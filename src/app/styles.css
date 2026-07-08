@@ -1,0 +1,141 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2129;
+  --panel-2: #232c37;
+  --line: #2e3946;
+  --text: #d8dee6;
+  --muted: #8a97a6;
+  --blue: #3b82f6;
+  --red: #ef4444;
+  --accent: #f5c451;
+  --ok: #34d399;
+  --warn: #fbbf24;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  direction: rtl;
+}
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+.topbar {
+  display: flex; align-items: baseline; gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 { font-size: 1.1rem; margin: 0; }
+.turn-info { color: var(--muted); font-size: 0.9rem; }
+.turn-info .sep { margin: 0 0.4rem; }
+
+.main { display: flex; flex: 1; min-height: 0; }
+
+.map-wrap {
+  flex: 1; position: relative; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #0b0f13; padding: 0.5rem;
+}
+
+.map { width: 100%; height: 100%; }
+.map-bg { fill: #11321f; }            /* olive-green field */
+.grid { stroke: #1d4a30; stroke-width: 0.5; }
+.move-range { fill: rgba(59,130,246,0.10); stroke: var(--blue); stroke-dasharray: 4 4; stroke-width: 1; }
+.selection-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
+
+.token { cursor: pointer; }
+.token-enemy.token-targetable { cursor: crosshair; }
+.token-neutralised { opacity: 0.5; }
+.hq-staff { stroke: #c7d0da; stroke-width: 1.5; }
+
+.tag {
+  display: inline-block; margin-inline-start: 0.4rem; padding: 0.02rem 0.4rem;
+  background: var(--accent); color: #1a1a1a; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 700;
+}
+
+/* sidebar */
+.sidebar {
+  width: 340px; flex-shrink: 0;
+  background: var(--panel);
+  border-inline-start: 1px solid var(--line);
+  display: flex; flex-direction: column; min-height: 0;
+}
+
+.panel { padding: 0.9rem; border-bottom: 1px solid var(--line); }
+.panel h3 { margin: 0 0 0.6rem; font-size: 1rem; }
+.hint { color: var(--muted); font-size: 0.82rem; margin: 0.5rem 0 0; }
+
+.controls label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+.seg { display: flex; gap: 0.3rem; }
+.seg button {
+  flex: 1; padding: 0.4rem; background: var(--panel-2);
+  color: var(--text); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+  font-size: 0.85rem;
+}
+.seg button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+.btn-primary {
+  margin-top: 0.8rem; width: 100%; padding: 0.6rem;
+  background: var(--accent); color: #1a1a1a; border: none; border-radius: 6px;
+  font-weight: 600; cursor: pointer; font-size: 0.95rem;
+}
+.btn-primary:hover { filter: brightness(1.05); }
+
+.unit-card {
+  margin-top: 0.8rem; padding: 0.6rem; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 6px; font-size: 0.88rem;
+}
+.unit-card.empty { color: var(--muted); text-align: center; }
+.unit-card .unit-name { font-weight: 600; margin-bottom: 0.3rem; }
+.unit-card .warn { color: var(--warn); }
+.unit-card .ok { color: var(--ok); }
+
+.roster { margin-top: 0.9rem; }
+.roster h4 { margin: 0 0 0.4rem; color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+.roster ul { list-style: none; margin: 0; padding: 0; }
+.roster li {
+  padding: 0.35rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 0.85rem;
+}
+.roster li:hover { background: var(--panel-2); }
+.roster li.sel { background: var(--blue); color: #fff; }
+.roster li.dead { opacity: 0.5; text-decoration: line-through; }
+
+/* log */
+.log { flex: 1; overflow-y: auto; padding: 0.9rem; }
+.log h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.log ul { list-style: none; margin: 0; padding: 0; }
+.log li { padding: 0.25rem 0; border-bottom: 1px solid var(--line); font-size: 0.82rem; line-height: 1.4; }
+.log-casualty { color: var(--accent); }
+.log-phase { color: var(--muted); font-style: italic; }
+.log-turn { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.chip {
+  display: inline-block; padding: 0.05rem 0.45rem; border-radius: 4px;
+  font-size: 0.75rem; font-weight: 700; color: #fff;
+}
+.chip-blue { background: var(--blue); }
+.chip-red { background: var(--red); }
+.chip-lg { font-size: 1.2rem; padding: 0.3rem 1rem; }
+
+.victory { color: var(--accent); font-size: 1.1rem; font-weight: 700; }
+
+/* handoff overlay */
+.handoff {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.handoff-card { text-align: center; padding: 2rem; }
+.handoff-card h2 { margin: 1rem 0 0.5rem; }
+.handoff-card p { color: var(--muted); margin: 0 0 1.5rem; }
+.handoff-blue .handoff-card { border-top: 4px solid var(--blue); }
+.handoff-red .handoff-card { border-top: 4px solid var(--red); }

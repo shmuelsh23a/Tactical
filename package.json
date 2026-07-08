@@ -1,0 +1,29 @@
+{
+  "name": "tactical-wargame-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rules engine for the PUM tactical wargame (משחק מלחמה לפו\"ם)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:engine": "tsc -p tsconfig.engine.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.29",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "milsymbol": "^2.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
