@@ -29,5 +29,24 @@ export function buildDemoScenario(seed = 2026): Scenario {
   game.addUnit(makeVehicle("RED-TANK", "RED", { x: 480, y: 130 }, 270, "טנק"));
   game.addUnit(makeCommandGroup("RED-HQ", "RED", "platoon", { x: 480, y: 90 }, 3, 'חפ"ק מ"מ'));
 
+  // RED has mined the approach: anti-personnel charges across the likely lanes,
+  // with an anti-tank charge on the open ground in the centre. BLUE only learns
+  // where they are by spotting them on the way in — or by walking into one.
+  for (const position of [
+    { x: 260, y: 400 },
+    { x: 340, y: 380 },
+    { x: 470, y: 420 },
+    { x: 620, y: 390 },
+  ]) {
+    game.addMine({ side: "RED", type: "antiPersonnel", position, armed: true, detected: false });
+  }
+  game.addMine({
+    side: "RED",
+    type: "antiTank",
+    position: { x: 545, y: 405 },
+    armed: true,
+    detected: false,
+  });
+
   return { game, mapWidth: 900, mapHeight: 800, title: "תרגיל הדגמה — מגע ראשון" };
 }

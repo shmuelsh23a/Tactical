@@ -51,6 +51,10 @@ body {
 .grid { stroke: #1d4a30; stroke-width: 0.5; }
 .move-range { fill: rgba(59,130,246,0.10); stroke: var(--blue); stroke-dasharray: 4 4; stroke-width: 1; }
 .selection-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
+.assault-range {
+  fill: rgba(239, 68, 68, 0.12); stroke: var(--red);
+  stroke-width: 1.5; stroke-dasharray: 3 3;
+}
 
 /* Marked aim point awaiting impact, and the smoke it may lay. */
 .aim-point { pointer-events: none; }
@@ -61,6 +65,10 @@ body {
 /* Smoke still in flight: shown in the colour of the screen it will become. */
 .aim-smoke circle, .aim-smoke line { stroke: #d6dee6; }
 .aim-smoke text { fill: #d6dee6; }
+/* Emplaced charges, drawn only where the viewing side knows of them. */
+.mine { pointer-events: none; }
+.mine-ap circle { fill: var(--warn); stroke: #1a1a1a; stroke-width: 1.5; }
+.mine-at polygon { fill: #f97316; stroke: #1a1a1a; stroke-width: 1.5; }
 
 .smoke {
   pointer-events: none;

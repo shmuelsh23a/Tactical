@@ -1,5 +1,6 @@
 import { useReducer, useRef, useState } from "react";
 import {
+  ASSAULT_RANGE_M,
   MOVEMENT_PROFILES,
   SMOKE_DURATION_TURNS,
   SMOKE_RADIUS_M,
@@ -240,7 +241,7 @@ export function App() {
     }
     const hadOrders = game.isUnderOrders(selectedOwn.id);
     try {
-      const det = game.moveUnit(selectedOwn.id, { x, y }, gait);
+      const { detection: det, mineDetonations } = game.moveUnit(selectedOwn.id, { x, y }, gait);
       pushLog(`${selectedOwn.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", viewingSide);
       // Moving consumes the force's orders; say so when the next set is not due
       // straight away, so the player can plan the חפ"ק's position around it.
@@ -252,8 +253,23 @@ export function App() {
         pushLog(`גילוי: ${det.spottedUnitIds.join(", ")}`, "info", viewingSide);
       }
       if (det.foundMineIds.length) {
-        pushLog(`התגלו מטענים: ${det.foundMineIds.length}`, "info", viewingSide);
+        pushLog(`${selectedOwn.name} איתר ${det.foundMineIds.length} מטענים`, "info", viewingSide);
       }
+      for (const det2 of mineDetonations) {
+        const kind = det2.type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
+        if (!det2.activated) {
+          pushLog(`${selectedOwn.name} דרך על ${kind} — לא הופעל`, "info", viewingSide);
+          continue;
+        }
+        pushLog(`${kind} התפוצץ תחת ${selectedOwn.name}!`, "casualty", viewingSide);
+        for (const hit of det2.blast?.targets ?? []) {
+          if (!hit.caught) continue;
+          const name = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
+          pushLog(`${name}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty", viewingSide);
+          if (hit.neutralized) pushLog(`${name} נוטרל!`, "casualty", viewingSide);
+        }
+      }
+      if (mineDetonations.some((d) => d.activated)) checkVictory();
     } catch (err) {
       pushLog((err as Error).message, "info", viewingSide);
     }
@@ -270,6 +286,11 @@ export function App() {
     }
     const target = game.units.find((u) => u.id === enemyId);
     if (!target) return;
+
+    if (combatAction === "assault") {
+      handleAssault(selectedOwn, target);
+      return;
+    }
 
     try {
       // Line of sight is left to the engine, which checks the shot against the
@@ -295,6 +316,36 @@ export function App() {
         }
       }
       if (target.neutralized) pushLog(`${target.name} נוטרל!`, "casualty", viewingSide);
+    } catch (err) {
+      pushLog((err as Error).message, "fire", viewingSide);
+    }
+    checkVictory();
+    force();
+  }
+
+  /** Go in on a neighbouring force: assault fire plus however many grenades. */
+  function handleAssault(attacker: Unit, target: Unit) {
+    try {
+      const r = game.assault(attacker.id, target.id, grenades);
+      if (!r.fired) {
+        pushLog(`${attacker.name}: ${reason(r.reason)}`, "fire", viewingSide);
+      } else {
+        pushLog(
+          `${attacker.name} הסתער על ${target.name}: ${r.fireHits} פגיעות אש` +
+            (grenades > 0 ? `, ${r.grenadeHits}/${grenades} רימונים` : "") +
+            `, ${r.defenderCasualties} נפגעים`,
+          r.defenderCasualties > 0 ? "casualty" : "fire",
+          viewingSide,
+        );
+        if (r.selfCasualties > 0) {
+          pushLog(
+            `${attacker.name} ספג ${r.selfCasualties} נפגעים מרימוני עצמו`,
+            "casualty",
+            viewingSide,
+          );
+        }
+        if (r.defenderNeutralized) pushLog(`${target.name} נוטרל!`, "casualty", viewingSide);
+      }
     } catch (err) {
       pushLog((err as Error).message, "fire", viewingSide);
     }
@@ -374,9 +425,15 @@ export function App() {
               moveCap={moveCap}
               revealedEnemyIds={revealed}
               awaitingOrderIds={awaitingOrders}
+              assaultReach={
+                enginePhase === "combat" && combatAction === "assault" && selectedOwn
+                  ? ASSAULT_RANGE_M
+                  : null
+              }
               smoke={game.smoke}
               pendingFire={game.pendingFire.filter((m) => m.side === viewingSide)}
               pendingSmoke={smokeInFlight}
+              mines={knownMines}
               onSelectUnit={handleSelect}
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
@@ -499,16 +556,61 @@ export function App() {
 
               {currentActivation.phase === "combat" && (
                 <div className="controls">
-                  <label>אמצעי ירי:</label>
+                  <label>פעולה:</label>
                   <div className="seg">
-                    <button className={weapon === "smallArms" ? "on" : ""} onClick={() => setWeapon("smallArms")}>
-                      נק"ל
+                    <button
+                      className={combatAction === "fire" ? "on" : ""}
+                      onClick={() => setCombatAction("fire")}
+                    >
+                      ירי
                     </button>
-                    <button className={weapon === "sustainedMg" ? "on" : ""} onClick={() => setWeapon("sustainedMg")}>
-                      מקלע
+                    <button
+                      className={combatAction === "assault" ? "on" : ""}
+                      onClick={() => setCombatAction("assault")}
+                    >
+                      הסתערות
                     </button>
                   </div>
-                  <p className="hint">בחר כוח, ולחץ על אויב מסומן כדי לירות.</p>
+
+                  {combatAction === "fire" ? (
+                    <>
+                      <label>אמצעי ירי:</label>
+                      <div className="seg">
+                        <button
+                          className={weapon === "smallArms" ? "on" : ""}
+                          onClick={() => setWeapon("smallArms")}
+                        >
+                          נק"ל
+                        </button>
+                        <button
+                          className={weapon === "sustainedMg" ? "on" : ""}
+                          onClick={() => setWeapon("sustainedMg")}
+                        >
+                          מקלע
+                        </button>
+                      </div>
+                      <p className="hint">בחר כוח, ולחץ על אויב מסומן כדי לירות.</p>
+                    </>
+                  ) : (
+                    <>
+                      <label>רימונים:</label>
+                      <div className="seg">
+                        {[0, 1, 2, 3].map((n) => (
+                          <button
+                            key={n}
+                            className={grenades === n ? "on" : ""}
+                            onClick={() => setGrenades(n)}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="hint">
+                        הסתערות עד {ASSAULT_RANGE_M}מ' (מסומן סביב הכוח הנבחר): אש הסתערות 70%
+                        לכל לוחם כשיר, וכל רימון 30% פגיעה באויב · 5% פגיעה עצמית.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -553,6 +655,12 @@ function reason(r?: string): string {
       return "מתחת לטווח מינימלי";
     case "no fit shooters":
       return "אין יורים כשירים";
+    case "out of assault range":
+      return `מחוץ לטווח הסתערות (${ASSAULT_RANGE_M}מ')`;
+    case "cannot assault armour":
+      return "לא ניתן להסתער על שריון";
+    case "attacker is neutralised":
+      return "הכוח מנוטרל";
     default:
       return r ?? "לא ניתן לירות";
   }

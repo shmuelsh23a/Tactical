@@ -22,12 +22,16 @@ interface MapViewProps {
   revealedEnemyIds: Set<string>;
   /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
   awaitingOrderIds: Set<string>;
+  /** Assault reach (metres) to ring the selected force with, when assaulting. */
+  assaultReach: number | null;
   /** Smoke screens on the map — physical, so both sides see them. */
   smoke: readonly SmokeScreen[];
   /** The viewing side's own marked fire missions, awaiting impact. */
   pendingFire: readonly PendingFireMission[];
   /** The viewing side's own smoke screens, still in flight. */
   pendingSmoke: readonly PendingSmokeMission[];
+  /** Charges this side knows about: its own, plus any enemy ones it has found. */
+  mines: readonly Mine[];
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
@@ -92,6 +96,16 @@ export function MapView(props: MapViewProps) {
         />
       )}
 
+      {/* How far the selected force can press an assault home. */}
+      {phase === "combat" && selected && selected.side === viewingSide && props.assaultReach != null && (
+        <circle
+          cx={selected.position.x}
+          cy={selected.position.y}
+          r={props.assaultReach}
+          className="assault-range"
+        />
+      )}
+
       {/* Marked aim points, own side only — an enemy sees nothing until it lands.
           Smoke shows the screen it will become, so it can be sited on a line. */}
       {props.pendingFire.map((m) => (
@@ -99,6 +113,19 @@ export function MapView(props: MapViewProps) {
       ))}
       {props.pendingSmoke.map((m) => (
         <AimPoint key={m.id} at={m.target} turn={m.resolvesOnTurn} radius={m.radius} smoke />
+      ))}
+
+      {/* Known charges: an anti-personnel one as a disc, anti-tank as a wedge. */}
+      {props.mines.map((m) => (
+        <g key={m.id} className={`mine mine-${m.type === "antiTank" ? "at" : "ap"}`}>
+          {m.type === "antiTank" ? (
+            <polygon
+              points={`${m.position.x},${m.position.y - 9} ${m.position.x - 9},${m.position.y + 7} ${m.position.x + 9},${m.position.y + 7}`}
+            />
+          ) : (
+            <circle cx={m.position.x} cy={m.position.y} r={7} />
+          )}
+        </g>
       ))}
 
       {units.map((u) => (

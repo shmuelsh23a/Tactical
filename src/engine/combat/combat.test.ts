@@ -319,13 +319,71 @@ describe("indirect fire end-to-end", () => {
 });
 
 describe("assault", () => {
+  const attacker = (x: number, y: number, n = 8) =>
+    makeInfantry("A", "BLUE", "squad", { x, y }, n);
+  const defender = (x: number, y: number, n = 4) =>
+    makeInfantry("D", "RED", "squad", { x, y }, n);
+
   it("inflicts casualties and can neutralise a defender", () => {
     const rng = new Rng(15);
-    const att = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
-    const def = makeInfantry("D", "RED", "squad", { x: 0, y: 5 }, 4);
+    const att = attacker(0, 0);
+    const def = defender(0, 5);
     const r = resolveAssault(rng, att, def, { grenades: 2 });
+    expect(r.fired).toBe(true);
     expect(r.fireHits).toBeGreaterThanOrEqual(0);
     expect(fitSoldiers(def)).toBeLessThanOrEqual(4);
+  });
+
+  it("reaches 25 m and no further", () => {
+    const at25 = resolveAssault(new Rng(1), attacker(0, 0), defender(0, 25));
+    expect(at25.fired).toBe(true);
+
+    const beyond = resolveAssault(new Rng(1), attacker(0, 0), defender(0, 26));
+    expect(beyond.fired).toBe(false);
+    expect(beyond.reason).toBe("out of assault range");
+    expect(beyond.range).toBeCloseTo(26, 5);
+  });
+
+  it("leaves the defender untouched when it is out of reach", () => {
+    const def = defender(0, 200);
+    resolveAssault(new Rng(1), attacker(0, 0), def);
+    expect(fitSoldiers(def)).toBe(4);
+    expect(def.hitThisTurn).toBe(false);
+  });
+
+  it("does not spend the attacker's action on a refused assault", () => {
+    const att = attacker(0, 0);
+    resolveAssault(new Rng(1), att, defender(0, 200));
+    expect(att.firedThisTurn).toBe(false);
+
+    resolveAssault(new Rng(1), att, defender(0, 10));
+    expect(att.firedThisTurn).toBe(true);
+  });
+
+  it("cannot be pressed home against armour", () => {
+    const tank = makeVehicle("T", "RED", { x: 0, y: 10 });
+    const r = resolveAssault(new Rng(1), attacker(0, 0), tank);
+    expect(r.fired).toBe(false);
+    expect(r.reason).toBe("cannot assault armour");
+  });
+
+  it("needs someone left to press it", () => {
+    const att = attacker(0, 0, 2);
+    att.soldiers!.forEach((s) => (s.neutralized = true));
+    const r = resolveAssault(new Rng(1), att, defender(0, 10));
+    expect(r.fired).toBe(false);
+    expect(r.reason).toBe("no fit shooters");
+  });
+
+  it("grenades sometimes wound the throwers themselves", () => {
+    // 5% self-hit per grenade — over many seeds it must happen.
+    let selfHarm = false;
+    for (let s = 0; s < 200 && !selfHarm; s++) {
+      const att = attacker(0, 0);
+      resolveAssault(new Rng(s), att, defender(0, 5), { grenades: 3 });
+      if (att.soldiers!.some((x) => x.damagePoints > 0)) selfHarm = true;
+    }
+    expect(selfHarm).toBe(true);
   });
 });
 

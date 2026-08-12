@@ -81,8 +81,13 @@ export {
   type DirectExplosiveResult,
 } from "./combat/explosives.js";
 export { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
-export { resolveAssault, type AssaultResult } from "./combat/assault.js";
+export { resolveAssault, ASSAULT_RANGE_M, type AssaultResult } from "./combat/assault.js";
 export { detectByMovement, detectByUav, type DetectionResult } from "./combat/detection.js";
+export {
+  triggerMines,
+  MINE_TRIGGER_RADIUS_M,
+  type MineDetonation,
+} from "./combat/mines.js";
 
 // Turn engine
 export {
@@ -91,5 +96,6 @@ export {
   PhaseError,
   type Phase,
   type GameOptions,
+  type MoveResult,
   type SmokeOrder,
 } from "./game.js";

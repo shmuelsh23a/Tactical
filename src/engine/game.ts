@@ -20,6 +20,7 @@ import {
 } from "./data/smoke.js";
 import { orderInterval } from "./data/c2.js";
 import { detectByMovement, detectByUav, type DetectionResult } from "./combat/detection.js";
+import { triggerMines, type MineDetonation } from "./combat/mines.js";
 import { resolveDirectFire, type DirectFireOptions, type DirectFireResult } from "./combat/directFire.js";
 import {
   resolveDirectExplosive,
@@ -45,6 +46,13 @@ let idCounter = 0;
 const nextId = (prefix: string) => `${prefix}-${++idCounter}`;
 
 export class PhaseError extends Error {}
+
+/** What a move turned up: what the force saw, and what it set off. */
+export interface MoveResult {
+  detection: DetectionResult;
+  /** Charges triggered along the path walked. */
+  mineDetonations: MineDetonation[];
+}
 
 /** What a call for smoke produced: a screen on the map, or one still in flight. */
 export interface SmokeOrder {
@@ -247,7 +255,7 @@ export class Game {
    * cap (halved when under fire) and the no-move-after-being-hit rule. Returns
    * the detection result from the move.
    */
-  moveUnit(unitId: string, to: Point, mode: MovementMode = "normal"): DetectionResult {
+  moveUnit(unitId: string, to: Point, mode: MovementMode = "normal"): MoveResult {
     this.requirePhase("movement");
     const unit = this.getUnit(unitId);
     if (unit.neutralized && !unit.canOnlyRetreat) {
@@ -283,7 +291,22 @@ export class Game {
     unit.movedThisTurn += dist;
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
-    return detectByMovement(this.rng, unit, mode, enemies, this.mines);
+    const detection = detectByMovement(this.rng, unit, mode, enemies, this.mines);
+
+    // Charges are tested against the whole path walked, so a bound cannot vault
+    // a minefield. Any that fired are spent.
+    const { detonations, spent } = triggerMines(
+      this.rng,
+      unit,
+      from,
+      unit.position,
+      this.mines,
+      this.units,
+      this.turn,
+    );
+    if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
+
+    return { detection, mineDetonations: detonations };
   }
 
   // ---- combat phase ----
@@ -330,9 +353,31 @@ export class Game {
     });
   }
 
+  /**
+   * Assault (הסתערות) a neighbouring enemy force. Closing to contact is a
+   * movement-phase job, so this only checks that the attacker is already there
+   * — see {@link ASSAULT_RANGE_M}.
+   */
   assault(attackerId: string, defenderId: string, grenades = 0): AssaultResult {
     this.requirePhase("combat");
-    return resolveAssault(this.rng, this.getUnit(attackerId), this.getUnit(defenderId), {
+    const attacker = this.getUnit(attackerId);
+    if (attacker.neutralized) {
+      return {
+        fired: false,
+        reason: "attacker is neutralised",
+        attackerId,
+        defenderId,
+        range: distance(attacker.position, this.getUnit(defenderId).position),
+        fireHits: 0,
+        fireDamage: 0,
+        grenadeHits: 0,
+        grenadeDamage: 0,
+        selfCasualties: 0,
+        defenderCasualties: 0,
+        defenderNeutralized: this.getUnit(defenderId).neutralized,
+      };
+    }
+    return resolveAssault(this.rng, attacker, this.getUnit(defenderId), {
       grenades,
       turn: this.turn,
     });

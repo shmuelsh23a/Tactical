@@ -278,6 +278,98 @@ describe("smoke blocks fire", () => {
   });
 });
 
+describe("emplaced charges", () => {
+  /** A BLUE squad about to walk a lane RED has mined. */
+  function minedLane(seed: number, type: "antiPersonnel" | "antiTank" = "antiPersonnel") {
+    const g = new Game({ seed });
+    const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    const mine = g.addMine({
+      side: "RED",
+      type,
+      position: { x: 0, y: 25 }, // squarely on the path, mid-bound
+      armed: true,
+      detected: false,
+    });
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    return { g, sq, mine };
+  }
+
+  /** Seeds differ in whether the 50% activation roll comes up. */
+  function firstSeedWhere(activated: boolean): number {
+    for (let s = 0; s < 200; s++) {
+      const { g, sq } = minedLane(s);
+      const r = g.moveUnit(sq.id, { x: 0, y: 50 }, "normal");
+      const det = r.mineDetonations[0];
+      if (det && det.activated === activated) return s;
+    }
+    throw new Error(`no seed produced activated=${activated}`);
+  }
+
+  it("goes off under a force that walks onto it", () => {
+    const { g, sq } = minedLane(firstSeedWhere(true));
+    const r = g.moveUnit(sq.id, { x: 0, y: 50 }, "normal");
+    expect(r.mineDetonations.length).toBe(1);
+    expect(r.mineDetonations[0]!.activated).toBe(true);
+    expect(r.mineDetonations[0]!.blast).toBeDefined();
+    expect(g.mines.length).toBe(0); // spent
+  });
+
+  it("stays armed when the activation roll fails", () => {
+    const { g, sq } = minedLane(firstSeedWhere(false));
+    const r = g.moveUnit(sq.id, { x: 0, y: 50 }, "normal");
+    expect(r.mineDetonations[0]!.activated).toBe(false);
+    expect(r.mineDetonations[0]!.blast).toBeUndefined();
+    expect(g.mines.length).toBe(1);
+  });
+
+  it("is triggered by the path walked, not just where the bound ends", () => {
+    // The charge at y=25 is nowhere near the destination at y=50, but the
+    // force still walks over it.
+    const { g, sq } = minedLane(firstSeedWhere(true));
+    const r = g.moveUnit(sq.id, { x: 0, y: 50 }, "normal");
+    expect(distanceBetween({ position: { x: 0, y: 50 } }, { position: { x: 0, y: 25 } })).toBe(25);
+    expect(r.mineDetonations.length).toBe(1);
+  });
+
+  it("is stepped around once it has been found", () => {
+    const { g, sq, mine } = minedLane(1);
+    mine.detected = true;
+    const r = g.moveUnit(sq.id, { x: 0, y: 50 }, "normal");
+    expect(r.mineDetonations).toEqual([]);
+    expect(g.mines.length).toBe(1);
+  });
+
+  it("never catches the side that laid it", () => {
+    const g = new Game({ seed: 1 });
+    const sq = g.addUnit(makeInfantry("S", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addMine({ side: "RED", type: "antiPersonnel", position: { x: 0, y: 25 }, armed: true, detected: false });
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    expect(g.moveUnit(sq.id, { x: 0, y: 50 }, "normal").mineDetonations).toEqual([]);
+  });
+
+  it("leaves a charge well off the path alone", () => {
+    const g = new Game({ seed: 1 });
+    const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.addMine({ side: "RED", type: "antiPersonnel", position: { x: 40, y: 25 }, armed: true, detected: false });
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    expect(g.moveUnit(sq.id, { x: 0, y: 50 }, "normal").mineDetonations).toEqual([]);
+  });
+
+  it("hurts the force that set it off", () => {
+    // Over many seeds an AP charge that fires must cost the squad something.
+    let anyDamage = false;
+    for (let s = 0; s < 40 && !anyDamage; s++) {
+      const { g, sq } = minedLane(s);
+      const r = g.moveUnit(sq.id, { x: 0, y: 50 }, "normal");
+      if (r.mineDetonations[0]?.activated && sumDamage(sq) > 0) anyDamage = true;
+    }
+    expect(anyDamage).toBe(true);
+  });
+});
+
 describe("smoke delivery", () => {
   function ready(seed = 1) {
     const g = new Game({ seed });
