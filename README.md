@@ -211,13 +211,22 @@ on the stated reasoning, still awaiting the author's word.
    `targetSoldierId` — [`units.ts`](src/engine/units.ts).
 5. ✅ **Engine/track damage**: the 8/4 nq"p are component pools; a penetrating
    hit deals the full pool (one-hit mobility kill), light HE chips 2 at a time.
-6. ⚠️ **C2 gates manoeuvre, not fire** (assumed 2026-08-12, not yet confirmed
-   with the author). A force that cannot receive new orders this turn may not be
-   *moved*; it may still fire, on its local commander's initiative. The command
-   group itself is never gated, and the interval is recomputed live — bringing
-   the חפ"ק forward restores a cut-off force's tempo immediately.
-   [`game.ts`](src/engine/game.ts) `canManoeuvre` / `moveUnit`; the whole module
-   is switched off with `new Game({ seed, enforceC2: false })`.
+6. ✅ **A force out of contact keeps executing its standing orders**
+   (ruled by the author 2026-08-12). Being beyond the פו"ש interval does not
+   freeze a force: it goes on doing what it was last told to do until new
+   orders can reach it. Distance from the חפ"ק therefore measures how *stale*
+   a force's orders are, not whether it may act at all.
+
+   > **Not yet built.** The code still implements the first reading — a force
+   > that cannot receive new orders may not be moved (it may still fire). That
+   > was an assumption, and this ruling supersedes it. Standing orders are the
+   > next task; see the design questions still open below.
+
+   Unchanged either way: the command group is never gated, fire is never gated,
+   the interval is recomputed live so bringing the חפ"ק forward restores a
+   force's tempo, and the whole module switches off with
+   `new Game({ seed, enforceC2: false })` —
+   [`game.ts`](src/engine/game.ts) `canManoeuvre` / `moveUnit`.
 7. ⚠️ **Cover cuts the hit chance proportionally, not by percentage points**
    (decided 2026-08-12 from the document, worth a sanity check). The source
    reads `-50% מסיכויי הפגיעה` — "-50% *of* the hit chance" — and the partitive
