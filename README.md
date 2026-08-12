@@ -306,6 +306,8 @@ Still modelled by reasonable assumption (flag if you want them changed):
   fog-of-war, turn/phase panel, driving this engine.
 - **Stage 3 — networked multiplayer** (per-side fog-of-war) and
   **single-player vs AI**. Both already supported by the seed-driven design.
+  The AI opponent and backlog item 13 (OPORD mode) are the same engine seam
+  seen from two directions: something other than a human emitting the actions.
 
 ### Later development iterations (unordered backlog)
 
@@ -328,3 +330,34 @@ Each is intended to be an independent, toggleable module:
 10. **Air support** — fixed/rotary CAS missions.
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
 12. **Logistics** — ammunition, fuel, resupply, sustainment.
+13. **OPORD mode — write the order, watch it executed.** A game mode where the
+    player does not manoeuvre pieces at all: they write a **פקודת מבצע** and/or
+    draw a plan on the map (axes, objectives, control measures, fire plan), and
+    the engine plays it out. Execution is driven by an **LLM with RAG over
+    doctrine publications**, so subordinates behave the way the doctrine says a
+    force at that echelon behaves, rather than following a hand-written script.
+
+    This is the natural end of the C2 line of work: rules decision 6 gates
+    *when* a force may receive orders, and this mode supplies *what* the order
+    says and lets the engine interpret it — the persistent standing-orders model
+    considered and set aside when C2 was implemented, at OPORD scale.
+
+    **To settle before building** (deliberately not decided here):
+
+    - **Model size and where it runs.** Local small model vs hosted frontier
+      model; latency budget per turn; whether every subordinate reasons or only
+      the commander does, with the rest resolved mechanically.
+    - **Where it attaches to the turn loop.** The engine's action API is already
+      the seam — an LLM planner would emit the same `moveUnit` / `fire` /
+      `queueIndirectFire` calls a player makes. Likely once per side per
+      activation, reading the fog-of-war view that side is entitled to.
+    - **Determinism.** An LLM is not reproducible, which collides head-on with
+      the seeded core. The action log is the way out: record what the model
+      *decided*, not how it decided it, so a recording still replays exactly
+      (see `recording.ts`). A recording would then also need the model and
+      prompt version stamped on it to be reproducible from the order itself.
+    - **The doctrine corpus.** Which publications, how chunked and cited — and
+      it has to be material the project may lawfully hold and ship.
+    - **Adjudication.** Whether the model may only choose among actions the
+      rules already permit (safest — the engine stays the referee), or may also
+      argue for outcomes the tables do not cover.
