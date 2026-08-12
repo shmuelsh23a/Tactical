@@ -15,7 +15,7 @@ export type WeaponClass = "smallArms" | "sustainedMg";
 
 export interface DirectFireOptions {
   weapon: WeaponClass;
-  /** Cover state of the target. */
+  /** Cover state of the target; scales the hit chance (full cover halves it). */
   cover?: CoverState;
   /**
    * Additive hit modifier from the target's movement this turn:
@@ -83,8 +83,10 @@ export function resolveDirectFire(
   }
 
   const cover = opts.cover ?? "none";
+  // Cover cuts the chance proportionally ("-50% מסיכויי הפגיעה"), so it scales
+  // the situational chance rather than being subtracted from it.
   const hitChance = clamp01(
-    band.value + COVER_MODIFIERS[cover] + (opts.targetMovementModifier ?? 0),
+    (band.value + (opts.targetMovementModifier ?? 0)) * (1 + COVER_MODIFIERS[cover]),
   );
 
   const available = fitSoldiers(attacker);

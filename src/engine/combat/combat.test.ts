@@ -28,12 +28,50 @@ describe("direct fire", () => {
     expect(avg).toBeLessThan(2.8);
   });
 
-  it("full cover reduces hit chance by 50 points", () => {
+  it("full cover halves the hit chance", () => {
     const rng = new Rng(5);
     const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
     const b = makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 8);
     const r = resolveDirectFire(rng, a, b, { weapon: "smallArms", cover: "full" });
-    expect(r.hitChance).toBeCloseTo(0, 5); // 0.3 - 0.5 clamped to 0
+    expect(r.hitChance).toBeCloseTo(0.15, 5); // 0.3 * (1 - 0.5)
+  });
+
+  it("partial cover takes a tenth off the hit chance", () => {
+    const rng = new Rng(5);
+    const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    const b = makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 8);
+    const r = resolveDirectFire(rng, a, b, { weapon: "smallArms", cover: "partial" });
+    expect(r.hitChance).toBeCloseTo(0.27, 5); // 0.3 * (1 - 0.1)
+  });
+
+  it("leaves every band of the direct-fire table live against a covered target", () => {
+    // The cover cut is proportional, so a force in cover is harder to hit but
+    // never immune — an additive -50 points would zero the whole table.
+    const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    for (const [range, weapon] of [
+      [50, "smallArms"],
+      [250, "smallArms"],
+      [380, "smallArms"],
+      [250, "sustainedMg"],
+      [450, "sustainedMg"],
+      [650, "sustainedMg"],
+    ] as const) {
+      const b = makeInfantry("B", "RED", "squad", { x: 0, y: range }, 8);
+      const r = resolveDirectFire(new Rng(5), a, b, { weapon, cover: "full" });
+      expect(r.hitChance).toBeGreaterThan(0);
+    }
+  });
+
+  it("cover scales the chance the target's movement has already modified", () => {
+    const rng = new Rng(5);
+    const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    const b = makeInfantry("B", "RED", "squad", { x: 0, y: 250 }, 8);
+    const r = resolveDirectFire(rng, a, b, {
+      weapon: "smallArms",
+      cover: "partial",
+      targetMovementModifier: +0.3,
+    });
+    expect(r.hitChance).toBeCloseTo(0.45, 5); // (0.2 + 0.3) * (1 - 0.1)
   });
 
   it("running target lowers hit chance, normal-moving raises it", () => {

@@ -24,7 +24,11 @@ export const SUSTAINED_MG_BANDS: readonly RangeBand[] = [
 ];
 
 /**
- * Cover modifiers, applied additively to the looked-up hit chance.
+ * Cover modifiers — a **proportional** cut of the hit chance, not a subtraction
+ * of percentage points. The document reads "-50% מסיכויי הפגיעה" ("-50% *of*
+ * the hit chance"), so full cover halves whatever the shot would otherwise be
+ * (20% → 10%). Read additively these would zero the whole direct-fire table —
+ * see rules decision 7 in the README.
  *   Full cover (did not move and did not fire on the previous turn): -50%.
  *   Partial cover (when firing while in cover): -10%.
  */
