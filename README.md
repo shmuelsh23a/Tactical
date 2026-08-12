@@ -101,6 +101,11 @@ applied, which silently rewrites every recording made before them.
 
 Engine capability the UI does not reach yet — the next obvious work:
 
+- **Orders can only send a force somewhere, not tell it what to do there.**
+  The engine executes a standing *engage* task and it is tested, but nothing in
+  the hotseat sets one — the map click issues a destination and a gait only.
+  The debrief narrates orders generically too, rather than naming the objective
+  and reporting each force's bound.
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
 - **Fog-of-war is a flat 300 m radius** (`hotseat.ts`), with no terrain and no

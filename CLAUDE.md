@@ -54,6 +54,12 @@ one it is in your reply, too.
 - **Features are toggleable per game**, not baked in — the pattern is a flag on
   `GameOptions` (see `enforceC2`), so a quick firefight and a full exercise run
   on the same engine.
+- **The player issues orders; the engine moves the pieces.** A force is given a
+  standing order (`setStandingOrder`) and `executeStandingOrders` carries it out
+  every turn until it is replaced — see rules decision 6. `moveUnit` is the
+  primitive underneath and is only called directly for the חפ"ק, which the
+  player drives by hand. Reach for an order, not a move, when adding anything
+  that manoeuvres a force.
 - **`noUncheckedIndexedAccess` is on**: indexing an array yields `T | undefined`.
 - **The UI is Hebrew and RTL.** User-facing strings, log lines and labels are in
   Hebrew; keep new ones consistent with the existing phrasing.
@@ -72,8 +78,7 @@ behaviour you just replaced.
 ### Driving it by script
 
 Playing the demo to an interesting position takes many activations, so it is
-usually scripted through the browser tools. Four things cost real time to
-rediscover:
+usually scripted through the browser tools. These cost real time to rediscover:
 
 - **A token's symbol image is large in map coordinates.** `elementFromPoint` at
   a spot near a unit hits the `<image>`, and `Token`'s handler calls
@@ -84,8 +89,12 @@ rediscover:
   slow enough that a long click sequence blows the 30 s tool timeout. Drive one
   or two activations per call and read the state back between them.
 - **C2 is measured from where the חפ"ק stands when the order is given**, so
-  move the command group *before* the subordinate, or the squad drops to a
-  2-turn interval and the script stalls waiting for it.
+  move the command group *before* the subordinate if you want the squad to
+  stay in the every-turn band.
+- **One order is usually enough.** Since a standing order executes every turn,
+  a script can order a force once and then just advance activations — far
+  cheaper than clicking a bound per turn, and it no longer stalls when the
+  force falls out of contact.
 - **Check a move landed by looking for a `נע` line anywhere in the new log
   entries**, not at the top one — detection and orders log after it.
 
@@ -97,6 +106,7 @@ faster than driving the UI at all.
 ## Tests
 
 Vitest, colocated as `*.test.ts` next to the code. The interesting suites are
-`src/engine/game.test.ts` (turn loop, C2) and `src/engine/combat/combat.test.ts`
-(fire resolution). Tests assert against the document's numbers — if a test needs
-changing, be sure the *rule* changed and not just the code.
+`src/engine/game.test.ts` (turn loop, C2), `src/engine/orders.test.ts` (standing
+orders) and `src/engine/combat/combat.test.ts` (fire resolution). Tests assert
+against the document's numbers — if a test needs changing, be sure the *rule*
+changed and not just the code.
