@@ -38,6 +38,15 @@ body {
 .turn-info { color: var(--muted); font-size: 0.9rem; }
 .turn-info .sep { margin: 0 0.4rem; }
 
+.btn-ghost {
+  margin-inline-start: auto;
+  padding: 0.3rem 0.7rem;
+  background: transparent; color: var(--text);
+  border: 1px solid var(--line); border-radius: 6px;
+  font-size: 0.82rem; cursor: pointer;
+}
+.btn-ghost:hover { background: var(--panel-2); }
+
 .main { display: flex; flex: 1; min-height: 0; }
 
 .map-wrap {

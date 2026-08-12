@@ -353,6 +353,23 @@ export function App() {
     force();
   }
 
+  /**
+   * Download the battle as a recording — seed plus the action log, which
+   * replayGame() reconstructs exactly. The seed-driven engine is what makes
+   * this a few hundred bytes rather than a state dump.
+   */
+  function handleSaveRecording() {
+    const recording = game.toRecording();
+    const blob = new Blob([JSON.stringify(recording, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${scn.title} — תור ${game.turn}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    pushLog(`הקרב נשמר להקלטה (${recording.actions.length} פעולות)`, "info");
+  }
+
   function checkVictory() {
     for (const side of ["RED", "BLUE"] as Side[]) {
       if (sideDefeated(game, side)) {
@@ -404,6 +421,9 @@ export function App() {
           <span className="sep">·</span>
           <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>
         </div>
+        <button className="btn-ghost" onClick={handleSaveRecording} title="שמירת הקרב לקובץ לצורך שחזור ותחקיר">
+          שמור הקלטה
+        </button>
       </header>
 
       <div className="main">

@@ -29,6 +29,7 @@ import {
 import { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
+import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -41,9 +42,6 @@ export const PHASES = [
   "summary", // סיכום והתארגנות
 ] as const;
 export type Phase = (typeof PHASES)[number];
-
-let idCounter = 0;
-const nextId = (prefix: string) => `${prefix}-${++idCounter}`;
 
 export class PhaseError extends Error {}
 
@@ -84,6 +82,7 @@ export interface GameOptions {
  * turn/phase loop. Player actions are validated against the current phase.
  */
 export class Game {
+  readonly seed: number;
   readonly rng: Rng;
   readonly sides: Side[];
   readonly enforceC2: boolean;
@@ -99,22 +98,74 @@ export class Game {
   /** Turn each unit last received orders, for the C2 interval rule. */
   private lastOrderTurn = new Map<string, number>();
 
+  /**
+   * Ids are numbered per game, not per process: two games from the same seed
+   * and the same actions must produce byte-identical state, which a counter
+   * shared across instances would break.
+   */
+  private idCounter = 0;
+  private nextId(prefix: string): string {
+    return `${prefix}-${++this.idCounter}`;
+  }
+
+  /**
+   * Every action taken on this game, in order — enough to replay it exactly.
+   * Actions are journalled after they succeed, so a rejected move leaves no
+   * trace, and nested calls (advanceToPhase driving advancePhase) record only
+   * the outermost one.
+   */
+  private readonly actions: RecordedAction[] = [];
+  private journalDepth = 0;
+
+  private journal(action: RecordedAction): void {
+    if (this.journalDepth === 0) this.actions.push(action);
+  }
+
+  /** Run `fn` without journalling the public actions it calls internally. */
+  private internally<T>(fn: () => T): T {
+    this.journalDepth++;
+    try {
+      return fn();
+    } finally {
+      this.journalDepth--;
+    }
+  }
+
   constructor(opts: GameOptions) {
+    this.seed = opts.seed;
     this.rng = new Rng(opts.seed);
     this.sides = opts.sides ?? ["RED", "BLUE"];
     this.enforceC2 = opts.enforceC2 ?? true;
+  }
+
+  /**
+   * Snapshot this game as a replayable recording — seed plus the action log.
+   * Feed it to {@link replayGame} to reconstruct the game exactly.
+   */
+  toRecording(): GameRecording {
+    return {
+      version: 1,
+      seed: this.seed,
+      sides: [...this.sides],
+      enforceC2: this.enforceC2,
+      actions: cloneForRecord(this.actions),
+    };
   }
 
   // ---- setup ----
 
   addUnit(unit: Unit): Unit {
     this.units.push(unit);
+    this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
   }
 
   addMine(mine: Omit<Mine, "id">): Mine {
-    const m: Mine = { ...mine, id: nextId("mine") };
+    const m: Mine = { ...mine, id: this.nextId("mine") };
     this.mines.push(m);
+    // The id is not recorded: replay regenerates it from its own counter, and
+    // the same sequence of calls yields the same ids.
+    this.journal({ kind: "addMine", mine: cloneForRecord(mine) });
     return m;
   }
 
@@ -131,6 +182,7 @@ export class Game {
     this.turn += 1;
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
+    this.journal({ kind: "beginTurn" });
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
   }
 
@@ -151,20 +203,25 @@ export class Game {
     resolved?: IndirectFireResult[];
     smokeArrived?: SmokeScreen[];
   } {
-    if (this.phase === "summary") {
-      this.endOfTurnUpkeep();
-      this.beginTurn();
+    const result = this.internally(() => {
+      if (this.phase === "summary") {
+        this.endOfTurnUpkeep();
+        this.beginTurn();
+        return { phase: this.phase };
+      }
+      const idx = PHASES.indexOf(this.phase);
+      this.phase = PHASES[idx + 1]!;
+      if (this.phase === "resolvePriorArty") {
+        // Screens go down before the rounds land, so a smoke mission fired on
+        // the same turn as an HE mission cannot be walked through by its own
+        // barrage.
+        const smokeArrived = this.resolveDueSmoke();
+        return { phase: this.phase, resolved: this.resolveDueFireMissions(), smokeArrived };
+      }
       return { phase: this.phase };
-    }
-    const idx = PHASES.indexOf(this.phase);
-    this.phase = PHASES[idx + 1]!;
-    if (this.phase === "resolvePriorArty") {
-      // Screens go down before the rounds land, so a smoke mission fired on the
-      // same turn as an HE mission cannot be walked through by its own barrage.
-      const smokeArrived = this.resolveDueSmoke();
-      return { phase: this.phase, resolved: this.resolveDueFireMissions(), smokeArrived };
-    }
-    return { phase: this.phase };
+    });
+    this.journal({ kind: "advancePhase" });
+    return result;
   }
 
   /**
@@ -182,13 +239,16 @@ export class Game {
   } {
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
-    let guard = 0;
-    while (this.phase !== target) {
-      const step = this.advancePhase();
-      if (step.resolved) resolved.push(...step.resolved);
-      if (step.smokeArrived) smokeArrived.push(...step.smokeArrived);
-      if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
-    }
+    this.internally(() => {
+      let guard = 0;
+      while (this.phase !== target) {
+        const step = this.advancePhase();
+        if (step.resolved) resolved.push(...step.resolved);
+        if (step.smokeArrived) smokeArrived.push(...step.smokeArrived);
+        if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
+      }
+    });
+    this.journal({ kind: "advanceToPhase", target });
     return { phase: this.phase, resolved, smokeArrived };
   }
 
@@ -204,7 +264,9 @@ export class Game {
   uavSweep(uavKey: string, footprintCenter: Point, viewer: Side): DetectionResult {
     this.requirePhase("intel");
     const enemies = this.units.filter((u) => u.side !== viewer);
-    return detectByUav(this.rng, uavKey, footprintCenter, enemies, this.mines);
+    const result = detectByUav(this.rng, uavKey, footprintCenter, enemies, this.mines);
+    this.journal({ kind: "uavSweep", uavKey, footprintCenter, viewer });
+    return result;
   }
 
   // ---- targeting phase ----
@@ -222,7 +284,7 @@ export class Game {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     }
     const mission: PendingFireMission = {
-      id: nextId("fire"),
+      id: this.nextId("fire"),
       weapon: weaponKey,
       side,
       target,
@@ -232,6 +294,7 @@ export class Game {
     // Stash firing origin on the mission for dispersion orientation.
     (mission as PendingFireMission & { firingFrom?: Point }).firingFrom = opts.firingFrom;
     this.pendingFire.push(mission);
+    this.journal({ kind: "queueIndirectFire", weaponKey, side, target, opts });
     return mission;
   }
 
@@ -306,6 +369,7 @@ export class Game {
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
 
+    this.journal({ kind: "moveUnit", unitId, to, mode });
     return { detection, mineDetonations: detonations };
   }
 
@@ -326,13 +390,15 @@ export class Game {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    return resolveDirectFire(this.rng, attacker, target, {
+    const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       ...opts,
       // The caller may assert line of sight itself; otherwise the engine works
       // it out from the smoke on the map.
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
     });
+    this.journal({ kind: "fire", attackerId, targetId, opts });
+    return fireResult;
   }
 
   fireExplosive(
@@ -345,12 +411,14 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    return resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
+    const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight:
         opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
       collateral,
       turn: this.turn,
     });
+    this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
+    return result;
   }
 
   /**
@@ -377,10 +445,12 @@ export class Game {
         defenderNeutralized: this.getUnit(defenderId).neutralized,
       };
     }
-    return resolveAssault(this.rng, attacker, this.getUnit(defenderId), {
+    const result = resolveAssault(this.rng, attacker, this.getUnit(defenderId), {
       grenades,
       turn: this.turn,
     });
+    this.journal({ kind: "assault", attackerId, defenderId, grenades });
+    return result;
   }
 
   /**
@@ -404,12 +474,15 @@ export class Game {
     const delay = EXPLOSIVES[source]?.impactDelayTurns ?? 0;
     const durationTurns = SMOKE_DURATION_TURNS[source];
     const common = { source, radius, durationTurns, arrivesOnTurn: this.turn + delay };
+    // Journalled with the resolved radius, so replay does not depend on the
+    // default still being what it was when the game was played.
+    this.journal({ kind: "deploySmoke", source, side, center, radius });
 
     if (delay === 0) {
       return { ...common, screen: this.layScreen(center, radius, durationTurns) };
     }
     const mission: PendingSmokeMission = {
-      id: nextId("smoke"),
+      id: this.nextId("smoke"),
       source,
       side,
       target: center,
@@ -422,7 +495,7 @@ export class Game {
 
   /** Put a screen on the map now. */
   private layScreen(center: Point, radius: number, turnsRemaining: number): SmokeScreen {
-    const screen: SmokeScreen = { id: nextId("smoke"), center, radius, turnsRemaining };
+    const screen: SmokeScreen = { id: this.nextId("smoke"), center, radius, turnsRemaining };
     this.smoke.push(screen);
     return screen;
   }
@@ -497,6 +570,7 @@ export class Game {
   issueOrders(unitId: string, commanderPosition?: Point): boolean {
     if (!this.canReceiveOrders(unitId, commanderPosition)) return false;
     this.lastOrderTurn.set(unitId, this.turn);
+    this.journal({ kind: "issueOrders", unitId, commanderPosition });
     return true;
   }
 

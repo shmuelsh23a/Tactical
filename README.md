@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (105 tests)
+npm test             # run the engine test suite (115 tests)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -71,6 +71,11 @@ enemy: pick the action, choose how many grenades to throw, and the selected
 force is ringed with its 25 m reach (rules decision 11). The log reports assault
 fire, grenade hits, and any casualties the throwers inflict on themselves.
 
+**שמור הקלטה** in the header saves the battle as a recording — the seed plus the
+action log, a few kilobytes rather than a state dump, because the seeded engine
+can rebuild everything else. [`replayGame()`](src/engine/recording.ts) replays
+it to the same state, ids and RNG position included.
+
 Engine capability the UI does not reach yet — the next obvious work:
 
 - **Charges cannot be laid during play** — they are placed when a scenario is
@@ -80,7 +85,9 @@ Engine capability the UI does not reach yet — the next obvious work:
   obstructs it.
 - **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
   "did not move or fire" flag rather than a feature of the ground.
-- **No save / replay**, though the seeded design makes it nearly free.
+- **A recording can be saved but not loaded back** — replaying one reconstructs
+  the game in the engine, but the hotseat UI has no debrief view to step
+  through it yet.
 
 ## Layout
 
@@ -92,6 +99,7 @@ src/engine/
   types.ts          Units, soldiers, vehicles, mines, smoke, fire missions
   units.ts          Casualty bookkeeping + unit constructors
   upkeep.ts         Bleeding, smoke decay, end-of-turn flag reset
+  recording.ts      Battle recording: action log -> replayable game
   game.ts           Game class: 7-phase turn loop, C2 gating, action API
   index.ts          Public API barrel
   data/
@@ -159,6 +167,7 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Casualties: nq"p accumulation, 5-pt bleeding (1d4 / 5 turns), 8-pt neutralise,
   50%-attrition force neutralisation
 - Command & control order intervals by distance (פו"ש), gating manoeuvre
+- Battle recording: a game replays exactly from its seed and action log
 
 ## Rules decisions
 
@@ -310,8 +319,10 @@ Each is intended to be an independent, toggleable module:
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. **Map generation** — procedural / authored maps and terrain (LOS, cover).
-7. **Battle recording & debrief tool** — capture a game (seed + action log) for
-   replay and after-action review.
+7. **Battle recording & debrief tool** — *recording done*: `game.toRecording()`
+   captures the seed and action log, `replayGame()` reconstructs the game
+   exactly, and the hotseat UI saves one to a file. The debrief view that steps
+   through a recording is still to come.
 8. **Leaderboards.**
 9. **Leagues.**
 10. **Air support** — fixed/rotary CAS missions.

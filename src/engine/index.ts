@@ -89,6 +89,14 @@ export {
   type MineDetonation,
 } from "./combat/mines.js";
 
+// Recording / replay
+export {
+  replayGame,
+  cloneForRecord,
+  type GameRecording,
+  type RecordedAction,
+} from "./recording.js";
+
 // Turn engine
 export {
   Game,
