@@ -1,7 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { Game } from "./game.js";
-import { replayGame, replayWithOutcomes, type GameRecording } from "./recording.js";
+import {
+  replayGame,
+  replayWithOutcomes,
+  sealRecording,
+  verifyRecording,
+  type GameRecording,
+} from "./recording.js";
 import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
+import { CASUALTY_RULES } from "./data/casualties.js";
+import { MOVEMENT_PROFILES } from "./data/movement.js";
 
 /**
  * Play a game that exercises every recorded action: setup, the turn loop,
@@ -259,6 +267,89 @@ describe("battle recording", () => {
     expect(replayWithOutcomes(other).steps.map((s) => s.action)).toEqual(
       replayWithOutcomes(rec).steps.map((s) => s.action),
     );
+  });
+
+  it("seals a recording with a fingerprint per action", () => {
+    const rec = sealRecording(playDemo().toRecording());
+    expect(rec.digests?.length).toBe(rec.actions.length);
+    expect(rec.digests?.every((d) => /^[0-9a-f]{8}$/.test(d))).toBe(true);
+    // Sealing must not disturb the decisions.
+    expect(rec.actions).toEqual(playDemo().toRecording().actions);
+  });
+
+  it("verifies a sealed recording that still plays out the same", () => {
+    const rec = sealRecording(playDemo().toRecording());
+    expect(verifyRecording(rec)).toEqual({ checked: true, ok: true });
+  });
+
+  it("cannot check a recording that was never sealed", () => {
+    const rec = playDemo().toRecording();
+    expect(verifyRecording(rec)).toEqual({ checked: false, ok: true });
+  });
+
+  it("reports where a battle first diverges from the one recorded", () => {
+    const rec = sealRecording(playDemo().toRecording());
+    // Stand in for a rules change: from this action on, the replay no longer
+    // produces what it did when the recording was made.
+    const broken: GameRecording = {
+      ...rec,
+      digests: rec.digests!.map((d, i) => (i >= 6 ? "deadbeef" : d)),
+    };
+
+    const result = verifyRecording(broken);
+    expect(result.checked).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.firstDivergence?.index).toBe(6);
+    expect(result.firstDivergence?.action).toEqual(rec.actions[6]);
+    expect(result.firstDivergence?.expected).toBe("deadbeef");
+    expect(result.firstDivergence?.actual).toBe(rec.digests![6]);
+  });
+
+  it("notices a recording sealed under a rule that has since changed", () => {
+    // The real scenario: seal under one reading of the document, then change
+    // how a number is applied — as decisions 7 and 10 both did — and check.
+    const sealed = sealRecording(playDemo().toRecording());
+    const threshold = CASUALTY_RULES.neutralizeThreshold;
+    const mutable = CASUALTY_RULES as { neutralizeThreshold: number };
+    try {
+      mutable.neutralizeThreshold = 20; // nobody goes down any more
+      const result = verifyRecording(sealed);
+      expect(result.checked).toBe(true);
+      // The decisions still replay; it is the battle they produce that moved.
+      expect(result.ok).toBe(false);
+      expect(result.firstDivergence).toBeDefined();
+    } finally {
+      mutable.neutralizeThreshold = threshold;
+    }
+  });
+
+  it("reports an action a rules change has made illegal", () => {
+    // Drift can stop a replay outright rather than merely change it: seal a
+    // move that was legal, then shorten the gait it was made at.
+    const g = new Game({ seed: 1 });
+    const u = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.moveUnit(u.id, { x: 0, y: 95 }, "run");
+    const sealed = sealRecording(g.toRecording());
+
+    const profile = MOVEMENT_PROFILES.run as { maxDistance: number };
+    const original = profile.maxDistance;
+    try {
+      profile.maxDistance = 50; // the recorded bound no longer fits
+      const result = verifyRecording(sealed);
+      expect(result.ok).toBe(false);
+      expect(result.firstDivergence?.actual).toMatch(/rejected: .*exceeds/);
+      expect(result.firstDivergence?.action.kind).toBe("moveUnit");
+    } finally {
+      profile.maxDistance = original;
+    }
+  });
+
+  it("survives a JSON round trip with its fingerprints intact", () => {
+    const rec = sealRecording(playDemo().toRecording());
+    const back = JSON.parse(JSON.stringify(rec)) as GameRecording;
+    expect(verifyRecording(back)).toEqual({ checked: true, ok: true });
   });
 
   it("refuses a recording from an unknown format version", () => {

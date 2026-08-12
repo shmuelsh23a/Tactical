@@ -9,6 +9,8 @@ import {
   fullStrength,
   orderInterval,
   replayGame,
+  sealRecording,
+  verifyRecording,
   type GameRecording,
   type IndirectFireResult,
   type Side,
@@ -364,7 +366,9 @@ export function App() {
    * this a few hundred bytes rather than a state dump.
    */
   function handleSaveRecording() {
-    const recording = game.toRecording();
+    // Sealed on the way out: the fingerprints let a later load tell whether
+    // the rules have moved under the recording since.
+    const recording = sealRecording(game.toRecording());
     const blob = new Blob([JSON.stringify(recording, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -381,6 +385,15 @@ export function App() {
       const parsed = JSON.parse(await file.text()) as GameRecording;
       // Fail here rather than halfway through a replay.
       replayGame(parsed, { upToAction: 0 });
+      const check = verifyRecording(parsed);
+      if (check.checked && !check.ok) {
+        pushLog(
+          `אזהרה: ההקלטה נוצרה תחת חוקים אחרים — התוצאות משתנות מפעולה ${
+            (check.firstDivergence?.index ?? 0) + 1
+          }`,
+          "info",
+        );
+      }
       setDebrief(parsed);
     } catch (err) {
       pushLog(`טעינת ההקלטה נכשלה: ${(err as Error).message}`, "info");

@@ -14,6 +14,7 @@ import type { IndirectFireResult } from "./combat/indirectFire.js";
 import type { AssaultResult } from "./combat/assault.js";
 import type { DetectionResult } from "./combat/detection.js";
 import { Game, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
+import { stateDigest } from "./digest.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -61,6 +62,12 @@ export interface GameRecording {
   sides: Side[];
   enforceC2: boolean;
   actions: RecordedAction[];
+  /**
+   * State fingerprint after each action, written when the recording is sealed.
+   * Optional: a recording without them still replays, it just cannot be
+   * checked for drift. See {@link sealRecording} and {@link verifyRecording}.
+   */
+  digests?: string[];
 }
 
 /**
@@ -127,7 +134,11 @@ export function replayGame(
  */
 export function replayWithOutcomes(
   recording: GameRecording,
-  opts: { upToAction?: number } = {},
+  opts: {
+    upToAction?: number;
+    /** Called after each action is applied, for fingerprinting a replay. */
+    onStep?: (game: Game, index: number) => void;
+  } = {},
 ): { game: Game; steps: ReplayStep[] } {
   if (recording.version !== 1) {
     throw new Error(`Unsupported recording version: ${recording.version}`);
@@ -242,6 +253,86 @@ export function replayWithOutcomes(
       }
     }
     steps.push({ action, outcome });
+    opts.onStep?.(game, steps.length - 1);
   }
   return { game, steps };
+}
+
+/**
+ * Stamp a recording with the state fingerprint after each action, so a later
+ * replay can tell whether it still produces the same battle.
+ *
+ * The digests are taken from a replay rather than from the live game, which
+ * doubles as a check that the recording round-trips at the moment it is saved.
+ */
+export function sealRecording(recording: GameRecording): GameRecording {
+  const digests: string[] = [];
+  replayWithOutcomes(recording, {
+    onStep: (game, index) => {
+      digests[index] = stateDigest(game);
+    },
+  });
+  return { ...cloneForRecord(recording), digests };
+}
+
+export interface RecordingVerification {
+  /** False when the recording carries no digests — nothing to check against. */
+  checked: boolean;
+  /** True when every action still produces the state it did when sealed. */
+  ok: boolean;
+  /** Where the battle first diverges from the one that was recorded. */
+  firstDivergence?: {
+    index: number;
+    action: RecordedAction;
+    expected: string;
+    actual: string;
+  };
+}
+
+/**
+ * Replay a sealed recording and check it still plays out the way it did.
+ *
+ * A mismatch does not mean the recording is corrupt — far more likely the
+ * rules changed under it, which is exactly what this is for. The decisions
+ * still replay; it is the outcomes that have moved. Reporting the *first*
+ * divergent action points straight at what the change affected.
+ */
+export function verifyRecording(recording: GameRecording): RecordingVerification {
+  const expected = recording.digests;
+  if (!expected?.length) return { checked: false, ok: true };
+
+  let firstDivergence: RecordingVerification["firstDivergence"];
+  let applied = 0;
+  try {
+    replayWithOutcomes(recording, {
+      onStep: (game, index) => {
+        applied = index + 1;
+        if (firstDivergence) return;
+        const actual = stateDigest(game);
+        const want = expected[index];
+        if (want !== undefined && want !== actual) {
+          firstDivergence = {
+            index,
+            action: recording.actions[index]!,
+            expected: want,
+            actual,
+          };
+        }
+      },
+    });
+  } catch (err) {
+    // A rules change can make a recorded action outright illegal — a move that
+    // is now out of budget, an order the C2 table no longer allows. That is
+    // drift too, at the action replay stopped on.
+    firstDivergence ??= {
+      index: applied,
+      action: recording.actions[applied]!,
+      expected: expected[applied] ?? "",
+      actual: `rejected: ${(err as Error).message}`,
+    };
+  }
+
+  return firstDivergence
+    ? { checked: true, ok: false, firstDivergence }
+    : { checked: true, ok: true };
 }

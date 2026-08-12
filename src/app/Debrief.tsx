@@ -4,6 +4,7 @@ import {
   fullStrength,
   replayGame,
   replayWithOutcomes,
+  verifyRecording,
   type GameRecording,
 } from "../engine/index.js";
 import { MapView } from "./components/MapView.js";
@@ -37,6 +38,10 @@ export function Debrief({
   // Outcomes are fixed by the recording, so the whole battle is replayed once
   // for them; only the board state is re-derived per step.
   const steps = useMemo(() => replayWithOutcomes(recording).steps, [recording]);
+  // A recording carries fingerprints of the state it produced when it was made.
+  // If replay no longer matches them, the rules have moved under it — the
+  // decisions still replay, but this is no longer the battle that was fought.
+  const drift = useMemo(() => verifyRecording(recording), [recording]);
   const outcomeAt = (i: number) => {
     const step = steps[i];
     return step ? describeOutcome(step.outcome, names) : "";
@@ -63,6 +68,15 @@ export function Debrief({
           חזרה למשחק
         </button>
       </header>
+
+      {drift.checked && !drift.ok && (
+        <div className="drift-banner">
+          ההקלטה נוצרה תחת חוקים שהשתנו מאז — התוצאות מתפצלות החל מפעולה{" "}
+          {(drift.firstDivergence?.index ?? 0) + 1}
+          {drift.firstDivergence ? ` (${describeAction(drift.firstDivergence.action, names)})` : ""}.
+          ההחלטות משוחזרות כרגיל; מה שהשתנה הוא התוצאה.
+        </div>
+      )}
 
       <div className="main">
         <div className="map-wrap">

@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (124 tests)
+npm test             # run the engine test suite (139 tests)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -91,6 +91,13 @@ with the engine that just computed it, and the recording stays a log of
 intent. Indirect fire is narrated on the step that *resolved* it rather than
 the one that marked it, which is where it actually lands.
 
+A saved recording is **sealed** with a state fingerprint per action, and a
+loaded one is checked against them. If the rules have moved since it was
+recorded, the debrief says so and names the action the battle first diverges
+at — the decisions still replay, but what they produce has changed. That
+matters here: rules decisions 7 and 10 both altered how an existing number is
+applied, which silently rewrites every recording made before them.
+
 Engine capability the UI does not reach yet — the next obvious work:
 
 - **Charges cannot be laid during play** — they are placed when a scenario is
@@ -115,6 +122,7 @@ src/engine/
   units.ts          Casualty bookkeeping + unit constructors
   upkeep.ts         Bleeding, smoke decay, end-of-turn flag reset
   recording.ts      Battle recording: action log -> replayable game
+  digest.ts         State fingerprints, for spotting rules drift in a recording
   game.ts           Game class: 7-phase turn loop, C2 gating, action API
   index.ts          Public API barrel
   data/
@@ -348,6 +356,10 @@ Each is intended to be an independent, toggleable module:
    decisions under a **different seed** already works in the engine — the
    question a debrief exists to answer is *was that a bad plan or bad luck?*,
    and that is how you ask it. Not surfaced in the UI yet.
+
+   `sealRecording()` stamps a state fingerprint per action and
+   `verifyRecording()` checks a replay against them, so a recording made under
+   older rules is flagged rather than silently reinterpreted.
 8. **Leaderboards.**
 9. **Leagues.**
 10. **Air support** — fixed/rotary CAS missions.

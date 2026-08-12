@@ -93,12 +93,16 @@ export {
 export {
   replayGame,
   replayWithOutcomes,
+  sealRecording,
+  verifyRecording,
   cloneForRecord,
   type GameRecording,
   type RecordedAction,
   type ActionOutcome,
   type ReplayStep,
+  type RecordingVerification,
 } from "./recording.js";
+export { stateDigest, canonicalJson, fnv1a } from "./digest.js";
 
 // Turn engine
 export {

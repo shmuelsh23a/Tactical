@@ -201,3 +201,12 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .handoff-card p { color: var(--muted); margin: 0 0 1.5rem; }
 .handoff-blue .handoff-card { border-top: 4px solid var(--blue); }
 .handoff-red .handoff-card { border-top: 4px solid var(--red); }
+
+/* A recording whose replay no longer matches the state it was sealed with. */
+.drift-banner {
+  padding: 0.5rem 1rem;
+  background: rgba(251, 191, 36, 0.12);
+  border-bottom: 1px solid var(--warn);
+  color: var(--warn);
+  font-size: 0.85rem;
+}
