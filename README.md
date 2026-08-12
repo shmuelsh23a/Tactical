@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (117 tests)
+npm test             # run the engine test suite (124 tests)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -83,6 +83,14 @@ fog-of-war — since the point of a debrief is to see what each side could not.
 State at step N is replayed from the seed rather than stored as snapshots, so
 what is on screen is what the engine actually does with that recording.
 
+Each step also shows **what it rolled** — hits out of shooters and at what
+chance, casualties, dispersion, charges tripped, whether the assault carried.
+These outcomes are **derived, never stored**: they come back out of the
+resolvers as replay re-applies the decisions, so an outcome cannot disagree
+with the engine that just computed it, and the recording stays a log of
+intent. Indirect fire is narrated on the step that *resolved* it rather than
+the one that marked it, which is where it actually lands.
+
 Engine capability the UI does not reach yet — the next obvious work:
 
 - **Charges cannot be laid during play** — they are placed when a scenario is
@@ -92,9 +100,9 @@ Engine capability the UI does not reach yet — the next obvious work:
   obstructs it.
 - **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
   "did not move or fire" flag rather than a feature of the ground.
-- **The debrief shows the board, not the dice** — it narrates what was done,
-  but not what each action rolled (hits, casualties, dispersion). Those come
-  back in the resolver results, which the recording deliberately does not store.
+- **The debrief is umpire-view only** — it shows both sides and every outcome.
+  Reviewing a battle as one side saw it needs a knowledge model the app does
+  not have (backlog item 14).
 
 ## Layout
 
@@ -332,8 +340,14 @@ Each is intended to be an independent, toggleable module:
 6. **Map generation** — procedural / authored maps and terrain (LOS, cover).
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
-   to any prefix), and the hotseat UI saves a recording to a file and loads one
-   back into a step-through debrief.
+   to any prefix), `replayWithOutcomes()` also hands back what each action
+   rolled, and the hotseat UI saves a recording to a file and loads one back
+   into a step-through debrief.
+
+   Because outcomes are derived rather than stored, replaying the same
+   decisions under a **different seed** already works in the engine — the
+   question a debrief exists to answer is *was that a bad plan or bad luck?*,
+   and that is how you ask it. Not surfaced in the UI yet.
 8. **Leaderboards.**
 9. **Leagues.**
 10. **Air support** — fixed/rotary CAS missions.
@@ -370,3 +384,12 @@ Each is intended to be an independent, toggleable module:
     - **Adjudication.** Whether the model may only choose among actions the
       rules already permit (safest — the engine stays the referee), or may also
       argue for outcomes the tables do not cover.
+
+14. **Per-side debrief** — review a battle as one side saw it, not as the
+    umpire did. Harder than it looks: the engine returns ground truth, so a
+    player must not learn from the debrief what they never observed — an exact
+    enemy casualty count from a shot into smoke, a charge that was never found,
+    a force that was never spotted. That needs a real knowledge model per side
+    (what was seen, when, and with what confidence), where today's fog-of-war is
+    a 300 m reveal set recomputed each frame. Pairs with recording *observations*
+    alongside decisions.

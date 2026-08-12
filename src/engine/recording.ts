@@ -1,8 +1,19 @@
 import type { Point } from "./geometry.js";
-import type { Mine, MovementMode, Side, Unit } from "./types.js";
+import type {
+  Mine,
+  MovementMode,
+  PendingFireMission,
+  Side,
+  SmokeScreen,
+  Unit,
+} from "./types.js";
 import type { SmokeSource } from "./data/smoke.js";
-import type { DirectFireOptions } from "./combat/directFire.js";
-import { Game, type Phase } from "./game.js";
+import type { DirectFireOptions, DirectFireResult } from "./combat/directFire.js";
+import type { DirectExplosiveResult } from "./combat/explosives.js";
+import type { IndirectFireResult } from "./combat/indirectFire.js";
+import type { AssaultResult } from "./combat/assault.js";
+import type { DetectionResult } from "./combat/detection.js";
+import { Game, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -52,6 +63,34 @@ export interface GameRecording {
   actions: RecordedAction[];
 }
 
+/**
+ * What an action produced when it was applied.
+ *
+ * Outcomes are **derived, never stored**: the recording holds decisions only,
+ * and these come back out of the resolvers as replay re-applies them. That is
+ * what keeps them honest — an outcome cannot disagree with the engine, because
+ * the engine just computed it. It also means replaying the same decisions under
+ * a different seed answers the question a debrief is for: bad plan, or bad luck?
+ */
+export type ActionOutcome =
+  | { kind: "setup" }
+  | { kind: "beginTurn"; turn: number; initiativeOrder: Side[] }
+  | { kind: "phase"; phase: Phase; resolved: IndirectFireResult[]; smokeArrived: SmokeScreen[] }
+  | { kind: "uavSweep"; detection: DetectionResult }
+  | { kind: "queueIndirectFire"; mission: PendingFireMission }
+  | { kind: "moveUnit"; move: MoveResult }
+  | { kind: "fire"; result: DirectFireResult }
+  | { kind: "fireExplosive"; result: DirectExplosiveResult }
+  | { kind: "assault"; result: AssaultResult }
+  | { kind: "deploySmoke"; order: SmokeOrder }
+  | { kind: "issueOrders"; accepted: boolean };
+
+/** One replayed action and what it produced. */
+export interface ReplayStep {
+  action: RecordedAction;
+  outcome: ActionOutcome;
+}
+
 /** Plain-data deep copy — a recording must not alias live game state. */
 export function cloneForRecord<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -76,6 +115,20 @@ export function replayGame(
     upToAction?: number;
   } = {},
 ): Game {
+  return replayWithOutcomes(recording, opts).game;
+}
+
+/**
+ * Replay a recording and hand back what each action produced along the way —
+ * hits, casualties, dispersion, detections, charges set off.
+ *
+ * These are not read from the recording; they come straight out of the
+ * resolvers as the actions are re-applied. See {@link ActionOutcome}.
+ */
+export function replayWithOutcomes(
+  recording: GameRecording,
+  opts: { upToAction?: number } = {},
+): { game: Game; steps: ReplayStep[] } {
   if (recording.version !== 1) {
     throw new Error(`Unsupported recording version: ${recording.version}`);
   }
@@ -86,51 +139,101 @@ export function replayGame(
   });
 
   const limit = Math.max(0, Math.min(opts.upToAction ?? recording.actions.length, recording.actions.length));
+  const steps: ReplayStep[] = [];
+
   for (const action of recording.actions.slice(0, limit)) {
+    let outcome: ActionOutcome;
     switch (action.kind) {
       case "addUnit":
         game.addUnit(cloneForRecord(action.unit));
+        outcome = { kind: "setup" };
         break;
       case "addMine":
         game.addMine(cloneForRecord(action.mine));
+        outcome = { kind: "setup" };
         break;
-      case "beginTurn":
-        game.beginTurn();
+      case "beginTurn": {
+        const r = game.beginTurn();
+        outcome = { kind: "beginTurn", turn: r.turn, initiativeOrder: r.initiativeOrder };
         break;
-      case "advancePhase":
-        game.advancePhase();
+      }
+      case "advancePhase": {
+        const r = game.advancePhase();
+        outcome = {
+          kind: "phase",
+          phase: r.phase,
+          resolved: r.resolved ?? [],
+          smokeArrived: r.smokeArrived ?? [],
+        };
         break;
-      case "advanceToPhase":
-        game.advanceToPhase(action.target);
+      }
+      case "advanceToPhase": {
+        const r = game.advanceToPhase(action.target);
+        outcome = {
+          kind: "phase",
+          phase: r.phase,
+          resolved: r.resolved,
+          smokeArrived: r.smokeArrived,
+        };
         break;
+      }
       case "uavSweep":
-        game.uavSweep(action.uavKey, action.footprintCenter, action.viewer);
+        outcome = {
+          kind: "uavSweep",
+          detection: game.uavSweep(action.uavKey, action.footprintCenter, action.viewer),
+        };
         break;
       case "queueIndirectFire":
-        game.queueIndirectFire(action.weaponKey, action.side, action.target, action.opts);
+        outcome = {
+          kind: "queueIndirectFire",
+          mission: game.queueIndirectFire(
+            action.weaponKey,
+            action.side,
+            action.target,
+            action.opts,
+          ),
+        };
         break;
       case "moveUnit":
-        game.moveUnit(action.unitId, action.to, action.mode);
+        outcome = {
+          kind: "moveUnit",
+          move: game.moveUnit(action.unitId, action.to, action.mode),
+        };
         break;
       case "fire":
-        game.fire(action.attackerId, action.targetId, action.opts);
+        outcome = {
+          kind: "fire",
+          result: game.fire(action.attackerId, action.targetId, action.opts),
+        };
         break;
       case "fireExplosive":
-        game.fireExplosive(
-          action.weaponKey,
-          action.attackerId,
-          action.targetId,
-          action.opts,
-        );
+        outcome = {
+          kind: "fireExplosive",
+          result: game.fireExplosive(
+            action.weaponKey,
+            action.attackerId,
+            action.targetId,
+            action.opts,
+          ),
+        };
         break;
       case "assault":
-        game.assault(action.attackerId, action.defenderId, action.grenades);
+        outcome = {
+          kind: "assault",
+          result: game.assault(action.attackerId, action.defenderId, action.grenades),
+        };
         break;
       case "deploySmoke":
-        game.deploySmoke(action.source, action.side, action.center, action.radius);
+        outcome = {
+          kind: "deploySmoke",
+          order: game.deploySmoke(action.source, action.side, action.center, action.radius),
+        };
         break;
       case "issueOrders":
-        game.issueOrders(action.unitId, action.commanderPosition);
+        outcome = {
+          kind: "issueOrders",
+          accepted: game.issueOrders(action.unitId, action.commanderPosition),
+        };
         break;
       default: {
         // Exhaustiveness: a new action kind must be handled here.
@@ -138,6 +241,7 @@ export function replayGame(
         throw new Error(`Unknown recorded action: ${JSON.stringify(never)}`);
       }
     }
+    steps.push({ action, outcome });
   }
-  return game;
+  return { game, steps };
 }

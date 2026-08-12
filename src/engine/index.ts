@@ -92,9 +92,12 @@ export {
 // Recording / replay
 export {
   replayGame,
+  replayWithOutcomes,
   cloneForRecord,
   type GameRecording,
   type RecordedAction,
+  type ActionOutcome,
+  type ReplayStep,
 } from "./recording.js";
 
 // Turn engine

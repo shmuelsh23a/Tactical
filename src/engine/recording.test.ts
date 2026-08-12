@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Game } from "./game.js";
-import { replayGame, type GameRecording } from "./recording.js";
+import { replayGame, replayWithOutcomes, type GameRecording } from "./recording.js";
 import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
 
 /**
@@ -190,6 +190,75 @@ describe("battle recording", () => {
 
     expect(before.getUnit(moved.unitId).position).not.toEqual(moved.to);
     expect(after.getUnit(moved.unitId).position).toEqual(moved.to);
+  });
+
+  it("hands back one outcome per action, aligned with it", () => {
+    const rec = playDemo().toRecording();
+    const { steps } = replayWithOutcomes(rec);
+    expect(steps.length).toBe(rec.actions.length);
+    expect(steps.map((s) => s.action)).toEqual(rec.actions);
+  });
+
+  it("derives the same outcomes every time — they are not stored", () => {
+    const rec = playDemo().toRecording();
+    expect(replayWithOutcomes(rec).steps).toEqual(replayWithOutcomes(rec).steps);
+  });
+
+  it("reports what a shot actually did", () => {
+    const rec = playDemo().toRecording();
+    const { steps } = replayWithOutcomes(rec);
+    const shot = steps.find((s) => s.outcome.kind === "fire");
+    expect(shot).toBeDefined();
+    if (shot?.outcome.kind !== "fire") throw new Error("expected a shot");
+    expect(shot.outcome.result.fired).toBe(true);
+    expect(shot.outcome.result.shooters).toBeGreaterThan(0);
+    expect(shot.outcome.result.hits).toBeLessThanOrEqual(shot.outcome.result.shooters);
+  });
+
+  it("attributes an artillery impact to the step that resolved it, not the one that marked it", () => {
+    const rec = playDemo().toRecording();
+    const { steps } = replayWithOutcomes(rec);
+
+    const marked = steps.findIndex((s) => s.action.kind === "queueIndirectFire");
+    expect(marked).toBeGreaterThan(-1);
+    // Marking a mission only queues it.
+    if (steps[marked]?.outcome.kind !== "queueIndirectFire") throw new Error("expected a queued mission");
+
+    const landed = steps.findIndex(
+      (s) => s.outcome.kind === "phase" && s.outcome.resolved.length > 0,
+    );
+    expect(landed).toBeGreaterThan(marked);
+  });
+
+  it("reports a charge that went off under a force that moved", () => {
+    const rec = playDemo().toRecording();
+    const { steps } = replayWithOutcomes(rec);
+    const detonations = steps.flatMap((s) =>
+      s.outcome.kind === "moveUnit" ? s.outcome.move.mineDetonations : [],
+    );
+    expect(detonations.length).toBeGreaterThan(0);
+  });
+
+  it("replaying a prefix reports only that prefix's outcomes", () => {
+    const rec = playDemo().toRecording();
+    const full = replayWithOutcomes(rec).steps;
+    const partial = replayWithOutcomes(rec, { upToAction: 5 }).steps;
+    expect(partial.length).toBe(5);
+    expect(partial).toEqual(full.slice(0, 5));
+  });
+
+  it("the same decisions under a different seed give different dice", () => {
+    // The point of deriving rather than storing: a debrief can ask whether an
+    // outcome was the plan or the luck.
+    const rec = playDemo(2026).toRecording();
+    const other = { ...rec, seed: 99 };
+    const a = replayWithOutcomes(rec).game;
+    const b = replayWithOutcomes(other).game;
+    expect(b.rng.getState()).not.toBe(a.rng.getState());
+    // …while the decisions replayed are identical.
+    expect(replayWithOutcomes(other).steps.map((s) => s.action)).toEqual(
+      replayWithOutcomes(rec).steps.map((s) => s.action),
+    );
   });
 
   it("refuses a recording from an unknown format version", () => {

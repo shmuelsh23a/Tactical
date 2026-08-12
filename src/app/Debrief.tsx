@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react";
-import { fitSoldiers, fullStrength, replayGame, type GameRecording } from "../engine/index.js";
+import {
+  fitSoldiers,
+  fullStrength,
+  replayGame,
+  replayWithOutcomes,
+  type GameRecording,
+} from "../engine/index.js";
 import { MapView } from "./components/MapView.js";
-import { describeAction, recordingExtent, unitNames } from "./debriefText.js";
+import { describeAction, describeOutcome, recordingExtent, unitNames } from "./debriefText.js";
 import { isGone } from "./hotseat.js";
 
 /**
@@ -28,6 +34,13 @@ export function Debrief({
   const names = useMemo(() => unitNames(recording), [recording]);
   const extent = useMemo(() => recordingExtent(recording), [recording]);
   const game = useMemo(() => replayGame(recording, { upToAction: index }), [recording, index]);
+  // Outcomes are fixed by the recording, so the whole battle is replayed once
+  // for them; only the board state is re-derived per step.
+  const steps = useMemo(() => replayWithOutcomes(recording).steps, [recording]);
+  const outcomeAt = (i: number) => {
+    const step = steps[i];
+    return step ? describeOutcome(step.outcome, names) : "";
+  };
 
   const units = game.units.filter((u) => !isGone(u));
   const last = index > 0 ? recording.actions[index - 1] : null;
@@ -107,6 +120,9 @@ export function Debrief({
               <div className="unit-name">
                 {last ? describeAction(last, names) : "לפני תחילת הקרב"}
               </div>
+              {index > 0 && outcomeAt(index - 1) && (
+                <div className="outcome">{outcomeAt(index - 1)}</div>
+              )}
               <div className="c2-line">שלב: {game.phase}</div>
             </div>
 
@@ -141,6 +157,7 @@ export function Debrief({
                   onClick={() => setIndex(i + 1)}
                 >
                   <span className="log-turn">{i + 1}</span> {describeAction(action, names)}
+                  {outcomeAt(i) && <div className="outcome">{outcomeAt(i)}</div>}
                 </li>
               ))}
             </ul>

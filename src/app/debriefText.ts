@@ -1,4 +1,4 @@
-import type { GameRecording, RecordedAction } from "../engine/index.js";
+import type { ActionOutcome, GameRecording, RecordedAction } from "../engine/index.js";
 
 /** Hebrew phase names, matching the ones the hotseat UI uses. */
 const phaseHe: Record<string, string> = {
@@ -70,6 +70,126 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${who(action.unitId)} קיבל פקודות`;
     default:
       return JSON.stringify(action);
+  }
+}
+
+const pct = (p: number) => `${Math.round(p * 100)}%`;
+
+/**
+ * What the action produced, in one line — the dice behind the decision.
+ *
+ * Returns an empty string when there is nothing to report, so the timeline
+ * stays quiet for setup and for phase steps where nothing landed.
+ */
+export function describeOutcome(outcome: ActionOutcome, names: Map<string, string>): string {
+  const who = (id: string) => names.get(id) ?? id;
+
+  switch (outcome.kind) {
+    case "setup":
+      return "";
+
+    case "beginTurn":
+      return `יוזמה: ${outcome.initiativeOrder.join(" → ")}`;
+
+    case "phase": {
+      // Indirect fire lands on the step that crossed resolvePriorArty, not on
+      // the step that marked it — so it is narrated here.
+      const parts: string[] = [];
+      for (const screen of outcome.smokeArrived) {
+        parts.push(`מסך עשן ירד (רדיוס ${screen.radius}מ')`);
+      }
+      for (const impact of outcome.resolved) {
+        const off = Math.round(
+          Math.hypot(
+            impact.dispersion.impact.x - impact.aim.x,
+            impact.dispersion.impact.y - impact.aim.y,
+          ),
+        );
+        const caught = impact.blast.targets.filter((t) => t.caught);
+        const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
+        const hit = caught.length
+          ? `, פגע ב${caught.map((t) => who(t.unitId)).join(", ")}${
+              casualties ? ` — ${casualties} נפגעים` : ""
+            }`
+          : ", ללא פגיעות";
+        parts.push(`${off > 0 ? `נחיתה בסטייה ${off}מ'` : "נחיתה מדויקת"}${hit}`);
+      }
+      return parts.join(" · ");
+    }
+
+    case "uavSweep": {
+      const { spottedUnitIds, foundMineIds } = outcome.detection;
+      if (!spottedUnitIds.length && !foundMineIds.length) return "ללא גילוי";
+      const bits: string[] = [];
+      if (spottedUnitIds.length) bits.push(`גילוי: ${spottedUnitIds.map(who).join(", ")}`);
+      if (foundMineIds.length) bits.push(`${foundMineIds.length} מטענים`);
+      return bits.join(" · ");
+    }
+
+    case "queueIndirectFire":
+      return `פגיעה צפויה בתור ${outcome.mission.resolvesOnTurn}`;
+
+    case "moveUnit": {
+      const bits: string[] = [];
+      const { detection, mineDetonations } = outcome.move;
+      if (detection.spottedUnitIds.length) {
+        bits.push(`גילוי: ${detection.spottedUnitIds.map(who).join(", ")}`);
+      }
+      if (detection.foundMineIds.length) bits.push(`איתר ${detection.foundMineIds.length} מטענים`);
+      for (const det of mineDetonations) {
+        const kind = det.type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
+        if (!det.activated) {
+          bits.push(`דרך על ${kind} — לא הופעל`);
+          continue;
+        }
+        const caught = (det.blast?.targets ?? []).filter((t) => t.caught);
+        const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
+        bits.push(`${kind} התפוצץ — ${caught.reduce((n, t) => n + t.damage, 0)} נק"פ, ${casualties} נפגעים`);
+      }
+      return bits.join(" · ");
+    }
+
+    case "fire": {
+      const r = outcome.result;
+      if (!r.fired) return `לא ירה (${r.reason ?? "—"})`;
+      return `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
+        r.targetNeutralized ? " — נוטרל" : ""
+      }`;
+    }
+
+    case "fireExplosive": {
+      const r = outcome.result;
+      if (!r.fired) return `לא ירה (${r.reason ?? "—"})`;
+      if (!r.hit) return `החטאה (${pct(r.hitChance)})`;
+      const caught = (r.blast?.targets ?? []).filter((t) => t.caught);
+      const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
+      const armour = caught.find((t) => t.armorEffect)?.armorEffect;
+      const armourText = armour
+        ? ` — ${armour.partName}${armour.penetrated ? ", חדירה" : ", ללא חדירה"}${
+            armour.destroyed ? ", הושמד" : armour.mobilityKilled ? ", נכשל ניוד" : ""
+          }`
+        : "";
+      return `פגיעה (${pct(r.hitChance)})${casualties ? `, ${casualties} נפגעים` : ""}${armourText}`;
+    }
+
+    case "assault": {
+      const r = outcome.result;
+      if (!r.fired) return `לא הסתער (${r.reason ?? "—"})`;
+      return `${r.fireHits} פגיעות אש, ${r.grenadeHits} רימונים, ${r.defenderCasualties} נפגעים${
+        r.selfCasualties ? ` · ${r.selfCasualties} נפגעים עצמיים` : ""
+      }${r.defenderNeutralized ? " — האויב נוטרל" : ""}`;
+    }
+
+    case "deploySmoke":
+      return outcome.order.screen
+        ? `הונח מיד — ${outcome.order.durationTurns} תורות`
+        : `יגיע בתור ${outcome.order.arrivesOnTurn}`;
+
+    case "issueOrders":
+      return outcome.accepted ? "הפקודה התקבלה" : "מחוץ למחזור הפקודות";
+
+    default:
+      return "";
   }
 }
 
