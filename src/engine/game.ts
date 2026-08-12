@@ -1,9 +1,10 @@
 import { Rng } from "./rng.js";
 import { roll } from "./dice.js";
-import { distance, type Point } from "./geometry.js";
+import { distance, segmentIntersectsCircle, type Point } from "./geometry.js";
 import type {
   Mine,
   PendingFireMission,
+  PendingSmokeMission,
   SmokeScreen,
   Side,
   Unit,
@@ -11,7 +12,12 @@ import type {
 import type { MovementMode } from "./types.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES } from "./data/explosives.js";
-import { SMOKE_DURATION_TURNS, type SmokeSource } from "./data/smoke.js";
+import {
+  SMOKE_BLOCKS_FIRE,
+  SMOKE_DURATION_TURNS,
+  SMOKE_RADIUS_M,
+  type SmokeSource,
+} from "./data/smoke.js";
 import { orderInterval } from "./data/c2.js";
 import { detectByMovement, detectByUav, type DetectionResult } from "./combat/detection.js";
 import { resolveDirectFire, type DirectFireOptions, type DirectFireResult } from "./combat/directFire.js";
@@ -40,6 +46,19 @@ const nextId = (prefix: string) => `${prefix}-${++idCounter}`;
 
 export class PhaseError extends Error {}
 
+/** What a call for smoke produced: a screen on the map, or one still in flight. */
+export interface SmokeOrder {
+  source: SmokeSource;
+  radius: number;
+  durationTurns: number;
+  /** Turn the screen is (or will be) on the map. */
+  arrivesOnTurn: number;
+  /** Set when the screen went down immediately (grenade). */
+  screen?: SmokeScreen;
+  /** Set when it still has to be fired (mortar / artillery). */
+  mission?: PendingSmokeMission;
+}
+
 export interface GameOptions {
   seed: number;
   sides?: Side[];
@@ -66,6 +85,7 @@ export class Game {
   mines: Mine[] = [];
   smoke: SmokeScreen[] = [];
   pendingFire: PendingFireMission[] = [];
+  pendingSmoke: PendingSmokeMission[] = [];
   initiativeOrder: Side[] = [];
 
   /** Turn each unit last received orders, for the C2 interval rule. */
@@ -118,7 +138,11 @@ export class Game {
    * indirect-fire missions; advancing past `summary` runs end-of-turn upkeep
    * and begins the next turn. Returns anything the phase transition resolved.
    */
-  advancePhase(): { phase: Phase; resolved?: IndirectFireResult[] } {
+  advancePhase(): {
+    phase: Phase;
+    resolved?: IndirectFireResult[];
+    smokeArrived?: SmokeScreen[];
+  } {
     if (this.phase === "summary") {
       this.endOfTurnUpkeep();
       this.beginTurn();
@@ -127,7 +151,10 @@ export class Game {
     const idx = PHASES.indexOf(this.phase);
     this.phase = PHASES[idx + 1]!;
     if (this.phase === "resolvePriorArty") {
-      return { phase: this.phase, resolved: this.resolveDueFireMissions() };
+      // Screens go down before the rounds land, so a smoke mission fired on the
+      // same turn as an HE mission cannot be walked through by its own barrage.
+      const smokeArrived = this.resolveDueSmoke();
+      return { phase: this.phase, resolved: this.resolveDueFireMissions(), smokeArrived };
     }
     return { phase: this.phase };
   }
@@ -136,13 +163,25 @@ export class Game {
    * Advance repeatedly until the given phase is current. Convenience for
    * callers (and tests) that want to skip directly to a phase; will roll into
    * subsequent turns if the target lies ahead of `summary`.
+   *
+   * Returns any indirect fire that landed on the way, so a caller stepping
+   * between phases does not silently skip past artillery impacts.
    */
-  advanceToPhase(target: Phase): void {
+  advanceToPhase(target: Phase): {
+    phase: Phase;
+    resolved: IndirectFireResult[];
+    smokeArrived: SmokeScreen[];
+  } {
+    const resolved: IndirectFireResult[] = [];
+    const smokeArrived: SmokeScreen[] = [];
     let guard = 0;
     while (this.phase !== target) {
-      this.advancePhase();
+      const step = this.advancePhase();
+      if (step.resolved) resolved.push(...step.resolved);
+      if (step.smokeArrived) smokeArrived.push(...step.smokeArrived);
       if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
     }
+    return { phase: this.phase, resolved, smokeArrived };
   }
 
   private requirePhase(p: Phase): void {
@@ -249,11 +288,27 @@ export class Game {
 
   // ---- combat phase ----
 
+  /**
+   * Whether a shot from `from` to `to` has an unobstructed line of sight. The
+   * document's only modelled obstruction is smoke — "אין ירי לתוך\דרך עשן" —
+   * so a screen blocks the shot whether it lies between the two points or over
+   * either of them. Terrain LOS comes with the map iteration.
+   */
+  hasLineOfSight(from: Point, to: Point): boolean {
+    if (!SMOKE_BLOCKS_FIRE) return true;
+    return !this.smoke.some((s) => segmentIntersectsCircle(from, to, s.center, s.radius));
+  }
+
   fire(attackerId: string, targetId: string, opts: DirectFireOptions): DirectFireResult {
     this.requirePhase("combat");
-    return resolveDirectFire(this.rng, this.getUnit(attackerId), this.getUnit(targetId), {
+    const attacker = this.getUnit(attackerId);
+    const target = this.getUnit(targetId);
+    return resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       ...opts,
+      // The caller may assert line of sight itself; otherwise the engine works
+      // it out from the smoke on the map.
+      hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
     });
   }
 
@@ -265,13 +320,14 @@ export class Game {
   ): DirectExplosiveResult {
     this.requirePhase("combat");
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
-    return resolveDirectExplosive(
-      this.rng,
-      weaponKey,
-      this.getUnit(attackerId),
-      this.getUnit(targetId),
-      { hasLineOfSight: opts.hasLineOfSight, collateral, turn: this.turn },
-    );
+    const attacker = this.getUnit(attackerId);
+    const target = this.getUnit(targetId);
+    return resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
+      hasLineOfSight:
+        opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
+      collateral,
+      turn: this.turn,
+    });
   }
 
   assault(attackerId: string, defenderId: string, grenades = 0): AssaultResult {
@@ -282,19 +338,57 @@ export class Game {
     });
   }
 
-  /** Lay a smoke screen of the given source's duration. */
-  deploySmoke(source: SmokeSource, center: Point, radius = 50): SmokeScreen {
+  /**
+   * Call for a smoke screen. A hand-thrown pot (רימון) is in place at once; a
+   * mortar or artillery screen has to be fired, so it waits out that weapon's
+   * own שיהוי and arrives with the rest of the indirect fire. Screen size comes
+   * from the delivery means unless the caller overrides it.
+   *
+   * Returns what was ordered either way: `screen` when it is already on the
+   * map, `mission` when it is still in flight.
+   */
+  deploySmoke(
+    source: SmokeSource,
+    side: Side,
+    center: Point,
+    radius = SMOKE_RADIUS_M[source],
+  ): SmokeOrder {
     if (this.phase !== "targeting" && this.phase !== "combat") {
       throw new PhaseError(`Smoke can only be deployed in targeting or combat phases`);
     }
-    const screen: SmokeScreen = {
+    const delay = EXPLOSIVES[source]?.impactDelayTurns ?? 0;
+    const durationTurns = SMOKE_DURATION_TURNS[source];
+    const common = { source, radius, durationTurns, arrivesOnTurn: this.turn + delay };
+
+    if (delay === 0) {
+      return { ...common, screen: this.layScreen(center, radius, durationTurns) };
+    }
+    const mission: PendingSmokeMission = {
       id: nextId("smoke"),
-      center,
+      source,
+      side,
+      target: center,
       radius,
-      turnsRemaining: SMOKE_DURATION_TURNS[source],
+      resolvesOnTurn: this.turn + delay,
     };
+    this.pendingSmoke.push(mission);
+    return { ...common, mission };
+  }
+
+  /** Put a screen on the map now. */
+  private layScreen(center: Point, radius: number, turnsRemaining: number): SmokeScreen {
+    const screen: SmokeScreen = { id: nextId("smoke"), center, radius, turnsRemaining };
     this.smoke.push(screen);
     return screen;
+  }
+
+  /** Lay the screens whose flight time elapses this turn. */
+  private resolveDueSmoke(): SmokeScreen[] {
+    const due = this.pendingSmoke.filter((m) => m.resolvesOnTurn <= this.turn);
+    this.pendingSmoke = this.pendingSmoke.filter((m) => m.resolvesOnTurn > this.turn);
+    return due.map((m) =>
+      this.layScreen(m.target, m.radius, SMOKE_DURATION_TURNS[m.source]),
+    );
   }
 
   // ---- command & control ----

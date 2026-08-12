@@ -52,6 +52,23 @@ body {
 .move-range { fill: rgba(59,130,246,0.10); stroke: var(--blue); stroke-dasharray: 4 4; stroke-width: 1; }
 .selection-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
 
+/* Marked aim point awaiting impact, and the smoke it may lay. */
+.aim-point { pointer-events: none; }
+.aim-point circle { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.aim-point line { stroke: var(--accent); stroke-width: 1.5; }
+.aim-point text { fill: var(--accent); font-size: 16px; font-weight: 600; }
+.aim-point .aim-footprint { stroke-dasharray: 2 6; opacity: 0.7; }
+/* Smoke still in flight: shown in the colour of the screen it will become. */
+.aim-smoke circle, .aim-smoke line { stroke: #d6dee6; }
+.aim-smoke text { fill: #d6dee6; }
+
+.smoke {
+  pointer-events: none;
+  fill: rgba(214, 222, 230, 0.42);
+  stroke: rgba(214, 222, 230, 0.75);
+  stroke-width: 1.5;
+}
+
 .token { cursor: pointer; }
 .token-enemy.token-targetable { cursor: crosshair; }
 .token-neutralised { opacity: 0.5; }

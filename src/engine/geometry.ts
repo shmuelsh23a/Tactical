@@ -40,3 +40,27 @@ export function lookupBand(
 export function withinRadius(center: Point, target: Point, radius: number): boolean {
   return distance(center, target) <= radius;
 }
+
+/**
+ * True when the segment `a`→`b` touches the disc of `radius` around `center` —
+ * the test behind "no firing into or through smoke" (אין ירי לתוך\דרך עשן):
+ * a shot is blocked whether the screen sits between the two points or over
+ * either of them.
+ */
+export function segmentIntersectsCircle(
+  a: Point,
+  b: Point,
+  center: Point,
+  radius: number,
+): boolean {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSq = dx * dx + dy * dy;
+  // Degenerate segment (shooter on the target): fall back to a point test.
+  if (lengthSq === 0) return distance(a, center) <= radius;
+  // Project the centre onto the segment, clamped to its ends, and measure from
+  // that closest point.
+  const t = Math.max(0, Math.min(1, ((center.x - a.x) * dx + (center.y - a.y) * dy) / lengthSq));
+  const closest = { x: a.x + t * dx, y: a.y + t * dy };
+  return distance(closest, center) <= radius;
+}

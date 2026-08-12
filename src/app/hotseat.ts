@@ -1,8 +1,11 @@
 import { Game, distance, type Side, type Unit } from "../engine/index.js";
 
+/** The engine phases a player acts in, in turn order. */
+export type ActivationPhase = "targeting" | "movement" | "combat";
+
 /** One side acting within one phase of a turn. */
 export interface Activation {
-  phase: "movement" | "combat";
+  phase: ActivationPhase;
   side: Side;
 }
 
@@ -16,15 +19,14 @@ export interface LogEntry {
 }
 
 /**
- * Within a turn, every side moves (in initiative order), then every side
- * fights (in initiative order) — matching the document's movement-then-fire
- * phase structure while giving each side a discrete hotseat activation.
+ * Within a turn, every side marks its targets (in initiative order), then every
+ * side moves, then every side fights — matching the document's phase order
+ * while giving each side a discrete hotseat activation. Indirect fire marked in
+ * the targeting phase lands on a later turn, on the way into movement.
  */
 export function buildActivations(initiativeOrder: Side[]): Activation[] {
-  return [
-    ...initiativeOrder.map((side): Activation => ({ phase: "movement", side })),
-    ...initiativeOrder.map((side): Activation => ({ phase: "combat", side })),
-  ];
+  const phases: ActivationPhase[] = ["targeting", "movement", "combat"];
+  return phases.flatMap((phase) => initiativeOrder.map((side): Activation => ({ phase, side })));
 }
 
 /** Simplified spotting range for the slice (the doc's visible-enemy band). */

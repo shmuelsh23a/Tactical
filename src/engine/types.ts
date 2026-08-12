@@ -1,4 +1,5 @@
 import type { Point } from "./geometry.js";
+import type { SmokeSource } from "./data/smoke.js";
 
 /** The two combatant sides. The umpire (מנחה) is not a combatant. */
 export type Side = "RED" | "BLUE";
@@ -103,6 +104,21 @@ export interface Mine {
   position: Point;
   armed: boolean;
   detected: boolean;
+}
+
+/**
+ * A smoke screen called for but still in flight. Grenade smoke never queues —
+ * it is in place the moment it is thrown — so only mortar and artillery screens
+ * appear here, waiting out the delivering weapon's שיהוי.
+ */
+export interface PendingSmokeMission {
+  id: string;
+  source: SmokeSource;
+  side: Side;
+  target: Point;
+  radius: number;
+  /** Turn index on which the screen appears. */
+  resolvesOnTurn: number;
 }
 
 /** A queued indirect-fire mission awaiting its impact-delay resolution. */

@@ -1,5 +1,13 @@
 import React, { useRef } from "react";
-import type { Side, Unit } from "../../engine/index.js";
+import type {
+  Mine,
+  PendingFireMission,
+  PendingSmokeMission,
+  Side,
+  SmokeScreen,
+  Unit,
+} from "../../engine/index.js";
+import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 
 interface MapViewProps {
@@ -8,15 +16,22 @@ interface MapViewProps {
   units: Unit[];
   viewingSide: Side;
   selectedId: string | null;
-  phase: "movement" | "combat" | "other";
+  phase: ActivationPhase | "other";
   /** Movement range circle radius (metres) for the selected unit, if moving. */
   moveCap: number | null;
   revealedEnemyIds: Set<string>;
   /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
   awaitingOrderIds: Set<string>;
+  /** Smoke screens on the map — physical, so both sides see them. */
+  smoke: readonly SmokeScreen[];
+  /** The viewing side's own marked fire missions, awaiting impact. */
+  pendingFire: readonly PendingFireMission[];
+  /** The viewing side's own smoke screens, still in flight. */
+  pendingSmoke: readonly PendingSmokeMission[];
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
+  onTargetAt: (x: number, y: number) => void;
 }
 
 function clientToMap(svg: SVGSVGElement, clientX: number, clientY: number) {
@@ -36,11 +51,15 @@ export function MapView(props: MapViewProps) {
   const selected = units.find((u) => u.id === selectedId) ?? null;
 
   function handleBackgroundClick(e: React.MouseEvent) {
-    if (phase !== "movement" || !selected || selected.side !== viewingSide) return;
     const svg = svgRef.current;
     if (!svg) return;
     const m = clientToMap(svg, e.clientX, e.clientY);
-    if (m) props.onMoveTo(m.x, m.y);
+    if (!m) return;
+    if (phase === "targeting") {
+      props.onTargetAt(m.x, m.y);
+    } else if (phase === "movement" && selected && selected.side === viewingSide) {
+      props.onMoveTo(m.x, m.y);
+    }
   }
 
   // 100 m reference grid.
@@ -73,6 +92,15 @@ export function MapView(props: MapViewProps) {
         />
       )}
 
+      {/* Marked aim points, own side only — an enemy sees nothing until it lands.
+          Smoke shows the screen it will become, so it can be sited on a line. */}
+      {props.pendingFire.map((m) => (
+        <AimPoint key={m.id} at={m.target} turn={m.resolvesOnTurn} />
+      ))}
+      {props.pendingSmoke.map((m) => (
+        <AimPoint key={m.id} at={m.target} turn={m.resolvesOnTurn} radius={m.radius} smoke />
+      ))}
+
       {units.map((u) => (
         <Token
           key={u.id}
@@ -85,7 +113,38 @@ export function MapView(props: MapViewProps) {
           onFireAt={props.onFireAt}
         />
       ))}
+
+      {/* Smoke obscures what is under it, so it is drawn last — but it never
+          swallows a click (pointer-events: none), so tokens stay selectable. */}
+      {props.smoke.map((s) => (
+        <circle key={s.id} cx={s.center.x} cy={s.center.y} r={s.radius} className="smoke" />
+      ))}
     </svg>
+  );
+}
+
+/** A marked aim point awaiting impact, with the turn it lands. */
+function AimPoint({
+  at,
+  turn,
+  radius,
+  smoke = false,
+}: {
+  at: { x: number; y: number };
+  turn: number;
+  radius?: number;
+  smoke?: boolean;
+}) {
+  return (
+    <g className={`aim-point${smoke ? " aim-smoke" : ""}`}>
+      {radius != null && <circle cx={at.x} cy={at.y} r={radius} className="aim-footprint" />}
+      <circle cx={at.x} cy={at.y} r={18} />
+      <line x1={at.x - 26} y1={at.y} x2={at.x + 26} y2={at.y} />
+      <line x1={at.x} y1={at.y - 26} x2={at.x} y2={at.y + 26} />
+      <text x={at.x + 30} y={at.y - 8}>
+        {smoke ? "עשן" : ""} תור {turn}
+      </text>
+    </g>
   );
 }
 
@@ -93,7 +152,7 @@ interface TokenProps {
   unit: Unit;
   viewingSide: Side;
   selected: boolean;
-  phase: "movement" | "combat" | "other";
+  phase: ActivationPhase | "other";
   awaitingOrders: boolean;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;

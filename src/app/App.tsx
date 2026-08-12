@@ -1,11 +1,16 @@
 import { useReducer, useRef, useState } from "react";
 import {
   MOVEMENT_PROFILES,
+  SMOKE_DURATION_TURNS,
+  SMOKE_RADIUS_M,
   distance,
   fitSoldiers,
   fullStrength,
   orderInterval,
+  type IndirectFireResult,
   type Side,
+  type SmokeScreen,
+  type SmokeSource,
   type Unit,
 } from "../engine/index.js";
 import { buildDemoScenario, type Scenario } from "./scenario.js";
@@ -15,6 +20,7 @@ import {
   isGone,
   sideDefeated,
   type Activation,
+  type ActivationPhase,
   type LogEntry,
 } from "./hotseat.js";
 import { MapView } from "./components/MapView.js";
@@ -24,10 +30,26 @@ import { Handoff } from "./components/Handoff.js";
 type Gait = "normal" | "run";
 type SmallArm = "smallArms" | "sustainedMg";
 type Stage = "initiative" | "activation" | "gameover";
+/** Indirect-fire tube the player is marking with. */
+type Tube = "mortar" | "artillery";
+/** What the marked point is for: high explosive, or a smoke screen. */
+type Mission = "he" | "smoke";
+/** What a force does in the fire phase: shoot, or go in. */
+type CombatAction = "fire" | "assault";
 
-const phaseLabelHe: Record<"movement" | "combat", string> = {
+const phaseLabelHe: Record<ActivationPhase, string> = {
+  targeting: "שלב סימון מטרות",
   movement: "שלב תנועה",
   combat: "שלב ירי",
+};
+
+const tubeHe: Record<Tube, string> = { mortar: "מרגמה", artillery: "ארטילריה" };
+
+/** Smoke by delivery means, in the document's own words (the עשן table). */
+const smokeSourceHe: Record<SmokeSource, string> = {
+  grenade: "רימון",
+  mortar: 'פצמ"ר',
+  artillery: "פגז ארטילריה",
 };
 
 export function App() {
@@ -61,7 +83,18 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gait, setGait] = useState<Gait>("normal");
   const [weapon, setWeapon] = useState<SmallArm>("smallArms");
+  const [tube, setTube] = useState<Tube>("mortar");
+  const [mission, setMission] = useState<Mission>("he");
+  const [smokeSource, setSmokeSource] = useState<SmokeSource>("mortar");
+  const [combatAction, setCombatAction] = useState<CombatAction>("fire");
+  const [grenades, setGrenades] = useState(1);
   const [winner, setWinner] = useState<Side | null>(null);
+
+  // One fire mission and one smoke screen per side per turn (see README rules
+  // decision 8) — keyed `SIDE-he` / `SIDE-smoke` to the turn it was spent on.
+  const missionsUsed = useRef<Record<string, number>>({});
+  const missionSpent = (side: Side, kind: Mission) =>
+    missionsUsed.current[`${side}-${kind}`] === game.turn;
 
   function pushLog(text: string, kind: LogEntry["kind"], side?: Side) {
     setLog((l) => [...l, { id: ++logIdRef.current, turn: game.turn, text, kind, ...(side ? { side } : {}) }]);
@@ -70,7 +103,7 @@ export function App() {
   const currentActivation =
     stage === "activation" && actIndex < activations.length ? activations[actIndex] : null;
   const viewingSide: Side = currentActivation?.side ?? activations[0]?.side ?? "BLUE";
-  const enginePhase: "movement" | "combat" | "other" = currentActivation?.phase ?? "other";
+  const enginePhase: ActivationPhase | "other" = currentActivation?.phase ?? "other";
 
   const revealed = computeRevealed(game, viewingSide);
   const visibleUnits = game.units.filter(
@@ -116,12 +149,77 @@ export function App() {
   // ---- actions ----
 
   function handleContinue() {
-    game.advanceToPhase("movement");
+    game.advanceToPhase("targeting");
     setStage("activation");
     setActIndex(0);
     setHandoffTo(activations[0]!.side);
     force();
   }
+
+  /** Mark an aim point: a fire mission that lands later, or a smoke screen. */
+  function handleTargetAt(x: number, y: number) {
+    if (enginePhase !== "targeting") return;
+    if (missionSpent(viewingSide, mission)) {
+      pushLog(
+        mission === "smoke"
+          ? "כבר הונח מסך עשן בתור זה"
+          : "כבר סומנה משימת אש בתור זה",
+        "info",
+        viewingSide,
+      );
+      return;
+    }
+    try {
+      if (mission === "smoke") {
+        const order = game.deploySmoke(smokeSource, viewingSide, { x, y });
+        const what = `מסך עשן (${smokeSourceHe[smokeSource]}, רדיוס ${order.radius}מ')`;
+        pushLog(
+          order.screen
+            ? `${what} הונח — ${order.durationTurns} תורות`
+            : `${what} סומן — יגיע בתור ${order.arrivesOnTurn}`,
+          "fire",
+          viewingSide,
+        );
+      } else {
+        const m = game.queueIndirectFire(tube, viewingSide, { x, y });
+        pushLog(
+          `משימת אש — ${tubeHe[tube]}, פגיעה צפויה בתור ${m.resolvesOnTurn}`,
+          "fire",
+          viewingSide,
+        );
+      }
+      missionsUsed.current[`${viewingSide}-${mission}`] = game.turn;
+    } catch (err) {
+      pushLog((err as Error).message, "info", viewingSide);
+    }
+    force();
+  }
+
+  /** Log indirect fire and smoke that arrived while stepping between phases. */
+  function logImpacts(resolved: IndirectFireResult[], smokeArrived: SmokeScreen[]) {
+    for (const s of smokeArrived) {
+      pushLog(`מסך עשן ירד — רדיוס ${s.radius}מ', ${s.turnsRemaining} תורות`, "fire");
+    }
+    for (const r of resolved) {
+      const off = Math.round(distance(r.aim, r.dispersion.impact));
+      const weapon = tubeHe[r.weapon as Tube] ?? r.weapon;
+      pushLog(
+        off > 0 ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה` : `${weapon}: פגיעה מדויקת במטרה`,
+        "fire",
+      );
+      for (const hit of r.blast.targets) {
+        if (!hit.caught) continue;
+        const name = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
+        pushLog(`${name} נפגע מ${weapon}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty");
+        if (hit.neutralized) pushLog(`${name} נוטרל!`, "casualty");
+      }
+    }
+    if (resolved.length) checkVictory();
+  }
+
+  const smokeInFlight = game.pendingSmoke.filter((m) => m.side === viewingSide);
+  // A side knows its own charges; the enemy's only once they have been spotted.
+  const knownMines = game.mines.filter((m) => m.side === viewingSide || m.detected);
 
   function handleSelect(id: string) {
     const u = game.units.find((x) => x.id === id);
@@ -174,10 +272,10 @@ export function App() {
     if (!target) return;
 
     try {
+      // Line of sight is left to the engine, which checks the shot against the
+      // smoke on the map.
       if (selectedOwn.kind === "vehicle") {
-        const r = game.fireExplosive("tankRound", selectedOwn.id, target.id, {
-          hasLineOfSight: true,
-        });
+        const r = game.fireExplosive("tankRound", selectedOwn.id, target.id);
         if (!r.fired) pushLog(`${selectedOwn.name}: ${reason(r.reason)}`, "fire", viewingSide);
         else if (!r.hit) pushLog(`${selectedOwn.name} ירה פגז — החטאה`, "fire", viewingSide);
         else pushLog(`${selectedOwn.name} פגע ב${target.name} בפגז טנק`, "casualty", viewingSide);
@@ -185,7 +283,6 @@ export function App() {
         const r = game.fire(selectedOwn.id, target.id, {
           weapon,
           cover: target.inFullCover ? "full" : "none",
-          hasLineOfSight: true,
         });
         if (!r.fired) {
           pushLog(`${selectedOwn.name}: ${reason(r.reason)}`, "fire", viewingSide);
@@ -220,9 +317,14 @@ export function App() {
     setSelectedId(null);
     const next = actIndex + 1;
     if (next < activations.length) {
-      if (activations[actIndex]!.phase === "movement" && activations[next]!.phase === "combat") {
-        game.advanceToPhase("combat");
-        pushLog("מעבר לשלב ירי", "phase");
+      const from = activations[actIndex]!.phase;
+      const to = activations[next]!.phase;
+      if (from !== to) {
+        // Stepping into movement crosses resolvePriorArty, where fire missions
+        // marked on an earlier turn come down.
+        const { resolved, smokeArrived } = game.advanceToPhase(to);
+        pushLog(`מעבר ל${phaseLabelHe[to]}`, "phase");
+        logImpacts(resolved, smokeArrived);
       }
       setActIndex(next);
       setHandoffTo(activations[next]!.side);
@@ -272,9 +374,13 @@ export function App() {
               moveCap={moveCap}
               revealedEnemyIds={revealed}
               awaitingOrderIds={awaitingOrders}
+              smoke={game.smoke}
+              pendingFire={game.pendingFire.filter((m) => m.side === viewingSide)}
+              pendingSmoke={smokeInFlight}
               onSelectUnit={handleSelect}
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
+              onTargetAt={handleTargetAt}
             />
           )}
         </div>
@@ -296,6 +402,82 @@ export function App() {
                 <span className={`chip chip-${viewingSide.toLowerCase()}`}>{viewingSide}</span>{" "}
                 {phaseLabelHe[currentActivation.phase]}
               </h3>
+
+              {currentActivation.phase === "targeting" && (
+                <div className="controls">
+                  <label>משימה:</label>
+                  <div className="seg">
+                    <button className={mission === "he" ? "on" : ""} onClick={() => setMission("he")}>
+                      פגז
+                    </button>
+                    <button
+                      className={mission === "smoke" ? "on" : ""}
+                      onClick={() => setMission("smoke")}
+                    >
+                      עשן
+                    </button>
+                  </div>
+
+                  <label>אמצעי:</label>
+                  {mission === "he" ? (
+                    <div className="seg">
+                      <button
+                        className={tube === "mortar" ? "on" : ""}
+                        onClick={() => setTube("mortar")}
+                      >
+                        מרגמה
+                      </button>
+                      <button
+                        className={tube === "artillery" ? "on" : ""}
+                        onClick={() => setTube("artillery")}
+                      >
+                        ארטילריה
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="seg">
+                      {(["grenade", "mortar", "artillery"] as SmokeSource[]).map((s) => (
+                        <button
+                          key={s}
+                          className={smokeSource === s ? "on" : ""}
+                          onClick={() => setSmokeSource(s)}
+                        >
+                          {smokeSourceHe[s]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="hint">
+                    {mission === "he" ? (
+                      <>
+                        לחץ על המפה כדי לסמן מטרה. הפגז נוחת כעבור{" "}
+                        {tube === "mortar" ? "תור" : "שני תורות"} ומפוזר לפי טבלת הפגיעה.
+                      </>
+                    ) : (
+                      <>
+                        עשן חוסם ירי לתוכו ודרכו. {smokeSourceHe[smokeSource]}: רדיוס{" "}
+                        {SMOKE_RADIUS_M[smokeSource]}מ',{" "}
+                        {SMOKE_DURATION_TURNS[smokeSource]} תורות,{" "}
+                        {smokeSource === "grenade"
+                          ? "יורד מייד"
+                          : smokeSource === "mortar"
+                            ? "יורד כעבור תור"
+                            : "יורד כעבור שני תורות"}
+                        .
+                      </>
+                    )}
+                  </p>
+                  <div className="unit-card">
+                    <div className={missionSpent(viewingSide, "he") ? "warn" : "ok"}>
+                      משימת אש: {missionSpent(viewingSide, "he") ? "נוצלה בתור זה" : "זמינה"}
+                    </div>
+                    <div className={missionSpent(viewingSide, "smoke") ? "warn" : "ok"}>
+                      מסך עשן: {missionSpent(viewingSide, "smoke") ? "נוצל בתור זה" : "זמין"}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {currentActivation.phase === "movement" && (
                 <div className="controls">

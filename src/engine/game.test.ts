@@ -215,6 +215,157 @@ describe("C2 gating of manoeuvre", () => {
   });
 });
 
+describe("smoke blocks fire", () => {
+  function contact() {
+    const g = new Game({ seed: 1 });
+    const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    const b = g.addUnit(makeInfantry("B", "RED", "squad", { x: 0, y: 200 }, 8));
+    g.beginTurn();
+    return { g, a, b };
+  }
+
+  it("refuses a shot whose line of sight crosses a screen", () => {
+    const { g, a, b } = contact();
+    g.advanceToPhase("targeting");
+    g.deploySmoke("grenade", "BLUE", { x: 0, y: 100 }, 50);
+    g.advanceToPhase("combat");
+    const r = g.fire(a.id, b.id, { weapon: "smallArms" });
+    expect(r.fired).toBe(false);
+    expect(r.reason).toBe("no line of sight");
+  });
+
+  it("leaves a shot clear of the screen alone", () => {
+    const { g, a, b } = contact();
+    g.advanceToPhase("targeting");
+    g.deploySmoke("grenade", "BLUE", { x: 200, y: 100 }, 50); // well off the line
+    g.advanceToPhase("combat");
+    expect(g.fire(a.id, b.id, { weapon: "smallArms" }).fired).toBe(true);
+  });
+
+  it("blocks a tank round through smoke too", () => {
+    const g = new Game({ seed: 1 });
+    const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 0 }));
+    const inf = g.addUnit(makeInfantry("I", "BLUE", "squad", { x: 0, y: 200 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    g.deploySmoke("grenade", "RED", { x: 0, y: 100 }, 50);
+    g.advanceToPhase("combat");
+    const r = g.fireExplosive("tankRound", tank.id, inf.id);
+    expect(r.fired).toBe(false);
+    expect(r.reason).toBe("no line of sight");
+  });
+
+  it("lets the caller assert line of sight itself", () => {
+    const { g, a, b } = contact();
+    g.advanceToPhase("targeting");
+    g.deploySmoke("grenade", "BLUE", { x: 0, y: 100 }, 50);
+    g.advanceToPhase("combat");
+    expect(g.fire(a.id, b.id, { weapon: "smallArms", hasLineOfSight: true }).fired).toBe(true);
+  });
+
+  it("clears once the screen has decayed", () => {
+    const { g, a, b } = contact();
+    g.advanceToPhase("targeting");
+    g.deploySmoke("grenade", "BLUE", { x: 0, y: 100 }, 50); // 1 turn
+    g.advanceToPhase("combat");
+    expect(g.fire(a.id, b.id, { weapon: "smallArms" }).fired).toBe(false);
+
+    while (g.phase !== "summary") g.advancePhase();
+    g.advancePhase(); // end of turn → upkeep decays the screen
+    expect(g.smoke.length).toBe(0);
+    g.advanceToPhase("combat");
+    expect(g.fire(a.id, b.id, { weapon: "smallArms" }).fired).toBe(true);
+  });
+});
+
+describe("smoke delivery", () => {
+  function ready(seed = 1) {
+    const g = new Game({ seed });
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    return g;
+  }
+
+  it("puts a thrown grenade screen straight on the map", () => {
+    const g = ready();
+    const order = g.deploySmoke("grenade", "BLUE", { x: 0, y: 0 });
+    expect(order.screen).toBeDefined();
+    expect(order.mission).toBeUndefined();
+    expect(order.arrivesOnTurn).toBe(g.turn);
+    expect(g.smoke.length).toBe(1);
+    expect(g.pendingSmoke.length).toBe(0);
+  });
+
+  it("makes a fired screen wait out its weapon's שיהוי", () => {
+    const g = ready();
+    const mortar = g.deploySmoke("mortar", "BLUE", { x: 0, y: 0 });
+    const arty = g.deploySmoke("artillery", "BLUE", { x: 500, y: 0 });
+    expect(mortar.arrivesOnTurn).toBe(2); // mortar: one turn
+    expect(arty.arrivesOnTurn).toBe(3); // artillery: two turns
+    expect(g.smoke.length).toBe(0);
+    expect(g.pendingSmoke.length).toBe(2);
+
+    // Turn 2: only the mortar screen is down.
+    g.advanceToPhase("initiative");
+    const t2 = g.advanceToPhase("movement");
+    expect(t2.smokeArrived.length).toBe(1);
+    expect(g.smoke.length).toBe(1);
+    expect(g.pendingSmoke.length).toBe(1);
+
+    // Turn 3: the artillery screen joins it.
+    g.advanceToPhase("initiative");
+    const t3 = g.advanceToPhase("movement");
+    expect(t3.smokeArrived.length).toBe(1);
+    expect(g.pendingSmoke.length).toBe(0);
+  });
+
+  it("sizes the screen by its delivery means", () => {
+    const g = ready();
+    expect(g.deploySmoke("grenade", "BLUE", { x: 0, y: 0 }).radius).toBe(25);
+    expect(g.deploySmoke("mortar", "BLUE", { x: 0, y: 0 }).radius).toBe(50);
+    expect(g.deploySmoke("artillery", "BLUE", { x: 0, y: 0 }).radius).toBe(100);
+  });
+
+  it("gives a fired screen its full duration from the turn it lands", () => {
+    const g = ready();
+    g.deploySmoke("artillery", "BLUE", { x: 0, y: 0 }); // 4 turns, 2-turn flight
+
+    g.advanceToPhase("movement"); // turn 1 — still in flight
+    expect(g.smoke.length).toBe(0);
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement"); // turn 2 — still in flight
+    expect(g.smoke.length).toBe(0);
+    g.advanceToPhase("initiative");
+    expect(g.turn).toBe(3);
+
+    g.advanceToPhase("movement"); // turn 3 — down, at full duration
+    expect(g.smoke[0]!.turnsRemaining).toBe(4);
+    expect(g.smoke[0]!.radius).toBe(100);
+  });
+});
+
+describe("advanceToPhase", () => {
+  it("hands back indirect fire that landed while stepping through phases", () => {
+    const g = new Game({ seed: 3 });
+    g.addUnit(makeInfantry("T", "RED", "squad", { x: 300, y: 300 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    g.queueIndirectFire("mortar", "BLUE", { x: 300, y: 300 }); // 1-turn delay
+
+    // Nothing lands this turn.
+    expect(g.advanceToPhase("combat").resolved).toEqual([]);
+
+    // Next turn, stepping targeting → movement crosses resolvePriorArty.
+    g.advanceToPhase("initiative");
+    expect(g.turn).toBe(2);
+    g.advanceToPhase("targeting");
+    const { resolved } = g.advanceToPhase("movement");
+    expect(resolved.length).toBe(1);
+    expect(resolved[0]!.weapon).toBe("mortar");
+    expect(g.pendingFire.length).toBe(0);
+  });
+});
+
 describe("end-to-end skirmish", () => {
   it("plays a few turns deterministically and resolves combat", () => {
     const g = new Game({ seed: 2024 });

@@ -13,6 +13,7 @@ export {
   distance,
   lookupBand,
   withinRadius,
+  segmentIntersectsCircle,
   type Point,
   type RangeBand,
 } from "./geometry.js";
@@ -30,6 +31,7 @@ export type {
   SmokeScreen,
   Mine,
   PendingFireMission,
+  PendingSmokeMission,
 } from "./types.js";
 export {
   fitSoldiers,
@@ -51,7 +53,12 @@ export {
   type CoverState,
 } from "./data/directFire.js";
 export { EXPLOSIVES, type ExplosiveWeapon, type DeliveryMethod } from "./data/explosives.js";
-export { SMOKE_DURATION_TURNS, type SmokeSource } from "./data/smoke.js";
+export {
+  SMOKE_DURATION_TURNS,
+  SMOKE_RADIUS_M,
+  SMOKE_BLOCKS_FIRE,
+  type SmokeSource,
+} from "./data/smoke.js";
 export { UAV_PROFILES, FIXED_WING_MISS_REDUCTION, type UavProfile } from "./data/uav.js";
 export { ARMOR_TABLE, MOBILITY_THRESHOLDS, HE_VS_ARMOR, type ArmorRow } from "./data/armor.js";
 export { ARTILLERY_DISPERSION } from "./data/artillery.js";
@@ -78,4 +85,11 @@ export { resolveAssault, type AssaultResult } from "./combat/assault.js";
 export { detectByMovement, detectByUav, type DetectionResult } from "./combat/detection.js";
 
 // Turn engine
-export { Game, PHASES, PhaseError, type Phase, type GameOptions } from "./game.js";
+export {
+  Game,
+  PHASES,
+  PhaseError,
+  type Phase,
+  type GameOptions,
+  type SmokeOrder,
+} from "./game.js";
