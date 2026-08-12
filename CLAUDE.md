@@ -69,6 +69,31 @@ will not pick up an engine change** — the old instance keeps running the old
 code. Hard-reload the page to get a fresh game, or you will "verify" the
 behaviour you just replaced.
 
+### Driving it by script
+
+Playing the demo to an interesting position takes many activations, so it is
+usually scripted through the browser tools. Four things cost real time to
+rediscover:
+
+- **A token's symbol image is large in map coordinates.** `elementFromPoint` at
+  a spot near a unit hits the `<image>`, and `Token`'s handler calls
+  `stopPropagation`, so the click never reaches the map — a move silently does
+  nothing. Dispatch on `svg.map` itself instead: the background handler reads
+  `clientX/clientY` off the event and does not care what was under the cursor.
+- **Every state change re-renders every token through milsymbol**, which is
+  slow enough that a long click sequence blows the 30 s tool timeout. Drive one
+  or two activations per call and read the state back between them.
+- **C2 is measured from where the חפ"ק stands when the order is given**, so
+  move the command group *before* the subordinate, or the squad drops to a
+  2-turn interval and the script stalls waiting for it.
+- **Check a move landed by looking for a `נע` line anywhere in the new log
+  entries**, not at the top one — detection and orders log after it.
+
+Once a position is set up, a **recording is the cheap way back to it**: save
+one (`שמור הקלטה`), then `replayGame()` reconstructs that exact state without
+replaying the clicks. For engine-only checks, building a recording in a test is
+faster than driving the UI at all.
+
 ## Tests
 
 Vitest, colocated as `*.test.ts` next to the code. The interesting suites are
