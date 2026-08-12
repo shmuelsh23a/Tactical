@@ -1,14 +1,19 @@
 # Tactical Wargame — Rules Engine (משחק מלחמה לפו"ם)
 
 A deterministic, fully-tested **TypeScript rules engine** implementing the
-tabletop tactical wargame described in `משחק מלחמה לפום.docx`. This is stage 1
-of the project: a pure engine with no UI. The browser game (and, later, mobile
-and networked/single-player modes) will sit on top of this module.
+tabletop tactical wargame described in [`Tactical - Mechanics.docx`](Tactical%20-%20Mechanics.docx)
+(Hebrew; readable as Markdown at
+[`docs/mechanics.he.md`](docs/mechanics.he.md)). Stage 1 — the engine — is
+complete; stage 2, the hotseat browser game on top of it, is in progress. Mobile
+and networked/single-player modes sit on the same module later.
+
+Working on this repo with Claude Code? Start with [CLAUDE.md](CLAUDE.md).
 
 ## Why it's built this way
 
-- **Pure TypeScript, no runtime deps** — the same engine powers the browser
-  game now and the mobile app later.
+- **The engine has no runtime dependencies** — pure TypeScript, no React and no
+  browser APIs, so the same module powers the browser game now and the mobile
+  app later. (React, react-dom and milsymbol belong to the app layer only.)
 - **Single seeded RNG** ([`Rng`](src/engine/rng.ts)) — every random outcome is
   drawn from one seedable generator, so a whole game is replayable bit-for-bit.
   Essential for tests, debugging, and future networked play (all clients
@@ -24,25 +29,16 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (65 tests)
+npm test             # run the engine test suite (105 tests)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
 
 ## Stage 2 — browser UI (hotseat) — in progress
 
-A React + Vite + SVG app in [`src/app/`](src/app) drives the engine in
-**hotseat** mode, using **NATO symbols** (via the `milsymbol` library) for all
-units.
-
-- `src/app/scenario.ts` — demo scenario (BLUE platoon vs RED position + tank)
-- `src/app/symbols.ts` — builds an APP-6/2525 SIDC per unit (affiliation is
-  relative to the **viewing** side) and renders the NATO symbol
-- `src/app/hotseat.ts` — turn activations, fog-of-war, victory check
-- `src/app/components/` — `MapView` (SVG map, tokens, move/fire interaction),
-  `Handoff` (device-handoff overlay), `LogPanel`
-- `src/app/App.tsx` — controller: 7-phase turn loop, initiative, per-side
-  activations, selection, movement (range-capped), direct fire, combat log
+A React + Vite + SVG app in [`src/app/`](src/app) (see **Layout** below) drives
+the engine in **hotseat** mode, using **NATO symbols** (via the `milsymbol`
+library) for all units. Affiliation is drawn relative to the **viewing** side.
 
 Implemented in the slice: initiative roll, hotseat handoff overlay (hides the
 board between players so fog-of-war isn't leaked), per-side fog-of-war (an enemy
@@ -50,10 +46,41 @@ is shown once a friendly unit is within 300 m), unit selection with a movement
 range ring, range-validated movement with detection, direct fire (small-arms /
 MG and tank round) with a combat log, casualty/neutralisation display, **one
 fire action per force per fire phase**, a **command group (חפ"ק)** per side that
-the player moves (shown with the APP-6 HQ staff) and a live **C2 readout**
-(distance to the command group → order interval from the פו"ש table), and
-**fixed faction colours** (BLUE always friendly/blue, RED always hostile/red,
-regardless of whose turn it is).
+the player moves (shown with the APP-6 HQ staff), **enforced command & control**
+(the פו"ש order interval gates manoeuvre — see rules decision 6 — with a live
+readout of distance to the command group, order frequency, and the turn the next
+orders arrive), **fixed faction colours** (BLUE always friendly/blue, RED always
+hostile/red, regardless of whose turn it is), and a **targeting phase**: each
+side marks one indirect-fire mission and one smoke screen per turn (see rules
+decision 8). A marked aim point is drawn only on its owner's map, with the turn
+it will land; the round scatters through the dispersion table on arrival and the
+combat log reports the miss distance and every casualty. Smoke comes from any of
+the document's three sources — a thrown רימון is in place at once, a פצמ"ר or
+פגז ארטילריה has to be fired and arrives with its weapon's שיהוי, each with its
+own screen size (rules decision 9); a screen in flight shows its future
+footprint so it can be sited on a line. **Smoke blocks fire into and through it**
+(אין ירי לתוך\דרך עשן) — the engine derives line of sight from the screens on
+the map rather than the app asserting it.
+
+RED also defends behind a **minefield** in the demo scenario. A side sees its own
+charges; the enemy's only once they have been spotted, and a force that walks
+into one takes the blast mid-bound (rules decision 10).
+
+In the fire phase a force can shoot or **assault** (הסתערות) a neighbouring
+enemy: pick the action, choose how many grenades to throw, and the selected
+force is ringed with its 25 m reach (rules decision 11). The log reports assault
+fire, grenade hits, and any casualties the throwers inflict on themselves.
+
+Engine capability the UI does not reach yet — the next obvious work:
+
+- **Charges cannot be laid during play** — they are placed when a scenario is
+  built. Laying them is an engineering action the document does not describe.
+- **Fog-of-war is a flat 300 m radius** (`hotseat.ts`), with no terrain and no
+  probabilistic spotting. Line of sight now accounts for smoke, but nothing else
+  obstructs it.
+- **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
+  "did not move or fire" flag rather than a feature of the ground.
+- **No save / replay**, though the seeded design makes it nearly free.
 
 ## Layout
 
@@ -61,7 +88,7 @@ regardless of whose turn it is).
 src/engine/
   rng.ts            Seedable Mulberry32 PRNG
   dice.ts           Dice notation (1d8 / Hebrew 1ק8), rolling
-  geometry.ts       Distance, range-band lookup, blast radius
+  geometry.ts       Distance, range-band lookup, blast radius, LOS through smoke
   types.ts          Units, soldiers, vehicles, mines, smoke, fire missions
   units.ts          Casualty bookkeeping + unit constructors
   upkeep.ts         Bleeding, smoke decay, end-of-turn flag reset
@@ -71,7 +98,7 @@ src/engine/
     movement.ts     Normal/run gaits, detection %, enemy-hit modifiers
     directFire.ts   Small-arms & sustained-MG range bands, cover modifiers
     explosives.ts   RPG, mortar, artillery, tank, mines, ATGM
-    smoke.ts        Smoke durations by source
+    smoke.ts        Smoke duration + screen radius by source
     uav.ts          Fixed-wing & drone profiles
     armor.ts        Armour hit-location / penetration / effect table
     artillery.ts    Dispersion (short/long, left/right) configuration
@@ -85,7 +112,20 @@ src/engine/
     armorDamage.ts  Armour hit resolution
     assault.ts      Assault (fire + grenades)
     detection.ts    Movement-based and UAV-based detection
+    mines.ts        Charges triggered along a force's path
+
+src/app/                Hotseat browser game (React + Vite + SVG)
+  App.tsx           Controller: turn loop, activations, selection, actions
+  hotseat.ts        Activation order, fog-of-war, victory check
+  scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
+  symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
+  components/       MapView (SVG map + interaction), Handoff, LogPanel
+
+docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
+tools/dump-docx.py      Raw .docx extraction, to re-verify that transcription
 ```
+
+Tests live beside the code they cover (`*.test.ts`).
 
 ## Quick example
 
@@ -109,18 +149,22 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Detection on movement; UAV/drone footprint detection
 - Direct fire: range bands, cover, target-movement modifiers, split fire, 1d4
 - Explosives: RPG, mortar, artillery (with rate-of-fire & impact delay), tank
-  round, AP/AT mines, ATGM (vs infantry / vs armour)
+  round, ATGM (vs infantry / vs armour)
+- AP/AT mines: spotted on the approach, or triggered by the path a force walks
 - Artillery dispersion (short/long, left/right; launcher & UAV scaling)
-- Smoke screens with per-source duration
-- Assault (assault fire + grenades, self-hit)
+- Smoke screens: per-source duration, size and flight time, blocking fire into
+  and through them
+- Assault (assault fire + grenades, self-hit) within 25 m, infantry only
 - Armour damage table (location → penetration → crew/component/critical effect)
 - Casualties: nq"p accumulation, 5-pt bleeding (1d4 / 5 turns), 8-pt neutralise,
   50%-attrition force neutralisation
-- Command & control order intervals by distance (פו"ש)
+- Command & control order intervals by distance (פו"ש), gating manoeuvre
 
 ## Rules decisions
 
-Resolved with the author (2026-05-29):
+Where the document is silent or ambiguous, the reading is decided here rather
+than in the code. ✅ = confirmed with the author (2026-05-29); ⚠️ = implemented
+on the stated reasoning, still awaiting the author's word.
 
 1. ✅ **מטול = under-rifle grenade launcher** (key `rifleGrenade`).
 2. ✅ **נגד רק"מ = RPG** (key `rpgVsArmor`), usable to **700 m** at 10%. A guided
@@ -133,10 +177,83 @@ Resolved with the author (2026-05-29):
    `targetSoldierId` — [`units.ts`](src/engine/units.ts).
 5. ✅ **Engine/track damage**: the 8/4 nq"p are component pools; a penetrating
    hit deals the full pool (one-hit mobility kill), light HE chips 2 at a time.
+6. ⚠️ **C2 gates manoeuvre, not fire** (assumed 2026-08-12, not yet confirmed
+   with the author). A force that cannot receive new orders this turn may not be
+   *moved*; it may still fire, on its local commander's initiative. The command
+   group itself is never gated, and the interval is recomputed live — bringing
+   the חפ"ק forward restores a cut-off force's tempo immediately.
+   [`game.ts`](src/engine/game.ts) `canManoeuvre` / `moveUnit`; the whole module
+   is switched off with `new Game({ seed, enforceC2: false })`.
+7. ⚠️ **Cover cuts the hit chance proportionally, not by percentage points**
+   (decided 2026-08-12 from the document, worth a sanity check). The source
+   reads `-50% מסיכויי הפגיעה` — "-50% *of* the hit chance" — and the partitive
+   מ־ makes it a proportional cut: full cover halves the shot (20% → 10%),
+   partial cover shaves a tenth off it. Read as a subtraction of 50 points it
+   would zero the entire direct-fire table (small arms 30/20/10 → 0/0/0,
+   sustained MG 70/50/20 → 20/0/0), and since a force that holds still is *by
+   definition* in full cover ([`upkeep.ts`](src/engine/upkeep.ts)), no defender
+   could ever be shot. The table values stay verbatim (`-0.5` / `-0.1`); only
+   their application changed — [`combat/directFire.ts`](src/engine/combat/directFire.ts).
+8. ⚠️ **Indirect fire is an off-map asset, one mission per side per turn**
+   (assumed 2026-08-12). The document gives rates of fire per barrel (3 bombs
+   for a mortar, 2 shells for artillery) but the game has no battery piece to
+   own them, so the hotseat UI allows each side one fire mission and one smoke
+   screen per turn. This is a UI limit over an engine that already models
+   `roundsPerTurn`; a battery unit would replace it.
+9. ✅ **A smoke screen waits for its delivery, and is sized by it** (confirmed
+   with the author 2026-08-12). The document lists the three sources with their
+   durations but neither a delay nor a size, so:
+
+   | מקור | רדיוס | משך | שיהוי |
+   |---|---|---|---|
+   | רימון | 25 m | 1 turn | none — in place when thrown |
+   | פצמ"ר | 50 m | 2 turns | 1 turn |
+   | פגז ארטילריה | 100 m | 4 turns | 2 turns |
+
+   The **delay is not a separate table**: it is read from the delivering
+   weapon's own שיהוי in the explosives table, so the two can never drift apart.
+   The **radii are chosen** (⚠️ — the document sizes no screen) to scale with
+   the delivery: a thrown pot screens a bound, a mortar bomb a squad's frontage,
+   a shell a platoon's — [`data/smoke.ts`](src/engine/data/smoke.ts). A screen in
+   flight is queued like an HE mission and lands in `resolvePriorArty`; screens
+   go down *before* the rounds do, so a barrage cannot walk through its own
+   smoke on the turn both arrive.
+10. ⚠️ **A charge is triggered by the path walked, within 10 m** (assumed
+    2026-08-12). The document gives the trigger as `דריכה` — stepping on it —
+    with a 50% activation roll, but no distance, and a token here is a squad
+    spread over some frontage rather than one man. So:
+    - the **whole bound** is tested, not just where it ends, or a 100 m rush
+      would vault a minefield;
+    - **10 m** is the trigger radius — half the 20 m at which a charge can be
+      *spotted*, so a force that fails its detection roll can still walk into
+      one ([`combat/mines.ts`](src/engine/combat/mines.ts));
+    - a charge already **found is stepped around**, which is what makes the
+      document's detection percentages worth having: moving at normal pace
+      spots charges within 20 m at 30%, running at only 5% — so the gait choice
+      is a real gamble over a mined approach;
+    - a charge that fires is **spent**; one that fails its activation roll stays
+      armed for the next force through;
+    - **no force triggers its own side's charges.**
+
+    Until this, `activationChance` sat in the data and nothing read it — charges
+    could be found but never went off.
+11. ✅ **An assault reaches 25 m** (confirmed with the author 2026-08-12). The
+    document puts הסתערות in the fire phase and makes the grenade
+    `הסתערות בלבד`, but states no range; closing the last stretch is a
+    movement-phase job, so the assault itself only checks that the force is
+    already there — [`combat/assault.ts`](src/engine/combat/assault.ts).
+    Two riders (⚠️): **armour cannot be assaulted** — the document models no
+    infantry close assault on a vehicle, only נגד רק"מ as a weapon — and the
+    **number of grenades is the player's choice** (0–3 in the UI) with no
+    ammunition tracked, since logistics is still a roadmap item.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
+- **Target-movement modifiers** (`+30%` / `-20%` from the movement table) kept
+  **additive** — the document phrases those without the partitive מ־ that made
+  cover proportional (decision 7), and read additively they stay in range
+  (30% → 60% against a walking target). Say if you want them proportional too.
 - **Artillery "2d10 per axis"** read as a **d100 percentile** per axis (matching
   the ≤15% / 16–30% / 31%+ thresholds).
 - **"hit% × fit soldiers"** modelled as each fit soldier rolling the hit chance
