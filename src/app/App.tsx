@@ -8,6 +8,8 @@ import {
   fitSoldiers,
   fullStrength,
   orderInterval,
+  replayGame,
+  type GameRecording,
   type IndirectFireResult,
   type Side,
   type SmokeScreen,
@@ -25,6 +27,7 @@ import {
   type LogEntry,
 } from "./hotseat.js";
 import { MapView } from "./components/MapView.js";
+import { Debrief } from "./Debrief.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
 
@@ -90,6 +93,8 @@ export function App() {
   const [combatAction, setCombatAction] = useState<CombatAction>("fire");
   const [grenades, setGrenades] = useState(1);
   const [winner, setWinner] = useState<Side | null>(null);
+  /** A loaded recording being reviewed; the game is left untouched behind it. */
+  const [debrief, setDebrief] = useState<GameRecording | null>(null);
 
   // One fire mission and one smoke screen per side per turn (see README rules
   // decision 8) — keyed `SIDE-he` / `SIDE-smoke` to the turn it was spent on.
@@ -370,6 +375,19 @@ export function App() {
     pushLog(`הקרב נשמר להקלטה (${recording.actions.length} פעולות)`, "info");
   }
 
+  /** Read a saved recording and hand it to the debrief view. */
+  async function loadRecording(file: File) {
+    try {
+      const parsed = JSON.parse(await file.text()) as GameRecording;
+      // Fail here rather than halfway through a replay.
+      replayGame(parsed, { upToAction: 0 });
+      setDebrief(parsed);
+    } catch (err) {
+      pushLog(`טעינת ההקלטה נכשלה: ${(err as Error).message}`, "info");
+      force();
+    }
+  }
+
   function checkVictory() {
     for (const side of ["RED", "BLUE"] as Side[]) {
       if (sideDefeated(game, side)) {
@@ -412,6 +430,8 @@ export function App() {
 
   const showHandoff = stage === "activation" && handoffTo != null;
 
+  if (debrief) return <Debrief recording={debrief} onClose={() => setDebrief(null)} />;
+
   return (
     <div className="app">
       <header className="topbar">
@@ -424,6 +444,19 @@ export function App() {
         <button className="btn-ghost" onClick={handleSaveRecording} title="שמירת הקרב לקובץ לצורך שחזור ותחקיר">
           שמור הקלטה
         </button>
+        <label className="btn-ghost" title="טעינת הקלטה שמורה לתחקיר">
+          טען לתחקיר
+          <input
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = ""; // allow re-loading the same file
+              if (file) void loadRecording(file);
+            }}
+          />
+        </label>
       </header>
 
       <div className="main">

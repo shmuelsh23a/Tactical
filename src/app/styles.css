@@ -46,6 +46,18 @@ body {
   font-size: 0.82rem; cursor: pointer;
 }
 .btn-ghost:hover { background: var(--panel-2); }
+label.btn-ghost { margin-inline-start: 0.4rem; }
+
+/* debrief */
+.scrubber { width: 100%; margin-top: 0.7rem; accent-color: var(--accent); }
+.timeline-item { cursor: pointer; color: var(--muted); }
+.timeline-item:hover { background: var(--panel-2); }
+.timeline-item.done { color: var(--text); }
+.timeline-item.current {
+  background: var(--panel-2);
+  border-inline-start: 3px solid var(--accent);
+  padding-inline-start: 0.4rem;
+}
 
 .main { display: flex; flex: 1; min-height: 0; }
 

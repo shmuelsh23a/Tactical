@@ -155,6 +155,43 @@ describe("battle recording", () => {
     expect(before.actions.length).toBe(1);
   });
 
+  it("replays a prefix, for stepping through a debrief", () => {
+    const rec = playDemo().toRecording();
+
+    // Nothing applied yet: an empty board before the scenario is laid out.
+    const start = replayGame(rec, { upToAction: 0 });
+    expect(start.units).toEqual([]);
+    expect(start.turn).toBe(0);
+
+    // Every prefix in turn must apply cleanly.
+    for (let k = 0; k <= rec.actions.length; k++) {
+      expect(() => replayGame(rec, { upToAction: k })).not.toThrow();
+    }
+
+    // The full-length prefix is the whole recording.
+    expect(replayGame(rec, { upToAction: rec.actions.length }).rng.getState()).toBe(
+      replayGame(rec).rng.getState(),
+    );
+    // Asking past the end is not an error.
+    expect(replayGame(rec, { upToAction: 999 }).rng.getState()).toBe(
+      replayGame(rec).rng.getState(),
+    );
+  });
+
+  it("shows a force where it stood before and after the move that shifted it", () => {
+    const rec = playDemo().toRecording();
+    const moveAt = rec.actions.findIndex((a) => a.kind === "moveUnit");
+    expect(moveAt).toBeGreaterThan(-1);
+
+    const before = replayGame(rec, { upToAction: moveAt });
+    const after = replayGame(rec, { upToAction: moveAt + 1 });
+    const moved = rec.actions[moveAt];
+    if (moved?.kind !== "moveUnit") throw new Error("expected a move");
+
+    expect(before.getUnit(moved.unitId).position).not.toEqual(moved.to);
+    expect(after.getUnit(moved.unitId).position).toEqual(moved.to);
+  });
+
   it("refuses a recording from an unknown format version", () => {
     const bad = { version: 99, seed: 1, sides: [], enforceC2: true, actions: [] };
     expect(() => replayGame(bad as unknown as GameRecording)).toThrow(/version/);

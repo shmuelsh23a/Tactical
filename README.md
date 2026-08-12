@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (115 tests)
+npm test             # run the engine test suite (117 tests)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -76,6 +76,13 @@ action log, a few kilobytes rather than a state dump, because the seeded engine
 can rebuild everything else. [`replayGame()`](src/engine/recording.ts) replays
 it to the same state, ids and RNG position included.
 
+**טען לתחקיר** loads one back into a **debrief** ([`Debrief.tsx`](src/app/Debrief.tsx)):
+step or scrub through the battle action by action, with a narrated timeline you
+can click to jump. The board is shown as the umpire saw it — both sides, no
+fog-of-war — since the point of a debrief is to see what each side could not.
+State at step N is replayed from the seed rather than stored as snapshots, so
+what is on screen is what the engine actually does with that recording.
+
 Engine capability the UI does not reach yet — the next obvious work:
 
 - **Charges cannot be laid during play** — they are placed when a scenario is
@@ -85,9 +92,9 @@ Engine capability the UI does not reach yet — the next obvious work:
   obstructs it.
 - **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
   "did not move or fire" flag rather than a feature of the ground.
-- **A recording can be saved but not loaded back** — replaying one reconstructs
-  the game in the engine, but the hotseat UI has no debrief view to step
-  through it yet.
+- **The debrief shows the board, not the dice** — it narrates what was done,
+  but not what each action rolled (hits, casualties, dispersion). Those come
+  back in the resolver results, which the recording deliberately does not store.
 
 ## Layout
 
@@ -124,6 +131,8 @@ src/engine/
 
 src/app/                Hotseat browser game (React + Vite + SVG)
   App.tsx           Controller: turn loop, activations, selection, actions
+  Debrief.tsx       After-action review: step through a saved recording
+  debriefText.ts    Hebrew narration of recorded actions + map extent
   hotseat.ts        Activation order, fog-of-war, victory check
   scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
@@ -321,10 +330,10 @@ Each is intended to be an independent, toggleable module:
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. **Map generation** — procedural / authored maps and terrain (LOS, cover).
-7. **Battle recording & debrief tool** — *recording done*: `game.toRecording()`
-   captures the seed and action log, `replayGame()` reconstructs the game
-   exactly, and the hotseat UI saves one to a file. The debrief view that steps
-   through a recording is still to come.
+7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
+   seed and action log, `replayGame()` reconstructs the game exactly (whole or
+   to any prefix), and the hotseat UI saves a recording to a file and loads one
+   back into a step-through debrief.
 8. **Leaderboards.**
 9. **Leagues.**
 10. **Air support** — fixed/rotary CAS missions.

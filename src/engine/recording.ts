@@ -65,7 +65,17 @@ export function cloneForRecord<T>(value: T): T {
  * Actions that were rejected when the game was played were never recorded, so
  * replay does not have to reproduce failures.
  */
-export function replayGame(recording: GameRecording): Game {
+export function replayGame(
+  recording: GameRecording,
+  opts: {
+    /**
+     * Stop after this many actions, for stepping through a battle in a
+     * debrief. Replaying a prefix is exact for the same reason the whole
+     * recording is: the actions before it drew the same random numbers.
+     */
+    upToAction?: number;
+  } = {},
+): Game {
   if (recording.version !== 1) {
     throw new Error(`Unsupported recording version: ${recording.version}`);
   }
@@ -75,7 +85,8 @@ export function replayGame(recording: GameRecording): Game {
     enforceC2: recording.enforceC2,
   });
 
-  for (const action of recording.actions) {
+  const limit = Math.max(0, Math.min(opts.upToAction ?? recording.actions.length, recording.actions.length));
+  for (const action of recording.actions.slice(0, limit)) {
     switch (action.kind) {
       case "addUnit":
         game.addUnit(cloneForRecord(action.unit));
