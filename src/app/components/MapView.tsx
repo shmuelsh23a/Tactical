@@ -12,6 +12,8 @@ interface MapViewProps {
   /** Movement range circle radius (metres) for the selected unit, if moving. */
   moveCap: number | null;
   revealedEnemyIds: Set<string>;
+  /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
+  awaitingOrderIds: Set<string>;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
@@ -78,6 +80,7 @@ export function MapView(props: MapViewProps) {
           viewingSide={viewingSide}
           selected={u.id === selectedId}
           phase={phase}
+          awaitingOrders={props.awaitingOrderIds.has(u.id)}
           onSelectUnit={props.onSelectUnit}
           onFireAt={props.onFireAt}
         />
@@ -91,11 +94,20 @@ interface TokenProps {
   viewingSide: Side;
   selected: boolean;
   phase: "movement" | "combat" | "other";
+  awaitingOrders: boolean;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
 }
 
-function Token({ unit, viewingSide, selected, phase, onSelectUnit, onFireAt }: TokenProps) {
+function Token({
+  unit,
+  viewingSide,
+  selected,
+  phase,
+  awaitingOrders,
+  onSelectUnit,
+  onFireAt,
+}: TokenProps) {
   const sym = renderUnitSymbol(unit, 30);
   const friendly = unit.side === viewingSide;
 
@@ -113,6 +125,7 @@ function Token({ unit, viewingSide, selected, phase, onSelectUnit, onFireAt }: T
     friendly ? "token-friendly" : "token-enemy",
     selected ? "token-selected" : "",
     unit.neutralized ? "token-neutralised" : "",
+    awaitingOrders ? "token-no-orders" : "",
     !friendly && phase === "combat" ? "token-targetable" : "",
   ].join(" ");
 
@@ -126,6 +139,10 @@ function Token({ unit, viewingSide, selected, phase, onSelectUnit, onFireAt }: T
     <g className={cls} onClick={handleClick}>
       {selected && (
         <circle cx={unit.position.x} cy={unit.position.y} r={22} className="selection-ring" />
+      )}
+      {/* Awaiting orders from the חפ"ק — cannot manoeuvre this turn. */}
+      {awaitingOrders && (
+        <circle cx={unit.position.x} cy={unit.position.y} r={26} className="no-orders-ring" />
       )}
       {isHq && (
         <line x1={left} y1={bottom} x2={left} y2={bottom + 16} className="hq-staff" />

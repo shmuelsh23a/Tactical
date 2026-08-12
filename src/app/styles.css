@@ -55,6 +55,10 @@ body {
 .token { cursor: pointer; }
 .token-enemy.token-targetable { cursor: crosshair; }
 .token-neutralised { opacity: 0.5; }
+.token-no-orders { opacity: 0.72; }
+.no-orders-ring {
+  fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 5;
+}
 .hq-staff { stroke: #c7d0da; stroke-width: 1.5; }
 
 .tag {
@@ -99,6 +103,7 @@ body {
 .unit-card .unit-name { font-weight: 600; margin-bottom: 0.3rem; }
 .unit-card .warn { color: var(--warn); }
 .unit-card .ok { color: var(--ok); }
+.unit-card .c2-line { color: var(--muted); margin-top: 0.25rem; }
 
 .roster { margin-top: 0.9rem; }
 .roster h4 { margin: 0 0 0.4rem; color: var(--muted); font-weight: 500; font-size: 0.85rem; }
@@ -109,6 +114,8 @@ body {
 .roster li:hover { background: var(--panel-2); }
 .roster li.sel { background: var(--blue); color: #fff; }
 .roster li.dead { opacity: 0.5; text-decoration: line-through; }
+.roster li.no-orders { color: var(--warn); }
+.roster li.no-orders.sel { color: #fff; }
 
 /* log */
 .log { flex: 1; overflow-y: auto; padding: 0.9rem; }

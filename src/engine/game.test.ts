@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Game, PHASES } from "./game.js";
-import { makeInfantry, makeVehicle, fitSoldiers } from "./units.js";
+import { makeCommandGroup, makeInfantry, makeVehicle, fitSoldiers } from "./units.js";
 
 describe("Game turn/phase loop", () => {
   it("walks through all seven phases in order", () => {
@@ -111,6 +111,107 @@ describe("command & control gating", () => {
     g.advancePhase();
     expect(g.turn).toBe(3);
     expect(g.canReceiveOrders(sq.id, cmdPos)).toBe(true);
+  });
+
+  it("measures the interval from the side's own command group when none is given", () => {
+    const g = new Game({ seed: 1 });
+    const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
+    g.addUnit(makeCommandGroup("HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
+    g.beginTurn();
+    expect(g.commandGroupFor("BLUE")?.id).toBe("HQ");
+    expect(g.issueOrders(sq.id)).toBe(true); // 400 m → interval 2
+    expect(g.canReceiveOrders(sq.id)).toBe(false);
+    expect(g.nextOrderTurn(sq.id)).toBe(3);
+  });
+
+  it("a side with no command group is unconstrained", () => {
+    const g = new Game({ seed: 1 });
+    const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 900 }, 8));
+    g.beginTurn();
+    expect(g.issueOrders(sq.id)).toBe(true);
+    expect(g.canReceiveOrders(sq.id)).toBe(true);
+    expect(g.nextOrderTurn(sq.id)).toBe(null);
+  });
+});
+
+describe("C2 gating of manoeuvre", () => {
+  /** BLUE squad 400 m from its חפ"ק → orders every 2 turns. */
+  function setup(opts: { enforceC2?: boolean } = {}) {
+    const g = new Game({ seed: 1, ...opts });
+    const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
+    const hq = g.addUnit(makeCommandGroup("HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    return { g, sq, hq };
+  }
+
+  /** End the current turn and stop in the next turn's movement phase. */
+  function nextTurnMovement(g: Game) {
+    while (g.phase !== "summary") g.advancePhase();
+    g.advancePhase(); // -> next turn, initiative
+    g.advanceToPhase("movement");
+  }
+
+  it("blocks movement on turns the force cannot receive new orders", () => {
+    const { g, sq } = setup();
+
+    // Turn 1: free to move — the order is issued as it moves.
+    g.moveUnit(sq.id, { x: 0, y: 370 }, "normal");
+    expect(g.isUnderOrders(sq.id)).toBe(true);
+
+    // Turn 2: still inside the 2-turn interval → no new orders, no manoeuvre.
+    nextTurnMovement(g);
+    expect(g.canManoeuvre(sq.id)).toBe(false);
+    expect(() => g.moveUnit(sq.id, { x: 0, y: 340 }, "normal")).toThrow(/no orders/);
+    expect(sq.position.y).toBe(370); // did not budge
+
+    // Turn 3: orders due again.
+    nextTurnMovement(g);
+    expect(g.canManoeuvre(sq.id)).toBe(true);
+    expect(() => g.moveUnit(sq.id, { x: 0, y: 340 }, "normal")).not.toThrow();
+  });
+
+  it("lets a force keep moving within the turn it was ordered", () => {
+    const { g, sq } = setup();
+    g.moveUnit(sq.id, { x: 0, y: 380 }, "normal");
+    // A second bound in the same turn is the same order, not a new one.
+    expect(() => g.moveUnit(sq.id, { x: 0, y: 360 }, "normal")).not.toThrow();
+    expect(sq.movedThisTurn).toBeCloseTo(40);
+  });
+
+  it("does not stamp an order when the move is rejected", () => {
+    const { g, sq } = setup();
+    expect(() => g.moveUnit(sq.id, { x: 0, y: 300 }, "normal")).toThrow(/exceeds/);
+    expect(g.isUnderOrders(sq.id)).toBe(false);
+    expect(g.canReceiveOrders(sq.id)).toBe(true); // still due its orders
+  });
+
+  it("never gates the command group itself", () => {
+    const { g, hq } = setup();
+    g.moveUnit(hq.id, { x: 0, y: 40 }, "normal");
+    nextTurnMovement(g);
+    expect(g.canManoeuvre(hq.id)).toBe(true);
+    expect(() => g.moveUnit(hq.id, { x: 0, y: 80 }, "normal")).not.toThrow();
+  });
+
+  it("does not gate fire — a force engages on its own initiative", () => {
+    const { g, sq } = setup();
+    g.addUnit(makeInfantry("E", "RED", "squad", { x: 0, y: 450 }, 6));
+    g.moveUnit(sq.id, { x: 0, y: 400 }, "normal"); // 0 m, but takes the order
+
+    nextTurnMovement(g); // turn 2: awaiting orders
+    expect(g.canManoeuvre(sq.id)).toBe(false);
+    g.advanceToPhase("combat");
+    expect(g.fire(sq.id, "E", { weapon: "smallArms" }).fired).toBe(true);
+  });
+
+  it("enforceC2: false plays the game without the C2 module", () => {
+    const { g, sq } = setup({ enforceC2: false });
+    g.moveUnit(sq.id, { x: 0, y: 370 }, "normal");
+    nextTurnMovement(g);
+    expect(g.canReceiveOrders(sq.id)).toBe(false); // the clock still runs…
+    expect(g.canManoeuvre(sq.id)).toBe(true); // …but nothing is gated on it
+    expect(() => g.moveUnit(sq.id, { x: 0, y: 340 }, "normal")).not.toThrow();
   });
 });
 

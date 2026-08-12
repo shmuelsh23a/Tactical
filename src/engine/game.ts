@@ -43,6 +43,13 @@ export class PhaseError extends Error {}
 export interface GameOptions {
   seed: number;
   sides?: Side[];
+  /**
+   * Whether the C2 (פו"ש) order interval gates manoeuvre: a force that cannot
+   * receive new orders this turn may not be moved (it may still fire at its
+   * own initiative). Defaults to on; turn it off for a game played without
+   * the command-and-control module.
+   */
+  enforceC2?: boolean;
 }
 
 /**
@@ -52,6 +59,7 @@ export interface GameOptions {
 export class Game {
   readonly rng: Rng;
   readonly sides: Side[];
+  readonly enforceC2: boolean;
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -66,6 +74,7 @@ export class Game {
   constructor(opts: GameOptions) {
     this.rng = new Rng(opts.seed);
     this.sides = opts.sides ?? ["RED", "BLUE"];
+    this.enforceC2 = opts.enforceC2 ?? true;
   }
 
   // ---- setup ----
@@ -208,6 +217,15 @@ export class Game {
     if (unit.movementBlocked) {
       throw new Error(`${unitId} was hit last turn and cannot move this turn`);
     }
+    // C2: manoeuvre needs orders. The interval is measured from where the unit
+    // stands when the order reaches it, so this is checked before it moves —
+    // and the order is only stamped once the move actually goes through.
+    const needsNewOrders = !this.isUnderOrders(unitId);
+    if (!this.canManoeuvre(unitId)) {
+      throw new Error(
+        `${unitId} has received no orders this turn (next orders on turn ${this.nextOrderTurn(unitId)})`,
+      );
+    }
     const profile = MOVEMENT_PROFILES[mode];
     const cap = profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1);
     const dist = distance(unit.position, to);
@@ -220,6 +238,8 @@ export class Game {
         `Move of ${dist.toFixed(1)} m exceeds remaining ${mode} budget of ${remaining.toFixed(1)} m`,
       );
     }
+    if (needsNewOrders && this.canReceiveOrders(unitId)) this.lastOrderTurn.set(unitId, this.turn);
+    const from = unit.position;
     unit.position = { ...to };
     unit.movedThisTurn += dist;
 
@@ -279,24 +299,76 @@ export class Game {
 
   // ---- command & control ----
 
+  /** The side's command group (חפ"ק) — the C2 reference for its subordinates. */
+  commandGroupFor(side: Side): Unit | undefined {
+    return this.units.find((u) => u.side === side && u.kind === "command");
+  }
+
   /**
-   * Whether `unit` may receive new orders this turn, given the distance to its
-   * command element and the order interval from the C2 table.
+   * Position the C2 interval is measured from: the caller's explicit commander
+   * position, else the unit's own side's command group. Undefined when the side
+   * has no command group — such a game is played without the C2 constraint.
    */
-  canReceiveOrders(unitId: string, commanderPosition: Point): boolean {
+  private commanderPositionFor(unit: Unit, explicit?: Point): Point | undefined {
+    return explicit ?? this.commandGroupFor(unit.side)?.position;
+  }
+
+  /**
+   * Whether `unit` may receive **new** orders this turn, given the distance to
+   * its command element and the order interval from the C2 table. A command
+   * group issues orders rather than receiving them, so it is never gated.
+   *
+   * Note this answers "may be given a *new* order now", so it is false for a
+   * unit already ordered this turn — ask {@link isUnderOrders} for whether a
+   * unit is acting under orders it already holds.
+   */
+  canReceiveOrders(unitId: string, commanderPosition?: Point): boolean {
     const unit = this.getUnit(unitId);
-    const interval = orderInterval(unit.echelon, distance(unit.position, commanderPosition));
+    if (unit.kind === "command") return true;
+    const from = this.commanderPositionFor(unit, commanderPosition);
+    if (!from) return true; // no command group → unconstrained
+    const interval = orderInterval(unit.echelon, distance(unit.position, from));
     if (interval == null) return true; // no profile → unconstrained
     const last = this.lastOrderTurn.get(unitId);
     if (last == null) return true;
     return this.turn - last >= interval;
   }
 
+  /** Whether `unit` already received its orders this turn and is acting on them. */
+  isUnderOrders(unitId: string): boolean {
+    return this.lastOrderTurn.get(unitId) === this.turn;
+  }
+
+  /**
+   * Turn on which `unit` may next receive orders, for display. Null when the
+   * unit is unconstrained or has never been ordered (i.e. may be ordered now).
+   */
+  nextOrderTurn(unitId: string, commanderPosition?: Point): number | null {
+    const unit = this.getUnit(unitId);
+    if (unit.kind === "command") return null;
+    const from = this.commanderPositionFor(unit, commanderPosition);
+    if (!from) return null;
+    const interval = orderInterval(unit.echelon, distance(unit.position, from));
+    const last = this.lastOrderTurn.get(unitId);
+    if (interval == null || last == null) return null;
+    return last + interval;
+  }
+
   /** Record that `unit` received orders this turn (after a successful check). */
-  issueOrders(unitId: string, commanderPosition: Point): boolean {
+  issueOrders(unitId: string, commanderPosition?: Point): boolean {
     if (!this.canReceiveOrders(unitId, commanderPosition)) return false;
     this.lastOrderTurn.set(unitId, this.turn);
     return true;
+  }
+
+  /**
+   * Whether `unit` may manoeuvre this turn: either it is already acting on
+   * orders received this turn, or it is due new ones. Fire is deliberately not
+   * gated — a force engages what it sees on its local commander's initiative.
+   */
+  canManoeuvre(unitId: string, commanderPosition?: Point): boolean {
+    if (!this.enforceC2) return true;
+    return this.isUnderOrders(unitId) || this.canReceiveOrders(unitId, commanderPosition);
   }
 
   // ---- upkeep ----

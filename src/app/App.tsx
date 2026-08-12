@@ -79,8 +79,19 @@ export function App() {
   const selected = visibleUnits.find((u) => u.id === selectedId) ?? null;
   const selectedOwn = selected && selected.side === viewingSide ? selected : null;
 
+  // The viewing side's command group is the C2 reference for its subordinates.
+  // A force too far from it may not be given new orders — and without orders it
+  // cannot manoeuvre (it may still fire; see handleFireAt).
+  const commandGroup = game.commandGroupFor(viewingSide) ?? null;
+  const awaitingOrders = new Set(
+    enginePhase === "movement"
+      ? game.units.filter((u) => u.side === viewingSide && !game.canManoeuvre(u.id)).map((u) => u.id)
+      : [],
+  );
+  const selectedCanManoeuvre = selectedOwn ? !awaitingOrders.has(selectedOwn.id) : false;
+
   const moveCap =
-    selectedOwn && enginePhase === "movement"
+    selectedOwn && enginePhase === "movement" && selectedCanManoeuvre
       ? Math.max(
           0,
           MOVEMENT_PROFILES[gait].maxDistance * (selectedOwn.underFire ? 0.5 : 1) -
@@ -88,14 +99,17 @@ export function App() {
         )
       : null;
 
-  // The viewing side's command group is the C2 reference for its subordinates.
-  const commandGroup = game.units.find((u) => u.side === viewingSide && u.kind === "command") ?? null;
-  const orderInfo =
+  const orderInfo: OrderInfo | null =
     selectedOwn && selectedOwn.kind !== "command" && commandGroup
       ? {
           distance: distance(selectedOwn.position, commandGroup.position),
-          interval: orderInterval(selectedOwn.echelon, distance(selectedOwn.position, commandGroup.position)),
-          canOrder: game.canReceiveOrders(selectedOwn.id, commandGroup.position),
+          interval: orderInterval(
+            selectedOwn.echelon,
+            distance(selectedOwn.position, commandGroup.position),
+          ),
+          underOrders: game.isUnderOrders(selectedOwn.id),
+          canManoeuvre: game.canManoeuvre(selectedOwn.id),
+          nextOrderTurn: game.nextOrderTurn(selectedOwn.id),
         }
       : null;
 
@@ -116,9 +130,26 @@ export function App() {
 
   function handleMoveTo(x: number, y: number) {
     if (!selectedOwn || enginePhase !== "movement") return;
+    if (!selectedCanManoeuvre) {
+      const next = game.nextOrderTurn(selectedOwn.id);
+      pushLog(
+        `${selectedOwn.name} ממתין לפקודות מהחפ"ק — לא ניתן לתמרן בתור זה` +
+          (next != null ? ` (פקודה הבאה: תור ${next})` : ""),
+        "info",
+        viewingSide,
+      );
+      return;
+    }
+    const hadOrders = game.isUnderOrders(selectedOwn.id);
     try {
       const det = game.moveUnit(selectedOwn.id, { x, y }, gait);
       pushLog(`${selectedOwn.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", viewingSide);
+      // Moving consumes the force's orders; say so when the next set is not due
+      // straight away, so the player can plan the חפ"ק's position around it.
+      const next = game.nextOrderTurn(selectedOwn.id);
+      if (!hadOrders && next != null && next > game.turn + 1) {
+        pushLog(`${selectedOwn.name} קיבל פקודות — הבאות בתור ${next}`, "info", viewingSide);
+      }
       if (det.spottedUnitIds.length) {
         pushLog(`גילוי: ${det.spottedUnitIds.join(", ")}`, "info", viewingSide);
       }
@@ -240,6 +271,7 @@ export function App() {
               phase={enginePhase}
               moveCap={moveCap}
               revealedEnemyIds={revealed}
+              awaitingOrderIds={awaitingOrders}
               onSelectUnit={handleSelect}
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
@@ -277,7 +309,8 @@ export function App() {
                     </button>
                   </div>
                   <p className="hint">
-                    בחר כוח, ולחץ על המפה כדי לנוע (בתוך הטווח המסומן).
+                    בחר כוח, ולחץ על המפה כדי לנוע (בתוך הטווח המסומן). כוח המסומן
+                    בעיגול מקווקו ממתין לפקודות ואינו יכול לתמרן — קרב את החפ"ק אליו.
                   </p>
                 </div>
               )}
@@ -303,7 +336,12 @@ export function App() {
                 סיים {phaseLabelHe[currentActivation.phase]} ({viewingSide})
               </button>
 
-              <Roster units={game.units.filter((u) => u.side === viewingSide)} selectedId={selectedId} onSelect={handleSelect} />
+              <Roster
+                units={game.units.filter((u) => u.side === viewingSide)}
+                selectedId={selectedId}
+                awaitingOrders={awaitingOrders}
+                onSelect={handleSelect}
+              />
             </div>
           )}
 
@@ -339,9 +377,21 @@ function reason(r?: string): string {
 }
 
 interface OrderInfo {
+  /** Distance from the force to its command group, in metres. */
   distance: number;
+  /** Order interval in turns from the פו"ש table (null = unconstrained). */
   interval: number | null;
-  canOrder: boolean;
+  /** The force already received its orders this turn. */
+  underOrders: boolean;
+  /** It may be moved this turn (already ordered, or new orders are due). */
+  canManoeuvre: boolean;
+  /** Turn its next orders arrive (null = they are due now). */
+  nextOrderTurn: number | null;
+}
+
+/** "כל תור" / "כל 2 תורות" — order frequency in readable Hebrew. */
+function everyNTurns(interval: number): string {
+  return interval === 1 ? "כל תור" : `כל ${interval} תורות`;
 }
 
 function SelectedUnitCard({ unit, orderInfo }: { unit: Unit | null; orderInfo: OrderInfo | null }) {
@@ -360,10 +410,20 @@ function SelectedUnitCard({ unit, orderInfo }: { unit: Unit | null; orderInfo: O
         <div>כשירים: {fitSoldiers(unit)}/{fullStrength(unit)}</div>
       )}
       {orderInfo && orderInfo.interval != null && (
-        <div className={orderInfo.canOrder ? "ok" : "warn"}>
-          מרחק מהחפ"ק: {Math.round(orderInfo.distance)}מ' · פקודות כל {orderInfo.interval} תור
-          {orderInfo.interval > 1 ? "ות" : ""} · {orderInfo.canOrder ? "ניתן לפקד כעת" : "אין פיקוד התור"}
-        </div>
+        <>
+          <div className="c2-line">
+            מרחק מהחפ"ק: {Math.round(orderInfo.distance)}מ' · פקודות {everyNTurns(orderInfo.interval)}
+          </div>
+          <div className={orderInfo.canManoeuvre ? "ok" : "warn"}>
+            {orderInfo.underOrders
+              ? "פועל לפי פקודות התור"
+              : orderInfo.canManoeuvre
+                ? "ממתין לפקודה — ניתן לתמרן"
+                : `ממתין לפקודות — לא ניתן לתמרן${
+                    orderInfo.nextOrderTurn != null ? ` (פקודה הבאה: תור ${orderInfo.nextOrderTurn})` : ""
+                  }`}
+          </div>
+        </>
       )}
       {unit.neutralized && <div className="warn">מנוטרל</div>}
       {unit.movementBlocked && <div className="warn">נפגע — לא יכול לנוע</div>}
@@ -376,10 +436,12 @@ function SelectedUnitCard({ unit, orderInfo }: { unit: Unit | null; orderInfo: O
 function Roster({
   units,
   selectedId,
+  awaitingOrders,
   onSelect,
 }: {
   units: Unit[];
   selectedId: string | null;
+  awaitingOrders: Set<string>;
   onSelect: (id: string) => void;
 }) {
   return (
@@ -389,12 +451,15 @@ function Roster({
         {units.map((u) => (
           <li
             key={u.id}
-            className={`${u.id === selectedId ? "sel" : ""} ${u.neutralized ? "dead" : ""}`}
+            className={`${u.id === selectedId ? "sel" : ""} ${u.neutralized ? "dead" : ""} ${
+              awaitingOrders.has(u.id) ? "no-orders" : ""
+            }`}
             onClick={() => onSelect(u.id)}
           >
             {u.name} —{" "}
             {u.kind === "vehicle" ? "טנק" : `${fitSoldiers(u)}/${fullStrength(u)}`}
             {u.firedThisTurn && " · ירה"}
+            {awaitingOrders.has(u.id) && ' · ממתין לפקודות'}
           </li>
         ))}
       </ul>
