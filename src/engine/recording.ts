@@ -15,6 +15,7 @@ import type { AssaultResult } from "./combat/assault.js";
 import type { DetectionResult } from "./combat/detection.js";
 import { Game, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
 import { stateDigest } from "./digest.js";
+import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -53,7 +54,9 @@ export type RecordedAction =
     }
   | { kind: "assault"; attackerId: string; defenderId: string; grenades: number }
   | { kind: "deploySmoke"; source: SmokeSource; side: Side; center: Point; radius: number }
-  | { kind: "issueOrders"; unitId: string; commanderPosition?: Point };
+  | { kind: "issueOrders"; unitId: string; commanderPosition?: Point }
+  | { kind: "setStandingOrder"; unitId: string; order: Omit<StandingOrder, "issuedTurn"> }
+  | { kind: "executeStandingOrders"; side: Side };
 
 export interface GameRecording {
   /** Format version, so an old recording can be recognised and migrated. */
@@ -90,7 +93,9 @@ export type ActionOutcome =
   | { kind: "fireExplosive"; result: DirectExplosiveResult }
   | { kind: "assault"; result: AssaultResult }
   | { kind: "deploySmoke"; order: SmokeOrder }
-  | { kind: "issueOrders"; accepted: boolean };
+  | { kind: "issueOrders"; accepted: boolean }
+  | { kind: "setStandingOrder"; accepted: boolean }
+  | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] };
 
 /** One replayed action and what it produced. */
 export interface ReplayStep {
@@ -244,6 +249,18 @@ export function replayWithOutcomes(
         outcome = {
           kind: "issueOrders",
           accepted: game.issueOrders(action.unitId, action.commanderPosition),
+        };
+        break;
+      case "setStandingOrder":
+        outcome = {
+          kind: "setStandingOrder",
+          accepted: game.setStandingOrder(action.unitId, cloneForRecord(action.order)),
+        };
+        break;
+      case "executeStandingOrders":
+        outcome = {
+          kind: "executeStandingOrders",
+          executions: game.executeStandingOrders(action.side),
         };
         break;
       default: {

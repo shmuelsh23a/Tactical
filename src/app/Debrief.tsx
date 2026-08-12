@@ -95,6 +95,10 @@ export function Debrief({
             pendingFire={game.pendingFire}
             pendingSmoke={game.pendingSmoke}
             mines={game.mines}
+            standingOrders={game.units.flatMap((u) => {
+              const o = game.standingOrderFor(u.id);
+              return o?.destination ? [{ from: u.position, to: o.destination, unitId: u.id }] : [];
+            })}
             onSelectUnit={noop}
             onFireAt={noop}
             onMoveTo={noop}

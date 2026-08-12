@@ -210,3 +210,8 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
   color: var(--warn);
   font-size: 0.85rem;
 }
+
+/* Where a force has been ordered to, and how far it still has to go. */
+.order-line { pointer-events: none; }
+.order-line line { stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 8 6; opacity: 0.8; }
+.order-line circle { fill: none; stroke: var(--ok); stroke-width: 1.5; }

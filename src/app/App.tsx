@@ -239,48 +239,96 @@ export function App() {
     if (!selectedCanManoeuvre) {
       const next = game.nextOrderTurn(selectedOwn.id);
       pushLog(
-        `${selectedOwn.name} ממתין לפקודות מהחפ"ק — לא ניתן לתמרן בתור זה` +
-          (next != null ? ` (פקודה הבאה: תור ${next})` : ""),
+        `${selectedOwn.name} מחוץ למחזור הפקודות — ממשיך בפקודה הקודמת` +
+          (next != null ? ` (פקודה חדשה: תור ${next})` : ""),
         "info",
         viewingSide,
       );
       return;
     }
-    const hadOrders = game.isUnderOrders(selectedOwn.id);
+    // The חפ"ק is the player's own command post: he moves it himself. Everyone
+    // else is given an order, which the engine then carries out — this turn and
+    // every turn after, until it is replaced (rules decision 6).
+    if (selectedOwn.kind === "command") {
+      moveCommandGroup(selectedOwn, x, y);
+      return;
+    }
+    const next = game.nextOrderTurn(selectedOwn.id);
+    game.setStandingOrder(selectedOwn.id, { gait, destination: { x, y } });
+    pushLog(
+      `${selectedOwn.name} — פקודה: התקדם ל(${Math.round(x)}, ${Math.round(y)})` +
+        ` ב${gait === "run" ? "ריצה" : "קצב רגיל"}`,
+      "move",
+      viewingSide,
+    );
+    if (next != null && next > game.turn + 1) {
+      pushLog(`${selectedOwn.name} — פקודה חדשה רק בתור ${next}`, "info", viewingSide);
+    }
+    runStandingOrders();
+    force();
+  }
+
+  /** The one force the player still drives by hand. */
+  function moveCommandGroup(unit: Unit, x: number, y: number) {
     try {
-      const { detection: det, mineDetonations } = game.moveUnit(selectedOwn.id, { x, y }, gait);
-      pushLog(`${selectedOwn.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", viewingSide);
-      // Moving consumes the force's orders; say so when the next set is not due
-      // straight away, so the player can plan the חפ"ק's position around it.
-      const next = game.nextOrderTurn(selectedOwn.id);
-      if (!hadOrders && next != null && next > game.turn + 1) {
-        pushLog(`${selectedOwn.name} קיבל פקודות — הבאות בתור ${next}`, "info", viewingSide);
-      }
+      const { detection: det } = game.moveUnit(unit.id, { x, y }, gait);
+      pushLog(`${unit.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", viewingSide);
       if (det.spottedUnitIds.length) {
         pushLog(`גילוי: ${det.spottedUnitIds.join(", ")}`, "info", viewingSide);
       }
-      if (det.foundMineIds.length) {
-        pushLog(`${selectedOwn.name} איתר ${det.foundMineIds.length} מטענים`, "info", viewingSide);
-      }
-      for (const det2 of mineDetonations) {
-        const kind = det2.type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
-        if (!det2.activated) {
-          pushLog(`${selectedOwn.name} דרך על ${kind} — לא הופעל`, "info", viewingSide);
-          continue;
-        }
-        pushLog(`${kind} התפוצץ תחת ${selectedOwn.name}!`, "casualty", viewingSide);
-        for (const hit of det2.blast?.targets ?? []) {
-          if (!hit.caught) continue;
-          const name = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
-          pushLog(`${name}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty", viewingSide);
-          if (hit.neutralized) pushLog(`${name} נוטרל!`, "casualty", viewingSide);
-        }
-      }
-      if (mineDetonations.some((d) => d.activated)) checkVictory();
     } catch (err) {
       pushLog((err as Error).message, "info", viewingSide);
     }
     force();
+  }
+
+  /** Let the engine carry out this side's orders for the current phase. */
+  function runStandingOrders() {
+    runStandingOrdersFor(viewingSide);
+  }
+
+  function runStandingOrdersFor(side: Side) {
+    for (const done of game.executeStandingOrders(side)) {
+      const unit = game.units.find((u) => u.id === done.unitId);
+      const name = unit?.name ?? done.unitId;
+      if (done.moved) {
+        pushLog(
+          `${name} ${done.moved.arrived ? "הגיע ליעד" : "מתקדם"} לפי פקודה`,
+          "move",
+          side,
+        );
+        const { detection, mineDetonations } = done.moved.result;
+        if (detection.spottedUnitIds.length) {
+          pushLog(`גילוי: ${detection.spottedUnitIds.join(", ")}`, "info", viewingSide);
+        }
+        if (detection.foundMineIds.length) {
+          pushLog(`${name} איתר ${detection.foundMineIds.length} מטענים`, "info", viewingSide);
+        }
+        for (const det of mineDetonations) {
+          const kind = det.type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
+          if (!det.activated) {
+            pushLog(`${name} דרך על ${kind} — לא הופעל`, "info", viewingSide);
+            continue;
+          }
+          pushLog(`${kind} התפוצץ תחת ${name}!`, "casualty", viewingSide);
+          for (const hit of det.blast?.targets ?? []) {
+            if (!hit.caught) continue;
+            const victim = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
+            pushLog(`${victim}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty", viewingSide);
+            if (hit.neutralized) pushLog(`${victim} נוטרל!`, "casualty", viewingSide);
+          }
+        }
+      }
+      if (done.engaged) {
+        pushLog(
+          `${name} תקף לפי פקודה: ${done.engaged.hits} פגיעות, ${done.engaged.newCasualties} נפגעים`,
+          done.engaged.newCasualties > 0 ? "casualty" : "fire",
+          viewingSide,
+        );
+      }
+      if (done.reason) pushLog(`${name}: ${done.reason}`, "info", viewingSide);
+    }
+    checkVictory();
   }
 
   function handleFireAt(enemyId: string) {
@@ -427,6 +475,12 @@ export function App() {
       }
       setActIndex(next);
       setHandoffTo(activations[next]!.side);
+      // The side taking over acts on the orders it already holds before the
+      // player touches anything.
+      const opening = activations[next]!;
+      if (opening.phase === "movement" || opening.phase === "combat") {
+        runStandingOrdersFor(opening.side);
+      }
     } else {
       // End of turn: run upkeep + begin the next turn.
       game.advanceToPhase("initiative");
@@ -500,6 +554,14 @@ export function App() {
               pendingFire={game.pendingFire.filter((m) => m.side === viewingSide)}
               pendingSmoke={smokeInFlight}
               mines={knownMines}
+              standingOrders={game.units
+                .filter((u) => u.side === viewingSide)
+                .flatMap((u) => {
+                  const o = game.standingOrderFor(u.id);
+                  return o?.destination
+                    ? [{ from: u.position, to: o.destination, unitId: u.id }]
+                    : [];
+                })}
               onSelectUnit={handleSelect}
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
@@ -615,7 +677,7 @@ export function App() {
                   </div>
                   <p className="hint">
                     בחר כוח, ולחץ על המפה כדי לנוע (בתוך הטווח המסומן). כוח המסומן
-                    בעיגול מקווקו ממתין לפקודות ואינו יכול לתמרן — קרב את החפ"ק אליו.
+                    בעיגול מקווקו ממשיך בפקודה הקודמת ואי אפשר לשנות לו אותה — קרב את החפ"ק אליו.
                   </p>
                 </div>
               )}
@@ -774,9 +836,9 @@ function SelectedUnitCard({ unit, orderInfo }: { unit: Unit | null; orderInfo: O
             {orderInfo.underOrders
               ? "פועל לפי פקודות התור"
               : orderInfo.canManoeuvre
-                ? "ממתין לפקודה — ניתן לתמרן"
-                : `ממתין לפקודות — לא ניתן לתמרן${
-                    orderInfo.nextOrderTurn != null ? ` (פקודה הבאה: תור ${orderInfo.nextOrderTurn})` : ""
+                ? "ניתן לפקד כעת"
+                : `ממשיך בפקודה הקודמת — אין קשר לפקודה חדשה${
+                    orderInfo.nextOrderTurn != null ? ` (פקודה חדשה: תור ${orderInfo.nextOrderTurn})` : ""
                   }`}
           </div>
         </>
@@ -815,7 +877,7 @@ function Roster({
             {u.name} —{" "}
             {u.kind === "vehicle" ? "טנק" : `${fitSoldiers(u)}/${fullStrength(u)}`}
             {u.firedThisTurn && " · ירה"}
-            {awaitingOrders.has(u.id) && ' · ממתין לפקודות'}
+            {awaitingOrders.has(u.id) && ' · בפקודה קודמת'}
           </li>
         ))}
       </ul>

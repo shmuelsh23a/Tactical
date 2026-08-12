@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (139 tests)
+npm test             # run the engine test suite (157 tests)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -47,9 +47,10 @@ range ring, range-validated movement with detection, direct fire (small-arms /
 MG and tank round) with a combat log, casualty/neutralisation display, **one
 fire action per force per fire phase**, a **command group (חפ"ק)** per side that
 the player moves (shown with the APP-6 HQ staff), **enforced command & control**
-(the פו"ש order interval gates manoeuvre — see rules decision 6 — with a live
-readout of distance to the command group, order frequency, and the turn the next
-orders arrive), **fixed faction colours** (BLUE always friendly/blue, RED always
+(the פו"ש order interval governs how often a force can be given *new* orders —
+see rules decision 6 — with a live readout of distance to the command group,
+order frequency, and the turn fresh orders become possible; a force out of
+contact goes on with the order it holds, drawn on its own side's map), **fixed faction colours** (BLUE always friendly/blue, RED always
 hostile/red, regardless of whose turn it is), and a **targeting phase**: each
 side marks one indirect-fire mission and one smoke screen per turn (see rules
 decision 8). A marked aim point is drawn only on its owner's map, with the turn
@@ -121,6 +122,7 @@ src/engine/
   types.ts          Units, soldiers, vehicles, mines, smoke, fire missions
   units.ts          Casualty bookkeeping + unit constructors
   upkeep.ts         Bleeding, smoke decay, end-of-turn flag reset
+  orders.ts         Standing orders: advance, engage, hold at the objective
   recording.ts      Battle recording: action log -> replayable game
   digest.ts         State fingerprints, for spotting rules drift in a recording
   game.ts           Game class: 7-phase turn loop, C2 gating, action API
@@ -191,7 +193,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Armour damage table (location → penetration → crew/component/critical effect)
 - Casualties: nq"p accumulation, 5-pt bleeding (1d4 / 5 turns), 8-pt neutralise,
   50%-attrition force neutralisation
-- Command & control order intervals by distance (פו"ש), gating manoeuvre
+- Command & control order intervals by distance (פו"ש), gating *new* orders
+- Standing orders: a force keeps to its last order until it is replaced
 - Battle recording: a game replays exactly from its seed and action log
 
 ## Rules decisions
@@ -217,16 +220,30 @@ on the stated reasoning, still awaiting the author's word.
    orders can reach it. Distance from the חפ"ק therefore measures how *stale*
    a force's orders are, not whether it may act at all.
 
-   > **Not yet built.** The code still implements the first reading — a force
-   > that cannot receive new orders may not be moved (it may still fire). That
-   > was an assumption, and this ruling supersedes it. Standing orders are the
-   > next task; see the design questions still open below.
+   **An order stands until it is replaced.** The engine carries it out every
+   turn for every force holding one — being in contact means the player *may*
+   rewrite the order, not that the force waits to be told again. Issuing a new
+   order is the override, and so is moving the force by hand.
 
-   Unchanged either way: the command group is never gated, fire is never gated,
-   the interval is recomputed live so bringing the חפ"ק forward restores a
-   force's tempo, and the whole module switches off with
-   `new Game({ seed, enforceC2: false })` —
-   [`game.ts`](src/engine/game.ts) `canManoeuvre` / `moveUnit`.
+   An order is deliberately small — a destination, a gait, and optionally a
+   force to engage — which covers the tasks named without inventing a task
+   language the document does not have. Reaching the objective drops the
+   destination, which is what turns "advance" into "hold at the objective".
+   The no-move-after-being-hit and half-pace-under-fire rules bite while it
+   executes, exactly as they do under the player's hand.
+   [`orders.ts`](src/engine/orders.ts), `Game.setStandingOrder` /
+   `Game.executeStandingOrders`.
+
+   Two consequences worth knowing. The פו"ש interval still governs *new*
+   orders, so a force out of contact keeps marching but cannot be redirected —
+   which is the whole point of the rule. And because the interval is measured
+   live, a force advancing towards its חפ"ק works its way back into the
+   every-turn band under its own orders.
+
+   Unchanged: the command group is never gated, fire is never gated, and the
+   interval module switches off with `new Game({ seed, enforceC2: false })` —
+   which governs the interval on new orders, not whether a force carries out
+   the ones it has.
 7. ⚠️ **Cover cuts the hit chance proportionally, not by percentage points**
    (decided 2026-08-12 from the document, worth a sanity check). The source
    reads `-50% מסיכויי הפגיעה` — "-50% *of* the hit chance" — and the partitive

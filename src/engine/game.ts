@@ -30,6 +30,12 @@ import { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectF
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
 import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
+import {
+  hasArrived,
+  stepTowards,
+  type StandingOrder,
+  type StandingOrderExecution,
+} from "./orders.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -97,6 +103,16 @@ export class Game {
 
   /** Turn each unit last received orders, for the C2 interval rule. */
   private lastOrderTurn = new Map<string, number>();
+
+  /** The order each force is still working to, until new ones reach it. */
+  private standingOrders = new Map<string, StandingOrder>();
+
+  /**
+   * Set while the engine is carrying out a standing order. Execution bypasses
+   * the C2 gate — the whole point is that a force out of contact still acts —
+   * and must not stamp the order clock, since no new order was received.
+   */
+  private executingOrders = false;
 
   /**
    * Ids are numbered per game, not per process: two games from the same seed
@@ -330,8 +346,8 @@ export class Game {
     // C2: manoeuvre needs orders. The interval is measured from where the unit
     // stands when the order reaches it, so this is checked before it moves —
     // and the order is only stamped once the move actually goes through.
-    const needsNewOrders = !this.isUnderOrders(unitId);
-    if (!this.canManoeuvre(unitId)) {
+    const needsNewOrders = !this.executingOrders && !this.isUnderOrders(unitId);
+    if (!this.executingOrders && !this.canManoeuvre(unitId)) {
       throw new Error(
         `${unitId} has received no orders this turn (next orders on turn ${this.nextOrderTurn(unitId)})`,
       );
@@ -349,6 +365,13 @@ export class Game {
       );
     }
     if (needsNewOrders && this.canReceiveOrders(unitId)) this.lastOrderTurn.set(unitId, this.turn);
+    if (!this.executingOrders) {
+      // Moving a force by hand overrides where its orders were sending it.
+      const standing = this.standingOrders.get(unitId);
+      if (standing?.destination) {
+        this.standingOrders.set(unitId, { ...standing, destination: undefined });
+      }
+    }
     const from = unit.position;
     unit.position = { ...to };
     unit.movedThisTurn += dist;
@@ -507,6 +530,121 @@ export class Game {
     return due.map((m) =>
       this.layScreen(m.target, m.radius, SMOKE_DURATION_TURNS[m.source]),
     );
+  }
+
+  // ---- standing orders ----
+
+  /** The order `unit` is currently working to, if any. */
+  standingOrderFor(unitId: string): StandingOrder | undefined {
+    return this.standingOrders.get(unitId);
+  }
+
+  /**
+   * Give a force its orders. Refused when the פו"ש interval says no new orders
+   * can reach it — which is precisely when it goes on with the ones it has.
+   *
+   * Issuing does not move anything: {@link executeStandingOrders} carries the
+   * order out, so a force in contact and a force out of contact are driven the
+   * same way and only differ in who may rewrite the order.
+   */
+  setStandingOrder(unitId: string, order: Omit<StandingOrder, "issuedTurn">): boolean {
+    const unit = this.getUnit(unitId);
+    if (!this.isUnderOrders(unitId) && !this.canReceiveOrders(unitId)) return false;
+    this.standingOrders.set(unitId, { ...cloneForRecord(order), issuedTurn: this.turn });
+    this.lastOrderTurn.set(unitId, this.turn);
+    this.journal({ kind: "setStandingOrder", unitId, order: cloneForRecord(order) });
+    void unit;
+    return true;
+  }
+
+  /**
+   * Carry out the standing orders of `side` for the current phase: advance in
+   * the movement phase, engage in the fire phase.
+   *
+   * **An order stands until it is replaced** (rules decision 6). Every force
+   * holding one is driven, whether or not its commander can reach it this
+   * turn — being in contact means the player *may* rewrite the order, not that
+   * the force waits to be told again. Issuing a new order is the override; so
+   * is moving the force directly.
+   *
+   * Execution is journalled as the single decision it is; the moves and shots
+   * it produces are derived, so a replay reproduces them exactly. Calling it
+   * twice in a phase is harmless — the movement budget and the one-action rule
+   * absorb the second call.
+   */
+  executeStandingOrders(side: Side): StandingOrderExecution[] {
+    const executions: StandingOrderExecution[] = [];
+    const doing = this.phase === "movement" || this.phase === "combat";
+
+    if (doing) {
+      this.executingOrders = true;
+      try {
+        this.internally(() => {
+          for (const unit of this.units.filter((u) => u.side === side)) {
+            const order = this.standingOrders.get(unit.id);
+            if (!order) continue;
+            const done =
+              this.phase === "movement"
+                ? this.advanceUnderOrder(unit, order)
+                : this.engageUnderOrder(unit, order);
+            if (done) executions.push(done);
+          }
+        });
+      } finally {
+        this.executingOrders = false;
+      }
+    }
+
+    this.journal({ kind: "executeStandingOrders", side });
+    return executions;
+  }
+
+  /** One force's bound towards its objective. */
+  private advanceUnderOrder(unit: Unit, order: StandingOrder): StandingOrderExecution | null {
+    const base: StandingOrderExecution = { unitId: unit.id };
+    if (!order.destination) return null; // holding
+    if (unit.neutralized && !unit.canOnlyRetreat) return { ...base, reason: "neutralised" };
+    if (unit.movementBlocked) return { ...base, reason: "hit last turn" };
+
+    const profile = MOVEMENT_PROFILES[order.gait];
+    const cap =
+      profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1) -
+      unit.movedThisTurn;
+    if (cap <= 0) return { ...base, reason: "no movement left" };
+
+    const to = stepTowards(unit.position, order.destination, cap);
+    const result = this.moveUnit(unit.id, to, order.gait);
+
+    const arrived = hasArrived(unit.position, order.destination);
+    // Reaching the objective turns "advance" into "hold at the objective".
+    if (arrived) this.standingOrders.set(unit.id, { ...order, destination: undefined });
+    return { ...base, moved: { to, arrived, result } };
+  }
+
+  /** One force engaging the enemy its order names. */
+  private engageUnderOrder(unit: Unit, order: StandingOrder): StandingOrderExecution | null {
+    const base: StandingOrderExecution = { unitId: unit.id };
+    if (!order.engage) return null;
+    if (unit.firedThisTurn) return { ...base, reason: "already acted" };
+    if (unit.neutralized) return { ...base, reason: "neutralised" };
+
+    const target = this.units.find((u) => u.id === order.engage!.targetId);
+    if (!target || target.neutralized) return { ...base, reason: "target gone" };
+
+    const result = this.fire(unit.id, target.id, {
+      weapon: order.engage.weapon,
+      cover: target.inFullCover ? "full" : "none",
+    });
+    if (!result.fired) return { ...base, reason: result.reason ?? "could not fire" };
+    return {
+      ...base,
+      engaged: {
+        targetId: target.id,
+        hits: result.hits,
+        newCasualties: result.newCasualties,
+        hitChance: result.hitChance,
+      },
+    };
   }
 
   // ---- command & control ----

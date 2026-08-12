@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import type {
   Mine,
+  Point,
   PendingFireMission,
   PendingSmokeMission,
   Side,
@@ -32,6 +33,8 @@ interface MapViewProps {
   pendingSmoke: readonly PendingSmokeMission[];
   /** Charges this side knows about: its own, plus any enemy ones it has found. */
   mines: readonly Mine[];
+  /** Where this side's forces have been ordered to — its own orders only. */
+  standingOrders: readonly { from: Point; to: Point; unitId: string }[];
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
@@ -95,6 +98,14 @@ export function MapView(props: MapViewProps) {
           className="move-range"
         />
       )}
+
+      {/* Where each force has been ordered to, and how far it still has to go. */}
+      {props.standingOrders.map((o) => (
+        <g key={o.unitId} className="order-line">
+          <line x1={o.from.x} y1={o.from.y} x2={o.to.x} y2={o.to.y} />
+          <circle cx={o.to.x} cy={o.to.y} r={8} />
+        </g>
+      ))}
 
       {/* How far the selected force can press an assault home. */}
       {phase === "combat" && selected && selected.side === viewingSide && props.assaultReach != null && (

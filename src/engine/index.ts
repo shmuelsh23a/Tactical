@@ -103,6 +103,13 @@ export {
   type RecordingVerification,
 } from "./recording.js";
 export { stateDigest, canonicalJson, fnv1a } from "./digest.js";
+export {
+  hasArrived,
+  stepTowards,
+  ARRIVAL_TOLERANCE_M,
+  type StandingOrder,
+  type StandingOrderExecution,
+} from "./orders.js";
 
 // Turn engine
 export {
