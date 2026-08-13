@@ -3,24 +3,43 @@ import {
   fitSoldiers,
   fullStrength,
   replayGame,
-  replayWithOutcomes,
   verifyRecording,
   type GameRecording,
+  type Side,
 } from "../engine/index.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
-import { describeAction, describeOutcome, recordingExtent, unitNames } from "./debriefText.js";
-import { isGone } from "./hotseat.js";
+import {
+  describeAction,
+  describeOutcome,
+  recordingExtent,
+  unitNames,
+  type Lens,
+} from "./debriefText.js";
+import {
+  actionVisibleTo,
+  lensFor,
+  outcomeVisibleTo,
+  replayForReview,
+  unitSides,
+  UMPIRE_LENS,
+  type Viewpoint,
+} from "./debriefView.js";
+import { isGone, sideView } from "./hotseat.js";
 
 /**
  * After-action review (תחקיר). Replays a saved battle and steps through it.
  *
- * The board is shown as the umpire saw it — both sides, no fog-of-war — since
- * the point of a debrief is to see what each side could not.
+ * The board can be shown as the umpire saw it — both sides, no fog-of-war —
+ * or **as one side saw it**: its own forces, the enemy only where it had been
+ * detected, and a timeline with the enemy's decisions taken out of it
+ * (backlog item 14; see [`debriefView.ts`](./debriefView.ts)). The point of a
+ * per-side review is to see what that side could *not*, so it must not teach
+ * the reader anything they never observed.
  *
  * State at step N is produced by replaying the first N actions from the seed
  * rather than by storing snapshots. That is cheap for the sizes a hotseat game
  * produces, and it keeps the debrief honest: what is on screen is what the
- * engine actually does with that recording.
+ * engine actually does with that recording — the contact ledger included.
  */
 export function Debrief({
   recording,
@@ -31,24 +50,52 @@ export function Debrief({
 }) {
   const total = recording.actions.length;
   const [index, setIndex] = useState(total);
+  const [viewpoint, setViewpoint] = useState<Viewpoint>("umpire");
 
   const names = useMemo(() => unitNames(recording), [recording]);
+  const sides = useMemo(() => unitSides(recording), [recording]);
   const extent = useMemo(() => recordingExtent(recording), [recording]);
   const game = useMemo(() => replayGame(recording, { upToAction: index }), [recording, index]);
-  // Outcomes are fixed by the recording, so the whole battle is replayed once
-  // for them; only the board state is re-derived per step.
-  const steps = useMemo(() => replayWithOutcomes(recording).steps, [recording]);
+  // Outcomes and the contact ledger are fixed by the recording, so the whole
+  // battle is replayed once for both; only the board state is re-derived per
+  // step.
+  const { steps, contactsAfter } = useMemo(() => replayForReview(recording), [recording]);
   // A recording carries fingerprints of the state it produced when it was made.
   // If replay no longer matches them, the rules have moved under it — the
   // decisions still replay, but this is no longer the battle that was fought.
   const drift = useMemo(() => verifyRecording(recording), [recording]);
-  const outcomeAt = (i: number) => {
+
+  /** A recording played without the knowledge model has no per-side picture. */
+  const perSidePossible = game.trackIntel;
+  const side: Side | null = viewpoint === "umpire" ? null : viewpoint;
+
+  const lensAt = (i: number): Lens =>
+    side ? lensFor(side, i, contactsAfter, sides) : UMPIRE_LENS;
+
+  /** One timeline row, or null where the viewer would have seen nothing. */
+  const rowAt = (i: number) => {
+    const action = recording.actions[i];
     const step = steps[i];
-    return step ? describeOutcome(step.outcome, names) : "";
+    if (!action || !step) return null;
+    const lens = lensAt(i);
+    if (side && !actionVisibleTo(action, side, lens, sides)) return null;
+    const outcome =
+      !side || outcomeVisibleTo(action, side, sides, lens)
+        ? describeOutcome(step.outcome, names, lens)
+        : "";
+    // An enemy step whose every line was redacted is not a step this side saw.
+    if (side && action.kind === "executeStandingOrders" && action.side !== side && !outcome) {
+      return null;
+    }
+    return { text: describeAction(action, names), outcome };
   };
 
-  const units = game.units.filter((u) => !isGone(u));
-  const last = index > 0 ? recording.actions[index - 1] : null;
+  // The board: ground truth for the umpire, the side's own picture otherwise.
+  const view = side ? sideView(game, side) : null;
+  const units = view ? view.units : game.units.filter((u) => !isGone(u));
+  const staleIds = view ? view.staleIds : new Set<string>();
+  const orderOwners = side ? game.units.filter((u) => u.side === side) : game.units;
+  const last = index > 0 ? rowAt(index - 1) : null;
   const noop = () => {};
 
   return (
@@ -84,19 +131,21 @@ export function Debrief({
             width={extent.width}
             height={extent.height}
             units={units}
-            viewingSide="BLUE"
+            viewingSide={side ?? "BLUE"}
             selectedId={null}
             phase="other"
             moveCap={null}
-            staleContactIds={new Set()}
+            staleContactIds={staleIds}
             awaitingOrderIds={new Set()}
             assaultReach={null}
             smoke={game.smoke}
-            pendingFire={game.pendingFire}
-            pendingSmoke={game.pendingSmoke}
-            mines={game.mines}
-            standingOrders={game.units.flatMap((u) =>
-              orderOverlay(game.standingOrderFor(u.id), u, game.units),
+            pendingFire={side ? game.pendingFire.filter((m) => m.side === side) : game.pendingFire}
+            pendingSmoke={
+              side ? game.pendingSmoke.filter((m) => m.side === side) : game.pendingSmoke
+            }
+            mines={side ? game.mines.filter((m) => m.side === side || m.detected) : game.mines}
+            standingOrders={orderOwners.flatMap((u) =>
+              orderOverlay(game.standingOrderFor(u.id), u, units),
             )}
             onSelectUnit={noop}
             onFireAt={noop}
@@ -106,6 +155,36 @@ export function Debrief({
         </div>
 
         <aside className="sidebar">
+          <div className="panel">
+            <h3>נקודת מבט</h3>
+            <div className="seg">
+              <button
+                className={viewpoint === "umpire" ? "on" : ""}
+                onClick={() => setViewpoint("umpire")}
+              >
+                מנחה
+              </button>
+              {(["BLUE", "RED"] as Side[]).map((s) => (
+                <button
+                  key={s}
+                  className={viewpoint === s ? "on" : ""}
+                  disabled={!perSidePossible}
+                  title={
+                    perSidePossible ? undefined : "ההקלטה נוצרה ללא מודל ידיעה — רק תצוגת מנחה"
+                  }
+                  onClick={() => setViewpoint(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <p className="hint">
+              {side
+                ? "הקרב כפי שצד זה ראה אותו: כוחותיו, אויב רק היכן שזוהה, ורק פעולות שנצפו."
+                : "תמונת המנחה: שני הצדדים וכל התוצאות."}
+            </p>
+          </div>
+
           <div className="panel">
             <h3>ניווט</h3>
             <div className="seg">
@@ -135,27 +214,31 @@ export function Debrief({
             />
             <div className="unit-card">
               <div className="unit-name">
-                {last ? describeAction(last, names) : "לפני תחילת הקרב"}
+                {last ? last.text : index > 0 ? "פעולה שצד זה לא ראה" : "לפני תחילת הקרב"}
               </div>
-              {index > 0 && outcomeAt(index - 1) && (
-                <div className="outcome">{outcomeAt(index - 1)}</div>
-              )}
+              {last?.outcome && <div className="outcome">{last.outcome}</div>}
               <div className="c2-line">שלב: {game.phase}</div>
             </div>
 
             <div className="roster">
-              <h4>מצב הכוחות</h4>
+              <h4>{side ? "תמונת המצב של הצד" : "מצב הכוחות"}</h4>
               <ul>
-                {game.units.map((u) => (
+                {units.map((u) => (
                   <li key={u.id} className={u.neutralized ? "dead" : ""}>
                     <span className={`chip chip-${u.side.toLowerCase()}`}>{u.side}</span> {u.name} —{" "}
-                    {u.kind === "vehicle"
-                      ? u.vehicle?.destroyed
+                    {side && u.side !== side ? (
+                      // A contact is a report: this side knows a force is there,
+                      // not how many of them are still standing.
+                      <span className="muted">{staleIds.has(u.id) ? "דיווח קודם" : "מזוהה"}</span>
+                    ) : u.kind === "vehicle" ? (
+                      u.vehicle?.destroyed
                         ? "הושמד"
                         : u.vehicle?.mobilityKilled
                           ? "נכשל ניוד"
                           : "כשיר"
-                      : `${fitSoldiers(u)}/${fullStrength(u)}`}
+                    ) : (
+                      `${fitSoldiers(u)}/${fullStrength(u)}`
+                    )}
                   </li>
                 ))}
               </ul>
@@ -165,18 +248,22 @@ export function Debrief({
           <div className="log">
             <h3>יומן פעולות</h3>
             <ul>
-              {recording.actions.map((action, i) => (
-                <li
-                  key={i}
-                  className={`timeline-item ${i < index ? "done" : ""} ${
-                    i === index - 1 ? "current" : ""
-                  }`}
-                  onClick={() => setIndex(i + 1)}
-                >
-                  <span className="log-turn">{i + 1}</span> {describeAction(action, names)}
-                  {outcomeAt(i) && <div className="outcome">{outcomeAt(i)}</div>}
-                </li>
-              ))}
+              {recording.actions.map((_, i) => {
+                const row = rowAt(i);
+                if (!row) return null;
+                return (
+                  <li
+                    key={i}
+                    className={`timeline-item ${i < index ? "done" : ""} ${
+                      i === index - 1 ? "current" : ""
+                    }`}
+                    onClick={() => setIndex(i + 1)}
+                  >
+                    <span className="log-turn">{i + 1}</span> {row.text}
+                    {row.outcome && <div className="outcome">{row.outcome}</div>}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </aside>

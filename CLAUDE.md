@@ -76,6 +76,11 @@ one it is in your reply, too.
   rather than where it is. When adding anything the player looks at, ask which
   of the two it should read; when adding anything that *resolves*, use the
   truth (firing at a stale mark is meant to miss).
+- **The debrief must not teach what a side never saw.** Anything added to the
+  review goes through [`debriefView.ts`](src/app/debriefView.ts) — which action
+  a side may see, and what it may be told the action produced (rules decision
+  13). Adding a new `RecordedAction` means adding it to both switches there, or
+  it silently defaults to hidden.
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.

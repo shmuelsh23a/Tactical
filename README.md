@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (216 tests: engine + app narration)
+npm test             # run the test suite (229 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -105,8 +105,12 @@ it to the same state, ids and RNG position included.
 
 **טען לתחקיר** loads one back into a **debrief** ([`Debrief.tsx`](src/app/Debrief.tsx)):
 step or scrub through the battle action by action, with a narrated timeline you
-can click to jump. The board is shown as the umpire saw it — both sides, no
-fog-of-war — since the point of a debrief is to see what each side could not.
+can click to jump. It can be read through three sets of eyes — **the umpire's**
+(both sides, every outcome, the default) or **either side's**, which shows that
+side's own forces, the enemy only where it had been detected, and a timeline
+with everything it never saw taken out of it: the enemy's orders, its
+undetected forces, and the results of shots into ground it could not observe
+(rules decision 13).
 State at step N is replayed from the seed rather than stored as snapshots, so
 what is on screen is what the engine actually does with that recording.
 
@@ -148,9 +152,6 @@ Engine capability the UI does not reach yet — the next obvious work:
   nothing on the map suggests where cover would be.
 - **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
   "did not move or fire" flag rather than a feature of the ground.
-- **The debrief is umpire-view only** — it shows both sides and every outcome.
-  Reviewing a battle as one side saw it needs a knowledge model the app does
-  not have (backlog item 14).
 
 ## Layout
 
@@ -193,6 +194,7 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   App.tsx           Controller: turn loop, activations, selection, actions
   Debrief.tsx       After-action review: step through a saved recording
   debriefText.ts    Hebrew narration: recorded actions, orders, refusals, extent
+  debriefView.ts    What each side may be shown of its own battle (decision 13)
   hotseat.ts        Activation order, fog-of-war, victory check
   scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
@@ -433,6 +435,29 @@ on the stated reasoning, still awaiting the author's word.
     inside 20 m, and a scout 40%. What camouflage really buys is cancelling out
     the bonuses an ordinary observer brings — but not a scout's.
 
+13. ⚠️ **What a side may be told in its own debrief** (assumed 2026-08-13).
+    Reviewing a battle as one side saw it needs a line drawn that the document
+    never discusses, because the engine returns ground truth and the review
+    must not teach a player what they never observed. The line drawn is:
+
+    - **Its own decisions, always** — orders, postures, fire missions, UAV
+      sweeps. The enemy's never: an order is not something you can watch.
+    - **The enemy's forces only where it held a contact**, from the same ledger
+      the battle was played on (decision 12). A force never detected is absent
+      from the review rather than merely unmentioned, and a stale contact is
+      drawn where it was last seen.
+    - **Being fired on is always known** — you know you are under fire, and
+      firing puts the firer on your map anyway.
+    - **Your own casualties are always known**; the enemy's only for a force
+      you can currently see. So a side that fires on a stale mark is told the
+      shot was taken, not what it achieved.
+    - **The turn structure is common to the table** — turns, phases and
+      initiative are the umpire's bookkeeping, not intelligence.
+
+    The umpire's view is unchanged and remains the default. A recording made
+    without the knowledge model has no per-side picture to show, and the
+    viewpoint buttons are disabled for it.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -549,14 +574,18 @@ Each is intended to be an independent, toggleable module:
       rules already permit (safest — the engine stays the referee), or may also
       argue for outcomes the tables do not cover.
 
-14. **Per-side debrief** — review a battle as one side saw it, not as the
-    umpire did. Harder than it looks: the engine returns ground truth, so a
-    player must not learn from the debrief what they never observed — an exact
-    enemy casualty count from a shot into smoke, a charge that was never found,
-    a force that was never spotted. That needs a real knowledge model per side
-    (what was seen, when, and with what confidence), where today's fog-of-war is
-    a 300 m reveal set recomputed each frame. Pairs with recording *observations*
-    alongside decisions.
+14. ✅ **Per-side debrief** — the debrief reads through the umpire's eyes or
+    either side's. A side sees its own forces, the enemy only where it held a
+    contact (drawn where it was last seen), and a timeline with the enemy's
+    decisions and its own unobserved results taken out — rules decision 13
+    draws that line, and [`debriefView.ts`](src/app/debriefView.ts) enforces it.
+
+    The knowledge is **replayed, not stored**, exactly like every other outcome:
+    one pass over the recording rebuilds the contact ledger per step (rules
+    decision 12), so what a side is shown cannot disagree with what the engine
+    gave it during the battle. What is still missing is a side's *own* estimate
+    of what it achieved — it is told the casualties it caused to a force it can
+    see, which is ground truth rather than a report from the field.
 
     Rules decision 12 is the start of this: the engine now keeps a contact
     ledger per side, so "what BLUE knew at action 40" is already replayable.

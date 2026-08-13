@@ -93,6 +93,21 @@ const at = (p: { x: number; y: number }) => `(${Math.round(p.x)}, ${Math.round(p
 export type NameOf = (id: string) => string;
 
 /**
+ * What the reader of a line is entitled to know about a force. The umpire
+ * knows everything; a side knows its own forces and whatever it has picked up
+ * (see [`debriefView.ts`](./debriefView.ts)).
+ */
+export interface Lens {
+  /** True for a force the reader owns. */
+  isOwn(unitId: string): boolean;
+  /** True for a force the reader owns or holds a contact on. */
+  mayKnow(unitId: string): boolean;
+}
+
+/** The umpire's lens — ground truth, which is what the engine returns. */
+export const FULL_VIEW: Lens = { isOwn: () => true, mayKnow: () => true };
+
+/**
  * The order a force is working to, in one line: the objective, the gait, and
  * the enemy it was told to engage. Used for the live log, the selected-force
  * card and the debrief, so an order is worded the same wherever it is read.
@@ -206,7 +221,11 @@ const pct = (p: number) => `${Math.round(p * 100)}%`;
  * Returns an empty string when there is nothing to report, so the timeline
  * stays quiet for setup and for phase steps where nothing landed.
  */
-export function describeOutcome(outcome: ActionOutcome, names: Map<string, string>): string {
+export function describeOutcome(
+  outcome: ActionOutcome,
+  names: Map<string, string>,
+  lens: Lens = FULL_VIEW,
+): string {
   const who = (id: string) => names.get(id) ?? id;
 
   switch (outcome.kind) {
@@ -223,8 +242,10 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
       for (const screen of outcome.smokeArrived) {
         parts.push(`מסך עשן ירד (רדיוס ${screen.radius}מ')`);
       }
-      // The umpire's view of who picked whom up — a player never sees this.
+      // Who picked whom up. A side sees its own reports; that the enemy has
+      // spotted *it* is precisely what it would not know.
       for (const seen of outcome.observed ?? []) {
+        if (!lens.isOwn(seen.observerId)) continue;
         parts.push(`${who(seen.observerId)} איתר את ${who(seen.targetId)}`);
       }
       for (const impact of outcome.resolved) {
@@ -234,7 +255,8 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
             impact.dispersion.impact.y - impact.aim.y,
           ),
         );
-        const caught = impact.blast.targets.filter((t) => t.caught);
+        // The fall of shot is plain to everyone; who it caught is not.
+        const caught = impact.blast.targets.filter((t) => t.caught && lens.mayKnow(t.unitId));
         const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
         const hit = caught.length
           ? `, פגע ב${caught.map((t) => who(t.unitId)).join(", ")}${
@@ -328,6 +350,7 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
     // derived by the replay, so each force's bound is reported here.
     case "executeStandingOrders":
       return outcome.executions
+        .filter((done) => lens.mayKnow(done.unitId))
         .filter((done) => !isRoutineOrderReason(done.reason))
         .map((done) => describeExecution(done, who))
         .join(" · ");
