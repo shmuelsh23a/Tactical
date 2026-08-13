@@ -63,6 +63,13 @@ one it is in your reply, too.
   consequence worth remembering: a hotseat battle journals *orders*, not moves,
   so anything that reads a recording (extent, narration, digests) has to work
   from the order.
+- **The engine is the umpire; what a side *knows* is a separate ledger.**
+  `game.units` is ground truth and must never be drawn to a player directly —
+  the hotseat renders `sideView()` ([`hotseat.ts`](src/app/hotseat.ts)), built
+  from `game.contactsFor(side)`, so an enemy shows up where it was last seen
+  rather than where it is. When adding anything the player looks at, ask which
+  of the two it should read; when adding anything that *resolves*, use the
+  truth (firing at a stale mark is meant to miss).
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.

@@ -33,9 +33,9 @@ export function buildActivations(initiativeOrder: Side[]): Activation[] {
 export const SPOT_RANGE_M = 300;
 
 /**
- * Fog-of-war for the slice: a side knows an enemy unit when any of its own
- * live units is within spotting range. (Probabilistic / hidden detection and
- * terrain LOS come in a later iteration.)
+ * Fog-of-war without the knowledge model: a side knows an enemy unit when any
+ * of its own live units is within spotting range. Kept for a game built with
+ * `trackIntel: false`, where the engine records no contacts to draw instead.
  */
 export function computeRevealed(game: Game, side: Side, spotRange = SPOT_RANGE_M): Set<string> {
   const friendly = game.units.filter((u) => u.side === side && !isGone(u));
@@ -47,6 +47,50 @@ export function computeRevealed(game: Game, side: Side, spotRange = SPOT_RANGE_M
     }
   }
   return revealed;
+}
+
+/** The board as one side is entitled to see it. */
+export interface SideView {
+  /**
+   * What to draw: this side's own forces as they are, and each enemy force it
+   * has picked up — drawn **where it was last seen**, which is not necessarily
+   * where it is. Anything never detected is simply absent.
+   */
+  units: Unit[];
+  /** Contacts whose last report is older than this turn: marks, not sightings. */
+  staleIds: Set<string>;
+}
+
+/**
+ * What `side` may be shown. With the knowledge model on this is the engine's
+ * contact ledger — the document's own detections, reflected onto that player's
+ * map — and an enemy that has moved since it was last seen keeps its mark
+ * where the report put it. Without it, the flat spotting radius stands and
+ * every revealed enemy is shown where it truly is.
+ */
+export function sideView(game: Game, side: Side): SideView {
+  const own = game.units.filter((u) => u.side === side && !isGone(u));
+  const staleIds = new Set<string>();
+
+  if (!game.trackIntel) {
+    const revealed = computeRevealed(game, side);
+    return {
+      units: [...own, ...game.units.filter((u) => u.side !== side && !isGone(u) && revealed.has(u.id))],
+      staleIds,
+    };
+  }
+
+  const enemies: Unit[] = [];
+  for (const contact of game.contactsFor(side)) {
+    const truth = game.units.find((u) => u.id === contact.unitId);
+    if (!truth || isGone(truth)) continue;
+    const seenNow = contact.lastSeenTurn >= game.turn;
+    if (!seenNow) staleIds.add(truth.id);
+    // A copy, positioned by the report rather than by the truth — the player
+    // must not read a force's current position off a stale contact.
+    enemies.push(seenNow ? truth : { ...truth, position: { ...contact.lastKnownPosition } });
+  }
+  return { units: [...own, ...enemies], staleIds };
 }
 
 /** A destroyed vehicle is removed from play; neutralised infantry stays visible. */

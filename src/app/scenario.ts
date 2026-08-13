@@ -14,7 +14,9 @@ export interface Scenario {
  * is made within a couple of bounds (fog-of-war reveals the enemy on approach).
  */
 export function buildDemoScenario(seed = 2026): Scenario {
-  const game = new Game({ seed });
+  // Played with the knowledge model on: each side sees what it has detected —
+  // the document's own rolls — rather than everything within a radius.
+  const game = new Game({ seed, trackIntel: true });
 
   // BLUE — a platoon attacking from the south. The player is the platoon
   // leader: they manoeuvre the squads, and control their own command group.

@@ -88,7 +88,7 @@ export function Debrief({
             selectedId={null}
             phase="other"
             moveCap={null}
-            revealedEnemyIds={new Set(units.map((u) => u.id))}
+            staleContactIds={new Set()}
             awaitingOrderIds={new Set()}
             assaultReach={null}
             smoke={game.smoke}

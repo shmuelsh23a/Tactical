@@ -28,9 +28,9 @@ import {
 import { buildDemoScenario, type Scenario } from "./scenario.js";
 import {
   buildActivations,
-  computeRevealed,
   isGone,
   sideDefeated,
+  sideView,
   type Activation,
   type ActivationPhase,
   type LogEntry,
@@ -129,10 +129,9 @@ export function App() {
   const viewingSide: Side = currentActivation?.side ?? activations[0]?.side ?? "BLUE";
   const enginePhase: ActivationPhase | "other" = currentActivation?.phase ?? "other";
 
-  const revealed = computeRevealed(game, viewingSide);
-  const visibleUnits = game.units.filter(
-    (u) => !isGone(u) && (u.side === viewingSide || revealed.has(u.id)),
-  );
+  // Everything the player sees comes from here: their own forces, plus the
+  // enemy they have actually detected, each drawn where it was last seen.
+  const { units: visibleUnits, staleIds } = sideView(game, viewingSide);
   const selected = visibleUnits.find((u) => u.id === selectedId) ?? null;
   const selectedOwn = selected && selected.side === viewingSide ? selected : null;
 
@@ -581,7 +580,7 @@ export function App() {
               selectedId={selectedId}
               phase={enginePhase}
               moveCap={moveCap}
-              revealedEnemyIds={revealed}
+              staleContactIds={staleIds}
               awaitingOrderIds={awaitingOrders}
               assaultReach={
                 enginePhase === "combat" && combatAction === "assault" && selectedOwn
@@ -594,7 +593,7 @@ export function App() {
               mines={knownMines}
               standingOrders={game.units
                 .filter((u) => u.side === viewingSide)
-                .flatMap((u) => orderOverlay(game.standingOrderFor(u.id), u, game.units))}
+                .flatMap((u) => orderOverlay(game.standingOrderFor(u.id), u, visibleUnits))}
               onSelectUnit={handleSelect}
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
@@ -812,7 +811,10 @@ export function App() {
                           מקלע
                         </button>
                       </div>
-                      <p className="hint">בחר כוח, ולחץ על אויב מסומן כדי לירות.</p>
+                      <p className="hint">
+                        בחר כוח, ולחץ על אויב מסומן כדי לירות. מוצגים רק כוחות שזוהו;
+                        סימון דהוי הוא דיווח מתור קודם — ייתכן שהכוח כבר אינו שם.
+                      </p>
                     </>
                   ) : (
                     <>

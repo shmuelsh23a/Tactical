@@ -114,6 +114,11 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .no-orders-ring {
   fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 5;
 }
+/* A contact last seen on an earlier turn: the mark, not the force. */
+.token-stale { opacity: 0.55; }
+.stale-ring {
+  fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4;
+}
 .hq-staff { stroke: #c7d0da; stroke-width: 1.5; }
 
 .tag {

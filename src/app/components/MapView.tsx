@@ -59,7 +59,11 @@ interface MapViewProps {
   phase: ActivationPhase | "other";
   /** Movement range circle radius (metres) for the selected unit, if moving. */
   moveCap: number | null;
-  revealedEnemyIds: Set<string>;
+  /**
+   * Enemy forces drawn from a stale contact: the mark is where this side last
+   * saw them, not where they are. Empty in the umpire's (debrief) view.
+   */
+  staleContactIds: Set<string>;
   /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
   awaitingOrderIds: Set<string>;
   /** Assault reach (metres) to ring the selected force with, when assaulting. */
@@ -204,6 +208,7 @@ export function MapView(props: MapViewProps) {
           selected={u.id === selectedId}
           phase={phase}
           awaitingOrders={props.awaitingOrderIds.has(u.id)}
+          stale={props.staleContactIds.has(u.id)}
           onSelectUnit={props.onSelectUnit}
           onFireAt={props.onFireAt}
         />
@@ -249,6 +254,8 @@ interface TokenProps {
   selected: boolean;
   phase: ActivationPhase | "other";
   awaitingOrders: boolean;
+  /** A last-known mark rather than a sighting — drawn faded, with a query ring. */
+  stale: boolean;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
 }
@@ -259,6 +266,7 @@ function Token({
   selected,
   phase,
   awaitingOrders,
+  stale,
   onSelectUnit,
   onFireAt,
 }: TokenProps) {
@@ -280,6 +288,7 @@ function Token({
     selected ? "token-selected" : "",
     unit.neutralized ? "token-neutralised" : "",
     awaitingOrders ? "token-no-orders" : "",
+    stale ? "token-stale" : "",
     !friendly && phase === "combat" ? "token-targetable" : "",
   ].join(" ");
 
@@ -293,6 +302,10 @@ function Token({
     <g className={cls} onClick={handleClick}>
       {selected && (
         <circle cx={unit.position.x} cy={unit.position.y} r={22} className="selection-ring" />
+      )}
+      {/* A contact last seen on an earlier turn: it may no longer be there. */}
+      {stale && (
+        <circle cx={unit.position.x} cy={unit.position.y} r={20} className="stale-ring" />
       )}
       {/* Awaiting orders from the חפ"ק — cannot manoeuvre this turn. */}
       {awaitingOrders && (

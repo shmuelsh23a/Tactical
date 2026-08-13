@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (171 tests: engine + app narration)
+npm test             # run the test suite (183 tests: engine + app narration)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -41,8 +41,8 @@ the engine in **hotseat** mode, using **NATO symbols** (via the `milsymbol`
 library) for all units. Affiliation is drawn relative to the **viewing** side.
 
 Implemented in the slice: initiative roll, hotseat handoff overlay (hides the
-board between players so fog-of-war isn't leaked), per-side fog-of-war (an enemy
-is shown once a friendly unit is within 300 m), unit selection with a movement
+board between players so fog-of-war isn't leaked), **per-side fog-of-war on
+what each side has actually detected** (rules decision 12), unit selection with a movement
 range ring, range-validated movement with detection, direct fire (small-arms /
 MG and tank round) with a combat log, casualty/neutralisation display, **one
 fire action per force per fire phase**, a **command group (חפ"ק)** per side that
@@ -66,6 +66,16 @@ own screen size (rules decision 9); a screen in flight shows its future
 footprint so it can be sited on a line. **Smoke blocks fire into and through it**
 (אין ירי לתוך\דרך עשן) — the engine derives line of sight from the screens on
 the map rather than the app asserting it.
+
+**Fog-of-war is the document's own detections, not a radius.** The document has
+the umpire reflect גילויים onto each player's map, so a side sees the enemy it
+has picked up — by the movement table's rolls (70% at a walk, 50% at a run,
+within 300 m), by a UAV sweep, or by being shot at — and nothing else. A contact
+is drawn **where it was last seen**: a force that has moved since leaves a faded
+mark behind, and firing at that mark is resolved against the truth, so it can
+turn up out of range. A bound is rolled in both directions, which is what keeps
+a defender that never moves from being blind (rules decision 12 — its open
+questions are worth a read).
 
 RED also defends behind a **minefield** in the demo scenario. A side sees its own
 charges; the enemy's only once they have been spotted, and a force that walks
@@ -118,9 +128,16 @@ Engine capability the UI does not reach yet — the next obvious work:
   indirect-fire missions would all need the order model widened first.
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
-- **Fog-of-war is a flat 300 m radius** (`hotseat.ts`), with no terrain and no
-  probabilistic spotting. Line of sight now accounts for smoke, but nothing else
-  obstructs it.
+- **Nothing but movement, fire and UAVs generates a contact.** A force sitting
+  in position observes only when an enemy moves within 300 m of it; there is no
+  standing observation, no observation post, and no scouting action. Nor is a
+  contact ever *lost* — the mark stays on the map for the rest of the battle,
+  going stale but never being cleared.
+- **Hidden forces are not modelled.** The document's movement table separates
+  "אויב **גלוי**" at 300 m from "אויב **חבוי**" within 20 m, but nothing in the
+  engine makes a force hidden — every force is treated as visible, and the 20 m
+  band is used only for charges. Concealment, and how a force takes it, is the
+  open question (see rules decision 12).
 - **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
   "did not move or fire" flag rather than a feature of the ground.
 - **The debrief is umpire-view only** — it shows both sides and every outcome.
@@ -132,6 +149,7 @@ Engine capability the UI does not reach yet — the next obvious work:
 ```
 src/engine/
   rng.ts            Seedable Mulberry32 PRNG
+  intel.ts          What each side has detected, and where it last saw it
   dice.ts           Dice notation (1d8 / Hebrew 1ק8), rolling
   geometry.ts       Distance, range-band lookup, blast radius, LOS through smoke
   types.ts          Units, soldiers, vehicles, mines, smoke, fire missions
@@ -196,7 +214,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 
 - 7-phase turn order with initiative (1d10/side), delayed indirect fire
 - Movement gaits (normal/run), under-fire half-pace, no-move-after-hit
-- Detection on movement; UAV/drone footprint detection
+- Detection on movement, in both directions; UAV/drone footprint detection
+- Per-side contacts: what a side has detected, and where it last saw it
 - Direct fire: range bands, cover, target-movement modifiers, split fire, 1d4
 - Explosives: RPG, mortar, artillery (with rate-of-fire & impact delay), tank
   round, ATGM (vs infantry / vs armour)
@@ -322,6 +341,54 @@ on the stated reasoning, still awaiting the author's word.
     **number of grenades is the player's choice** (0–3 in the UI) with no
     ammunition tracked, since logistics is still a roadmap item.
 
+12. ⚠️ **A side sees what it has detected, and remembers where** (assumed
+    2026-08-13 — **the open questions below want your word**). The document is
+    explicit that the game is played on separate maps and that
+    "גילויי אדום\כחול ישוקפו על מפות השחקנים על ידי המנחה" — the umpire
+    reflects *detections* onto each player's map. It gives detection
+    percentages (70% at a walk, 50% at a run, against a visible enemy within
+    300 m) but only as an effect of *moving*, and says nothing about who else
+    sees what. So:
+
+    - **Contacts are kept per side** ([`intel.ts`](src/engine/intel.ts)): each
+      side holds, per enemy force, the turn it was last seen and where. The
+      hotseat draws that and nothing else — a force never detected is not on
+      the map at all.
+    - **A contact is a report, not a tracker.** It is drawn where the force was
+      last seen; if it has moved since, the mark stays behind, faded. Firing at
+      a stale mark is resolved against the truth, so it can turn up out of
+      range or with no line of sight.
+    - **A bound is rolled in both directions.** Read literally, only the mover
+      rolls — which leaves a defender that never moves permanently blind, and
+      an attack could walk onto its position unseen. So an enemy within the
+      same 300 m band rolls to pick the mover up, at the **normal-pace 70%**,
+      on the reasoning that a force standing still is not the one distracted by
+      its own movement. No new number enters the game.
+    - **A shot puts both forces on each other's map** — the firer plainly sees
+      what it is shooting at, and the target learns where the fire came from.
+      Indirect fire gives nothing away: it comes from off the map.
+    - **Smoke stops the eye as well as the bullet**: observation runs through
+      the same line-of-sight check as fire, so a screen hides movement behind
+      it. The document only says "אין ירי לתוך\דרך עשן".
+    - **A contact is never lost** once made, and nothing decays it.
+    - The module is a `GameOptions` flag (`trackIntel`, off by default; the
+      hotseat turns it on) and is stamped into a recording, so a battle
+      recorded without it replays without it and asks the rng for exactly what
+      it asked at the time.
+
+    **Open questions for the author** — the readings above are what the code
+    does until you say otherwise:
+    1. Should a force in position observe *continuously* (an enemy within 300 m
+       in the open is seen sooner or later), rather than only when the enemy
+       moves?
+    2. Should a contact go **stale enough to be dropped** — a force unobserved
+       for N turns falls off the map — or does the mark stand for the rest of
+       the battle?
+    3. What makes a force **"חבוי"** rather than "גלוי"? Holding still? Being
+       in cover? Digging in? That distinction is in the movement table (20 m /
+       30% against hidden, 300 m / 70% against visible) and is the one part of
+       it the engine does not implement.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -446,3 +513,9 @@ Each is intended to be an independent, toggleable module:
     (what was seen, when, and with what confidence), where today's fog-of-war is
     a 300 m reveal set recomputed each frame. Pairs with recording *observations*
     alongside decisions.
+
+    Rules decision 12 is the start of this: the engine now keeps a contact
+    ledger per side, so "what BLUE knew at action 40" is already replayable.
+    What is missing is the rest of the picture — what a side learned from a
+    shot it fired (how many casualties it actually caused), and a debrief view
+    that reads the ledger instead of the truth.
