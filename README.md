@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (198 tests: engine + app narration)
+npm test             # run the test suite (203 tests: engine + app narration)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -82,9 +82,11 @@ coming and the attacker does not see the defence: an ambush. A force can be told
 to **camouflage** its position (a step every two turns, up to -50% to be found,
 thrown away the moment it moves), and one that stays put long enough **digs in**,
 improving its protection every two turns up to the protection of a force behind
-cover. The selected force's card reads its posture back — what it is behind,
-whether it is hidden, how far its camouflage and its digging have got
-(rules decision 12).
+cover. Against that, a force can be sent out **scouting** — it looks harder and
+walks while it does, and the range ring and the gait control follow it. The
+selected force's card reads its posture back: what it is behind, whether it is
+hidden, whether it is out scouting, and how far its camouflage and its digging
+have got (rules decision 12).
 
 RED also defends behind a **minefield** in the demo scenario. A side sees its own
 charges; the enemy's only once they have been spotted, and a force that walks
@@ -137,9 +139,9 @@ Engine capability the UI does not reach yet — the next obvious work:
   indirect-fire missions would all need the order model widened first.
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
-- **Nothing but posture generates a contact.** Detection comes from movement,
-  standing observation, fire and UAVs — there is no scouting action, no
-  observation post, and no way to *look* somewhere in particular.
+- **A force cannot be told where to look.** Scouting raises what a force finds
+  everywhere at once; there is no sector, no observation post, and no way to
+  watch one approach rather than another.
 - **Digging in and camouflage are the only ground a force can improve.** There
   is no terrain to take cover in, so `baseCover` is set by a scenario and
   nothing on the map suggests where cover would be.
@@ -222,8 +224,9 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Movement gaits (normal/run), under-fire half-pace, no-move-after-hit
 - Detection on movement, in both directions; UAV/drone footprint detection
 - Per-side contacts: what a side has detected, and where it last saw it
-- Posture: hidden while stationary, digging in over time, camouflage, and the
-  detection modifiers each carries
+- Posture: hidden while stationary, digging in over time, camouflage (with a
+  floor at the concealed-charge chance), scouting, and the detection modifiers
+  each carries
 - Direct fire: range bands, cover, target-movement modifiers, split fire, 1d4
 - Explosives: RPG, mortar, artillery (with rate-of-fire & impact delay), tank
   round, ATGM (vs infantry / vs armour)
@@ -379,6 +382,15 @@ on the stated reasoning, still awaiting the author's word.
       banked. A defender may declare a force camouflaged at setup — read here as
       a position prepared before the battle, so it **starts at the full -50%**
       (⚠️ the one part of the camouflage rule that is an interpretation).
+    - **Scouting is a command** (סיור): a force that looks rather than covers
+      ground detects better and **may only walk** while it does. An order to run
+      is walked rather than refused, so a force can be sent out to look without
+      rewriting the order it holds.
+    - **A camouflaged force has a floor under it**: whatever cover and
+      camouflage take off, it is never harder to find than a **concealed
+      charge** — the document's own 30% at a walk, 5% at a run, inside 20 m.
+      Camouflage can cancel out an observer's advantages; it cannot make a
+      squad impossible to find.
     - **A contact unobserved for 3 turns is dropped** from the map.
     - **A shot puts both forces on each other's map** — the firer plainly sees
       what it is shooting at, and the target learns where the fire came from.
@@ -399,12 +411,13 @@ on the stated reasoning, still awaiting the author's word.
     observing from position, -10%/2 turns to -50% for camouflage, 3 turns to
     start digging and 2 per level, and 3 turns to drop a contact. Two he left
     open, and they are marked `tentative` in the data: how much easier a
-    **running** force is to find (**+10%**), and how much **cover** hides it
-    (**-10%** partial, **-20%** full). One consequence worth a look: at the full
-    -50%, camouflage more than cancels the 30% hidden-band chance, so a
-    camouflaged force that holds still cannot be found by looking at all — only
-    by walking onto it, or by its own fire. That is a real ambush, and it may
-    also be too strong once the game is balanced.
+    **running** force is to find (**+10%**), how much **cover** hides it
+    (**-10%** partial, **-20%** full), and what **scouting** is worth
+    (**+10%**). The concealed-charge floor is his answer to the first version of
+    this rule, where a fully camouflaged force could not be found by looking at
+    all; with the floor, a walking searcher always has the document's 30%
+    inside 20 m, and what camouflage really buys is cancelling the bonuses an
+    observer would otherwise bring — including a scout's.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

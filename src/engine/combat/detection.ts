@@ -2,7 +2,12 @@ import { Rng } from "../rng.js";
 import { distance, type Point } from "../geometry.js";
 import type { Mine, Unit } from "../types.js";
 import { MOVEMENT_PROFILES } from "../data/movement.js";
-import { CAMOUFLAGE, COVER_CONCEALMENT, OBSERVATION } from "../data/concealment.js";
+import {
+  CAMOUFLAGE,
+  COVER_CONCEALMENT,
+  OBSERVATION,
+  SCOUTING,
+} from "../data/concealment.js";
 import { UAV_PROFILES } from "../data/uav.js";
 import type { MovementMode } from "../types.js";
 
@@ -37,6 +42,9 @@ export function detectionChance(
   const profile = MOVEMENT_PROFILES[observerGait ?? "normal"];
   const watching = observerGait ? 0 : OBSERVATION.stationaryBonus;
 
+  // Looking rather than covering ground.
+  const scouting = observer.scouting ? SCOUTING.detectionBonus : 0;
+
   const hidden = isHidden(target);
   const base = hidden ? profile.hiddenDetectChance : profile.visibleDetectChance;
   const range = hidden ? profile.hiddenDetectRange : profile.visibleDetectRange;
@@ -46,10 +54,16 @@ export function detectionChance(
   const exposure = target.ranThisTurn ? OBSERVATION.runningExposure : 0;
   const concealment = COVER_CONCEALMENT[target.cover] + camouflageBonus(target);
 
-  return {
-    chance: Math.min(1, Math.max(0, base + watching + exposure - concealment)),
-    range,
-  };
+  // …but never past the point where a squad is harder to find than a charge
+  // buried in the ground. Camouflage can cancel an observer's advantages; it
+  // cannot make a force impossible to find (rules decision 12).
+  const floor =
+    CAMOUFLAGE.floorIsConcealedChargeChance && camouflageBonus(target) > 0
+      ? profile.hiddenDetectChance
+      : 0;
+
+  const chance = base + watching + scouting + exposure - concealment;
+  return { chance: Math.min(1, Math.max(floor, chance)), range };
 }
 
 /** Whether a force is in any state to be observing at all. */

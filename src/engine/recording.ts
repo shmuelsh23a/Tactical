@@ -57,7 +57,8 @@ export type RecordedAction =
   | { kind: "issueOrders"; unitId: string; commanderPosition?: Point }
   | { kind: "setStandingOrder"; unitId: string; order: Omit<StandingOrder, "issuedTurn"> }
   | { kind: "executeStandingOrders"; side: Side }
-  | { kind: "setCamouflage"; unitId: string; on: boolean };
+  | { kind: "setCamouflage"; unitId: string; on: boolean }
+  | { kind: "setScouting"; unitId: string; on: boolean };
 
 export interface GameRecording {
   /** Format version, so an old recording can be recognised and migrated. */
@@ -111,7 +112,8 @@ export type ActionOutcome =
   | { kind: "issueOrders"; accepted: boolean }
   | { kind: "setStandingOrder"; accepted: boolean }
   | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] }
-  | { kind: "setCamouflage"; on: boolean };
+  | { kind: "setCamouflage"; on: boolean }
+  | { kind: "setScouting"; on: boolean };
 
 /** One replayed action and what it produced. */
 export interface ReplayStep {
@@ -279,6 +281,10 @@ export function replayWithOutcomes(
       case "setCamouflage":
         game.setCamouflage(action.unitId, action.on);
         outcome = { kind: "setCamouflage", on: action.on };
+        break;
+      case "setScouting":
+        game.setScouting(action.unitId, action.on);
+        outcome = { kind: "setScouting", on: action.on };
         break;
       case "executeStandingOrders":
         outcome = {

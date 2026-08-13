@@ -175,6 +175,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${action.side}: ביצוע פקודות עומדות`;
     case "setCamouflage":
       return `${who(action.unitId)} ${action.on ? "מסווה את עמדתו" : "הפסיק הסוואה"}`;
+    case "setScouting":
+      return `${who(action.unitId)} ${action.on ? "יצא לסיור" : "חזר מסיור"}`;
     default:
       return JSON.stringify(action);
   }
@@ -298,6 +300,9 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
 
     case "setCamouflage":
       return outcome.on ? "מתחיל בהסוואה" : "ההסוואה שנצברה אבדה";
+
+    case "setScouting":
+      return outcome.on ? "מגלה טוב יותר, נע בהליכה בלבד" : "חוזר לקצב רגיל";
 
     case "issueOrders":
     case "setStandingOrder":

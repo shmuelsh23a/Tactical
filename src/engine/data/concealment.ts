@@ -19,7 +19,9 @@ import type { CoverState } from "./directFire.js";
  *     protection every 2 turns up to the protection of a force behind cover;
  *   - **camouflage** is a command: -10% every 2 turns, up to -50%, and a moving
  *     force cannot be camouflaged;
- *   - a contact **unobserved for 3 turns** falls off the map.
+ *   - a contact **unobserved for 3 turns** falls off the map;
+ *   - **scouting** is a command: a force that looks rather than covers ground
+ *     sees better, and may only walk while it does.
  *
  * Figures he gave are marked `author`; the two he left open are marked
  * `tentative` and are the ones to revisit when the game is balanced. Everything
@@ -63,6 +65,26 @@ export const CAMOUFLAGE = {
   turnsPerStep: 2, // author
   /** The most camouflage can ever be worth. */
   max: 0.5, // author
+  /**
+   * A camouflaged force is never harder to find than a **concealed charge**
+   * (author, 2026-08-13, tentative): whatever cover and camouflage take off,
+   * the chance never falls below the document's own figure for finding a hidden
+   * charge at that gait — 30% at a walk, 5% at a run, inside 20 m. Camouflage
+   * can cancel out an observer's advantages; it cannot make a squad harder to
+   * spot than a buried charge, and it can never make a force impossible to find.
+   */
+  floorIsConcealedChargeChance: true, // author (tentative)
+} as const;
+
+/**
+ * Scouting (סיור): a force moving deliberately, looking rather than covering
+ * ground. It sees better and may only walk (author, 2026-08-13).
+ */
+export const SCOUTING = {
+  /** Added to the force's own chance of picking anything up. */
+  detectionBonus: 0.1, // tentative — the author gave the direction, not the size
+  /** The fastest a scouting force moves: no running. */
+  maxGait: "normal",
 } as const;
 
 /** Turns of work behind a fully camouflaged position, for a prepared defence. */

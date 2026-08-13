@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { Game } from "./game.js";
+import { replayGame } from "./recording.js";
 import { digInCover, endTurnUnitUpkeep } from "./upkeep.js";
 import { makeInfantry } from "./units.js";
 import { CAMOUFLAGE, CAMOUFLAGE_TURNS_AT_MAX, OBSERVATION } from "./data/concealment.js";
 import { camouflageBonus, detectionChance } from "./combat/detection.js";
+import { MOVEMENT_PROFILES } from "./data/movement.js";
 
 /** Put a force through `turns` end-of-turn upkeeps, moving it or not. */
 function holdPosition(unit: ReturnType<typeof makeInfantry>, turns: number, metres = 0) {
@@ -114,13 +116,38 @@ describe("a prepared ambush", () => {
     return unit;
   }
 
-  it("is looked for at 20 m, and is very hard to find even there", () => {
+  it("is looked for at 20 m, and never more easily than a buried charge", () => {
     const mover = makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8);
     mover.movedThisTurn = 40;
     const { chance, range } = detectionChance(mover, ambusher(), "normal");
-    // 30% in the hidden band, less full cover and a full camouflage.
+    // 30% in the hidden band, less full cover and a full camouflage, would be
+    // nothing at all. The floor is the chance of finding a concealed charge.
     expect(range).toBe(20);
-    expect(chance).toBe(0);
+    expect(chance).toBeCloseTo(MOVEMENT_PROFILES.normal.hiddenDetectChance, 5);
+
+    // …and a force that runs past it has the running figure, not the walking one.
+    const runner = makeInfantry("C", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    runner.movedThisTurn = 90;
+    expect(detectionChance(runner, ambusher(), "run").chance).toBeCloseTo(
+      MOVEMENT_PROFILES.run.hiddenDetectChance,
+      5,
+    );
+  });
+
+  it("gives a scout a real edge over a force just walking past", () => {
+    const walker = makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    walker.movedThisTurn = 40;
+    const scout = makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    scout.movedThisTurn = 40;
+    scout.scouting = true;
+
+    // Against an ordinary hidden force the scout looks harder…
+    const hiding = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 6);
+    expect(detectionChance(walker, hiding, "normal").chance).toBeCloseTo(0.3, 5);
+    expect(detectionChance(scout, hiding, "normal").chance).toBeCloseTo(0.4, 5);
+
+    // …though against a fully camouflaged one the floor is what it gets.
+    expect(detectionChance(scout, ambusher(), "normal").chance).toBeCloseTo(0.3, 5);
   });
 
   it("still sees the attacker walk in, and better for standing still", () => {
@@ -169,5 +196,58 @@ describe("contacts that go cold", () => {
     // The third turn without a report closes at this turn's upkeep.
     g.advanceToPhase("initiative");
     expect(g.knows("RED", blue.id)).toBe(false);
+  });
+});
+
+describe("scouting", () => {
+  /** A squad with room to run, and an order it will not be able to obey. */
+  function scout(seed = 2) {
+    const g = new Game({ seed, enforceC2: false, trackIntel: true });
+    const unit = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 15 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    return { g, unit };
+  }
+
+  it("walks, whatever gait the move asked for", () => {
+    const { g, unit } = scout();
+    g.setScouting(unit.id, true);
+    expect(g.gaitFor(unit, "run")).toBe("normal");
+
+    // A run of 90 m is refused at the walking budget…
+    expect(() => g.moveUnit(unit.id, { x: 0, y: 90 }, "run")).toThrow(/normal budget/);
+    // …and the same order at 40 m goes through as a walk.
+    g.moveUnit(unit.id, { x: 0, y: 40 }, "run");
+    expect(unit.ranThisTurn).toBe(false);
+    expect(unit.movedThisTurn).toBeCloseTo(40, 5);
+  });
+
+  it("keeps a standing order to run inside the walking budget", () => {
+    const { g, unit } = scout();
+    g.setScouting(unit.id, true);
+    g.setStandingOrder(unit.id, { gait: "run", destination: { x: 0, y: 400 } });
+    g.executeStandingOrders("BLUE");
+    // The order still says "run"; the force is out scouting, so it walked.
+    expect(g.standingOrderFor(unit.id)?.gait).toBe("run");
+    expect(unit.position.y).toBeCloseTo(MOVEMENT_PROFILES.normal.maxDistance, 5);
+  });
+
+  it("runs again the moment it is called in", () => {
+    const { g, unit } = scout();
+    g.setScouting(unit.id, true);
+    g.setScouting(unit.id, false);
+    g.moveUnit(unit.id, { x: 0, y: 90 }, "run");
+    expect(unit.ranThisTurn).toBe(true);
+  });
+
+  it("replays out of a recording as the posture it was", () => {
+    const { g, unit } = scout();
+    g.setScouting(unit.id, true);
+    g.moveUnit(unit.id, { x: 0, y: 40 }, "run");
+    const replayed = replayGame(g.toRecording());
+    expect(replayed.getUnit(unit.id).scouting).toBe(true);
+    expect(replayed.getUnit(unit.id).position.y).toBeCloseTo(40, 5);
+    expect(replayed.rng.getState()).toBe(g.rng.getState());
   });
 });

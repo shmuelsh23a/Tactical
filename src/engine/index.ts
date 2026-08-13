@@ -98,6 +98,7 @@ export {
   COVER_CONCEALMENT,
   DIG_IN,
   OBSERVATION,
+  SCOUTING,
 } from "./data/concealment.js";
 export { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 export {

@@ -144,6 +144,7 @@ export function makeInfantry(
     cover: "none",
     baseCover: "none",
     camouflaging: false,
+    scouting: false,
     camouflageTurns: 0,
   };
 }
@@ -186,6 +187,7 @@ export function makeCommandGroup(
     cover: "none",
     baseCover: "none",
     camouflaging: false,
+    scouting: false,
     camouflageTurns: 0,
   };
 }
@@ -227,6 +229,7 @@ export function makeVehicle(
     cover: "none",
     baseCover: "none",
     camouflaging: false,
+    scouting: false,
     camouflageTurns: 0,
   };
 }

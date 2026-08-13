@@ -104,6 +104,8 @@ export interface Unit {
   baseCover: CoverState;
   /** True while the force is working on its camouflage (הסוואה). */
   camouflaging: boolean;
+  /** True while the force is scouting (סיור): looks better, walks only. */
+  scouting: boolean;
   /** Turns of camouflage work banked; moving throws them away. */
   camouflageTurns: number;
 }

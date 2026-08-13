@@ -26,7 +26,7 @@ import {
   type DetectionResult,
   type Observation,
 } from "./combat/detection.js";
-import { CAMOUFLAGE_TURNS_AT_MAX, OBSERVATION } from "./data/concealment.js";
+import { OBSERVATION, SCOUTING } from "./data/concealment.js";
 import type { CoverState } from "./data/directFire.js";
 import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 import { triggerMines, type MineDetonation } from "./combat/mines.js";
@@ -389,7 +389,9 @@ export class Game {
         `${unitId} has received no orders this turn (next orders on turn ${this.nextOrderTurn(unitId)})`,
       );
     }
-    const profile = MOVEMENT_PROFILES[mode];
+    // A scouting force walks, whatever gait the move asked for.
+    const gait = this.gaitFor(unit, mode);
+    const profile = MOVEMENT_PROFILES[gait];
     const cap = profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1);
     const dist = distance(unit.position, to);
     // The cap is a per-turn budget (e.g. "up to 50 m in a turn"), so movement
@@ -398,7 +400,7 @@ export class Game {
     if (unit.movedThisTurn + dist > cap + 1e-6) {
       const remaining = Math.max(0, cap - unit.movedThisTurn);
       throw new Error(
-        `Move of ${dist.toFixed(1)} m exceeds remaining ${mode} budget of ${remaining.toFixed(1)} m`,
+        `Move of ${dist.toFixed(1)} m exceeds remaining ${gait} budget of ${remaining.toFixed(1)} m`,
       );
     }
     if (needsNewOrders && this.canReceiveOrders(unitId)) this.lastOrderTurn.set(unitId, this.turn);
@@ -412,7 +414,7 @@ export class Game {
     const from = unit.position;
     unit.position = { ...to };
     unit.movedThisTurn += dist;
-    if (mode === "run") unit.ranThisTurn = true;
+    if (gait === "run") unit.ranThisTurn = true;
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
     // Smoke stops the eye as well as the bullet, so observation runs through
@@ -421,7 +423,7 @@ export class Game {
     const sight = this.trackIntel
       ? (from: Point, to: Point) => this.hasLineOfSight(from, to)
       : undefined;
-    const detection = detectByMovement(this.rng, unit, mode, enemies, this.mines, sight);
+    const detection = detectByMovement(this.rng, unit, gait, enemies, this.mines, sight);
     // What the mover found. What found the mover is rolled once for the whole
     // turn, by every force in position — see observeFromPosition.
     for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement");
@@ -495,6 +497,25 @@ export class Game {
     unit.camouflaging = on;
     if (!on) unit.camouflageTurns = 0;
     this.journal({ kind: "setCamouflage", unitId, on });
+  }
+
+  /**
+   * Put a force out scouting, or bring it back in (סיור). A scouting force
+   * looks rather than covers ground: it sees better, and it may only walk
+   * while it does (rules decision 12).
+   */
+  setScouting(unitId: string, on: boolean): void {
+    this.getUnit(unitId).scouting = on;
+    this.journal({ kind: "setScouting", unitId, on });
+  }
+
+  /**
+   * The gait a force actually moves at, given the posture it is in. A scouting
+   * force walks whatever it was told, so an old order to run does not have to
+   * be rewritten before it can be sent out to look.
+   */
+  gaitFor(unit: Unit, mode: MovementMode): MovementMode {
+    return unit.scouting ? SCOUTING.maxGait : mode;
   }
 
   /**
@@ -738,7 +759,8 @@ export class Game {
     if (unit.neutralized && !unit.canOnlyRetreat) return { ...base, reason: "neutralised" };
     if (unit.movementBlocked) return { ...base, reason: "hit last turn" };
 
-    const profile = MOVEMENT_PROFILES[order.gait];
+    const gait = this.gaitFor(unit, order.gait);
+    const profile = MOVEMENT_PROFILES[gait];
     const cap =
       profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1) -
       unit.movedThisTurn;
@@ -749,7 +771,7 @@ export class Game {
     if (cap <= 1e-6) return { ...base, reason: "no movement left" };
 
     const to = stepTowards(unit.position, order.destination, cap);
-    const result = this.moveUnit(unit.id, to, order.gait);
+    const result = this.moveUnit(unit.id, to, gait);
 
     const arrived = hasArrived(unit.position, order.destination);
     // Reaching the objective turns "advance" into "hold at the objective".

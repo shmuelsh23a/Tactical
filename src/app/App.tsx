@@ -4,6 +4,7 @@ import {
   CAMOUFLAGE,
   DIG_IN,
   MOVEMENT_PROFILES,
+  SCOUTING,
   SMOKE_DURATION_TURNS,
   SMOKE_RADIUS_M,
   camouflageBonus,
@@ -162,11 +163,14 @@ export function App() {
     return target ? { targetId: target.id, weapon: orderWeapon } : undefined;
   }
 
+  /** A scouting force walks, so the range ring must show the walk. */
+  const scoutingSelected = selectedOwn?.scouting ?? false;
+  const effectiveGait: Gait = scoutingSelected ? "normal" : gait;
   const moveCap =
     selectedOwn && enginePhase === "movement" && selectedCanManoeuvre
       ? Math.max(
           0,
-          MOVEMENT_PROFILES[gait].maxDistance * (selectedOwn.underFire ? 0.5 : 1) -
+          MOVEMENT_PROFILES[effectiveGait].maxDistance * (selectedOwn.underFire ? 0.5 : 1) -
             selectedOwn.movedThisTurn,
         )
       : null;
@@ -292,7 +296,11 @@ export function App() {
       moveCommandGroup(selectedOwn, x, y);
       return;
     }
-    issueOrder(selectedOwn, { gait, destination: { x, y }, engage: orderedEngagement() });
+    issueOrder(selectedOwn, {
+      gait: effectiveGait,
+      destination: { x, y },
+      engage: orderedEngagement(),
+    });
   }
 
   /**
@@ -314,10 +322,28 @@ export function App() {
     force();
   }
 
+  /**
+   * Send the selected force out scouting, or call it in (סיור): it looks harder
+   * and walks while it does (rules decision 12).
+   */
+  function handleScouting() {
+    if (!selectedOwn || enginePhase !== "movement") return;
+    const on = !selectedOwn.scouting;
+    game.setScouting(selectedOwn.id, on);
+    pushLog(
+      on
+        ? `${selectedOwn.name} יוצא לסיור — תנועה בהליכה בלבד`
+        : `${selectedOwn.name} חוזר מסיור`,
+      "info",
+      viewingSide,
+    );
+    force();
+  }
+
   /** Order the force to stay where it is — and, if a task is set, to fight from there. */
   function handleHoldOrder() {
     if (!selectedOwn || enginePhase !== "movement" || selectedOwn.kind === "command") return;
-    issueOrder(selectedOwn, { gait, engage: orderedEngagement() });
+    issueOrder(selectedOwn, { gait: effectiveGait, engage: orderedEngagement() });
   }
 
   /**
@@ -744,7 +770,12 @@ export function App() {
                     <button className={gait === "normal" ? "on" : ""} onClick={() => setGait("normal")}>
                       רגיל (≤50מ')
                     </button>
-                    <button className={gait === "run" ? "on" : ""} onClick={() => setGait("run")}>
+                    <button
+                      className={gait === "run" && !scoutingSelected ? "on" : ""}
+                      disabled={scoutingSelected}
+                      title={scoutingSelected ? "כוח בסיור נע בהליכה בלבד" : undefined}
+                      onClick={() => setGait("run")}
+                    >
                       ריצה (≤100מ')
                     </button>
                   </div>
@@ -806,6 +837,15 @@ export function App() {
                     title="פקודה ללא תנועה: הכוח נשאר במקומו ומבצע את המשימה שנקבעה"
                   >
                     {orderedEngagement() ? "החזק מקום ותקוף" : "החזק מקום"}
+                  </button>
+
+                  <button
+                    className={`btn-ghost${scoutingSelected ? " on" : ""}`}
+                    disabled={!selectedOwn}
+                    onClick={handleScouting}
+                    title={`סיור: +${Math.round(SCOUTING.detectionBonus * 100)}% לגילוי, תנועה בהליכה בלבד.`}
+                  >
+                    {scoutingSelected ? "חזור מסיור" : "צא לסיור"}
                   </button>
 
                   <button
@@ -1012,6 +1052,11 @@ function PostureLine({ unit }: { unit: Unit }) {
         {digging ? " · מתחפר" : ""}
         {stationary ? ` · חבוי (${unit.stationaryTurns} תורות במקום)` : " · נע — גלוי"}
       </div>
+      {unit.scouting && (
+        <div className="ok">
+          בסיור: +{Math.round(SCOUTING.detectionBonus * 100)}% לגילוי · הליכה בלבד
+        </div>
+      )}
       {(unit.camouflaging || camouflage > 0) && (
         <div className="ok">
           הסוואה: {camouflage > 0 ? `-${Math.round(camouflage * 100)}% לגילוי` : "בעבודה"}
