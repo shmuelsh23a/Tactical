@@ -63,6 +63,12 @@ one it is in your reply, too.
   consequence worth remembering: a hotseat battle journals *orders*, not moves,
   so anything that reads a recording (extent, narration, digests) has to work
   from the order.
+- **Posture drives both being seen and being hit.** `stationaryTurns`, `cover`
+  and `camouflageTurns` on a `Unit` are maintained by `endTurnUnitUpkeep` and
+  read by `detectionChance` and by fire resolution — a force is hidden because
+  it did not move, in cover because it dug, and hard to find because it
+  camouflaged (rules decision 12). Don't assert cover at a call site: the engine
+  derives it from the target (`coverAgainst`).
 - **The engine is the umpire; what a side *knows* is a separate ledger.**
   `game.units` is ground truth and must never be drawn to a player directly —
   the hotseat renders `sideView()` ([`hotseat.ts`](src/app/hotseat.ts)), built

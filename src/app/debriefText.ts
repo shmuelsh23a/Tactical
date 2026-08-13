@@ -173,6 +173,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${who(action.unitId)} — פקודה: ${describeStandingOrder(action.order, who)}`;
     case "executeStandingOrders":
       return `${action.side}: ביצוע פקודות עומדות`;
+    case "setCamouflage":
+      return `${who(action.unitId)} ${action.on ? "מסווה את עמדתו" : "הפסיק הסוואה"}`;
     default:
       return JSON.stringify(action);
   }
@@ -202,6 +204,10 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
       const parts: string[] = [];
       for (const screen of outcome.smokeArrived) {
         parts.push(`מסך עשן ירד (רדיוס ${screen.radius}מ')`);
+      }
+      // The umpire's view of who picked whom up — a player never sees this.
+      for (const seen of outcome.observed ?? []) {
+        parts.push(`${who(seen.observerId)} איתר את ${who(seen.targetId)}`);
       }
       for (const impact of outcome.resolved) {
         const off = Math.round(
@@ -289,6 +295,9 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
       return outcome.order.screen
         ? `הונח מיד — ${outcome.order.durationTurns} תורות`
         : `יגיע בתור ${outcome.order.arrivesOnTurn}`;
+
+    case "setCamouflage":
+      return outcome.on ? "מתחיל בהסוואה" : "ההסוואה שנצברה אבדה";
 
     case "issueOrders":
     case "setStandingOrder":

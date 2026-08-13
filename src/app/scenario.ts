@@ -1,4 +1,10 @@
-import { Game, makeCommandGroup, makeInfantry, makeVehicle } from "../engine/index.js";
+import {
+  CAMOUFLAGE_TURNS_AT_MAX,
+  Game,
+  makeCommandGroup,
+  makeInfantry,
+  makeVehicle,
+} from "../engine/index.js";
 
 export interface Scenario {
   game: Game;
@@ -25,8 +31,15 @@ export function buildDemoScenario(seed = 2026): Scenario {
   game.addUnit(makeInfantry("BLUE-3", "BLUE", "squad", { x: 650, y: 650 }, 8, "כיתה 3"));
   game.addUnit(makeCommandGroup("BLUE-HQ", "BLUE", "platoon", { x: 450, y: 745 }, 3, 'חפ"ק מ"מ'));
 
-  // RED — defending in the north.
-  game.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 350, y: 220 }, 6, "מחלקה א'/1"));
+  // RED — defending in the north. The forward squad prepared its position
+  // before the battle, so it starts fully camouflaged (rules decision 12): BLUE
+  // will not find it by looking. The rest have to dig in as the game runs.
+  const ambush = makeInfantry("RED-1", "RED", "squad", { x: 350, y: 220 }, 6, "מחלקה א'/1");
+  ambush.camouflaging = true;
+  ambush.camouflageTurns = CAMOUFLAGE_TURNS_AT_MAX;
+  // Set before it is added: addUnit records the force as it stands, so a unit
+  // dressed after the fact would replay undressed.
+  game.addUnit(ambush);
   game.addUnit(makeInfantry("RED-2", "RED", "squad", { x: 600, y: 200 }, 8, "מחלקה א'/2"));
   game.addUnit(makeVehicle("RED-TANK", "RED", { x: 480, y: 130 }, 270, "טנק"));
   game.addUnit(makeCommandGroup("RED-HQ", "RED", "platoon", { x: 480, y: 90 }, 3, 'חפ"ק מ"מ'));

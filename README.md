@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (183 tests: engine + app narration)
+npm test             # run the test suite (198 tests: engine + app narration)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -73,9 +73,18 @@ has picked up — by the movement table's rolls (70% at a walk, 50% at a run,
 within 300 m), by a UAV sweep, or by being shot at — and nothing else. A contact
 is drawn **where it was last seen**: a force that has moved since leaves a faded
 mark behind, and firing at that mark is resolved against the truth, so it can
-turn up out of range. A bound is rolled in both directions, which is what keeps
-a defender that never moves from being blind (rules decision 12 — its open
-questions are worth a read).
+turn up out of range.
+
+**A force that holds still is hidden** — looked for in the document's 20 m band
+rather than its 300 m one — while a force in position watches its sector every
+turn, and better for not being on the move. So the defender sees the attack
+coming and the attacker does not see the defence: an ambush. A force can be told
+to **camouflage** its position (a step every two turns, up to -50% to be found,
+thrown away the moment it moves), and one that stays put long enough **digs in**,
+improving its protection every two turns up to the protection of a force behind
+cover. The selected force's card reads its posture back — what it is behind,
+whether it is hidden, how far its camouflage and its digging have got
+(rules decision 12).
 
 RED also defends behind a **minefield** in the demo scenario. A side sees its own
 charges; the enemy's only once they have been spotted, and a force that walks
@@ -128,16 +137,12 @@ Engine capability the UI does not reach yet — the next obvious work:
   indirect-fire missions would all need the order model widened first.
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
-- **Nothing but movement, fire and UAVs generates a contact.** A force sitting
-  in position observes only when an enemy moves within 300 m of it; there is no
-  standing observation, no observation post, and no scouting action. Nor is a
-  contact ever *lost* — the mark stays on the map for the rest of the battle,
-  going stale but never being cleared.
-- **Hidden forces are not modelled.** The document's movement table separates
-  "אויב **גלוי**" at 300 m from "אויב **חבוי**" within 20 m, but nothing in the
-  engine makes a force hidden — every force is treated as visible, and the 20 m
-  band is used only for charges. Concealment, and how a force takes it, is the
-  open question (see rules decision 12).
+- **Nothing but posture generates a contact.** Detection comes from movement,
+  standing observation, fire and UAVs — there is no scouting action, no
+  observation post, and no way to *look* somewhere in particular.
+- **Digging in and camouflage are the only ground a force can improve.** There
+  is no terrain to take cover in, so `baseCover` is set by a scenario and
+  nothing on the map suggests where cover would be.
 - **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
   "did not move or fire" flag rather than a feature of the ground.
 - **The debrief is umpire-view only** — it shows both sides and every outcome.
@@ -169,6 +174,7 @@ src/engine/
     armor.ts        Armour hit-location / penetration / effect table
     artillery.ts    Dispersion (short/long, left/right) configuration
     c2.ts           Command-interval-by-distance table (פו"ש)
+    concealment.ts  Observation, digging in and camouflage figures
     casualties.ts   nq"p thresholds + assault values
   combat/
     directFire.ts   Ballistic fire resolution
@@ -216,6 +222,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Movement gaits (normal/run), under-fire half-pace, no-move-after-hit
 - Detection on movement, in both directions; UAV/drone footprint detection
 - Per-side contacts: what a side has detected, and where it last saw it
+- Posture: hidden while stationary, digging in over time, camouflage, and the
+  detection modifiers each carries
 - Direct fire: range bands, cover, target-movement modifiers, split fire, 1d4
 - Explosives: RPG, mortar, artillery (with rate-of-fire & impact delay), tank
   round, ATGM (vs infantry / vs armour)
@@ -284,9 +292,10 @@ on the stated reasoning, still awaiting the author's word.
    מ־ makes it a proportional cut: full cover halves the shot (20% → 10%),
    partial cover shaves a tenth off it. Read as a subtraction of 50 points it
    would zero the entire direct-fire table (small arms 30/20/10 → 0/0/0,
-   sustained MG 70/50/20 → 20/0/0), and since a force that holds still is *by
-   definition* in full cover ([`upkeep.ts`](src/engine/upkeep.ts)), no defender
-   could ever be shot. The table values stay verbatim (`-0.5` / `-0.1`); only
+   sustained MG 70/50/20 → 20/0/0), so a defender in cover could never be shot
+   at all. (The reasoning originally leaned on every stationary force counting
+   as in full cover; decision 12 has since made cover something a force digs or
+   starts with, but the arithmetic above is unchanged.) The table values stay verbatim (`-0.5` / `-0.1`); only
    their application changed — [`combat/directFire.ts`](src/engine/combat/directFire.ts).
 8. ⚠️ **Indirect fire is an off-map asset, one mission per side per turn**
    (assumed 2026-08-12). The document gives rates of fire per barrel (3 bombs
@@ -341,53 +350,61 @@ on the stated reasoning, still awaiting the author's word.
     **number of grenades is the player's choice** (0–3 in the UI) with no
     ammunition tracked, since logistics is still a roadmap item.
 
-12. ⚠️ **A side sees what it has detected, and remembers where** (assumed
-    2026-08-13 — **the open questions below want your word**). The document is
-    explicit that the game is played on separate maps and that
-    "גילויי אדום\כחול ישוקפו על מפות השחקנים על ידי המנחה" — the umpire
-    reflects *detections* onto each player's map. It gives detection
-    percentages (70% at a walk, 50% at a run, against a visible enemy within
-    300 m) but only as an effect of *moving*, and says nothing about who else
-    sees what. So:
+12. ✅ **A side sees what it has detected — and a force that holds still is
+    hidden** (ruled by the author 2026-08-13). The document is explicit that the
+    game is played on separate maps and that
+    "גילויי אדום\כחול ישוקפו על מפות השחקנים על ידי המנחה" — the umpire reflects
+    *detections* onto each player's map. It gives detection percentages (70% at
+    a walk, 50% at a run against a **visible** enemy within 300 m; 30% / 5%
+    against a **hidden** one within 20 m) but only as an effect of *moving*, and
+    never says what makes a force hidden. The author settled the rest:
 
-    - **Contacts are kept per side** ([`intel.ts`](src/engine/intel.ts)): each
-      side holds, per enemy force, the turn it was last seen and where. The
-      hotseat draws that and nothing else — a force never detected is not on
-      the map at all.
-    - **A contact is a report, not a tracker.** It is drawn where the force was
-      last seen; if it has moved since, the mark stays behind, faded. Firing at
-      a stale mark is resolved against the truth, so it can turn up out of
-      range or with no line of sight.
-    - **A bound is rolled in both directions.** Read literally, only the mover
-      rolls — which leaves a defender that never moves permanently blind, and
-      an attack could walk onto its position unseen. So an enemy within the
-      same 300 m band rolls to pick the mover up, at the **normal-pace 70%**,
-      on the reasoning that a force standing still is not the one distracted by
-      its own movement. No new number enters the game.
+    - **A hidden force is a stationary one.** A force that has not moved this
+      turn is looked for in the 20 m band, not the 300 m one. That is how an
+      ambush works, and it is what a force gives up by moving.
+    - **A force in position observes continuously**, at **+10%** — it does not
+      need the enemy to walk into it, and it is not distracted by its own
+      movement. Run once a turn, on the way into the fire phase, so it sees the
+      turn's movement.
+    - **A running force is easier to find**; **cover** and **camouflage** make a
+      force harder to find.
+    - **A stationary force in the open digs in**: nothing for 3 turns, then a
+      level of protection every 2 turns, up to the protection of a force that
+      was behind cover to begin with. Getting up and moving leaves the hole
+      behind. This replaces the old "held still ⇒ in full cover" derivation:
+      cover is now something a force has, or earns, not a side effect of a quiet
+      turn.
+    - **Camouflage is a command** (הסוואה): -10% to be detected every 2 turns,
+      up to -50%. A moving force cannot be camouflaged and loses what it had
+      banked. A defender may declare a force camouflaged at setup — read here as
+      a position prepared before the battle, so it **starts at the full -50%**
+      (⚠️ the one part of the camouflage rule that is an interpretation).
+    - **A contact unobserved for 3 turns is dropped** from the map.
     - **A shot puts both forces on each other's map** — the firer plainly sees
       what it is shooting at, and the target learns where the fire came from.
       Indirect fire gives nothing away: it comes from off the map.
     - **Smoke stops the eye as well as the bullet**: observation runs through
-      the same line-of-sight check as fire, so a screen hides movement behind
-      it. The document only says "אין ירי לתוך\דרך עשן".
-    - **A contact is never lost** once made, and nothing decays it.
-    - The module is a `GameOptions` flag (`trackIntel`, off by default; the
-      hotseat turns it on) and is stamped into a recording, so a battle
-      recorded without it replays without it and asks the rng for exactly what
-      it asked at the time.
+      the same line-of-sight check as fire. The document only says
+      "אין ירי לתוך\דרך עשן".
+    - **A contact is a report, not a tracker**: it is drawn where the force was
+      last seen, so a stale mark can be fired at and turn up out of range.
 
-    **Open questions for the author** — the readings above are what the code
-    does until you say otherwise:
-    1. Should a force in position observe *continuously* (an enemy within 300 m
-       in the open is seen sooner or later), rather than only when the enemy
-       moves?
-    2. Should a contact go **stale enough to be dropped** — a force unobserved
-       for N turns falls off the map — or does the mark stand for the rest of
-       the battle?
-    3. What makes a force **"חבוי"** rather than "גלוי"? Holding still? Being
-       in cover? Digging in? That distinction is in the movement table (20 m /
-       30% against hidden, 300 m / 70% against visible) and is the one part of
-       it the engine does not implement.
+    The module is a `GameOptions` flag (`trackIntel`, off by default; the
+    hotseat turns it on) and is stamped into a recording, so a battle recorded
+    without it replays without it and asks the rng for exactly what it asked at
+    the time. Contacts live in [`intel.ts`](src/engine/intel.ts), the figures in
+    [`data/concealment.ts`](src/engine/data/concealment.ts).
+
+    **Tentative numbers, for the balance pass.** The author gave +10% for
+    observing from position, -10%/2 turns to -50% for camouflage, 3 turns to
+    start digging and 2 per level, and 3 turns to drop a contact. Two he left
+    open, and they are marked `tentative` in the data: how much easier a
+    **running** force is to find (**+10%**), and how much **cover** hides it
+    (**-10%** partial, **-20%** full). One consequence worth a look: at the full
+    -50%, camouflage more than cancels the 30% hidden-band chance, so a
+    camouflaged force that holds still cannot be found by looking at all — only
+    by walking onto it, or by its own fire. That is a real ambush, and it may
+    also be too strong once the game is balanced.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

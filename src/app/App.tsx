@@ -1,9 +1,12 @@
 import { useReducer, useRef, useState } from "react";
 import {
   ASSAULT_RANGE_M,
+  CAMOUFLAGE,
+  DIG_IN,
   MOVEMENT_PROFILES,
   SMOKE_DURATION_TURNS,
   SMOKE_RADIUS_M,
+  camouflageBonus,
   distance,
   fitSoldiers,
   fullStrength,
@@ -13,6 +16,7 @@ import {
   verifyRecording,
   type GameRecording,
   type IndirectFireResult,
+  type Observation,
   type Side,
   type SmokeScreen,
   type SmokeSource,
@@ -230,6 +234,24 @@ export function App() {
     force();
   }
 
+  /**
+   * Report what a side's forces in position have just picked up — first sight
+   * only. Standing observation re-finds the same force every turn, so only the
+   * first report is news, and without it a contact would appear on the map with
+   * nothing in the log to explain it.
+   */
+  const reported = useRef(new Set<string>());
+  function logNewContacts(observed: Observation[]) {
+    for (const { observerId, targetId } of observed) {
+      const observer = game.units.find((u) => u.id === observerId);
+      if (!observer) continue;
+      const key = `${observer.side}:${targetId}`;
+      if (reported.current.has(key)) continue;
+      reported.current.add(key);
+      pushLog(`${observer.name} איתר את ${nameOf(targetId)}`, "info", observer.side);
+    }
+  }
+
   /** Log indirect fire and smoke that arrived while stepping between phases. */
   function logImpacts(resolved: IndirectFireResult[], smokeArrived: SmokeScreen[]) {
     for (const s of smokeArrived) {
@@ -271,6 +293,25 @@ export function App() {
       return;
     }
     issueOrder(selectedOwn, { gait, destination: { x, y }, engage: orderedEngagement() });
+  }
+
+  /**
+   * Set the selected force to work on its camouflage, or stop. It builds up
+   * while the force stays put and is thrown away the moment it moves, so this
+   * is a posture rather than an action (rules decision 12).
+   */
+  function handleCamouflage() {
+    if (!selectedOwn || enginePhase !== "movement") return;
+    const on = !selectedOwn.camouflaging;
+    game.setCamouflage(selectedOwn.id, on);
+    pushLog(
+      on
+        ? `${selectedOwn.name} מסווה את עמדתו`
+        : `${selectedOwn.name} הפסיק הסוואה — ההסוואה שנצברה אבדה`,
+      "info",
+      viewingSide,
+    );
+    force();
   }
 
   /** Order the force to stay where it is — and, if a task is set, to fight from there. */
@@ -393,10 +434,9 @@ export function App() {
         else if (!r.hit) pushLog(`${selectedOwn.name} ירה פגז — החטאה`, "fire", viewingSide);
         else pushLog(`${selectedOwn.name} פגע ב${target.name} בפגז טנק`, "casualty", viewingSide);
       } else {
-        const r = game.fire(selectedOwn.id, target.id, {
-          weapon,
-          cover: target.inFullCover ? "full" : "none",
-        });
+        // Cover is the engine's business: it knows what the target is behind,
+        // and the player is not entitled to read it off the map.
+        const r = game.fire(selectedOwn.id, target.id, { weapon });
         if (!r.fired) {
           pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
         } else {
@@ -506,9 +546,10 @@ export function App() {
       if (from !== to) {
         // Stepping into movement crosses resolvePriorArty, where fire missions
         // marked on an earlier turn come down.
-        const { resolved, smokeArrived } = game.advanceToPhase(to);
+        const { resolved, smokeArrived, observed } = game.advanceToPhase(to);
         pushLog(`מעבר ל${phaseLabelHe[to]}`, "phase");
         logImpacts(resolved, smokeArrived);
+        logNewContacts(observed);
       }
       setActIndex(next);
       setHandoffTo(activations[next]!.side);
@@ -767,6 +808,15 @@ export function App() {
                     {orderedEngagement() ? "החזק מקום ותקוף" : "החזק מקום"}
                   </button>
 
+                  <button
+                    className={`btn-ghost${selectedOwn?.camouflaging ? " on" : ""}`}
+                    disabled={!selectedOwn}
+                    onClick={handleCamouflage}
+                    title={`הסוואה: -${Math.round(CAMOUFLAGE.perStep * 100)}% לגילוי כל ${CAMOUFLAGE.turnsPerStep} תורות, עד -${Math.round(CAMOUFLAGE.max * 100)}%. תנועה מבטלת אותה.`}
+                  >
+                    {selectedOwn?.camouflaging ? "הפסק הסוואה" : "הסווה עמדה"}
+                  </button>
+
                   <p className="hint">
                     בחר כוח, ולחץ על המפה כדי לתת פקודה (בתוך הטווח המסומן). הפקודה
                     נשארת בתוקף — הכוח ממשיך אליה ומבצע את משימתו בכל תור עד שתוחלף.
@@ -939,8 +989,36 @@ function SelectedUnitCard({
       {unit.neutralized && <div className="warn">מנוטרל</div>}
       {unit.movementBlocked && <div className="warn">נפגע — לא יכול לנוע</div>}
       {unit.firedThisTurn && <div className="warn">בוצעה פעולת ירי בתור זה</div>}
-      {unit.inFullCover && <div className="ok">במחסה מלא</div>}
+      <PostureLine unit={unit} />
     </div>
+  );
+}
+
+const coverHe: Record<string, string> = { full: "מחסה מלא", partial: "מחסה חלקי", none: "בשטח פתוח" };
+
+/**
+ * How exposed the force is: what it is behind, whether it is hidden by holding
+ * still, and how far its camouflage has got (rules decision 12).
+ */
+function PostureLine({ unit }: { unit: Unit }) {
+  const camouflage = camouflageBonus(unit);
+  const stationary = unit.movedThisTurn === 0;
+  const digging =
+    stationary && unit.cover !== "full" && unit.stationaryTurns >= DIG_IN.startsAfterTurns;
+  return (
+    <>
+      <div className={unit.cover === "none" ? "warn" : "ok"}>
+        {coverHe[unit.cover]}
+        {digging ? " · מתחפר" : ""}
+        {stationary ? ` · חבוי (${unit.stationaryTurns} תורות במקום)` : " · נע — גלוי"}
+      </div>
+      {(unit.camouflaging || camouflage > 0) && (
+        <div className="ok">
+          הסוואה: {camouflage > 0 ? `-${Math.round(camouflage * 100)}% לגילוי` : "בעבודה"}
+          {unit.camouflaging && camouflage < CAMOUFLAGE.max ? ` (${unit.camouflageTurns} תורות)` : ""}
+        </div>
+      )}
+    </>
   );
 }
 
