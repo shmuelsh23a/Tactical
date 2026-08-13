@@ -558,10 +558,15 @@ Each is intended to be an independent, toggleable module:
    rolled, and the hotseat UI saves a recording to a file and loads one back
    into a step-through debrief.
 
-   Because outcomes are derived rather than stored, replaying the same
-   decisions under a **different seed** already works in the engine — the
-   question a debrief exists to answer is *was that a bad plan or bad luck?*,
-   and that is how you ask it. Not surfaced in the UI yet.
+   Because outcomes are derived rather than stored, the recording holds the
+   **decisions**, which is what makes *was that a bad plan or bad luck?* an
+   answerable question: re-roll the same decisions and see how often the battle
+   goes the other way. Two things are missing before it can be asked, and
+   neither is large: `replayWithOutcomes` builds its game from the recording's
+   own seed with no way to override it, and it stops dead on a decision the
+   alternate history has made illegal (a bound now out of budget, a shot at a
+   force already gone) instead of skipping it and carrying on. What to do with
+   those divergences is the real design question, not the re-rolling.
 
    The debrief reads through the umpire's eyes or either side's, and a side's
    view is banded rather than counted, so it can be read as a lesson before the
