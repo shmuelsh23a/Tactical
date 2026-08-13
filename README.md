@@ -7,7 +7,8 @@ tabletop tactical wargame described in [`Tactical - Mechanics.docx`](Tactical%20
 complete; stage 2, the hotseat browser game on top of it, is in progress. Mobile
 and networked/single-player modes sit on the same module later.
 
-Working on this repo with Claude Code? Start with [CLAUDE.md](CLAUDE.md).
+Working on this repo with Claude Code? Start with [CLAUDE.md](CLAUDE.md), then
+[docs/handoff.md](docs/handoff.md) for where the work stands.
 
 ## Why it's built this way
 
@@ -215,6 +216,8 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   components/       MapView (SVG map + interaction), Handoff, LogPanel
 
 docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
+docs/handoff.md         State of play: what is done, what is waiting, what next
+docs/balance.md         Every number that was chosen rather than transcribed
 tools/dump-docx.py      Raw .docx extraction, to re-verify that transcription
 ```
 

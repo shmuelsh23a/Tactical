@@ -5,6 +5,9 @@ rules engine plus a React hotseat UI. [README.md](README.md) holds the design,
 the rules decisions, and the roadmap — read it before proposing changes. This
 file is the operating manual.
 
+Picking the work up cold? [docs/handoff.md](docs/handoff.md) is where the
+project stands, what is waiting on the author, and what to take next.
+
 ## Commands
 
 ```bash
@@ -51,6 +54,8 @@ one it is in your reply, too.
   `src/engine/index.ts` barrel.
 - **Imports carry the `.js` extension** even for TypeScript files
   (`./units.js`), throughout.
+- **A unit is recorded as it stands when `addUnit` is called.** Dressing it
+  afterwards (camouflage, `baseCover`) desyncs the recording from the live game.
 - **Features are toggleable per game**, not baked in — the pattern is a flag on
   `GameOptions` (see `enforceC2`), so a quick firefight and a full exercise run
   on the same engine.
