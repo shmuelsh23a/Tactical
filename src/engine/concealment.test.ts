@@ -146,8 +146,11 @@ describe("a prepared ambush", () => {
     expect(detectionChance(walker, hiding, "normal").chance).toBeCloseTo(0.3, 5);
     expect(detectionChance(scout, hiding, "normal").chance).toBeCloseTo(0.4, 5);
 
-    // …though against a fully camouflaged one the floor is what it gets.
-    expect(detectionChance(scout, ambusher(), "normal").chance).toBeCloseTo(0.3, 5);
+    // …and it keeps that edge against a fully camouflaged one: the floor is
+    // the concealed-charge chance, and a scout beats it by what scouting is
+    // worth (author, 2026-08-13).
+    expect(detectionChance(walker, ambusher(), "normal").chance).toBeCloseTo(0.3, 5);
+    expect(detectionChance(scout, ambusher(), "normal").chance).toBeCloseTo(0.4, 5);
   });
 
   it("still sees the attacker walk in, and better for standing still", () => {

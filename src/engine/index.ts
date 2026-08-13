@@ -132,6 +132,7 @@ export {
 // Turn engine
 export {
   Game,
+  HOLDING_FIRE,
   PHASES,
   PhaseError,
   type Phase,

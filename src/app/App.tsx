@@ -55,11 +55,11 @@ type Mission = "he" | "smoke";
 /** What a force does in the fire phase: shoot, or go in. */
 type CombatAction = "fire" | "assault";
 /**
- * What an order tells a force to do at its objective — the task, over and above
- * where to go. The engine's standing order carries an `engage` task
- * (rules decision 6); this is the player's way of setting one.
+ * What an order tells a force to do about the enemy, over and above where to
+ * go: nothing in particular, engage a named force, or hold its fire until the
+ * order is replaced (rules decisions 6 and 12).
  */
-type OrderTask = "advance" | "engage";
+type OrderTask = "advance" | "engage" | "holdFire";
 
 const phaseLabelHe: Record<ActivationPhase, string> = {
   targeting: "שלב סימון מטרות",
@@ -161,6 +161,13 @@ export function App() {
     if (orderTask !== "engage" || !orderTargetId) return undefined;
     const target = visibleEnemies.find((u) => u.id === orderTargetId);
     return target ? { targetId: target.id, weapon: orderWeapon } : undefined;
+  }
+
+  /** The task part of an order, as the panel currently reads. */
+  function orderedTask(): Pick<StandingOrder, "engage" | "holdFire"> {
+    return orderTask === "holdFire"
+      ? { holdFire: true }
+      : { engage: orderedEngagement() };
   }
 
   /** A scouting force walks, so the range ring must show the walk. */
@@ -296,11 +303,7 @@ export function App() {
       moveCommandGroup(selectedOwn, x, y);
       return;
     }
-    issueOrder(selectedOwn, {
-      gait: effectiveGait,
-      destination: { x, y },
-      engage: orderedEngagement(),
-    });
+    issueOrder(selectedOwn, { gait: effectiveGait, destination: { x, y }, ...orderedTask() });
   }
 
   /**
@@ -343,7 +346,7 @@ export function App() {
   /** Order the force to stay where it is — and, if a task is set, to fight from there. */
   function handleHoldOrder() {
     if (!selectedOwn || enginePhase !== "movement" || selectedOwn.kind === "command") return;
-    issueOrder(selectedOwn, { gait: effectiveGait, engage: orderedEngagement() });
+    issueOrder(selectedOwn, { gait: effectiveGait, ...orderedTask() });
   }
 
   /**
@@ -793,7 +796,21 @@ export function App() {
                     >
                       תנועה ותקיפה
                     </button>
+                    <button
+                      className={orderTask === "holdFire" ? "on" : ""}
+                      onClick={() => setOrderTask("holdFire")}
+                      title="הכוח לא יפתח באש עד לפקודה חדשה — כך שלא יתגלה בירי"
+                    >
+                      אחזקת אש
+                    </button>
                   </div>
+
+                  {orderTask === "holdFire" && (
+                    <p className="hint">
+                      הכוח לא יירה עד שתינתן לו פקודה אחרת — גם לא בלחיצה שלך. ירי
+                      מסגיר את מיקום הכוח לאויב, ולכן זו הפקודה ששומרת על מארב.
+                    </p>
+                  )}
 
                   {orderTask === "engage" &&
                     (visibleEnemies.length === 0 ? (
@@ -836,7 +853,11 @@ export function App() {
                     onClick={handleHoldOrder}
                     title="פקודה ללא תנועה: הכוח נשאר במקומו ומבצע את המשימה שנקבעה"
                   >
-                    {orderedEngagement() ? "החזק מקום ותקוף" : "החזק מקום"}
+                    {orderTask === "holdFire"
+                      ? "החזק מקום ואל תירה"
+                      : orderedEngagement()
+                        ? "החזק מקום ותקוף"
+                        : "החזק מקום"}
                   </button>
 
                   <button

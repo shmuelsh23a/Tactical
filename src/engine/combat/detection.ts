@@ -56,10 +56,11 @@ export function detectionChance(
 
   // …but never past the point where a squad is harder to find than a charge
   // buried in the ground. Camouflage can cancel an observer's advantages; it
-  // cannot make a force impossible to find (rules decision 12).
+  // cannot make a force impossible to find. A scout keeps its edge even here —
+  // the floor is what it is *plus* what scouting is worth (rules decision 12).
   const floor =
     CAMOUFLAGE.floorIsConcealedChargeChance && camouflageBonus(target) > 0
-      ? profile.hiddenDetectChance
+      ? profile.hiddenDetectChance + scouting
       : 0;
 
   const chance = base + watching + scouting + exposure - concealment;

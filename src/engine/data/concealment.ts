@@ -72,6 +72,10 @@ export const CAMOUFLAGE = {
    * charge at that gait — 30% at a walk, 5% at a run, inside 20 m. Camouflage
    * can cancel out an observer's advantages; it cannot make a squad harder to
    * spot than a buried charge, and it can never make a force impossible to find.
+   *
+   * A **scout beats the floor** by what scouting is worth: looking properly is
+   * the answer to a camouflaged position, so the bonus is added on top of the
+   * floor rather than swallowed by it (author, 2026-08-13).
    */
   floorIsConcealedChargeChance: true, // author (tentative)
 } as const;

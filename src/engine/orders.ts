@@ -28,6 +28,14 @@ export interface StandingOrder {
   destination?: Point;
   /** A force to engage whenever the fire phase allows. */
   engage?: { targetId: string; weapon: WeaponClass };
+  /**
+   * Hold fire (אחזקת אש): the force does not shoot at all until the order is
+   * replaced — not on its own initiative, and not at the player's click. It is
+   * what keeps an ambush an ambush, since firing puts the force on the enemy's
+   * map (rules decision 12), and what stops a flanking force giving itself
+   * away before it is in position.
+   */
+  holdFire?: boolean;
 }
 
 /** Close enough to count as arrived, in metres. */

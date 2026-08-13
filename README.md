@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (203 tests: engine + app narration)
+npm test             # run the test suite (208 tests: engine + app narration)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -52,8 +52,9 @@ see rules decision 6 — with a live readout of distance to the command group,
 order frequency, and the turn fresh orders become possible; a force out of
 contact goes on with the order it holds, drawn on its own side's map), **orders
 that carry a task** — an order is an objective *and* what to do about the enemy
-there: advance, advance and engage a named force, or hold where you are and
-engage; the order the selected force is working to is written out on its card,
+there: advance, advance and engage a named force, hold where you are and engage,
+or **hold fire** until told otherwise (which the engine enforces against the
+player's own click); the order the selected force is working to is written out on its card,
 and its objective and its target are both drawn on the map, **fixed faction colours** (BLUE always friendly/blue, RED always
 hostile/red, regardless of whose turn it is), and a **targeting phase**: each
 side marks one indirect-fire mission and one smoke screen per turn (see rules
@@ -132,11 +133,11 @@ force's bound on the step that executed it.
 
 Engine capability the UI does not reach yet — the next obvious work:
 
-- **An order names one force to engage, not a sector or a trigger.** The
-  document has no task language to model, so what the UI can express is what
-  `StandingOrder` holds: a destination, a gait, and one target. "Engage anything
-  that appears on this axis", "hold fire until X", or a fire plan tied to the
-  indirect-fire missions would all need the order model widened first.
+- **An order has no trigger and no sector.** `StandingOrder` holds a
+  destination, a gait, one named target, and hold-fire — so "engage anything
+  that appears on this axis", "hold fire *until* X", or a fire plan tied to the
+  indirect-fire missions would all need the order model widened first. Hold fire
+  today is lifted by a new order, not by a condition the engine watches for.
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
 - **A force cannot be told where to look.** Scouting raises what a force finds
@@ -271,8 +272,11 @@ on the stated reasoning, still awaiting the author's word.
    order is the override, and so is moving the force by hand.
 
    An order is deliberately small — a destination, a gait, and optionally a
-   force to engage — which covers the tasks named without inventing a task
-   language the document does not have. Reaching the objective drops the
+   task: a force to engage, or **hold fire** (אחזקת אש), under which the force
+   does not shoot at all, not even at the player's click, until the order is
+   replaced. That covers the tasks named without inventing a task language the
+   document does not have. Hold fire is what keeps an ambush an ambush, since
+   firing puts a force on the enemy's map (decision 12). Reaching the objective drops the
    destination, which is what turns "advance" into "hold at the objective".
    The no-move-after-being-hit and half-pace-under-fire rules bite while it
    executes, exactly as they do under the player's hand.
@@ -390,7 +394,9 @@ on the stated reasoning, still awaiting the author's word.
       camouflage take off, it is never harder to find than a **concealed
       charge** — the document's own 30% at a walk, 5% at a run, inside 20 m.
       Camouflage can cancel out an observer's advantages; it cannot make a
-      squad impossible to find.
+      squad impossible to find. **A scout beats the floor by its own bonus**
+      (40% at a walk), so looking properly remains the answer to a camouflaged
+      position rather than being swallowed by the floor.
     - **A contact unobserved for 3 turns is dropped** from the map.
     - **A shot puts both forces on each other's map** — the firer plainly sees
       what it is shooting at, and the target learns where the fire came from.
@@ -416,8 +422,8 @@ on the stated reasoning, still awaiting the author's word.
     (**+10%**). The concealed-charge floor is his answer to the first version of
     this rule, where a fully camouflaged force could not be found by looking at
     all; with the floor, a walking searcher always has the document's 30%
-    inside 20 m, and what camouflage really buys is cancelling the bonuses an
-    observer would otherwise bring — including a scout's.
+    inside 20 m, and a scout 40%. What camouflage really buys is cancelling out
+    the bonuses an ordinary observer brings — but not a scout's.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

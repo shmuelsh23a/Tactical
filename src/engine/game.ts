@@ -60,6 +60,9 @@ export type Phase = (typeof PHASES)[number];
 
 export class PhaseError extends Error {}
 
+/** Refusal reason when a force is under orders to hold its fire. */
+export const HOLDING_FIRE = "holding fire";
+
 /** What a move turned up: what the force saw, and what it set off. */
 export interface MoveResult {
   detection: DetectionResult;
@@ -557,10 +560,32 @@ export class Game {
     return !this.smoke.some((s) => segmentIntersectsCircle(from, to, s.center, s.radius));
   }
 
+  /**
+   * Whether the force is under orders to hold its fire. Checked for every kind
+   * of shot, including the player's own click: an order the player can ignore
+   * is not an order (rules decision 6 — it stands until it is replaced).
+   */
+  isHoldingFire(unitId: string): boolean {
+    return this.standingOrders.get(unitId)?.holdFire === true;
+  }
+
   fire(attackerId: string, targetId: string, opts: DirectFireOptions): DirectFireResult {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
+    if (this.isHoldingFire(attackerId)) {
+      return {
+        fired: false,
+        reason: HOLDING_FIRE,
+        range: distance(attacker.position, target.position),
+        hitChance: 0,
+        shooters: 0,
+        hits: 0,
+        totalDamage: 0,
+        newCasualties: 0,
+        targetNeutralized: target.neutralized,
+      };
+    }
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       ...opts,
@@ -585,6 +610,15 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
+    if (this.isHoldingFire(attackerId)) {
+      return {
+        fired: false,
+        reason: HOLDING_FIRE,
+        range: distance(attacker.position, target.position),
+        hit: false,
+        hitChance: 0,
+      };
+    }
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight:
         opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
@@ -604,10 +638,10 @@ export class Game {
   assault(attackerId: string, defenderId: string, grenades = 0): AssaultResult {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
-    if (attacker.neutralized) {
+    if (attacker.neutralized || this.isHoldingFire(attackerId)) {
       return {
         fired: false,
-        reason: "attacker is neutralised",
+        reason: attacker.neutralized ? "attacker is neutralised" : HOLDING_FIRE,
         attackerId,
         defenderId,
         range: distance(attacker.position, this.getUnit(defenderId).position),
@@ -782,6 +816,7 @@ export class Game {
   /** One force engaging the enemy its order names. */
   private engageUnderOrder(unit: Unit, order: StandingOrder): StandingOrderExecution | null {
     const base: StandingOrderExecution = { unitId: unit.id };
+    if (order.holdFire) return null; // told not to shoot; nothing to report
     if (!order.engage) return null;
     if (unit.firedThisTurn) return { ...base, reason: "already acted" };
     if (unit.neutralized) return { ...base, reason: "neutralised" };

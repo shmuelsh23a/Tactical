@@ -58,6 +58,8 @@ export function reasonHe(reason?: string): string {
       return "לא ניתן להסתער על שריון";
     case "attacker is neutralised":
       return "הכוח מנוטרל";
+    case "holding fire":
+      return "הכוח בפקודת אחזקת אש";
     // …an order that could not be carried out
     case "neutralised":
       return "מנוטרל";
@@ -107,6 +109,7 @@ export function describeStandingOrder(
   if (order.engage) {
     parts.push(`תקוף את ${nameOf(order.engage.targetId)} ב${term(weaponHe, order.engage.weapon)}`);
   }
+  if (order.holdFire) parts.push("אחזקת אש");
   return parts.join(" · ");
 }
 

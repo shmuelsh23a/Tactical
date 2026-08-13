@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { Game } from "./game.js";
+import { Game, HOLDING_FIRE } from "./game.js";
 import { stepTowards, hasArrived } from "./orders.js";
-import { makeCommandGroup, makeInfantry } from "./units.js";
+import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
 import { distance } from "./geometry.js";
 
 describe("stepTowards", () => {
@@ -224,5 +224,68 @@ describe("standing orders", () => {
     nextTurnMovement(g);
     g.executeStandingOrders("BLUE");
     expect(squad.position.y).toBeCloseTo(300, 5);
+  });
+});
+
+describe("an order to hold fire", () => {
+  /** Two squads in contact, BLUE under orders not to shoot. */
+  function holdingFire(seed = 3) {
+    const g = new Game({ seed, enforceC2: false });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
+    const enemy = g.addUnit(makeInfantry("E", "RED", "squad", { x: 0, y: 440 }, 6));
+    const tank = g.addUnit(makeVehicle("T", "BLUE", { x: 60, y: 400 }));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "normal", holdFire: true });
+    g.setStandingOrder(tank.id, { gait: "normal", holdFire: true });
+    g.advanceToPhase("combat");
+    return { g, squad, enemy, tank };
+  }
+
+  it("refuses the shot the player asks for", () => {
+    const { g, squad, enemy } = holdingFire();
+    const result = g.fire(squad.id, enemy.id, { weapon: "smallArms" });
+    expect(result.fired).toBe(false);
+    expect(result.reason).toBe(HOLDING_FIRE);
+    expect(squad.firedThisTurn).toBe(false);
+  });
+
+  it("covers every way of shooting, and going in", () => {
+    const { g, squad, enemy, tank } = holdingFire();
+    expect(g.fireExplosive("tankRound", tank.id, enemy.id).reason).toBe(HOLDING_FIRE);
+    expect(g.assault(squad.id, enemy.id, 1).reason).toBe(HOLDING_FIRE);
+  });
+
+  it("keeps the force off the enemy's map — which is the point", () => {
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
+    const enemy = g.addUnit(makeInfantry("E", "RED", "squad", { x: 0, y: 440 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "normal", holdFire: true });
+    g.advanceToPhase("combat");
+    g.fire(squad.id, enemy.id, { weapon: "smallArms" });
+    expect(g.knows("RED", squad.id)).toBe(false);
+  });
+
+  it("stands until it is replaced", () => {
+    const { g, squad, enemy } = holdingFire();
+    expect(g.fire(squad.id, enemy.id, { weapon: "smallArms" }).fired).toBe(false);
+
+    // A new order is the only thing that lifts it.
+    g.setStandingOrder(squad.id, { gait: "normal" });
+    expect(g.isHoldingFire(squad.id)).toBe(false);
+    expect(g.fire(squad.id, enemy.id, { weapon: "smallArms" }).fired).toBe(true);
+  });
+
+  it("is not overridden by an order to engage — the two never travel together", () => {
+    const { g, squad, enemy } = holdingFire();
+    g.setStandingOrder(squad.id, {
+      gait: "normal",
+      engage: { targetId: enemy.id, weapon: "smallArms" },
+      holdFire: true,
+    });
+    expect(g.executeStandingOrders("BLUE").some((e) => e.engaged)).toBe(false);
+    expect(squad.firedThisTurn).toBe(false);
   });
 });
