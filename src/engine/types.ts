@@ -1,5 +1,6 @@
 import type { Point } from "./geometry.js";
 import type { SmokeSource } from "./data/smoke.js";
+import type { CoverState } from "./data/directFire.js";
 
 /** The two combatant sides. The umpire (מנחה) is not a combatant. */
 export type Side = "RED" | "BLUE";
@@ -75,6 +76,8 @@ export interface Unit {
   // --- per-turn / cross-turn flags consumed by movement & fire rules ---
   /** Metres moved during the current turn. */
   movedThisTurn: number;
+  /** True if any of this turn's movement was made at a run (easier to spot). */
+  ranThisTurn: boolean;
   /** True if the unit fired/acted during the current turn. */
   firedThisTurn: boolean;
   /** True if the unit took a hit this turn (blocks movement next turn). */
@@ -83,8 +86,26 @@ export interface Unit {
   movementBlocked: boolean;
   /** True while the unit is under enemy fire (moves at half pace). */
   underFire: boolean;
-  /** True if the unit neither moved nor fired last turn (full cover). */
-  inFullCover: boolean;
+
+  // --- posture: how well protected, and how hard to find (decision 12) ---
+  /**
+   * Consecutive turns the force has stayed put. A force that holds still is
+   * **hidden** (looked for in the 20 m band, not the 300 m one) and, past the
+   * dig-in threshold, works on its position.
+   */
+  stationaryTurns: number;
+  /**
+   * Protection the ground gives it: what it started with (terrain, a prepared
+   * position) raised by whatever it has dug. Recomputed each turn's upkeep, so
+   * a force that gets up and moves loses what it dug.
+   */
+  cover: CoverState;
+  /** Protection it holds without digging — terrain, or a prepared position. */
+  baseCover: CoverState;
+  /** True while the force is working on its camouflage (הסוואה). */
+  camouflaging: boolean;
+  /** Turns of camouflage work banked; moving throws them away. */
+  camouflageTurns: number;
 }
 
 /** Smoke / obscuration screen present on the map. */

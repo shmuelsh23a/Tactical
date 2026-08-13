@@ -83,4 +83,22 @@ export class IntelLedger {
   knows(side: Side, unitId: string): boolean {
     return this.bySide.get(side)?.has(unitId) ?? false;
   }
+
+  /**
+   * Drop contacts nobody has refreshed in `afterTurns` turns — the force is no
+   * longer where the report puts it, and no one is prepared to say where it is
+   * (rules decision 12). Returns what was dropped, per side.
+   */
+  expire(currentTurn: number, afterTurns: number): Contact[] {
+    const dropped: Contact[] = [];
+    for (const contacts of this.bySide.values()) {
+      for (const [unitId, contact] of contacts) {
+        if (currentTurn - contact.lastSeenTurn >= afterTurns) {
+          contacts.delete(unitId);
+          dropped.push(contact);
+        }
+      }
+    }
+    return dropped;
+  }
 }

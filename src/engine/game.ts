@@ -22,9 +22,12 @@ import { orderInterval } from "./data/c2.js";
 import {
   detectByMovement,
   detectByUav,
-  detectMover,
+  observeFromPosition,
   type DetectionResult,
+  type Observation,
 } from "./combat/detection.js";
+import { CAMOUFLAGE_TURNS_AT_MAX, OBSERVATION } from "./data/concealment.js";
+import type { CoverState } from "./data/directFire.js";
 import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 import { triggerMines, type MineDetonation } from "./combat/mines.js";
 import { resolveDirectFire, type DirectFireOptions, type DirectFireResult } from "./combat/directFire.js";
@@ -62,12 +65,6 @@ export interface MoveResult {
   detection: DetectionResult;
   /** Charges triggered along the path walked. */
   mineDetonations: MineDetonation[];
-  /**
-   * Enemy forces that picked the mover up on the way (`trackIntel` only). This
-   * is the umpire's half of the bound — it is what the *other* side now knows,
-   * so a hotseat must not show it to the player who moved.
-   */
-  observedBy: string[];
 }
 
 /** What a call for smoke produced: a screen on the map, or one still in flight. */
@@ -248,6 +245,7 @@ export class Game {
     phase: Phase;
     resolved?: IndirectFireResult[];
     smokeArrived?: SmokeScreen[];
+    observed?: Observation[];
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
@@ -263,6 +261,11 @@ export class Game {
         // barrage.
         const smokeArrived = this.resolveDueSmoke();
         return { phase: this.phase, resolved: this.resolveDueFireMissions(), smokeArrived };
+      }
+      if (this.phase === "combat") {
+        // Movement is over: every force still in position reports what it can
+        // see from where it stands (rules decision 12).
+        return { phase: this.phase, observed: this.observeFromPositions() };
       }
       return { phase: this.phase };
     });
@@ -282,20 +285,23 @@ export class Game {
     phase: Phase;
     resolved: IndirectFireResult[];
     smokeArrived: SmokeScreen[];
+    observed: Observation[];
   } {
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
+    const observed: Observation[] = [];
     this.internally(() => {
       let guard = 0;
       while (this.phase !== target) {
         const step = this.advancePhase();
         if (step.resolved) resolved.push(...step.resolved);
         if (step.smokeArrived) smokeArrived.push(...step.smokeArrived);
+        if (step.observed) observed.push(...step.observed);
         if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
       }
     });
     this.journal({ kind: "advanceToPhase", target });
-    return { phase: this.phase, resolved, smokeArrived };
+    return { phase: this.phase, resolved, smokeArrived, observed };
   }
 
   private requirePhase(p: Phase): void {
@@ -406,6 +412,7 @@ export class Game {
     const from = unit.position;
     unit.position = { ...to };
     unit.movedThisTurn += dist;
+    if (mode === "run") unit.ranThisTurn = true;
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
     // Smoke stops the eye as well as the bullet, so observation runs through
@@ -415,16 +422,9 @@ export class Game {
       ? (from: Point, to: Point) => this.hasLineOfSight(from, to)
       : undefined;
     const detection = detectByMovement(this.rng, unit, mode, enemies, this.mines, sight);
-    const observedBy = this.trackIntel ? detectMover(this.rng, unit, enemies, sight) : [];
-    if (this.trackIntel) {
-      // What the mover found, and what found the mover.
-      for (const id of detection.spottedUnitIds) {
-        this.observe(unit.side, id, "movement");
-      }
-      for (const id of observedBy) {
-        this.observe(this.getUnit(id).side, unit.id, "movement");
-      }
-    }
+    // What the mover found. What found the mover is rolled once for the whole
+    // turn, by every force in position — see observeFromPosition.
+    for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement");
 
     // Charges are tested against the whole path walked, so a bound cannot vault
     // a minefield. Any that fired are spent.
@@ -440,7 +440,7 @@ export class Game {
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
 
     this.journal({ kind: "moveUnit", unitId, to, mode });
-    return { detection, mineDetonations: detonations, observedBy };
+    return { detection, mineDetonations: detonations };
   }
 
   // ---- what each side knows ----
@@ -465,6 +465,47 @@ export class Game {
   private exchangeContact(attacker: Unit, target: Unit): void {
     this.observe(target.side, attacker.id, "fire");
     this.observe(attacker.side, target.id, "fire");
+  }
+
+  /**
+   * Every force in position looks over its sector (rules decision 12). Run once
+   * per turn, on the way into the fire phase, so it sees the turn's movement —
+   * a force that moved had its own look during its bound and is skipped.
+   *
+   * Nothing happens without the knowledge model: there is no one to tell.
+   */
+  private observeFromPositions(): Observation[] {
+    if (!this.trackIntel) return [];
+    const seen = observeFromPosition(this.rng, this.units, (from, to) =>
+      this.hasLineOfSight(from, to),
+    );
+    for (const { observerId, targetId } of seen) {
+      this.observe(this.getUnit(observerId).side, targetId, "movement");
+    }
+    return seen;
+  }
+
+  /**
+   * Work on a force's camouflage, or stop (הסוואה). It accrues while the force
+   * stays put — see {@link CAMOUFLAGE} — and a force that moves loses the lot,
+   * so this is a posture, not a one-off action.
+   */
+  setCamouflage(unitId: string, on: boolean): void {
+    const unit = this.getUnit(unitId);
+    unit.camouflaging = on;
+    if (!on) unit.camouflageTurns = 0;
+    this.journal({ kind: "setCamouflage", unitId, on });
+  }
+
+  /**
+   * The cover a shot at `target` is resolved against, worked out from the
+   * force's own state rather than asserted by the caller. A force that fires
+   * from its position exposes itself doing it, which is what the document's
+   * partial-cover figure is for ("-10% when firing while in cover").
+   */
+  coverAgainst(target: Unit): CoverState {
+    if (target.cover === "full" && target.firedThisTurn) return "partial";
+    return target.cover;
   }
 
   /** Everything `side` has picked up of the enemy, with where it last saw it. */
@@ -502,6 +543,8 @@ export class Game {
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       ...opts,
+      // The engine knows what the target is behind; a caller may still say.
+      cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
       // it out from the smoke on the map.
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
@@ -724,10 +767,7 @@ export class Game {
     const target = this.units.find((u) => u.id === order.engage!.targetId);
     if (!target || target.neutralized) return { ...base, reason: "target gone" };
 
-    const result = this.fire(unit.id, target.id, {
-      weapon: order.engage.weapon,
-      cover: target.inFullCover ? "full" : "none",
-    });
+    const result = this.fire(unit.id, target.id, { weapon: order.engage.weapon });
     if (!result.fired) return { ...base, reason: result.reason ?? "could not fire" };
     return {
       ...base,
@@ -818,6 +858,8 @@ export class Game {
   // ---- upkeep ----
 
   private endOfTurnUpkeep(): void {
+    // A report nobody has refreshed for three turns is no longer a contact.
+    this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
     applyBleeding(this.rng, this.units, this.turn);
     this.smoke = decaySmoke(this.smoke);
     endTurnUnitUpkeep(this.units);

@@ -52,11 +52,13 @@ describe("what each side knows", () => {
     // the defender never moves, so without its own roll it would stay blind.
     const { g, blue, red } = contact();
     g.advanceToPhase("movement");
-    const { detection, observedBy } = g.moveUnit(blue.id, { x: 0, y: 160 }, "normal");
+    g.moveUnit(blue.id, { x: 0, y: 160 }, "normal");
+    // RED is stationary, so the mover only finds it inside the 20 m band; RED
+    // looks over its sector on the way into the fire phase.
+    expect(g.knows("BLUE", red.id)).toBe(false);
+    const { observed } = g.advanceToPhase("combat");
 
-    expect(detection.spottedUnitIds).toContain(red.id);
-    expect(observedBy).toContain(red.id);
-    expect(g.knows("BLUE", red.id)).toBe(true);
+    expect(observed.map((o) => o.observerId)).toContain(red.id);
     expect(g.knows("RED", blue.id)).toBe(true);
   });
 
@@ -67,6 +69,7 @@ describe("what each side knows", () => {
     g.beginTurn();
     g.advanceToPhase("movement");
     g.moveUnit(blue.id, { x: 0, y: 250 }, "normal");
+    g.advanceToPhase("combat"); // RED looks over its sector and picks it up
     expect(g.knows("RED", blue.id)).toBe(true);
     const seenAt = { ...blue.position };
 
@@ -74,6 +77,7 @@ describe("what each side knows", () => {
     g.advanceToPhase("initiative");
     g.advanceToPhase("movement");
     g.moveUnit(blue.id, { x: 0, y: 350 }, "run");
+    g.advanceToPhase("combat");
 
     const mark = g.contactFor("RED", blue.id);
     expect(mark?.lastKnownPosition).toEqual(seenAt);
@@ -118,28 +122,31 @@ describe("what each side knows", () => {
     g.advanceToPhase("targeting");
     g.deploySmoke("grenade", "RED", { x: 0, y: 100 }); // between them
     g.advanceToPhase("movement");
-    const { detection, observedBy } = g.moveUnit(blue.id, { x: 0, y: 160 }, "normal");
+    g.moveUnit(blue.id, { x: 0, y: 160 }, "normal");
+    const { observed } = g.advanceToPhase("combat");
 
-    expect(detection.spottedUnitIds).not.toContain(red.id);
-    expect(observedBy).not.toContain(red.id);
+    expect(g.knows("BLUE", red.id)).toBe(false);
+    expect(observed).toEqual([]);
   });
 
   it("costs nothing when the module is off", () => {
-    // Same seed, same bound: with no knowledge model the extra rolls are never
-    // made, so a game played without it draws exactly what it always drew.
+    // The rolls a knowledge model needs are the standing observation ones, and
+    // they are simply not made without it — so a game played without the module
+    // draws exactly what it always drew.
     const withIntel = contact(4, true);
     const without = contact(4, false);
     for (const { g, blue } of [withIntel, without]) {
       g.advanceToPhase("movement");
       g.moveUnit(blue.id, { x: 0, y: 160 }, "normal");
     }
+    // The bound itself is identical either way…
+    expect(without.g.rng.getState()).toBe(withIntel.g.rng.getState());
+
+    // …and it is the watching that costs, which only one of them does.
+    withIntel.g.advanceToPhase("combat");
+    without.g.advanceToPhase("combat");
     expect(without.g.contactsFor("BLUE")).toEqual([]);
     expect(without.g.rng.getState()).not.toBe(withIntel.g.rng.getState());
-
-    const plain = contact(4, false);
-    plain.g.advanceToPhase("movement");
-    plain.g.moveUnit(plain.blue.id, { x: 0, y: 160 }, "normal");
-    expect(plain.g.rng.getState()).toBe(without.g.rng.getState());
   });
 
   it("replays out of a recording, contacts and all", () => {

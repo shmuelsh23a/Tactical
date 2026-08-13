@@ -7,7 +7,12 @@ import { resolveDispersion } from "./artillery.js";
 import { resolveBlast, resolveDirectExplosive } from "./explosives.js";
 import { resolveIndirectFire } from "./indirectFire.js";
 import { resolveAssault } from "./assault.js";
-import { detectByMovement, detectByUav } from "./detection.js";
+import {
+  camouflageBonus,
+  detectByMovement,
+  detectByUav,
+  detectionChance,
+} from "./detection.js";
 
 describe("direct fire", () => {
   it("respects range bands and produces casualties over many trials", () => {
@@ -388,17 +393,72 @@ describe("assault", () => {
 });
 
 describe("detection", () => {
+  /** A force that has moved this turn — i.e. one that is *visible*. */
+  function movingEnemy(at: { x: number; y: number }) {
+    const enemy = makeInfantry("E", "RED", "squad", at, 8);
+    enemy.movedThisTurn = 40;
+    return enemy;
+  }
+
   it("movement spots a visible enemy in range often at normal pace", () => {
     let spotted = 0;
     const n = 2000;
     for (let t = 0; t < n; t++) {
       const rng = new Rng(t + 1);
       const mover = makeInfantry("M", "BLUE", "squad", { x: 0, y: 0 }, 8);
-      const enemy = makeInfantry("E", "RED", "squad", { x: 0, y: 200 }, 8);
-      const r = detectByMovement(rng, mover, "normal", [enemy], []);
+      const r = detectByMovement(rng, mover, "normal", [movingEnemy({ x: 0, y: 200 })], []);
       if (r.spottedUnitIds.includes("E")) spotted++;
     }
     expect(spotted / n).toBeCloseTo(0.7, 1);
+  });
+
+  it("cannot see a force that is holding still, until it is almost on top of it", () => {
+    // A stationary force is hidden (rules decision 12), so it is looked for in
+    // the document's 20 m band at 30% — not the 300 m one. That is an ambush.
+    let farSpots = 0;
+    let closeSpots = 0;
+    const n = 2000;
+    for (let t = 0; t < n; t++) {
+      const mover = makeInfantry("M", "BLUE", "squad", { x: 0, y: 0 }, 8);
+      const far = makeInfantry("E", "RED", "squad", { x: 0, y: 200 }, 8);
+      const near = makeInfantry("E", "RED", "squad", { x: 0, y: 15 }, 8);
+      if (detectByMovement(new Rng(t + 1), mover, "normal", [far], []).spottedUnitIds.length) {
+        farSpots++;
+      }
+      if (detectByMovement(new Rng(t + 1), mover, "normal", [near], []).spottedUnitIds.length) {
+        closeSpots++;
+      }
+    }
+    expect(farSpots).toBe(0);
+    expect(closeSpots / n).toBeCloseTo(0.3, 1);
+  });
+
+  it("a force in position watches better than one on the move", () => {
+    const watcher = makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    const runner = makeInfantry("R", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    runner.movedThisTurn = 80;
+    const target = movingEnemy({ x: 0, y: 200 });
+
+    // 70% base, +10% for watching rather than moving.
+    expect(detectionChance(watcher, target).chance).toBeCloseTo(0.8, 5);
+    // …and a runner is both worse at looking and easier to find.
+    expect(detectionChance(runner, target, "run").chance).toBeCloseTo(0.5, 5);
+    target.ranThisTurn = true;
+    expect(detectionChance(watcher, target).chance).toBeCloseTo(0.9, 5);
+  });
+
+  it("cover and camouflage take the chance back down", () => {
+    const watcher = makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    const target = movingEnemy({ x: 0, y: 200 });
+    target.cover = "full";
+    expect(detectionChance(watcher, target).chance).toBeCloseTo(0.6, 5); // 0.8 - 0.2
+
+    target.camouflageTurns = 4; // two completed steps
+    expect(camouflageBonus(target)).toBeCloseTo(0.2, 5);
+    expect(detectionChance(watcher, target).chance).toBeCloseTo(0.4, 5);
+
+    target.camouflageTurns = 100; // capped
+    expect(camouflageBonus(target)).toBeCloseTo(0.5, 5);
   });
 
   it("UAV footprint auto-detects units inside it", () => {

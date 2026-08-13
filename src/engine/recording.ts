@@ -12,7 +12,7 @@ import type { DirectFireOptions, DirectFireResult } from "./combat/directFire.js
 import type { DirectExplosiveResult } from "./combat/explosives.js";
 import type { IndirectFireResult } from "./combat/indirectFire.js";
 import type { AssaultResult } from "./combat/assault.js";
-import type { DetectionResult } from "./combat/detection.js";
+import type { DetectionResult, Observation } from "./combat/detection.js";
 import { Game, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
@@ -56,7 +56,8 @@ export type RecordedAction =
   | { kind: "deploySmoke"; source: SmokeSource; side: Side; center: Point; radius: number }
   | { kind: "issueOrders"; unitId: string; commanderPosition?: Point }
   | { kind: "setStandingOrder"; unitId: string; order: Omit<StandingOrder, "issuedTurn"> }
-  | { kind: "executeStandingOrders"; side: Side };
+  | { kind: "executeStandingOrders"; side: Side }
+  | { kind: "setCamouflage"; unitId: string; on: boolean };
 
 export interface GameRecording {
   /** Format version, so an old recording can be recognised and migrated. */
@@ -92,7 +93,14 @@ export interface GameRecording {
 export type ActionOutcome =
   | { kind: "setup" }
   | { kind: "beginTurn"; turn: number; initiativeOrder: Side[] }
-  | { kind: "phase"; phase: Phase; resolved: IndirectFireResult[]; smokeArrived: SmokeScreen[] }
+  | {
+      kind: "phase";
+      phase: Phase;
+      resolved: IndirectFireResult[];
+      smokeArrived: SmokeScreen[];
+      /** What the forces in position saw on the way into the fire phase. */
+      observed: Observation[];
+    }
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
   | { kind: "moveUnit"; move: MoveResult }
@@ -102,7 +110,8 @@ export type ActionOutcome =
   | { kind: "deploySmoke"; order: SmokeOrder }
   | { kind: "issueOrders"; accepted: boolean }
   | { kind: "setStandingOrder"; accepted: boolean }
-  | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] };
+  | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] }
+  | { kind: "setCamouflage"; on: boolean };
 
 /** One replayed action and what it produced. */
 export interface ReplayStep {
@@ -188,6 +197,7 @@ export function replayWithOutcomes(
           phase: r.phase,
           resolved: r.resolved ?? [],
           smokeArrived: r.smokeArrived ?? [],
+          observed: r.observed ?? [],
         };
         break;
       }
@@ -198,6 +208,7 @@ export function replayWithOutcomes(
           phase: r.phase,
           resolved: r.resolved,
           smokeArrived: r.smokeArrived,
+          observed: r.observed,
         };
         break;
       }
@@ -264,6 +275,10 @@ export function replayWithOutcomes(
           kind: "setStandingOrder",
           accepted: game.setStandingOrder(action.unitId, cloneForRecord(action.order)),
         };
+        break;
+      case "setCamouflage":
+        game.setCamouflage(action.unitId, action.on);
+        outcome = { kind: "setCamouflage", on: action.on };
         break;
       case "executeStandingOrders":
         outcome = {

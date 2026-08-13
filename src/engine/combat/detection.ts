@@ -2,6 +2,7 @@ import { Rng } from "../rng.js";
 import { distance, type Point } from "../geometry.js";
 import type { Mine, Unit } from "../types.js";
 import { MOVEMENT_PROFILES } from "../data/movement.js";
+import { CAMOUFLAGE, COVER_CONCEALMENT, OBSERVATION } from "../data/concealment.js";
 import { UAV_PROFILES } from "../data/uav.js";
 import type { MovementMode } from "../types.js";
 
@@ -10,11 +11,63 @@ export interface DetectionResult {
   foundMineIds: string[];
 }
 
+/** How much camouflage a force has managed to bank, as a detection penalty. */
+export function camouflageBonus(unit: Unit): number {
+  const steps = Math.floor(unit.camouflageTurns / CAMOUFLAGE.turnsPerStep);
+  return Math.min(CAMOUFLAGE.max, steps * CAMOUFLAGE.perStep);
+}
+
 /**
- * Detection rolls made by a moving unit (תנועה). Visible enemy within 300 m
- * may be spotted (70% normal / 50% running); mines/IEDs/hidden enemy within
- * 20 m may be found (30% / 5%). A `hasLineOfSight` predicate can gate visible
- * detection on terrain; by default sight is assumed clear.
+ * A force that has not moved this turn is **hidden** (rules decision 12): it is
+ * looked for in the document's 20 m / 30% band rather than the 300 m / 70% one.
+ * That is what makes an ambush possible — and what a moving force gives up.
+ */
+export function isHidden(unit: Unit): boolean {
+  return unit.movedThisTurn === 0;
+}
+
+/** The chance and the range at which `observer` may pick `target` up this turn. */
+export function detectionChance(
+  observer: Unit,
+  target: Unit,
+  observerGait?: MovementMode,
+): { chance: number; range: number } {
+  // The observer's own figures: its gait if it is on the move, otherwise the
+  // walking figures plus the bonus for watching rather than moving.
+  const profile = MOVEMENT_PROFILES[observerGait ?? "normal"];
+  const watching = observerGait ? 0 : OBSERVATION.stationaryBonus;
+
+  const hidden = isHidden(target);
+  const base = hidden ? profile.hiddenDetectChance : profile.visibleDetectChance;
+  const range = hidden ? profile.hiddenDetectRange : profile.visibleDetectRange;
+
+  // What the target is doing about being seen. A force at a run is louder and
+  // more conspicuous; cover and camouflage work the other way.
+  const exposure = target.ranThisTurn ? OBSERVATION.runningExposure : 0;
+  const concealment = COVER_CONCEALMENT[target.cover] + camouflageBonus(target);
+
+  return {
+    chance: Math.min(1, Math.max(0, base + watching + exposure - concealment)),
+    range,
+  };
+}
+
+/** Whether a force is in any state to be observing at all. */
+function canObserve(unit: Unit): boolean {
+  if (unit.neutralized) return false;
+  return !(unit.kind === "vehicle" && unit.vehicle?.destroyed);
+}
+
+/** Whether a force can still be found — a destroyed vehicle is not a contact. */
+function isFindable(unit: Unit): boolean {
+  return !(unit.neutralized && unit.kind === "vehicle" && unit.vehicle?.destroyed);
+}
+
+/**
+ * Detection rolls made by a unit that has just moved (תנועה). It looks for the
+ * enemy — visible at 300 m, hidden at 20 m — at its gait's figures, and for
+ * charges within 20 m. A `hasLineOfSight` predicate gates sight on smoke and,
+ * later, on terrain.
  */
 export function detectByMovement(
   rng: Rng,
@@ -29,10 +82,11 @@ export function detectByMovement(
   const foundMineIds: string[] = [];
 
   for (const enemy of enemies) {
-    if (enemy.neutralized && enemy.kind === "vehicle" && enemy.vehicle?.destroyed) continue;
+    if (!isFindable(enemy)) continue;
+    const { chance, range } = detectionChance(mover, enemy, mode);
     const d = distance(mover.position, enemy.position);
-    if (d <= profile.visibleDetectRange && hasLineOfSight(mover.position, enemy.position)) {
-      if (rng.chance(profile.visibleDetectChance)) spottedUnitIds.push(enemy.id);
+    if (d <= range && hasLineOfSight(mover.position, enemy.position)) {
+      if (rng.chance(chance)) spottedUnitIds.push(enemy.id);
     }
   }
 
@@ -48,40 +102,41 @@ export function detectByMovement(
   return { spottedUnitIds, foundMineIds };
 }
 
+/** One force picking another up while watching its sector. */
+export interface Observation {
+  observerId: string;
+  targetId: string;
+}
+
 /**
- * The other half of a bound: who picks the mover up.
+ * What every force in position sees this turn (rules decision 12). A force that
+ * has not moved watches continuously — it does not need the enemy to walk into
+ * it — and is that much better at it for not being on the move. This is the
+ * other half of {@link detectByMovement}: between them, a force that moves is
+ * rolled for by every enemy watching, and a force that stays put rolls itself.
  *
- * The document gives detection as an effect of moving — the mover's own 70%
- * (normal) / 50% (running) against a visible enemy within 300 m — and says
- * nothing about the force that is standing still and watching. Read literally
- * that leaves a defender blind: it never moves, so it never rolls, so an attack
- * could walk onto its position unseen.
- *
- * So the same roll is made in the other direction, at the normal-pace chance:
- * an observer that is *not* moving is not the one distracted by its own
- * movement, and 70% within 300 m is the document's own visible-enemy number.
- * No new figure enters the game — see README rules decision 12.
- *
- * Returns the ids of the observers that picked the mover up.
+ * Movers are skipped: they had their look during their bound.
  */
-export function detectMover(
+export function observeFromPosition(
   rng: Rng,
-  mover: Unit,
-  observers: Unit[],
+  units: Unit[],
   hasLineOfSight: (from: Point, to: Point) => boolean = () => true,
-): string[] {
-  const watching = MOVEMENT_PROFILES.normal;
-  const spotters: string[] = [];
-  for (const observer of observers) {
-    // A force that is down does not report.
-    if (observer.neutralized) continue;
-    if (observer.kind === "vehicle" && observer.vehicle?.destroyed) continue;
-    const d = distance(observer.position, mover.position);
-    if (d > watching.visibleDetectRange) continue;
-    if (!hasLineOfSight(observer.position, mover.position)) continue;
-    if (rng.chance(watching.visibleDetectChance)) spotters.push(observer.id);
+): Observation[] {
+  const observations: Observation[] = [];
+  for (const observer of units) {
+    if (observer.movedThisTurn > 0) continue;
+    if (!canObserve(observer)) continue;
+    for (const target of units) {
+      if (target.side === observer.side || !isFindable(target)) continue;
+      const { chance, range } = detectionChance(observer, target);
+      if (distance(observer.position, target.position) > range) continue;
+      if (!hasLineOfSight(observer.position, target.position)) continue;
+      if (rng.chance(chance)) {
+        observations.push({ observerId: observer.id, targetId: target.id });
+      }
+    }
   }
-  return spotters;
+  return observations;
 }
 
 /**
@@ -109,7 +164,7 @@ export function detectByUav(
 
   if (profile.autoDetectsVisible) {
     for (const enemy of enemies) {
-      if (enemy.neutralized && enemy.kind === "vehicle" && enemy.vehicle?.destroyed) continue;
+      if (!isFindable(enemy)) continue;
       if (inFootprint(enemy.position)) spottedUnitIds.push(enemy.id);
     }
   }

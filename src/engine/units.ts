@@ -135,11 +135,16 @@ export function makeInfantry(
     neutralized: false,
     canOnlyRetreat: false,
     movedThisTurn: 0,
+    ranThisTurn: false,
     firedThisTurn: false,
     hitThisTurn: false,
     movementBlocked: false,
     underFire: false,
-    inFullCover: false,
+    stationaryTurns: 0,
+    cover: "none",
+    baseCover: "none",
+    camouflaging: false,
+    camouflageTurns: 0,
   };
 }
 
@@ -172,11 +177,16 @@ export function makeCommandGroup(
     neutralized: false,
     canOnlyRetreat: false,
     movedThisTurn: 0,
+    ranThisTurn: false,
     firedThisTurn: false,
     hitThisTurn: false,
     movementBlocked: false,
     underFire: false,
-    inFullCover: false,
+    stationaryTurns: 0,
+    cover: "none",
+    baseCover: "none",
+    camouflaging: false,
+    camouflageTurns: 0,
   };
 }
 
@@ -208,10 +218,15 @@ export function makeVehicle(
     neutralized: false,
     canOnlyRetreat: false,
     movedThisTurn: 0,
+    ranThisTurn: false,
     firedThisTurn: false,
     hitThisTurn: false,
     movementBlocked: false,
     underFire: false,
-    inFullCover: false,
+    stationaryTurns: 0,
+    cover: "none",
+    baseCover: "none",
+    camouflaging: false,
+    camouflageTurns: 0,
   };
 }

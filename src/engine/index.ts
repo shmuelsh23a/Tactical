@@ -83,11 +83,22 @@ export {
 export { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
 export { resolveAssault, ASSAULT_RANGE_M, type AssaultResult } from "./combat/assault.js";
 export {
+  camouflageBonus,
   detectByMovement,
   detectByUav,
-  detectMover,
+  detectionChance,
+  isHidden,
+  observeFromPosition,
   type DetectionResult,
+  type Observation,
 } from "./combat/detection.js";
+export {
+  CAMOUFLAGE,
+  CAMOUFLAGE_TURNS_AT_MAX,
+  COVER_CONCEALMENT,
+  DIG_IN,
+  OBSERVATION,
+} from "./data/concealment.js";
 export { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 export {
   triggerMines,
