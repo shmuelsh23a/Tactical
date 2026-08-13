@@ -81,6 +81,9 @@ one it is in your reply, too.
   a side may see, and what it may be told the action produced (rules decision
   13). Adding a new `RecordedAction` means adding it to both switches there, or
   it silently defaults to hidden.
+- **A player is never shown a count of enemy losses.** Losses go through
+  `casualtyReport(n, exact)`, exact only for the reader's own forces — the
+  umpire's debrief view is the one place the tally belongs (rules decision 13).
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.

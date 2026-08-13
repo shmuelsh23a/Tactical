@@ -33,6 +33,12 @@ export interface Contact {
   lastKnownPosition: Point;
   /** What picked it up last. */
   source: ContactSource;
+  /**
+   * Whether the force was out of action when it was last seen. A side keeps
+   * looking at the report, not at the force: one neutralised after it dropped
+   * out of sight still reads as a live contact until somebody looks again.
+   */
+  lastKnownNeutralized: boolean;
 }
 
 /**
@@ -50,6 +56,7 @@ export class IntelLedger {
     position: Point,
     turn: number,
     source: ContactSource,
+    neutralized = false,
   ): Contact {
     let contacts = this.bySide.get(side);
     if (!contacts) {
@@ -61,6 +68,7 @@ export class IntelLedger {
       lastSeenTurn: turn,
       lastKnownPosition: { ...position },
       source,
+      lastKnownNeutralized: neutralized,
     };
     contacts.set(unitId, contact);
     return contact;

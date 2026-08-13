@@ -81,7 +81,7 @@ export function Debrief({
     if (side && !actionVisibleTo(action, side, lens, sides)) return null;
     const outcome =
       !side || outcomeVisibleTo(action, side, sides, lens)
-        ? describeOutcome(step.outcome, names, lens)
+        ? describeOutcome(step.outcome, names, lens, action)
         : "";
     // An enemy step whose every line was redacted is not a step this side saw.
     if (side && action.kind === "executeStandingOrders" && action.side !== side && !outcome) {

@@ -463,7 +463,7 @@ export class Game {
     if (!this.trackIntel) return;
     const unit = this.units.find((u) => u.id === unitId);
     if (!unit || unit.side === side) return;
-    this.intel.record(side, unitId, unit.position, this.turn, source);
+    this.intel.record(side, unitId, unit.position, this.turn, source, unit.neutralized);
   }
 
   /**

@@ -108,6 +108,24 @@ export interface Lens {
 export const FULL_VIEW: Lens = { isOwn: () => true, mayKnow: () => true };
 
 /**
+ * Losses as they are *reported* rather than counted (rules decision 13).
+ *
+ * The umpire has the whole picture and reads exact numbers. A force looking at
+ * an enemy across 200 m does not count the bodies: it sees roughly what its
+ * fire did, and says so. Own losses stay exact — a commander is told what his
+ * own casualty state is.
+ *
+ * Bands are ⚠️ chosen, not from the document.
+ */
+export function casualtyReport(casualties: number, exact: boolean): string {
+  if (exact) return `${casualties} נפגעים`;
+  if (casualties === 0) return "ללא נפגעים שנצפו";
+  if (casualties <= 2) return "נפגעים בודדים";
+  if (casualties <= 5) return "מספר נפגעים";
+  return "אבידות כבדות";
+}
+
+/**
  * The order a force is working to, in one line: the objective, the gait, and
  * the enemy it was told to engage. Used for the live log, the selected-force
  * card and the debrief, so an order is worded the same wherever it is read.
@@ -151,8 +169,16 @@ export function isRoutineOrderReason(reason?: string): boolean {
   return reason === "no movement left" || reason === "already acted";
 }
 
-/** What one force actually did when the engine carried its order out. */
-export function describeExecution(done: StandingOrderExecution, nameOf: NameOf): string {
+/**
+ * What one force actually did when the engine carried its order out. Losses are
+ * reported rather than counted unless `exactLosses` says the reader is entitled
+ * to the tally (rules decision 13).
+ */
+export function describeExecution(
+  done: StandingOrderExecution,
+  nameOf: NameOf,
+  exactLosses = true,
+): string {
   const name = nameOf(done.unitId);
   if (done.moved) {
     return done.moved.arrived
@@ -160,9 +186,12 @@ export function describeExecution(done: StandingOrderExecution, nameOf: NameOf):
       : `${name} מתקדם לפי פקודה ל${at(done.moved.to)}`;
   }
   if (done.engaged) {
-    return `${name} תקף את ${nameOf(done.engaged.targetId)} — ${done.engaged.hits} פגיעות ב-${pct(
-      done.engaged.hitChance,
-    )}, ${done.engaged.newCasualties} נפגעים`;
+    return `${name} תקף את ${nameOf(done.engaged.targetId)} — ${
+      exactLosses ? `${done.engaged.hits} פגיעות ` : ""
+    }ב-${pct(done.engaged.hitChance)}, ${casualtyReport(
+      done.engaged.newCasualties,
+      exactLosses,
+    )}`;
   }
   return `${name}: ${reasonHe(done.reason)}`;
 }
@@ -215,6 +244,19 @@ export function describeAction(action: RecordedAction, names: Map<string, string
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
+/** The force an action was aimed at, where it was aimed at one. */
+function targetOf(action: RecordedAction): string | undefined {
+  switch (action.kind) {
+    case "fire":
+    case "fireExplosive":
+      return action.targetId;
+    case "assault":
+      return action.defenderId;
+    default:
+      return undefined;
+  }
+}
+
 /**
  * What the action produced, in one line — the dice behind the decision.
  *
@@ -225,8 +267,13 @@ export function describeOutcome(
   outcome: ActionOutcome,
   names: Map<string, string>,
   lens: Lens = FULL_VIEW,
+  action?: RecordedAction,
 ): string {
   const who = (id: string) => names.get(id) ?? id;
+  // Losses are counted exactly for the reader's own forces, and reported rather
+  // than counted for anyone else's (rules decision 13).
+  const shotAt = action ? targetOf(action) : undefined;
+  const exact = shotAt == null || lens.isOwn(shotAt);
 
   switch (outcome.kind) {
     case "setup":
@@ -258,9 +305,11 @@ export function describeOutcome(
         // The fall of shot is plain to everyone; who it caught is not.
         const caught = impact.blast.targets.filter((t) => t.caught && lens.mayKnow(t.unitId));
         const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
+        // Exact only where every force caught is one of the reader's own.
+        const counted = caught.every((t) => lens.isOwn(t.unitId));
         const hit = caught.length
           ? `, פגע ב${caught.map((t) => who(t.unitId)).join(", ")}${
-              casualties ? ` — ${casualties} נפגעים` : ""
+              casualties || !counted ? ` — ${casualtyReport(casualties, counted)}` : ""
             }`
           : ", ללא פגיעות";
         parts.push(`${off > 0 ? `נחיתה בסטייה ${off}מ'` : "נחיתה מדויקת"}${hit}`);
@@ -302,15 +351,20 @@ export function describeOutcome(
 
     case "fire": {
       const r = outcome.result;
-      if (!r.fired) return `לא ירה (${r.reason ?? "—"})`;
-      return `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
-        r.targetNeutralized ? " — נוטרל" : ""
-      }`;
+      if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
+      // Against an enemy force the shooter reports an effect, not a tally.
+      return exact
+        ? `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
+            r.targetNeutralized ? " — נוטרל" : ""
+          }`
+        : `${r.shooters} יורים ב-${pct(r.hitChance)} — ${casualtyReport(r.newCasualties, false)}${
+            r.targetNeutralized ? " — נראה מנוטרל" : ""
+          }`;
     }
 
     case "fireExplosive": {
       const r = outcome.result;
-      if (!r.fired) return `לא ירה (${r.reason ?? "—"})`;
+      if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
       if (!r.hit) return `החטאה (${pct(r.hitChance)})`;
       const caught = (r.blast?.targets ?? []).filter((t) => t.caught);
       const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
@@ -320,15 +374,23 @@ export function describeOutcome(
             armour.destroyed ? ", הושמד" : armour.mobilityKilled ? ", נכשל ניוד" : ""
           }`
         : "";
-      return `פגיעה (${pct(r.hitChance)})${casualties ? `, ${casualties} נפגעים` : ""}${armourText}`;
+      const losses = exact
+        ? casualties
+          ? `, ${casualties} נפגעים`
+          : ""
+        : `, ${casualtyReport(casualties, false)}`;
+      return `פגיעה (${pct(r.hitChance)})${losses}${armourText}`;
     }
 
     case "assault": {
       const r = outcome.result;
-      if (!r.fired) return `לא הסתער (${r.reason ?? "—"})`;
-      return `${r.fireHits} פגיעות אש, ${r.grenadeHits} רימונים, ${r.defenderCasualties} נפגעים${
-        r.selfCasualties ? ` · ${r.selfCasualties} נפגעים עצמיים` : ""
-      }${r.defenderNeutralized ? " — האויב נוטרל" : ""}`;
+      if (!r.fired) return `לא הסתער (${reasonHe(r.reason)})`;
+      return `${r.fireHits} פגיעות אש, ${r.grenadeHits} רימונים, ${casualtyReport(
+        r.defenderCasualties,
+        exact,
+      )}${r.selfCasualties ? ` · ${r.selfCasualties} נפגעים עצמיים` : ""}${
+        r.defenderNeutralized ? (exact ? " — האויב נוטרל" : " — האויב נראה מנוטרל") : ""
+      }`;
     }
 
     case "deploySmoke":

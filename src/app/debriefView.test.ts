@@ -6,7 +6,7 @@ import {
   type GameRecording,
   type Side,
 } from "../engine/index.js";
-import { describeOutcome, unitNames } from "./debriefText.js";
+import { casualtyReport, describeOutcome, unitNames } from "./debriefText.js";
 import {
   actionVisibleTo,
   lensFor,
@@ -161,5 +161,48 @@ describe("the contact ledger behind the review", () => {
   it("grows over the battle rather than being known from the start", () => {
     expect(contactsAfter[0]!.RED.size).toBe(0);
     expect(contactsAfter[rec.actions.length - 1]!.RED.size).toBeGreaterThan(0);
+  });
+});
+
+describe("how precisely a side is told what it did", () => {
+  const shot = find("fire")[0]!;
+  const outcome = steps[shot.index]!.outcome;
+
+  it("counts exactly for the umpire", () => {
+    // The umpire has the whole picture: that is what an umpire is for.
+    const text = describeOutcome(outcome, names, undefined, shot.action);
+    expect(text).toMatch(/\d+ נפגעים/);
+    expect(text).toContain("פגיעות");
+  });
+
+  it("reports rather than counts for the force that fired", () => {
+    // RED fired on BLUE: it saw the effect, it did not count the bodies.
+    const asRed = describeOutcome(
+      outcome,
+      names,
+      lensFor("RED", shot.index, contactsAfter, sides),
+      shot.action,
+    );
+    expect(asRed).not.toMatch(/\d+ נפגעים/);
+    expect(asRed).toMatch(/נפגעים בודדים|מספר נפגעים|אבידות כבדות|ללא נפגעים שנצפו/);
+  });
+
+  it("keeps a side's own losses exact", () => {
+    // BLUE was the one fired on; its own casualty state is not an estimate.
+    const asBlue = describeOutcome(
+      outcome,
+      names,
+      lensFor("BLUE", shot.index, contactsAfter, sides),
+      shot.action,
+    );
+    expect(asBlue).toMatch(/\d+ נפגעים/);
+  });
+
+  it("bands losses the way the report reads", () => {
+    expect(casualtyReport(3, true)).toBe("3 נפגעים");
+    expect(casualtyReport(0, false)).toBe("ללא נפגעים שנצפו");
+    expect(casualtyReport(2, false)).toBe("נפגעים בודדים");
+    expect(casualtyReport(5, false)).toBe("מספר נפגעים");
+    expect(casualtyReport(9, false)).toBe("אבידות כבדות");
   });
 });

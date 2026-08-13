@@ -25,6 +25,7 @@ import {
   type Unit,
 } from "../engine/index.js";
 import {
+  casualtyReport,
   describeExecution,
   describeStandingOrder,
   isRoutineOrderReason,
@@ -154,6 +155,13 @@ export function App() {
   const selectedCanManoeuvre = selectedOwn ? !awaitingOrders.has(selectedOwn.id) : false;
 
   const nameOf = (id: string) => game.units.find((u) => u.id === id)?.name ?? id;
+  /**
+   * How losses read to the side at the screen: exactly for its own forces, as a
+   * report for anyone else's (rules decision 13). The umpire's exact numbers are
+   * in the debrief, which is where the whole picture belongs.
+   */
+  const lossesOf = (unit: Unit, casualties: number) =>
+    casualtyReport(casualties, unit.side === viewingSide);
   /** Enemies this side can currently see — the only ones an order may name. */
   const visibleEnemies = visibleUnits.filter((u) => u.side !== viewingSide && !u.neutralized);
   const selectedOrder = selectedOwn ? game.standingOrderFor(selectedOwn.id) : undefined;
@@ -285,7 +293,13 @@ export function App() {
       for (const hit of r.blast.targets) {
         if (!hit.caught) continue;
         const name = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
-        pushLog(`${name} נפגע מ${weapon}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty");
+        const victim = game.units.find((u) => u.id === hit.unitId);
+        pushLog(
+          victim && victim.side !== viewingSide
+            ? `${name} נפגע מ${weapon} — ${lossesOf(victim, hit.newCasualties)}`
+            : `${name} נפגע מ${weapon}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`,
+          "casualty",
+        );
         if (hit.neutralized) pushLog(`${name} נוטרל!`, "casualty");
       }
     }
@@ -423,20 +437,29 @@ export function App() {
           pushLog(`${kind} התפוצץ תחת ${name}!`, "casualty", side);
           for (const hit of det.blast?.targets ?? []) {
             if (!hit.caught) continue;
-            const victim = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
-            pushLog(`${victim}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty", side);
-            if (hit.neutralized) pushLog(`${victim} נוטרל!`, "casualty", side);
+            const victim = game.units.find((u) => u.id === hit.unitId);
+            const label = victim?.name ?? hit.unitId;
+            pushLog(
+              victim && victim.side !== side
+                ? `${label} — ${lossesOf(victim, hit.newCasualties)}`
+                : `${label}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`,
+              "casualty",
+              side,
+            );
+            if (hit.neutralized) pushLog(`${label} נוטרל!`, "casualty", side);
           }
         }
       }
       if (done.engaged) {
+        const engaged = game.units.find((u) => u.id === done.engaged!.targetId);
         pushLog(
-          describeExecution(done, nameOf),
+          describeExecution(done, nameOf, engaged?.side === side),
           done.engaged.newCasualties > 0 ? "casualty" : "fire",
           side,
         );
-        const target = game.units.find((u) => u.id === done.engaged!.targetId);
-        if (target?.neutralized) pushLog(`${target.name} נוטרל!`, "casualty", side);
+        if (engaged?.neutralized) {
+          pushLog(`${engaged.name} ${engaged.side === side ? "נוטרל!" : "נראה מנוטרל"}`, "casualty", side);
+        }
       }
       if (done.reason && !isRoutineOrderReason(done.reason)) {
         pushLog(`${name}: ${reasonHe(done.reason)}`, "info", side);
@@ -477,13 +500,15 @@ export function App() {
           pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
         } else {
           pushLog(
-            `${selectedOwn.name} → ${target.name}: ${r.hits} פגיעות (${Math.round(r.hitChance * 100)}%), ${r.newCasualties} נפגעים`,
+            `${selectedOwn.name} → ${target.name}: ${r.shooters} יורים ב-${Math.round(
+              r.hitChance * 100,
+            )}% — ${lossesOf(target, r.newCasualties)}`,
             r.newCasualties > 0 ? "casualty" : "fire",
             viewingSide,
           );
         }
       }
-      if (target.neutralized) pushLog(`${target.name} נוטרל!`, "casualty", viewingSide);
+      if (target.neutralized) pushLog(`${target.name} נראה מנוטרל`, "casualty", viewingSide);
     } catch (err) {
       pushLog((err as Error).message, "fire", viewingSide);
     }
@@ -501,7 +526,7 @@ export function App() {
         pushLog(
           `${attacker.name} הסתער על ${target.name}: ${r.fireHits} פגיעות אש` +
             (grenades > 0 ? `, ${r.grenadeHits}/${grenades} רימונים` : "") +
-            `, ${r.defenderCasualties} נפגעים`,
+            `, ${lossesOf(target, r.defenderCasualties)}`,
           r.defenderCasualties > 0 ? "casualty" : "fire",
           viewingSide,
         );
@@ -512,7 +537,7 @@ export function App() {
             viewingSide,
           );
         }
-        if (r.defenderNeutralized) pushLog(`${target.name} נוטרל!`, "casualty", viewingSide);
+        if (r.defenderNeutralized) pushLog(`${target.name} נראה מנוטרל`, "casualty", viewingSide);
       }
     } catch (err) {
       pushLog((err as Error).message, "fire", viewingSide);

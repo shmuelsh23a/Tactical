@@ -16,6 +16,7 @@ describe("the contact ledger", () => {
       lastSeenTurn: 3,
       lastKnownPosition: { x: 50, y: 0 },
       source: "uav",
+      lastKnownNeutralized: false,
     });
     expect(intel.contactsFor("BLUE")).toHaveLength(1);
     // One side's picture is not the other's.

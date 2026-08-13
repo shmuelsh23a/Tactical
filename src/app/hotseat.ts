@@ -86,9 +86,18 @@ export function sideView(game: Game, side: Side): SideView {
     if (!truth || isGone(truth)) continue;
     const seenNow = contact.lastSeenTurn >= game.turn;
     if (!seenNow) staleIds.add(truth.id);
-    // A copy, positioned by the report rather than by the truth — the player
-    // must not read a force's current position off a stale contact.
-    enemies.push(seenNow ? truth : { ...truth, position: { ...contact.lastKnownPosition } });
+    // A copy of the *report*, not of the force: an old contact carries where it
+    // was and how it looked when it was last seen, so a player cannot read a
+    // force's current position — or its collapse — off a stale mark.
+    enemies.push(
+      seenNow
+        ? truth
+        : {
+            ...truth,
+            position: { ...contact.lastKnownPosition },
+            neutralized: contact.lastKnownNeutralized,
+          },
+    );
   }
   return { units: [...own, ...enemies], staleIds };
 }

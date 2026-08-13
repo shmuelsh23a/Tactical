@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (229 tests: engine + app + review)
+npm test             # run the test suite (233 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -109,8 +109,10 @@ can click to jump. It can be read through three sets of eyes — **the umpire's*
 (both sides, every outcome, the default) or **either side's**, which shows that
 side's own forces, the enemy only where it had been detected, and a timeline
 with everything it never saw taken out of it: the enemy's orders, its
-undetected forces, and the results of shots into ground it could not observe
-(rules decision 13).
+undetected forces, and the results of shots into ground it could not observe.
+What a side *is* shown of its own fire is a report rather than a tally —
+`נפגעים בודדים` where the umpire reads `2 נפגעים` — and the live combat log
+reads the same way during play (rules decision 13).
 State at step N is replayed from the seed rather than stored as snapshots, so
 what is on screen is what the engine actually does with that recording.
 
@@ -451,6 +453,17 @@ on the stated reasoning, still awaiting the author's word.
     - **Your own casualties are always known**; the enemy's only for a force
       you can currently see. So a side that fires on a stale mark is told the
       shot was taken, not what it achieved.
+    - **And what it does learn is a report, not a count** (ruled 2026-08-13:
+      *the umpire has the entire picture, players are fuzzier*). A force is told
+      how many of its own men fired and at what chance — its own business — and
+      then what its fire appeared to do: `ללא נפגעים שנצפו`, `נפגעים בודדים`,
+      `מספר נפגעים`, `אבידות כבדות`. An enemy force that goes down reads as
+      `נראה מנוטרל` rather than as a fact. Own losses stay exact; the umpire's
+      view is unchanged, which is where the tally lives. The **bands are ⚠️
+      chosen** (0 / 1–2 / 3–5 / 6+) and are the thing to tune.
+    - **A stale contact carries the state it was last seen in**, not the force's
+      current one — a squad neutralised after it dropped out of sight still
+      reads as a live mark until somebody looks again.
     - **The turn structure is common to the table** — turns, phases and
       initiative are the umpire's bookkeeping, not intelligence.
 
