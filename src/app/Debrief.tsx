@@ -18,6 +18,7 @@ import {
 import {
   actionVisibleTo,
   lensFor,
+  lessonsFor,
   outcomeVisibleTo,
   replayForReview,
   unitSides,
@@ -25,6 +26,12 @@ import {
   type Viewpoint,
 } from "./debriefView.js";
 import { isGone, sideView } from "./hotseat.js";
+
+/** "אף פעם" / "פעם אחת" / "3 פעמים" — a count of occasions, in readable Hebrew. */
+function times(n: number): string {
+  if (n === 0) return "אף פעם";
+  return n === 1 ? "פעם אחת" : `${n} פעמים`;
+}
 
 /**
  * After-action review (תחקיר). Replays a saved battle and steps through it.
@@ -51,6 +58,12 @@ export function Debrief({
   const total = recording.actions.length;
   const [index, setIndex] = useState(total);
   const [viewpoint, setViewpoint] = useState<Viewpoint>("umpire");
+  /**
+   * Lift the veil on a side's review. The debrief is meant to be read blind
+   * first — as the side fought it — and only then compared with what was
+   * actually there, which is where it teaches (rules decision 13).
+   */
+  const [showTruth, setShowTruth] = useState(false);
 
   const names = useMemo(() => unitNames(recording), [recording]);
   const sides = useMemo(() => unitSides(recording), [recording]);
@@ -72,23 +85,39 @@ export function Debrief({
   const lensAt = (i: number): Lens =>
     side ? lensFor(side, i, contactsAfter, sides) : UMPIRE_LENS;
 
-  /** One timeline row, or null where the viewer would have seen nothing. */
+  /**
+   * One timeline row. `hidden` marks a step this side never saw: it is dropped
+   * from the review unless the truth is showing, where it is what the reader is
+   * meant to learn. `truth` is the umpire's version of an outcome the side was
+   * told less of.
+   */
   const rowAt = (i: number) => {
     const action = recording.actions[i];
     const step = steps[i];
     if (!action || !step) return null;
     const lens = lensAt(i);
-    if (side && !actionVisibleTo(action, side, lens, sides)) return null;
-    const outcome =
-      !side || outcomeVisibleTo(action, side, sides, lens)
-        ? describeOutcome(step.outcome, names, lens, action)
-        : "";
+    const full = describeOutcome(step.outcome, names, UMPIRE_LENS, action);
+    const row = (hidden: boolean, outcome: string) => ({
+      text: describeAction(action, names),
+      outcome,
+      truth: full && full !== outcome ? full : "",
+      hidden,
+    });
+
+    if (!side) return row(false, full);
+    if (!actionVisibleTo(action, side, lens, sides)) return row(true, "");
+    const outcome = outcomeVisibleTo(action, side, sides, lens)
+      ? describeOutcome(step.outcome, names, lens, action)
+      : "";
     // An enemy step whose every line was redacted is not a step this side saw.
-    if (side && action.kind === "executeStandingOrders" && action.side !== side && !outcome) {
-      return null;
+    if (action.kind === "executeStandingOrders" && action.side !== side && !outcome) {
+      return row(true, "");
     }
-    return { text: describeAction(action, names), outcome };
+    return row(false, outcome);
   };
+
+  const lessons = side ? lessonsFor(side, index, steps, contactsAfter, sides) : null;
+  const nameOf = (id: string) => names.get(id) ?? id;
 
   // The board: ground truth for the umpire, the side's own picture otherwise.
   const view = side ? sideView(game, side) : null;
@@ -183,6 +212,41 @@ export function Debrief({
                 ? "הקרב כפי שצד זה ראה אותו: כוחותיו, אויב רק היכן שזוהה, ורק פעולות שנצפו."
                 : "תמונת המנחה: שני הצדדים וכל התוצאות."}
             </p>
+
+            {side && (
+              <>
+                <button
+                  className={`btn-ghost${showTruth ? " on" : ""}`}
+                  onClick={() => setShowTruth((t) => !t)}
+                  title="קרא קודם את הקרב כפי שהצד ראה אותו, ורק אז השווה למה שהיה שם באמת"
+                >
+                  {showTruth ? "הסתר את תמונת המנחה" : "חשוף את תמונת המנחה"}
+                </button>
+
+                {lessons && (
+                  <div className="unit-card lessons">
+                    <div className="unit-name">לקחים עד כאן</div>
+                    <div className={lessons.neverDetected.length ? "warn" : "ok"}>
+                      כוחות אויב שלא זוהו: {lessons.neverDetected.length}
+                      {showTruth && lessons.neverDetected.length
+                        ? ` — ${lessons.neverDetected.map(nameOf).join(", ")}`
+                        : ""}
+                    </div>
+                    <div className={lessons.hitByUnseen ? "warn" : "ok"}>
+                      ספג אש מכוח שלא זוהה: {times(lessons.hitByUnseen)}
+                    </div>
+                    <div className={lessons.firedUnseen ? "warn" : "ok"}>
+                      ירה על מטרה שלא היתה בקשר עין: {times(lessons.firedUnseen)}
+                    </div>
+                    <div className="c2-line">נפגעים שספג: {lessons.suffered}</div>
+                    <div className="c2-line">
+                      נפגעים שגרם:{" "}
+                      {showTruth ? lessons.inflicted : <span className="muted">גלוי בתמונת המנחה</span>}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="panel">
@@ -214,9 +278,14 @@ export function Debrief({
             />
             <div className="unit-card">
               <div className="unit-name">
-                {last ? last.text : index > 0 ? "פעולה שצד זה לא ראה" : "לפני תחילת הקרב"}
+                {!last
+                  ? "לפני תחילת הקרב"
+                  : last.hidden && !showTruth
+                    ? "פעולה שצד זה לא ראה"
+                    : last.text}
               </div>
               {last?.outcome && <div className="outcome">{last.outcome}</div>}
+              {showTruth && last?.truth && <div className="truth">מנחה: {last.truth}</div>}
               <div className="c2-line">שלב: {game.phase}</div>
             </div>
 
@@ -250,17 +319,18 @@ export function Debrief({
             <ul>
               {recording.actions.map((_, i) => {
                 const row = rowAt(i);
-                if (!row) return null;
+                if (!row || (row.hidden && !showTruth)) return null;
                 return (
                   <li
                     key={i}
                     className={`timeline-item ${i < index ? "done" : ""} ${
                       i === index - 1 ? "current" : ""
-                    }`}
+                    } ${row.hidden ? "unseen" : ""}`}
                     onClick={() => setIndex(i + 1)}
                   >
                     <span className="log-turn">{i + 1}</span> {row.text}
                     {row.outcome && <div className="outcome">{row.outcome}</div>}
+                    {showTruth && row.truth && <div className="truth">מנחה: {row.truth}</div>}
                   </li>
                 );
               })}

@@ -10,6 +10,7 @@ import { casualtyReport, describeOutcome, unitNames } from "./debriefText.js";
 import {
   actionVisibleTo,
   lensFor,
+  lessonsFor,
   outcomeVisibleTo,
   replayForReview,
   unitSides,
@@ -204,5 +205,42 @@ describe("how precisely a side is told what it did", () => {
     expect(casualtyReport(2, false)).toBe("נפגעים בודדים");
     expect(casualtyReport(5, false)).toBe("מספר נפגעים");
     expect(casualtyReport(9, false)).toBe("אבידות כבדות");
+  });
+});
+
+describe("the lessons a side takes out of it", () => {
+  const total = rec.actions.length;
+  const asBlue = () => lessonsFor("BLUE", total, steps, contactsAfter, sides);
+  const asRed = () => lessonsFor("RED", total, steps, contactsAfter, sides);
+
+  it("names the forces a side never found", () => {
+    // BLUE walked in against forces that held still. It ends the battle knowing
+    // only the one that fired on it — which is how it learned of it at all.
+    expect(asBlue().neverDetected).toEqual(["RED-2"]);
+    // RED watched the approach, so BLUE's squad is not on its list.
+    expect(asRed().neverDetected).not.toContain("BLUE-1");
+  });
+
+  it("counts being fired on by a force that was never seen — the ambush", () => {
+    expect(asBlue().hitByUnseen).toBe(1);
+    expect(asRed().hitByUnseen).toBe(0);
+  });
+
+  it("counts fire sent at something the side had no eyes on", () => {
+    // RED could see what it fired at, so this is the good case: nothing blind.
+    expect(asRed().firedUnseen).toBe(0);
+  });
+
+  it("keeps the umpire's tally for the reveal, on both sides of the ledger", () => {
+    const blue = asBlue();
+    const red = asRed();
+    // One shot, one set of casualties: what RED inflicted is what BLUE suffered.
+    expect(red.inflicted).toBe(blue.suffered);
+    expect(red.suffered).toBe(blue.inflicted);
+  });
+
+  it("grows with the battle rather than being known from the start", () => {
+    expect(lessonsFor("BLUE", 0, steps, contactsAfter, sides).hitByUnseen).toBe(0);
+    expect(asBlue().hitByUnseen).toBeGreaterThan(0);
   });
 });

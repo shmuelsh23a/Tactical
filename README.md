@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (233 tests: engine + app + review)
+npm test             # run the test suite (238 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -112,7 +112,14 @@ with everything it never saw taken out of it: the enemy's orders, its
 undetected forces, and the results of shots into ground it could not observe.
 What a side *is* shown of its own fire is a report rather than a tally —
 `נפגעים בודדים` where the umpire reads `2 נפגעים` — and the live combat log
-reads the same way during play (rules decision 13).
+reads the same way during play.
+
+That makes the review a **teaching instrument**: read the battle blind as the
+side fought it, with a **לקחים** panel counting what it never found, how often
+it was ambushed by a force it had not seen, and how often it fired at ground it
+had no eyes on — then **חשוף את תמונת המנחה** to put the truth beside it, adding
+back every step the side never saw and the umpire's version of every report it
+was given (rules decision 13).
 State at step N is replayed from the seed rather than stored as snapshots, so
 what is on screen is what the engine actually does with that recording.
 
@@ -453,14 +460,23 @@ on the stated reasoning, still awaiting the author's word.
     - **Your own casualties are always known**; the enemy's only for a force
       you can currently see. So a side that fires on a stale mark is told the
       shot was taken, not what it achieved.
-    - **And what it does learn is a report, not a count** (ruled 2026-08-13:
-      *the umpire has the entire picture, players are fuzzier*). A force is told
+    - ✅ **And what it does learn is a report, not a count** (confirmed with the
+      author 2026-08-13: *the umpire has the entire picture, players are
+      fuzzier — banding is good, it should be a learning tool*). A force is told
       how many of its own men fired and at what chance — its own business — and
       then what its fire appeared to do: `ללא נפגעים שנצפו`, `נפגעים בודדים`,
       `מספר נפגעים`, `אבידות כבדות`. An enemy force that goes down reads as
       `נראה מנוטרל` rather than as a fact. Own losses stay exact; the umpire's
       view is unchanged, which is where the tally lives. The **bands are ⚠️
       chosen** (0 / 1–2 / 3–5 / 6+) and are the thing to tune.
+
+      Because the point is to teach, the per-side review is meant to be read
+      **blind first**: the side's own picture, its own reports, and its own
+      lessons — how many enemy forces it never found, how often it was fired on
+      by one of them, how often it fired at ground it had no eyes on. Then
+      **חשוף את תמונת המנחה** puts the truth beside it: the steps it never saw
+      are added to the timeline, marked as such, and each report it was given
+      gets the umpire's line under it.
     - **A stale contact carries the state it was last seen in**, not the force's
       current one — a squad neutralised after it dropped out of sight still
       reads as a live mark until somebody looks again.
@@ -546,6 +562,10 @@ Each is intended to be an independent, toggleable module:
    decisions under a **different seed** already works in the engine — the
    question a debrief exists to answer is *was that a bad plan or bad luck?*,
    and that is how you ask it. Not surfaced in the UI yet.
+
+   The debrief reads through the umpire's eyes or either side's, and a side's
+   view is banded rather than counted, so it can be read as a lesson before the
+   truth is revealed (decisions 12 and 13).
 
    `sealRecording()` stamps a state fingerprint per action and
    `verifyRecording()` checks a replay against them, so a recording made under

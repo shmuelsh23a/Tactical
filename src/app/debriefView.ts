@@ -180,3 +180,109 @@ export function actionVisibleTo(
       return false;
   }
 }
+
+/**
+ * What a side did not know, drawn out of the battle it fought (rules decision
+ * 13). The point of banding a player's reports is that the debrief teaches:
+ * you read the battle as you fought it, form a judgement, and only then look at
+ * what was actually there. These are the figures that make the comparison —
+ * every one of them derived from the same replay, never stored.
+ */
+export interface Lessons {
+  /** Enemy forces this side never picked up at all. */
+  neverDetected: string[];
+  /** Its own shots at a force it was not holding a contact on at the time. */
+  firedUnseen: number;
+  /** Times it was fired on by a force it had never detected — the ambush. */
+  hitByUnseen: number;
+  /** Casualties it actually inflicted: the umpire's tally, not its own report. */
+  inflicted: number;
+  /** Casualties it took. A side knows these exactly. */
+  suffered: number;
+}
+
+/**
+ * Work the lessons out over the first `upTo` actions, so scrubbing the timeline
+ * shows the picture as it stood at that point rather than only at the end.
+ */
+export function lessonsFor(
+  side: Side,
+  upTo: number,
+  steps: ReplayStep[],
+  contactsAfter: Contacts[],
+  sides: Map<string, Side>,
+): Lessons {
+  const own = (unitId: string) => sides.get(unitId) === side;
+  // What the side knew *going into* the action: a shot puts its firer on the
+  // enemy's map, so asking afterwards would say every ambusher had been seen.
+  const knewBefore = (i: number, unitId: string) =>
+    i > 0 && (contactsAfter[i - 1]?.[side].has(unitId) ?? false);
+
+  const lessons: Lessons = {
+    neverDetected: [],
+    firedUnseen: 0,
+    hitByUnseen: 0,
+    inflicted: 0,
+    suffered: 0,
+  };
+
+  const count = (unitId: string, casualties: number) => {
+    if (!casualties) return;
+    if (own(unitId)) lessons.suffered += casualties;
+    else lessons.inflicted += casualties;
+  };
+
+  for (let i = 0; i < Math.min(upTo, steps.length); i++) {
+    const { action, outcome } = steps[i]!;
+
+    if (action.kind === "fire" || action.kind === "fireExplosive" || action.kind === "assault") {
+      const attackerId = action.attackerId;
+      const targetId = action.kind === "assault" ? action.defenderId : action.targetId;
+      const fired =
+        (outcome.kind === "fire" && outcome.result.fired) ||
+        (outcome.kind === "fireExplosive" && outcome.result.fired) ||
+        (outcome.kind === "assault" && outcome.result.fired);
+      if (fired && own(attackerId) && !knewBefore(i, targetId)) lessons.firedUnseen += 1;
+      if (fired && own(targetId) && !knewBefore(i, attackerId)) lessons.hitByUnseen += 1;
+    }
+
+    switch (outcome.kind) {
+      case "fire":
+        if (action.kind === "fire") count(action.targetId, outcome.result.newCasualties);
+        break;
+      case "assault":
+        if (action.kind === "assault") {
+          count(action.defenderId, outcome.result.defenderCasualties);
+          count(action.attackerId, outcome.result.selfCasualties);
+        }
+        break;
+      case "fireExplosive":
+      case "phase":
+      case "moveUnit":
+      case "executeStandingOrders": {
+        // Blast and charge casualties come with the force they fell on.
+        const blasts =
+          outcome.kind === "fireExplosive"
+            ? [outcome.result.blast]
+            : outcome.kind === "phase"
+              ? outcome.resolved.map((r) => r.blast)
+              : outcome.kind === "moveUnit"
+                ? outcome.move.mineDetonations.map((d) => d.blast)
+                : outcome.executions.flatMap((e) => e.moved?.result.mineDetonations.map((d) => d.blast) ?? []);
+        for (const blast of blasts) {
+          for (const target of blast?.targets ?? []) {
+            if (target.caught) count(target.unitId, target.newCasualties);
+          }
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  const enemies = [...sides.entries()].filter(([, s]) => s !== side).map(([id]) => id);
+  const known = contactsAfter[Math.min(upTo, contactsAfter.length) - 1]?.[side] ?? new Set<string>();
+  lessons.neverDetected = enemies.filter((id) => !known.has(id));
+  return lessons;
+}
