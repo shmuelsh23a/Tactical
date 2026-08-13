@@ -82,7 +82,13 @@ export {
 } from "./combat/explosives.js";
 export { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
 export { resolveAssault, ASSAULT_RANGE_M, type AssaultResult } from "./combat/assault.js";
-export { detectByMovement, detectByUav, type DetectionResult } from "./combat/detection.js";
+export {
+  detectByMovement,
+  detectByUav,
+  detectMover,
+  type DetectionResult,
+} from "./combat/detection.js";
+export { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 export {
   triggerMines,
   MINE_TRIGGER_RADIUS_M,

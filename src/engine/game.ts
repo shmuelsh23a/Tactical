@@ -19,7 +19,13 @@ import {
   type SmokeSource,
 } from "./data/smoke.js";
 import { orderInterval } from "./data/c2.js";
-import { detectByMovement, detectByUav, type DetectionResult } from "./combat/detection.js";
+import {
+  detectByMovement,
+  detectByUav,
+  detectMover,
+  type DetectionResult,
+} from "./combat/detection.js";
+import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 import { triggerMines, type MineDetonation } from "./combat/mines.js";
 import { resolveDirectFire, type DirectFireOptions, type DirectFireResult } from "./combat/directFire.js";
 import {
@@ -56,6 +62,12 @@ export interface MoveResult {
   detection: DetectionResult;
   /** Charges triggered along the path walked. */
   mineDetonations: MineDetonation[];
+  /**
+   * Enemy forces that picked the mover up on the way (`trackIntel` only). This
+   * is the umpire's half of the bound — it is what the *other* side now knows,
+   * so a hotseat must not show it to the player who moved.
+   */
+  observedBy: string[];
 }
 
 /** What a call for smoke produced: a screen on the map, or one still in flight. */
@@ -81,6 +93,18 @@ export interface GameOptions {
    * the command-and-control module.
    */
   enforceC2?: boolean;
+  /**
+   * Whether the engine keeps each side's picture of the enemy — what it has
+   * detected, and where it last saw it (see {@link IntelLedger}). Off by
+   * default: the engine is the umpire and knows everything, and a game played
+   * on one map wants no fog. The hotseat turns it on, which is what makes its
+   * fog-of-war the document's detections rather than a radius.
+   *
+   * With it on, a bound is also rolled *against* — nearby enemies get their
+   * own chance to pick the mover up — so it changes what the rng is asked, not
+   * only what is remembered.
+   */
+  trackIntel?: boolean;
 }
 
 /**
@@ -92,6 +116,7 @@ export class Game {
   readonly rng: Rng;
   readonly sides: Side[];
   readonly enforceC2: boolean;
+  readonly trackIntel: boolean;
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -103,6 +128,9 @@ export class Game {
 
   /** Turn each unit last received orders, for the C2 interval rule. */
   private lastOrderTurn = new Map<string, number>();
+
+  /** What each side has picked up of the other; empty unless `trackIntel`. */
+  private readonly intel = new IntelLedger();
 
   /** The order each force is still working to, until new ones reach it. */
   private standingOrders = new Map<string, StandingOrder>();
@@ -152,6 +180,7 @@ export class Game {
     this.rng = new Rng(opts.seed);
     this.sides = opts.sides ?? ["RED", "BLUE"];
     this.enforceC2 = opts.enforceC2 ?? true;
+    this.trackIntel = opts.trackIntel ?? false;
   }
 
   /**
@@ -164,6 +193,7 @@ export class Game {
       seed: this.seed,
       sides: [...this.sides],
       enforceC2: this.enforceC2,
+      trackIntel: this.trackIntel,
       actions: cloneForRecord(this.actions),
     };
   }
@@ -281,6 +311,7 @@ export class Game {
     this.requirePhase("intel");
     const enemies = this.units.filter((u) => u.side !== viewer);
     const result = detectByUav(this.rng, uavKey, footprintCenter, enemies, this.mines);
+    for (const id of result.spottedUnitIds) this.observe(viewer, id, "uav");
     this.journal({ kind: "uavSweep", uavKey, footprintCenter, viewer });
     return result;
   }
@@ -377,7 +408,23 @@ export class Game {
     unit.movedThisTurn += dist;
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
-    const detection = detectByMovement(this.rng, unit, mode, enemies, this.mines);
+    // Smoke stops the eye as well as the bullet, so observation runs through
+    // the same line of sight fire does — but only where the knowledge model is
+    // in play, so a game without it draws exactly what it always drew.
+    const sight = this.trackIntel
+      ? (from: Point, to: Point) => this.hasLineOfSight(from, to)
+      : undefined;
+    const detection = detectByMovement(this.rng, unit, mode, enemies, this.mines, sight);
+    const observedBy = this.trackIntel ? detectMover(this.rng, unit, enemies, sight) : [];
+    if (this.trackIntel) {
+      // What the mover found, and what found the mover.
+      for (const id of detection.spottedUnitIds) {
+        this.observe(unit.side, id, "movement");
+      }
+      for (const id of observedBy) {
+        this.observe(this.getUnit(id).side, unit.id, "movement");
+      }
+    }
 
     // Charges are tested against the whole path walked, so a bound cannot vault
     // a minefield. Any that fired are spent.
@@ -393,7 +440,46 @@ export class Game {
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
 
     this.journal({ kind: "moveUnit", unitId, to, mode });
-    return { detection, mineDetonations: detonations };
+    return { detection, mineDetonations: detonations, observedBy };
+  }
+
+  // ---- what each side knows ----
+
+  /**
+   * Note that `side` has observed `unitId` where it now stands. Silently does
+   * nothing when the knowledge model is off, so callers need no guard.
+   */
+  private observe(side: Side, unitId: string, source: ContactSource): void {
+    if (!this.trackIntel) return;
+    const unit = this.units.find((u) => u.id === unitId);
+    if (!unit || unit.side === side) return;
+    this.intel.record(side, unitId, unit.position, this.turn, source);
+  }
+
+  /**
+   * A shot puts both forces on each other's map: the firer plainly has the
+   * force it is shooting at, and the force being shot at learns where the fire
+   * is coming from. Direct fire only — an indirect mission comes from off the
+   * map and gives nothing away (⚠️ rules decision 12).
+   */
+  private exchangeContact(attacker: Unit, target: Unit): void {
+    this.observe(target.side, attacker.id, "fire");
+    this.observe(attacker.side, target.id, "fire");
+  }
+
+  /** Everything `side` has picked up of the enemy, with where it last saw it. */
+  contactsFor(side: Side): Contact[] {
+    return this.intel.contactsFor(side);
+  }
+
+  /** What `side` last knows of one enemy force, if anything. */
+  contactFor(side: Side, unitId: string): Contact | undefined {
+    return this.intel.contactFor(side, unitId);
+  }
+
+  /** Whether `side` has picked `unitId` up at all. */
+  knows(side: Side, unitId: string): boolean {
+    return this.intel.knows(side, unitId);
   }
 
   // ---- combat phase ----
@@ -420,6 +506,7 @@ export class Game {
       // it out from the smoke on the map.
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
     });
+    if (fireResult.fired) this.exchangeContact(attacker, target);
     this.journal({ kind: "fire", attackerId, targetId, opts });
     return fireResult;
   }
@@ -440,6 +527,7 @@ export class Game {
       collateral,
       turn: this.turn,
     });
+    if (result.fired) this.exchangeContact(attacker, target);
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return result;
   }
@@ -472,6 +560,7 @@ export class Game {
       grenades,
       turn: this.turn,
     });
+    if (result.fired) this.exchangeContact(attacker, this.getUnit(defenderId));
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
     return result;
   }

@@ -49,6 +49,42 @@ export function detectByMovement(
 }
 
 /**
+ * The other half of a bound: who picks the mover up.
+ *
+ * The document gives detection as an effect of moving — the mover's own 70%
+ * (normal) / 50% (running) against a visible enemy within 300 m — and says
+ * nothing about the force that is standing still and watching. Read literally
+ * that leaves a defender blind: it never moves, so it never rolls, so an attack
+ * could walk onto its position unseen.
+ *
+ * So the same roll is made in the other direction, at the normal-pace chance:
+ * an observer that is *not* moving is not the one distracted by its own
+ * movement, and 70% within 300 m is the document's own visible-enemy number.
+ * No new figure enters the game — see README rules decision 12.
+ *
+ * Returns the ids of the observers that picked the mover up.
+ */
+export function detectMover(
+  rng: Rng,
+  mover: Unit,
+  observers: Unit[],
+  hasLineOfSight: (from: Point, to: Point) => boolean = () => true,
+): string[] {
+  const watching = MOVEMENT_PROFILES.normal;
+  const spotters: string[] = [];
+  for (const observer of observers) {
+    // A force that is down does not report.
+    if (observer.neutralized) continue;
+    if (observer.kind === "vehicle" && observer.vehicle?.destroyed) continue;
+    const d = distance(observer.position, mover.position);
+    if (d > watching.visibleDetectRange) continue;
+    if (!hasLineOfSight(observer.position, mover.position)) continue;
+    if (rng.chance(watching.visibleDetectChance)) spotters.push(observer.id);
+  }
+  return spotters;
+}
+
+/**
  * Detection within a UAV/drone footprint (כטב"מ / רחפן). Moving or visible
  * ground targets inside the footprint are detected automatically; emplaced
  * charges are found with the asset's charge-finding probability.

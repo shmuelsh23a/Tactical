@@ -64,6 +64,13 @@ export interface GameRecording {
   seed: number;
   sides: Side[];
   enforceC2: boolean;
+  /**
+   * Whether the game kept each side's picture of the enemy. Optional, and read
+   * as **off** when absent: a recording made before the module existed was
+   * played without it, and replaying it with the module on would ask the rng
+   * for detection rolls that battle never made.
+   */
+  trackIntel?: boolean;
   actions: RecordedAction[];
   /**
    * State fingerprint after each action, written when the recording is sealed.
@@ -152,6 +159,7 @@ export function replayWithOutcomes(
     seed: recording.seed,
     sides: recording.sides,
     enforceC2: recording.enforceC2,
+    trackIntel: recording.trackIntel ?? false,
   });
 
   const limit = Math.max(0, Math.min(opts.upToAction ?? recording.actions.length, recording.actions.length));
