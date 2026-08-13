@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (238 tests: engine + app + review)
+npm test             # run the test suite (248 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -120,6 +120,10 @@ it was ambushed by a force it had not seen, and how often it fired at ground it
 had no eyes on — then **חשוף את תמונת המנחה** to put the truth beside it, adding
 back every step the side never saw and the umpire's version of every report it
 was given (rules decision 13).
+
+And **תוכנית או מזל?** re-fights the whole thing 20 times under different dice —
+same orders, same shots, same timing — and reports the spread beside what
+actually happened, so a plan can be told apart from the luck it ran into.
 State at step N is replayed from the seed rather than stored as snapshots, so
 what is on screen is what the engine actually does with that recording.
 
@@ -204,6 +208,7 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   Debrief.tsx       After-action review: step through a saved recording
   debriefText.ts    Hebrew narration: recorded actions, orders, refusals, extent
   debriefView.ts    What each side may be shown of its own battle (decision 13)
+  whatIf.ts         Re-fighting the same decisions under other dice
   hotseat.ts        Activation order, fog-of-war, victory check
   scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
@@ -559,14 +564,20 @@ Each is intended to be an independent, toggleable module:
    into a step-through debrief.
 
    Because outcomes are derived rather than stored, the recording holds the
-   **decisions**, which is what makes *was that a bad plan or bad luck?* an
-   answerable question: re-roll the same decisions and see how often the battle
-   goes the other way. Two things are missing before it can be asked, and
-   neither is large: `replayWithOutcomes` builds its game from the recording's
-   own seed with no way to override it, and it stops dead on a decision the
-   alternate history has made illegal (a bound now out of budget, a shot at a
-   force already gone) instead of skipping it and carrying on. What to do with
-   those divergences is the real design question, not the re-rolling.
+   **decisions** — so the same battle can be re-fought under other dice without
+   anyone playing it again. **תוכנית או מזל?** in the debrief does exactly that:
+   20 alternate histories from the same orders, shots and timing, reported as a
+   spread ("BLUE נפגעים 0–1, חציון 0, בפועל 0 · נשבר ב-0 מתוך 20"). That is the
+   question a debrief exists to answer.
+
+   The alternate battles drift, so a decision one of them has made impossible —
+   a bound now out of budget because the force was slowed, a shot at a force
+   already gone — is **skipped rather than fatal**, and the count of skipped
+   decisions is reported with the spread: a run that dropped half the plan is
+   not the same plan, and the reader has to be able to see that
+   ([`whatIf.ts`](src/app/whatIf.ts), `replayWithOutcomes({ seed, skipRejected })`).
+   Seeds follow the recording's own, so the same battle always re-rolls the same
+   way.
 
    The debrief reads through the umpire's eyes or either side's, and a side's
    view is banded rather than counted, so it can be read as a lesson before the

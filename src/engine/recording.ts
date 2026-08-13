@@ -115,6 +115,14 @@ export type ActionOutcome =
   | { kind: "setCamouflage"; on: boolean }
   | { kind: "setScouting"; on: boolean };
 
+/** A decision the replay could not carry out, and why. */
+export interface SkippedAction {
+  /** Position in the recording's action list. */
+  index: number;
+  action: RecordedAction;
+  reason: string;
+}
+
 /** One replayed action and what it produced. */
 export interface ReplayStep {
   action: RecordedAction;
@@ -143,6 +151,9 @@ export function replayGame(
      * recording is: the actions before it drew the same random numbers.
      */
     upToAction?: number;
+    /** Re-fight the same decisions under other dice — see {@link replayWithOutcomes}. */
+    seed?: number;
+    skipRejected?: boolean;
   } = {},
 ): Game {
   return replayWithOutcomes(recording, opts).game;
@@ -161,13 +172,28 @@ export function replayWithOutcomes(
     upToAction?: number;
     /** Called after each action is applied, for fingerprinting a replay. */
     onStep?: (game: Game, index: number) => void;
+    /**
+     * Replay the same decisions under a **different seed**. The recording holds
+     * what was decided, not what it produced, so this asks the question a
+     * debrief is for: was that a bad plan, or bad luck?
+     */
+    seed?: number;
+    /**
+     * Carry on past a decision this history has made impossible instead of
+     * stopping on it — a bound now out of budget because the force was slowed
+     * differently, a shot at a force already gone. Required for a re-roll,
+     * where the alternate battle drifts away from the recorded one; the skipped
+     * decisions come back in `skipped`, because a run that dropped half the
+     * plan is no longer a fair comparison and the reader must be told.
+     */
+    skipRejected?: boolean;
   } = {},
-): { game: Game; steps: ReplayStep[] } {
+): { game: Game; steps: ReplayStep[]; skipped: SkippedAction[] } {
   if (recording.version !== 1) {
     throw new Error(`Unsupported recording version: ${recording.version}`);
   }
   const game = new Game({
-    seed: recording.seed,
+    seed: opts.seed ?? recording.seed,
     sides: recording.sides,
     enforceC2: recording.enforceC2,
     trackIntel: recording.trackIntel ?? false,
@@ -175,9 +201,13 @@ export function replayWithOutcomes(
 
   const limit = Math.max(0, Math.min(opts.upToAction ?? recording.actions.length, recording.actions.length));
   const steps: ReplayStep[] = [];
+  const skipped: SkippedAction[] = [];
 
+  let index = -1;
   for (const action of recording.actions.slice(0, limit)) {
-    let outcome: ActionOutcome;
+    index += 1;
+    let outcome: ActionOutcome | undefined;
+    try {
     switch (action.kind) {
       case "addUnit":
         game.addUnit(cloneForRecord(action.unit));
@@ -298,10 +328,16 @@ export function replayWithOutcomes(
         throw new Error(`Unknown recorded action: ${JSON.stringify(never)}`);
       }
     }
+    } catch (err) {
+      if (!opts.skipRejected) throw err;
+      skipped.push({ index, action, reason: (err as Error).message });
+      continue;
+    }
+    if (!outcome) continue;
     steps.push({ action, outcome });
     opts.onStep?.(game, steps.length - 1);
   }
-  return { game, steps };
+  return { game, steps, skipped };
 }
 
 /**

@@ -430,3 +430,48 @@ describe("a battle fought under orders", () => {
     });
   });
 });
+
+describe("re-fighting the same decisions", () => {
+  it("produces a different battle under a different seed", () => {
+    const rec = playDemo(2026).toRecording();
+    const asFought = replayGame(rec);
+    const reRolled = replayGame(rec, { seed: 999, skipRejected: true });
+
+    // Same decisions, different dice: the state must differ somewhere.
+    expect(stateOf(reRolled)).not.toEqual(stateOf(asFought));
+    // …and re-rolling is itself reproducible.
+    expect(stateOf(replayGame(rec, { seed: 999, skipRejected: true }))).toEqual(
+      stateOf(reRolled),
+    );
+  });
+
+  it("still replays the recording's own battle when no seed is given", () => {
+    const played = playDemo();
+    expect(stateOf(replayGame(played.toRecording()))).toEqual(stateOf(played));
+  });
+
+  it("stops on a decision it cannot carry out, unless told to skip", () => {
+    // A bound that no longer fits the budget is exactly what an alternate
+    // history produces: a force slowed by fire cannot make the move it made.
+    const g = new Game({ seed: 1 });
+    const unit = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.moveUnit(unit.id, { x: 0, y: 40 }, "normal");
+    const rec = g.toRecording();
+    // Rewrite the bound into one the rules will refuse.
+    const move = rec.actions.find((a) => a.kind === "moveUnit");
+    if (move?.kind !== "moveUnit") throw new Error("expected a move");
+    move.to = { x: 0, y: 500 };
+
+    expect(() => replayGame(rec)).toThrow(/exceeds/);
+
+    const { game, skipped, steps } = replayWithOutcomes(rec, { skipRejected: true });
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]!.reason).toMatch(/exceeds/);
+    expect(skipped[0]!.action.kind).toBe("moveUnit");
+    // The rest of the battle still ran, and the force stayed where it was.
+    expect(steps).toHaveLength(rec.actions.length - 1);
+    expect(game.getUnit("A").position).toEqual({ x: 0, y: 0 });
+  });
+});

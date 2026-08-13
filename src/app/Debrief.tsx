@@ -26,6 +26,10 @@ import {
   type Viewpoint,
 } from "./debriefView.js";
 import { isGone, sideView } from "./hotseat.js";
+import { spread, whatIf, type WhatIf } from "./whatIf.js";
+
+/** How many alternate battles a re-roll fights. Cheap: a battle replays in ms. */
+const RUNS = 20;
 
 /** "אף פעם" / "פעם אחת" / "3 פעמים" — a count of occasions, in readable Hebrew. */
 function times(n: number): string {
@@ -64,6 +68,8 @@ export function Debrief({
    * actually there, which is where it teaches (rules decision 13).
    */
   const [showTruth, setShowTruth] = useState(false);
+  /** The same decisions re-fought under other dice, once the reader asks. */
+  const [rolls, setRolls] = useState<WhatIf | null>(null);
 
   const names = useMemo(() => unitNames(recording), [recording]);
   const sides = useMemo(() => unitSides(recording), [recording]);
@@ -117,6 +123,9 @@ export function Debrief({
   };
 
   const lessons = side ? lessonsFor(side, index, steps, contactsAfter, sides) : null;
+  // The re-roll is the umpire's answer, so a side's review only gets it once
+  // the truth is up — read the battle as you fought it first.
+  const mayReroll = !side || showTruth;
   const nameOf = (id: string) => names.get(id) ?? id;
 
   // The board: ground truth for the umpire, the side's own picture otherwise.
@@ -314,6 +323,20 @@ export function Debrief({
             </div>
           </div>
 
+          {mayReroll && (
+            <div className="panel">
+              <h3>תוכנית או מזל?</h3>
+              <p className="hint">
+                אותן ההחלטות, קוביות אחרות. אף אחד לא משחק מחדש — ההקלטה שומרת מה
+                הוחלט, והתוצאות נגזרות מחדש בכל הרצה.
+              </p>
+              <button className="btn-ghost" onClick={() => setRolls(whatIf(recording, RUNS))}>
+                {rolls ? `הרץ שוב (${RUNS} הרצות)` : `הרץ ${RUNS} פעמים`}
+              </button>
+              {rolls && <WhatIfTable result={rolls} runs={RUNS} />}
+            </div>
+          )}
+
           <div className="log">
             <h3>יומן פעולות</h3>
             <ul>
@@ -337,6 +360,38 @@ export function Debrief({
             </ul>
           </div>
         </aside>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The spread of a plan across its re-rolls. Losses are the umpire's tally by
+ * definition — this is a question about the battle, not about what a side
+ * observed — and skipped decisions are reported because a run that could not
+ * carry the plan out is not a fair comparison (see [`whatIf.ts`](./whatIf.ts)).
+ */
+function WhatIfTable({ result, runs }: { result: WhatIf; runs: number }) {
+  const sides: Side[] = ["BLUE", "RED"];
+  const skipped = result.runs.reduce((n, r) => n + r.skipped, 0);
+  return (
+    <div className="unit-card lessons">
+      <div className="unit-name">{runs} הרצות של אותה תוכנית</div>
+      {sides.map((side) => {
+        const losses = spread(result.runs.map((r) => r.losses[side]));
+        const broken = result.runs.filter((r) => r.broken.includes(side)).length;
+        return (
+          <div key={side} className="c2-line">
+            <span className={`chip chip-${side.toLowerCase()}`}>{side}</span> נפגעים{" "}
+            {losses.min}–{losses.max} (חציון {losses.median}) · בפועל{" "}
+            {result.actual.losses[side]} · נשבר ב-{broken} מתוך {runs}
+          </div>
+        );
+      })}
+      <div className={skipped ? "warn" : "ok"}>
+        {skipped
+          ? `${skipped} החלטות לא ניתנות לביצוע בהיסטוריות החלופיות — ההשוואה חלקית`
+          : "כל ההחלטות בוצעו בכל ההרצות"}
       </div>
     </div>
   );
