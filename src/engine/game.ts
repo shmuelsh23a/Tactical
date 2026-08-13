@@ -561,19 +561,28 @@ export class Game {
   }
 
   /**
-   * Whether the force is under orders to hold its fire. Checked for every kind
-   * of shot, including the player's own click: an order the player can ignore
-   * is not an order (rules decision 6 — it stands until it is replaced).
+   * Whether the force is under orders to hold its fire against `targetId`.
+   * Checked for every kind of shot, including the player's own click: an order
+   * the player can ignore is not an order (rules decision 6 — it stands until
+   * it is replaced).
+   *
+   * An order may carry an **engagement range**: the force holds until the
+   * target is inside it, which is how an ambush is laid. With no range, and
+   * with no target to measure against, it holds at any range.
    */
-  isHoldingFire(unitId: string): boolean {
-    return this.standingOrders.get(unitId)?.holdFire === true;
+  isHoldingFire(unitId: string, targetId?: string): boolean {
+    const order = this.standingOrders.get(unitId);
+    if (!order?.holdFire) return false;
+    if (order.engagementRange == null || targetId == null) return true;
+    const range = distance(this.getUnit(unitId).position, this.getUnit(targetId).position);
+    return range > order.engagementRange;
   }
 
   fire(attackerId: string, targetId: string, opts: DirectFireOptions): DirectFireResult {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    if (this.isHoldingFire(attackerId)) {
+    if (this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
         reason: HOLDING_FIRE,
@@ -610,7 +619,7 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    if (this.isHoldingFire(attackerId)) {
+    if (this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
         reason: HOLDING_FIRE,
@@ -638,7 +647,7 @@ export class Game {
   assault(attackerId: string, defenderId: string, grenades = 0): AssaultResult {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
-    if (attacker.neutralized || this.isHoldingFire(attackerId)) {
+    if (attacker.neutralized || this.isHoldingFire(attackerId, defenderId)) {
       return {
         fired: false,
         reason: attacker.neutralized ? "attacker is neutralised" : HOLDING_FIRE,

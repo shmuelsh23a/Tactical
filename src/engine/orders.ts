@@ -29,13 +29,21 @@ export interface StandingOrder {
   /** A force to engage whenever the fire phase allows. */
   engage?: { targetId: string; weapon: WeaponClass };
   /**
-   * Hold fire (אחזקת אש): the force does not shoot at all until the order is
-   * replaced — not on its own initiative, and not at the player's click. It is
-   * what keeps an ambush an ambush, since firing puts the force on the enemy's
-   * map (rules decision 12), and what stops a flanking force giving itself
-   * away before it is in position.
+   * Hold fire (אחזקת אש): the force does not shoot until the order is replaced
+   * — not on its own initiative, and not at the player's click. It is what
+   * keeps an ambush an ambush, since firing puts the force on the enemy's map
+   * (rules decision 12), and what stops a flanking force giving itself away
+   * before it is in position.
    */
   holdFire?: boolean;
+  /**
+   * The range at which a force holding its fire may open up, in metres — the
+   * fire-discipline line an ambush is laid on ("nobody fires until they are
+   * inside 100 m"). Targets beyond it stay held; targets inside it may be
+   * engaged. **Optional**: with no range given the order holds at any range.
+   * Only read while {@link holdFire} is set.
+   */
+  engagementRange?: number;
 }
 
 /** Close enough to count as arrived, in metres. */

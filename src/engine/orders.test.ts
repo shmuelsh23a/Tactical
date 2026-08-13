@@ -268,6 +268,32 @@ describe("an order to hold fire", () => {
     expect(g.knows("RED", squad.id)).toBe(false);
   });
 
+  it("opens up once the target is inside the engagement range", () => {
+    // The fire-discipline line an ambush is laid on: nobody fires until they
+    // are inside 100 m.
+    const g = new Game({ seed: 3, enforceC2: false });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    const far = g.addUnit(makeInfantry("F", "RED", "squad", { x: 0, y: 250 }, 6));
+    const near = g.addUnit(makeInfantry("N", "RED", "squad", { x: 0, y: 80 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "normal", holdFire: true, engagementRange: 100 });
+    g.advanceToPhase("combat");
+
+    expect(g.isHoldingFire(squad.id, far.id)).toBe(true);
+    expect(g.isHoldingFire(squad.id, near.id)).toBe(false);
+    expect(g.fire(squad.id, far.id, { weapon: "smallArms" }).reason).toBe(HOLDING_FIRE);
+    expect(g.fire(squad.id, near.id, { weapon: "smallArms" }).fired).toBe(true);
+  });
+
+  it("holds at any range when no range is given", () => {
+    const { g, squad, enemy } = holdingFire();
+    expect(g.standingOrderFor(squad.id)?.engagementRange).toBeUndefined();
+    expect(g.isHoldingFire(squad.id, enemy.id)).toBe(true);
+    // …and asking without a target at all reads as held, for the panel.
+    expect(g.isHoldingFire(squad.id)).toBe(true);
+  });
+
   it("stands until it is replaced", () => {
     const { g, squad, enemy } = holdingFire();
     expect(g.fire(squad.id, enemy.id, { weapon: "smallArms" }).fired).toBe(false);

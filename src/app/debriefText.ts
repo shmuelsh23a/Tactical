@@ -109,7 +109,13 @@ export function describeStandingOrder(
   if (order.engage) {
     parts.push(`תקוף את ${nameOf(order.engage.targetId)} ב${term(weaponHe, order.engage.weapon)}`);
   }
-  if (order.holdFire) parts.push("אחזקת אש");
+  if (order.holdFire) {
+    parts.push(
+      order.engagementRange != null
+        ? `אחזקת אש — אש רק בטווח ${Math.round(order.engagementRange)}מ'`
+        : "אחזקת אש",
+    );
+  }
   return parts.join(" · ");
 }
 

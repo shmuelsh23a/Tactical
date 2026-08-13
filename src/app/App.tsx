@@ -114,6 +114,8 @@ export function App() {
   const [orderTask, setOrderTask] = useState<OrderTask>("advance");
   const [orderTargetId, setOrderTargetId] = useState<string | null>(null);
   const [orderWeapon, setOrderWeapon] = useState<SmallArm>("smallArms");
+  /** Range at which a force holding its fire may open up; null = any range. */
+  const [engagementRange, setEngagementRange] = useState<number | null>(null);
   const [grenades, setGrenades] = useState(1);
   const [winner, setWinner] = useState<Side | null>(null);
   /** A loaded recording being reviewed; the game is left untouched behind it. */
@@ -166,7 +168,7 @@ export function App() {
   /** The task part of an order, as the panel currently reads. */
   function orderedTask(): Pick<StandingOrder, "engage" | "holdFire"> {
     return orderTask === "holdFire"
-      ? { holdFire: true }
+      ? { holdFire: true, ...(engagementRange != null ? { engagementRange } : {}) }
       : { engage: orderedEngagement() };
   }
 
@@ -806,10 +808,33 @@ export function App() {
                   </div>
 
                   {orderTask === "holdFire" && (
-                    <p className="hint">
-                      הכוח לא יירה עד שתינתן לו פקודה אחרת — גם לא בלחיצה שלך. ירי
-                      מסגיר את מיקום הכוח לאויב, ולכן זו הפקודה ששומרת על מארב.
-                    </p>
+                    <>
+                      <label>פתיחה באש בטווח:</label>
+                      <div className="seg seg-wrap">
+                        <button
+                          className={engagementRange == null ? "on" : ""}
+                          onClick={() => setEngagementRange(null)}
+                        >
+                          כלל לא
+                        </button>
+                        {[300, 200, 100, 50].map((r) => (
+                          <button
+                            key={r}
+                            className={engagementRange === r ? "on" : ""}
+                            onClick={() => setEngagementRange(r)}
+                          >
+                            {r}מ'
+                          </button>
+                        ))}
+                      </div>
+                      <p className="hint">
+                        הכוח לא יירה — גם לא בלחיצה שלך — עד שתינתן פקודה אחרת
+                        {engagementRange != null
+                          ? `, או עד שהמטרה תיכנס לטווח ${engagementRange}מ'`
+                          : ""}
+                        . ירי מסגיר את מיקום הכוח לאויב, ולכן זו הפקודה ששומרת על מארב.
+                      </p>
+                    </>
                   )}
 
                   {orderTask === "engage" &&
@@ -854,7 +879,9 @@ export function App() {
                     title="פקודה ללא תנועה: הכוח נשאר במקומו ומבצע את המשימה שנקבעה"
                   >
                     {orderTask === "holdFire"
-                      ? "החזק מקום ואל תירה"
+                      ? engagementRange != null
+                        ? `החזק מקום — אש מ-${engagementRange}מ'`
+                        : "החזק מקום ואל תירה"
                       : orderedEngagement()
                         ? "החזק מקום ותקוף"
                         : "החזק מקום"}
