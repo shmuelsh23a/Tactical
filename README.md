@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the engine test suite (157 tests)
+npm test             # run the test suite (171 tests: engine + app narration)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -50,7 +50,11 @@ the player moves (shown with the APP-6 HQ staff), **enforced command & control**
 (the פו"ש order interval governs how often a force can be given *new* orders —
 see rules decision 6 — with a live readout of distance to the command group,
 order frequency, and the turn fresh orders become possible; a force out of
-contact goes on with the order it holds, drawn on its own side's map), **fixed faction colours** (BLUE always friendly/blue, RED always
+contact goes on with the order it holds, drawn on its own side's map), **orders
+that carry a task** — an order is an objective *and* what to do about the enemy
+there: advance, advance and engage a named force, or hold where you are and
+engage; the order the selected force is working to is written out on its card,
+and its objective and its target are both drawn on the map, **fixed faction colours** (BLUE always friendly/blue, RED always
 hostile/red, regardless of whose turn it is), and a **targeting phase**: each
 side marks one indirect-fire mission and one smoke screen per turn (see rules
 decision 8). A marked aim point is drawn only on its owner's map, with the turn
@@ -99,13 +103,19 @@ at — the decisions still replay, but what they produce has changed. That
 matters here: rules decisions 7 and 10 both altered how an existing number is
 applied, which silently rewrites every recording made before them.
 
+Because a battle is now fought almost entirely through orders, a recording of
+one contains **no `moveUnit` actions at all** — only the orders and the turns
+they were carried out on, with every bound and every shot derived by the replay.
+The debrief names the objective on the step that ordered it and reports each
+force's bound on the step that executed it.
+
 Engine capability the UI does not reach yet — the next obvious work:
 
-- **Orders can only send a force somewhere, not tell it what to do there.**
-  The engine executes a standing *engage* task and it is tested, but nothing in
-  the hotseat sets one — the map click issues a destination and a gait only.
-  The debrief narrates orders generically too, rather than naming the objective
-  and reporting each force's bound.
+- **An order names one force to engage, not a sector or a trigger.** The
+  document has no task language to model, so what the UI can express is what
+  `StandingOrder` holds: a destination, a gait, and one target. "Engage anything
+  that appears on this axis", "hold fire until X", or a fire plan tied to the
+  indirect-fire missions would all need the order model widened first.
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
 - **Fog-of-war is a flat 300 m radius** (`hotseat.ts`), with no terrain and no
@@ -155,7 +165,7 @@ src/engine/
 src/app/                Hotseat browser game (React + Vite + SVG)
   App.tsx           Controller: turn loop, activations, selection, actions
   Debrief.tsx       After-action review: step through a saved recording
-  debriefText.ts    Hebrew narration of recorded actions + map extent
+  debriefText.ts    Hebrew narration: recorded actions, orders, refusals, extent
   hotseat.ts        Activation order, fog-of-war, victory check
   scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol

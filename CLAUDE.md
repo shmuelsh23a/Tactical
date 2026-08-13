@@ -55,11 +55,17 @@ one it is in your reply, too.
   `GameOptions` (see `enforceC2`), so a quick firefight and a full exercise run
   on the same engine.
 - **The player issues orders; the engine moves the pieces.** A force is given a
-  standing order (`setStandingOrder`) and `executeStandingOrders` carries it out
-  every turn until it is replaced — see rules decision 6. `moveUnit` is the
-  primitive underneath and is only called directly for the חפ"ק, which the
-  player drives by hand. Reach for an order, not a move, when adding anything
-  that manoeuvres a force.
+  standing order (`setStandingOrder`) — an objective, a gait, and optionally an
+  enemy to engage — and `executeStandingOrders` carries it out every turn until
+  it is replaced (rules decision 6). `moveUnit` is the primitive underneath and
+  is only called directly for the חפ"ק, which the player drives by hand. Reach
+  for an order, not a move, when adding anything that manoeuvres a force. A
+  consequence worth remembering: a hotseat battle journals *orders*, not moves,
+  so anything that reads a recording (extent, narration, digests) has to work
+  from the order.
+- **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
+  Orders, engine refusal reasons and action narration are worded once there and
+  used by both the live log and the debrief, so the two cannot drift apart.
 - **`noUncheckedIndexedAccess` is on**: indexing an array yields `T | undefined`.
 - **The UI is Hebrew and RTL.** User-facing strings, log lines and labels are in
   Hebrew; keep new ones consistent with the existing phrasing.
@@ -95,8 +101,14 @@ usually scripted through the browser tools. These cost real time to rediscover:
   a script can order a force once and then just advance activations — far
   cheaper than clicking a bound per turn, and it no longer stalls when the
   force falls out of contact.
-- **Check a move landed by looking for a `נע` line anywhere in the new log
-  entries**, not at the top one — detection and orders log after it.
+- **Check a move landed by looking for a movement line anywhere in the new log
+  entries**, not at the top one — detection and orders log after it. (The log
+  renders newest-first.)
+- **One click per script call, or await a tick between them.** React batches
+  state updates, so two `.click()`s in the same tick both hit the pre-render
+  DOM — the second silently re-clicks the same stale button. A
+  `await new Promise(r => setTimeout(r, 60))` between clicks is enough, and the
+  whole activation sequence can then run in one call.
 
 Once a position is set up, a **recording is the cheap way back to it**: save
 one (`שמור הקלטה`), then `replayGame()` reconstructs that exact state without

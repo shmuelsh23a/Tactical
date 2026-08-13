@@ -16,8 +16,15 @@ import {
   type Side,
   type SmokeScreen,
   type SmokeSource,
+  type StandingOrder,
   type Unit,
 } from "../engine/index.js";
+import {
+  describeExecution,
+  describeStandingOrder,
+  isRoutineOrderReason,
+  reasonHe,
+} from "./debriefText.js";
 import { buildDemoScenario, type Scenario } from "./scenario.js";
 import {
   buildActivations,
@@ -28,7 +35,7 @@ import {
   type ActivationPhase,
   type LogEntry,
 } from "./hotseat.js";
-import { MapView } from "./components/MapView.js";
+import { MapView, orderOverlay } from "./components/MapView.js";
 import { Debrief } from "./Debrief.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
@@ -42,6 +49,12 @@ type Tube = "mortar" | "artillery";
 type Mission = "he" | "smoke";
 /** What a force does in the fire phase: shoot, or go in. */
 type CombatAction = "fire" | "assault";
+/**
+ * What an order tells a force to do at its objective — the task, over and above
+ * where to go. The engine's standing order carries an `engage` task
+ * (rules decision 6); this is the player's way of setting one.
+ */
+type OrderTask = "advance" | "engage";
 
 const phaseLabelHe: Record<ActivationPhase, string> = {
   targeting: "שלב סימון מטרות",
@@ -93,6 +106,9 @@ export function App() {
   const [mission, setMission] = useState<Mission>("he");
   const [smokeSource, setSmokeSource] = useState<SmokeSource>("mortar");
   const [combatAction, setCombatAction] = useState<CombatAction>("fire");
+  const [orderTask, setOrderTask] = useState<OrderTask>("advance");
+  const [orderTargetId, setOrderTargetId] = useState<string | null>(null);
+  const [orderWeapon, setOrderWeapon] = useState<SmallArm>("smallArms");
   const [grenades, setGrenades] = useState(1);
   const [winner, setWinner] = useState<Side | null>(null);
   /** A loaded recording being reviewed; the game is left untouched behind it. */
@@ -130,6 +146,18 @@ export function App() {
       : [],
   );
   const selectedCanManoeuvre = selectedOwn ? !awaitingOrders.has(selectedOwn.id) : false;
+
+  const nameOf = (id: string) => game.units.find((u) => u.id === id)?.name ?? id;
+  /** Enemies this side can currently see — the only ones an order may name. */
+  const visibleEnemies = visibleUnits.filter((u) => u.side !== viewingSide && !u.neutralized);
+  const selectedOrder = selectedOwn ? game.standingOrderFor(selectedOwn.id) : undefined;
+
+  /** The engage task the order controls are currently set to, if any. */
+  function orderedEngagement(): StandingOrder["engage"] | undefined {
+    if (orderTask !== "engage" || !orderTargetId) return undefined;
+    const target = visibleEnemies.find((u) => u.id === orderTargetId);
+    return target ? { targetId: target.id, weapon: orderWeapon } : undefined;
+  }
 
   const moveCap =
     selectedOwn && enginePhase === "movement" && selectedCanManoeuvre
@@ -236,16 +264,6 @@ export function App() {
 
   function handleMoveTo(x: number, y: number) {
     if (!selectedOwn || enginePhase !== "movement") return;
-    if (!selectedCanManoeuvre) {
-      const next = game.nextOrderTurn(selectedOwn.id);
-      pushLog(
-        `${selectedOwn.name} מחוץ למחזור הפקודות — ממשיך בפקודה הקודמת` +
-          (next != null ? ` (פקודה חדשה: תור ${next})` : ""),
-        "info",
-        viewingSide,
-      );
-      return;
-    }
     // The חפ"ק is the player's own command post: he moves it himself. Everyone
     // else is given an order, which the engine then carries out — this turn and
     // every turn after, until it is replaced (rules decision 6).
@@ -253,16 +271,36 @@ export function App() {
       moveCommandGroup(selectedOwn, x, y);
       return;
     }
-    const next = game.nextOrderTurn(selectedOwn.id);
-    game.setStandingOrder(selectedOwn.id, { gait, destination: { x, y } });
-    pushLog(
-      `${selectedOwn.name} — פקודה: התקדם ל(${Math.round(x)}, ${Math.round(y)})` +
-        ` ב${gait === "run" ? "ריצה" : "קצב רגיל"}`,
-      "move",
-      viewingSide,
-    );
+    issueOrder(selectedOwn, { gait, destination: { x, y }, engage: orderedEngagement() });
+  }
+
+  /** Order the force to stay where it is — and, if a task is set, to fight from there. */
+  function handleHoldOrder() {
+    if (!selectedOwn || enginePhase !== "movement" || selectedOwn.kind === "command") return;
+    issueOrder(selectedOwn, { gait, engage: orderedEngagement() });
+  }
+
+  /**
+   * Hand a force its orders and let the engine start on them. An order replaces
+   * the one before it whole — objective *and* task — so what the panel shows is
+   * exactly what the force is now working to.
+   */
+  function issueOrder(unit: Unit, order: Omit<StandingOrder, "issuedTurn">) {
+    if (awaitingOrders.has(unit.id)) {
+      const next = game.nextOrderTurn(unit.id);
+      pushLog(
+        `${unit.name} מחוץ למחזור הפקודות — ממשיך בפקודה הקודמת` +
+          (next != null ? ` (פקודה חדשה: תור ${next})` : ""),
+        "info",
+        viewingSide,
+      );
+      return;
+    }
+    const next = game.nextOrderTurn(unit.id);
+    game.setStandingOrder(unit.id, order);
+    pushLog(`${unit.name} — פקודה: ${describeStandingOrder(order, nameOf)}`, "move", viewingSide);
     if (next != null && next > game.turn + 1) {
-      pushLog(`${selectedOwn.name} — פקודה חדשה רק בתור ${next}`, "info", viewingSide);
+      pushLog(`${unit.name} — פקודה חדשה רק בתור ${next}`, "info", viewingSide);
     }
     runStandingOrders();
     force();
@@ -274,7 +312,7 @@ export function App() {
       const { detection: det } = game.moveUnit(unit.id, { x, y }, gait);
       pushLog(`${unit.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", viewingSide);
       if (det.spottedUnitIds.length) {
-        pushLog(`גילוי: ${det.spottedUnitIds.join(", ")}`, "info", viewingSide);
+        pushLog(`גילוי: ${det.spottedUnitIds.map(nameOf).join(", ")}`, "info", viewingSide);
       }
     } catch (err) {
       pushLog((err as Error).message, "info", viewingSide);
@@ -292,41 +330,41 @@ export function App() {
       const unit = game.units.find((u) => u.id === done.unitId);
       const name = unit?.name ?? done.unitId;
       if (done.moved) {
-        pushLog(
-          `${name} ${done.moved.arrived ? "הגיע ליעד" : "מתקדם"} לפי פקודה`,
-          "move",
-          side,
-        );
+        pushLog(describeExecution(done, nameOf), "move", side);
         const { detection, mineDetonations } = done.moved.result;
         if (detection.spottedUnitIds.length) {
-          pushLog(`גילוי: ${detection.spottedUnitIds.join(", ")}`, "info", viewingSide);
+          pushLog(`גילוי: ${detection.spottedUnitIds.map(nameOf).join(", ")}`, "info", side);
         }
         if (detection.foundMineIds.length) {
-          pushLog(`${name} איתר ${detection.foundMineIds.length} מטענים`, "info", viewingSide);
+          pushLog(`${name} איתר ${detection.foundMineIds.length} מטענים`, "info", side);
         }
         for (const det of mineDetonations) {
           const kind = det.type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
           if (!det.activated) {
-            pushLog(`${name} דרך על ${kind} — לא הופעל`, "info", viewingSide);
+            pushLog(`${name} דרך על ${kind} — לא הופעל`, "info", side);
             continue;
           }
-          pushLog(`${kind} התפוצץ תחת ${name}!`, "casualty", viewingSide);
+          pushLog(`${kind} התפוצץ תחת ${name}!`, "casualty", side);
           for (const hit of det.blast?.targets ?? []) {
             if (!hit.caught) continue;
             const victim = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
-            pushLog(`${victim}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty", viewingSide);
-            if (hit.neutralized) pushLog(`${victim} נוטרל!`, "casualty", viewingSide);
+            pushLog(`${victim}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`, "casualty", side);
+            if (hit.neutralized) pushLog(`${victim} נוטרל!`, "casualty", side);
           }
         }
       }
       if (done.engaged) {
         pushLog(
-          `${name} תקף לפי פקודה: ${done.engaged.hits} פגיעות, ${done.engaged.newCasualties} נפגעים`,
+          describeExecution(done, nameOf),
           done.engaged.newCasualties > 0 ? "casualty" : "fire",
-          viewingSide,
+          side,
         );
+        const target = game.units.find((u) => u.id === done.engaged!.targetId);
+        if (target?.neutralized) pushLog(`${target.name} נוטרל!`, "casualty", side);
       }
-      if (done.reason) pushLog(`${name}: ${done.reason}`, "info", viewingSide);
+      if (done.reason && !isRoutineOrderReason(done.reason)) {
+        pushLog(`${name}: ${reasonHe(done.reason)}`, "info", side);
+      }
     }
     checkVictory();
   }
@@ -352,7 +390,7 @@ export function App() {
       // smoke on the map.
       if (selectedOwn.kind === "vehicle") {
         const r = game.fireExplosive("tankRound", selectedOwn.id, target.id);
-        if (!r.fired) pushLog(`${selectedOwn.name}: ${reason(r.reason)}`, "fire", viewingSide);
+        if (!r.fired) pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
         else if (!r.hit) pushLog(`${selectedOwn.name} ירה פגז — החטאה`, "fire", viewingSide);
         else pushLog(`${selectedOwn.name} פגע ב${target.name} בפגז טנק`, "casualty", viewingSide);
       } else {
@@ -361,7 +399,7 @@ export function App() {
           cover: target.inFullCover ? "full" : "none",
         });
         if (!r.fired) {
-          pushLog(`${selectedOwn.name}: ${reason(r.reason)}`, "fire", viewingSide);
+          pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
         } else {
           pushLog(
             `${selectedOwn.name} → ${target.name}: ${r.hits} פגיעות (${Math.round(r.hitChance * 100)}%), ${r.newCasualties} נפגעים`,
@@ -383,7 +421,7 @@ export function App() {
     try {
       const r = game.assault(attacker.id, target.id, grenades);
       if (!r.fired) {
-        pushLog(`${attacker.name}: ${reason(r.reason)}`, "fire", viewingSide);
+        pushLog(`${attacker.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
       } else {
         pushLog(
           `${attacker.name} הסתער על ${target.name}: ${r.fireHits} פגיעות אש` +
@@ -556,12 +594,7 @@ export function App() {
               mines={knownMines}
               standingOrders={game.units
                 .filter((u) => u.side === viewingSide)
-                .flatMap((u) => {
-                  const o = game.standingOrderFor(u.id);
-                  return o?.destination
-                    ? [{ from: u.position, to: o.destination, unitId: u.id }]
-                    : [];
-                })}
+                .flatMap((u) => orderOverlay(game.standingOrderFor(u.id), u, game.units))}
               onSelectUnit={handleSelect}
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
@@ -675,9 +708,71 @@ export function App() {
                       ריצה (≤100מ')
                     </button>
                   </div>
+                  <label>משימה:</label>
+                  <div className="seg">
+                    <button
+                      className={orderTask === "advance" ? "on" : ""}
+                      onClick={() => setOrderTask("advance")}
+                    >
+                      תנועה בלבד
+                    </button>
+                    <button
+                      className={orderTask === "engage" ? "on" : ""}
+                      onClick={() => setOrderTask("engage")}
+                    >
+                      תנועה ותקיפה
+                    </button>
+                  </div>
+
+                  {orderTask === "engage" &&
+                    (visibleEnemies.length === 0 ? (
+                      <p className="hint warn">אין אויב מזוהה — אי אפשר לקבוע מטרה בפקודה.</p>
+                    ) : (
+                      <>
+                        <label>מטרה לתקיפה:</label>
+                        <div className="seg seg-wrap">
+                          {visibleEnemies.map((u) => (
+                            <button
+                              key={u.id}
+                              className={orderTargetId === u.id ? "on" : ""}
+                              onClick={() => setOrderTargetId(u.id)}
+                            >
+                              {u.name}
+                            </button>
+                          ))}
+                        </div>
+                        <label>אמצעי ירי בפקודה:</label>
+                        <div className="seg">
+                          <button
+                            className={orderWeapon === "smallArms" ? "on" : ""}
+                            onClick={() => setOrderWeapon("smallArms")}
+                          >
+                            נק"ל
+                          </button>
+                          <button
+                            className={orderWeapon === "sustainedMg" ? "on" : ""}
+                            onClick={() => setOrderWeapon("sustainedMg")}
+                          >
+                            מקלע
+                          </button>
+                        </div>
+                      </>
+                    ))}
+
+                  <button
+                    className="btn-ghost"
+                    disabled={!selectedOwn || selectedOwn.kind === "command"}
+                    onClick={handleHoldOrder}
+                    title="פקודה ללא תנועה: הכוח נשאר במקומו ומבצע את המשימה שנקבעה"
+                  >
+                    {orderedEngagement() ? "החזק מקום ותקוף" : "החזק מקום"}
+                  </button>
+
                   <p className="hint">
-                    בחר כוח, ולחץ על המפה כדי לנוע (בתוך הטווח המסומן). כוח המסומן
-                    בעיגול מקווקו ממשיך בפקודה הקודמת ואי אפשר לשנות לו אותה — קרב את החפ"ק אליו.
+                    בחר כוח, ולחץ על המפה כדי לתת פקודה (בתוך הטווח המסומן). הפקודה
+                    נשארת בתוקף — הכוח ממשיך אליה ומבצע את משימתו בכל תור עד שתוחלף.
+                    כוח המסומן בעיגול מקווקו מחוץ למחזור הפקודות: הוא ממשיך בפקודה
+                    הקודמת ואי אפשר לשנות לו אותה — קרב את החפ"ק אליו.
                   </p>
                 </div>
               )}
@@ -742,7 +837,12 @@ export function App() {
                 </div>
               )}
 
-              <SelectedUnitCard unit={selectedOwn} orderInfo={orderInfo} />
+              <SelectedUnitCard
+                unit={selectedOwn}
+                orderInfo={orderInfo}
+                order={selectedOrder}
+                nameOf={nameOf}
+              />
 
               <button className="btn-primary" onClick={handleEndActivation}>
                 סיים {phaseLabelHe[currentActivation.phase]} ({viewingSide})
@@ -771,29 +871,6 @@ export function App() {
   );
 }
 
-function reason(r?: string): string {
-  switch (r) {
-    case "out of range":
-      return "מחוץ לטווח";
-    case "no line of sight":
-      return "אין קו ראייה";
-    case "small arms ineffective vs armour":
-      return "נשק קל לא יעיל מול שריון";
-    case "below minimum range":
-      return "מתחת לטווח מינימלי";
-    case "no fit shooters":
-      return "אין יורים כשירים";
-    case "out of assault range":
-      return `מחוץ לטווח הסתערות (${ASSAULT_RANGE_M}מ')`;
-    case "cannot assault armour":
-      return "לא ניתן להסתער על שריון";
-    case "attacker is neutralised":
-      return "הכוח מנוטרל";
-    default:
-      return r ?? "לא ניתן לירות";
-  }
-}
-
 interface OrderInfo {
   /** Distance from the force to its command group, in metres. */
   distance: number;
@@ -812,7 +889,18 @@ function everyNTurns(interval: number): string {
   return interval === 1 ? "כל תור" : `כל ${interval} תורות`;
 }
 
-function SelectedUnitCard({ unit, orderInfo }: { unit: Unit | null; orderInfo: OrderInfo | null }) {
+function SelectedUnitCard({
+  unit,
+  orderInfo,
+  order,
+  nameOf,
+}: {
+  unit: Unit | null;
+  orderInfo: OrderInfo | null;
+  /** The order the force is working to — what it will do again next turn. */
+  order: StandingOrder | undefined;
+  nameOf: (id: string) => string;
+}) {
   if (!unit) return <div className="unit-card empty">לא נבחר כוח</div>;
   return (
     <div className="unit-card">
@@ -826,6 +914,9 @@ function SelectedUnitCard({ unit, orderInfo }: { unit: Unit | null; orderInfo: O
         </div>
       ) : (
         <div>כשירים: {fitSoldiers(unit)}/{fullStrength(unit)}</div>
+      )}
+      {order && (
+        <div className="order-line-text">פקודה: {describeStandingOrder(order, nameOf)}</div>
       )}
       {orderInfo && orderInfo.interval != null && (
         <>

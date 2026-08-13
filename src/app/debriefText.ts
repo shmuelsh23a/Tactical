@@ -1,4 +1,12 @@
-import type { ActionOutcome, GameRecording, RecordedAction } from "../engine/index.js";
+import { ASSAULT_RANGE_M } from "../engine/index.js";
+import type {
+  ActionOutcome,
+  GameRecording,
+  MovementMode,
+  RecordedAction,
+  StandingOrder,
+  StandingOrderExecution,
+} from "../engine/index.js";
 
 /** Hebrew phase names, matching the ones the hotseat UI uses. */
 const phaseHe: Record<string, string> = {
@@ -22,7 +30,51 @@ const weaponHe: Record<string, string> = {
   rpgVsArmor: 'רק"ק נגד רק"מ',
 };
 
+const gaitHe: Record<MovementMode, string> = { normal: "קצב רגיל", run: "ריצה" };
+
 const term = (dict: Record<string, string>, key: string) => dict[key] ?? key;
+
+/**
+ * Why an action or an order came to nothing, in Hebrew. Shared by the live log
+ * and the debrief so a refusal reads the same in both — the engine's reasons
+ * are English identifiers and are never shown raw.
+ */
+export function reasonHe(reason?: string): string {
+  switch (reason) {
+    // …a shot that could not be taken
+    case "out of range":
+      return "מחוץ לטווח";
+    case "no line of sight":
+      return "אין קו ראייה";
+    case "small arms ineffective vs armour":
+      return "נשק קל לא יעיל מול שריון";
+    case "below minimum range":
+      return "מתחת לטווח מינימלי";
+    case "no fit shooters":
+      return "אין יורים כשירים";
+    case "out of assault range":
+      return `מחוץ לטווח הסתערות (${ASSAULT_RANGE_M}מ')`;
+    case "cannot assault armour":
+      return "לא ניתן להסתער על שריון";
+    case "attacker is neutralised":
+      return "הכוח מנוטרל";
+    // …an order that could not be carried out
+    case "neutralised":
+      return "מנוטרל";
+    case "hit last turn":
+      return "נפגע — לא יכול לנוע";
+    case "no movement left":
+      return "מיצה את התנועה בתור זה";
+    case "already acted":
+      return "כבר ביצע פעולה בשלב הירי";
+    case "target gone":
+      return "המטרה אינה עוד";
+    case "could not fire":
+      return "לא ניתן לירות";
+    default:
+      return reason ?? "לא ניתן לבצע";
+  }
+}
 
 /** Force names by id, read out of the recording's own setup actions. */
 export function unitNames(recording: GameRecording): Map<string, string> {
@@ -34,6 +86,55 @@ export function unitNames(recording: GameRecording): Map<string, string> {
 }
 
 const at = (p: { x: number; y: number }) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
+
+/** Look a force's name up by id, falling back to the id itself. */
+export type NameOf = (id: string) => string;
+
+/**
+ * The order a force is working to, in one line: the objective, the gait, and
+ * the enemy it was told to engage. Used for the live log, the selected-force
+ * card and the debrief, so an order is worded the same wherever it is read.
+ */
+export function describeStandingOrder(
+  order: Omit<StandingOrder, "issuedTurn">,
+  nameOf: NameOf,
+): string {
+  const parts = [
+    order.destination
+      ? `התקדם ל${at(order.destination)} ב${gaitHe[order.gait]}`
+      : "החזק מקום",
+  ];
+  if (order.engage) {
+    parts.push(`תקוף את ${nameOf(order.engage.targetId)} ב${term(weaponHe, order.engage.weapon)}`);
+  }
+  return parts.join(" · ");
+}
+
+/**
+ * A force answering that it had already made its bound, or already fired, this
+ * phase. A side's orders are re-run whenever any one force is given a new one,
+ * so every other force answers this every time — bookkeeping, not news, and it
+ * would bury both the log and the timeline.
+ */
+export function isRoutineOrderReason(reason?: string): boolean {
+  return reason === "no movement left" || reason === "already acted";
+}
+
+/** What one force actually did when the engine carried its order out. */
+export function describeExecution(done: StandingOrderExecution, nameOf: NameOf): string {
+  const name = nameOf(done.unitId);
+  if (done.moved) {
+    return done.moved.arrived
+      ? `${name} הגיע ליעד ${at(done.moved.to)}`
+      : `${name} מתקדם לפי פקודה ל${at(done.moved.to)}`;
+  }
+  if (done.engaged) {
+    return `${name} תקף את ${nameOf(done.engaged.targetId)} — ${done.engaged.hits} פגיעות ב-${pct(
+      done.engaged.hitChance,
+    )}, ${done.engaged.newCasualties} נפגעים`;
+  }
+  return `${name}: ${reasonHe(done.reason)}`;
+}
 
 /** One line of after-action narration for a recorded action. */
 export function describeAction(action: RecordedAction, names: Map<string, string>): string {
@@ -68,6 +169,10 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${action.side}: מסך עשן ${term(weaponHe, action.source)} ${at(action.center)}`;
     case "issueOrders":
       return `${who(action.unitId)} קיבל פקודות`;
+    case "setStandingOrder":
+      return `${who(action.unitId)} — פקודה: ${describeStandingOrder(action.order, who)}`;
+    case "executeStandingOrders":
+      return `${action.side}: ביצוע פקודות עומדות`;
     default:
       return JSON.stringify(action);
   }
@@ -186,7 +291,16 @@ export function describeOutcome(outcome: ActionOutcome, names: Map<string, strin
         : `יגיע בתור ${outcome.order.arrivesOnTurn}`;
 
     case "issueOrders":
+    case "setStandingOrder":
       return outcome.accepted ? "הפקודה התקבלה" : "מחוץ למחזור הפקודות";
+
+    // One decision, many bounds: the shots and moves an order produced are
+    // derived by the replay, so each force's bound is reported here.
+    case "executeStandingOrders":
+      return outcome.executions
+        .filter((done) => !isRoutineOrderReason(done.reason))
+        .map((done) => describeExecution(done, who))
+        .join(" · ");
 
     default:
       return "";
@@ -214,6 +328,12 @@ export function recordingExtent(recording: GameRecording): { width: number; heig
         break;
       case "moveUnit":
         see(action.to);
+        break;
+      // A force driven by orders never journals a move — the bounds are derived
+      // from the order — so the objective is what marks out the ground it
+      // crosses. Without this a battle fought under orders draws off the map.
+      case "setStandingOrder":
+        if (action.order.destination) see(action.order.destination);
         break;
       case "queueIndirectFire":
         see(action.target);

@@ -142,6 +142,13 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
   font-size: 0.85rem;
 }
 .seg button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+/* A row of choices that can outgrow the sidebar — e.g. every enemy in sight. */
+.seg-wrap { flex-wrap: wrap; }
+.seg-wrap button { flex: 1 1 45%; }
+
+/* Controls that issue an order rather than select a setting. */
+.controls .btn-ghost { margin-top: 0.6rem; width: 100%; }
+.controls .btn-ghost:disabled { opacity: 0.5; cursor: default; }
 
 .btn-primary {
   margin-top: 0.8rem; width: 100%; padding: 0.6rem;
@@ -159,6 +166,8 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .unit-card .warn { color: var(--warn); }
 .unit-card .ok { color: var(--ok); }
 .unit-card .c2-line { color: var(--muted); margin-top: 0.25rem; }
+/* The order the force is working to, in its own words. */
+.unit-card .order-line-text { color: var(--ok); margin-top: 0.25rem; }
 
 .roster { margin-top: 0.9rem; }
 .roster h4 { margin: 0 0 0.4rem; color: var(--muted); font-weight: 500; font-size: 0.85rem; }
@@ -215,3 +224,5 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .order-line { pointer-events: none; }
 .order-line line { stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 8 6; opacity: 0.8; }
 .order-line circle { fill: none; stroke: var(--ok); stroke-width: 1.5; }
+/* The enemy the same order tells it to engage — drawn in the fire colour. */
+.order-line .order-engage { stroke: var(--warn); stroke-dasharray: 2 6; opacity: 0.75; }

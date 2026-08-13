@@ -7,7 +7,7 @@ import {
   verifyRecording,
   type GameRecording,
 } from "../engine/index.js";
-import { MapView } from "./components/MapView.js";
+import { MapView, orderOverlay } from "./components/MapView.js";
 import { describeAction, describeOutcome, recordingExtent, unitNames } from "./debriefText.js";
 import { isGone } from "./hotseat.js";
 
@@ -95,10 +95,9 @@ export function Debrief({
             pendingFire={game.pendingFire}
             pendingSmoke={game.pendingSmoke}
             mines={game.mines}
-            standingOrders={game.units.flatMap((u) => {
-              const o = game.standingOrderFor(u.id);
-              return o?.destination ? [{ from: u.position, to: o.destination, unitId: u.id }] : [];
-            })}
+            standingOrders={game.units.flatMap((u) =>
+              orderOverlay(game.standingOrderFor(u.id), u, game.units),
+            )}
             onSelectUnit={noop}
             onFireAt={noop}
             onMoveTo={noop}

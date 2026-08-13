@@ -6,10 +6,49 @@ import type {
   PendingSmokeMission,
   Side,
   SmokeScreen,
+  StandingOrder,
   Unit,
 } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
+
+/**
+ * One force's order as the map draws it: the leg still to march, and the enemy
+ * it was told to engage.
+ */
+export interface OrderOverlay {
+  unitId: string;
+  from: Point;
+  /** The objective — absent once the force has arrived, or was told to hold. */
+  to?: Point;
+  /** Where the enemy the order names is standing. */
+  engage?: Point;
+}
+
+/**
+ * The overlay for a force's standing order, or nothing to draw. An order with
+ * neither an objective left to reach nor a target to engage — a force simply
+ * holding — puts no line on the map.
+ */
+export function orderOverlay(
+  order: StandingOrder | undefined,
+  unit: Unit,
+  units: readonly Unit[],
+): OrderOverlay[] {
+  if (!order) return [];
+  const target = order.engage
+    ? units.find((u) => u.id === order.engage!.targetId && !u.neutralized)
+    : undefined;
+  if (!order.destination && !target) return [];
+  return [
+    {
+      unitId: unit.id,
+      from: unit.position,
+      ...(order.destination ? { to: order.destination } : {}),
+      ...(target ? { engage: target.position } : {}),
+    },
+  ];
+}
 
 interface MapViewProps {
   width: number;
@@ -33,8 +72,12 @@ interface MapViewProps {
   pendingSmoke: readonly PendingSmokeMission[];
   /** Charges this side knows about: its own, plus any enemy ones it has found. */
   mines: readonly Mine[];
-  /** Where this side's forces have been ordered to — its own orders only. */
-  standingOrders: readonly { from: Point; to: Point; unitId: string }[];
+  /**
+   * The orders this side's forces are working to — its own only. `to` is the
+   * objective (absent for a force ordered to hold), `engage` the enemy it was
+   * told to attack.
+   */
+  standingOrders: readonly OrderOverlay[];
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
@@ -99,11 +142,25 @@ export function MapView(props: MapViewProps) {
         />
       )}
 
-      {/* Where each force has been ordered to, and how far it still has to go. */}
+      {/* Where each force has been ordered to, and how far it still has to go;
+          plus the enemy its order tells it to engage on arrival. */}
       {props.standingOrders.map((o) => (
         <g key={o.unitId} className="order-line">
-          <line x1={o.from.x} y1={o.from.y} x2={o.to.x} y2={o.to.y} />
-          <circle cx={o.to.x} cy={o.to.y} r={8} />
+          {o.to && (
+            <>
+              <line x1={o.from.x} y1={o.from.y} x2={o.to.x} y2={o.to.y} />
+              <circle cx={o.to.x} cy={o.to.y} r={8} />
+            </>
+          )}
+          {o.engage && (
+            <line
+              className="order-engage"
+              x1={o.from.x}
+              y1={o.from.y}
+              x2={o.engage.x}
+              y2={o.engage.y}
+            />
+          )}
         </g>
       ))}
 
