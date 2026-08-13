@@ -610,7 +610,11 @@ export class Game {
     const cap =
       profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1) -
       unit.movedThisTurn;
-    if (cap <= 0) return { ...base, reason: "no movement left" };
+    // The same tolerance moveUnit measures a bound with: a force that has spent
+    // its budget is done for the turn, and must not creep the rounding error
+    // left over from the bound it just made — a zero-length "move" would report
+    // as a bound and cost a detection roll.
+    if (cap <= 1e-6) return { ...base, reason: "no movement left" };
 
     const to = stepTowards(unit.position, order.destination, cap);
     const result = this.moveUnit(unit.id, to, order.gait);

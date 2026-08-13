@@ -94,6 +94,20 @@ describe("standing orders", () => {
     expect(squad.position).toEqual(after);
   });
 
+  it("absorbs a second execution in the same phase", () => {
+    // The hotseat runs the side's orders again whenever another force is given
+    // one, so this happens every turn. A spent budget must read as spent —
+    // the rounding error left over from the bound is not another bound.
+    const { g, squad } = ordered();
+    g.executeStandingOrders("BLUE");
+    const after = { ...squad.position };
+
+    const again = g.executeStandingOrders("BLUE");
+    expect(again[0]!.moved).toBeUndefined();
+    expect(again[0]!.reason).toBe("no movement left");
+    expect(squad.position).toEqual(after);
+  });
+
   it("does not move a force that was hit last turn", () => {
     const { g, squad } = ordered();
     nextTurnMovement(g);
