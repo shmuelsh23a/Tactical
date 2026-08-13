@@ -30,7 +30,12 @@ import { OBSERVATION, SCOUTING } from "./data/concealment.js";
 import type { CoverState } from "./data/directFire.js";
 import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 import { triggerMines, type MineDetonation } from "./combat/mines.js";
-import { resolveDirectFire, type DirectFireOptions, type DirectFireResult } from "./combat/directFire.js";
+import {
+  resolveDirectFire,
+  type DirectFireOptions,
+  type DirectFireResult,
+  type WeaponClass,
+} from "./combat/directFire.js";
 import {
   resolveDirectExplosive,
   type DirectExplosiveResult,
@@ -822,27 +827,92 @@ export class Game {
     return { ...base, moved: { to, arrived, result } };
   }
 
-  /** One force engaging the enemy its order names. */
+  /**
+   * One force engaging under its orders — either the enemy the order names, or
+   * whatever crosses the line it was told to open fire at.
+   *
+   * An ambush springs itself: a force holding its fire on an engagement range
+   * fires the moment an enemy is inside it, at the **nearest** one unless the
+   * order designates a target (author, 2026-08-13). Holding fire with no range
+   * is what it says — the force never opens up until the order is replaced.
+   */
   private engageUnderOrder(unit: Unit, order: StandingOrder): StandingOrderExecution | null {
     const base: StandingOrderExecution = { unitId: unit.id };
-    if (order.holdFire) return null; // told not to shoot; nothing to report
-    if (!order.engage) return null;
+    const target = this.orderedTargetFor(unit, order);
+    if (!target) {
+      // Nothing to do: no task, or a task whose conditions are not met — a
+      // held force with nobody inside its line has nothing to report.
+      if (!order.engage || order.holdFire) return null;
+      return { ...base, reason: "target gone" };
+    }
     if (unit.firedThisTurn) return { ...base, reason: "already acted" };
     if (unit.neutralized) return { ...base, reason: "neutralised" };
 
-    const target = this.units.find((u) => u.id === order.engage!.targetId);
-    if (!target || target.neutralized) return { ...base, reason: "target gone" };
+    const engaged = this.engageWithWhatItHas(unit, target, order.engage?.weapon);
+    if (!engaged) return { ...base, reason: "could not fire" };
+    if ("reason" in engaged) return { ...base, reason: engaged.reason };
+    return { ...base, engaged };
+  }
 
-    const result = this.fire(unit.id, target.id, { weapon: order.engage.weapon });
-    if (!result.fired) return { ...base, reason: result.reason ?? "could not fire" };
-    return {
-      ...base,
-      engaged: {
+  /**
+   * The force this order has `unit` shooting at this turn, if any.
+   *
+   * A designated target is only engaged when the order's conditions allow it —
+   * an ambush laid on 100 m does not reach out to 400 m because a target was
+   * named. With no designation, a held force takes the nearest enemy inside its
+   * line that its own side has actually picked up: the engine must not aim a
+   * force at something nobody has seen.
+   */
+  private orderedTargetFor(unit: Unit, order: StandingOrder): Unit | undefined {
+    const designated = order.engage
+      ? this.units.find((u) => u.id === order.engage!.targetId && !u.neutralized)
+      : undefined;
+
+    if (!order.holdFire) return designated;
+    if (order.engagementRange == null) return undefined; // held at any range
+
+    const inRange = (u: Unit) =>
+      distance(unit.position, u.position) <= order.engagementRange! &&
+      this.hasLineOfSight(unit.position, u.position);
+
+    if (designated) return inRange(designated) ? designated : undefined;
+
+    const candidates = this.units
+      .filter((u) => u.side !== unit.side && !u.neutralized && !u.vehicle?.destroyed)
+      .filter((u) => !this.trackIntel || this.knows(unit.side, u.id))
+      .filter(inRange)
+      .sort((a, b) => distance(unit.position, a.position) - distance(unit.position, b.position));
+    return candidates[0];
+  }
+
+  /**
+   * Fire on `target` with what the force actually carries: the weapon the order
+   * named, a tank's round, or small arms. Normalised to the shape a standing
+   * order reports, so an ambush sprung by a tank reads like any other.
+   */
+  private engageWithWhatItHas(
+    unit: Unit,
+    target: Unit,
+    weapon?: WeaponClass,
+  ): StandingOrderExecution["engaged"] | { reason: string } | null {
+    if (unit.kind === "vehicle") {
+      const result = this.fireExplosive("tankRound", unit.id, target.id);
+      if (!result.fired) return { reason: result.reason ?? "could not fire" };
+      const caught = (result.blast?.targets ?? []).filter((t) => t.caught);
+      return {
         targetId: target.id,
-        hits: result.hits,
-        newCasualties: result.newCasualties,
+        hits: result.hit ? 1 : 0,
+        newCasualties: caught.reduce((n, t) => n + t.newCasualties, 0),
         hitChance: result.hitChance,
-      },
+      };
+    }
+    const result = this.fire(unit.id, target.id, { weapon: weapon ?? "smallArms" });
+    if (!result.fired) return { reason: result.reason ?? "could not fire" };
+    return {
+      targetId: target.id,
+      hits: result.hits,
+      newCasualties: result.newCasualties,
+      hitChance: result.hitChance,
     };
   }
 

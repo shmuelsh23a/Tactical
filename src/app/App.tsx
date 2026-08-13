@@ -160,16 +160,21 @@ export function App() {
 
   /** The engage task the order controls are currently set to, if any. */
   function orderedEngagement(): StandingOrder["engage"] | undefined {
-    if (orderTask !== "engage" || !orderTargetId) return undefined;
+    if (orderTask === "advance" || !orderTargetId) return undefined;
     const target = visibleEnemies.find((u) => u.id === orderTargetId);
     return target ? { targetId: target.id, weapon: orderWeapon } : undefined;
   }
 
   /** The task part of an order, as the panel currently reads. */
   function orderedTask(): Pick<StandingOrder, "engage" | "holdFire"> {
-    return orderTask === "holdFire"
-      ? { holdFire: true, ...(engagementRange != null ? { engagementRange } : {}) }
-      : { engage: orderedEngagement() };
+    if (orderTask !== "holdFire") return { engage: orderedEngagement() };
+    // A held force opens up on the nearest enemy inside its line unless the
+    // order names one — so the target list is offered here too.
+    return {
+      holdFire: true,
+      ...(engagementRange != null ? { engagementRange } : {}),
+      ...(orderedEngagement() ? { engage: orderedEngagement() } : {}),
+    };
   }
 
   /** A scouting force walks, so the range ring must show the walk. */
@@ -570,6 +575,11 @@ export function App() {
 
   function handleEndActivation() {
     setSelectedId(null);
+    // The task is about the force in front of the player, not a standing panel
+    // setting: handing over with "hold fire" still selected would quietly put
+    // the next side's forces under it.
+    setOrderTask("advance");
+    setOrderTargetId(null);
     const next = actIndex + 1;
     if (next < activations.length) {
       const from = activations[actIndex]!.phase;
@@ -828,22 +838,41 @@ export function App() {
                         ))}
                       </div>
                       <p className="hint">
-                        הכוח לא יירה — גם לא בלחיצה שלך — עד שתינתן פקודה אחרת
-                        {engagementRange != null
-                          ? `, או עד שהמטרה תיכנס לטווח ${engagementRange}מ'`
-                          : ""}
-                        . ירי מסגיר את מיקום הכוח לאויב, ולכן זו הפקודה ששומרת על מארב.
+                        {engagementRange == null ? (
+                          <>
+                            הכוח לא יירה כלל — גם לא בלחיצה שלך — עד שתינתן פקודה אחרת.
+                            ירי מסגיר את מיקום הכוח לאויב, ולכן זו הפקודה ששומרת על מארב.
+                          </>
+                        ) : (
+                          <>
+                            הכוח שותק עד שאויב ייכנס לטווח {engagementRange}מ', ואז יפתח באש
+                            מעצמו על {orderTargetId ? "המטרה המיועדת" : "האויב הקרוב ביותר"} —
+                            כך נפרץ מארב.
+                          </>
+                        )}
                       </p>
                     </>
                   )}
 
-                  {orderTask === "engage" &&
+                  {orderTask !== "advance" &&
                     (visibleEnemies.length === 0 ? (
-                      <p className="hint warn">אין אויב מזוהה — אי אפשר לקבוע מטרה בפקודה.</p>
+                      orderTask === "engage" ? (
+                        <p className="hint warn">אין אויב מזוהה — אי אפשר לקבוע מטרה בפקודה.</p>
+                      ) : null
                     ) : (
                       <>
-                        <label>מטרה לתקיפה:</label>
+                        <label>
+                          {orderTask === "holdFire" ? "מטרה מיועדת:" : "מטרה לתקיפה:"}
+                        </label>
                         <div className="seg seg-wrap">
+                          {orderTask === "holdFire" && (
+                            <button
+                              className={orderTargetId == null ? "on" : ""}
+                              onClick={() => setOrderTargetId(null)}
+                            >
+                              הקרוב ביותר
+                            </button>
+                          )}
                           {visibleEnemies.map((u) => (
                             <button
                               key={u.id}
@@ -880,7 +909,7 @@ export function App() {
                   >
                     {orderTask === "holdFire"
                       ? engagementRange != null
-                        ? `החזק מקום — אש מ-${engagementRange}מ'`
+                        ? `ארוב במקום — אש בטווח ${engagementRange}מ'`
                         : "החזק מקום ואל תירה"
                       : orderedEngagement()
                         ? "החזק מקום ותקוף"

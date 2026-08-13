@@ -106,15 +106,22 @@ export function describeStandingOrder(
       ? `התקדם ל${at(order.destination)} ב${gaitHe[order.gait]}`
       : "החזק מקום",
   ];
-  if (order.engage) {
-    parts.push(`תקוף את ${nameOf(order.engage.targetId)} ב${term(weaponHe, order.engage.weapon)}`);
-  }
+  const engaging = order.engage
+    ? `${nameOf(order.engage.targetId)} ב${term(weaponHe, order.engage.weapon)}`
+    : null;
+
   if (order.holdFire) {
+    // An engagement range turns holding fire into an ambush: it says when to
+    // open up, and on whom.
     parts.push(
-      order.engagementRange != null
-        ? `אחזקת אש — אש רק בטווח ${Math.round(order.engagementRange)}מ'`
-        : "אחזקת אש",
+      order.engagementRange == null
+        ? "אחזקת אש"
+        : `אחזקת אש — פתח באש על ${engaging ?? "הקרוב ביותר"} בטווח ${Math.round(
+            order.engagementRange,
+          )}מ'`,
     );
+  } else if (engaging) {
+    parts.push(`תקוף את ${engaging}`);
   }
   return parts.join(" · ");
 }

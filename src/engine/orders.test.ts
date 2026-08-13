@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Game, HOLDING_FIRE } from "./game.js";
-import { stepTowards, hasArrived } from "./orders.js";
+import { stepTowards, hasArrived, type StandingOrder } from "./orders.js";
 import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
 import { distance } from "./geometry.js";
 
@@ -304,7 +304,7 @@ describe("an order to hold fire", () => {
     expect(g.fire(squad.id, enemy.id, { weapon: "smallArms" }).fired).toBe(true);
   });
 
-  it("is not overridden by an order to engage — the two never travel together", () => {
+  it("holds a designated target too, while no range is given", () => {
     const { g, squad, enemy } = holdingFire();
     g.setStandingOrder(squad.id, {
       gait: "normal",
@@ -313,5 +313,106 @@ describe("an order to hold fire", () => {
     });
     expect(g.executeStandingOrders("BLUE").some((e) => e.engaged)).toBe(false);
     expect(squad.firedThisTurn).toBe(false);
+  });
+});
+
+describe("an ambush laid on a range", () => {
+  /** BLUE waiting in position, RED walking in from 250 m out. */
+  function ambush(order: Partial<StandingOrder> = {}, seed = 3) {
+    const g = new Game({ seed, enforceC2: false });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    const near = g.addUnit(makeInfantry("N", "RED", "squad", { x: 0, y: 250 }, 6));
+    const far = g.addUnit(makeInfantry("F", "RED", "squad", { x: 0, y: 400 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, {
+      gait: "normal",
+      holdFire: true,
+      engagementRange: 100,
+      ...order,
+    });
+    return { g, squad, near, far };
+  }
+
+  /** End the current turn and stop in the next turn's fire phase. */
+  function nextTurnCombat(g: Game) {
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("combat");
+  }
+
+  it("stays quiet while everyone is outside the line", () => {
+    const { g, squad } = ambush();
+    g.advanceToPhase("combat");
+    expect(g.executeStandingOrders("BLUE")).toEqual([]);
+    expect(squad.firedThisTurn).toBe(false);
+  });
+
+  it("springs itself on the nearest enemy that crosses it", () => {
+    const { g, squad, near, far } = ambush();
+    g.advanceToPhase("combat");
+    g.executeStandingOrders("BLUE");
+    expect(squad.firedThisTurn).toBe(false);
+
+    // Both walk in; the nearer one is the one engaged.
+    near.position = { x: 0, y: 60 };
+    far.position = { x: 0, y: 90 };
+    nextTurnCombat(g);
+    const done = g.executeStandingOrders("BLUE");
+    expect(done[0]!.engaged?.targetId).toBe(near.id);
+    expect(squad.firedThisTurn).toBe(true);
+  });
+
+  it("keeps to the target it was given, and waits for that one", () => {
+    const { g, squad, near, far } = ambush({
+      engage: { targetId: "F", weapon: "sustainedMg" },
+    });
+    // The nearest enemy crosses the line, but the order names the other one.
+    near.position = { x: 0, y: 50 };
+    g.advanceToPhase("combat");
+    expect(g.executeStandingOrders("BLUE")).toEqual([]);
+
+    // …and it fires the moment the designated force is inside it.
+    far.position = { x: 0, y: 80 };
+    nextTurnCombat(g);
+    expect(g.executeStandingOrders("BLUE")[0]!.engaged?.targetId).toBe(far.id);
+  });
+
+  it("holds again if the enemy pulls back out of the line", () => {
+    const { g, squad, near } = ambush();
+    near.position = { x: 0, y: 60 };
+    g.advanceToPhase("combat");
+    expect(g.executeStandingOrders("BLUE")[0]!.engaged).toBeDefined();
+
+    near.position = { x: 0, y: 300 };
+    nextTurnCombat(g);
+    expect(g.executeStandingOrders("BLUE")).toEqual([]);
+    expect(squad.firedThisTurn).toBe(false);
+  });
+
+  it("does not aim a force at an enemy its side has never seen", () => {
+    // With the knowledge model on, the engine must not spring an ambush on a
+    // force nobody has picked up.
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("N", "RED", "squad", { x: 0, y: 60 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "normal", holdFire: true, engagementRange: 100 });
+    g.advanceToPhase("combat");
+    expect(g.knows("BLUE", "N")).toBe(false);
+    expect(g.executeStandingOrders("BLUE")).toEqual([]);
+  });
+
+  it("springs a tank with its own round", () => {
+    const g = new Game({ seed: 5, enforceC2: false });
+    const tank = g.addUnit(makeVehicle("T", "BLUE", { x: 0, y: 0 }));
+    g.addUnit(makeInfantry("N", "RED", "squad", { x: 0, y: 60 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(tank.id, { gait: "normal", holdFire: true, engagementRange: 100 });
+    g.advanceToPhase("combat");
+    const done = g.executeStandingOrders("BLUE");
+    expect(done[0]!.engaged?.targetId).toBe("N");
+    expect(tank.firedThisTurn).toBe(true);
   });
 });

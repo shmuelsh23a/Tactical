@@ -29,7 +29,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (210 tests: engine + app narration)
+npm test             # run the test suite (216 tests: engine + app narration)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -54,7 +54,7 @@ contact goes on with the order it holds, drawn on its own side's map), **orders
 that carry a task** — an order is an objective *and* what to do about the enemy
 there: advance, advance and engage a named force, hold where you are and engage,
 or **hold fire** — enforced against the player's own click, and with an optional
-range at which the force may open up; the order the selected force is working to is written out on its card,
+range at which the force springs the ambush by itself; the order the selected force is working to is written out on its card,
 and its objective and its target are both drawn on the map, **fixed faction colours** (BLUE always friendly/blue, RED always
 hostile/red, regardless of whose turn it is), and a **targeting phase**: each
 side marks one indirect-fire mission and one smoke screen per turn (see rules
@@ -135,12 +135,9 @@ Engine capability the UI does not reach yet — the next obvious work:
 
 - **An order has no sector, and only one trigger.** `StandingOrder` holds a
   destination, a gait, one named target, and hold-fire with an engagement range
-  — which is the only condition the engine watches. "Engage anything that
+  — a range is the only condition the engine watches for. "Engage anything that
   appears on this axis", "hold fire until the artillery lands", or a fire plan
   tied to the indirect-fire missions would all need the order model widened.
-- **A force released by its engagement range does not shoot by itself.** The
-  range lifts the *restriction*; choosing the target is still the player's
-  click (or a separate order to engage).
 - **Charges cannot be laid during play** — they are placed when a scenario is
   built. Laying them is an engineering action the document does not describe.
 - **A force cannot be told where to look.** Scouting raises what a force finds
@@ -277,12 +274,17 @@ on the stated reasoning, still awaiting the author's word.
    An order is deliberately small — a destination, a gait, and optionally a
    task: a force to engage, or **hold fire** (אחזקת אש), under which the force
    does not shoot at all, not even at the player's click, until the order is
-   replaced. Hold fire takes an optional **engagement range** — the
-   fire-discipline line an ambush is laid on, "nobody fires until they are
-   inside 100 m"; with no range given it holds at any range. That covers the
-   tasks named without inventing a task language the document does not have.
-   Hold fire is what keeps an ambush an ambush, since firing puts a force on
-   the enemy's map (decision 12). Reaching the objective drops the
+   replaced. Hold fire is what keeps an ambush an ambush, since firing puts a
+   force on the enemy's map (decision 12).
+
+   Hold fire takes an optional **engagement range** — the fire-discipline line
+   an ambush is laid on — and that line is a **trigger**: the force opens fire
+   by itself the moment an enemy is inside it, on the **nearest** one unless
+   the order designates a target, in which case it waits for that one
+   (ruled 2026-08-13). With no range given it simply holds, at any range. It
+   will not spring on a force its own side has never detected, and it holds
+   again if the enemy pulls back out of the line. A tank ambushes with its own
+   round. Reaching the objective drops the
    destination, which is what turns "advance" into "hold at the objective".
    The no-move-after-being-hit and half-pace-under-fire rules bite while it
    executes, exactly as they do under the player's hand.
