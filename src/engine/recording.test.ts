@@ -357,3 +357,76 @@ describe("battle recording", () => {
     expect(() => replayGame(bad as unknown as GameRecording)).toThrow(/version/);
   });
 });
+
+/**
+ * A hotseat battle is fought almost entirely through orders — the player names
+ * an objective and a task, and the engine drives every bound and every shot.
+ * None of those moves are journalled (they are derived), so a recording is only
+ * as good as the two order actions replaying identically.
+ */
+describe("a battle fought under orders", () => {
+  function playOrdered(seed = 11): Game {
+    const g = new Game({ seed });
+    const squad = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 300 }, 8));
+    g.addUnit(makeCommandGroup("BLUE-HQ", "BLUE", "platoon", { x: 0, y: 320 }, 3));
+    const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 60 }, 6));
+
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    // Close on the enemy and engage it there: one order, carried out every turn.
+    g.setStandingOrder(squad.id, {
+      gait: "run",
+      destination: { x: 0, y: 120 },
+      engage: { targetId: red.id, weapon: "smallArms" },
+    });
+    g.executeStandingOrders("BLUE");
+    g.advanceToPhase("combat");
+    g.executeStandingOrders("BLUE");
+
+    for (let turn = 0; turn < 3; turn++) {
+      g.advanceToPhase("initiative");
+      g.advanceToPhase("movement");
+      g.executeStandingOrders("BLUE");
+      g.advanceToPhase("combat");
+      g.executeStandingOrders("BLUE");
+    }
+    g.advanceToPhase("summary");
+    return g;
+  }
+
+  it("replays to the same state, though not one move was recorded", () => {
+    const played = playOrdered();
+    const rec = played.toRecording();
+    expect(rec.actions.some((a) => a.kind === "moveUnit")).toBe(false);
+    expect(played.getUnit("BLUE-1").position.y).toBeLessThan(300); // it did march
+
+    expect(stateOf(replayGame(rec))).toEqual(stateOf(played));
+  });
+
+  it("hands the debrief each force's bound back out of the replay", () => {
+    const rec = playOrdered().toRecording();
+    const { steps } = replayWithOutcomes(rec);
+    const executions = steps.flatMap((s) =>
+      s.outcome.kind === "executeStandingOrders" ? s.outcome.executions : [],
+    );
+    expect(executions.some((e) => e.moved)).toBe(true);
+    expect(executions.some((e) => e.moved?.arrived)).toBe(true);
+    expect(executions.some((e) => e.engaged?.targetId === "RED-1")).toBe(true);
+  });
+
+  it("keeps the order itself in the log, so the debrief can name the objective", () => {
+    const rec = playOrdered().toRecording();
+    const order = rec.actions.find((a) => a.kind === "setStandingOrder");
+    expect(order?.kind).toBe("setStandingOrder");
+    if (order?.kind !== "setStandingOrder") throw new Error("expected an order");
+    expect(order.order.destination).toEqual({ x: 0, y: 120 });
+    expect(order.order.engage?.targetId).toBe("RED-1");
+  });
+
+  it("seals and verifies like any other recording", () => {
+    expect(verifyRecording(sealRecording(playOrdered().toRecording()))).toEqual({
+      checked: true,
+      ok: true,
+    });
+  });
+});
