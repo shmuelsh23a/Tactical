@@ -2,6 +2,7 @@ import type { Point } from "./geometry.js";
 import type {
   Mine,
   MovementMode,
+  ObservationSector,
   PendingFireMission,
   Side,
   SmokeScreen,
@@ -58,7 +59,13 @@ export type RecordedAction =
   | { kind: "setStandingOrder"; unitId: string; order: Omit<StandingOrder, "issuedTurn"> }
   | { kind: "executeStandingOrders"; side: Side }
   | { kind: "setCamouflage"; unitId: string; on: boolean }
-  | { kind: "setScouting"; unitId: string; on: boolean };
+  | { kind: "setScouting"; unitId: string; on: boolean }
+  | {
+      kind: "setObservationSector";
+      unitId: string;
+      /** Null releases the force to watch all round. */
+      sector: ObservationSector | null;
+    };
 
 export interface GameRecording {
   /** Format version, so an old recording can be recognised and migrated. */
@@ -113,7 +120,8 @@ export type ActionOutcome =
   | { kind: "setStandingOrder"; accepted: boolean }
   | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] }
   | { kind: "setCamouflage"; on: boolean }
-  | { kind: "setScouting"; on: boolean };
+  | { kind: "setScouting"; on: boolean }
+  | { kind: "setObservationSector"; sector: ObservationSector | null };
 
 /** A decision the replay could not carry out, and why. */
 export interface SkippedAction {
@@ -315,6 +323,10 @@ export function replayWithOutcomes(
       case "setScouting":
         game.setScouting(action.unitId, action.on);
         outcome = { kind: "setScouting", on: action.on };
+        break;
+      case "setObservationSector":
+        game.setObservationSector(action.unitId, cloneForRecord(action.sector));
+        outcome = { kind: "setObservationSector", sector: action.sector };
         break;
       case "executeStandingOrders":
         outcome = {

@@ -3,8 +3,14 @@ import { Game } from "./game.js";
 import { replayGame } from "./recording.js";
 import { digInCover, endTurnUnitUpkeep } from "./upkeep.js";
 import { makeInfantry } from "./units.js";
-import { CAMOUFLAGE, CAMOUFLAGE_TURNS_AT_MAX, OBSERVATION } from "./data/concealment.js";
-import { camouflageBonus, detectionChance } from "./combat/detection.js";
+import {
+  CAMOUFLAGE,
+  CAMOUFLAGE_TURNS_AT_MAX,
+  OBSERVATION,
+  OBSERVATION_SECTOR,
+  sectorBonus,
+} from "./data/concealment.js";
+import { camouflageBonus, detectionChance, sectorFocus } from "./combat/detection.js";
 import { MOVEMENT_PROFILES } from "./data/movement.js";
 
 /** Put a force through `turns` end-of-turn upkeeps, moving it or not. */
@@ -252,5 +258,196 @@ describe("scouting", () => {
     expect(replayed.getUnit(unit.id).scouting).toBe(true);
     expect(replayed.getUnit(unit.id).position.y).toBeCloseTo(40, 5);
     expect(replayed.rng.getState()).toBe(g.rng.getState());
+  });
+});
+
+describe("a sector of observation", () => {
+  /**
+   * A watcher in position and a force to the east of it, well inside 300 m.
+   * The watcher is *stationary and camouflaged-free*, so its all-round chance
+   * (0.7 + 0.1) leaves headroom under the `Math.min(1, …)` clamp for the
+   * sector bonus to show up as arithmetic rather than as a ceiling.
+   */
+  function watcherAndTarget() {
+    const watcher = makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    const east = makeInfantry("E", "RED", "squad", { x: 200, y: 0 }, 6);
+    east.movedThisTurn = 40; // visible: the 300 m band
+    return { watcher, east };
+  }
+
+  it("cuts both ways — better where it looks, worse where it does not", () => {
+    const { watcher, east } = watcherAndTarget();
+    const allRound = detectionChance(watcher, east).chance;
+    const width = OBSERVATION_SECTOR.defaultWidth;
+    expect(allRound + sectorBonus(width)).toBeLessThan(1); // not measuring the clamp
+
+    // Told to watch east, where the enemy actually is.
+    watcher.observationSector = { bearing: 0, width };
+    expect(detectionChance(watcher, east).chance).toBeCloseTo(allRound + sectorBonus(width), 5);
+
+    // Told to watch west, and the enemy comes from behind.
+    watcher.observationSector = { bearing: 180, width };
+    expect(detectionChance(watcher, east).chance).toBeCloseTo(
+      allRound - OBSERVATION_SECTOR.outsidePenalty,
+      5,
+    );
+  });
+
+  it("pays a narrow arc more than a wide one — the same attention over less ground", () => {
+    // The whole point of the width control: without this, widening is free and
+    // the widest sector dominates every narrower one (author, 2026-08-16).
+    const { watcher, east } = watcherAndTarget();
+    const worth = (width: number) => {
+      watcher.observationSector = { bearing: 0, width };
+      return detectionChance(watcher, east).chance;
+    };
+    expect(worth(60)).toBeGreaterThan(worth(90));
+    expect(worth(90)).toBeGreaterThan(worth(180));
+
+    // …at the document-free figures the author settled on: 13.5 %·degrees.
+    expect(sectorBonus(60)).toBeCloseTo(0.225, 5);
+    expect(sectorBonus(90)).toBeCloseTo(0.15, 5);
+    expect(sectorBonus(180)).toBeCloseTo(0.075, 5);
+  });
+
+  it("gives nothing for watching the whole compass — that is not a sector", () => {
+    // Otherwise a 360° arc collects the bonus everywhere with no ground left
+    // outside it to pay the penalty: a free bonus, and no decision.
+    const { watcher, east } = watcherAndTarget();
+    const allRound = detectionChance(watcher, east).chance;
+    watcher.observationSector = { bearing: 0, width: 360 };
+    expect(sectorBonus(360)).toBe(0);
+    expect(detectionChance(watcher, east).chance).toBeCloseTo(allRound, 5);
+  });
+
+  it("caps what an arbitrarily thin arc can be worth", () => {
+    expect(sectorBonus(1)).toBe(OBSERVATION_SECTOR.maxBonus);
+    expect(sectorBonus(10)).toBe(OBSERVATION_SECTOR.maxBonus);
+  });
+
+  it("leaves a force with no sector exactly as it was", () => {
+    const { watcher, east } = watcherAndTarget();
+    const before = detectionChance(watcher, east).chance;
+    expect(sectorFocus(watcher, east.position)).toBe(0);
+    expect(detectionChance(watcher, east).chance).toBeCloseTo(before, 5);
+  });
+
+  it("narrows the arc a force is watching, not the ground it can see", () => {
+    const { watcher, east } = watcherAndTarget();
+    // The band is the document's; a sector never changes how far a force sees.
+    watcher.observationSector = { bearing: 180, width: 60 };
+    expect(detectionChance(watcher, east).range).toBe(300);
+  });
+
+  it("is an absolute bearing, so displacing does not re-aim it", () => {
+    const g = new Game({ seed: 1, enforceC2: false });
+    const unit = g.addUnit(makeInfantry("W", "BLUE", "squad", { x: 300, y: 300 }, 8));
+    g.watchTowards(unit.id, { x: 400, y: 300 }); // east
+    expect(unit.observationSector?.bearing).toBeCloseTo(0, 5);
+
+    // The force displaces north-west under its own steam — not by having its
+    // position written behind the game's back, which is what desyncs a
+    // recording from the live game.
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.moveUnit(unit.id, { x: 270, y: 270 }, "normal");
+    expect(unit.observationSector?.bearing).toBeCloseTo(0, 5);
+    expect(unit.observationSector?.width).toBe(OBSERVATION_SECTOR.defaultWidth);
+  });
+
+  it("keeps the width it was given when it is only re-pointed", () => {
+    const g = new Game({ seed: 1 });
+    const unit = g.addUnit(makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.watchTowards(unit.id, { x: 100, y: 0 }, 60);
+    g.watchTowards(unit.id, { x: 0, y: 100 });
+    expect(unit.observationSector).toEqual({ bearing: 90, width: 60 });
+  });
+
+  it("raises the camouflage floor for a force looking the right way", () => {
+    // The concealed-charge floor is the observer's, so watching the right
+    // sector beats it, the same way scouting does (rules decision 14).
+    const ambusher = makeInfantry("R", "RED", "squad", { x: 200, y: 0 }, 6);
+    ambusher.cover = "full";
+    ambusher.camouflaging = true;
+    ambusher.camouflageTurns = CAMOUFLAGE_TURNS_AT_MAX;
+
+    const facing = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    facing.observationSector = { bearing: 0, width: 90 };
+
+    const floor = MOVEMENT_PROFILES.normal.hiddenDetectChance;
+    expect(detectionChance(facing, ambusher).chance).toBeCloseTo(floor + sectorBonus(90), 5);
+  });
+
+  it("never lets a sector make a camouflaged force impossible to find", () => {
+    // The floor is what camouflage cannot take away, and where a force is
+    // looking is not camouflage's doing. Letting the penalty through here would
+    // put a *running* observer's floor (5%) at a flat zero — the one thing the
+    // camouflage rule says outright cannot happen (decision 12).
+    const ambusher = makeInfantry("R", "RED", "squad", { x: 200, y: 0 }, 6);
+    ambusher.cover = "full";
+    ambusher.camouflaging = true;
+    ambusher.camouflageTurns = CAMOUFLAGE_TURNS_AT_MAX;
+
+    for (const gait of ["normal", "run"] as const) {
+      const away = makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8);
+      away.observationSector = { bearing: 180, width: 90 };
+      away.movedThisTurn = 40;
+      const { chance } = detectionChance(away, ambusher, gait);
+      expect(chance).toBeCloseTo(MOVEMENT_PROFILES[gait].hiddenDetectChance, 5);
+      expect(chance).toBeGreaterThan(0);
+    }
+  });
+
+  it("replays out of a recording, and releasing it clears the arc", () => {
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true });
+    const unit = g.addUnit(makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 200, y: 0 }, 6));
+    g.beginTurn();
+    g.setObservationSector(unit.id, { bearing: 0, width: 60 });
+
+    const replayed = replayGame(g.toRecording());
+    expect(replayed.getUnit(unit.id).observationSector).toEqual({ bearing: 0, width: 60 });
+    expect(replayed.rng.getState()).toBe(g.rng.getState());
+
+    g.setObservationSector(unit.id, null);
+    expect(g.getUnit(unit.id).observationSector).toBeUndefined();
+    expect(replayGame(g.toRecording()).getUnit(unit.id).observationSector).toBeUndefined();
+  });
+
+  it("normalises what it is given, and records what it adopted", () => {
+    const g = new Game({ seed: 1 });
+    const unit = g.addUnit(makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.setObservationSector(unit.id, { bearing: -90, width: 400 });
+    // A full circle is not a sector, so the width stops just short of one.
+    expect(unit.observationSector).toEqual({ bearing: 270, width: 359 });
+
+    // The journal must hold the decision the engine took. A recording that said
+    // "400°" would have the debrief narrate an arc nobody ever watched.
+    const recorded = g.toRecording().actions.find((a) => a.kind === "setObservationSector");
+    expect(recorded).toMatchObject({ sector: { bearing: 270, width: 359 } });
+  });
+
+  it("decides which flank a watching force picks the enemy up on", () => {
+    // Same battle, same seed, same everything but where the squad was told to
+    // look — and the enemy walks in from the east.
+    // Seed 11 is chosen: the watcher's observation roll lands between the two
+    // chances this test is comparing — 0.95 watching east, 0.60 watching west —
+    // so the sector, and nothing else, decides the outcome. A future change to
+    // the rng or to the order of draws will move it, and that is a seed to
+    // re-pick rather than a rule that regressed.
+    function battle(bearing: number) {
+      const g = new Game({ seed: 11, enforceC2: false, trackIntel: true });
+      const watcher = g.addUnit(makeInfantry("W", "BLUE", "squad", { x: 0, y: 0 }, 8));
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 250, y: 0 }, 6));
+      g.setObservationSector(watcher.id, { bearing, width: 90 });
+      g.beginTurn();
+      // The RED squad shuffles in place, so it is visible rather than hidden.
+      g.advanceToPhase("movement");
+      g.moveUnit("R", { x: 240, y: 0 }, "normal");
+      g.advanceToPhase("combat");
+      return g.knows("BLUE", "R");
+    }
+    expect(battle(0)).toBe(true); // watching east — sees it
+    expect(battle(180)).toBe(false); // watching west — misses it
   });
 });

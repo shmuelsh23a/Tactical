@@ -1,12 +1,14 @@
 import { Rng } from "../rng.js";
-import { distance, type Point } from "../geometry.js";
+import { distance, withinArc, type Point } from "../geometry.js";
 import type { Mine, Unit } from "../types.js";
 import { MOVEMENT_PROFILES } from "../data/movement.js";
 import {
   CAMOUFLAGE,
   COVER_CONCEALMENT,
   OBSERVATION,
+  OBSERVATION_SECTOR,
   SCOUTING,
+  sectorBonus,
 } from "../data/concealment.js";
 import { UAV_PROFILES } from "../data/uav.js";
 import type { MovementMode } from "../types.js";
@@ -31,6 +33,19 @@ export function isHidden(unit: Unit): boolean {
   return unit.movedThisTurn === 0;
 }
 
+/**
+ * What the sector a force was told to watch is worth against a point on the map
+ * (rules decision 14): a bonus inside the arc, a penalty outside it, and nothing
+ * either way for a force watching all round.
+ */
+export function sectorFocus(observer: Unit, target: Point): number {
+  const sector = observer.observationSector;
+  if (!sector) return 0;
+  return withinArc(observer.position, target, sector.bearing, sector.width)
+    ? sectorBonus(sector.width)
+    : -OBSERVATION_SECTOR.outsidePenalty;
+}
+
 /** The chance and the range at which `observer` may pick `target` up this turn. */
 export function detectionChance(
   observer: Unit,
@@ -45,6 +60,9 @@ export function detectionChance(
   // Looking rather than covering ground.
   const scouting = observer.scouting ? SCOUTING.detectionBonus : 0;
 
+  // …and whether it is looking *this* way at all.
+  const focus = sectorFocus(observer, target.position);
+
   const hidden = isHidden(target);
   const base = hidden ? profile.hiddenDetectChance : profile.visibleDetectChance;
   const range = hidden ? profile.hiddenDetectRange : profile.visibleDetectRange;
@@ -58,12 +76,20 @@ export function detectionChance(
   // buried in the ground. Camouflage can cancel an observer's advantages; it
   // cannot make a force impossible to find. A scout keeps its edge even here —
   // the floor is what it is *plus* what scouting is worth (rules decision 12).
+  //
+  // The floor is the *observer's*, so watching the right sector raises it the
+  // same way scouting does. Watching the wrong one does **not** lower it: the
+  // floor is the thing camouflage cannot take away, and where a force is looking
+  // is not camouflage's doing. Letting the sector penalty through here would
+  // drive a running observer's floor (5%) to a flat zero and make a camouflaged
+  // force literally impossible to find — which the camouflage rule forbids in
+  // so many words (rules decisions 12 and 14).
   const floor =
     CAMOUFLAGE.floorIsConcealedChargeChance && camouflageBonus(target) > 0
-      ? profile.hiddenDetectChance + scouting
+      ? profile.hiddenDetectChance + scouting + Math.max(0, focus)
       : 0;
 
-  const chance = base + watching + scouting + exposure - concealment;
+  const chance = base + watching + scouting + focus + exposure - concealment;
   return { chance: Math.min(1, Math.max(floor, chance)), range };
 }
 

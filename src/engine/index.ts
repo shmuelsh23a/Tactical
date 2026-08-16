@@ -10,8 +10,11 @@
 export { Rng } from "./rng.js";
 export { parseDice, roll, rollDetailed, type Dice } from "./dice.js";
 export {
+  angleBetween,
+  bearingDegrees,
   distance,
   lookupBand,
+  withinArc,
   withinRadius,
   segmentIntersectsCircle,
   type Point,
@@ -28,6 +31,7 @@ export type {
   TankPart,
   VehicleState,
   Unit,
+  ObservationSector,
   SmokeScreen,
   Mine,
   PendingFireMission,
@@ -89,6 +93,7 @@ export {
   detectionChance,
   isHidden,
   observeFromPosition,
+  sectorFocus,
   type DetectionResult,
   type Observation,
 } from "./combat/detection.js";
@@ -98,7 +103,9 @@ export {
   COVER_CONCEALMENT,
   DIG_IN,
   OBSERVATION,
+  OBSERVATION_SECTOR,
   SCOUTING,
+  sectorBonus,
 } from "./data/concealment.js";
 export { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 export {

@@ -42,6 +42,38 @@ export function withinRadius(center: Point, target: Point, radius: number): bool
 }
 
 /**
+ * Direction from `a` to `b`, in degrees in [0, 360), with 0 along +x — the same
+ * convention `VehicleState.facing` already uses, so a hull heading and a sector
+ * of observation are quoted in the same numbers.
+ */
+export function bearingDegrees(a: Point, b: Point): number {
+  const deg = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+  return (deg + 360) % 360;
+}
+
+/** The smaller angle between two bearings, in degrees in [0, 180]. */
+export function angleBetween(a: number, b: number): number {
+  const diff = (((a - b) % 360) + 360) % 360;
+  return diff > 180 ? 360 - diff : diff;
+}
+
+/**
+ * True when `target` falls inside the arc of `width` degrees centred on
+ * `bearing`, seen from `from`. A target standing on the observer is inside any
+ * arc — there is no direction to it to be wrong about.
+ */
+export function withinArc(
+  from: Point,
+  target: Point,
+  bearing: number,
+  width: number,
+): boolean {
+  if (width >= 360) return true;
+  if (from.x === target.x && from.y === target.y) return true;
+  return angleBetween(bearingDegrees(from, target), bearing) <= width / 2;
+}
+
+/**
  * True when the segment `a`→`b` touches the disc of `radius` around `center` —
  * the test behind "no firing into or through smoke" (אין ירי לתוך\דרך עשן):
  * a shot is blocked whether the screen sits between the two points or over

@@ -81,6 +81,62 @@ export const CAMOUFLAGE = {
 } as const;
 
 /**
+ * A sector of observation (גזרת תצפית): where a force has been told to look
+ * (README rules decision 14 — ⚠️ the document has no sector rule at all).
+ *
+ * Everything above makes a force better or worse at looking; none of it makes
+ * looking a **choice**. Scouting in particular raises detection in every
+ * direction at once, which is not what a commander assigns — he gives a force a
+ * frontage and accepts that its flank is thinner.
+ *
+ * So a sector cuts both ways: **better inside the arc, worse outside it**. A
+ * force given no sector observes all round at the plain figures, so nothing
+ * changes for a game that never assigns one. The penalty is the larger number
+ * deliberately: concentrating attention has to cost more than it gains, or a
+ * sector is a free bonus every force would take and no decision at all.
+ *
+ * Both figures are **chosen, not the author's** — the sizes to argue about in
+ * the balance pass.
+ */
+export const OBSERVATION_SECTOR = {
+  /**
+   * **Attention is a fixed budget spread over the arc** (author, 2026-08-16):
+   * the bonus inside a sector is this divided by its width in degrees. A flat
+   * bonus made width a trap — widening only ever converted a penalised
+   * direction into a bonused one, so the widest arc dominated every narrower
+   * one and there was no decision to take. Dividing it makes the three widths
+   * genuinely different bets: a narrow arc is a sharp wager that you know the
+   * axis of advance, a wide one is cheap insurance against not knowing.
+   *
+   * Expressed in percentage-points × degrees, so 13.5 is **+15% at the default
+   * 90°**, +22% at 60°, +8% at 180°.
+   */
+  attentionBudget: 13.5, // shape: author; size: chosen (tentative)
+  /** However narrow the arc, watching it is never a certainty. */
+  maxBonus: 0.3, // tentative
+  /** Taken off the chance of picking up anything outside it, whatever the width. */
+  outsidePenalty: 0.2, // tentative — chosen, no document basis
+  /** The frontage a sector covers unless the player narrows or widens it. */
+  defaultWidth: 90, // tentative
+  /** The widths the hotseat offers, narrowest first. */
+  widths: [60, 90, 180] as const,
+} as const;
+
+/**
+ * What watching an arc `width` degrees wide is worth inside it. A sector that
+ * covers the whole compass is worth **nothing**: watching everything is not
+ * watching anything in particular, and it must not be a way to collect a bonus
+ * with no arc left over to pay the penalty.
+ */
+export function sectorBonus(width: number): number {
+  if (width >= 360) return 0;
+  return Math.min(
+    OBSERVATION_SECTOR.maxBonus,
+    OBSERVATION_SECTOR.attentionBudget / Math.max(1, width),
+  );
+}
+
+/**
  * Scouting (סיור): a force moving deliberately, looking rather than covering
  * ground. It sees better and may only walk (author, 2026-08-13).
  */

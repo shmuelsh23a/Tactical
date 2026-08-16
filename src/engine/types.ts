@@ -108,6 +108,26 @@ export interface Unit {
   scouting: boolean;
   /** Turns of camouflage work banked; moving throws them away. */
   camouflageTurns: number;
+  /**
+   * The arc the force has been told to watch (גזרת תצפית), if it has been given
+   * one. Absent means all-round observation: no better anywhere, no worse
+   * anywhere (rules decision 14).
+   */
+  observationSector?: ObservationSector;
+}
+
+/**
+ * A sector of observation (גזרת תצפית): where a force has been told to look.
+ * An arc, not a line — a squad watches a frontage, not a bearing.
+ */
+export interface ObservationSector {
+  /**
+   * Centre of the arc, in degrees, 0 along +x — the same convention as
+   * `VehicleState.facing`.
+   */
+  bearing: number;
+  /** Total width of the arc in degrees, split evenly either side of `bearing`. */
+  width: number;
 }
 
 /** Smoke / obscuration screen present on the map. */

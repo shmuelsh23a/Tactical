@@ -1,8 +1,9 @@
 import { Rng } from "./rng.js";
 import { roll } from "./dice.js";
-import { distance, segmentIntersectsCircle, type Point } from "./geometry.js";
+import { bearingDegrees, distance, segmentIntersectsCircle, type Point } from "./geometry.js";
 import type {
   Mine,
+  ObservationSector,
   PendingFireMission,
   PendingSmokeMission,
   SmokeScreen,
@@ -26,7 +27,7 @@ import {
   type DetectionResult,
   type Observation,
 } from "./combat/detection.js";
-import { OBSERVATION, SCOUTING } from "./data/concealment.js";
+import { OBSERVATION, OBSERVATION_SECTOR, SCOUTING } from "./data/concealment.js";
 import type { CoverState } from "./data/directFire.js";
 import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 import { triggerMines, type MineDetonation } from "./combat/mines.js";
@@ -515,6 +516,45 @@ export class Game {
   setScouting(unitId: string, on: boolean): void {
     this.getUnit(unitId).scouting = on;
     this.journal({ kind: "setScouting", unitId, on });
+  }
+
+  /**
+   * Tell a force which way to look (גזרת תצפית), or release it to watch all
+   * round. Inside the arc it sees better, outside it worse — so this is an
+   * allocation of attention rather than an upgrade (rules decision 14).
+   *
+   * The sector is an **absolute bearing**, not one relative to the force, so it
+   * survives the force moving: a squad told to watch the eastern approach is
+   * still watching east after it has displaced.
+   */
+  setObservationSector(unitId: string, sector: ObservationSector | null): void {
+    const unit = this.getUnit(unitId);
+    // Normalise once, then record *that* — the journal has to hold the decision
+    // the engine took, not the one the caller phrased. A bearing of 400° that
+    // becomes 40° must not be narrated back as 400°, and a sector recorded by
+    // reference would drift with the caller's object.
+    const applied: ObservationSector | null = sector
+      ? {
+          bearing: ((sector.bearing % 360) + 360) % 360,
+          // Never a full circle: watching everything is watching nothing in
+          // particular, and it must not be a way to collect the bonus with no
+          // ground left outside the arc to pay the penalty (decision 14).
+          width: Math.max(1, Math.min(359, sector.width)),
+        }
+      : null;
+
+    if (applied) unit.observationSector = { ...applied };
+    else delete unit.observationSector;
+    this.journal({ kind: "setObservationSector", unitId, sector: applied });
+  }
+
+  /** Point a force's sector at a place on the map, keeping the width it has. */
+  watchTowards(unitId: string, target: Point, width?: number): void {
+    const unit = this.getUnit(unitId);
+    this.setObservationSector(unitId, {
+      bearing: bearingDegrees(unit.position, target),
+      width: width ?? unit.observationSector?.width ?? OBSERVATION_SECTOR.defaultWidth,
+    });
   }
 
   /**
