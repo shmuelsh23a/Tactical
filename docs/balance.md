@@ -74,7 +74,8 @@ decision 12 says a camouflaged force can never be impossible to find).
 
 | Figure | Value | Whose |
 |---|---|---|
-| Casualty bands | **0 / 1–2 / 3–5 / 6+** → `ללא נפגעים שנצפו` / `נפגעים בודדים` / `מספר נפגעים` / `אבידות כבדות` | ours (banding itself ✅ confirmed) |
+| Casualty bands | **0 / 1–2 / 3–5 / 6+** → `ללא נפגעים שנצפו` / `נפגעים בודדים` / `מספר נפגעים` / `אבידות כבדות` | ours (that reports are banded is ✅; where the bands fall is not) |
+| "No observation" line | `N יורים ב-X% — ללא תצפית על המטרה` | ✅ author, decision 13 | Fire at a force the side held no contact on: its own shooters and chance, no effect. The wording, not a number — but it is the one place the disclosure line is visible to a player, so keep it saying nothing about the target. |
 
 Two properties to keep in mind if these move: the bands are **honest** (a player
 is told less, never told something false), and they apply to the live combat log

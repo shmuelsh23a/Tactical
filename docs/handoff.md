@@ -15,7 +15,7 @@ up next. It deliberately does *not* restate the rules or the conventions —
 ## Green as of this commit
 
 ```
-npm test        278 tests, 14 files
+npm test        281 tests, 14 files
 npm run typecheck   clean
 ```
 
@@ -108,6 +108,26 @@ this changes the rng draw count on a move near a charge, so **sealed recordings
 made before 2026-08-16 that cross a minefield will fail `verifyRecording`**;
 that is the tool working, not a regression.
 
+**Decision 13 is settled, and two things moved** (2026-08-16). The disclosure
+line was mine and is now his, with two corrections he made to it:
+
+- **The לקחים panel leaked.** *How many enemy forces were never identified* was
+  shown before the truth reveal — the one line in that panel that was umpire
+  knowledge rather than the side's own experience. It answers the question the
+  blind read exists to pose, and since a side knows what it *did* detect, the
+  count handed over the enemy's order of battle. It now waits for the reveal.
+- **A shot at an unseen force reported nothing at all**, which contradicted the
+  ✅ half of the same decision: a force always knows how many of its own men
+  fired and at what chance. Only the *effect* was ever meant to need watching.
+  It now reads `N יורים ב-X% — ללא תצפית על המטרה`.
+
+**The shape worth remembering:** both bugs were the same one — a filter written
+as *"can the side see the target?"* when the real question is *"which part of
+this line is the side's own business, and which part is an observation?"*
+`outcomeVisibleTo` decides whether a line appears; `describeOutcome` decides
+what it may say. Putting an observation test in the first of those suppresses
+things a side plainly knows.
+
 **Decision 8 is settled as scoped, not provisional** (2026-08-16): indirect
 fire stays an off-map asset, one mission per side per turn, because the playable
 slice is the platoon-leader view and a platoon commander *calls for* fire rather
@@ -117,15 +137,19 @@ it. **Do not re-propose a battery piece as a standalone feature.**
 
 ## Waiting on the author
 
-The ⚠️ rules decisions in the README, and what each actually needs:
+**Nothing.** As of 2026-08-16 every rules decision in the README is ✅ — 7, 8,
+10, 13 and 14 were all settled in that session, and the ⚠️ list is empty for the
+first time. Do not re-open one without him.
 
-| # | Decision | The question |
-|---|---|---|
-| 13 | What a side may be told in its own debrief | The disclosure line — enemy orders never, own casualties always, enemy casualties only for a force in sight. The **banding is confirmed ✅**; the rest of the line is mine. |
+Two things are ✅ *as decisions* while their **numbers** remain ours, and they
+live on [balance.md](balance.md) rather than here: **decision 9's smoke radii**
+(25/50/100 m) and **decision 13's casualty band cut-points** (0 / 1–2 / 3–5 /
+6+ — he confirmed reports should be banded, not where the bands fall).
+**Decision 11's riders** (no assault on armour, no ammunition tracking) are
+still assumptions he has not contradicted; ammunition is backlog 12's job.
 
-Also open, though not rules: **decision 9's smoke radii** (25/50/100 m) are
-chosen, and **decision 11's riders** (no assault on armour, no ammunition
-tracking) are assumptions the author has not contradicted.
+So the next rules question is a *new* one — terrain is the big one, and it needs
+him before it needs code.
 
 ## What I would pick up next
 

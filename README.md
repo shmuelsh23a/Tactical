@@ -30,7 +30,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (278 tests: engine + app + review)
+npm test             # run the test suite (281 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -530,10 +530,11 @@ on the stated reasoning, still awaiting the author's word.
     inside 20 m, and a scout 40%. What camouflage really buys is cancelling out
     the bonuses an ordinary observer brings — but not a scout's.
 
-13. ⚠️ **What a side may be told in its own debrief** (assumed 2026-08-13).
-    Reviewing a battle as one side saw it needs a line drawn that the document
-    never discusses, because the engine returns ground truth and the review
-    must not teach a player what they never observed. The line drawn is:
+13. ✅ **What a side may be told in its own debrief** (drawn 2026-08-13,
+    **confirmed with the author 2026-08-16**). Reviewing a battle as one side
+    saw it needs a line drawn that the document never discusses, because the
+    engine returns ground truth and the review must not teach a player what they
+    never observed. The line drawn is:
 
     - **Its own decisions, always** — orders, postures, fire missions, UAV
       sweeps. The enemy's never: an order is not something you can watch.
@@ -544,8 +545,15 @@ on the stated reasoning, still awaiting the author's word.
     - **Being fired on is always known** — you know you are under fire, and
       firing puts the firer on your map anyway.
     - **Your own casualties are always known**; the enemy's only for a force
-      you can currently see. So a side that fires on a stale mark is told the
-      shot was taken, not what it achieved.
+      you can currently see.
+    - **The dividing line is observation, not ownership of the shot** (settled
+      2026-08-16). A side fires on a stale mark and is told **how many of its
+      own men fired and at what chance** — that is its own business, and the
+      same clause that grants it for an observed shot grants it here — followed
+      by `ללא תצפית על המטרה` and not one word about what it found. Previously
+      the whole outcome line was suppressed, which contradicted the ✅ rule
+      below: a force that ordered fire and watched its own men shoot knows that
+      much. Only the *effect* was ever meant to depend on watching.
     - ✅ **And what it does learn is a report, not a count** (confirmed with the
       author 2026-08-13: *the umpire has the entire picture, players are
       fuzzier — banding is good, it should be a learning tool*). A force is told
@@ -553,16 +561,26 @@ on the stated reasoning, still awaiting the author's word.
       then what its fire appeared to do: `ללא נפגעים שנצפו`, `נפגעים בודדים`,
       `מספר נפגעים`, `אבידות כבדות`. An enemy force that goes down reads as
       `נראה מנוטרל` rather than as a fact. Own losses stay exact; the umpire's
-      view is unchanged, which is where the tally lives. The **bands are ⚠️
-      chosen** (0 / 1–2 / 3–5 / 6+) and are the thing to tune.
+      view is unchanged, which is where the tally lives. The **cut-points are
+      still ours** (0 / 1–2 / 3–5 / 6+) — the author confirmed that reports
+      should be banded, not where the bands fall — so they sit on the balance
+      list with the other chosen numbers rather than as an open rules question.
 
       Because the point is to teach, the per-side review is meant to be read
-      **blind first**: the side's own picture, its own reports, and its own
-      lessons — how many enemy forces it never found, how often it was fired on
-      by one of them, how often it fired at ground it had no eyes on. Then
-      **חשוף את תמונת המנחה** puts the truth beside it: the steps it never saw
-      are added to the timeline, marked as such, and each report it was given
-      gets the umpire's line under it.
+      **blind first**: the side's own picture, its own reports, and the lessons
+      drawn from **what it actually experienced** — how often it was fired on by
+      a force it had never found, how often it fired at ground it had no eyes
+      on, and what those failures cost it. Then **חשוף את תמונת המנחה** puts the
+      truth beside it: the steps it never saw are added to the timeline, marked
+      as such, and each report it was given gets the umpire's line under it.
+
+      **The לקחים panel holds that line too** (settled 2026-08-16). *How many
+      enemy forces were never identified* now waits for the reveal, alongside
+      their names and the casualties-inflicted tally. A bare count is still the
+      umpire's knowledge: it answers the question the blind read exists to pose,
+      and — since a side knows what it *did* detect — it hands over the enemy's
+      order of battle for free. What survives the blind read is only what the
+      side lived through.
     - **A stale contact carries the state it was last seen in**, not the force's
       current one — a squad neutralised after it dropped out of sight still
       reads as a live mark until somebody looks again.
