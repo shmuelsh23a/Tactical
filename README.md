@@ -226,7 +226,8 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   components/       MapView (SVG map + interaction), Handoff, LogPanel
 
 docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
-docs/handoff.md         State of play: what is done, what is waiting, what next
+docs/handoff.md         State of play: what is waiting, what next (current only)
+docs/handoff-archive.md What past sessions built, and why decisions went as they did
 docs/balance.md         Every number that was chosen rather than transcribed
 tools/dump-docx.py      Raw .docx extraction, to re-verify that transcription
 ```

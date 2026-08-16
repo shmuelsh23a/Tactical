@@ -6,7 +6,9 @@ the rules decisions, and the roadmap — read it before proposing changes. This
 file is the operating manual.
 
 Picking the work up cold? [docs/handoff.md](docs/handoff.md) is where the
-project stands, what is waiting on the author, and what to take next.
+project stands, what is waiting on the author, and what to take next — current
+state only. Why a past decision went the way it did is in
+[docs/handoff-archive.md](docs/handoff-archive.md).
 
 ## Commands
 
@@ -135,6 +137,26 @@ usually scripted through the browser tools. These cost real time to rediscover:
   DOM — the second silently re-clicks the same stale button. A
   `await new Promise(r => setTimeout(r, 60))` between clicks is enough, and the
   whole activation sequence can then run in one call.
+- **Advancing turns needs all three buttons**, in this order of preference each
+  time: `התחל תור`, `מוכן — הצג את המפה`, `סיים שלב`. Click whichever is present
+  and *enabled*. A driver that clicks only the last two stalls at the initiative
+  panel and looks like the engine hung. Six to eight such steps per tool call is
+  the ceiling before the 30 s timeout — read the log back between batches.
+- **The `.roster` list only exists during an activation**, not on the initiative
+  panel — querying it to decide "has the app rendered?" gives a false negative
+  at the start of a turn.
+- **Getting into the debrief without touching the disk.** `שמור הקלטה` triggers
+  a download and `טען לתחקיר` is a file input, but both drive in-page, and this
+  is the only cheap way to check anything in `Debrief.tsx`: patch
+  `URL.createObjectURL` to capture the Blob, click save, restore it, then push
+  `await blob.text()` back through the input as a `File` via a `DataTransfer`
+  (`input.files = dt.files`) and dispatch a bubbling `change` event.
+- **The browser console buffer survives reloads.** Stale HMR errors from a
+  mid-edit moment look alarming after a hard reload — especially after renaming
+  an export, where every module that imported the old name logs a failure. Check
+  what the modules *currently loaded* export before chasing one:
+  `(await import('/src/engine/index.ts')).theThing`. If that answers correctly
+  and the page renders, the errors are history.
 
 Once a position is set up, a **recording is the cheap way back to it**: save
 one (`שמור הקלטה`), then `replayGame()` reconstructs that exact state without
@@ -148,3 +170,19 @@ Vitest, colocated as `*.test.ts` next to the code. The interesting suites are
 orders) and `src/engine/combat/combat.test.ts` (fire resolution). Tests assert
 against the document's numbers — if a test needs changing, be sure the *rule*
 changed and not just the code.
+
+- **A "nothing happened" result is usually an unlucky seed, not a bug.** A
+  single 80% check fails one time in five. When a test needs a detection or a
+  detonation to land, pick a seed that produces one **and say in a comment why
+  that seed** — otherwise a later change to the draw order reads as a rules
+  regression instead of a seed to re-pick.
+- **Measure before ruling on a rule that "feels" wrong.** Twice now a suspected
+  problem turned out to be exactly quantifiable with a throwaway loop over a few
+  hundred seeds (`{ triggered: 200, detected: 0 }`), and the number is what
+  settled the question. Write the scratch test, read it, delete it — and put the
+  figure in the README so the decision carries its evidence.
+- **When a rule has two halves, test them against each other.** The bugs this
+  repo has actually shipped were halves of one rule measured off different
+  geometry or filtered at different layers, each half fine alone. The test that
+  catches those applies *both* at once and asserts the wrong combinations are
+  not produced (see "adds the movement modifier, then scales by cover").
