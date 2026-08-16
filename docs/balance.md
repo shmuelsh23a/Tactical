@@ -40,6 +40,34 @@ figure; "ours" means the code needed one and the README records the reasoning.
 - Digging in reaches full cover at **7 stationary turns**. A demo battle runs
   4–6 turns, so in practice only a force that started in cover ever has it.
 
+## Sectors of observation (rules decision 14) — settled, not open
+
+[`src/engine/data/concealment.ts`](../src/engine/data/concealment.ts)
+
+Listed for completeness rather than for tuning: the document has no sector rule
+at all, so every figure here was invented — but the author settled the shape
+*and* the sizes on 2026-08-16, so none of it is awaiting a verdict the way
+decision 12's `tentative` figures are.
+
+| Figure | Value | Whose | What it does |
+|---|---|---|---|
+| `OBSERVATION_SECTOR.attentionBudget` | **13.5 %·°** | author | Divided by the arc's width: **+23% at 60°, +15% at 90°, +8% at 180°**. |
+| `OBSERVATION_SECTOR.outsidePenalty` | **-20%** | author | Flat, whatever the width — the cost of looking elsewhere. |
+| `OBSERVATION_SECTOR.maxBonus` | **+30%** | author | However thin the arc is drawn, watching it is never a certainty. |
+| `OBSERVATION_SECTOR.defaultWidth` | **90°** | author | The frontage a sector covers unless narrowed or widened. |
+
+**The one interaction to preserve if any of these ever moves.** The bonus is
+divided by the width and the penalty is not, which is the only thing making the
+width a decision. An earlier cut paid a **flat** bonus at every width, and the
+widest arc then dominated every narrower one outright — widening only converted
+a penalised direction into a bonused one, so the control existed solely to
+punish a player for using it. Any change that decouples the bonus from the width
+brings that back. Two guards are already in the data: a **360° arc is worth
+zero** (otherwise it collects the bonus everywhere with no ground outside to pay
+the penalty) and the sector **raises the camouflage floor but never lowers it**
+(otherwise a running observer facing away has a floor of exactly zero, and
+decision 12 says a camouflaged force can never be impossible to find).
+
 ## What a player is told (rules decision 13)
 
 [`src/app/debriefText.ts`](../src/app/debriefText.ts) — `casualtyReport`

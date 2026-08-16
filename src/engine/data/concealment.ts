@@ -82,7 +82,8 @@ export const CAMOUFLAGE = {
 
 /**
  * A sector of observation (גזרת תצפית): where a force has been told to look
- * (README rules decision 14 — ⚠️ the document has no sector rule at all).
+ * (README rules decision 14 — the document has no sector rule at all, so all of
+ * this is invention, confirmed with the author 2026-08-16).
  *
  * Everything above makes a force better or worse at looking; none of it makes
  * looking a **choice**. Scouting in particular raises detection in every
@@ -91,12 +92,10 @@ export const CAMOUFLAGE = {
  *
  * So a sector cuts both ways: **better inside the arc, worse outside it**. A
  * force given no sector observes all round at the plain figures, so nothing
- * changes for a game that never assigns one. The penalty is the larger number
- * deliberately: concentrating attention has to cost more than it gains, or a
- * sector is a free bonus every force would take and no decision at all.
+ * changes for a game that never assigns one.
  *
- * Both figures are **chosen, not the author's** — the sizes to argue about in
- * the balance pass.
+ * Unlike decision 12's figures, these are **not** tentative: the author settled
+ * both the shape and the sizes.
  */
 export const OBSERVATION_SECTOR = {
   /**
@@ -109,15 +108,15 @@ export const OBSERVATION_SECTOR = {
    * axis of advance, a wide one is cheap insurance against not knowing.
    *
    * Expressed in percentage-points × degrees, so 13.5 is **+15% at the default
-   * 90°**, +22% at 60°, +8% at 180°.
+   * 90°**, +23% at 60°, +8% at 180°.
    */
-  attentionBudget: 13.5, // shape: author; size: chosen (tentative)
+  attentionBudget: 13.5, // author
   /** However narrow the arc, watching it is never a certainty. */
-  maxBonus: 0.3, // tentative
+  maxBonus: 0.3, // author
   /** Taken off the chance of picking up anything outside it, whatever the width. */
-  outsidePenalty: 0.2, // tentative — chosen, no document basis
+  outsidePenalty: 0.2, // author
   /** The frontage a sector covers unless the player narrows or widens it. */
-  defaultWidth: 90, // tentative
+  defaultWidth: 90, // author
   /** The widths the hotseat offers, narrowest first. */
   widths: [60, 90, 180] as const,
 } as const;

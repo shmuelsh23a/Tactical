@@ -507,8 +507,9 @@ on the stated reasoning, still awaiting the author's word.
     without the knowledge model has no per-side picture to show, and the
     viewpoint buttons are disabled for it.
 
-14. ⚠️ **A force can be told where to look, and pays for it elsewhere**
-    (גזרת תצפית — assumed 2026-08-16). The document has **no sector rule at
+14. ✅ **A force can be told where to look, and pays for it elsewhere**
+    (גזרת תצפית — confirmed with the author 2026-08-16, shape *and* figures).
+    The document has **no sector rule at
     all**, so all of this is invented. What forced it: decision 12 makes a force
     better or worse at looking, but never makes looking a *choice*. Scouting in
     particular raises detection in every direction at once, which is not what a
@@ -563,10 +564,12 @@ on the stated reasoning, still awaiting the author's word.
       to its owner only (decision 13) — an arc is not something the enemy can
       watch being drawn.
 
-    The **shape** is the author's — bonus scaled by width, penalty flat. The
-    **sizes** are chosen and marked `tentative` in
-    [`data/concealment.ts`](src/engine/data/concealment.ts) for the balance
-    pass: the 13.5 budget, the -20% penalty and the +30% cap.
+    Both the **shape** (bonus scaled by width, penalty flat) and the **sizes**
+    (the 13.5 budget, the -20% penalty, the +30% cap) are the author's, settled
+    2026-08-16. Unlike decision 12's figures, none of them is on the balance
+    list awaiting a verdict — the reasoning is above and in
+    [`data/concealment.ts`](src/engine/data/concealment.ts) so a future change
+    is a decision to revisit rather than a number to discover.
     [`Game.setObservationSector` / `Game.watchTowards`](src/engine/game.ts),
     `sectorBonus` in [`data/concealment.ts`](src/engine/data/concealment.ts) and
     `sectorFocus` in [`combat/detection.ts`](src/engine/combat/detection.ts).

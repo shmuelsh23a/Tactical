@@ -61,6 +61,9 @@ a fixed budget spread over the arc, so the bonus is `13.5 ÷ width` (+23% / +15%
 modifier that applies to a region has to be checked against the region's *size*,
 or the control that sets the size is decoration.
 
+Decision 14 is **fully ✅** — he settled the sizes too (2026-08-16), so nothing
+in it is waiting on him and none of it is on the balance list.
+
 This closes what was item 2 on the last handoff's list. Driven in the browser:
 wedge drawn, log line, posture line, the sector surviving a move, and release
 back to all-round.
@@ -75,7 +78,6 @@ The ⚠️ rules decisions in the README, and what each actually needs:
 | 8 | Indirect fire is one mission per side per turn | The document gives rates of fire per barrel but the game has no battery piece. Should a battery be a unit? |
 | 10 | A charge triggers within **10 m** of the path walked | The document says `דריכה` with no distance, and a token is a squad, not a man. |
 | 13 | What a side may be told in its own debrief | The disclosure line — enemy orders never, own casualties always, enemy casualties only for a force in sight. The **banding is confirmed ✅**; the rest of the line is mine. |
-| 14 | A sector's **sizes**: the 13.5 attention budget, the -20% penalty, the +30% cap | The document has no sector rule at all. The **shape is confirmed ✅** (bonus divided by arc width, penalty flat); only the three numbers are open. |
 
 Also open, though not rules: **decision 9's smoke radii** (25/50/100 m) are
 chosen, and **decision 11's riders** (no assault on armour, no ammunition
