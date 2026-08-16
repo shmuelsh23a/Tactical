@@ -15,7 +15,7 @@ up next. It deliberately does *not* restate the rules or the conventions —
 ## Green as of this commit
 
 ```
-npm test        266 tests, 14 files
+npm test        270 tests, 14 files
 npm run typecheck   clean
 ```
 
@@ -68,13 +68,24 @@ This closes what was item 2 on the last handoff's list. Driven in the browser:
 wedge drawn, log line, posture line, the sector surviving a move, and release
 back to all-round.
 
+**Decision 7 is settled too** (2026-08-16): cover cuts the hit chance
+**proportionally**. What settled it was not the arithmetic but the *grammar* —
+the document writes the cover modifier with the partitive מ־ and the definite
+article (`-50% מסיכויי הפגיעה`) and the movement-table modifier without it
+(`+30% סיכויי פגיעה`), so the two were always meant to be applied differently.
+That also confirms the movement modifiers as additive, which had been a separate
+open assumption. No code changed; the reading was already the implemented one.
+
+**Worth reusing:** when the document is ambiguous, look for the *same quantity
+phrased twice*. This one had been open since 2026-08-12 on an arithmetic
+argument alone, and a two-line grep across the two tables closed it.
+
 ## Waiting on the author
 
 The ⚠️ rules decisions in the README, and what each actually needs:
 
 | # | Decision | The question |
 |---|---|---|
-| 7 | Cover cuts hit chance **proportionally** | Is `-50% מסיכויי הפגיעה` a proportional cut (halves a 20% shot) or percentage points? Read as points it zeroes the whole direct-fire table. |
 | 8 | Indirect fire is one mission per side per turn | The document gives rates of fire per barrel but the game has no battery piece. Should a battery be a unit? |
 | 10 | A charge triggers within **10 m** of the path walked | The document says `דריכה` with no distance, and a token is a squad, not a man. |
 | 13 | What a side may be told in its own debrief | The disclosure line — enemy orders never, own casualties always, enemy casualties only for a force in sight. The **banding is confirmed ✅**; the rest of the line is mine. |

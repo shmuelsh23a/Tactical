@@ -332,17 +332,34 @@ on the stated reasoning, still awaiting the author's word.
    interval module switches off with `new Game({ seed, enforceC2: false })` —
    which governs the interval on new orders, not whether a force carries out
    the ones it has.
-7. ⚠️ **Cover cuts the hit chance proportionally, not by percentage points**
-   (decided 2026-08-12 from the document, worth a sanity check). The source
-   reads `-50% מסיכויי הפגיעה` — "-50% *of* the hit chance" — and the partitive
-   מ־ makes it a proportional cut: full cover halves the shot (20% → 10%),
-   partial cover shaves a tenth off it. Read as a subtraction of 50 points it
-   would zero the entire direct-fire table (small arms 30/20/10 → 0/0/0,
-   sustained MG 70/50/20 → 20/0/0), so a defender in cover could never be shot
-   at all. (The reasoning originally leaned on every stationary force counting
-   as in full cover; decision 12 has since made cover something a force digs or
-   starts with, but the arithmetic above is unchanged.) The table values stay verbatim (`-0.5` / `-0.1`); only
-   their application changed — [`combat/directFire.ts`](src/engine/combat/directFire.ts).
+7. ✅ **Cover cuts the hit chance proportionally, not by percentage points**
+   (read from the document 2026-08-12, **confirmed with the author 2026-08-16**).
+   The source reads `-50% מסיכויי הפגיעה` — "-50% *of* the hit chance" — and the
+   partitive מ־ makes it a proportional cut: full cover halves the shot
+   (20% → 10%), partial cover shaves a tenth off it.
+
+   **The document distinguishes the two phrasings itself**, which is what
+   settles it. The cover bullets carry the partitive and the definite article
+   (`מסיכויי הפגיעה`, "of *the* hit chances"); the movement table's modifier is
+   bare (`+30% סיכויי פגיעה לאש אויב`). Same kind of quantity, same document,
+   deliberately different wording — so cover is proportional and the movement
+   modifiers stay additive.
+
+   The arithmetic agrees. Read as a subtraction of 50 points, full cover would
+   zero the entire small-arms table (30/20/10 → 0/0/0) and leave the sustained
+   MG live only inside 300 m (70/50/20 → 20/0/0) — an entire weapon class
+   switched off by a parenthetical bullet, and the 400 m band unreachable
+   against any covered target. Proportionally it stays a real defence without
+   being an immunity: 15/10/5 and 35/25/10.
+
+   (The reasoning originally leaned on every stationary force counting as in
+   full cover; decision 12 has since made cover something a force digs or starts
+   with — and the document's own behavioural condition,
+   `לא לנוע ולא לירות בתור הקודם`, is honoured through that machinery: moving
+   resets cover at upkeep, and `coverAgainst` downgrades full to partial for a
+   force that has fired. The arithmetic above is unchanged either way.) The
+   table values stay verbatim (`-0.5` / `-0.1`); only their application changed
+   — [`combat/directFire.ts`](src/engine/combat/directFire.ts).
 8. ⚠️ **Indirect fire is an off-map asset, one mission per side per turn**
    (assumed 2026-08-12). The document gives rates of fire per barrel (3 bombs
    for a mortar, 2 shells for artillery) but the game has no battery piece to
@@ -578,9 +595,11 @@ Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
 - **Target-movement modifiers** (`+30%` / `-20%` from the movement table) kept
-  **additive** — the document phrases those without the partitive מ־ that made
-  cover proportional (decision 7), and read additively they stay in range
-  (30% → 60% against a walking target). Say if you want them proportional too.
+  **additive**. This is the other half of decision 7 rather than a separate
+  assumption: what the author confirmed on 2026-08-16 is that the partitive מ־
+  is doing real work, and the movement table is phrased *without* it
+  (`+30% סיכויי פגיעה`, bare). So cover is proportional and these are additive,
+  and they stay in range read that way (30% → 60% against a walking target).
 - **Artillery "2d10 per axis"** read as a **d100 percentile** per axis (matching
   the ≤15% / 16–30% / 31%+ thresholds).
 - **"hit% × fit soldiers"** modelled as each fit soldier rolling the hit chance

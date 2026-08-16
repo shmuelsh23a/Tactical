@@ -67,7 +67,12 @@ describe("direct fire", () => {
     }
   });
 
-  it("cover scales the chance the target's movement has already modified", () => {
+  it("adds the movement modifier, then scales by cover — the two are not alike", () => {
+    // This pins rules decision 7, confirmed by the author 2026-08-16. The
+    // document phrases the two modifiers differently and means it: cover is
+    // "-50% מסיכויי הפגיעה" (partitive מ־, "of the hit chance" → proportional),
+    // the movement table is a bare "+30% סיכויי פגיעה" (→ additive). Applying
+    // both the same way is the mistake this test exists to catch.
     const rng = new Rng(5);
     const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
     const b = makeInfantry("B", "RED", "squad", { x: 0, y: 250 }, 8);
@@ -77,6 +82,9 @@ describe("direct fire", () => {
       targetMovementModifier: +0.3,
     });
     expect(r.hitChance).toBeCloseTo(0.45, 5); // (0.2 + 0.3) * (1 - 0.1)
+    // Both additive would be 0.4; both proportional would be 0.234.
+    expect(r.hitChance).not.toBeCloseTo(0.4, 5);
+    expect(r.hitChance).not.toBeCloseTo(0.234, 5);
   });
 
   it("running target lowers hit chance, normal-moving raises it", () => {

@@ -25,10 +25,14 @@ export const SUSTAINED_MG_BANDS: readonly RangeBand[] = [
 
 /**
  * Cover modifiers — a **proportional** cut of the hit chance, not a subtraction
- * of percentage points. The document reads "-50% מסיכויי הפגיעה" ("-50% *of*
- * the hit chance"), so full cover halves whatever the shot would otherwise be
- * (20% → 10%). Read additively these would zero the whole direct-fire table —
- * see rules decision 7 in the README.
+ * of percentage points (author, 2026-08-16). The document reads
+ * "-50% מסיכויי הפגיעה" ("-50% *of* the hit chance"), so full cover halves
+ * whatever the shot would otherwise be (20% → 10%).
+ *
+ * Two things settle it. The document uses the partitive מ־ here and **not** in
+ * the movement table's `+30% סיכויי פגיעה`, so the two are meant to be applied
+ * differently. And read additively these would zero the whole direct-fire table
+ * — see rules decision 7 in the README.
  *   Full cover: -50%. What the ground gives a force, or what it has dug for
  *   itself after long enough in place (rules decision 12).
  *   Partial cover: -10%. Half-decent ground — and what full cover counts as
