@@ -30,7 +30,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (248 tests: engine + app + review)
+npm test             # run the test suite (270 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -89,6 +89,16 @@ walks while it does, and the range ring and the gait control follow it. The
 selected force's card reads its posture back: what it is behind, whether it is
 hidden, whether it is out scouting, and how far its camouflage and its digging
 have got (rules decision 12).
+
+None of that, though, is a decision about *where* to look: scouting sharpens a
+force's eyes in every direction at once. So a force can also be given a **sector
+of observation** (גזרת תצפית) — an arc drawn on the map, worth a bonus inside it
+and -20% outside it. Attention is a fixed budget spread over the arc, so a narrow
+sector is worth more where it points (+23% at 60°, +8% at 180°): a narrow one is
+a wager that you know the axis of advance, a wide one is insurance against not
+knowing. That makes attention a thing a commander allocates and can get wrong —
+the squad watching the eastern approach is the squad that does not see the
+flanking move (rules decision 14).
 
 RED also defends behind a **minefield** in the demo scenario. A side sees its own
 charges; the enemy's only once they have been spotted, and a force that walks
@@ -247,6 +257,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Posture: hidden while stationary, digging in over time, camouflage (with a
   floor at the concealed-charge chance), scouting, and the detection modifiers
   each carries
+- Sectors of observation: an arc a force is told to watch, better inside it and
+  worse outside
 - Direct fire: range bands, cover, target-movement modifiers, split fire, 1d4
 - Explosives: RPG, mortar, artillery (with rate-of-fire & impact delay), tank
   round, ATGM (vs infantry / vs armour)
@@ -494,6 +506,70 @@ on the stated reasoning, still awaiting the author's word.
     The umpire's view is unchanged and remains the default. A recording made
     without the knowledge model has no per-side picture to show, and the
     viewpoint buttons are disabled for it.
+
+14. ⚠️ **A force can be told where to look, and pays for it elsewhere**
+    (גזרת תצפית — assumed 2026-08-16). The document has **no sector rule at
+    all**, so all of this is invented. What forced it: decision 12 makes a force
+    better or worse at looking, but never makes looking a *choice*. Scouting in
+    particular raises detection in every direction at once, which is not what a
+    commander assigns — he gives a force a frontage and accepts that its flank
+    is thinner. The reading:
+
+    - **A sector is an arc, not a bearing** — a bearing and a width, because a
+      squad watches a frontage. The hotseat offers **60° / 90° / 180°**, and 90°
+      is the default.
+    - **It cuts both ways**: a bonus inside the arc, **-20%** outside it,
+      whatever its width.
+    - ✅ **Attention is a fixed budget spread over the arc** (confirmed with the
+      author 2026-08-16). The bonus inside a sector is **13.5 ÷ its width in
+      degrees**, so:
+
+      | גזרה | בתוכה | מחוצה לה |
+      |---|---|---|
+      | 60° | **+23%** | -20% |
+      | 90° | **+15%** | -20% |
+      | 180° | **+8%** | -20% |
+
+      The first version of this rule paid a **flat** +15% at any width, which
+      made width a trap: widening only ever converted a penalised direction into
+      a bonused one, so 180° strictly dominated 60° and the control existed only
+      to punish the player for touching it. Dividing the bonus by the width is
+      what makes the three a real choice — a narrow arc is a sharp wager that
+      you know the axis of advance, a wide one is cheap insurance against not
+      knowing, and releasing the sector is the neutral bet that beats a wide arc
+      pointed the wrong way. A sector is capped at **+30%** however thin it is
+      drawn, and a **360° arc is worth nothing at all**: watching everything is
+      not watching anything in particular, and it must not be a way to collect
+      the bonus with no ground left outside to pay the penalty.
+    - **A force with no sector watches all round** at exactly the plain figures,
+      so a game that never assigns one plays as it did before. This is what
+      makes the module additive rather than a rewrite of decision 12.
+    - **The bearing is absolute, not relative to the force.** A squad told to
+      watch the eastern approach is still watching east after it has displaced;
+      re-pointing it is a fresh decision, taken deliberately.
+    - **It raises the concealed-charge floor, and never lowers it.** The floor
+      is the *observer's*, so a force watching the right sector beats it by its
+      bonus, exactly as a scout does. A force facing the wrong way is **held at
+      the plain floor** rather than pushed under it: the floor is the thing
+      camouflage cannot take away, and where a force is looking is not
+      camouflage's doing. Letting the penalty through would put a *running*
+      observer's floor (5%) at a flat zero and make a camouflaged force literally
+      impossible to find — which decision 12 forbids in so many words.
+    - **A sector never changes how far a force sees.** The 300 m / 20 m bands
+      are the document's and are untouched; a sector only says how well the
+      force is attending to what is inside them.
+    - **Where a force is looking is its own business.** The sector goes in the
+      recording as a decision like any other, and the per-side debrief shows it
+      to its owner only (decision 13) — an arc is not something the enemy can
+      watch being drawn.
+
+    The **shape** is the author's — bonus scaled by width, penalty flat. The
+    **sizes** are chosen and marked `tentative` in
+    [`data/concealment.ts`](src/engine/data/concealment.ts) for the balance
+    pass: the 13.5 budget, the -20% penalty and the +30% cap.
+    [`Game.setObservationSector` / `Game.watchTowards`](src/engine/game.ts),
+    `sectorBonus` in [`data/concealment.ts`](src/engine/data/concealment.ts) and
+    `sectorFocus` in [`combat/detection.ts`](src/engine/combat/detection.ts).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

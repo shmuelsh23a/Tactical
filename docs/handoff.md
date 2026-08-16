@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Written 2026-08-13, at commit `4c01fa8`.** This is a working note for the next
+**Written 2026-08-13, revised 2026-08-16.** This is a working note for the next
 session: the state of play, what is waiting on the author, and what I would pick
 up next. It deliberately does *not* restate the rules or the conventions —
 
@@ -15,14 +15,14 @@ up next. It deliberately does *not* restate the rules or the conventions —
 ## Green as of this commit
 
 ```
-npm test        248 tests, 14 files
+npm test        266 tests, 14 files
 npm run typecheck   clean
 ```
 
 The demo scenario plays end to end in the browser. Everything below was driven
 in the actual game before it was called done, not only unit-tested.
 
-## What the last session built
+## What the 2026-08-13 session built
 
 One arc, in six commits, each verified in play:
 
@@ -42,6 +42,29 @@ One arc, in six commits, each verified in play:
    skipping decisions the alternate history has made impossible and reporting
    how many were skipped.
 
+## What the 2026-08-16 session built
+
+**Sectors of observation** (rules decision 14), one arc: a force can be told
+which way to look — an arc with a bearing and a width, worth a bonus inside and
+-20% outside. Absolute bearing, so displacing does not re-aim it. It raises the
+concealed-charge floor the way scouting does but never lowers it, it goes in the
+recording as a decision, and the per-side debrief shows it to its owner only
+(the umpire sees both). The hotseat lays one by picking a width and clicking the
+map, and draws the wedge out to 300 m.
+
+**The width is the bet, and getting there took two goes.** The first cut paid a
+flat +15% at any width, which made the control a trap — widening only ever
+converted a penalised direction into a bonused one, so 180° strictly dominated
+60° and there was no decision to take. The author confirmed the fix: attention is
+a fixed budget spread over the arc, so the bonus is `13.5 ÷ width` (+23% / +15% /
++8% at 60° / 90° / 180°). **Worth remembering as a shape, not just a number:** a
+modifier that applies to a region has to be checked against the region's *size*,
+or the control that sets the size is decoration.
+
+This closes what was item 2 on the last handoff's list. Driven in the browser:
+wedge drawn, log line, posture line, the sector surviving a move, and release
+back to all-round.
+
 ## Waiting on the author
 
 The ⚠️ rules decisions in the README, and what each actually needs:
@@ -52,6 +75,7 @@ The ⚠️ rules decisions in the README, and what each actually needs:
 | 8 | Indirect fire is one mission per side per turn | The document gives rates of fire per barrel but the game has no battery piece. Should a battery be a unit? |
 | 10 | A charge triggers within **10 m** of the path walked | The document says `דריכה` with no distance, and a token is a squad, not a man. |
 | 13 | What a side may be told in its own debrief | The disclosure line — enemy orders never, own casualties always, enemy casualties only for a force in sight. The **banding is confirmed ✅**; the rest of the line is mine. |
+| 14 | A sector's **sizes**: the 13.5 attention budget, the -20% penalty, the +30% cap | The document has no sector rule at all. The **shape is confirmed ✅** (bonus divided by arc width, penalty flat); only the three numbers are open. |
 
 Also open, though not rules: **decision 9's smoke radii** (25/50/100 m) are
 chosen, and **decision 11's riders** (no assault on armour, no ammunition
@@ -62,17 +86,15 @@ tracking) are assumptions the author has not contradicted.
 The gap list in the README, in the order I would take it:
 
 1. **Terrain** (backlog 6). Everything now points at it: `baseCover` exists on a
-   `Unit` with nothing to set it, line of sight only knows about smoke, scouting
-   has no sector to look at, and the map is a bare field. It is also the biggest
-   rules invention left — the document has no terrain table — so it needs the
-   author's involvement more than it needs code.
-2. **A force cannot be told where to look.** Scouting raises detection
-   everywhere at once. A sector or an observation post would make it a decision
-   rather than a switch, and it is small next to terrain.
-3. **Laying charges during play.** Small, self-contained, but the document does
+   `Unit` with nothing to set it, line of sight only knows about smoke, and the
+   map is a bare field. With sectors in, a force can be told where to look but
+   there is still nothing on the ground to look *at* or from behind. It is also
+   the biggest rules invention left — the document has no terrain table — so it
+   needs the author's involvement more than it needs code.
+2. **Laying charges during play.** Small, self-contained, but the document does
    not describe engineering work at all — ask before building.
-4. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
-   posture system built this session is the natural place to hang suppression.
+3. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
+   posture system is the natural place to hang suppression.
 
 Two things I would *not* rush: echelon scaling (backlog 3) touches the C2 model
 everywhere, and OPORD mode (backlog 13) is a research project with a section of
