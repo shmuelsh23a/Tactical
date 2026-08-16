@@ -4,6 +4,7 @@ import {
   CAMOUFLAGE,
   DIG_IN,
   MOVEMENT_PROFILES,
+  OBSERVATION_SECTOR,
   SCOUTING,
   SMOKE_DURATION_TURNS,
   SMOKE_RADIUS_M,
@@ -14,6 +15,7 @@ import {
   orderInterval,
   replayGame,
   sealRecording,
+  sectorBonus,
   verifyRecording,
   type GameRecording,
   type IndirectFireResult,
@@ -27,9 +29,11 @@ import {
 import {
   casualtyReport,
   describeExecution,
+  describeSector,
   describeStandingOrder,
   isRoutineOrderReason,
   reasonHe,
+  sectorWorthHe,
 } from "./debriefText.js";
 import { buildDemoScenario, type Scenario } from "./scenario.js";
 import {
@@ -118,6 +122,13 @@ export function App() {
   /** Range at which a force holding its fire may open up; null = any range. */
   const [engagementRange, setEngagementRange] = useState<number | null>(null);
   const [grenades, setGrenades] = useState(1);
+  /**
+   * While on, a click on the map points the selected force's sector of
+   * observation instead of ordering it somewhere — the two are both "click a
+   * place on the map", so the player has to say which one they mean.
+   */
+  const [aimingSector, setAimingSector] = useState(false);
+  const [sectorWidth, setSectorWidth] = useState<number>(OBSERVATION_SECTOR.defaultWidth);
   const [winner, setWinner] = useState<Side | null>(null);
   /** A loaded recording being reviewed; the game is left untouched behind it. */
   const [debrief, setDebrief] = useState<GameRecording | null>(null);
@@ -312,11 +323,21 @@ export function App() {
 
   function handleSelect(id: string) {
     const u = game.units.find((x) => x.id === id);
-    if (u && u.side === viewingSide) setSelectedId(id);
+    if (u && u.side === viewingSide) {
+      setSelectedId(id);
+      // A half-laid sector belongs to the force it was being laid for.
+      setAimingSector(false);
+    }
   }
 
   function handleMoveTo(x: number, y: number) {
     if (!selectedOwn || enginePhase !== "movement") return;
+    // Same click, two meanings: while the player is laying a sector it points
+    // the force's attention rather than sending it anywhere.
+    if (aimingSector) {
+      aimSectorAt(selectedOwn, x, y);
+      return;
+    }
     // The חפ"ק is the player's own command post: he moves it himself. Everyone
     // else is given an order, which the engine then carries out — this turn and
     // every turn after, until it is replaced (rules decision 6).
@@ -325,6 +346,29 @@ export function App() {
       return;
     }
     issueOrder(selectedOwn, { gait: effectiveGait, destination: { x, y }, ...orderedTask() });
+  }
+
+  /**
+   * Tell the selected force which way to look (גזרת תצפית): better inside the
+   * arc, worse outside it, so it is an allocation of attention rather than a
+   * bonus (rules decision 14). The bearing is taken from the force to the point
+   * clicked, and is absolute — displacing does not re-aim it.
+   */
+  function aimSectorAt(unit: Unit, x: number, y: number) {
+    game.watchTowards(unit.id, { x, y }, sectorWidth);
+    const sector = game.getUnit(unit.id).observationSector!;
+    pushLog(`${unit.name} — גזרת תצפית: ${describeSector(sector)}`, "info", viewingSide);
+    setAimingSector(false);
+    force();
+  }
+
+  /** Release the force to watch all round: no better anywhere, no worse. */
+  function handleClearSector() {
+    if (!selectedOwn || enginePhase !== "movement") return;
+    game.setObservationSector(selectedOwn.id, null);
+    pushLog(`${selectedOwn.name} — תצפית מעגלית`, "info", viewingSide);
+    setAimingSector(false);
+    force();
   }
 
   /**
@@ -605,6 +649,9 @@ export function App() {
     // the next side's forces under it.
     setOrderTask("advance");
     setOrderTargetId(null);
+    // …and a sector half-laid belongs to the force that was selected, not to
+    // whoever the next side clicks on first.
+    setAimingSector(false);
     const next = actIndex + 1;
     if (next < activations.length) {
       const from = activations[actIndex]!.phase;
@@ -950,6 +997,42 @@ export function App() {
                     {scoutingSelected ? "חזור מסיור" : "צא לסיור"}
                   </button>
 
+                  {/* Where the force is told to look. An arc, not a bearing:
+                      a squad watches a frontage (rules decision 14). */}
+                  <label>גזרת תצפית:</label>
+                  {/* The width is the bet: the same attention over a narrower
+                      arc is worth more inside it, so what each button buys is
+                      on the button (rules decision 14). */}
+                  <div className="seg">
+                    {OBSERVATION_SECTOR.widths.map((w) => (
+                      <button
+                        key={w}
+                        className={sectorWidth === w ? "on" : ""}
+                        onClick={() => setSectorWidth(w)}
+                        title={`גזרה של ${w}° — +${Math.round(sectorBonus(w) * 100)}% לגילוי בתוכה`}
+                      >
+                        {w}° · +{Math.round(sectorBonus(w) * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                  <div className="seg">
+                    <button
+                      className={aimingSector ? "on" : ""}
+                      disabled={!selectedOwn}
+                      onClick={() => setAimingSector((on) => !on)}
+                      title={`+${Math.round(sectorBonus(sectorWidth) * 100)}% לגילוי בתוך הגזרה, -${Math.round(OBSERVATION_SECTOR.outsidePenalty * 100)}% מחוצה לה. גזרה צרה שווה יותר בתוכה. לחץ ואז סמן על המפה לאן להסתכל.`}
+                    >
+                      {aimingSector ? "סמן על המפה…" : "קבע גזרה"}
+                    </button>
+                    <button
+                      disabled={!selectedOwn?.observationSector}
+                      onClick={handleClearSector}
+                      title="ביטול הגזרה: הכוח צופה לכל הכיוונים, ללא תוספת וללא קנס"
+                    >
+                      תצפית מעגלית
+                    </button>
+                  </div>
+
                   <button
                     className={`btn-ghost${selectedOwn?.camouflaging ? " on" : ""}`}
                     disabled={!selectedOwn}
@@ -1157,6 +1240,12 @@ function PostureLine({ unit }: { unit: Unit }) {
       {unit.scouting && (
         <div className="ok">
           בסיור: +{Math.round(SCOUTING.detectionBonus * 100)}% לגילוי · הליכה בלבד
+        </div>
+      )}
+      {unit.observationSector && (
+        <div className="ok">
+          גזרת תצפית: {describeSector(unit.observationSector)} ·{" "}
+          {sectorWorthHe(unit.observationSector)}
         </div>
       )}
       {(unit.camouflaging || camouflage > 0) && (

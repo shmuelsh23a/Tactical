@@ -86,6 +86,21 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
   stroke-width: 1.5; stroke-dasharray: 3 3;
 }
 
+/* The arc a force is watching. Faint, because every force may carry one and
+   they overlap; the selected force's is picked out. Never swallows a click —
+   the ground under a wedge still has to be orderable. */
+.obs-sector {
+  pointer-events: none;
+  fill: rgba(250, 204, 21, 0.06);
+  stroke: rgba(250, 204, 21, 0.35);
+  stroke-width: 1;
+}
+.obs-sector.selected {
+  fill: rgba(250, 204, 21, 0.13);
+  stroke: rgba(250, 204, 21, 0.8);
+  stroke-width: 1.5;
+}
+
 /* Marked aim point awaiting impact, and the smoke it may lay. */
 .aim-point { pointer-events: none; }
 .aim-point circle { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; }

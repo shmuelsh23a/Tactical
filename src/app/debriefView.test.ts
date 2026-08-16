@@ -244,3 +244,39 @@ describe("the lessons a side takes out of it", () => {
     expect(asBlue().hitByUnseen).toBeGreaterThan(0);
   });
 });
+
+describe("a sector of observation in the review", () => {
+  /**
+   * Where a force was told to look is a decision taken behind its own lines, so
+   * it goes to its own side and nowhere else. The switches in `debriefView`
+   * default to *hidden*, so a new action that nobody added to them disappears
+   * silently rather than leaking — this is the test that says which it is.
+   */
+  const rec2 = (() => {
+    const g = new Game({ seed: 4, enforceC2: false, trackIntel: true });
+    const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 200, y: 0 }, 6));
+    g.beginTurn();
+    g.setObservationSector(blue.id, { bearing: 0, width: 90 });
+    return g.toRecording();
+  })();
+  const sides2 = unitSides(rec2);
+  const { steps: steps2, contactsAfter: after2 } = replayForReview(rec2);
+  const index = rec2.actions.findIndex((a) => a.kind === "setObservationSector");
+  const action = rec2.actions[index]!;
+
+  it("is the owner's to see, and the enemy's never", () => {
+    expect(index).toBeGreaterThanOrEqual(0);
+    for (const side of ["BLUE", "RED"] as Side[]) {
+      const lens = lensFor(side, index, after2, sides2);
+      const mine = side === "BLUE";
+      expect(actionVisibleTo(action, side, lens, sides2)).toBe(mine);
+      expect(outcomeVisibleTo(action, side, sides2, lens)).toBe(mine);
+    }
+  });
+
+  it("says in Hebrew which way the force was told to look", () => {
+    const step = steps2.find((s) => s.action.kind === "setObservationSector")!;
+    expect(describeOutcome(step.outcome, unitNames(rec2))).toContain("%");
+  });
+});

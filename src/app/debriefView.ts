@@ -101,6 +101,7 @@ export function outcomeVisibleTo(
     case "setStandingOrder":
     case "setCamouflage":
     case "setScouting":
+    case "setObservationSector":
       return own(action.unitId);
     case "executeStandingOrders":
       return action.side === side;
@@ -161,6 +162,7 @@ export function actionVisibleTo(
     case "setStandingOrder":
     case "setCamouflage":
     case "setScouting":
+    case "setObservationSector":
       return own(action.unitId);
     case "executeStandingOrders":
       // The enemy's own step is shown only when something inside it was seen;

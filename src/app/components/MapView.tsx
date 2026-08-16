@@ -9,6 +9,7 @@ import type {
   StandingOrder,
   Unit,
 } from "../../engine/index.js";
+import { MOVEMENT_PROFILES } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 
@@ -82,10 +83,35 @@ interface MapViewProps {
    * told to attack.
    */
   standingOrders: readonly OrderOverlay[];
+  /**
+   * Draw every force's sector of observation rather than just the viewing
+   * side's. Only the umpire may have this: where the enemy is looking is
+   * precisely what a side does not know (rules decisions 13 and 14).
+   */
+  allSectors?: boolean;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
   onTargetAt: (x: number, y: number) => void;
+}
+
+/**
+ * An SVG wedge for a sector of observation: the apex on the force, the arc at
+ * `radius`. A full-circle sector has no wedge to draw — an arc that closes on
+ * itself degenerates to a point in SVG's arc syntax — so it is drawn as the
+ * circle it is.
+ */
+function sectorWedge(at: Point, bearing: number, width: number, radius: number): string {
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+  if (width >= 360) {
+    return `M ${at.x - radius} ${at.y} a ${radius} ${radius} 0 1 0 ${radius * 2} 0 a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`;
+  }
+  const from = rad(bearing - width / 2);
+  const to = rad(bearing + width / 2);
+  const start = { x: at.x + radius * Math.cos(from), y: at.y + radius * Math.sin(from) };
+  const end = { x: at.x + radius * Math.cos(to), y: at.y + radius * Math.sin(to) };
+  const largeArc = width > 180 ? 1 : 0;
+  return `M ${at.x} ${at.y} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
 }
 
 function clientToMap(svg: SVGSVGElement, clientX: number, clientY: number) {
@@ -135,6 +161,32 @@ export function MapView(props: MapViewProps) {
     >
       <rect x={0} y={0} width={width} height={height} className="map-bg" />
       <g>{gridLines}</g>
+
+      {/* The arcs this side's forces are watching (rules decision 14), drawn out
+          to the document's 300 m visible band. That is the longer of the two
+          bands the sector bears on — against a force holding still it applies
+          inside 20 m — so the wedge shows the ground covered at its widest.
+          Own forces only, unless this is the umpire's map: where the enemy is
+          looking is exactly what a side does not know. */}
+      {units
+        .filter(
+          (u) =>
+            (props.allSectors || u.side === viewingSide) &&
+            u.observationSector &&
+            !u.neutralized,
+        )
+        .map((u) => (
+          <path
+            key={`sector-${u.id}`}
+            className={`obs-sector${u.id === selectedId ? " selected" : ""}`}
+            d={sectorWedge(
+              u.position,
+              u.observationSector!.bearing,
+              u.observationSector!.width,
+              MOVEMENT_PROFILES.normal.visibleDetectRange,
+            )}
+          />
+        ))}
 
       {/* Movement range for the selected friendly unit. */}
       {phase === "movement" && selected && selected.side === viewingSide && moveCap != null && (

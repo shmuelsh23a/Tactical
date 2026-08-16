@@ -1,8 +1,9 @@
-import { ASSAULT_RANGE_M } from "../engine/index.js";
+import { ASSAULT_RANGE_M, OBSERVATION_SECTOR, sectorBonus } from "../engine/index.js";
 import type {
   ActionOutcome,
   GameRecording,
   MovementMode,
+  ObservationSector,
   RecordedAction,
   StandingOrder,
   StandingOrderExecution,
@@ -88,6 +89,47 @@ export function unitNames(recording: GameRecording): Map<string, string> {
 }
 
 const at = (p: { x: number; y: number }) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
+
+/**
+ * The eight points of the compass a bearing falls in. The engine measures a
+ * sector in degrees off +x, which is the right thing for arithmetic and the
+ * wrong thing to read: a commander is told to watch the north-east, not 47°.
+ */
+const COMPASS_HE = [
+  "מזרח",
+  "צפון-מזרח",
+  "צפון",
+  "צפון-מערב",
+  "מערב",
+  "דרום-מערב",
+  "דרום",
+  "דרום-מזרח",
+];
+
+/**
+ * A sector of observation in words (rules decision 14). The map's y grows
+ * *downward*, so a bearing of 90° points down the screen — south.
+ *
+ * The bearing is folded into [0, 360) first. The engine normalises what it
+ * stores, but this also narrates recorded actions, which carry whatever the
+ * caller passed — and a negative index into `COMPASS_HE` is a compass point
+ * that does not exist.
+ */
+export function describeSector(sector: ObservationSector): string {
+  const bearing = ((sector.bearing % 360) + 360) % 360;
+  const point = COMPASS_HE[Math.round((360 - bearing) / 45) % 8] ?? "";
+  return `${point} (${Math.round(bearing)}°, ${Math.round(sector.width)}°)`;
+}
+
+/** What a sector is worth, in the percentages the player is being offered. */
+export function sectorWorthHe(sector: ObservationSector): string {
+  const bonus = sectorBonus(sector.width);
+  if (bonus === 0) return "תצפית לכל הכיוונים";
+  return (
+    `+${Math.round(bonus * 100)}% בגזרה, ` +
+    `-${Math.round(OBSERVATION_SECTOR.outsidePenalty * 100)}% מחוצה לה`
+  );
+}
 
 /** Look a force's name up by id, falling back to the id itself. */
 export type NameOf = (id: string) => string;
@@ -237,6 +279,10 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${who(action.unitId)} ${action.on ? "מסווה את עמדתו" : "הפסיק הסוואה"}`;
     case "setScouting":
       return `${who(action.unitId)} ${action.on ? "יצא לסיור" : "חזר מסיור"}`;
+    case "setObservationSector":
+      return action.sector
+        ? `${who(action.unitId)} — גזרת תצפית: ${describeSector(action.sector)}`
+        : `${who(action.unitId)} — תצפית מעגלית`;
     default:
       return JSON.stringify(action);
   }
@@ -403,6 +449,9 @@ export function describeOutcome(
 
     case "setScouting":
       return outcome.on ? "מגלה טוב יותר, נע בהליכה בלבד" : "חוזר לקצב רגיל";
+
+    case "setObservationSector":
+      return outcome.sector ? sectorWorthHe(outcome.sector) : "תצפית לכל הכיוונים";
 
     case "issueOrders":
     case "setStandingOrder":

@@ -120,3 +120,20 @@ describe("narrating a recording of an orders battle", () => {
     expect(recordingExtent(rec).height).toBeGreaterThan(640);
   });
 });
+
+import { describeSector } from "./debriefText.js";
+
+describe("a sector of observation in words", () => {
+  it("reads the compass off the map, where y grows downward", () => {
+    // 0° is +x — east; 90° is +y, which on the map is *down* the screen.
+    expect(describeSector({ bearing: 0, width: 90 })).toContain("מזרח");
+    expect(describeSector({ bearing: 90, width: 90 })).toContain("דרום");
+    expect(describeSector({ bearing: 180, width: 90 })).toContain("מערב");
+    expect(describeSector({ bearing: 270, width: 90 })).toContain("צפון");
+    expect(describeSector({ bearing: 45, width: 90 })).toContain("דרום-מזרח");
+  });
+
+  it("quotes the arc as well as the bearing — a squad watches a frontage", () => {
+    expect(describeSector({ bearing: 0, width: 60 })).toContain("60°");
+  });
+});

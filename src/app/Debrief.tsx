@@ -170,6 +170,8 @@ export function Debrief({
             height={extent.height}
             units={units}
             viewingSide={side ?? "BLUE"}
+            // The umpire is the one reader entitled to see both sides' arcs.
+            allSectors={side == null}
             selectedId={null}
             phase="other"
             moveCap={null}
