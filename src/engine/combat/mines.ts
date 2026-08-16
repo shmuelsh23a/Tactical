@@ -15,21 +15,11 @@ import { resolveBlast, type BlastResult } from "./explosives.js";
 export const MINE_TRIGGER_RADIUS_M = 10;
 
 /**
- * Whether a force moving at `mode` **searches the ground it crossed**, or only
- * gets a look at where it halted (rules decision 10, author 2026-08-16).
- *
- * A walking force sweeps its route: the document's 30% is rolled for every
- * charge within 20 m of the path it walked, which is what makes the gait a real
- * decision over mined ground. A force at a run does not look at all on the way
- * — its 5% applies only around where the bound ends.
- *
- * This is the other half of {@link MINE_TRIGGER_RADIUS_M}: charges are
- * triggered along the whole path either way, so a runner is tested against
- * ground it never searched. That is the gamble.
+ * Charges are triggered along the whole path either way, while only a walking
+ * force *searches* that path — see `sweepsGroundCrossed` in
+ * [`detection.ts`](./detection.ts). A runner is therefore tested against ground
+ * it never looked at, which is the gamble the gait choice buys.
  */
-export function sweepsPathForCharges(mode: MovementMode): boolean {
-  return mode === "normal";
-}
 
 /** Explosives-table key for each kind of emplaced charge. */
 const MINE_WEAPON: Record<Mine["type"], string> = {

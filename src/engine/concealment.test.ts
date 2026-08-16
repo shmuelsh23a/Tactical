@@ -208,6 +208,70 @@ describe("contacts that go cold", () => {
   });
 });
 
+describe("searching the ground crossed for a hidden enemy", () => {
+  /**
+   * Rules decision 10 (author, 2026-08-16). The document names charges, shafts
+   * and hidden enemy in one clause — 30% within 20 m — so the sweep covers all
+   * three. It matters because the hidden band is 20 m against a 50–100 m bound:
+   * searched from the endpoint alone, a force could walk within 15 m of a
+   * prepared position and never roll for it (measured 0/400 before this).
+   */
+  function walkPast(offsetY: number, gait: "normal" | "run", camouflaged = false) {
+    let found = 0;
+    const n = 400;
+    for (let s = 0; s < n; s++) {
+      const g = new Game({ seed: s, enforceC2: false, trackIntel: true });
+      const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+      const red = makeInfantry("R", "RED", "squad", { x: 15, y: offsetY }, 6);
+      if (camouflaged) {
+        red.cover = "full";
+        red.camouflaging = true;
+        red.camouflageTurns = CAMOUFLAGE_TURNS_AT_MAX;
+      }
+      g.addUnit(red);
+      g.beginTurn();
+      g.advanceToPhase("movement");
+      // RED never moves, so it is hidden — looked for in the 20 m band.
+      const to = { x: 0, y: gait === "run" ? 100 : 50 };
+      if (g.moveUnit(blue.id, to, gait).detection.spottedUnitIds.length) found++;
+    }
+    return found / n;
+  }
+
+  it("finds a force lying up beside the route, not only beside the halt", () => {
+    // 15 m off the midpoint of a 50 m walk: the case that used to be 0.
+    expect(walkPast(25, "normal")).toBeGreaterThan(0.15);
+  });
+
+  it("gives a running force no look at the ground it crossed", () => {
+    expect(walkPast(25, "run")).toBe(0);
+  });
+
+  it("does not let the sweep beat a camouflaged position outright", () => {
+    // Camouflage still holds the chance down to the concealed-charge floor
+    // (decision 12) — the sweep says *where* a force looks, not how well.
+    const plain = walkPast(25, "normal");
+    const camo = walkPast(25, "normal", true);
+    expect(camo).toBeGreaterThan(0);
+    expect(camo).toBeLessThanOrEqual(plain);
+  });
+
+  it("still leaves an ambush its edge — the defender sees first", () => {
+    // The sweep must not undo decision 12: a stationary defender observes
+    // continuously at 300 m, so it picks the attacker up several bounds before
+    // the attacker is close enough to sweep it at 20 m.
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true });
+    const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 250 }, 8));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.moveUnit(blue.id, { x: 0, y: 210 }, "normal");
+    g.advanceToPhase("combat");
+    expect(g.knows("RED", blue.id)).toBe(true); // the defender has its contact
+    expect(g.knows("BLUE", "R")).toBe(false); // the attacker still has nothing
+  });
+});
+
 describe("scouting", () => {
   /** A squad with room to run, and an order it will not be able to obey. */
   function scout(seed = 2) {

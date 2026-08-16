@@ -1,6 +1,5 @@
 import { Rng } from "../rng.js";
 import { distance, segmentIntersectsCircle, withinArc, type Point } from "../geometry.js";
-import { sweepsPathForCharges } from "./mines.js";
 import type { Mine, Unit } from "../types.js";
 import { MOVEMENT_PROFILES } from "../data/movement.js";
 import {
@@ -94,6 +93,26 @@ export function detectionChance(
   return { chance: Math.min(1, Math.max(floor, chance)), range };
 }
 
+/**
+ * Whether a force moving at `mode` **searches the ground it crossed**, or only
+ * gets a look at where it halted (rules decision 10, author 2026-08-16).
+ *
+ * A walking force sweeps its route; a force at a run does not look on the way
+ * at all, and its figures apply only around where the bound ends. The document
+ * puts charges, shafts and hidden enemy in one clause —
+ * `30% מציאת מטענים\פירים\אויב חבוי בטווח של עד 20 מ'` — so this is one rule
+ * covering all of them, not a rule about mines that an enemy happens to share.
+ *
+ * It matters because those bands are **20 m** and a bound is 50–100 m: searched
+ * from the endpoint alone, most of a route went unlooked-at, and a force could
+ * walk within 15 m of a prepared position and never roll for it. The 300 m
+ * visible band never had the problem — it already dwarfs any bound — so the
+ * sweep changes almost nothing there.
+ */
+export function sweepsGroundCrossed(mode: MovementMode): boolean {
+  return mode === "normal";
+}
+
 /** Whether a force is in any state to be observing at all. */
 function canObserve(unit: Unit): boolean {
   if (unit.neutralized) return false;
@@ -113,13 +132,10 @@ function isFindable(unit: Unit): boolean {
  *
  * `from` is where the bound started; `mover.position` is already the end of it.
  * The two are needed because a **walking** force searches the ground it crossed
- * for charges rather than only where it halted (rules decision 10) — charges
- * are triggered along the whole path, so searching only the endpoint left most
- * of a bound unswept and the document's 30%/5% gait split doing nothing.
- *
- * Enemy detection is deliberately **not** swept: a force is looked for where
- * the mover ended up. A charge sits still and is walked onto; an enemy does
- * not, and the 300 m band already covers the ground a bound crosses.
+ * rather than only where it halted (rules decision 10) — see
+ * {@link sweepsGroundCrossed}. This covers charges *and* a hidden enemy, which
+ * the document names in the same clause; without it a force could walk within
+ * 15 m of a prepared position, or straight over a charge, and never roll.
  */
 export function detectByMovement(
   rng: Rng,
@@ -134,24 +150,28 @@ export function detectByMovement(
   const spottedUnitIds: string[] = [];
   const foundMineIds: string[] = [];
 
+  // A walking force sweeps the route it took; a running one only gets a look at
+  // where it stopped (rules decision 10). Only the *range* is swept: the chance
+  // and the line of sight are judged from where the bound finished, so a force's
+  // gait, its sector and what it can see through are all read off one position
+  // rather than varying along the path.
+  const sweeping = sweepsGroundCrossed(mode);
+  const searched = (at: Point, radius: number) =>
+    sweeping
+      ? segmentIntersectsCircle(from, mover.position, at, radius)
+      : distance(mover.position, at) <= radius;
+
   for (const enemy of enemies) {
     if (!isFindable(enemy)) continue;
     const { chance, range } = detectionChance(mover, enemy, mode);
-    const d = distance(mover.position, enemy.position);
-    if (d <= range && hasLineOfSight(mover.position, enemy.position)) {
+    if (searched(enemy.position, range) && hasLineOfSight(mover.position, enemy.position)) {
       if (rng.chance(chance)) spottedUnitIds.push(enemy.id);
     }
   }
 
-  // A walking force sweeps the route it took; a running one only gets a look at
-  // where it stopped (rules decision 10).
-  const sweeping = sweepsPathForCharges(mode);
   for (const mine of mines) {
     if (mine.detected) continue;
-    const searched = sweeping
-      ? segmentIntersectsCircle(from, mover.position, mine.position, profile.hiddenDetectRange)
-      : distance(mover.position, mine.position) <= profile.hiddenDetectRange;
-    if (searched && rng.chance(profile.hiddenDetectChance)) {
+    if (searched(mine.position, profile.hiddenDetectRange) && rng.chance(profile.hiddenDetectChance)) {
       mine.detected = true;
       foundMineIds.push(mine.id);
     }
