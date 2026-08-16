@@ -15,7 +15,7 @@ up next. It deliberately does *not* restate the rules or the conventions —
 ## Green as of this commit
 
 ```
-npm test        270 tests, 14 files
+npm test        274 tests, 14 files
 npm run typecheck   clean
 ```
 
@@ -80,6 +80,25 @@ open assumption. No code changed; the reading was already the implemented one.
 phrased twice*. This one had been open since 2026-08-12 on an arithmetic
 argument alone, and a two-line grep across the two tables closed it.
 
+**Decision 10 is settled, and settling it found a bug** (2026-08-16). Charges
+were triggered along the whole path walked while the *search* for them was
+rolled from the endpoint alone — two different geometries. Measured: a charge
+5 m off the route at the midpoint of a 50 m walk went off 200/200 seeds and was
+found 0/200. So the document's 30%-walking / 5%-running split, which is the
+whole reason a mined approach is a decision, was doing nothing.
+
+The ruling: **a walking force searches the ground it crossed at 30%; a running
+force gets no look on the way** and its 5% applies only where it halts. Trigger
+radius stays 10 m. `sweepsPathForCharges` in
+[`combat/mines.ts`](../src/engine/combat/mines.ts); `detectByMovement` now takes
+the start of the bound.
+
+**Two things to carry forward.** Keep the trigger radius *below* the 20 m search
+band — the gap between them is the ground a search roll actually buys. And note
+this changes the rng draw count on a move near a charge, so **sealed recordings
+made before 2026-08-16 that cross a minefield will fail `verifyRecording`**;
+that is the tool working, not a regression.
+
 **Decision 8 is settled as scoped, not provisional** (2026-08-16): indirect
 fire stays an off-map asset, one mission per side per turn, because the playable
 slice is the platoon-leader view and a platoon commander *calls for* fire rather
@@ -93,7 +112,6 @@ The ⚠️ rules decisions in the README, and what each actually needs:
 
 | # | Decision | The question |
 |---|---|---|
-| 10 | A charge triggers within **10 m** of the path walked | The document says `דריכה` with no distance, and a token is a squad, not a man. |
 | 13 | What a side may be told in its own debrief | The disclosure line — enemy orders never, own casualties always, enemy casualties only for a force in sight. The **banding is confirmed ✅**; the rest of the line is mine. |
 
 Also open, though not rules: **decision 9's smoke radii** (25/50/100 m) are

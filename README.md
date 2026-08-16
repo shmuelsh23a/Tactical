@@ -30,7 +30,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (270 tests: engine + app + review)
+npm test             # run the test suite (274 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -397,25 +397,46 @@ on the stated reasoning, still awaiting the author's word.
    flight is queued like an HE mission and lands in `resolvePriorArty`; screens
    go down *before* the rounds do, so a barrage cannot walk through its own
    smoke on the turn both arrive.
-10. ⚠️ **A charge is triggered by the path walked, within 10 m** (assumed
-    2026-08-12). The document gives the trigger as `דריכה` — stepping on it —
-    with a 50% activation roll, but no distance, and a token here is a squad
-    spread over some frontage rather than one man. So:
+10. ✅ **A charge is triggered by the path walked, within 10 m — and only a
+    walking force searches that path** (radius assumed 2026-08-12, the whole
+    rule **confirmed with the author 2026-08-16**). The document gives the
+    trigger as `דריכה` — stepping on it — with a 50% activation roll, but no
+    distance, and a token here is a squad spread over some frontage rather than
+    one man. So:
     - the **whole bound** is tested, not just where it ends, or a 100 m rush
       would vault a minefield;
     - **10 m** is the trigger radius — half the 20 m at which a charge can be
-      *spotted*, so a force that fails its detection roll can still walk into
-      one ([`combat/mines.ts`](src/engine/combat/mines.ts));
-    - a charge already **found is stepped around**, which is what makes the
-      document's detection percentages worth having: moving at normal pace
-      spots charges within 20 m at 30%, running at only 5% — so the gait choice
-      is a real gamble over a mined approach;
+      *spotted*, so there is ground where a charge is found without ever being
+      trodden on ([`combat/mines.ts`](src/engine/combat/mines.ts));
+    - **a walking force searches the ground it crossed**; a running one gets no
+      look on the way, and its 5% applies only around where the bound ends
+      (`sweepsPathForCharges`);
+    - a charge already **found is stepped around**;
     - a charge that fires is **spent**; one that fails its activation roll stays
       armed for the next force through;
     - **no force triggers its own side's charges.**
 
+    **The sweep is the half that was missing, and it was a real bug.** Charges
+    were triggered along the whole path while the search was rolled from the
+    *endpoint alone*, so the two were measured off different geometry. A charge
+    5 m off the route, halfway along a 50 m walk, was inside the trigger
+    corridor and 25 m from where the bound ended: over 200 seeds it went off 200
+    times and was found 0 times. The document's own 30%-walking / 5%-running
+    split — which sits in the **movement** table, as an effect of moving — was
+    therefore doing almost nothing on a mined approach, which is precisely the
+    decision it exists to price. Sweeping the walked path at 30% makes the gait
+    the gamble the document implies: walk and you may find what you are about to
+    tread on, run and you will not.
+
     Until this, `activationChance` sat in the data and nothing read it — charges
     could be found but never went off.
+
+    ⚠️ **One thing this leaves open.** The document lists charges and *hidden
+    enemy* in the same breath — `30% מציאת מטענים\פירים\אויב חבוי בטווח של עד 20 מ'`
+    — but only the charge half is swept here. A hidden enemy beside the route is
+    still only looked for from where the bound ends. Charges sit still and are
+    walked onto and an enemy is neither, so the two are not obviously the same
+    roll; say if you want the hidden-enemy search swept as well.
 11. ✅ **An assault reaches 25 m** (confirmed with the author 2026-08-12). The
     document puts הסתערות in the fire phase and makes the grenade
     `הסתערות בלבד`, but states no range; closing the last stretch is a
