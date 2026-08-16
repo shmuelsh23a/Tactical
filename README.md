@@ -30,7 +30,7 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (274 tests: engine + app + review)
+npm test             # run the test suite (278 tests: engine + app + review)
 npm run typecheck    # strict type-check (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
@@ -410,7 +410,7 @@ on the stated reasoning, still awaiting the author's word.
       trodden on ([`combat/mines.ts`](src/engine/combat/mines.ts));
     - **a walking force searches the ground it crossed**; a running one gets no
       look on the way, and its 5% applies only around where the bound ends
-      (`sweepsPathForCharges`);
+      (`sweepsGroundCrossed`);
     - a charge already **found is stepped around**;
     - a charge that fires is **spent**; one that fails its activation roll stays
       armed for the next force through;
@@ -431,12 +431,27 @@ on the stated reasoning, still awaiting the author's word.
     Until this, `activationChance` sat in the data and nothing read it — charges
     could be found but never went off.
 
-    ⚠️ **One thing this leaves open.** The document lists charges and *hidden
-    enemy* in the same breath — `30% מציאת מטענים\פירים\אויב חבוי בטווח של עד 20 מ'`
-    — but only the charge half is swept here. A hidden enemy beside the route is
-    still only looked for from where the bound ends. Charges sit still and are
-    walked onto and an enemy is neither, so the two are not obviously the same
-    roll; say if you want the hidden-enemy search swept as well.
+    **The sweep covers a hidden enemy too, not only charges** (ruled 2026-08-16).
+    The document names all three in one clause —
+    `30% מציאת מטענים\פירים\אויב חבוי בטווח של עד 20 מ'` — so it is one rule.
+    The same measurement applies: a stationary RED squad 15 m to the side of a
+    50 m walk was found **0 times in 400** when the search came off the endpoint,
+    against ~26% for the identical squad beside the halt. A force could walk
+    within 15 m of a prepared position and never roll for it. The 300 m
+    *visible* band never had the problem — it already dwarfs any bound — so the
+    sweep barely touches it.
+
+    **Only the range is swept.** The chance and the line of sight are still
+    judged from where the bound finished, so a force's gait, its sector
+    (decision 14) and what it can see through are all read off one position
+    rather than varying along the path.
+
+    **This does not undo the ambush** (decision 12), which is the thing to check
+    when widening what an attacker may find. A defender that holds still
+    observes *continuously* at **300 m** and picks the attacker up several
+    bounds before the attacker is within 20 m to sweep it — and camouflage still
+    holds the attacker's chance down to the concealed-charge floor. The sweep
+    says *where* a force looks, not how well. There is a test for exactly this.
 11. ✅ **An assault reaches 25 m** (confirmed with the author 2026-08-12). The
     document puts הסתערות in the fire phase and makes the grenade
     `הסתערות בלבד`, but states no range; closing the last stretch is a

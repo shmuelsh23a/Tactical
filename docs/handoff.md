@@ -15,7 +15,7 @@ up next. It deliberately does *not* restate the rules or the conventions —
 ## Green as of this commit
 
 ```
-npm test        274 tests, 14 files
+npm test        278 tests, 14 files
 npm run typecheck   clean
 ```
 
@@ -89,9 +89,18 @@ whole reason a mined approach is a decision, was doing nothing.
 
 The ruling: **a walking force searches the ground it crossed at 30%; a running
 force gets no look on the way** and its 5% applies only where it halts. Trigger
-radius stays 10 m. `sweepsPathForCharges` in
-[`combat/mines.ts`](../src/engine/combat/mines.ts); `detectByMovement` now takes
-the start of the bound.
+radius stays 10 m. `sweepsGroundCrossed` in
+[`combat/detection.ts`](../src/engine/combat/detection.ts); `detectByMovement`
+now takes the start of the bound.
+
+The same hole existed for a **hidden enemy**, and the same ruling closed it: a
+stationary squad 15 m beside a 50 m walk was found 0/400 from the endpoint,
+~26% beside the halt. The document names charges, shafts and hidden enemy in one
+20 m clause, so it is one rule. Only the *range* is swept — chance and line of
+sight are still judged from where the bound finished, so gait and sector are
+read off one position. Ambushes are unaffected in substance: the defender
+observes continuously at 300 m and sees the attacker several bounds out, and
+camouflage still holds the attacker to the concealed-charge floor.
 
 **Two things to carry forward.** Keep the trigger radius *below* the 20 m search
 band — the gap between them is the ground a search roll actually buys. And note
