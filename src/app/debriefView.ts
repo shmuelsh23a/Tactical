@@ -110,12 +110,15 @@ export function outcomeVisibleTo(
     case "queueIndirectFire":
     case "deploySmoke":
       return action.side === side;
-    // Shooting at a mark is not the same as watching it fall: a side learns
-    // what its fire did to a force it can see, and always what was done to its
-    // own — but a shot at a stale contact tells it nothing it did not observe.
+    // Shooting at a mark is not the same as watching it fall. A side always
+    // gets a line for its own fire — how many of its men fired and at what
+    // chance is its own business (rules decision 13) — and always for fire that
+    // landed on its own people. What that line is allowed to say about the
+    // *effect* is the lens's job, not this one's: a shot at a force the side
+    // was not watching reports the shooters and stops there (`describeOutcome`).
     case "fire":
     case "fireExplosive":
-      return own(action.targetId) || (own(action.attackerId) && lens.mayKnow(action.targetId));
+      return own(action.targetId) || own(action.attackerId);
     case "assault":
       return own(action.defenderId) || (own(action.attackerId) && lens.mayKnow(action.defenderId));
     default:

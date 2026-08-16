@@ -320,6 +320,11 @@ export function describeOutcome(
   // than counted for anyone else's (rules decision 13).
   const shotAt = action ? targetOf(action) : undefined;
   const exact = shotAt == null || lens.isOwn(shotAt);
+  // Whether the reader was watching what it shot at. A force always knows how
+  // many of its own men fired and at what chance — that is its own business —
+  // but what the shot *achieved* is an observation, and a shot at a force it
+  // held no contact on is one it did not make (rules decision 13).
+  const observed = shotAt == null || lens.mayKnow(shotAt);
 
   switch (outcome.kind) {
     case "setup":
@@ -398,6 +403,9 @@ export function describeOutcome(
     case "fire": {
       const r = outcome.result;
       if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
+      // Fire onto ground the side had no eyes on: its own men and its own
+      // chance, and not a word about what it found there.
+      if (!observed) return `${r.shooters} יורים ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
       // Against an enemy force the shooter reports an effect, not a tally.
       return exact
         ? `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
@@ -411,6 +419,8 @@ export function describeOutcome(
     case "fireExplosive": {
       const r = outcome.result;
       if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
+      // Whether the round found anything is the part that needed watching.
+      if (!observed) return `ירה ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
       if (!r.hit) return `החטאה (${pct(r.hitChance)})`;
       const caught = (r.blast?.targets ?? []).filter((t) => t.caught);
       const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);

@@ -108,12 +108,22 @@ describe("what a side is told an action produced", () => {
     expect(outcomeFor(shot.index, "BLUE")).toBe(true);
   });
 
-  it("says nothing of what a shot at a force it cannot see achieved", () => {
-    // The reading behind rules decision 13: a side watches the fall of its own
-    // fire only on a force it holds a contact on.
+  it("reports its own shooters for a shot at a force it cannot see, but no effect", () => {
+    // Rules decision 13 (author, 2026-08-16). A side always knows how many of
+    // its own men fired and at what chance — its own business — while what the
+    // shot *achieved* is an observation it never made. So the line appears, and
+    // says nothing about the target.
     const shot = find("fire")[0]!;
-    const blind = { isOwn: (id: string) => sides.get(id) === "RED", mayKnow: (id: string) => sides.get(id) === "RED" };
-    expect(outcomeVisibleTo(shot.action, "RED", sides, blind)).toBe(false);
+    const blind = {
+      isOwn: (id: string) => sides.get(id) === "RED",
+      mayKnow: (id: string) => sides.get(id) === "RED",
+    };
+    expect(outcomeVisibleTo(shot.action, "RED", sides, blind)).toBe(true);
+
+    const line = describeOutcome(steps[shot.index]!.outcome, names, blind, shot.action);
+    expect(line).toMatch(/יורים/); // its own men, and its own chance
+    expect(line).toContain("ללא תצפית על המטרה");
+    expect(line).not.toMatch(/נפגעים|נוטרל/); // nothing about what it found
   });
 
   it("does not tell a side what the enemy's own orders produced", () => {
@@ -278,5 +288,42 @@ describe("a sector of observation in the review", () => {
   it("says in Hebrew which way the force was told to look", () => {
     const step = steps2.find((s) => s.action.kind === "setObservationSector")!;
     expect(describeOutcome(step.outcome, unitNames(rec2))).toContain("%");
+  });
+});
+
+describe("what a side's own fire is allowed to teach it", () => {
+  /**
+   * Rules decision 13, settled 2026-08-16. The dividing line is *observation*,
+   * not ownership of the shot: a side always knows its own shooters and its own
+   * chance, and learns what the fire achieved only where it was watching.
+   */
+  const shot = find("fire")[0]!;
+  const outcome = steps[shot.index]!.outcome;
+  const lensFor2 = (mayKnow: (id: string) => boolean) => ({
+    isOwn: (id: string) => sides.get(id) === "RED",
+    mayKnow,
+  });
+
+  it("bands the effect for a force it is holding a contact on", () => {
+    const watching = lensFor2(() => true);
+    const line = describeOutcome(outcome, names, watching, shot.action);
+    expect(line).toMatch(/יורים/);
+    expect(line).not.toContain("ללא תצפית על המטרה");
+  });
+
+  it("withholds the effect the moment the contact is gone", () => {
+    const blind = lensFor2((id) => sides.get(id) === "RED");
+    expect(describeOutcome(outcome, names, blind, shot.action)).toContain(
+      "ללא תצפית על המטרה",
+    );
+  });
+
+  it("still gives the target's own side the exact tally of its losses", () => {
+    // Being shot is always known, and a side counts its own casualties — the
+    // new "no observation" path must not swallow that.
+    const asBlue = { isOwn: (id: string) => sides.get(id) === "BLUE", mayKnow: () => true };
+    const line = describeOutcome(outcome, names, asBlue, shot.action);
+    expect(line).toMatch(/\d+ נפגעים/);
+    expect(line).not.toContain("ללא תצפית על המטרה");
   });
 });

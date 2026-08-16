@@ -237,11 +237,21 @@ export function Debrief({
                 {lessons && (
                   <div className="unit-card lessons">
                     <div className="unit-name">לקחים עד כאן</div>
-                    <div className={lessons.neverDetected.length ? "warn" : "ok"}>
-                      כוחות אויב שלא זוהו: {lessons.neverDetected.length}
-                      {showTruth && lessons.neverDetected.length
-                        ? ` — ${lessons.neverDetected.map(nameOf).join(", ")}`
-                        : ""}
+                    {/* How many enemy forces were never found is the umpire's
+                        knowledge, not the side's: a bare count still gives away
+                        the enemy's order of battle, and it answers the question
+                        the blind read is there to pose (rules decision 13). It
+                        waits for the reveal, like the casualties inflicted. */}
+                    <div className={showTruth && lessons.neverDetected.length ? "warn" : "ok"}>
+                      כוחות אויב שלא זוהו:{" "}
+                      {showTruth ? (
+                        lessons.neverDetected.length +
+                        (lessons.neverDetected.length
+                          ? ` — ${lessons.neverDetected.map(nameOf).join(", ")}`
+                          : "")
+                      ) : (
+                        <span className="muted">גלוי בתמונת המנחה</span>
+                      )}
                     </div>
                     <div className={lessons.hitByUnseen ? "warn" : "ok"}>
                       ספג אש מכוח שלא זוהה: {times(lessons.hitByUnseen)}
