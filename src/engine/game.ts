@@ -432,7 +432,9 @@ export class Game {
     const sight = this.trackIntel
       ? (from: Point, to: Point) => this.hasLineOfSight(from, to)
       : undefined;
-    const detection = detectByMovement(this.rng, unit, gait, enemies, this.mines, sight);
+    // `from` is where the bound started: a walking force searches the ground it
+    // crossed for charges, not only where it halted (rules decision 10).
+    const detection = detectByMovement(this.rng, unit, from, gait, enemies, this.mines, sight);
     // What the mover found. What found the mover is rolled once for the whole
     // turn, by every force in position — see observeFromPosition.
     for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement");

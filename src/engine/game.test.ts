@@ -368,6 +368,85 @@ describe("emplaced charges", () => {
     }
     expect(anyDamage).toBe(true);
   });
+
+  /**
+   * Rules decision 10, second half (author, 2026-08-16): a **walking** force
+   * searches the ground it crossed, a running one only where it halted.
+   *
+   * Before this, detection was tested from the endpoint alone while charges
+   * were triggered along the whole path — so a charge mid-bound was walked onto
+   * 200 times out of 200 and found 0 times, and the document's 30%/5% gait
+   * split did nothing on a mined approach. These tests exist to stop that
+   * asymmetry coming back.
+   */
+  describe("searching the ground crossed", () => {
+    /** A charge `offset` m to the side, halfway along a 50 m bound. */
+    function lane(seed: number, offset: number) {
+      const g = new Game({ seed });
+      const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+      g.addMine({
+        side: "RED",
+        type: "antiPersonnel",
+        position: { x: offset, y: 25 },
+        armed: true,
+        detected: false,
+      });
+      g.beginTurn();
+      g.advanceToPhase("movement");
+      return { g, sq };
+    }
+
+    /** How often a charge mid-bound is found, over many seeds. */
+    function foundRate(offset: number, gait: "normal" | "run", to = { x: 0, y: 50 }) {
+      let found = 0;
+      const n = 400;
+      for (let s = 0; s < n; s++) {
+        const { g, sq } = lane(s, offset);
+        if (g.moveUnit(sq.id, to, gait).detection.foundMineIds.length) found++;
+      }
+      return found / n;
+    }
+
+    it("finds a charge beside the route it walked, at the document's 30%", () => {
+      // 15 m off the path: inside the 20 m search band, outside the 10 m
+      // trigger corridor — the ground the search roll is there to buy.
+      expect(foundRate(15, "normal")).toBeCloseTo(0.3, 1);
+    });
+
+    it("gives a running force no look at all on the way", () => {
+      // Same charge, same route, at a run: it is 25 m from where the bound
+      // ends, so there is nothing to roll against.
+      expect(foundRate(15, "run")).toBe(0);
+    });
+
+    it("still gives a runner its 5% where it comes to a halt", () => {
+      // The charge sits beside the *destination* this time, so the endpoint
+      // look applies — at the running figure, not the walking one.
+      let found = 0;
+      const n = 400;
+      for (let s = 0; s < n; s++) {
+        const g = new Game({ seed: s });
+        const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
+        g.addMine({
+          side: "RED",
+          type: "antiPersonnel",
+          position: { x: 15, y: 100 },
+          armed: true,
+          detected: false,
+        });
+        g.beginTurn();
+        g.advanceToPhase("movement");
+        if (g.moveUnit(sq.id, { x: 0, y: 100 }, "run").detection.foundMineIds.length) found++;
+      }
+      expect(found / n).toBeCloseTo(0.05, 1);
+    });
+
+    it("makes the gait a real gamble over mined ground", () => {
+      // The whole point of the ruling: walking is the way to find what you are
+      // about to tread on, and running is the way to be caught by it.
+      expect(foundRate(8, "normal")).toBeGreaterThan(foundRate(8, "run"));
+    });
+  });
 });
 
 describe("smoke delivery", () => {

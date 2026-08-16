@@ -1,5 +1,6 @@
 import { Rng } from "../rng.js";
-import { distance, withinArc, type Point } from "../geometry.js";
+import { distance, segmentIntersectsCircle, withinArc, type Point } from "../geometry.js";
+import { sweepsPathForCharges } from "./mines.js";
 import type { Mine, Unit } from "../types.js";
 import { MOVEMENT_PROFILES } from "../data/movement.js";
 import {
@@ -109,10 +110,21 @@ function isFindable(unit: Unit): boolean {
  * enemy — visible at 300 m, hidden at 20 m — at its gait's figures, and for
  * charges within 20 m. A `hasLineOfSight` predicate gates sight on smoke and,
  * later, on terrain.
+ *
+ * `from` is where the bound started; `mover.position` is already the end of it.
+ * The two are needed because a **walking** force searches the ground it crossed
+ * for charges rather than only where it halted (rules decision 10) — charges
+ * are triggered along the whole path, so searching only the endpoint left most
+ * of a bound unswept and the document's 30%/5% gait split doing nothing.
+ *
+ * Enemy detection is deliberately **not** swept: a force is looked for where
+ * the mover ended up. A charge sits still and is walked onto; an enemy does
+ * not, and the 300 m band already covers the ground a bound crosses.
  */
 export function detectByMovement(
   rng: Rng,
   mover: Unit,
+  from: Point,
   mode: MovementMode,
   enemies: Unit[],
   mines: Mine[],
@@ -131,10 +143,15 @@ export function detectByMovement(
     }
   }
 
+  // A walking force sweeps the route it took; a running one only gets a look at
+  // where it stopped (rules decision 10).
+  const sweeping = sweepsPathForCharges(mode);
   for (const mine of mines) {
     if (mine.detected) continue;
-    const d = distance(mover.position, mine.position);
-    if (d <= profile.hiddenDetectRange && rng.chance(profile.hiddenDetectChance)) {
+    const searched = sweeping
+      ? segmentIntersectsCircle(from, mover.position, mine.position, profile.hiddenDetectRange)
+      : distance(mover.position, mine.position) <= profile.hiddenDetectRange;
+    if (searched && rng.chance(profile.hiddenDetectChance)) {
       mine.detected = true;
       foundMineIds.push(mine.id);
     }

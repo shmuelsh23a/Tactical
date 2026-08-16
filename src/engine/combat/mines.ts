@@ -1,6 +1,6 @@
 import { Rng } from "../rng.js";
 import { segmentIntersectsCircle, type Point } from "../geometry.js";
-import type { Mine, Unit } from "../types.js";
+import type { Mine, MovementMode, Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
 
@@ -8,10 +8,28 @@ import { resolveBlast, type BlastResult } from "./explosives.js";
  * How close a moving force has to pass to set a charge off (מטען). The document
  * gives the trigger as "דריכה" — stepping on it — but no distance, and a token
  * here is a whole squad spread over some frontage rather than one man. Ten
- * metres is half the 20 m at which a charge can be *spotted*, so a force that
- * fails its detection roll can still walk into one. See rules decision 10.
+ * metres is half the 20 m at which a charge can be *spotted*, so there is a
+ * band where a charge is found without ever being trodden on — which is what
+ * the search roll buys. Author-confirmed 2026-08-16; see rules decision 10.
  */
 export const MINE_TRIGGER_RADIUS_M = 10;
+
+/**
+ * Whether a force moving at `mode` **searches the ground it crossed**, or only
+ * gets a look at where it halted (rules decision 10, author 2026-08-16).
+ *
+ * A walking force sweeps its route: the document's 30% is rolled for every
+ * charge within 20 m of the path it walked, which is what makes the gait a real
+ * decision over mined ground. A force at a run does not look at all on the way
+ * — its 5% applies only around where the bound ends.
+ *
+ * This is the other half of {@link MINE_TRIGGER_RADIUS_M}: charges are
+ * triggered along the whole path either way, so a runner is tested against
+ * ground it never searched. That is the gamble.
+ */
+export function sweepsPathForCharges(mode: MovementMode): boolean {
+  return mode === "normal";
+}
 
 /** Explosives-table key for each kind of emplaced charge. */
 const MINE_WEAPON: Record<Mine["type"], string> = {

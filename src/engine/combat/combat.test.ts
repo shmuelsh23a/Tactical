@@ -414,7 +414,7 @@ describe("detection", () => {
     for (let t = 0; t < n; t++) {
       const rng = new Rng(t + 1);
       const mover = makeInfantry("M", "BLUE", "squad", { x: 0, y: 0 }, 8);
-      const r = detectByMovement(rng, mover, "normal", [movingEnemy({ x: 0, y: 200 })], []);
+      const r = detectByMovement(rng, mover, mover.position, "normal", [movingEnemy({ x: 0, y: 200 })], []);
       if (r.spottedUnitIds.includes("E")) spotted++;
     }
     expect(spotted / n).toBeCloseTo(0.7, 1);
@@ -430,10 +430,10 @@ describe("detection", () => {
       const mover = makeInfantry("M", "BLUE", "squad", { x: 0, y: 0 }, 8);
       const far = makeInfantry("E", "RED", "squad", { x: 0, y: 200 }, 8);
       const near = makeInfantry("E", "RED", "squad", { x: 0, y: 15 }, 8);
-      if (detectByMovement(new Rng(t + 1), mover, "normal", [far], []).spottedUnitIds.length) {
+      if (detectByMovement(new Rng(t + 1), mover, mover.position, "normal", [far], []).spottedUnitIds.length) {
         farSpots++;
       }
-      if (detectByMovement(new Rng(t + 1), mover, "normal", [near], []).spottedUnitIds.length) {
+      if (detectByMovement(new Rng(t + 1), mover, mover.position, "normal", [near], []).spottedUnitIds.length) {
         closeSpots++;
       }
     }
