@@ -89,7 +89,7 @@ where the tally belongs.
 | Charge trigger radius | **10 m** of the path walked | ours, decision 10 | [`combat/mines.ts`](../src/engine/combat/mines.ts) |
 | Assault reach | **25 m** | ✅ author, decision 11 | [`combat/assault.ts`](../src/engine/combat/assault.ts) |
 | Grenades per assault | **0–3, no ammunition tracked** | ours, decision 11 | UI |
-| Indirect fire | **one mission + one screen per side per turn** | ours, decision 8 | UI limit over an engine that models `roundsPerTurn` |
+| Indirect fire | **one mission + one screen per side per turn** | ✅ author, decision 8 | UI limit over an engine that models `roundsPerTurn`. Correct *for the platoon-leader slice* — a platoon commander calls for fire, he does not own a battery. Replaced by a real battery unit at battalion and above (backlog 3), so retune this only within the current echelon. |
 | Fog-of-war fallback radius | **300 m** (`SPOT_RANGE_M`) | ours | [`app/hotseat.ts`](../src/app/hotseat.ts) — only used when `trackIntel` is off |
 | What-if runs | **20** | ours | [`app/whatIf.ts`](../src/app/whatIf.ts) — a UI choice, not a rule |
 

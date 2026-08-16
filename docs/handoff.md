@@ -80,13 +80,19 @@ open assumption. No code changed; the reading was already the implemented one.
 phrased twice*. This one had been open since 2026-08-12 on an arithmetic
 argument alone, and a two-line grep across the two tables closed it.
 
+**Decision 8 is settled as scoped, not provisional** (2026-08-16): indirect
+fire stays an off-map asset, one mission per side per turn, because the playable
+slice is the platoon-leader view and a platoon commander *calls for* fire rather
+than owning a battery. The battery becomes a real unit at **battalion and above**
+— so it arrives with echelon scaling (backlog 3) and must not be built ahead of
+it. **Do not re-propose a battery piece as a standalone feature.**
+
 ## Waiting on the author
 
 The ⚠️ rules decisions in the README, and what each actually needs:
 
 | # | Decision | The question |
 |---|---|---|
-| 8 | Indirect fire is one mission per side per turn | The document gives rates of fire per barrel but the game has no battery piece. Should a battery be a unit? |
 | 10 | A charge triggers within **10 m** of the path walked | The document says `דריכה` with no distance, and a token is a squad, not a man. |
 | 13 | What a side may be told in its own debrief | The disclosure line — enemy orders never, own casualties always, enemy casualties only for a force in sight. The **banding is confirmed ✅**; the rest of the line is mine. |
 
@@ -111,7 +117,9 @@ The gap list in the README, in the order I would take it:
 
 Two things I would *not* rush: echelon scaling (backlog 3) touches the C2 model
 everywhere, and OPORD mode (backlog 13) is a research project with a section of
-its own in the README.
+its own in the README. Note that echelon scaling has since picked up a second
+payload — the artillery battery as a real unit (decision 8) — which makes it
+larger, not more urgent.
 
 ## Traps that cost real time
 

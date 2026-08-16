@@ -360,12 +360,25 @@ on the stated reasoning, still awaiting the author's word.
    force that has fired. The arithmetic above is unchanged either way.) The
    table values stay verbatim (`-0.5` / `-0.1`); only their application changed
    — [`combat/directFire.ts`](src/engine/combat/directFire.ts).
-8. ⚠️ **Indirect fire is an off-map asset, one mission per side per turn**
-   (assumed 2026-08-12). The document gives rates of fire per barrel (3 bombs
-   for a mortar, 2 shells for artillery) but the game has no battery piece to
-   own them, so the hotseat UI allows each side one fire mission and one smoke
-   screen per turn. This is a UI limit over an engine that already models
-   `roundsPerTurn`; a battery unit would replace it.
+8. ✅ **Indirect fire is an off-map asset, one mission per side per turn — at
+   this echelon** (ruled by the author 2026-08-16). The document gives rates of
+   fire per barrel (3 bombs for a mortar, 2 shells for artillery) but the game
+   has no battery piece to own them, so the hotseat UI allows each side one fire
+   mission and one smoke screen per turn. This is a UI limit over an engine that
+   already models `roundsPerTurn`.
+
+   **This is scoped, not provisional.** The playable slice is the
+   platoon-leader view, and a platoon commander does not own a battery — he
+   *calls for* fire from something that is not on his map. So an off-map asset
+   is the right model here, and it stops being right at **battalion and above**,
+   where the artillery belongs to the force the player commands. The battery
+   therefore becomes a real unit as part of **echelon scaling** (backlog 3) and
+   not before: it is a consequence of the level of control, which is why it
+   should not be built ahead of it.
+
+   What that later unit inherits: the rates of fire are already in the data and
+   already applied per barrel, so a battery is a piece to own them and a
+   position to be counter-batteried at, rather than a new fire model.
 9. ✅ **A smoke screen waits for its delivery, and is sized by it** (confirmed
    with the author 2026-08-12). The document lists the three sources with their
    durations but neither a delay nor a size, so:
@@ -653,7 +666,11 @@ Each is intended to be an independent, toggleable module:
 1. **Troop morale** — suppression/cohesion states beyond the current neutralise rule.
 2. **Individual soldier generator** — named soldiers with attributes/roles.
 3. **Echelon scaling** — platoons, companies, battalions, brigade (ties into the
-   level-of-control selector and the C2 model).
+   level-of-control selector and the C2 model). **Carries the artillery battery
+   with it**: indirect fire is an off-map asset only because a platoon commander
+   calls for fire rather than owning it. At battalion and above the battery is a
+   unit on the map, with the rates of fire the data already holds and a position
+   that can be counter-batteried (rules decision 8).
 4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
