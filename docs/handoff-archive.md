@@ -5,7 +5,7 @@ This file is where its history goes, newest first, so the working note stays
 short without losing the reasoning behind decisions someone may want to reopen.
 
 Durable facts do not live here either: rules go to the README's **Rules
-decisions**, conventions and traps go to [CLAUDE.md](../CLAUDE.md), and chosen
+decisions**, conventions and traps go to [AGENTS.md](../AGENTS.md), and chosen
 numbers go to [balance.md](balance.md). What is left — "this is what happened
 and why" — is what belongs below.
 

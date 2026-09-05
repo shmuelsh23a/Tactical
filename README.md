@@ -7,7 +7,7 @@ tabletop tactical wargame described in [`Tactical - Mechanics.docx`](Tactical%20
 complete; stage 2, the hotseat browser game on top of it, is in progress. Mobile
 and networked/single-player modes sit on the same module later.
 
-Working on this repo with Claude Code? Start with [CLAUDE.md](CLAUDE.md), then
+Working on this repo with an AI assistant? Start with [AGENTS.md](AGENTS.md), then
 [docs/handoff.md](docs/handoff.md) for where the work stands.
 
 ## Why it's built this way
@@ -30,8 +30,9 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm test             # run the test suite (281 tests: engine + app + review)
-npm run typecheck    # strict type-check (engine + app)
+npm run check        # typecheck + the whole suite (287 tests) — the one to run
+npm test             # the suite alone
+npm run typecheck    # strict type-check alone (engine + app)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
 
@@ -227,6 +228,8 @@ src/app/                Hotseat browser game (React + Vite + SVG)
 
 docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
 docs/handoff.md         State of play: what is waiting, what next (current only)
+docs/review-checklist.md What to check before committing — any reviewer, any make
+docs/driving-the-game.md Scripting the browser to verify a change for real
 docs/handoff-archive.md What past sessions built, and why decisions went as they did
 docs/balance.md         Every number that was chosen rather than transcribed
 tools/dump-docx.py      Raw .docx extraction, to re-verify that transcription

@@ -6,19 +6,22 @@ what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
 out of here on purpose:
 
-- [CLAUDE.md](../CLAUDE.md) — the operating manual: commands, conventions that
+- [AGENTS.md](../AGENTS.md) — the operating manual: commands, conventions that
   are easy to get wrong, and how to drive the game in a browser.
 - [README.md](../README.md) — the design: what is implemented, the **rules
   decisions**, the gap list and the roadmap.
 - [docs/mechanics.he.md](mechanics.he.md) — the rules document itself.
 - [docs/balance.md](balance.md) — every number that was chosen rather than
   transcribed, and the interactions to preserve when tuning them.
+- [docs/review-checklist.md](review-checklist.md) — what to check before
+  committing, written for any reviewer of any make.
+- [docs/driving-the-game.md](driving-the-game.md) — scripting the browser to
+  verify a change for real.
 
 ## Green as of this commit
 
 ```
-npm test            281 tests, 14 files
-npm run typecheck   clean
+npm run check       typecheck clean, 287 tests, 15 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -94,10 +97,9 @@ with a section of its own in the README.
 
 ## Traps that cost real time
 
-The browser-driving and testing traps are in [CLAUDE.md](../CLAUDE.md) — driving
-the turn loop, getting into the debrief without touching the disk, and the stale
-HMR console buffer all live there now. These are the ones specific to where the
-code currently stands:
+Browser-driving traps live in [driving-the-game.md](driving-the-game.md) and
+testing ones in [AGENTS.md](../AGENTS.md). These are the ones specific to where
+the code currently stands:
 
 - **Sealed recordings made before 2026-08-16 that cross a minefield will fail
   `verifyRecording`.** Decision 10 changed how many rng draws a move near a
