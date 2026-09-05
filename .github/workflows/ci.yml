@@ -1,0 +1,23 @@
+# The project's checks, run where no assistant's local setup can affect them.
+#
+# `npm run check` is the single entry point: the same command a contributor or
+# an agent runs locally, and the same one the Claude Code hooks in .claude/ call.
+# One definition, so the three cannot drift apart.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
