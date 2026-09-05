@@ -38,14 +38,21 @@ const files = sources(SRC).map((path) => ({
 function code(text: string): string {
   // Comments only. Prose in this repo says "the document" constantly and means
   // the rules .docx, not the DOM, so comments have to go before any global is
-  // looked for. String literals are left alone: that can only hide an offender,
-  // never invent one.
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  // looked for. A `//` preceded by `:` is left alone, so a URL inside a string
+  // cannot swallow the rest of its line: over-stripping would *hide* an
+  // offender, and that is the one direction these checks must not fail in.
+  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/gm, "$1");
 }
 
-/** Every import specifier in a file, comments stripped first. */
+/**
+ * Every import specifier in a file: `from`, bare side-effect `import "…"` and
+ * dynamic `import("…")`, in quotes of any kind. Nothing in this repo enforces a
+ * quote style, so a check that only saw double quotes could be stepped around
+ * without anyone meaning to.
+ */
 function imports(text: string): string[] {
-  return [...code(text).matchAll(/\bfrom\s+"([^"]+)"/g)].map((m) => m[1]!);
+  const spec = /\b(?:from|import)\s*\(?\s*["'`]([^"'`]+)["'`]/g;
+  return [...code(text).matchAll(spec)].map((m) => m[1]!);
 }
 
 const engine = files.filter((f) => f.rel.startsWith("engine/"));
@@ -71,12 +78,21 @@ describe("determinism: a game replays bit-for-bit from its seed", () => {
 });
 
 describe("layering: the engine is a library, not part of the app", () => {
-  it("keeps the engine free of React, the DOM and the symbol renderer", () => {
-    // The same module has to power the browser game now and a mobile app later.
+  it("keeps the engine free of React, the DOM, node and the app layer", () => {
+    // The same module has to power the browser game now and a mobile app later,
+    // and ship as a standalone library. The dependency arrow points one way:
+    // the app may import the engine, never the reverse.
     const offenders = engine
       .filter((f) => {
-        const ui = imports(f.text).some((s) => /^(react|react-dom|milsymbol)/.test(s));
-        return ui || /\b(document|window|localStorage|navigator)\./.test(code(f.text));
+        const specs = imports(f.text);
+        const ui = specs.some((s) => /^(react|react-dom|milsymbol)/.test(s));
+        const upward = specs.some((s) => s.includes("app/"));
+        const src = code(f.text);
+        const dom = /\b(document|window|localStorage|navigator)\./.test(src);
+        // tsconfig.engine.json sets "types": [], but that governs only the
+        // library build; this covers the engine wherever it is compiled.
+        const node = /\b(process|Buffer)\.|\b__dirname\b/.test(src);
+        return ui || upward || dom || node;
       })
       .map((f) => f.rel);
     expect(offenders).toEqual([]);

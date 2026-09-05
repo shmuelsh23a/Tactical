@@ -14,6 +14,10 @@
     "outDir": "dist",
     "rootDir": "src/engine",
     "skipLibCheck": true,
+    // The engine is a platform-free library: no node, no DOM, nothing ambient.
+    // Without this, every @types/* package in node_modules is auto-included and
+    // `process`, `Buffer` and `__dirname` quietly start compiling in here.
+    "types": [],
     "esModuleInterop": true
   },
   "include": ["src/engine/**/*.ts"],

@@ -283,8 +283,12 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return action.sector
         ? `${who(action.unitId)} — גזרת תצפית: ${describeSector(action.sector)}`
         : `${who(action.unitId)} — תצפית מעגלית`;
-    default:
-      return JSON.stringify(action);
+    default: {
+      // Exhaustiveness: a new RecordedAction must be given Hebrew narration
+      // rather than falling through and printing its raw object at a player.
+      const never: never = action;
+      return JSON.stringify(never);
+    }
   }
 }
 
