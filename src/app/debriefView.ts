@@ -121,8 +121,21 @@ export function outcomeVisibleTo(
       return own(action.targetId) || own(action.attackerId);
     case "assault":
       return own(action.defenderId) || (own(action.attackerId) && lens.mayKnow(action.defenderId));
-    default:
+
+    // Setup produced nothing to be told about: a force entering the map is an
+    // action, not an outcome. Whether the *action* crosses is `actionVisibleTo`.
+    case "addUnit":
+    case "addMine":
       return false;
+
+    default: {
+      // Exhaustiveness (rules decision 13). A new RecordedAction must say what
+      // its owner learns of what it produced. Without this the switch would
+      // default to hidden and the omission would never be noticed — the trap
+      // CLAUDE.md warns about, now enforced by the compiler instead.
+      const never: never = action;
+      throw new Error(`Unhandled action in outcomeVisibleTo: ${JSON.stringify(never)}`);
+    }
   }
 }
 
@@ -181,8 +194,12 @@ export function actionVisibleTo(
     case "assault":
       return lens.mayKnow(action.attackerId) || own(action.defenderId);
 
-    default:
-      return false;
+    default: {
+      // Exhaustiveness (rules decision 13): a new RecordedAction must state
+      // whether the enemy may see it happen at all.
+      const never: never = action;
+      throw new Error(`Unhandled action in actionVisibleTo: ${JSON.stringify(never)}`);
+    }
   }
 }
 
