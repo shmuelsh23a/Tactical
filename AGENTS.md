@@ -27,7 +27,10 @@ npm run lint         # the architectural rules alone
 ```
 
 Node **24** — pinned in `.nvmrc`, declared in `engines`, and read from that same
-file by CI, so there is one number rather than three.
+file by CI, so there is one number rather than three. It is in Active LTS and
+supported to **2028-04-30**; 22 would have run out in April 2027, and **20 went
+end-of-life on 2026-04-30**, which is what this pin was moved off. Checked
+against `nodejs/Release`, not remembered.
 
 `npm run check` is what CI runs. The hooks in `.claude/` run its two halves —
 `typecheck` after each edit, the suite before finishing — so they gate the same

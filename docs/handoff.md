@@ -90,6 +90,9 @@ Measurements that cost real time and are already recorded:
   found **0/400** from the endpoint against **~26%** beside the halt.
 - **Sector bonus by width:** `13.5 ÷ width` → +23% / +15% / +8% at
   60° / 90° / 180°, against a flat −20% outside.
+- **Node support windows** (from `nodejs/Release`, checked 2026-09-05): 20 went
+  EOL **2026-04-30**, 22 ends 2027-04-30, 24 ends **2028-04-30** and leaves
+  Active LTS on 2026-10-20. That is why the pin is 24 and not 22.
 
 ## What I would pick up next
 
