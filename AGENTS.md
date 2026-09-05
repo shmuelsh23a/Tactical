@@ -25,9 +25,10 @@ npm test             # vitest alone
 npm run typecheck    # strict tsc alone
 ```
 
-`npm run check` is what CI runs and what the Claude Code hooks call, so all
-three agree by construction. **Never report work as done without running it and
-quoting the result** (test count, exit status). If a player can see the change,
+`npm run check` is what CI runs. The hooks in `.claude/` run its two halves —
+`typecheck` after each edit, the suite before finishing — so they gate the same
+things without waiting for the whole of it on every keystroke. **Never report
+work as done without running `npm run check` and quoting the result** (test count, exit status). If a player can see the change,
 drive it in the browser too — see *Verifying a change in the actual game*.
 
 ## What is enforced, and what is asked
@@ -38,9 +39,14 @@ this file:
 - [`src/invariants.test.ts`](src/invariants.test.ts) fails on `Math.random` or
   `Date.now` anywhere in `src/`, React/DOM inside `src/engine/`, an app import
   that bypasses the engine barrel, and a relative import missing its `.js`.
-- The compiler fails on a new `RecordedAction` that any of the three switches
-  (`recording.ts`, and both in `debriefView.ts`) does not handle — the
-  disclosure rules cannot be skipped by omission.
+- The compiler fails on a new `RecordedAction` that any of the four switches
+  does not handle — `recording.ts` (replay), both in `debriefView.ts` (what a
+  side may see, and what it may learn of the result) and `describeAction` in
+  `debriefText.ts` (its Hebrew narration). The disclosure rules cannot be
+  skipped by omission, and an unnarrated action cannot print its raw object at
+  a player.
+- `tsconfig.engine.json` sets `"types": []`, so the standalone engine build
+  cannot quietly acquire node's ambient globals from `node_modules/@types`.
 
 Prefer adding a check to adding a paragraph. A rule a machine can state is worth
 more than a rule a reader has to remember, and it works on assistants that never

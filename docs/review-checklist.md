@@ -62,8 +62,11 @@ it (rules decisions 12 and 13).
 
 ## 4. Rules fidelity
 
-- Does the change match the README's **Rules decisions**? Every one is ✅ as of
-  2026-08-16 — a change that quietly alters one is a blocker, not a nit.
+- Does the change match the README's **Rules decisions**? Every *decision* is ✅
+  as of 2026-08-16, but several carry ⚠️ riders inside them — chosen smoke
+  radii, the casualty band cut-points, "armour cannot be assaulted", the
+  camouflage-at-setup reading. Those are still assumptions. A change that
+  quietly alters a ✅ is a blocker, not a nit.
 - Data tables in `src/engine/data/` are transcribed verbatim from the rules
   document. A wrong *reading* is fixed in `src/engine/combat/`, not by editing
   the number.
