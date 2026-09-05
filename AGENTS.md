@@ -18,12 +18,16 @@ state only. Why a past decision went the way it did is in
 ## Commands
 
 ```bash
-npm run check        # typecheck + the whole suite. The one command to run.
+npm run check        # lint + typecheck + the whole suite. The one to run.
 npm run dev          # Vite dev server, the hotseat game
 npm run build:engine # emit the engine as a standalone library -> dist/
 npm test             # vitest alone
 npm run typecheck    # strict tsc alone
+npm run lint         # the architectural rules alone
 ```
+
+Node **24** — pinned in `.nvmrc`, declared in `engines`, and read from that same
+file by CI, so there is one number rather than three.
 
 `npm run check` is what CI runs. The hooks in `.claude/` run its two halves —
 `typecheck` after each edit, the suite before finishing — so they gate the same
@@ -36,9 +40,14 @@ drive it in the browser too — see *Verifying a change in the actual game*.
 Most of the traps below are **checked by the build**, not left to whoever reads
 this file:
 
-- [`src/invariants.test.ts`](src/invariants.test.ts) fails on `Math.random` or
-  `Date.now` anywhere in `src/`, React/DOM inside `src/engine/`, an app import
-  that bypasses the engine barrel, and a relative import missing its `.js`.
+- [`eslint.config.js`](eslint.config.js) fails on `Math.random` or `Date.now`
+  anywhere in `src/`, and on React, the DOM, node globals or an app import
+  inside `src/engine/`, and on an app import that bypasses the engine barrel.
+  It carries **architectural rules only** — no style layer, nothing to argue
+  about, and no mechanical diff across files that have never been linted.
+- [`src/invariants.test.ts`](src/invariants.test.ts) takes what a selector
+  states badly: a relative import missing its `.js`, and a structural check that
+  the compiler's own exhaustiveness guards have not been deleted.
 - The compiler fails on a new `RecordedAction` that any of the four switches
   does not handle — `recording.ts` (replay), both in `debriefView.ts` (what a
   side may see, and what it may learn of the result) and `describeAction` in

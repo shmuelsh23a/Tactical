@@ -14,11 +14,12 @@ second opinion. Report findings and let the author decide.
 ## 0. Run the checks first
 
 ```bash
-npm run check      # typecheck + the whole suite, including the invariants
+npm run check      # lint + typecheck + the whole suite
 ```
 
 Most of what a reviewer used to look for by eye is enforced by
-[`src/invariants.test.ts`](../src/invariants.test.ts) and by the compiler. If
+[`eslint.config.js`](../eslint.config.js), [`src/invariants.test.ts`](../src/invariants.test.ts)
+and the compiler's exhaustiveness guards. If
 `npm run check` is green, spend the review on judgement rather than on rules a
 machine already checked. If it is red, that is the finding.
 

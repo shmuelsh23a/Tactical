@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       typecheck clean, 287 tests, 15 files
+npm run check       lint + typecheck clean, 284 tests, 15 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -30,11 +30,13 @@ gets driven in the actual game first.
 
 ## How this repo expects to be worked on
 
-The rules that matter are **enforced, not written down**: `npm run check` is the
-one command (typecheck + suite), [`src/invariants.test.ts`](../src/invariants.test.ts)
-fails on determinism and layering violations, and the compiler refuses a new
-`RecordedAction` that the disclosure switches do not handle. Prefer adding a
-check to adding a paragraph.
+The rules that matter are **enforced, not written down**. `npm run check` is the
+one command — lint, typecheck, suite — and the three surfaces divide the work
+with one owner per rule: [`eslint.config.js`](../eslint.config.js) for
+determinism and layering, [`src/invariants.test.ts`](../src/invariants.test.ts)
+for what a selector states badly, and the compiler for the four switches over
+`RecordedAction`. Node is pinned to **24** in `.nvmrc`, which `engines` and CI
+both read. Prefer adding a check to adding a paragraph.
 
 Instructions are vendor-neutral: [AGENTS.md](../AGENTS.md) is canonical,
 `CLAUDE.md` is a pointer to it, and `.claude/` holds adapters only — hooks that

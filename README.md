@@ -30,9 +30,10 @@ npm install
 npm run dev          # start the browser game (Vite dev server, hotseat UI)
 npm run build        # production build of the app -> dist/
 npm run preview      # preview the production build
-npm run check        # typecheck + the whole suite (287 tests) — the one to run
+npm run check        # lint + typecheck + suite (284 tests) — the one to run
 npm test             # the suite alone
 npm run typecheck    # strict type-check alone (engine + app)
+npm run lint         # the architectural rules alone (eslint.config.js)
 npm run build:engine # emit the engine as a standalone library -> dist/
 ```
 
