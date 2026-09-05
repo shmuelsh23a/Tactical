@@ -234,6 +234,12 @@ docs/driving-the-game.md Scripting the browser to verify a change for real
 docs/handoff-archive.md What past sessions built, and why decisions went as they did
 docs/balance.md         Every number that was chosen rather than transcribed
 tools/dump-docx.py      Raw .docx extraction, to re-verify that transcription
+
+AGENTS.md               Operating manual for any AI assistant (CLAUDE.md points here)
+eslint.config.js        The architectural rules: determinism, layering, the barrel
+src/invariants.test.ts  The rules a selector states badly, and the guards' guard
+.nvmrc                  Node 24 — read by version managers and by CI
+.github/workflows/ci.yml  Runs `npm run check` on every push and pull request
 ```
 
 Tests live beside the code they cover (`*.test.ts`).

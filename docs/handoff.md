@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `fc5b8c1`, 2026-09-05.** This is the working note for whoever
+**Current as of `5e5b978`, 2026-09-05.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
