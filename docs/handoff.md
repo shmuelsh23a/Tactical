@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `d61a646`, 2026-08-16.** This is the working note for whoever
+**Current as of `fc5b8c1`, 2026-09-05.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -27,6 +27,20 @@ npm run check       typecheck clean, 287 tests, 15 files
 The demo scenario plays end to end in the browser, including the debrief. The
 rule is that nothing is called done on tests alone: if a player can see it, it
 gets driven in the actual game first.
+
+## How this repo expects to be worked on
+
+The rules that matter are **enforced, not written down**: `npm run check` is the
+one command (typecheck + suite), [`src/invariants.test.ts`](../src/invariants.test.ts)
+fails on determinism and layering violations, and the compiler refuses a new
+`RecordedAction` that the disclosure switches do not handle. Prefer adding a
+check to adding a paragraph.
+
+Instructions are vendor-neutral: [AGENTS.md](../AGENTS.md) is canonical,
+`CLAUDE.md` is a pointer to it, and `.claude/` holds adapters only — hooks that
+call the project's npm scripts and a reviewer that reads
+[review-checklist.md](review-checklist.md). Any assistant should be able to work
+here from AGENTS.md alone.
 
 ## Waiting on the author
 
