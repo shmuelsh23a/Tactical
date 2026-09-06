@@ -38,6 +38,13 @@ dispatch clicks on `svg.map` itself.
   and *enabled*. A driver that clicks only the last two stalls at the initiative
   panel and looks like the engine hung. Six to eight such steps per tool call is
   the ceiling before the 30 s timeout — read the log back between batches.
+- **Match the handoff button on the word, not the prefix.** Its label starts
+  with the side — `RED מוכן — הצג את המפה` — so a driver that looks for a
+  label *starting* with `מוכן` never finds it and stalls at the handoff.
+- **When screenshots time out, drive by script and read the DOM.** With the
+  pane hidden the page can take longer than the screenshot's 5 s to paint;
+  `javascript_tool` clicks and `.sidebar li` / `.unit-card` text still work,
+  and `.token-enemy` counts say what a side's map is showing.
 - **The `.roster` list only exists during an activation**, not on the initiative
   panel — querying it to decide "has the app rendered?" gives a false negative
   at the start of a turn.

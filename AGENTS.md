@@ -121,6 +121,17 @@ one it is in your reply, too.
   it did not move, in cover because it dug, and hard to find because it
   camouflaged (rules decision 12). Don't assert cover at a call site: the engine
   derives it from the target (`coverAgainst`).
+- **Line of sight takes two forces, not two points.** `Game.hasLineOfSight`
+  reads the ground from the map and the eye height from each force's posture
+  (rules decision 15), so anything that asks "can A see B" passes the units.
+  The map's ground is in `game.terrain`; a game built without one is flat and
+  empty and plays exactly as it did before there was ground. Object cover
+  arrives through `coverFromObjects` at `addUnit` and at upkeep — do not set it
+  by hand.
+- **The demo ground is real and generated.** `src/app/maps/ramatMenashe.ts`
+  is written by `tools/fetch-dtm.py` from public terrain tiles; rerun the tool
+  rather than editing the numbers. The objects on it are hand-placed in
+  `scenario.ts`.
 - **The engine is the umpire; what a side *knows* is a separate ledger.**
   `game.units` is ground truth and must never be drawn to a player directly —
   the hotseat renders `sideView()` ([`hotseat.ts`](src/app/hotseat.ts)), built

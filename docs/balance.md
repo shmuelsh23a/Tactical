@@ -82,6 +82,49 @@ is told less, never told something false), and they apply to the live combat log
 during play as well as to a per-side debrief. The umpire's view is exact and is
 where the tally belongs.
 
+## Elevation and objects (rules decision 15)
+
+[`src/engine/data/terrain.ts`](../src/engine/data/terrain.ts)
+
+The author settled the shape on 2026-09-06 and said of every figure "we will
+tweak later when we get to balancing — write it down". So: written down.
+
+| Figure | Value | Whose | What it does |
+|---|---|---|---|
+| `EYE_HEIGHT.infantry` | **1.5 m** | author (tentative) | Where a standing force sees from, and how tall it stands to be seen. |
+| `EYE_HEIGHT.vehicle` | **2.5 m** | author (tentative) | A tank looks out of its hatches, and is that much easier to see over a rise. |
+| `EYE_HEIGHT.fullCover` | **0.5 m** | author (tentative) | A force in full cover keeps its head down: harder to see over a crest, sees less over it. The cost digging in never had. |
+| Sight is binary and symmetric | **on** | author (tentative) | No hull-down or partial-defilade state; whoever can see can be seen. |
+| `OBJECT_COVER` | **building full / wall partial / tree partial** | author (tentative) | The cover a force takes from what it stands in or against. |
+| `OBJECT_COVER_REACH_M` | **3 m** | ours | How near counts as "against" — the reach that gives a force an object's cover, and that marks the object as its own on a sight line. |
+| `OWN_OBJECT_SIGHT_M` | **6 m** (twice the reach) | ours | How far along its line a force ignores its own object's faces: both faces of the wall it lies behind, never the far wall of the building it stands against. A force deep inside a large building therefore cannot see out past a wall more than 6 m off — a windowless reading, his to change. |
+| `OBJECT_HEIGHT_M` | **building 6 / wall 1.5 / tree 4 m** | ours | What an object blocks when the map gives it no height of its own. |
+| `LOS_SAMPLE_STEP_M` | **5 m** | ours | How finely the ground is sampled along a line; objects are tested exactly. |
+
+**Open, awaiting the author's pick (2026-09-06, he asked for suggestions):**
+
+| Question | Suggested | Note |
+|---|---|---|
+| Slope and movement | **Naismith**: every metre climbed costs **8 m** of the bound; descent free; a vehicle cannot take a grade over **30°** | Makes the high ground cost what it is worth. Ours to suggest, his to pick. |
+| Height and hit chance | **None** in the first cut | The sight lines already reward height, and the document has no such modifier. The alternative on the table: **+10%** (additive, like the movement modifiers) for a shooter 10 m or more above its target. |
+
+**Interactions to keep in mind.**
+
+- Eye height and cover are one rule read twice: full cover *lowers* the eye.
+  Change `EYE_HEIGHT.fullCover` and both the protection and the blindness of a
+  dug-in force move together — which is the point.
+- The demo's dead ground is measured: BLUE-2 running straight at RED-1's
+  position from the northern low ground was seen by nobody on turn 1 at 176 m
+  (**0/200 seeds**, inside the 300 m band) and by someone on turn 2 at 76 m
+  (**200/200**, RED-1 itself in 185). Change the eye heights and re-measure.
+- Object cover is taken at placement and at upkeep, and **outlives the object
+  until upkeep**: a force that leaves a building and runs keeps the building's
+  full cover — and its 0.5 m eye — for that turn's fire phase. That is the
+  dig-in shape (decision 12 clears at upkeep) applied to a thing more
+  conspicuous than a scrape; worth revisiting with the eye heights.
+- A recording carries its ground. Replaying an older, groundless recording on a
+  map with ground is not a thing the code does — it replays flat, as played.
+
 ## Rules the document is silent on
 
 | Figure | Value | Whose | Where |

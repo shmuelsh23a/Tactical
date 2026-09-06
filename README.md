@@ -173,11 +173,14 @@ Engine capability the UI does not reach yet — the next obvious work:
 - **A force cannot be told where to look.** Scouting raises what a force finds
   everywhere at once; there is no sector, no observation post, and no way to
   watch one approach rather than another.
-- **Digging in and camouflage are the only ground a force can improve.** There
-  is no terrain to take cover in, so `baseCover` is set by a scenario and
-  nothing on the map suggests where cover would be.
-- **No terrain**: the map is a bare 900 × 800 m field, and cover is the engine's
-  "did not move or fire" flag rather than a feature of the ground.
+- **The ground has no say in movement or in a shot's chance.** Elevation and
+  objects decide what can be seen and what a force stands behind (rules
+  decision 15), but a bound up a 30% slope costs what a bound on the flat
+  costs, and fire downhill is fire. Both are open questions on the balance
+  sheet, waiting on the author.
+- **Objects are hand-placed.** The relief is real; the farm, the walls and the
+  oaks on it are invented. The natural next source is OpenStreetMap footprints
+  for the same window.
 
 ## Layout
 
@@ -281,6 +284,9 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Armour damage table (location → penetration → crew/component/critical effect)
 - Casualties: nq"p accumulation, 5-pt bleeding (1d4 / 5 turns), 8-pt neutralise,
   50%-attrition force neutralisation
+- Real ground: elevation from a public DTM and objects on it (buildings,
+  walls, trees) — one line-of-sight test for seeing and shooting, eye height by
+  posture, cover from the object a force stands in or against
 - Command & control order intervals by distance (פו"ש), gating *new* orders
 - Standing orders: a force keeps to its last order until it is replaced
 - Battle recording: a game replays exactly from its seed and action log
@@ -669,6 +675,62 @@ on the stated reasoning, still awaiting the author's word.
     `sectorBonus` in [`data/concealment.ts`](src/engine/data/concealment.ts) and
     `sectorFocus` in [`combat/detection.ts`](src/engine/combat/detection.ts).
 
+15. ✅ **The map is real ground: elevation and objects, one line of sight**
+    (settled with the author 2026-09-06 — shape ✅, every number tentative).
+    The document has **no terrain table at all**: it plays on a real map
+    (מפה, תצ"ל) and leaves the ground to the umpire. A first proposal of
+    *terrain types* — wood, built-up, each with a cover grade, a sight rule and
+    a movement cost — was withdrawn on his steer: the game is to scale from a
+    squad to a brigade with metre-level resolution underneath, so the map
+    carries **objects** (a building, a wall, a tree) rather than types, and the
+    thing to resolve is **elevation**.
+
+    - **One height function.** A heightfield of real ground elevations, plus
+      objects as footprints with a height on top of it. Line of sight is one
+      test over that: sample the profile from the observer's eye to the
+      target's silhouette and block where ground or object rises above it.
+      Smoke stays a second blocker on the same predicate. Scales as he wants —
+      a brigade map is the same grid sampled coarser.
+    - **Sight is binary and symmetric** (✅, to be tweaked at balance). A
+      crest hides a force and blinds it equally, so reverse slope versus crest
+      is the player's dial with no invented number behind it. No hull-down or
+      partial-defilade state.
+    - **Eye height follows posture** (✅ figures, tentative): infantry
+      **1.5 m**, a vehicle **2.5 m**, a force in full cover **0.5 m**. The same
+      figure serves both ends of a line, so digging in now has a cost it
+      lacked: a lower silhouette is harder to see over a rise, and sees less
+      over it.
+    - **Cover comes from objects, not from height** (✅ grades, tentative): in
+      or against a **building, full**; at a **wall or a tree, partial** — read
+      within **3 m** of the footprint, ours. It goes in as the ground's own
+      cover under the prepared position and the digging (rules decision 12),
+      so a force in a building is where a force behind cover has always been.
+    - **A force looks out of its own cover, not at it.** The faces of the
+      object a force is in or against — within the same 3 m that gives it
+      cover — are left off its sight lines for the first **6 m**: both faces of
+      the wall it lies behind, never the far wall of the building it stands
+      against, so a house still hides what is against it from the other side.
+      Found the hard way: a squad lying behind a chest-high terrace wall on a
+      forward slope was blinded by its own wall the moment it looked downhill;
+      the first fix skipped the whole object and let a force be seen straight
+      through a building. The two halves share one reach for that reason.
+    - **Cover and eye height are one posture.** A force that fired from full
+      cover stood up to do it: it is partial to the shot back (decision 7) and
+      stands 1.5 m on the sight line, from one function (`effectiveCover`).
+    - **No elevation bonus to hit or to detect, and no slope cost to move**
+      (open — see the balance sheet). The document has neither, and the sight
+      lines already reward the high ground; the author asked for suggestions
+      rather than settling it, and none is built until he does.
+    - **The ground is real.** The demo plays on a hillside on Ramat Menashe
+      near Elyakim, 900 × 800 m centred on 32.645 N 35.085 E, cut from public
+      terrain tiles by `tools/fetch-dtm.py`; what stands on it is invented. A
+      recording carries the ground, and a game built without one plays flat
+      and empty, exactly as before.
+
+    Figures: [`data/terrain.ts`](src/engine/data/terrain.ts). Mechanism:
+    [`terrain.ts`](src/engine/terrain.ts), `Game.hasLineOfSight` now taking
+    the two forces. Drawn by [`Relief.tsx`](src/app/components/Relief.tsx).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -739,7 +801,11 @@ Each is intended to be an independent, toggleable module:
 4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
-6. **Map generation** — procedural / authored maps and terrain (LOS, cover).
+6. **Map generation** — ✅ *real ground*: elevation from a public DTM and
+   hand-placed objects, with line of sight and cover derived from them (rules
+   decision 15). Still to come: object footprints from OpenStreetMap, slope
+   and height in movement and fire (open on the balance sheet), and a map
+   authoring tool.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
    to any prefix), `replayWithOutcomes()` also hands back what each action

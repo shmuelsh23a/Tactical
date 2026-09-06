@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `2e616d9`, 2026-09-06.** This is the working note for whoever
+**Current as of `520d527`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 284 tests, 15 files
+npm run check       lint + typecheck clean, 305 tests, 16 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -46,43 +46,19 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Elevation (backlog 6, reframed) — a proposal put to him 2026-09-06, not yet
-answered.** Every existing rules decision is ✅ as of 2026-08-16; do not reopen
-one without him. Build nothing until he answers; if he never does, the defaults
-below are what to build, marked ⚠️.
+**Slope and height in movement and fire (rules decision 15, the open half).**
+On 2026-09-06 he settled elevation and objects — heightfield, one binary
+symmetric sight test, eye heights 1.5 / 2.5 / 0.5 m, object cover building
+full / wall or tree partial, all "tentative, write it down" — and asked for
+**suggestions** on two things rather than settling them:
 
-The author's steer, 2026-09-06: the game is to scale from soldier level up to
-brigade and above, with the engine eventually moving and resolving individual
-units at metre scale under a commander who can zoom down. So **no terrain
-types** (wood, built-up) — the map carries **objects** (trees, buildings,
-walls) — and the thing to resolve now is **elevation**. A first proposal of
-terrain types with a cover/sight/movement table was withdrawn on that steer.
+| Question | Suggested to him | Status |
+|---|---|---|
+| Slope and movement | Naismith: each metre climbed costs 8 m of the bound, descent free; vehicles refused above 30° | not answered |
+| Height and hit chance | none in the first cut; the alternative is +10% additive for a shooter ≥ 10 m above its target | not answered |
 
-The shape proposed:
-
-- **One height function.** A heightfield (grid of ground elevations, ~10 m
-  spacing at platoon scale) plus objects as footprints with a height on top of
-  it (building ~6 m, tree ~4 m, wall ~1.5 m). Line of sight is one test: sample
-  the profile along the segment, block if ground or object rises above the line
-  from observer eye to target. Smoke stays a second blocker on the same
-  predicate. Scales as he wants: a brigade map is the same grid sampled
-  coarser, objects aggregate into polygons later without changing the test.
-- **Authoring.** Demo map = a few analytic hills rasterised into the grid; the
-  same grid can later be filled from a real DTM. Nothing procedural.
-- **Sight is binary and symmetric.** A crest hides a force and blinds it
-  equally, so reverse slope vs crest is the player's dial with no invented
-  number. No elevation bonus to hit or detect (the document has none).
-- **Eye height follows posture** (proposed): infantry 1.5 m, vehicle 2.5 m, a
-  force in full cover 0.5 m. Gives digging in a cost it lacks today — lower
-  silhouette, but it sees less over a rise.
-- **No slope cost to movement** in the first cut (the document gives none).
-- **Cover comes from objects, not height**: inside a building footprint full,
-  at a wall or tree partial — `baseCover` again, no new machinery.
-
-Questions put to him: (1) heightfield grid with a DTM as the eventual source,
-and whether a real training area is in mind; (2) the eye heights, or one
-height for all to start; (3) binary symmetric LOS only, no hull-down state;
-(4) no slope cost; (5) object cover in the first cut, or pure elevation first.
+Build neither until he picks. Every other rules decision is ✅; do not reopen
+one without him.
 
 Two are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
@@ -125,23 +101,27 @@ Measurements that cost real time and are already recorded:
   found **0/400** from the endpoint against **~26%** beside the halt.
 - **Sector bonus by width:** `13.5 ÷ width` → +23% / +15% / +8% at
   60° / 90° / 180°, against a flat −20% outside.
+- **Dead ground on the demo map:** BLUE-2 running up the centre from
+  (400, 60) is seen by nobody on turn 1 at (400, 160) — **0/200 seeds** —
+  and by someone on turn 2 at (400, 260) — **200/200**, RED-1 itself 185
+  times. The shoulder at about y = 250 is where the northern low ground comes
+  into view.
 - **Node support windows** (from `nodejs/Release`, checked 2026-09-05): 20 went
   EOL **2026-04-30**, 22 ends 2027-04-30, 24 ends **2028-04-30** and leaves
   Active LTS on 2026-10-20. That is why the pin is 24 and not 22.
 
 ## What I would pick up next
 
-1. **Terrain** (backlog 6) — and it needs the author more than it needs code.
-   The document has **no terrain table at all**, so this is the biggest rules
-   invention left, bigger than sectors were. Everything now points at it:
-   `baseCover` sits on a `Unit` with nothing to set it, line of sight only knows
-   about smoke, the map is a bare field, and a sector now tells a force where to
-   look with nothing on the ground to look at or from behind. Bring him a
-   proposal with the tradeoffs already worked out — he settles a well-framed
-   question in one line, and he checks new mechanics for dominated options.
-2. **Laying charges during play.** Small and self-contained, but the document
+1. **Slope in movement and fire** — once he picks (see *Waiting on the
+   author*). The seams are ready: `moveUnit` has the bound's two ends and
+   `groundHeight` gives the climb; `resolveDirectFire` takes an additive
+   modifier already.
+2. **Object footprints from OpenStreetMap** for the demo window, so the farm
+   and the walls are real too. `tools/fetch-dtm.py` is the pattern: a tool
+   that writes a TypeScript module, provenance in its header.
+3. **Laying charges during play.** Small and self-contained, but the document
    does not describe engineering work at all — ask before building.
-3. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
+4. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
    posture system is the natural place to hang suppression.
 
 Two I would *not* rush: **echelon scaling** (backlog 3) touches the C2 model
@@ -166,3 +146,12 @@ the code currently stands:
 - **`addUnit` records the force as it stands.** Setting `camouflaging` or
   `baseCover` after adding a unit desyncs the recording from the live game — the
   replay gets an undressed unit. Set it before `addUnit`.
+- **The demo seed can miss a 90% roll twice.** On seed 2026 BLUE-2 crests the
+  shoulder on turn 2 in full view of the tank and the ridge squad, and on that
+  seed both missed before the wall fix; after it the tank sees it. Over 200
+  seeds it is seen every time. A "nobody saw it" in the browser is a seed
+  before it is a bug — measure before ruling.
+- **Ten button clicks in one browser script call is too many.** The pane
+  re-renders every token through milsymbol between clicks; eight is the
+  ceiling, six is safe, and the handoff button's label starts with the side
+  (`RED מוכן — הצג את המפה`), so match on the word, not the prefix.
