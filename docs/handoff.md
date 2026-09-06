@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `7379bbf`, 2026-09-06.** This is the working note for whoever
+**Current as of `09c72e6`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 320 tests, 16 files
+npm run check       lint + typecheck clean, 324 tests, 17 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -46,7 +46,13 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Nothing.** Rules decision 15 closed on 2026-09-06 in two steps: the shape
+**One licensing line, his call.** `src/app/maps/ramatMenasheObjects.ts` is
+extracted OpenStreetMap data, which is ODbL and stays ODbL — while `LICENSE`
+is "all rights reserved" for the whole repo. Attribution is done (file header,
+README, and a line on the map itself); what is missing is a carve-out in
+`LICENSE` saying that file is © OpenStreetMap contributors under ODbL. Put to
+him 2026-09-06, not yet answered. Everything else: rules decision 15 closed on
+2026-09-06 in two steps: the shape
 (elevation and objects, one sight test, eye heights, object cover) and then,
 from our suggestions, **Naismith** for climbing and **no hit modifier for
 now**. Every figure he gave that day is "tentative, write it down" and sits on
@@ -105,9 +111,10 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-1. **Object footprints from OpenStreetMap** for the demo window, so the farm
-   and the walls are real too. `tools/fetch-dtm.py` is the pattern: a tool
-   that writes a TypeScript module, provenance in its header.
+1. **Draw the roads.** OpenStreetMap has the town's streets and Route 6 in
+   the window; `tools/fetch-osm.py` deliberately drops them because a road is
+   not an object. A decorative map layer (a `MapLine[]` beside the objects,
+   drawn under the tokens) is what the map most obviously lacks now.
 2. **Laying charges during play.** Small and self-contained, but the document
    does not describe engineering work at all — ask before building.
 3. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the

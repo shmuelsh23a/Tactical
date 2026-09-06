@@ -179,9 +179,10 @@ Engine capability the UI does not reach yet — the next obvious work:
   vehicle nothing past the grade it refuses. Advisory — the engine still
   judges each bound — so a click just outside it can still be refused with
   the cost in the log.
-- **Objects are hand-placed.** The relief is real; the farm, the walls and the
-  oaks on it are invented. The natural next source is OpenStreetMap footprints
-  for the same window.
+- **Roads are not drawn.** OpenStreetMap has the town's streets and Route 6
+  in the window, but a road is not an object — no height, no cover — so the
+  fetch leaves them out and the map shows none. Drawing them is a map-layer
+  job, and the first thing a player will ask for.
 
 ## Layout
 
@@ -716,6 +717,11 @@ on the stated reasoning, still awaiting the author's word.
       forward slope was blinded by its own wall the moment it looked downhill;
       the first fix skipped the whole object and let a force be seen straight
       through a building. The two halves share one reach for that reason.
+      Known gap: two forces both *inside* one large footprint — a wood from
+      OpenStreetMap — see each other at any distance, since a line wholly
+      inside a polygon crosses no face of it. A wood as a real terrain type
+      is the terrain-types proposal the author withdrew; leave it until it
+      matters in play.
     - **Cover and eye height are one posture.** A force that fired from full
       cover stood up to do it: it is partial to the shot back (decision 7) and
       stands 1.5 m on the sight line, from one function (`effectiveCover`).
@@ -730,10 +736,12 @@ on the stated reasoning, still awaiting the author's word.
     - **No elevation bonus to hit or to detect** (✅ author 2026-09-06, "no
       hit modifier for now"). The document has none, and the sight lines
       already reward the high ground. To be looked at again at balance.
-    - **The ground is real.** The demo plays on a hillside on Ramat Menashe
-      near Elyakim, 900 × 800 m centred on 32.645 N 35.085 E, cut from public
-      terrain tiles by `tools/fetch-dtm.py`; what stands on it is invented. A
-      recording carries the ground, and a game built without one plays flat
+    - **The ground is real, and so is what stands on it.** The demo plays on
+      the southern edge of Yokneam Illit on Ramat Menashe, 900 × 800 m centred
+      on 32.645 N 35.085 E: the relief cut from public terrain tiles by
+      `tools/fetch-dtm.py`, the town's 249 houses and its two woods from
+      OpenStreetMap by `tools/fetch-osm.py`. Nothing on the map is invented.
+      A recording carries the ground, and a game built without one plays flat
       and empty, exactly as before.
 
     Figures: [`data/terrain.ts`](src/engine/data/terrain.ts). Mechanism:
@@ -811,10 +819,10 @@ Each is intended to be an independent, toggleable module:
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. **Map generation** — ✅ *real ground*: elevation from a public DTM and
-   hand-placed objects, with line of sight and cover derived from them (rules
-   decision 15), Naismith's climb cost in movement, and the true reach drawn
-   on the map. Still to come: object footprints from OpenStreetMap, and a map
-   authoring tool.
+   object footprints from OpenStreetMap, with line of sight and cover derived
+   from them (rules decision 15), Naismith's climb cost in movement, and the
+   true reach drawn on the map. Still to come: roads drawn on the map, and a
+   scenario tool that picks a window and lays a battle out on it.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
    to any prefix), `replayWithOutcomes()` also hands back what each action
