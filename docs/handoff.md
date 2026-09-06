@@ -46,12 +46,8 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**One licensing line, his call.** `src/app/maps/ramatMenasheObjects.ts` is
-extracted OpenStreetMap data, which is ODbL and stays ODbL — while `LICENSE`
-is "all rights reserved" for the whole repo. Attribution is done (file header,
-README, and a line on the map itself); what is missing is a carve-out in
-`LICENSE` saying that file is © OpenStreetMap contributors under ODbL. Put to
-him 2026-09-06, not yet answered. Everything else: rules decision 15 closed on
+**Nothing.** The ODbL carve-out for the OpenStreetMap-derived file went into
+`LICENSE` on 2026-09-06 at his word. Rules decision 15 closed on
 2026-09-06 in two steps: the shape
 (elevation and objects, one sight test, eye heights, object cover) and then,
 from our suggestions, **Naismith** for climbing and **no hit modifier for

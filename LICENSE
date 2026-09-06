@@ -8,4 +8,16 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 Any public use, commercial use, modification, distribution, sublicensing, or copying of this Software for any other purpose is strictly prohibited without the prior express written authorization of the copyright holder.
 
+Third-party data, excluded from the above:
+
+- src/app/maps/ramatMenasheObjects.ts contains data extracted from OpenStreetMap
+  and is © OpenStreetMap contributors, licensed under the Open Database License
+  (ODbL) v1.0, https://opendatacommons.org/licenses/odbl/1-0/ — see
+  https://www.openstreetmap.org/copyright. That file is not covered by the
+  proprietary terms above and may be used under the ODbL.
+- src/app/maps/ramatMenashe.ts contains elevation data from the AWS Terrain
+  Tiles (courtesy of Mapzen), derived from NASA SRTM, which is public domain.
+  Attribution: "Terrain Tiles courtesy of Mapzen; elevation data from SRTM
+  (NASA)".
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
