@@ -66,6 +66,8 @@ export function reasonHe(reason?: string): string {
       return "מנוטרל";
     case "hit last turn":
       return "נפגע — לא יכול לנוע";
+    case "grade too steep":
+      return "המדרון תלול מדי לרכב";
     case "no movement left":
       return "מיצה את התנועה בתור זה";
     case "already acted":

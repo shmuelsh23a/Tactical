@@ -112,6 +112,8 @@ export { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 export {
   FLAT_GROUND,
   betterCover,
+  boundCost,
+  climbAlong,
   coverFromObjects,
   distanceToFootprint,
   effectiveCover,
@@ -119,6 +121,8 @@ export {
   footprintContains,
   groundHeight,
   objectHeight,
+  reachAlong,
+  steepestGradeAlong,
   terrainBlocksSight,
   type Footprint,
   type Heightfield,
@@ -132,6 +136,7 @@ export {
   OBJECT_COVER_REACH_M,
   OBJECT_HEIGHT_M,
   OWN_OBJECT_SIGHT_M,
+  SLOPE,
   type MapObjectKind,
 } from "./data/terrain.js";
 export {

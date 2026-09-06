@@ -74,7 +74,11 @@ export interface Unit {
   canOnlyRetreat: boolean;
 
   // --- per-turn / cross-turn flags consumed by movement & fire rules ---
-  /** Metres moved during the current turn. */
+  /**
+   * Movement budget spent this turn, in metres of flat going. On flat ground
+   * that is the distance moved; a climb costs more (rules decision 15). Zero
+   * means the force has not moved, which is what "hidden" reads.
+   */
   movedThisTurn: number;
   /** True if any of this turn's movement was made at a run (easier to spot). */
   ranThisTurn: boolean;

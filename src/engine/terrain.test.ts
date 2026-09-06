@@ -1,18 +1,24 @@
 import { describe, it, expect } from "vitest";
 import {
   FLAT_GROUND,
+  boundCost,
+  climbAlong,
   coverFromObjects,
   eyeHeight,
   groundHeight,
+  reachAlong,
+  steepestGradeAlong,
   terrainBlocksSight,
   type Heightfield,
   type MapObject,
   type Terrain,
 } from "./terrain.js";
-import { EYE_HEIGHT, OBJECT_COVER_REACH_M, OWN_OBJECT_SIGHT_M } from "./data/terrain.js";
+import { EYE_HEIGHT, OBJECT_COVER_REACH_M, OWN_OBJECT_SIGHT_M, SLOPE } from "./data/terrain.js";
 import { Game } from "./game.js";
+import { Rng } from "./rng.js";
 import { makeInfantry, makeVehicle } from "./units.js";
 import { replayGame } from "./recording.js";
+import { stepTowards } from "./orders.js";
 
 /**
  * A single ridge running north–south across a 400 m square: 0 m at both
@@ -225,6 +231,44 @@ describe("eye height follows posture", () => {
   });
 });
 
+describe("the cost of the ground (Naismith)", () => {
+  const foot = { x: 0, y: 200 };
+  const crest = { x: 200, y: 200 };
+  const far = { x: 400, y: 200 };
+
+  it("counts the metres climbed and ignores the descent", () => {
+    expect(climbAlong(ridged, foot, crest)).toBeCloseTo(20, 6);
+    expect(climbAlong(ridged, crest, far)).toBeCloseTo(0, 6);
+    expect(climbAlong(ridged, foot, far)).toBeCloseTo(20, 6);
+    expect(climbAlong(FLAT_GROUND, foot, far)).toBe(0);
+  });
+
+  it("charges eight metres of going per metre climbed, and nothing on the flat", () => {
+    expect(boundCost(ridged, foot, crest)).toBeCloseTo(200 + 20 * SLOPE.climbCostPerMetre, 6);
+    expect(boundCost(ridged, crest, far)).toBeCloseTo(200, 6);
+    expect(boundCost(FLAT_GROUND, foot, far)).toBeCloseTo(400, 6);
+  });
+
+  it("reads the grade in degrees", () => {
+    // 20 m over 200 m is a 10% grade, 5.7°; a 200 m ridge over 200 m is 45°.
+    expect(steepestGradeAlong(ridged, foot, crest)).toBeCloseTo(5.71, 1);
+    expect(steepestGradeAlong({ heightfield: ridge(200), objects: [] }, foot, crest)).toBeCloseTo(45, 1);
+    expect(steepestGradeAlong(FLAT_GROUND, foot, crest)).toBe(0);
+  });
+
+  it("a bound uphill stops where the budget runs out, downhill goes the distance", () => {
+    // Uphill every metre costs 1 + 8 × 0.1 = 1.8, so 50 m of budget is 27.8 m.
+    const up = reachAlong(ridged, foot, crest, 50);
+    expect(up.x).toBeCloseTo(50 / 1.8, 1);
+    expect(boundCost(ridged, foot, up)).toBeLessThanOrEqual(50 + 1e-6);
+    const down = reachAlong(ridged, crest, far, 50);
+    expect(down.x).toBeCloseTo(250, 6);
+    // Within reach, the destination itself.
+    expect(reachAlong(ridged, crest, { x: 240, y: 200 }, 50)).toEqual({ x: 240, y: 200 });
+    expect(reachAlong(ridged, foot, crest, 0)).toEqual(foot);
+  });
+});
+
 describe("the game on real ground", () => {
   function ridgeGame(seed = 1) {
     const g = new Game({ seed, trackIntel: true, terrain: ridged });
@@ -283,6 +327,133 @@ describe("the game on real ground", () => {
     expect(outside.cover).toBe("full");
   });
 
+  it("refuses a bound the climb puts over budget, and spends the budget on the climb", () => {
+    const g = new Game({ seed: 1, terrain: ridged });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 200 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    // 50 m on the flat; uphill it costs 90 m.
+    expect(() => g.moveUnit(squad.id, { x: 50, y: 200 })).toThrow(/climbed/);
+    g.moveUnit(squad.id, { x: 25, y: 200 });
+    expect(squad.movedThisTurn).toBeCloseTo(25 + 2.5 * SLOPE.climbCostPerMetre, 6);
+    expect(() => g.moveUnit(squad.id, { x: 30, y: 200 })).toThrow(/exceeds/);
+  });
+
+  it("a standing order climbs as far as the budget reaches, then carries on", () => {
+    const g = new Game({ seed: 1, terrain: ridged });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 200 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "normal", destination: { x: 200, y: 200 } });
+    const [first] = g.executeStandingOrders("BLUE");
+    expect(first?.moved?.to.x).toBeCloseTo(50 / 1.8, 1);
+    expect(first?.moved?.arrived).toBe(false);
+    // Bound by bound up the slope, the order reaches the crest.
+    for (let turn = 0; turn < 7; turn++) {
+      g.advanceToPhase("summary");
+      g.advancePhase();
+      g.advanceToPhase("movement");
+      g.executeStandingOrders("BLUE");
+    }
+    expect(squad.position.x).toBeCloseTo(200, 0);
+  });
+
+  it("what an order reaches never costs more than the bound may spend", () => {
+    // A gentle, slightly noisy descent — the kind of ground where a whole
+    // order line climbs nothing while the shorter bound's own samples, falling
+    // elsewhere, catch a rise of a few millimetres. The point reachAlong hands
+    // back must pass the very check moveUnit makes on it. The first cut judged
+    // "no climb" on the whole order line and handed back a flat step; on this
+    // field and this order that step costs 100.04 m of a 100 m budget, and on
+    // the real map one order in 260 threw out of the execution loop.
+    const columns = 41;
+    const rows = 41;
+    const heights: number[] = [];
+    const noise = new Rng(2);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) heights.push(-0.3 * c * 10 + 0.6 * noise.next());
+    }
+    const descent: Terrain = { heightfield: { spacing: 10, columns, rows, heights }, objects: [] };
+    const from = { x: 341.71834448352456, y: 385.79896995797753 };
+    const towards = { x: 372.49429477378726, y: 172.12405856698751 };
+    // The case is live: the order line climbs nothing, the flat step does.
+    expect(climbAlong(descent, from, towards)).toBe(0);
+    expect(boundCost(descent, from, stepTowards(from, towards, 100))).toBeGreaterThan(100 + 1e-6);
+    // …and reachAlong stays inside the budget regardless.
+    const to = reachAlong(descent, from, towards, 100);
+    expect(boundCost(descent, from, to)).toBeLessThanOrEqual(100 + 1e-6);
+
+    // Through the game: the order executes rather than throwing.
+    const g = new Game({ seed: 1, terrain: descent });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", from, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "run", destination: towards });
+    expect(() => g.executeStandingOrders("BLUE")).not.toThrow();
+    expect(squad.movedThisTurn).toBeLessThanOrEqual(100 + 1e-6);
+
+    // And at random across the same ground, for good measure.
+    const rng = new Rng(15);
+    for (let i = 0; i < 500; i++) {
+      const a = { x: rng.next() * 400, y: rng.next() * 400 };
+      const b = { x: rng.next() * 400, y: rng.next() * 400 };
+      const budget = [25, 50, 100][i % 3]!;
+      expect(boundCost(descent, a, reachAlong(descent, a, b, budget))).toBeLessThanOrEqual(budget + 1e-6);
+    }
+  });
+
+  it("on flat ground an order step lands exactly where it always did", () => {
+    const g = new Game({ seed: 1 });
+    const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 10, y: 20 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(squad.id, { gait: "run", destination: { x: 310, y: 420 } });
+    g.executeStandingOrders("BLUE");
+    expect(squad.position).toEqual(stepTowards({ x: 10, y: 20 }, { x: 310, y: 420 }, 100));
+    expect(squad.movedThisTurn).toBe(100);
+  });
+
+  it("the grade is judged on the bound taken, not on the whole order line", () => {
+    // Flat for 100 m, then a 45° wall. An order past the wall walks the flat
+    // part bound by bound and is refused only when the bound reaches the wall.
+    const columns = 41;
+    const rows = 41;
+    const heights: number[] = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < columns; c++) heights.push(Math.max(0, Math.min(50, c * 10 - 100)));
+    }
+    const walled: Terrain = { heightfield: { spacing: 10, columns, rows, heights }, objects: [] };
+    const g = new Game({ seed: 1, terrain: walled });
+    const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 200 }));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(tank.id, { gait: "normal", destination: { x: 300, y: 200 } });
+    expect(g.executeStandingOrders("RED")[0]?.moved?.to.x).toBeCloseTo(50, 6);
+    const reasons: (string | undefined)[] = [];
+    for (let turn = 0; turn < 3; turn++) {
+      g.advanceToPhase("summary");
+      g.advancePhase();
+      g.advanceToPhase("movement");
+      reasons.push(g.executeStandingOrders("RED")[0]?.reason);
+    }
+    expect(tank.position.x).toBeCloseTo(100, 6);
+    expect(reasons).toEqual([undefined, "grade too steep", "grade too steep"]);
+  });
+
+  it("a vehicle will not take a grade over the limit; infantry will", () => {
+    const steep: Terrain = { heightfield: ridge(200), objects: [] }; // 45°
+    const g = new Game({ seed: 1, terrain: steep });
+    const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 200 }));
+    const squad = g.addUnit(makeInfantry("S", "RED", "squad", { x: 0, y: 100 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.setStandingOrder(tank.id, { gait: "normal", destination: { x: 100, y: 150 } });
+    expect(g.executeStandingOrders("RED")[0]?.reason).toBe("grade too steep");
+    expect(() => g.moveUnit(tank.id, { x: 5, y: 200 })).toThrow(/too steep/);
+    expect(() => g.moveUnit(tank.id, { x: 0, y: 150 })).not.toThrow(); // along the contour
+    expect(() => g.moveUnit(squad.id, { x: 5, y: 100 })).not.toThrow();
+  });
+
   it("a recording carries the ground, and a replay fights on it", () => {
     const { g, west, east } = ridgeGame(3);
     g.beginTurn();
@@ -319,7 +490,8 @@ describe("the game on real ground", () => {
       g.addUnit(makeInfantry("E", "RED", "squad", { x: 350, y: 200 }, 8));
       g.beginTurn();
       g.advanceToPhase("movement");
-      const { detection } = g.moveUnit(west.id, { x: 100, y: 200 });
+      // 20 m towards the crest: 2 m of climb, 36 m of budget.
+      const { detection } = g.moveUnit(west.id, { x: 70, y: 200 });
       expect(detection.spottedUnitIds).toEqual([]);
     }
   });

@@ -60,6 +60,24 @@ export const OBJECT_HEIGHT_M: Record<MapObjectKind, number> = {
 };
 
 /**
+ * What the ground costs to cross (author, 2026-09-06 — "go with Naismith";
+ * the figures are ours and tentative pending balance). Naismith's rule: an
+ * hour for every 5 km on the flat and another for every 600 m climbed, so a
+ * metre of ascent costs about eight metres of going. Descent is free. This is
+ * what makes the high ground cost what it is worth: a crest buys sight lines
+ * and is paid for in bounds, where before it was free to take.
+ *
+ * A shot's chance is **not** changed by height (author, 2026-09-06, "no hit
+ * modifier for now"): the sight lines already reward the high ground.
+ */
+export const SLOPE = {
+  /** Metres of a bound's budget spent per metre climbed. */
+  climbCostPerMetre: 8, // author (tentative) — Naismith
+  /** The steepest grade a vehicle will take, in degrees. Infantry takes any. */
+  vehicleMaxGradeDeg: 30, // author (tentative)
+} as const;
+
+/**
  * How often the ground is sampled along a sight line, in metres. Objects are
  * tested exactly where the line crosses them, so this only has to catch the
  * ground itself, which the heightfield already smooths. Ours.

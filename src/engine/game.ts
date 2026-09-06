@@ -47,19 +47,19 @@ import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
 import {
   FLAT_GROUND,
   betterCover,
+  boundCost,
+  climbAlong,
   coverFromObjects,
   effectiveCover,
   eyeHeight,
+  reachAlong,
+  steepestGradeAlong,
   terrainBlocksSight,
   type Terrain,
 } from "./terrain.js";
+import { SLOPE } from "./data/terrain.js";
 import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
-import {
-  hasArrived,
-  stepTowards,
-  type StandingOrder,
-  type StandingOrderExecution,
-} from "./orders.js";
+import { hasArrived, type StandingOrder, type StandingOrderExecution } from "./orders.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -430,13 +430,27 @@ export class Game {
     const profile = MOVEMENT_PROFILES[gait];
     const cap = profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1);
     const dist = distance(unit.position, to);
+    // A vehicle will not take a grade it cannot climb (rules decision 15).
+    if (unit.kind === "vehicle") {
+      const grade = steepestGradeAlong(this.terrain, unit.position, to);
+      if (grade > SLOPE.vehicleMaxGradeDeg) {
+        throw new Error(
+          `Grade of ${grade.toFixed(0)}° is too steep for a vehicle (limit ${SLOPE.vehicleMaxGradeDeg}°)`,
+        );
+      }
+    }
     // The cap is a per-turn budget (e.g. "up to 50 m in a turn"), so movement
     // already spent this turn counts against it — a unit can move in several
-    // steps but no further than its gait allows in total.
-    if (unit.movedThisTurn + dist > cap + 1e-6) {
+    // steps but no further than its gait allows in total. Climbing costs
+    // extra (Naismith, rules decision 15): the budget is spent in metres of
+    // flat going, and on flat ground that is the distance exactly.
+    const climb = climbAlong(this.terrain, unit.position, to);
+    const cost = boundCost(this.terrain, unit.position, to);
+    if (unit.movedThisTurn + cost > cap + 1e-6) {
       const remaining = Math.max(0, cap - unit.movedThisTurn);
+      const climbing = climb > 0 ? ` (${climb.toFixed(1)} m climbed, costing ${cost.toFixed(1)} m)` : "";
       throw new Error(
-        `Move of ${dist.toFixed(1)} m exceeds remaining ${gait} budget of ${remaining.toFixed(1)} m`,
+        `Move of ${dist.toFixed(1)} m${climbing} exceeds remaining ${gait} budget of ${remaining.toFixed(1)} m`,
       );
     }
     if (needsNewOrders && this.canReceiveOrders(unitId)) this.lastOrderTurn.set(unitId, this.turn);
@@ -449,7 +463,7 @@ export class Game {
     }
     const from = unit.position;
     unit.position = { ...to };
-    unit.movedThisTurn += dist;
+    unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
@@ -904,7 +918,15 @@ export class Game {
     // as a bound and cost a detection roll.
     if (cap <= 1e-6) return { ...base, reason: "no movement left" };
 
-    const to = stepTowards(unit.position, order.destination, cap);
+    // As far along the line as the budget reaches — less than the flat
+    // distance where the line climbs (rules decision 15).
+    const to = reachAlong(this.terrain, unit.position, order.destination, cap);
+    if (
+      unit.kind === "vehicle" &&
+      steepestGradeAlong(this.terrain, unit.position, to) > SLOPE.vehicleMaxGradeDeg
+    ) {
+      return { ...base, reason: "grade too steep" };
+    }
     const result = this.moveUnit(unit.id, to, gait);
 
     const arrived = hasArrived(unit.position, order.destination);

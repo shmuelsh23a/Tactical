@@ -9,6 +9,7 @@ import {
   type Point,
 } from "./geometry.js";
 import type { Unit } from "./types.js";
+import { stepTowards } from "./orders.js";
 import type { CoverState } from "./data/directFire.js";
 import {
   EYE_HEIGHT,
@@ -17,6 +18,7 @@ import {
   OBJECT_COVER_REACH_M,
   OBJECT_HEIGHT_M,
   OWN_OBJECT_SIGHT_M,
+  SLOPE,
   type MapObjectKind,
 } from "./data/terrain.js";
 
@@ -163,6 +165,85 @@ export function coverFromObjects(terrain: Terrain, p: Point): CoverState {
     }
   }
   return best;
+}
+
+/**
+ * Metres climbed along the straight line `from`→`to`: the sum of every rise
+ * between one ground sample and the next, descents ignored. Zero on flat
+ * ground.
+ */
+export function climbAlong(terrain: Terrain, from: Point, to: Point): number {
+  if (!terrain.heightfield) return 0;
+  const length = distance(from, to);
+  if (length === 0) return 0;
+  const steps = Math.max(1, Math.ceil(length / LOS_SAMPLE_STEP_M));
+  let climb = 0;
+  let previous = groundHeight(terrain, from);
+  for (let i = 1; i <= steps; i++) {
+    const z = groundHeight(terrain, lerpPoint(from, to, i / steps));
+    if (z > previous) climb += z - previous;
+    previous = z;
+  }
+  return climb;
+}
+
+/**
+ * The steepest grade met along `from`→`to`, in degrees, up **or down** — a
+ * vehicle refuses a 30° descent as it refuses a 30° climb. Zero on flat
+ * ground.
+ */
+export function steepestGradeAlong(terrain: Terrain, from: Point, to: Point): number {
+  if (!terrain.heightfield) return 0;
+  const length = distance(from, to);
+  if (length === 0) return 0;
+  const steps = Math.max(1, Math.ceil(length / LOS_SAMPLE_STEP_M));
+  const run = length / steps;
+  let steepest = 0;
+  let previous = groundHeight(terrain, from);
+  for (let i = 1; i <= steps; i++) {
+    const z = groundHeight(terrain, lerpPoint(from, to, i / steps));
+    steepest = Math.max(steepest, Math.abs(z - previous) / run);
+    previous = z;
+  }
+  return (Math.atan(steepest) * 180) / Math.PI;
+}
+
+/**
+ * What a bound from `from` to `to` costs against a gait's budget, in metres
+ * of flat going: the distance, plus {@link SLOPE.climbCostPerMetre} for every
+ * metre climbed (Naismith). On flat ground it is the distance, exactly.
+ */
+export function boundCost(terrain: Terrain, from: Point, to: Point): number {
+  return distance(from, to) + climbAlong(terrain, from, to) * SLOPE.climbCostPerMetre;
+}
+
+/**
+ * The furthest point along `from`→`towards` a force can reach for `budget`
+ * metres of flat going — the destination itself when it is within reach.
+ * Where the bound climbs nothing the answer is the plain step, computed
+ * exactly, so a game on flat ground lands where it always landed; where it
+ * climbs, the cost only grows along the line and a bisection finds the point.
+ *
+ * The invariant `moveUnit` relies on: the point returned costs no more than
+ * `budget`, **measured over the bound itself**. The climb test is therefore
+ * made on the step, not on the whole order line — the two are sampled at
+ * different places, and a short line can catch a rise a long one stepped
+ * over. The first cut tested the long line, and on the real map one order in
+ * 260 threw out of the execution loop for a rise of a few millimetres.
+ */
+export function reachAlong(terrain: Terrain, from: Point, towards: Point, budget: number): Point {
+  if (budget <= 0) return { ...from };
+  const step = stepTowards(from, towards, budget);
+  if (climbAlong(terrain, from, step) === 0) return step;
+  if (boundCost(terrain, from, towards) <= budget) return { ...towards };
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (boundCost(terrain, from, lerpPoint(from, towards, mid)) <= budget) lo = mid;
+    else hi = mid;
+  }
+  return lerpPoint(from, towards, lo);
 }
 
 /**
