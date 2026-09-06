@@ -101,12 +101,13 @@ tweak later when we get to balancing — write it down". So: written down.
 | `OBJECT_HEIGHT_M` | **building 6 / wall 1.5 / tree 4 m** | ours | What an object blocks when the map gives it no height of its own. |
 | `LOS_SAMPLE_STEP_M` | **5 m** | ours | How finely the ground is sampled along a line; objects are tested exactly. |
 
-**Open, awaiting the author's pick (2026-09-06, he asked for suggestions):**
+**Settled 2026-09-06 (he picked from our suggestions; figures tentative):**
 
-| Question | Suggested | Note |
-|---|---|---|
-| Slope and movement | **Naismith**: every metre climbed costs **8 m** of the bound; descent free; a vehicle cannot take a grade over **30°** | Makes the high ground cost what it is worth. Ours to suggest, his to pick. |
-| Height and hit chance | **None** in the first cut | The sight lines already reward height, and the document has no such modifier. The alternative on the table: **+10%** (additive, like the movement modifiers) for a shooter 10 m or more above its target. |
+| Figure | Value | Whose | What it does |
+|---|---|---|---|
+| `SLOPE.climbCostPerMetre` | **8 m** of the bound per metre climbed (Naismith); descent free | author (tentative) | Makes the high ground cost what it is worth. A 10% slope costs 1.8 m of budget per metre, so a walking bound uphill is ~28 m, not 50. |
+| `SLOPE.vehicleMaxGradeDeg` | **30°**, up or down | author (tentative) | A vehicle refuses a steeper bound, descending as well as climbing; a standing order across such a patch reports `grade too steep` every turn until replaced, since an order stands until it is. Infantry takes anything. On the demo map about one 50 m bound in 500 exceeds it. |
+| Height and hit chance | **none, for now** | author | The sight lines already reward height; the alternative kept on file is +10% additive for a shooter ≥ 10 m above its target. Revisit at balance. |
 
 **Interactions to keep in mind.**
 

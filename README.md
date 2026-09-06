@@ -173,11 +173,10 @@ Engine capability the UI does not reach yet — the next obvious work:
 - **A force cannot be told where to look.** Scouting raises what a force finds
   everywhere at once; there is no sector, no observation post, and no way to
   watch one approach rather than another.
-- **The ground has no say in movement or in a shot's chance.** Elevation and
-  objects decide what can be seen and what a force stands behind (rules
-  decision 15), but a bound up a 30% slope costs what a bound on the flat
-  costs, and fire downhill is fire. Both are open questions on the balance
-  sheet, waiting on the author.
+- **The movement ring is the flat reach.** Climbing costs the bound (rules
+  decision 15), so uphill a force stops short of the ring and a hand move past
+  what the climb allows is refused with the cost in the log. Drawing the true
+  reach as a contour of cost is the next step for the map.
 - **Objects are hand-placed.** The relief is real; the farm, the walls and the
   oaks on it are invented. The natural next source is OpenStreetMap footprints
   for the same window.
@@ -286,7 +285,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
   50%-attrition force neutralisation
 - Real ground: elevation from a public DTM and objects on it (buildings,
   walls, trees) — one line-of-sight test for seeing and shooting, eye height by
-  posture, cover from the object a force stands in or against
+  posture, cover from the object a force stands in or against, and Naismith's
+  climb cost on every bound
 - Command & control order intervals by distance (פו"ש), gating *new* orders
 - Standing orders: a force keeps to its last order until it is replaced
 - Battle recording: a game replays exactly from its seed and action log
@@ -717,10 +717,17 @@ on the stated reasoning, still awaiting the author's word.
     - **Cover and eye height are one posture.** A force that fired from full
       cover stood up to do it: it is partial to the shot back (decision 7) and
       stands 1.5 m on the sight line, from one function (`effectiveCover`).
-    - **No elevation bonus to hit or to detect, and no slope cost to move**
-      (open — see the balance sheet). The document has neither, and the sight
-      lines already reward the high ground; the author asked for suggestions
-      rather than settling it, and none is built until he does.
+    - **Climbing costs the bound — Naismith** (✅ author 2026-09-06, figures
+      tentative). Every metre climbed costs **8 m** of the gait's budget,
+      descent is free, and a **vehicle refuses a grade over 30°, up or
+      down**. A standing
+      order climbs as far as the budget reaches and carries on next turn. This
+      is what makes the high ground cost what it is worth: a crest buys sight
+      lines and is paid for in bounds, where before it was free to take. On
+      flat ground the budget is the distance, exactly as before.
+    - **No elevation bonus to hit or to detect** (✅ author 2026-09-06, "no
+      hit modifier for now"). The document has none, and the sight lines
+      already reward the high ground. To be looked at again at balance.
     - **The ground is real.** The demo plays on a hillside on Ramat Menashe
       near Elyakim, 900 × 800 m centred on 32.645 N 35.085 E, cut from public
       terrain tiles by `tools/fetch-dtm.py`; what stands on it is invented. A
@@ -803,8 +810,8 @@ Each is intended to be an independent, toggleable module:
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. **Map generation** — ✅ *real ground*: elevation from a public DTM and
    hand-placed objects, with line of sight and cover derived from them (rules
-   decision 15). Still to come: object footprints from OpenStreetMap, slope
-   and height in movement and fire (open on the balance sheet), and a map
+   decision 15), and Naismith's climb cost in movement. Still to come: object
+   footprints from OpenStreetMap, the true reach drawn on the map, and a map
    authoring tool.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or

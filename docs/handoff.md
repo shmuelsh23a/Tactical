@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `520d527`, 2026-09-06.** This is the working note for whoever
+**Current as of `34e7e5b`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 305 tests, 16 files
+npm run check       lint + typecheck clean, 317 tests, 16 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -46,19 +46,11 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Slope and height in movement and fire (rules decision 15, the open half).**
-On 2026-09-06 he settled elevation and objects — heightfield, one binary
-symmetric sight test, eye heights 1.5 / 2.5 / 0.5 m, object cover building
-full / wall or tree partial, all "tentative, write it down" — and asked for
-**suggestions** on two things rather than settling them:
-
-| Question | Suggested to him | Status |
-|---|---|---|
-| Slope and movement | Naismith: each metre climbed costs 8 m of the bound, descent free; vehicles refused above 30° | not answered |
-| Height and hit chance | none in the first cut; the alternative is +10% additive for a shooter ≥ 10 m above its target | not answered |
-
-Build neither until he picks. Every other rules decision is ✅; do not reopen
-one without him.
+**Nothing.** Rules decision 15 closed on 2026-09-06 in two steps: the shape
+(elevation and objects, one sight test, eye heights, object cover) and then,
+from our suggestions, **Naismith** for climbing and **no hit modifier for
+now**. Every figure he gave that day is "tentative, write it down" and sits on
+[balance.md](balance.md). Do not reopen a decision without him.
 
 Two are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
@@ -68,6 +60,7 @@ the balance pass, not to the rules list, and live on
 |---|---|---|
 | Decision 9 | smoke radii **25 / 50 / 100 m** | The document sizes no screen. |
 | Decision 13 | casualty bands **0 / 1–2 / 3–5 / 6+** | He confirmed that reports are banded, not where the bands fall. |
+| Decision 15 | eye heights **1.5 / 2.5 / 0.5 m**, object cover, **8 m per metre climbed**, **30°** for vehicles | All his, all "tentative until balance". |
 
 **Decision 11's riders** (no assault on armour, no ammunition tracking) remain
 assumptions he has not contradicted; ammunition is backlog 12's job.
@@ -112,10 +105,10 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-1. **Slope in movement and fire** — once he picks (see *Waiting on the
-   author*). The seams are ready: `moveUnit` has the bound's two ends and
-   `groundHeight` gives the climb; `resolveDirectFire` takes an additive
-   modifier already.
+1. **Draw the true reach on the map.** The movement ring is still the flat
+   gait radius; uphill a force stops short of it. A contour of `boundCost`
+   from the force's position — `reachAlong` on a fan of bearings — would show
+   the player what the climb costs before the move is refused.
 2. **Object footprints from OpenStreetMap** for the demo window, so the farm
    and the walls are real too. `tools/fetch-dtm.py` is the pattern: a tool
    that writes a TypeScript module, provenance in its header.
@@ -135,6 +128,9 @@ Browser-driving traps live in [driving-the-game.md](driving-the-game.md) and
 testing ones in [AGENTS.md](../AGENTS.md). These are the ones specific to where
 the code currently stands:
 
+- **Recordings saved from the demo before Naismith (2026-09-06) replay
+  differently**: an order's bound now stops short uphill, so every position
+  after the first climb moves. `verifyRecording` will say so.
 - **Sealed recordings made before 2026-08-16 that cross a minefield will fail
   `verifyRecording`.** Decision 10 changed how many rng draws a move near a
   charge makes. That is the tool doing its job, not a regression.
