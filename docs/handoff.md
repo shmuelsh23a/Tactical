@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `5e5b978`, 2026-09-05.** This is the working note for whoever
+**Current as of `2e616d9`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -46,8 +46,49 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Nothing.** Every rules decision in the README is ✅ as of 2026-08-16 — the
-⚠️ list is empty for the first time. Do not reopen one without him.
+**Terrain (backlog 6) — a proposal put to him 2026-09-06, not yet answered.**
+Every existing rules decision is ✅ as of 2026-08-16; do not reopen one without
+him. Terrain is a *new* question, and the document has no terrain table at all,
+so all of the below is invention. Build nothing until he answers; if he never
+does, the defaults below are what to build, marked ⚠️.
+
+The shape: **authored features on the map** (polygons a scenario places, drawn
+under the tokens, recorded like a unit so a replay has the same ground). A map
+with none plays exactly as today, so the module is additive. Each feature has a
+type, and a type carries at most three effects — all through machinery that
+already exists, so the invention is the table, not the engine:
+
+| Type | Cover for a force in it (`baseCover`) | Line of sight | Movement |
+|---|---|---|---|
+| open (no feature) | none | clear | as the document |
+| חורש / מטע (wood, orchard) | **partial** | concealing | metres in it count **double** |
+| שטח בנוי (built-up) | **full** | concealing | metres in it count **double** |
+| מכשול (water, cliff) | — | clear | **impassable** |
+
+- **Cover**: terrain sets `baseCover`, which exists and nothing sets. A force
+  in a wood still digs from partial up to full. Cover already carries its own
+  (tentative) concealment figure, so terrain adds **no new detection number**.
+- **Line of sight**: a line may cross at most **20 m** of concealing terrain in
+  total — the document's own hidden-enemy band, so a fight inside cover is a
+  fight at 20 m. Into the edge: allowed. Through a wood: blocked. Two forces
+  deep in the same wood: blocked past 20 m. Rejected alternatives: opaque like
+  smoke (a force inside could neither see nor fire out — a hide, never a
+  position), and blocks-through-only (a deep wood would hide nobody).
+- **Movement**: the double cost is what keeps terrain from being a dominated
+  choice — cover, concealment and a 20 m sight limit for nothing would make the
+  wood always the right place to be. Depth is the player's dial: at the edge
+  you fight, deep in you hide and see nothing.
+- **Kept out of the first cut**: elevation (a ridge blocks *through* but never
+  *into*, different geometry — a later row), terrain-specific detection
+  figures, and any effect on indirect fire or assault (cover is a direct-fire
+  modifier only; that is the document's scope).
+- **Riders proposed**: a UAV does not auto-detect a *stationary* force inside
+  concealing terrain (it is not "גלוי"); a moving one it does. Vehicles pay the
+  same double cost in wood and built-up rather than being barred.
+
+Questions put to him: (1) the cover grades — partial for a wood, full for
+built-up; (2) the 20 m sight rule; (3) the double movement cost; (4) whether a
+ridge belongs in the first cut; (5) the UAV rider.
 
 Two are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
