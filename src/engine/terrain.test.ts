@@ -7,6 +7,7 @@ import {
   eyeHeight,
   groundHeight,
   reachAlong,
+  reachFan,
   steepestGradeAlong,
   terrainBlocksSight,
   type Heightfield,
@@ -266,6 +267,36 @@ describe("the cost of the ground (Naismith)", () => {
     // Within reach, the destination itself.
     expect(reachAlong(ridged, crest, { x: 240, y: 200 }, 50)).toEqual({ x: 240, y: 200 });
     expect(reachAlong(ridged, foot, crest, 0)).toEqual(foot);
+  });
+});
+
+describe("the fan of reachable ground", () => {
+  it("is the flat circle on flat ground", () => {
+    const fan = reachFan(FLAT_GROUND, { x: 100, y: 100 }, 50, { bearings: 8 });
+    expect(fan).toHaveLength(8);
+    for (const p of fan) expect(Math.hypot(p.x - 100, p.y - 100)).toBeCloseTo(50, 6);
+  });
+
+  it("falls short uphill and reaches full length along the contour", () => {
+    // From the foot of the ridge: east climbs (27.8 m), north and south run
+    // along the level, west is off the grid and level too.
+    const fan = reachFan(ridged, { x: 0, y: 200 }, 50, { bearings: 4 });
+    expect(fan).toHaveLength(4);
+    expect(fan[0]!.x).toBeCloseTo(50 / 1.8, 1); // east
+    expect(fan[1]!.y).toBeCloseTo(250, 6); // south (y grows south)
+    expect(fan[2]!.x).toBeCloseTo(-50, 6); // west
+    expect(fan[3]!.y).toBeCloseTo(150, 6); // north
+  });
+
+  it("a vehicle's fan stops at the grade it refuses", () => {
+    const steep: Terrain = { heightfield: ridge(200), objects: [] }; // 45°
+    const fan = reachFan(steep, { x: 0, y: 200 }, 50, { bearings: 4, vehicle: true });
+    expect(fan).toHaveLength(4);
+    expect(fan[0]!.x).toBeLessThan(0.01); // east: cannot start
+    expect(fan[1]!.y).toBeCloseTo(250, 6); // along the contour, the full bound
+    // Infantry on the same ground goes as far as the budget allows.
+    const foot = reachFan(steep, { x: 0, y: 200 }, 50, { bearings: 4 });
+    expect(foot[0]!.x).toBeGreaterThan(5);
   });
 });
 

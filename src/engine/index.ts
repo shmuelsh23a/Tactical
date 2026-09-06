@@ -122,6 +122,7 @@ export {
   groundHeight,
   objectHeight,
   reachAlong,
+  reachFan,
   steepestGradeAlong,
   terrainBlocksSight,
   type Footprint,

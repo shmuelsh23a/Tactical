@@ -247,6 +247,44 @@ export function reachAlong(terrain: Terrain, from: Point, towards: Point, budget
 }
 
 /**
+ * The ground a force can reach this turn, as a fan of points around it: on
+ * each of `bearings` evenly spaced headings, how far `budget` metres of flat
+ * going carries it over the ground there — the true shape of a bound, which
+ * on flat ground is the circle it always was and uphill falls short of it. A
+ * vehicle's fan also stops where the grade it will not take begins.
+ *
+ * Advisory: the map draws it so the player sees the cost before a move is
+ * refused. `moveUnit` remains the judge of any particular bound.
+ */
+export function reachFan(
+  terrain: Terrain,
+  from: Point,
+  budget: number,
+  opts: { vehicle?: boolean; bearings?: number } = {},
+): Point[] {
+  const n = opts.bearings ?? 72;
+  const fan: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * 2 * Math.PI;
+    const towards = { x: from.x + budget * Math.cos(a), y: from.y + budget * Math.sin(a) };
+    let p = reachAlong(terrain, from, towards, budget);
+    if (opts.vehicle && steepestGradeAlong(terrain, from, p) > SLOPE.vehicleMaxGradeDeg) {
+      // Back off to the furthest point along the bound the grade allows.
+      let lo = 0;
+      let hi = 1;
+      for (let k = 0; k < 20; k++) {
+        const mid = (lo + hi) / 2;
+        if (steepestGradeAlong(terrain, from, lerpPoint(from, p, mid)) <= SLOPE.vehicleMaxGradeDeg) lo = mid;
+        else hi = mid;
+      }
+      p = lerpPoint(from, p, lo);
+    }
+    fan.push(p);
+  }
+  return fan;
+}
+
+/**
  * Whether the ground or anything on it stands between an eye `fromEye` metres
  * above `from` and a silhouette `toEye` metres above `to`. Binary, and
  * symmetric in its two ends.

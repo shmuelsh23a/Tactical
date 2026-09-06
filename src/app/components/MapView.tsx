@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import type {
   Mine,
   Point,
@@ -10,7 +10,7 @@ import type {
   Terrain,
   Unit,
 } from "../../engine/index.js";
-import { MOVEMENT_PROFILES } from "../../engine/index.js";
+import { MOVEMENT_PROFILES, reachFan } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 import { Relief, TerrainObjects } from "./Relief.js";
@@ -62,7 +62,7 @@ interface MapViewProps {
   viewingSide: Side;
   selectedId: string | null;
   phase: ActivationPhase | "other";
-  /** Movement range circle radius (metres) for the selected unit, if moving. */
+  /** Movement budget left (metres of flat going) for the selected unit, if moving — the fan's reach. */
   moveCap: number | null;
   /**
    * Enemy forces drawn from a stale contact: the mark is where this side last
@@ -134,6 +134,21 @@ export function MapView(props: MapViewProps) {
 
   const selected = units.find((u) => u.id === selectedId) ?? null;
 
+  // The ground the selected force can reach this turn (rules decision 15):
+  // the flat circle where the ground is flat, less where it climbs, and for a
+  // vehicle nothing past the grade it refuses.
+  // Keyed on the position object, not the unit: the engine mutates a unit in
+  // place but gives it a fresh position on every move, so the position is the
+  // honest sign that the fan needs redrawing.
+  const at = selected?.position ?? null;
+  const vehicle = selected?.kind === "vehicle";
+  const reach = useMemo(() => {
+    if (!at || moveCap == null || moveCap <= 0) return null;
+    return reachFan(props.terrain, at, moveCap, { vehicle })
+      .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+      .join(" ");
+  }, [at, vehicle, moveCap, props.terrain]);
+
   function handleBackgroundClick(e: React.MouseEvent) {
     const svg = svgRef.current;
     if (!svg) return;
@@ -197,14 +212,9 @@ export function MapView(props: MapViewProps) {
           />
         ))}
 
-      {/* Movement range for the selected friendly unit. */}
-      {phase === "movement" && selected && selected.side === viewingSide && moveCap != null && (
-        <circle
-          cx={selected.position.x}
-          cy={selected.position.y}
-          r={moveCap}
-          className="move-range"
-        />
+      {/* Where the selected friendly force can get to this turn. */}
+      {phase === "movement" && selected && selected.side === viewingSide && reach && (
+        <polygon points={reach} className="move-range" />
       )}
 
       {/* Where each force has been ordered to, and how far it still has to go;
