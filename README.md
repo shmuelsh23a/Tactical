@@ -179,10 +179,11 @@ Engine capability the UI does not reach yet — the next obvious work:
   vehicle nothing past the grade it refuses. Advisory — the engine still
   judges each bound — so a click just outside it can still be refused with
   the cost in the log.
-- **Roads are not drawn.** OpenStreetMap has the town's streets and Route 6
-  in the window, but a road is not an object — no height, no cover — so the
-  fetch leaves them out and the map shows none. Drawing them is a map-layer
-  job, and the first thing a player will ask for.
+- **Roads are drawn, and nothing more.** The streets, Route 6 and the tracks
+  are on the map from OpenStreetMap, as a line layer the recording carries and
+  no rule reads: no height, no cover, no movement bonus. A road as *going* —
+  faster along it, a vehicle confined to it — is a rules question the
+  document does not raise; ask before building it.
 
 ## Layout
 
@@ -739,8 +740,10 @@ on the stated reasoning, still awaiting the author's word.
     - **The ground is real, and so is what stands on it.** The demo plays on
       the southern edge of Yokneam Illit on Ramat Menashe, 900 × 800 m centred
       on 32.645 N 35.085 E: the relief cut from public terrain tiles by
-      `tools/fetch-dtm.py`, the town's 249 houses and its two woods from
-      OpenStreetMap by `tools/fetch-osm.py`. Nothing on the map is invented.
+      `tools/fetch-dtm.py`, the town's 249 houses, its two woods and its
+      roads from OpenStreetMap by `tools/fetch-osm.py`. Nothing on the map is
+      invented. Roads are drawn only — decoration the recording carries and
+      no rule reads.
       A recording carries the ground, and a game built without one plays flat
       and empty, exactly as before.
 
@@ -821,8 +824,8 @@ Each is intended to be an independent, toggleable module:
 6. **Map generation** — ✅ *real ground*: elevation from a public DTM and
    object footprints from OpenStreetMap, with line of sight and cover derived
    from them (rules decision 15), Naismith's climb cost in movement, and the
-   true reach drawn on the map. Still to come: roads drawn on the map, and a
-   scenario tool that picks a window and lays a battle out on it.
+   true reach drawn on the map, roads drawn from OpenStreetMap. Still to
+   come: a scenario tool that picks a window and lays a battle out on it.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
    to any prefix), `replayWithOutcomes()` also hands back what each action

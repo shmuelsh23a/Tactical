@@ -130,8 +130,10 @@ one it is in your reply, too.
   by hand.
 - **The demo ground is real and generated.** `src/app/maps/ramatMenashe.ts`
   is written by `tools/fetch-dtm.py` from public terrain tiles and
-  `ramatMenasheObjects.ts` by `tools/fetch-osm.py` from OpenStreetMap; rerun
-  the tools rather than editing the numbers. `src/app/scenario.test.ts` pins
+  `ramatMenasheObjects.ts` (objects and roads) by `tools/fetch-osm.py` from
+  OpenStreetMap; rerun the tools rather than editing the numbers. Roads are
+  `Terrain.roads`: drawn, carried by the recording, read by no rule — keep it
+  that way unless the author rules on roads. `src/app/scenario.test.ts` pins
   the sight lines the demo's lesson depends on, so a regenerated map that
   moves them fails there rather than in play.
 - **The engine is the umpire; what a side *knows* is a separate ledger.**

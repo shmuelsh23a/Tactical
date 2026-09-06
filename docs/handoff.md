@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `09c72e6`, 2026-09-06.** This is the working note for whoever
+**Current as of `35c1943`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 324 tests, 17 files
+npm run check       lint + typecheck clean, 325 tests, 17 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -111,14 +111,15 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-1. **Draw the roads.** OpenStreetMap has the town's streets and Route 6 in
-   the window; `tools/fetch-osm.py` deliberately drops them because a road is
-   not an object. A decorative map layer (a `MapLine[]` beside the objects,
-   drawn under the tokens) is what the map most obviously lacks now.
-2. **Laying charges during play.** Small and self-contained, but the document
+1. **Laying charges during play.** Small and self-contained, but the document
    does not describe engineering work at all — ask before building.
-3. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
+2. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
    posture system is the natural place to hang suppression.
+
+A rules question worth raising with him when the map next comes up: **roads
+as going** — faster along a road, a vehicle confined to one. The document
+does not raise it; the map now draws roads and the engine ignores them, which
+is the honest state until he rules.
 
 Two I would *not* rush: **echelon scaling** (backlog 3) touches the C2 model
 everywhere and has since picked up the artillery battery, which makes it larger
