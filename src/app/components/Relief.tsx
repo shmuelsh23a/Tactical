@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { groundHeight, type Heightfield, type MapObject, type Terrain } from "../../engine/index.js";
 
 /**
@@ -152,8 +152,16 @@ export function Relief({
   );
 }
 
-/** The objects on the ground: buildings and walls as their footprints, trees as crowns. */
-export function TerrainObjects({ objects }: { objects: readonly MapObject[] }) {
+/**
+ * The objects on the ground: buildings and walls as their footprints, trees as
+ * crowns. Memoised on the object list, which a game never changes, so a town
+ * of a few hundred houses is not re-strung on every token re-render.
+ */
+export const TerrainObjects = memo(function TerrainObjects({
+  objects,
+}: {
+  objects: readonly MapObject[];
+}) {
   return (
     <g className="terrain-objects">
       {objects.map((o) =>
@@ -175,4 +183,4 @@ export function TerrainObjects({ objects }: { objects: readonly MapObject[] }) {
       )}
     </g>
   );
-}
+});

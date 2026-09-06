@@ -722,6 +722,10 @@ export function App() {
 
       <div className="main">
         <div className="map-wrap">
+          {/* The data terms ask for this on the map itself, not only in a file header. */}
+          <div className="attribution">
+            © OpenStreetMap contributors (ODbL) · Terrain Tiles courtesy of Mapzen · SRTM (NASA)
+          </div>
           {showHandoff ? (
             <Handoff
               side={handoffTo!}
