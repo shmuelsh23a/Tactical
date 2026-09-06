@@ -17,6 +17,7 @@ export {
   withinArc,
   withinRadius,
   segmentIntersectsCircle,
+  pointInPolygon,
   type Point,
   type RangeBand,
 } from "./geometry.js";
@@ -108,6 +109,31 @@ export {
   sectorBonus,
 } from "./data/concealment.js";
 export { IntelLedger, type Contact, type ContactSource } from "./intel.js";
+export {
+  FLAT_GROUND,
+  betterCover,
+  coverFromObjects,
+  distanceToFootprint,
+  effectiveCover,
+  eyeHeight,
+  footprintContains,
+  groundHeight,
+  objectHeight,
+  terrainBlocksSight,
+  type Footprint,
+  type Heightfield,
+  type MapObject,
+  type Terrain,
+} from "./terrain.js";
+export {
+  EYE_HEIGHT,
+  LOS_SAMPLE_STEP_M,
+  OBJECT_COVER,
+  OBJECT_COVER_REACH_M,
+  OBJECT_HEIGHT_M,
+  OWN_OBJECT_SIGHT_M,
+  type MapObjectKind,
+} from "./data/terrain.js";
 export {
   triggerMines,
   MINE_TRIGGER_RADIUS_M,

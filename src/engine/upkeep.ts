@@ -1,10 +1,12 @@
 import { Rng } from "./rng.js";
 import { roll } from "./dice.js";
 import type { SmokeScreen, Unit } from "./types.js";
+import type { Point } from "./geometry.js";
 import { CASUALTY_RULES } from "./data/casualties.js";
 import { DIG_IN } from "./data/concealment.js";
 import type { CoverState } from "./data/directFire.js";
 import { refreshUnitStatus } from "./units.js";
+import { betterCover } from "./terrain.js";
 
 /**
  * Advance a wounded soldier's bleeding: from 5 nq"p the wound worsens by 1d4
@@ -58,8 +60,14 @@ export function digInCover(stationaryTurns: number): CoverState {
  *     camouflage if it was told to, and digs in once it has been there long
  *     enough. One that moved loses both (rules decision 12),
  *   - per-turn flags reset for the next turn.
+ *
+ * `groundCover` is what the map offers at a point — the object a force is in
+ * or against (rules decision 15). A game with no map offers nothing.
  */
-export function endTurnUnitUpkeep(units: Unit[]): void {
+export function endTurnUnitUpkeep(
+  units: Unit[],
+  groundCover: (at: Point) => CoverState = () => "none",
+): void {
   for (const u of units) {
     u.movementBlocked = u.hitThisTurn;
 
@@ -72,8 +80,12 @@ export function endTurnUnitUpkeep(units: Unit[]): void {
       u.camouflageTurns = 0;
       u.camouflaging = false;
     }
-    // Whatever the ground already gave it, or better if it has dug.
-    u.cover = betterCover(u.baseCover, digInCover(u.stationaryTurns));
+    // Whatever the ground already gave it — a prepared position, or the
+    // object it stands against — or better if it has dug.
+    u.cover = betterCover(
+      betterCover(u.baseCover, groundCover(u.position)),
+      digInCover(u.stationaryTurns),
+    );
 
     u.movedThisTurn = 0;
     u.ranThisTurn = false;
@@ -81,10 +93,4 @@ export function endTurnUnitUpkeep(units: Unit[]): void {
     u.hitThisTurn = false;
     u.underFire = false;
   }
-}
-
-/** The better of two cover states. */
-function betterCover(a: CoverState, b: CoverState): CoverState {
-  const rank: Record<CoverState, number> = { none: 0, partial: 1, full: 2 };
-  return rank[a] >= rank[b] ? a : b;
 }

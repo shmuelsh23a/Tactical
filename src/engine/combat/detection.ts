@@ -127,8 +127,9 @@ function isFindable(unit: Unit): boolean {
 /**
  * Detection rolls made by a unit that has just moved (תנועה). It looks for the
  * enemy — visible at 300 m, hidden at 20 m — at its gait's figures, and for
- * charges within 20 m. A `hasLineOfSight` predicate gates sight on smoke and,
- * later, on terrain.
+ * charges within 20 m. A `hasLineOfSight` predicate gates sight on smoke and
+ * on the ground — it takes the two forces, since how far each sees over a
+ * rise depends on its posture (rules decision 15).
  *
  * `from` is where the bound started; `mover.position` is already the end of it.
  * The two are needed because a **walking** force searches the ground it crossed
@@ -144,7 +145,7 @@ export function detectByMovement(
   mode: MovementMode,
   enemies: Unit[],
   mines: Mine[],
-  hasLineOfSight: (from: Point, to: Point) => boolean = () => true,
+  hasLineOfSight: (observer: Unit, target: Unit) => boolean = () => true,
 ): DetectionResult {
   const profile = MOVEMENT_PROFILES[mode];
   const spottedUnitIds: string[] = [];
@@ -164,7 +165,7 @@ export function detectByMovement(
   for (const enemy of enemies) {
     if (!isFindable(enemy)) continue;
     const { chance, range } = detectionChance(mover, enemy, mode);
-    if (searched(enemy.position, range) && hasLineOfSight(mover.position, enemy.position)) {
+    if (searched(enemy.position, range) && hasLineOfSight(mover, enemy)) {
       if (rng.chance(chance)) spottedUnitIds.push(enemy.id);
     }
   }
@@ -198,7 +199,7 @@ export interface Observation {
 export function observeFromPosition(
   rng: Rng,
   units: Unit[],
-  hasLineOfSight: (from: Point, to: Point) => boolean = () => true,
+  hasLineOfSight: (observer: Unit, target: Unit) => boolean = () => true,
 ): Observation[] {
   const observations: Observation[] = [];
   for (const observer of units) {
@@ -208,7 +209,7 @@ export function observeFromPosition(
       if (target.side === observer.side || !isFindable(target)) continue;
       const { chance, range } = detectionChance(observer, target);
       if (distance(observer.position, target.position) > range) continue;
-      if (!hasLineOfSight(observer.position, target.position)) continue;
+      if (!hasLineOfSight(observer, target)) continue;
       if (rng.chance(chance)) {
         observations.push({ observerId: observer.id, targetId: target.id });
       }

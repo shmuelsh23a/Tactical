@@ -17,6 +17,7 @@ import type { DetectionResult, Observation } from "./combat/detection.js";
 import { Game, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
+import type { Terrain } from "./terrain.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -80,6 +81,12 @@ export interface GameRecording {
    * for detection rolls that battle never made.
    */
   trackIntel?: boolean;
+  /**
+   * The ground the battle was fought on (rules decision 15). Optional, and
+   * read as **flat and empty** when absent: a recording made before the map
+   * had ground was played with every sight line clear.
+   */
+  terrain?: Terrain;
   actions: RecordedAction[];
   /**
    * State fingerprint after each action, written when the recording is sealed.
@@ -205,6 +212,7 @@ export function replayWithOutcomes(
     sides: recording.sides,
     enforceC2: recording.enforceC2,
     trackIntel: recording.trackIntel ?? false,
+    ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 
   const limit = Math.max(0, Math.min(opts.upToAction ?? recording.actions.length, recording.actions.length));

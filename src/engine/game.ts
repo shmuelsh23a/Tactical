@@ -44,6 +44,15 @@ import {
 import { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
+import {
+  FLAT_GROUND,
+  betterCover,
+  coverFromObjects,
+  effectiveCover,
+  eyeHeight,
+  terrainBlocksSight,
+  type Terrain,
+} from "./terrain.js";
 import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
 import {
   hasArrived,
@@ -111,6 +120,13 @@ export interface GameOptions {
    * only what is remembered.
    */
   trackIntel?: boolean;
+  /**
+   * The ground the battle is fought on: real elevation and the objects on it
+   * (rules decision 15). Absent means flat, empty ground — every sight line
+   * clear but for smoke, and nothing to take cover in — which is exactly the
+   * game as it was before the map had any ground at all.
+   */
+  terrain?: Terrain;
 }
 
 /**
@@ -123,6 +139,7 @@ export class Game {
   readonly sides: Side[];
   readonly enforceC2: boolean;
   readonly trackIntel: boolean;
+  readonly terrain: Terrain;
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -187,6 +204,7 @@ export class Game {
     this.sides = opts.sides ?? ["RED", "BLUE"];
     this.enforceC2 = opts.enforceC2 ?? true;
     this.trackIntel = opts.trackIntel ?? false;
+    this.terrain = opts.terrain ?? FLAT_GROUND;
   }
 
   /**
@@ -200,6 +218,9 @@ export class Game {
       sides: [...this.sides],
       enforceC2: this.enforceC2,
       trackIntel: this.trackIntel,
+      // The ground is part of what the decisions were taken on: a replay
+      // without it would clear every sight line the battle was fought around.
+      ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
       actions: cloneForRecord(this.actions),
     };
   }
@@ -207,6 +228,12 @@ export class Game {
   // ---- setup ----
 
   addUnit(unit: Unit): Unit {
+    // A force is placed behind whatever the ground offers where it stands from
+    // the first turn — not from the first upkeep. Done before the journal
+    // entry, so the recording carries the force as the game sees it. A
+    // prepared position (`baseCover`) is left to upkeep as it always was, so a
+    // game without ground replays bit for bit.
+    unit.cover = betterCover(unit.cover, coverFromObjects(this.terrain, unit.position));
     this.units.push(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
@@ -427,11 +454,13 @@ export class Game {
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
     // Smoke stops the eye as well as the bullet, so observation runs through
-    // the same line of sight fire does — but only where the knowledge model is
-    // in play, so a game without it draws exactly what it always drew.
-    const sight = this.trackIntel
-      ? (from: Point, to: Point) => this.hasLineOfSight(from, to)
-      : undefined;
+    // the same line of sight fire does — where the knowledge model is in play,
+    // or where there is ground to see over. A flat game without the model
+    // draws exactly what it always drew.
+    const sight =
+      this.trackIntel || this.terrain !== FLAT_GROUND
+        ? (observer: Unit, target: Unit) => this.hasLineOfSight(observer, target)
+        : undefined;
     // `from` is where the bound started: a walking force searches the ground it
     // crossed for charges, not only where it halted (rules decision 10).
     const detection = detectByMovement(this.rng, unit, from, gait, enemies, this.mines, sight);
@@ -489,8 +518,8 @@ export class Game {
    */
   private observeFromPositions(): Observation[] {
     if (!this.trackIntel) return [];
-    const seen = observeFromPosition(this.rng, this.units, (from, to) =>
-      this.hasLineOfSight(from, to),
+    const seen = observeFromPosition(this.rng, this.units, (observer, target) =>
+      this.hasLineOfSight(observer, target),
     );
     for (const { observerId, targetId } of seen) {
       this.observe(this.getUnit(observerId).side, targetId, "movement");
@@ -575,8 +604,7 @@ export class Game {
    * partial-cover figure is for ("-10% when firing while in cover").
    */
   coverAgainst(target: Unit): CoverState {
-    if (target.cover === "full" && target.firedThisTurn) return "partial";
-    return target.cover;
+    return effectiveCover(target);
   }
 
   /** Everything `side` has picked up of the enemy, with where it last saw it. */
@@ -597,14 +625,31 @@ export class Game {
   // ---- combat phase ----
 
   /**
-   * Whether a shot from `from` to `to` has an unobstructed line of sight. The
-   * document's only modelled obstruction is smoke — "אין ירי לתוך\דרך עשן" —
-   * so a screen blocks the shot whether it lies between the two points or over
-   * either of them. Terrain LOS comes with the map iteration.
+   * Whether `observer` has an unobstructed line of sight to `target` — the one
+   * test behind seeing a force and shooting at it.
+   *
+   * Smoke is the document's own obstruction — "אין ירי לתוך\דרך עשן" — and a
+   * screen blocks the line whether it lies between the two or over either of
+   * them. The ground and what stands on it are rules decision 15: the line
+   * runs from the observer's eye to the target's silhouette, each at the
+   * height its posture puts it, and a crest or a building between them ends
+   * it. Symmetric — whoever can see can be seen.
    */
-  hasLineOfSight(from: Point, to: Point): boolean {
-    if (!SMOKE_BLOCKS_FIRE) return true;
-    return !this.smoke.some((s) => segmentIntersectsCircle(from, to, s.center, s.radius));
+  hasLineOfSight(observer: Unit, target: Unit): boolean {
+    const from = observer.position;
+    const to = target.position;
+    if (
+      SMOKE_BLOCKS_FIRE &&
+      this.smoke.some((s) => segmentIntersectsCircle(from, to, s.center, s.radius))
+    ) {
+      return false;
+    }
+    return !terrainBlocksSight(this.terrain, from, eyeHeight(observer), to, eyeHeight(target));
+  }
+
+  /** The cover the map offers a force standing at `at` (rules decision 15). */
+  groundCoverAt(at: Point): CoverState {
+    return coverFromObjects(this.terrain, at);
   }
 
   /**
@@ -649,7 +694,7 @@ export class Game {
       cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
       // it out from the smoke on the map.
-      hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
+      hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) this.exchangeContact(attacker, target);
     this.journal({ kind: "fire", attackerId, targetId, opts });
@@ -676,8 +721,7 @@ export class Game {
       };
     }
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
-      hasLineOfSight:
-        opts.hasLineOfSight ?? this.hasLineOfSight(attacker.position, target.position),
+      hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
       turn: this.turn,
     });
@@ -915,7 +959,7 @@ export class Game {
 
     const inRange = (u: Unit) =>
       distance(unit.position, u.position) <= order.engagementRange! &&
-      this.hasLineOfSight(unit.position, u.position);
+      this.hasLineOfSight(unit, u);
 
     if (designated) return inRange(designated) ? designated : undefined;
 
@@ -1040,6 +1084,6 @@ export class Game {
     this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
     applyBleeding(this.rng, this.units, this.turn);
     this.smoke = decaySmoke(this.smoke);
-    endTurnUnitUpkeep(this.units);
+    endTurnUnitUpkeep(this.units, (at) => coverFromObjects(this.terrain, at));
   }
 }
