@@ -77,8 +77,17 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 }
 
 .map { width: 100%; height: 100%; }
-.map-bg { fill: #11321f; }            /* olive-green field */
-.grid { stroke: #1d4a30; stroke-width: 0.5; }
+.map-bg { fill: #11321f; }            /* olive-green field — what shows with no ground */
+.grid { stroke: rgba(160, 190, 150, 0.22); stroke-width: 0.5; }
+/* The ground (rules decision 15): shaded relief with contours, and the objects on it. */
+.relief { pointer-events: none; }
+.relief image { image-rendering: auto; }
+.contour { fill: none; stroke: rgba(230, 220, 170, 0.28); stroke-width: 0.6; }
+.contour-index { stroke: rgba(230, 220, 170, 0.55); stroke-width: 1.1; }
+.terrain-objects { pointer-events: none; }
+.object-building { fill: #6b5a48; stroke: #2a2118; stroke-width: 1; }
+.object-wall { fill: #b3a27e; stroke: #4a4030; stroke-width: 0.6; }
+.object-tree { fill: #1e6a2c; stroke: #0c3a16; stroke-width: 0.8; }
 .move-range { fill: rgba(59,130,246,0.10); stroke: var(--blue); stroke-dasharray: 4 4; stroke-width: 1; }
 .selection-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
 .assault-range {

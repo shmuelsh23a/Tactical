@@ -25,6 +25,9 @@ import {
   type SmokeSource,
   type StandingOrder,
   type Unit,
+  coverFromObjects,
+  groundHeight,
+  type Terrain,
 } from "../engine/index.js";
 import {
   casualtyReport,
@@ -729,6 +732,7 @@ export function App() {
             <MapView
               width={scn.mapWidth}
               height={scn.mapHeight}
+              terrain={game.terrain}
               units={visibleUnits}
               viewingSide={viewingSide}
               selectedId={selectedId}
@@ -1119,6 +1123,7 @@ export function App() {
                 orderInfo={orderInfo}
                 order={selectedOrder}
                 nameOf={nameOf}
+                terrain={game.terrain}
               />
 
               <button className="btn-primary" onClick={handleEndActivation}>
@@ -1171,12 +1176,14 @@ function SelectedUnitCard({
   orderInfo,
   order,
   nameOf,
+  terrain,
 }: {
   unit: Unit | null;
   orderInfo: OrderInfo | null;
   /** The order the force is working to — what it will do again next turn. */
   order: StandingOrder | undefined;
   nameOf: (id: string) => string;
+  terrain: Terrain;
 }) {
   if (!unit) return <div className="unit-card empty">לא נבחר כוח</div>;
   return (
@@ -1214,7 +1221,7 @@ function SelectedUnitCard({
       {unit.neutralized && <div className="warn">מנוטרל</div>}
       {unit.movementBlocked && <div className="warn">נפגע — לא יכול לנוע</div>}
       {unit.firedThisTurn && <div className="warn">בוצעה פעולת ירי בתור זה</div>}
-      <PostureLine unit={unit} />
+      <PostureLine unit={unit} terrain={terrain} />
     </div>
   );
 }
@@ -1225,11 +1232,15 @@ const coverHe: Record<string, string> = { full: "מחסה מלא", partial: "מ�
  * How exposed the force is: what it is behind, whether it is hidden by holding
  * still, and how far its camouflage has got (rules decision 12).
  */
-function PostureLine({ unit }: { unit: Unit }) {
+function PostureLine({ unit, terrain }: { unit: Unit; terrain: Terrain }) {
   const camouflage = camouflageBonus(unit);
   const stationary = unit.movedThisTurn === 0;
   const digging =
     stationary && unit.cover !== "full" && unit.stationaryTurns >= DIG_IN.startsAfterTurns;
+  // What the ground gives (rules decision 15): where the force stands, and
+  // what it stands against — so a player can read a crest off the card, and
+  // see that the cover on the line above is the wall's rather than dug.
+  const ground = coverFromObjects(terrain, unit.position);
   return (
     <>
       <div className={unit.cover === "none" ? "warn" : "ok"}>
@@ -1237,6 +1248,12 @@ function PostureLine({ unit }: { unit: Unit }) {
         {digging ? " · מתחפר" : ""}
         {stationary ? ` · חבוי (${unit.stationaryTurns} תורות במקום)` : " · נע — גלוי"}
       </div>
+      {terrain.heightfield && (
+        <div className="muted">
+          גובה {Math.round(groundHeight(terrain, unit.position))} מ'
+          {ground !== "none" ? ` · השטח נותן ${coverHe[ground]}` : ""}
+        </div>
+      )}
       {unit.scouting && (
         <div className="ok">
           בסיור: +{Math.round(SCOUTING.detectionBonus * 100)}% לגילוי · הליכה בלבד

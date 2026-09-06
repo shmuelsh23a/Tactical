@@ -168,6 +168,7 @@ export function Debrief({
           <MapView
             width={extent.width}
             height={extent.height}
+            terrain={game.terrain}
             units={units}
             viewingSide={side ?? "BLUE"}
             // The umpire is the one reader entitled to see both sides' arcs.

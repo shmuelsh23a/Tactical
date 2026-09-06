@@ -7,11 +7,13 @@ import type {
   Side,
   SmokeScreen,
   StandingOrder,
+  Terrain,
   Unit,
 } from "../../engine/index.js";
 import { MOVEMENT_PROFILES } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
+import { Relief, TerrainObjects } from "./Relief.js";
 
 /**
  * One force's order as the map draws it: the leg still to march, and the enemy
@@ -54,6 +56,8 @@ export function orderOverlay(
 interface MapViewProps {
   width: number;
   height: number;
+  /** The ground: real relief and the objects on it — physical, so both sides see it. */
+  terrain: Terrain;
   units: Unit[];
   viewingSide: Side;
   selectedId: string | null;
@@ -160,7 +164,12 @@ export function MapView(props: MapViewProps) {
       onClick={handleBackgroundClick}
     >
       <rect x={0} y={0} width={width} height={height} className="map-bg" />
+      {/* The ground itself (rules decision 15): shaded relief and contours
+          under the grid, the buildings, walls and trees over it. None of it
+          takes a click — a move lands on the ground the token is dropped on. */}
+      <Relief terrain={props.terrain} width={width} height={height} />
       <g>{gridLines}</g>
+      <TerrainObjects objects={props.terrain.objects} />
 
       {/* The arcs this side's forces are watching (rules decision 14), drawn out
           to the document's 300 m visible band. That is the longer of the two
