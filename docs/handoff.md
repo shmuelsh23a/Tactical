@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `35c1943`, 2026-09-06.** This is the working note for whoever
+**Current as of `056d056`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -46,13 +46,13 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Nothing.** The ODbL carve-out for the OpenStreetMap-derived file went into
-`LICENSE` on 2026-09-06 at his word. Rules decision 15 closed on
-2026-09-06 in two steps: the shape
-(elevation and objects, one sight test, eye heights, object cover) and then,
-from our suggestions, **Naismith** for climbing and **no hit modifier for
-now**. Every figure he gave that day is "tentative, write it down" and sits on
-[balance.md](balance.md). Do not reopen a decision without him.
+**Nothing.** Rules decision 15 (elevation and objects) closed on 2026-09-06
+in two steps: the shape — one sight test over real ground, eye heights, object
+cover — and then, from our suggestions, **Naismith** for climbing and **no hit
+modifier for now**. Every figure he gave that day is "tentative, write it
+down" and sits on [balance.md](balance.md). The ODbL carve-out for the
+OpenStreetMap-derived file went into `LICENSE` the same day at his word. Do
+not reopen a decision without him.
 
 Two are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
@@ -67,7 +67,13 @@ the balance pass, not to the rules list, and live on
 **Decision 11's riders** (no assault on armour, no ammunition tracking) remain
 assumptions he has not contradicted; ammunition is backlog 12's job.
 
-So the next rules question is a **new** one, and terrain is it.
+Two rules questions are **open but not asked**, because nothing needs them
+yet — raise them the moment the work does:
+
+- **Roads as going.** The map draws roads and the engine ignores them. Faster
+  along a road, a vehicle confined to one — the document does not raise it.
+- **Laying charges during play.** The document describes no engineering work.
+  Ask before building; it is the smallest item on the pick-up list.
 
 ## Do not re-propose
 
@@ -85,6 +91,20 @@ Closed deliberately, with reasons that are not obvious from the code:
 - **Raising the charge trigger radius to the 20 m search band.** The gap between
   10 m and 20 m is the ground where a charge is found without being trodden on,
   which is the only thing the search roll buys (decision 10).
+- **Terrain types** (wood, built-up, each with a cover grade, a sight rule and
+  a movement cost). Proposed and **withdrawn on the author's steer**
+  2026-09-06: the game is to scale from soldier to brigade with metre-level
+  resolution underneath, so the map carries *objects* and *elevation*, never
+  a zone with a rules table. A wood is a footprint from OpenStreetMap, not a
+  type (decision 15).
+- **An elevation bonus to hit or to detect.** "No hit modifier for now" — the
+  sight lines already reward the high ground. To be looked at again at
+  balance, not before (decision 15).
+- **Judging "no climb" on the whole order line.** It was the shortcut in
+  `reachAlong`, and on the real map it disagreed with the bound's own
+  samples one order in 260 and threw out of the order loop. The climb is
+  judged on the bound taken; a test holds a field on which the old shortcut
+  overspends.
 
 ## Do not re-derive
 
@@ -108,14 +128,19 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 1. **Laying charges during play.** Small and self-contained, but the document
-   does not describe engineering work at all — ask before building.
+   does not describe engineering work at all — ask before building (see
+   *Waiting on the author*).
 2. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
    posture system is the natural place to hang suppression.
+3. **A scenario tool.** Backlog 6 is otherwise done — real elevation, real
+   objects and roads, sight lines, cover and climb cost derived from them, the
+   true reach drawn. What is left is picking a window and laying a battle out
+   on it without editing `scenario.ts` by hand: the two fetch tools are the
+   pattern (a tool that writes a module, provenance in its header).
 
-A rules question worth raising with him when the map next comes up: **roads
-as going** — faster along a road, a vehicle confined to one. The document
-does not raise it; the map now draws roads and the engine ignores them, which
-is the honest state until he rules.
+Small things noticed and left: the debrief has no *height* readout for a
+force; `fetch-osm.py` keeps a way whole when any vertex is inside, so Route 6
+carries 1.3 km of off-map points that the SVG clips — file size only.
 
 Two I would *not* rush: **echelon scaling** (backlog 3) touches the C2 model
 everywhere and has since picked up the artillery battery, which makes it larger
@@ -151,3 +176,17 @@ the code currently stands:
   re-renders every token through milsymbol between clicks; eight is the
   ceiling, six is safe, and the handoff button's label starts with the side
   (`RED מוכן — הצג את המפה`), so match on the word, not the prefix.
+- **The tank's cover is 1.6 m from flipping.** `RED-TANK` stands 4.6 m from
+  the nearest house and the cover reach is 3 m; full cover would drop its
+  eye to 0.5 m and switch off the "far low ground" lesson.
+  `src/app/scenario.test.ts` pins it — if a regenerated map fails there, move
+  the tank, do not loosen the test.
+- **A force's own object is left off its sight line for 6 m only.** The first
+  cut skipped the whole object and let a squad against a house be seen
+  straight through it from the far side. `OWN_OBJECT_SIGHT_M` is twice the
+  cover reach for exactly the wall-versus-building distinction; read
+  `terrainBlocksSight`'s comment before touching either number.
+- **The console buffer in the Browser pane survives reloads.** After changing
+  an export's shape (a component becoming a `memo`), the buffer shows
+  "Component is not a function" with an *older* module timestamp than the
+  page. If a clean reload renders tokens and buildings, it is history.

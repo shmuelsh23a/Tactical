@@ -118,6 +118,48 @@ is in the repo now; `settings.local.json` stays ignored.
 
 ---
 
+## 2026-09-06 — the map is real ground
+
+Ended at `056d056`. 325 tests. Rules decision 15 in one day, settled in two
+rounds with the author, twelve commits, each driven in the browser:
+
+1. **The proposal that was withdrawn.** Terrain *types* — wood, built-up,
+   with cover, a 20 m sight rule and a double movement cost — went to him
+   first. His steer: the game scales from soldier to brigade with metre-level
+   resolution underneath, so the map carries **objects** and **elevation**,
+   not types. Recorded under *do not re-propose*.
+2. **Real ground** (`347b3e2`, `56055d7`, `520d527`) — a heightfield cut
+   from public terrain tiles by `tools/fetch-dtm.py`, objects with a height on
+   it, one binary symmetric sight test from an eye to a silhouette, eye height
+   by posture (1.5 / 2.5 / 0.5 m), object cover as the ground's own
+   `baseCover`. The review caught the first sight-line exclusion letting a
+   force be seen straight through a building; fixed to near faces only.
+3. **Naismith** (`34e7e5b`) — 8 m of the bound per metre climbed, descent
+   free, vehicles refuse 30° up or down, no hit modifier for now. The review
+   caught `reachAlong` judging the climb on the whole order line while
+   `moveUnit` costs the bound: one order in 260 on the real map threw out of
+   the execution loop. Judged on the bound taken, with a regression test that
+   holds the failing field.
+4. **The reach drawn** (`7379bbf`) — the movement ring became the true shape
+   of the bound over the ground, a fan of `reachAlong` on 72 bearings.
+5. **Real objects** (`f19e2a5`, `09c72e6`) — `tools/fetch-osm.py` pulled 249
+   houses and two woods from OpenStreetMap; the invented farm and walls went.
+   The street names settled where the ground really is: the southern edge of
+   Yokneam Illit, not "near Elyakim". The ground taught its own lesson: the
+   tank's 2.5 m hatches see over the shoulder to the far low ground 440 m off
+   and not the slope just below it. `scenario.test.ts` pins it.
+6. **Roads drawn** (`35c1943`) — a line layer the recording carries and no
+   rule reads, with a digest-equality test to keep it that way; the licence
+   carve-out for the ODbL data (`056d056`) at his word.
+
+Measured and recorded: the demo's dead ground, 0/200 seeds on turn 1 and
+200/200 on turn 2. The session's own lesson, twice over: the two halves of a
+rule — cover reach and sight exclusion, order-line climb and bound cost — were
+where both real bugs lived, and both were found by the reviewer, not the
+tests. Run it before committing.
+
+---
+
 ## 2026-08-13 — knowledge, posture, ambush and the debrief
 
 Ended at `4c01fa8`, handed over at `e42205e`. 248 tests. One arc in six commits,
