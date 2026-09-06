@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `34e7e5b`, 2026-09-06.** This is the working note for whoever
+**Current as of `7379bbf`, 2026-09-06.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 317 tests, 16 files
+npm run check       lint + typecheck clean, 320 tests, 16 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -105,16 +105,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-1. **Draw the true reach on the map.** The movement ring is still the flat
-   gait radius; uphill a force stops short of it. A contour of `boundCost`
-   from the force's position — `reachAlong` on a fan of bearings — would show
-   the player what the climb costs before the move is refused.
-2. **Object footprints from OpenStreetMap** for the demo window, so the farm
+1. **Object footprints from OpenStreetMap** for the demo window, so the farm
    and the walls are real too. `tools/fetch-dtm.py` is the pattern: a tool
    that writes a TypeScript module, provenance in its header.
-3. **Laying charges during play.** Small and self-contained, but the document
+2. **Laying charges during play.** Small and self-contained, but the document
    does not describe engineering work at all — ask before building.
-4. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
+3. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
    posture system is the natural place to hang suppression.
 
 Two I would *not* rush: **echelon scaling** (backlog 3) touches the C2 model

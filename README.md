@@ -173,10 +173,12 @@ Engine capability the UI does not reach yet — the next obvious work:
 - **A force cannot be told where to look.** Scouting raises what a force finds
   everywhere at once; there is no sector, no observation post, and no way to
   watch one approach rather than another.
-- **The movement ring is the flat reach.** Climbing costs the bound (rules
-  decision 15), so uphill a force stops short of the ring and a hand move past
-  what the climb allows is refused with the cost in the log. Drawing the true
-  reach as a contour of cost is the next step for the map.
+- **The reach is drawn, not the ring.** The selected force's movement range
+  is the true shape of its bound over the ground (rules decision 15): the
+  flat circle where the ground is flat, less where it climbs, and for a
+  vehicle nothing past the grade it refuses. Advisory — the engine still
+  judges each bound — so a click just outside it can still be refused with
+  the cost in the log.
 - **Objects are hand-placed.** The relief is real; the farm, the walls and the
   oaks on it are invented. The natural next source is OpenStreetMap footprints
   for the same window.
@@ -810,8 +812,8 @@ Each is intended to be an independent, toggleable module:
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. **Map generation** — ✅ *real ground*: elevation from a public DTM and
    hand-placed objects, with line of sight and cover derived from them (rules
-   decision 15), and Naismith's climb cost in movement. Still to come: object
-   footprints from OpenStreetMap, the true reach drawn on the map, and a map
+   decision 15), Naismith's climb cost in movement, and the true reach drawn
+   on the map. Still to come: object footprints from OpenStreetMap, and a map
    authoring tool.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
