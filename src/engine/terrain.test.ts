@@ -20,6 +20,7 @@ import { Rng } from "./rng.js";
 import { makeInfantry, makeVehicle } from "./units.js";
 import { replayGame } from "./recording.js";
 import { stepTowards } from "./orders.js";
+import { stateDigest } from "./digest.js";
 
 /**
  * A single ridge running north–south across a 400 m square: 0 m at both
@@ -496,6 +497,41 @@ describe("the game on real ground", () => {
     const replay = replayGame(recording);
     expect(replay.terrain.heightfield?.columns).toBe(41);
     expect(replay.hasLineOfSight(replay.getUnit(west.id), replay.getUnit(east.id))).toBe(false);
+  });
+
+  it("a road is carried by the recording and read by no rule", () => {
+    const road: Terrain = {
+      heightfield: ridge(20),
+      objects: [],
+      roads: [{ id: "r", kind: "street", width: 6, points: [{ x: 0, y: 200 }, { x: 400, y: 200 }] }],
+    };
+    const g = new Game({ seed: 1, terrain: road });
+    const west = g.addUnit(makeInfantry("W", "BLUE", "squad", { x: 50, y: 200 }, 8));
+    const east = g.addUnit(makeInfantry("E", "RED", "squad", { x: 350, y: 200 }, 8));
+    // Along the road and across the crest: the road changes nothing.
+    expect(g.hasLineOfSight(west, east)).toBe(false);
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    expect(() => g.moveUnit(west.id, { x: 100, y: 200 })).toThrow(/climbed/);
+    expect(replayGame(g.toRecording()).terrain.roads).toHaveLength(1);
+
+    // The strong form: the same battle with and without the road ends in the
+    // same material state, digest for digest — the test that catches a
+    // "roads as going" rule slipping in without the author's ruling.
+    const play = (terrain: Terrain) => {
+      const game = new Game({ seed: 4, trackIntel: true, terrain });
+      const a = game.addUnit(makeInfantry("A", "BLUE", "squad", { x: 20, y: 200 }, 8));
+      const b = game.addUnit(makeInfantry("B", "RED", "squad", { x: 120, y: 200 }, 8));
+      expect(game.groundCoverAt({ x: 60, y: 200 })).toBe("none"); // on the road
+      game.beginTurn();
+      game.advanceToPhase("movement");
+      game.moveUnit(a.id, { x: 40, y: 200 });
+      game.advanceToPhase("combat");
+      game.fire(a.id, b.id, { weapon: "smallArms" });
+      game.advanceToPhase("summary");
+      return stateDigest(game);
+    };
+    expect(play(road)).toBe(play({ heightfield: road.heightfield, objects: [] }));
   });
 
   it("a game built without ground records none, and plays flat", () => {

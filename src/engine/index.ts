@@ -127,6 +127,8 @@ export {
   terrainBlocksSight,
   type Footprint,
   type Heightfield,
+  type MapLine,
+  type MapLineKind,
   type MapObject,
   type Terrain,
 } from "./terrain.js";

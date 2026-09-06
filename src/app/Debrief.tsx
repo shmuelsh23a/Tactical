@@ -6,6 +6,7 @@ import {
   verifyRecording,
   type GameRecording,
   type Side,
+  FLAT_GROUND,
 } from "../engine/index.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
 import {
@@ -75,6 +76,7 @@ export function Debrief({
   const sides = useMemo(() => unitSides(recording), [recording]);
   const extent = useMemo(() => recordingExtent(recording), [recording]);
   const game = useMemo(() => replayGame(recording, { upToAction: index }), [recording, index]);
+  const terrain = useMemo(() => recording.terrain ?? FLAT_GROUND, [recording]);
   // Outcomes and the contact ledger are fixed by the recording, so the whole
   // battle is replayed once for both; only the board state is re-derived per
   // step.
@@ -168,7 +170,9 @@ export function Debrief({
           <MapView
             width={extent.width}
             height={extent.height}
-            terrain={game.terrain}
+            // The recording's own terrain, not the per-step replay's fresh
+            // clone, so the drawn map is memoised across steps.
+            terrain={terrain}
             units={units}
             viewingSide={side ?? "BLUE"}
             // The umpire is the one reader entitled to see both sides' arcs.

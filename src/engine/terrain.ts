@@ -70,10 +70,30 @@ export interface MapObject {
   height?: number;
 }
 
+/** The kinds of line a map draws. */
+export type MapLineKind = "motorway" | "street" | "track" | "path";
+
+/**
+ * A line on the map — a road, a track, a path. **Decoration, not rules**: no
+ * rule reads it, it has no height and gives no cover, and a game with none
+ * plays exactly as one with them. It lives here rather than in the app so a
+ * recording carries the picture the battle was fought on, and the debrief
+ * draws the same map the players saw.
+ */
+export interface MapLine {
+  id: string;
+  kind: MapLineKind;
+  points: Point[];
+  /** Drawn width in metres. */
+  width: number;
+}
+
 /** Everything a map says about the ground. */
 export interface Terrain {
   heightfield?: Heightfield;
   objects: MapObject[];
+  /** Lines drawn on the map; absent means none. Never read by a rule. */
+  roads?: MapLine[];
 }
 
 /** The ground of a game built without one: flat, and empty. */

@@ -13,7 +13,7 @@ import type {
 import { MOVEMENT_PROFILES, reachFan } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
-import { Relief, TerrainObjects } from "./Relief.js";
+import { Relief, Roads, TerrainObjects } from "./Relief.js";
 
 /**
  * One force's order as the map draws it: the leg still to march, and the enemy
@@ -184,6 +184,7 @@ export function MapView(props: MapViewProps) {
           takes a click — a move lands on the ground the token is dropped on. */}
       <Relief terrain={props.terrain} width={width} height={height} />
       <g>{gridLines}</g>
+      {props.terrain.roads && <Roads roads={props.terrain.roads} />}
       <TerrainObjects objects={props.terrain.objects} />
 
       {/* The arcs this side's forces are watching (rules decision 14), drawn out

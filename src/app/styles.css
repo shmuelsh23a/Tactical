@@ -89,6 +89,14 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .relief image { image-rendering: auto; }
 .contour { fill: none; stroke: rgba(230, 220, 170, 0.28); stroke-width: 0.6; }
 .contour-index { stroke: rgba(230, 220, 170, 0.55); stroke-width: 1.1; }
+.roads { pointer-events: none; }
+.road polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.road-motorway .road-casing { stroke: #1b1f24; }
+.road-motorway .road-fill { stroke: #6b7280; }
+.road-street .road-casing { stroke: #23282e; }
+.road-street .road-fill { stroke: #9aa3ad; }
+.road-track .road-fill { stroke: #a08a5a; stroke-dasharray: 8 5; }
+.road-path .road-fill { stroke: #c9c2a6; stroke-dasharray: 3 4; }
 .terrain-objects { pointer-events: none; }
 .object-building { fill: #6b5a48; stroke: #2a2118; stroke-width: 1; }
 .object-wall { fill: #b3a27e; stroke: #4a4030; stroke-width: 0.6; }

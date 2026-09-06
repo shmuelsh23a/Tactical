@@ -1,5 +1,11 @@
 import { memo, useMemo } from "react";
-import { groundHeight, type Heightfield, type MapObject, type Terrain } from "../../engine/index.js";
+import {
+  groundHeight,
+  type Heightfield,
+  type MapLine,
+  type MapObject,
+  type Terrain,
+} from "../../engine/index.js";
 
 /**
  * The ground as the map draws it (rules decision 15): a shaded relief with a
@@ -151,6 +157,27 @@ export function Relief({
     </g>
   );
 }
+
+/**
+ * The roads, tracks and paths: a cased line each, its width from the data.
+ * Decoration only — the engine carries them and reads none of them.
+ */
+export const Roads = memo(function Roads({ roads }: { roads: readonly MapLine[] }) {
+  return (
+    <g className="roads">
+      {roads.map((r) => {
+        const points = r.points.map((p) => `${p.x},${p.y}`).join(" ");
+        const cased = r.kind === "motorway" || r.kind === "street";
+        return (
+          <g key={r.id} className={`road road-${r.kind}`}>
+            {cased && <polyline className="road-casing" points={points} strokeWidth={r.width + 1} />}
+            <polyline className="road-fill" points={points} strokeWidth={r.width} />
+          </g>
+        );
+      })}
+    </g>
+  );
+});
 
 /**
  * The objects on the ground: buildings and walls as their footprints, trees as

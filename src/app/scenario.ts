@@ -7,7 +7,7 @@ import {
   type Terrain,
 } from "../engine/index.js";
 import { RAMAT_MENASHE } from "./maps/ramatMenashe.js";
-import { RAMAT_MENASHE_OBJECTS } from "./maps/ramatMenasheObjects.js";
+import { RAMAT_MENASHE_OBJECTS, RAMAT_MENASHE_ROADS } from "./maps/ramatMenasheObjects.js";
 
 export interface Scenario {
   game: Game;
@@ -21,14 +21,15 @@ export interface Scenario {
  * The demo ground (rules decision 15): the southern edge of Yokneam Illit on
  * Ramat Menashe, 900 × 800 m with north up. The relief is from public terrain
  * tiles (`maps/ramatMenashe.ts`) and the buildings and woods on it from
- * OpenStreetMap (`maps/ramatMenasheObjects.ts`) — nothing on this map is
+ * OpenStreetMap (`maps/ramatMenasheObjects.ts`), as are the streets, Route 6
+ * and the tracks, which are drawn and nothing more — nothing on this map is
  * invented. The town's houses stand on the hill in the south-east; the hill's
  * forward shoulder runs across the middle; a ridge comes down from the
  * north-east; Route 6 and its ramps lie in the west, and the north is low
  * ground.
  */
 export function buildDemoTerrain(): Terrain {
-  return { heightfield: RAMAT_MENASHE, objects: RAMAT_MENASHE_OBJECTS };
+  return { heightfield: RAMAT_MENASHE, objects: RAMAT_MENASHE_OBJECTS, roads: RAMAT_MENASHE_ROADS };
 }
 
 /**
