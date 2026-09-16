@@ -75,10 +75,17 @@ export function endTurnUnitUpkeep(
       u.stationaryTurns += 1;
       if (u.camouflaging) u.camouflageTurns += 1;
     } else {
-      // Up and moving: the position is abandoned and the camouflage with it.
+      // Up and moving: the position is abandoned, and everything that was
+      // *about the position* goes with it — the camouflage worked up, the hole
+      // dug, and the position prepared before the battle (author, 2026-09-16;
+      // rules decision 12). A prepared position is ground a force made ready,
+      // not a property it carries, so it cannot be walked away with: before
+      // this, a force could leave the shoulder it had prepared and take
+      // partial cover 800 m into the open with it.
       u.stationaryTurns = 0;
       u.camouflageTurns = 0;
       u.camouflaging = false;
+      u.baseCover = "none";
     }
     // Whatever the ground already gave it — a prepared position, or the
     // object it stands against — or better if it has dug.

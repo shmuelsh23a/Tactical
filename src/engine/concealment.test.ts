@@ -61,10 +61,42 @@ describe("digging in", () => {
     expect(unit.cover).toBe("partial");
     holdPosition(unit, 6);
     expect(unit.cover).toBe("full");
+  });
 
-    // …and moving falls back to the ground, not to nothing.
-    holdPosition(unit, 1, 40);
+  it("leaves the prepared position behind when the force walks away from it", () => {
+    // Author, 2026-09-16 — the other half of "getting up and moving leaves the
+    // hole behind" (rules decision 12). A prepared position is ground a force
+    // made ready, not a property it carries: before this it kept its cover
+    // however far it walked, which made a prepared defender safer on the move
+    // than a force that had never dug at all.
+    const unit = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    unit.baseCover = "partial";
+    holdPosition(unit, 7); // digging reaches "full" on the seventh turn in place
+    expect(unit.cover).toBe("full"); // prepared, and dug in on top of it
+
+    holdPosition(unit, 1, 40); // up and moving
+    expect(unit.baseCover).toBe("none");
+    expect(unit.cover).toBe("none");
+
+    // …and it does not come back by standing still again: the force has to
+    // dig the new position like anyone else.
+    holdPosition(unit, 4);
+    expect(unit.cover).toBe("none");
+    holdPosition(unit, 1);
     expect(unit.cover).toBe("partial");
+  });
+
+  it("still takes whatever the ground itself offers where it stops", () => {
+    // What a force walks away from is its *own* work. The object it now stands
+    // against is the ground's, and upkeep reads it every turn — which is what
+    // keeps "moving falls back to the ground, not to nothing" true.
+    const unit = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    unit.baseCover = "partial";
+    holdPosition(unit, 1, 40); // moves, losing the prepared position
+    expect(unit.baseCover).toBe("none");
+
+    endTurnUnitUpkeep([unit], () => "full"); // …into a building
+    expect(unit.cover).toBe("full");
   });
 });
 
