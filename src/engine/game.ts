@@ -264,12 +264,28 @@ export class Game {
   // ---- setup ----
 
   addUnit(unit: Unit): Unit {
-    // A force is placed behind whatever the ground offers where it stands from
-    // the first turn — not from the first upkeep. Done before the journal
-    // entry, so the recording carries the force as the game sees it. A
-    // prepared position (`baseCover`) is left to upkeep as it always was, so a
-    // game without ground replays bit for bit.
-    unit.cover = betterCover(unit.cover, coverFromObjects(this.terrain, unit.position));
+    // A force is placed with the protection it already has, from the first
+    // turn rather than the first upkeep: whatever the ground offers where it
+    // stands, *and* the position it prepared before the battle — "a force that
+    // prepared the position before battle should start dug in" (author,
+    // 2026-09-16; rules decision 12). It used to hold only the ground's own
+    // objects, which left a prepared defender standing in the open through the
+    // whole of turn 1 — latent until a scenario first set `baseCover`.
+    //
+    // Not quite upkeep's expression: upkeep *recomputes* `cover` from
+    // `baseCover`, the ground and the digging, discarding what was there, while
+    // this only ever raises what the caller set. So a force dressed with
+    // `cover` directly at setup keeps that cover for turn 1 and loses it at the
+    // first upkeep — which is the bug just fixed, one field over. **Dress a
+    // force for setup with `baseCover`**, which is what the scenario tool
+    // writes and what this reads; `cover` is derived, and upkeep owns it.
+    //
+    // Done before the journal entry, so the recording carries the force as the
+    // game sees it.
+    unit.cover = betterCover(
+      betterCover(unit.cover, unit.baseCover),
+      coverFromObjects(this.terrain, unit.position),
+    );
     this.units.push(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;

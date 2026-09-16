@@ -91,29 +91,32 @@ describe("the Elah valley scenario on Tel Azeka", () => {
     for (const id of ["RED-1", "RED-3"]) expect(game.getUnit(id).cover, id).toBe("none");
   });
 
-  it("does not give RED-2 its prepared position until the first turn is over", () => {
-    // ⚠️ Not a property of this scenario — a property of the engine, pinned
-    // where it is first visible. `addUnit` raises a force's cover to what the
-    // ground's *objects* give it straight away, but leaves `baseCover` to
-    // `endTurnUnitUpkeep`, deliberately, so that a game without ground replays
-    // bit for bit. The consequence is that a force which prepared its position
-    // before the battle stands in the open through the whole of turn 1.
+  it("has RED-2 in the position it prepared from the first turn", () => {
+    // Not a property of this scenario — a property of the engine, pinned where
+    // it first became visible. `addUnit` used to raise a force's cover from the
+    // ground's *objects* only and leave `baseCover` to the first upkeep, which
+    // left a prepared defender standing in the open through the whole of turn
+    // 1. Nothing had set `baseCover` before this map, so nothing had noticed.
     //
-    // It costs nothing here — BLUE starts 600 m off and small arms reach 400 —
-    // but it is a question for the author, not a thing to leave implied: does
-    // a position prepared before the battle protect against the first exchange
-    // of fire? Raised 2026-09-16; nothing used `baseCover` before this map, so
-    // it had never been visible.
+    // Ruled by the author 2026-09-16: a force that prepared the position before
+    // the battle starts dug in. The turn-1 fire phase is where that is either
+    // true or not, so that is what is checked.
     const { game: fresh } = buildTelAzekaScenario();
     expect(fresh.getUnit("RED-2").baseCover).toBe("partial");
-    expect(fresh.getUnit("RED-2").cover).toBe("none");
+    expect(fresh.getUnit("RED-2").cover, "at setup").toBe("partial");
 
     fresh.beginTurn();
     fresh.advanceToPhase("combat");
-    expect(fresh.getUnit("RED-2").cover, "through turn 1's fire phase").toBe("none");
+    expect(fresh.getUnit("RED-2").cover, "through turn 1's fire phase").toBe("partial");
+    // …and what actually resolves a shot agrees, which is the half that
+    // matters: `cover` is a field, `coverAgainst` is what the firer reads.
+    expect(fresh.coverAgainst(fresh.getUnit("RED-2")), "as a firer reads it").toBe("partial");
 
     fresh.advanceToPhase("summary");
     fresh.advancePhase(); // the upkeep that closes turn 1
     expect(fresh.getUnit("RED-2").cover, "from turn 2").toBe("partial");
+
+    // …and the force that prepared nothing is still in the open.
+    expect(fresh.getUnit("RED-1").cover).toBe("none");
   });
 });

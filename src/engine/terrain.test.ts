@@ -540,12 +540,20 @@ describe("the game on real ground", () => {
     const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const b = g.addUnit(makeInfantry("B", "RED", "squad", { x: 300, y: 0 }, 8));
     expect(g.hasLineOfSight(a, b)).toBe(true);
-    // A prepared position is still taken up at the first upkeep, as it was
-    // before there was ground — placement does not pull it forward.
+  });
+
+  it("gives a prepared position from placement, with or without ground", () => {
+    // A force that prepared its position before the battle is in it from the
+    // first turn (author, 2026-09-16 — rules decision 12). It used to wait for
+    // the first upkeep, which left a prepared defender in the open for the
+    // whole of turn 1. Asserted on flat, groundless terrain so it is the
+    // prepared position doing the work and not an object on the map.
+    const g = new Game({ seed: 1 });
     const prepared = makeInfantry("P", "RED", "squad", { x: 100, y: 0 }, 8);
     prepared.baseCover = "partial";
     g.addUnit(prepared);
-    expect(prepared.cover).toBe("none");
+    expect(prepared.cover).toBe("partial");
+    expect(g.coverAgainst(prepared)).toBe("partial");
   });
 
   it("a moving force does not spot across a crest even without the knowledge model", () => {
