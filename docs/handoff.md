@@ -138,14 +138,14 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-1. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
-   posture system is the natural place to hang suppression.
-2. **A scenario tool.** Backlog 6 is otherwise done — real elevation, real
-   objects and roads, sight lines, cover and climb cost derived from them, the
-   true reach drawn. What is left is picking a window and laying a battle out
-   on it without editing `scenario.ts` by hand: the two fetch tools are the
-   pattern (a tool that writes a module, provenance in its header).
-3. **The live combat log is not filtered by side.** `LogPanel` renders every
+1. **Morale** (backlog 1) — but **ask first**. The neutralise rule is the only
+   cohesion model and the posture system is the natural place to hang
+   suppression, so the work is clear. The problem is that the mechanics
+   document says *nothing* about morale: not מורל, not שבירה, not דיכוי, not a
+   table. Every number and every state transition would be ours, which is a
+   larger pile of assumptions than any decision so far. Get the shape from him
+   before building, the way decision 15 was got.
+2. **The live combat log is not filtered by side.** `LogPanel` renders every
    entry; an entry's `side` is a colour chip, not a filter. So RED's detections,
    its posture changes and its charge work are all readable on BLUE's screen in
    a hotseat game. The *debrief* enforces disclosure properly (two
@@ -154,6 +154,13 @@ Measurements that cost real time and are already recorded:
    position off the live line, which is a patch on one line and not the fix.
    What a shared-screen hotseat log should hide is a rules question as much as
    a code one.
+
+**Backlog 6 is closed.** A battle is now laid out by describing it:
+`tools/make-scenario.py` takes a JSON spec and writes the scenario module, and
+the demo is its output — which is what keeps the tool honest, since the suite
+plays the generated battle. A second scenario is a spec file and nothing else.
+The app still opens exactly one battle, though: choosing between scenarios is
+UI that does not exist.
 
 Small things noticed and left: the debrief has no *height* readout for a
 force; `fetch-osm.py` keeps a way whole when any vertex is inside, so Route 6
@@ -181,6 +188,10 @@ the code currently stands:
   two halves of a single rule applied at different layers or measured off
   different geometry — each half defensible alone. When you touch one half, go
   and read the other.
+- **`src/app/scenario.ts` is a seam, not the scenario.** The demo lives in
+  `src/app/scenarios/yokneamIllit.ts`, which is generated — editing it is
+  editing a build product, and the next run of the tool throws the edit away.
+  The spec is `tools/scenarios/yokneam-illit.json`.
 - **`addMine` is setup only now** (decision 16). A test or tool that emplaced a
   charge mid-game gets a `PhaseError`; in play a force lays one, which takes
   turns. Every call site was already before `beginTurn`, so nothing had to

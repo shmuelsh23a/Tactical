@@ -875,11 +875,24 @@ Each is intended to be an independent, toggleable module:
 4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
-6. **Map generation** — ✅ *real ground*: elevation from a public DTM and
+6. ✅ **Map generation** — *real ground*: elevation from a public DTM and
    object footprints from OpenStreetMap, with line of sight and cover derived
-   from them (rules decision 15), Naismith's climb cost in movement, and the
-   true reach drawn on the map, roads drawn from OpenStreetMap. Still to
-   come: a scenario tool that picks a window and lays a battle out on it.
+   from them (rules decision 15), Naismith's climb cost in movement, the true
+   reach drawn on the map, and roads drawn from OpenStreetMap.
+
+   A battle is laid out on a window by describing it, not by editing
+   TypeScript: `tools/make-scenario.py` takes a JSON spec — the window, the
+   forces, the charges and the prose — and writes the scenario module. What it
+   refuses is everything that would otherwise compile and play differently from
+   what the spec says: a force off the map, a duplicate id, a misspelt key, a
+   key given to the wrong kind of force, a fractional soldier count, a seed
+   that would not survive being written out, and a window that is not the one
+   the relief was cut to. Positions may be given in map metres or as latitude
+   and longitude — converted by the same projection `fetch-osm.py` used to
+   place the ground, borrowed from it rather than rewritten. The demo itself is its
+   output ([`scenarios/yokneamIllit.ts`](src/app/scenarios/yokneamIllit.ts)
+   from [`yokneam-illit.json`](tools/scenarios/yokneam-illit.json)), which is
+   what keeps the tool honest: the suite plays the generated battle.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
    to any prefix), `replayWithOutcomes()` also hands back what each action

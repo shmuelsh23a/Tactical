@@ -128,13 +128,30 @@ one it is in your reply, too.
   empty and plays exactly as it did before there was ground. Object cover
   arrives through `coverFromObjects` at `addUnit` and at upkeep — do not set it
   by hand.
-- **The demo ground is real and generated.** `src/app/maps/ramatMenashe.ts`
+- **The demo is generated, ground and battle both.** `src/app/maps/ramatMenashe.ts`
   is written by `tools/fetch-dtm.py` from public terrain tiles and
   `ramatMenasheObjects.ts` (objects and roads) by `tools/fetch-osm.py` from
-  OpenStreetMap; rerun the tools rather than editing the numbers. Roads are
-  `Terrain.roads`: drawn, carried by the recording, read by no rule — keep it
-  that way unless the author rules on roads. `src/app/scenario.test.ts` pins
-  the sight lines the demo's lesson depends on, so a regenerated map that
+  OpenStreetMap; the battle on them, `src/app/scenarios/yokneamIllit.ts`, by
+  `tools/make-scenario.py` from `tools/scenarios/yokneam-illit.json`. **Change
+  the spec and rerun the tool** rather than editing any of the three:
+
+  ```bash
+  python tools/make-scenario.py tools/scenarios/yokneam-illit.json
+  ```
+
+  The forces, the charges and the module's own prose all live in the spec. The
+  tool refuses what would otherwise compile and play *differently from what the
+  spec says*: a force off the map, a duplicate id, a misspelt key, a key given
+  to the wrong kind of force (`soldiers` on a command group), a fractional
+  count, a seed that is not a whole number, and a window that is not the one
+  the relief was cut to. It leaves the ground alone unless asked
+  (`--fetch-map`) — refetching moves the data under a layout already placed on
+  it. `src/app/scenario.ts` is only the seam that says *which* generated
+  scenario the app opens with.
+
+  Roads are `Terrain.roads`: drawn, carried by the recording, read by no rule —
+  keep it that way unless the author rules on roads. `src/app/scenario.test.ts`
+  pins the sight lines the demo's lesson depends on, so a regenerated map that
   moves them fails there rather than in play.
 - **The engine is the umpire; what a side *knows* is a separate ledger.**
   `game.units` is ground truth and must never be drawn to a player directly —
