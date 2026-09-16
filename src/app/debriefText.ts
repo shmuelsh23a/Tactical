@@ -7,6 +7,7 @@ import type {
   MovementMode,
   ObservationSector,
   RecordedAction,
+  Side,
   StandingOrder,
   StandingOrderExecution,
 } from "../engine/index.js";
@@ -117,10 +118,11 @@ export function chargeWorkHe(
   report: ChargeWorkReport,
   name: string,
   /**
-   * Whether to say **where**. The debrief does — it is filtered to the
-   * reader's own forces. The live hotseat log does not: its entries are tagged
-   * with a side but shown to whoever is at the table, so a charge's position
-   * is the one thing not to print there.
+   * Whether to say **where**. Both readers now do, and both are filtered to
+   * the reader's own forces — the debrief always was, and the live log became
+   * so under rules decision 17. The option is kept because a *shared* reader
+   * could exist again (an umpire's ticker at the table, a spectator view), and
+   * a charge's position is the first thing such a reader must not print.
    */
   opts: { where?: boolean } = {},
 ): string {
@@ -191,10 +193,39 @@ export interface Lens {
   isOwn(unitId: string): boolean;
   /** True for a force the reader owns or holds a contact on. */
   mayKnow(unitId: string): boolean;
+  /**
+   * Which side is reading — **`null` is the umpire**, and it is required so
+   * that it has to be said. Some disclosures belong to a *side* rather than to
+   * a force and no unit id carries them: how far a round fell from its aim
+   * point, and the difference between "entitled to the whole picture" and
+   * "entitled to count its own dead" (rules decision 17). A lens that could
+   * leave this out would default to the umpire, which is the omission-defaults-
+   * to-visible trap the `RecordedAction` switches exist to prevent.
+   */
+  side: Side | null;
 }
 
 /** The umpire's lens — ground truth, which is what the engine returns. */
-export const FULL_VIEW: Lens = { isOwn: () => true, mayKnow: () => true };
+export const FULL_VIEW: Lens = { isOwn: () => true, mayKnow: () => true, side: null };
+
+/**
+ * What one side may read of **another side's standing-order step** (rules
+ * decision 17). A step is one decision covering many forces, so it is filtered
+ * execution by execution rather than whole:
+ *
+ * - **Being fired on is always known** (rules decision 13) — an engagement that
+ *   landed on the reader's own force crosses, whatever it had detected. This is
+ *   the hole the live-log work turned up: the whole step used to be hidden from
+ *   the enemy, so a force shot at under a standing order was never told.
+ * - Its own forces, always; a bound or a shot by a force it was watching; and
+ *   never a refusal, which is the other side's own bookkeeping.
+ */
+export function executionVisibleTo(done: StandingOrderExecution, lens: Lens): boolean {
+  if (done.engaged && lens.isOwn(done.engaged.targetId)) return true;
+  if (lens.isOwn(done.unitId)) return true;
+  if (!done.moved && !done.engaged) return false;
+  return lens.mayKnow(done.unitId);
+}
 
 /**
  * Losses as they are *reported* rather than counted (rules decision 13).
@@ -258,30 +289,57 @@ export function isRoutineOrderReason(reason?: string): boolean {
   return reason === "no movement left" || reason === "already acted";
 }
 
+/** The bound a force made under orders, or `null` if it did not move. */
+export function describeBound(done: StandingOrderExecution, nameOf: NameOf): string | null {
+  if (!done.moved) return null;
+  const name = nameOf(done.unitId);
+  return done.moved.arrived
+    ? `${name} הגיע ליעד ${at(done.moved.to)}`
+    : `${name} מתקדם לפי פקודה ל${at(done.moved.to)}`;
+}
+
 /**
- * What one force actually did when the engine carried its order out. Losses are
- * reported rather than counted unless `exactLosses` says the reader is entitled
- * to the tally (rules decision 13).
+ * Whose eyes a standing-order execution is being read through. The three are
+ * not degrees of the same thing: the **firer** is entitled to how many of its
+ * men fired and at what chance and to nothing more than a report of the effect,
+ * the **target** is entitled to what landed on its own men and to count its own
+ * dead, and only the **umpire** gets both (rules decisions 13 and 17).
+ *
+ * A single `exactLosses` flag used to carry all of it, which meant the side
+ * being shot at read the firer's hit chance — and since a hotseat battle
+ * journals *orders* rather than shots, that is the path most fire in the game
+ * actually takes.
  */
+export type ExecutionView = "umpire" | "firer" | "target";
+
+/** What one force actually did when the engine carried its order out. */
 export function describeExecution(
   done: StandingOrderExecution,
   nameOf: NameOf,
-  exactLosses = true,
+  view: ExecutionView = "umpire",
 ): string {
   const name = nameOf(done.unitId);
-  if (done.moved) {
-    return done.moved.arrived
-      ? `${name} הגיע ליעד ${at(done.moved.to)}`
-      : `${name} מתקדם לפי פקודה ל${at(done.moved.to)}`;
-  }
+  // **The shot first.** `executionVisibleTo` lets an enemy step through because
+  // it engaged one of the reader's forces; if the same execution also moved,
+  // reporting the bound instead would print the enemy's position to a reader
+  // who may hold no contact on it, and never mention the shot that admitted the
+  // step. The engine only ever sets one of the two per phase today — this keeps
+  // the narration honest if that ever stops being true.
   if (done.engaged) {
-    return `${name} תקף את ${nameOf(done.engaged.targetId)} — ${
-      exactLosses ? `${done.engaged.hits} פגיעות ` : ""
-    }ב-${pct(done.engaged.hitChance)}, ${casualtyReport(
+    const who = `${name} תקף את ${nameOf(done.engaged.targetId)}`;
+    const hits = `${done.engaged.hits} פגיעות`;
+    const chance = `ב-${pct(done.engaged.hitChance)}`;
+    const counted = view !== "firer";
+    if (view === "target") {
+      return `${who} — ${hits}, ${casualtyReport(done.engaged.newCasualties, true)}`;
+    }
+    return `${who} — ${view === "umpire" ? `${hits} ` : ""}${chance}, ${casualtyReport(
       done.engaged.newCasualties,
-      exactLosses,
+      counted,
     )}`;
   }
+  const bound = describeBound(done, nameOf);
+  if (bound) return bound;
   return `${name}: ${reasonHe(done.reason)}`;
 }
 
@@ -380,6 +438,8 @@ export function describeOutcome(
   // but what the shot *achieved* is an observation, and a shot at a force it
   // held no contact on is one it did not make (rules decision 13).
   const observed = shotAt == null || lens.mayKnow(shotAt);
+  // The umpire has no side of its own; every other lens is somebody's.
+  const umpire = lens.side == null;
 
   switch (outcome.kind) {
     case "setup":
@@ -414,6 +474,11 @@ export function describeOutcome(
             impact.dispersion.impact.y - impact.aim.y,
           ),
         );
+        // How far the round fell from its **aim point** measures the shell
+        // against the gunner's own aim, so only the side that called the
+        // mission is told it — the side underneath is told that it fell
+        // (rules decision 17). The umpire has no side and reads everything.
+        const aimed = lens.side == null || impact.side == null || impact.side === lens.side;
         // The fall of shot is plain to everyone; who it caught is not.
         const caught = impact.blast.targets.filter((t) => t.caught && lens.mayKnow(t.unitId));
         const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
@@ -424,7 +489,8 @@ export function describeOutcome(
               casualties || !counted ? ` — ${casualtyReport(casualties, counted)}` : ""
             }`
           : ", ללא פגיעות";
-        parts.push(`${off > 0 ? `נחיתה בסטייה ${off}מ'` : "נחיתה מדויקת"}${hit}`);
+        const fell = !aimed ? "נחיתה" : off > 0 ? `נחיתה בסטייה ${off}מ'` : "נחיתה מדויקת";
+        parts.push(`${fell}${hit}`);
       }
       return parts.join(" · ");
     }
@@ -467,14 +533,27 @@ export function describeOutcome(
       // Fire onto ground the side had no eyes on: its own men and its own
       // chance, and not a word about what it found there.
       if (!observed) return `${r.shooters} יורים ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
-      // Against an enemy force the shooter reports an effect, not a tally.
-      return exact
-        ? `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
-            r.targetNeutralized ? " — נוטרל" : ""
-          }`
-        : `${r.shooters} יורים ב-${pct(r.hitChance)} — ${casualtyReport(r.newCasualties, false)}${
-            r.targetNeutralized ? " — נראה מנוטרל" : ""
-          }`;
+      // **Three readings, not two.** `exact` says the reader owns the target,
+      // which is true of the umpire *and* of the force being shot at — so one
+      // flag cannot separate "entitled to the whole picture" from "entitled to
+      // count its own dead". How many men fired, at what chance, and for how
+      // much damage is the **firer's** own business (rules decisions 13 and
+      // 17): giving it to the target would hand over the attacker's exact fit
+      // strength every time it opened fire, which is the state the casualty
+      // bands exist to hide.
+      if (umpire) {
+        return `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
+          r.targetNeutralized ? " — נוטרל" : ""
+        }`;
+      }
+      // The force that was shot at: what landed on its own men, counted.
+      if (exact) {
+        return `${r.hits} פגיעות, ${r.newCasualties} נפגעים${r.targetNeutralized ? " — נוטרל" : ""}`;
+      }
+      // The shooter: its own men, its own chance, and a report of the effect.
+      return `${r.shooters} יורים ב-${pct(r.hitChance)} — ${casualtyReport(r.newCasualties, false)}${
+        r.targetNeutralized ? " — נראה מנוטרל" : ""
+      }`;
     }
 
     case "fireExplosive": {
@@ -502,10 +581,15 @@ export function describeOutcome(
     case "assault": {
       const r = outcome.result;
       if (!r.fired) return `לא הסתער (${reasonHe(r.reason)})`;
+      // What a force did to itself with its own grenades is its own to know —
+      // the live log has always had this right, and the debrief was telling the
+      // defender (rules decision 17).
+      const ownAttacker =
+        umpire || (action?.kind === "assault" && lens.isOwn(action.attackerId));
       return `${r.fireHits} פגיעות אש, ${r.grenadeHits} רימונים, ${casualtyReport(
         r.defenderCasualties,
         exact,
-      )}${r.selfCasualties ? ` · ${r.selfCasualties} נפגעים עצמיים` : ""}${
+      )}${ownAttacker && r.selfCasualties ? ` · ${r.selfCasualties} נפגעים עצמיים` : ""}${
         r.defenderNeutralized ? (exact ? " — האויב נוטרל" : " — האויב נראה מנוטרל") : ""
       }`;
     }
@@ -537,9 +621,18 @@ export function describeOutcome(
     // derived by the replay, so each force's bound is reported here.
     case "executeStandingOrders":
       return outcome.executions
-        .filter((done) => lens.mayKnow(done.unitId))
+        .filter((done) => executionVisibleTo(done, lens))
         .filter((done) => !isRoutineOrderReason(done.reason))
-        .map((done) => describeExecution(done, who))
+        // Losses are counted only by the side that took them: the enemy's step
+        // reaches this reader when it shot at one of its forces, and that line
+        // must read as its own casualty report (rules decision 13).
+        .map((done) =>
+          describeExecution(
+            done,
+            who,
+            umpire ? "umpire" : done.engaged && lens.isOwn(done.engaged.targetId) ? "target" : "firer",
+          ),
+        )
         .join(" · ");
 
     default:

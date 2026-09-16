@@ -1,11 +1,12 @@
 import {
   replayWithOutcomes,
+  type ActionOutcome,
   type GameRecording,
   type RecordedAction,
   type ReplayStep,
   type Side,
 } from "../engine/index.js";
-import type { Lens } from "./debriefText.js";
+import { executionVisibleTo, type Lens } from "./debriefText.js";
 
 /**
  * Reviewing a battle as one side saw it (backlog item 14).
@@ -55,7 +56,18 @@ export function replayForReview(recording: GameRecording): {
 }
 
 /** The umpire's lens: everything, which is what the engine returns anyway. */
-export const UMPIRE_LENS: Lens = { isOwn: () => true, mayKnow: () => true };
+export const UMPIRE_LENS: Lens = { isOwn: () => true, mayKnow: () => true, side: null };
+
+/**
+ * Whether anything inside a standing-order step reached this reader. Without
+ * the outcome there is nothing to look at and the step stays the acting side's
+ * own — the conservative answer, and the one a caller that has no outcome to
+ * hand (an action listed on its own) should get.
+ */
+function stepReaches(outcome: ActionOutcome | undefined, lens: Lens): boolean {
+  if (outcome?.kind !== "executeStandingOrders") return false;
+  return outcome.executions.some((done) => executionVisibleTo(done, lens));
+}
 
 /**
  * What `side` was entitled to know after action `index`: its own forces, plus
@@ -69,7 +81,7 @@ export function lensFor(
 ): Lens {
   const contacts = contactsAfter[index] ?? { RED: new Set<string>(), BLUE: new Set<string>() };
   const isOwn = (unitId: string) => sides.get(unitId) === side;
-  return { isOwn, mayKnow: (unitId) => isOwn(unitId) || contacts[side].has(unitId) };
+  return { isOwn, mayKnow: (unitId) => isOwn(unitId) || contacts[side].has(unitId), side };
 }
 
 /**
@@ -89,6 +101,8 @@ export function outcomeVisibleTo(
   side: Side,
   sides: Map<string, Side>,
   lens: Lens,
+  /** The step's own outcome, where the caller has it — see `stepReaches`. */
+  outcome?: ActionOutcome,
 ): boolean {
   const own = (unitId: string) => sides.get(unitId) === side;
   switch (action.kind) {
@@ -105,7 +119,10 @@ export function outcomeVisibleTo(
     case "setObservationSector":
       return own(action.unitId);
     case "executeStandingOrders":
-      return action.side === side;
+      // Its own step whole; the enemy's only where something inside it reached
+      // this side — above all a shot that landed on one of its forces, which
+      // decision 13 says is always known (rules decision 17).
+      return action.side === side || stepReaches(outcome, lens);
     case "uavSweep":
       return action.viewer === side;
     case "queueIndirectFire":
@@ -154,6 +171,8 @@ export function actionVisibleTo(
   side: Side,
   lens: Lens,
   sides: Map<string, Side>,
+  /** The step's own outcome, where the caller has it — see `stepReaches`. */
+  outcome?: ActionOutcome,
 ): boolean {
   const own = (unitId: string) => sides.get(unitId) === side;
 
@@ -188,7 +207,7 @@ export function actionVisibleTo(
     case "executeStandingOrders":
       // The enemy's own step is shown only when something inside it was seen;
       // the outcome is filtered to that, so an empty one hides the step.
-      return action.side === side;
+      return action.side === side || stepReaches(outcome, lens);
 
     // …and what can be watched happening.
     case "moveUnit":
@@ -262,6 +281,12 @@ export function lessonsFor(
   for (let i = 0; i < Math.min(upTo, steps.length); i++) {
     const { action, outcome } = steps[i]!;
 
+    /** One shot, however it was ordered: who fired at whom, having seen what. */
+    const shot = (attackerId: string, targetId: string) => {
+      if (own(attackerId) && !knewBefore(i, targetId)) lessons.firedUnseen += 1;
+      if (own(targetId) && !knewBefore(i, attackerId)) lessons.hitByUnseen += 1;
+    };
+
     if (action.kind === "fire" || action.kind === "fireExplosive" || action.kind === "assault") {
       const attackerId = action.attackerId;
       const targetId = action.kind === "assault" ? action.defenderId : action.targetId;
@@ -269,8 +294,18 @@ export function lessonsFor(
         (outcome.kind === "fire" && outcome.result.fired) ||
         (outcome.kind === "fireExplosive" && outcome.result.fired) ||
         (outcome.kind === "assault" && outcome.result.fired);
-      if (fired && own(attackerId) && !knewBefore(i, targetId)) lessons.firedUnseen += 1;
-      if (fired && own(targetId) && !knewBefore(i, attackerId)) lessons.hitByUnseen += 1;
+      if (fired) shot(attackerId, targetId);
+    }
+    // A hotseat battle journals *orders*, not shots, so the ambush that the
+    // לקחים panel exists to count usually arrives inside a standing-order step
+    // rather than as a `fire` action. Reading only the explicit actions left
+    // `hitByUnseen` at nought for a side shot at under orders — the other half
+    // of the rule that hid the same step from the debrief (decision 17).
+    if (outcome.kind === "executeStandingOrders") {
+      for (const done of outcome.executions) {
+        if (!done.engaged) continue;
+        shot(done.unitId, done.engaged.targetId);
+      }
     }
 
     switch (outcome.kind) {
@@ -299,6 +334,13 @@ export function lessonsFor(
         for (const blast of blasts) {
           for (const target of blast?.targets ?? []) {
             if (target.caught) count(target.unitId, target.newCasualties);
+          }
+        }
+        // …and the men an order-driven engagement actually cost, which the
+        // blast walk above never sees.
+        if (outcome.kind === "executeStandingOrders") {
+          for (const done of outcome.executions) {
+            if (done.engaged) count(done.engaged.targetId, done.engaged.newCasualties);
           }
         }
         break;

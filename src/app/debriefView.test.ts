@@ -6,13 +6,14 @@ import {
   type GameRecording,
   type Side,
 } from "../engine/index.js";
-import { casualtyReport, describeOutcome, unitNames } from "./debriefText.js";
+import { casualtyReport, describeOutcome, unitNames, type Lens } from "./debriefText.js";
 import {
   actionVisibleTo,
   lensFor,
   lessonsFor,
   outcomeVisibleTo,
   replayForReview,
+  UMPIRE_LENS,
   unitSides,
 } from "./debriefView.js";
 
@@ -126,7 +127,8 @@ describe("what a side is told an action produced", () => {
     // shot *achieved* is an observation it never made. So the line appears, and
     // says nothing about the target.
     const shot = find("fire")[0]!;
-    const blind = {
+    const blind: Lens = {
+      side: "RED",
       isOwn: (id: string) => sides.get(id) === "RED",
       mayKnow: (id: string) => sides.get(id) === "RED",
     };
@@ -171,6 +173,7 @@ describe("what a side is told an action produced", () => {
     expect(step).toBeGreaterThan(-1);
 
     const lens = (side: Side) => ({
+      side,
       isOwn: (id: string) => theirSides.get(id) === side,
       // Worst case for the rule: the enemy is holding a contact on the layer.
       mayKnow: () => true,
@@ -358,6 +361,7 @@ describe("what a side's own fire is allowed to teach it", () => {
   const shot = find("fire")[0]!;
   const outcome = steps[shot.index]!.outcome;
   const lensFor2 = (mayKnow: (id: string) => boolean) => ({
+    side: "RED" as Side,
     isOwn: (id: string) => sides.get(id) === "RED",
     mayKnow,
   });
@@ -379,9 +383,178 @@ describe("what a side's own fire is allowed to teach it", () => {
   it("still gives the target's own side the exact tally of its losses", () => {
     // Being shot is always known, and a side counts its own casualties — the
     // new "no observation" path must not swallow that.
-    const asBlue = { isOwn: (id: string) => sides.get(id) === "BLUE", mayKnow: () => true };
+    const asBlue: Lens = {
+      side: "BLUE",
+      isOwn: (id: string) => sides.get(id) === "BLUE",
+      mayKnow: () => true,
+    };
     const line = describeOutcome(outcome, names, asBlue, shot.action);
     expect(line).toMatch(/\d+ נפגעים/);
     expect(line).not.toContain("ללא תצפית על המטרה");
+  });
+});
+
+/**
+ * A battle where one side's **standing order** does the shooting, and the other
+ * side's mortars come down (rules decisions 13 and 17).
+ *
+ * RED holds an order to engage BLUE-1 and carries it out; BLUE has a mortar
+ * mission in the air. Both are things the enemy's review used to get wrong: the
+ * whole standing-order step was hidden from the force it shot at, and the miss
+ * distance — which measures the shell against the *gunner's* aim point — was
+ * read out to the side underneath it.
+ */
+function orderedBattle(): GameRecording {
+  // **Seed 9 because the burst draws blood.** Most seeds here hit and kill
+  // nobody, and a 0-casualty engagement cannot show the difference between a
+  // count and a report — which is the whole point of the test below. 9, 18, 30
+  // and 52 are the seeds in the first sixty that produce casualties.
+  const g = new Game({ seed: 9, enforceC2: false, trackIntel: true });
+  const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 120 }, 8));
+  const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
+
+  g.beginTurn();
+  g.advanceToPhase("targeting");
+  // A mortar mission of BLUE's, with a 1-turn delay: it comes down next turn on
+  // the way into movement.
+  g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 40 });
+  g.advanceToPhase("movement");
+  g.setStandingOrder(red.id, {
+    gait: "normal",
+    engage: { targetId: blue.id, weapon: "sustainedMg" },
+  });
+  g.advanceToPhase("combat");
+  g.executeStandingOrders("RED");
+  g.advanceToPhase("initiative");
+  g.advanceToPhase("targeting");
+  g.advanceToPhase("movement"); // crosses resolvePriorArty — the round lands
+  g.advanceToPhase("summary");
+  return g.toRecording();
+}
+
+describe("an engagement fired under a standing order", () => {
+  const rec2 = orderedBattle();
+  const sides2 = unitSides(rec2);
+  const names2 = unitNames(rec2);
+  const { steps: steps2, contactsAfter: contacts2 } = replayForReview(rec2);
+  const at = (kind: string) => {
+    const index = rec2.actions.findIndex((a) => a.kind === kind);
+    expect(index).toBeGreaterThan(-1);
+    return index;
+  };
+  const lensAt = (index: number, side: Side) => lensFor(side, index, contacts2, sides2);
+
+  it("actually engages, or the rest of this proves nothing", () => {
+    const i = at("executeStandingOrders");
+    const outcome = steps2[i]!.outcome;
+    expect(outcome.kind).toBe("executeStandingOrders");
+    if (outcome.kind !== "executeStandingOrders") return;
+    expect(outcome.executions.some((e) => e.engaged)).toBe(true);
+  });
+
+  it("is shown to the force it was fired at", () => {
+    // Being fired on is always known (rules decision 13). The step used to be
+    // hidden from BLUE wholesale because it belonged to RED.
+    const i = at("executeStandingOrders");
+    const step = steps2[i]!;
+    expect(actionVisibleTo(step.action, "BLUE", lensAt(i, "BLUE"), sides2, step.outcome)).toBe(true);
+    expect(outcomeVisibleTo(step.action, "BLUE", sides2, lensAt(i, "BLUE"), step.outcome)).toBe(
+      true,
+    );
+  });
+
+  it("stays hidden without the outcome to look at", () => {
+    // A caller with no outcome in hand gets the conservative answer rather than
+    // a step it cannot check.
+    const i = at("executeStandingOrders");
+    expect(actionVisibleTo(steps2[i]!.action, "BLUE", lensAt(i, "BLUE"), sides2)).toBe(false);
+  });
+
+  it("counts the losses for the side that took them and bands them for the shooter", () => {
+    const i = at("executeStandingOrders");
+    const outcome = steps2[i]!.outcome;
+    const blue = describeOutcome(outcome, names2, lensAt(i, "BLUE"), steps2[i]!.action);
+    const red = describeOutcome(outcome, names2, lensAt(i, "RED"), steps2[i]!.action);
+    // BLUE owns the men who fell: its own casualty state is counted, and it is
+    // told what landed on them.
+    expect(blue).toMatch(/[1-9]\d* נפגעים/);
+    expect(blue).toMatch(/\d+ פגיעות/);
+    // …but **not** at what chance. How many men fired and at what chance is the
+    // firer's own business (decisions 13 and 17), and a hotseat battle journals
+    // orders rather than shots, so this is the path most fire in the game takes.
+    expect(blue).not.toMatch(/%/);
+    // RED reports what its fire appeared to do — a band, and never a hit count.
+    expect(red).toMatch(/נפגעים בודדים|מספר נפגעים|אבידות כבדות|ללא נפגעים שנצפו/);
+    expect(red).not.toMatch(/\d+ נפגעים/);
+    expect(red).not.toMatch(/פגיעות/);
+    expect(red).toMatch(/%/);
+  });
+});
+
+describe("how far a round fell from its aim point", () => {
+  const rec2 = orderedBattle();
+  const sides2 = unitSides(rec2);
+  const names2 = unitNames(rec2);
+  const { steps: steps2, contactsAfter: contacts2 } = replayForReview(rec2);
+  const landed = steps2.findIndex(
+    (s) => s.outcome.kind === "phase" && s.outcome.resolved.length > 0,
+  );
+
+  it("finds the round, or the rest of this proves nothing", () => {
+    expect(landed).toBeGreaterThan(-1);
+  });
+
+  it("tells the gunner, and tells the side underneath only that it fell", () => {
+    // The deviation measures the shell against BLUE's own aim point, which is
+    // not something RED is in a position to know (rules decision 17).
+    const outcome = steps2[landed]!.outcome;
+    const gunner = describeOutcome(outcome, names2, lensFor("BLUE", landed, contacts2, sides2));
+    const under = describeOutcome(outcome, names2, lensFor("RED", landed, contacts2, sides2));
+    expect(gunner).toMatch(/נחיתה (בסטייה|מדויקת)/);
+    expect(under).toContain("נחיתה");
+    expect(under).not.toContain("סטייה");
+    expect(under).not.toContain("מדויקת");
+  });
+
+  it("leaves the umpire's view alone", () => {
+    const outcome = steps2[landed]!.outcome;
+    expect(describeOutcome(outcome, names2)).toMatch(/נחיתה (בסטייה|מדויקת)/);
+  });
+});
+
+describe("a shot, as each of the three readers is entitled to read it", () => {
+  /**
+   * Rules decision 17. `exact` — "the reader owns the target" — is true of the
+   * umpire *and* of the force being shot at, so one flag cannot separate
+   * "entitled to the whole picture" from "entitled to count its own dead". The
+   * target used to read the firer's exact fit strength, its hit chance and the
+   * damage it took: everything the casualty bands exist to withhold.
+   */
+  const shot = find("fire")[0]!;
+  const outcome = steps[shot.index]!.outcome;
+  const lensAt = (side: Side) => lensFor(side, shot.index, contactsAfter, sides);
+  // RED fired on BLUE-1 in the fixture at the top of this file.
+  const firer = describeOutcome(outcome, names, lensAt("RED"), shot.action);
+  const target = describeOutcome(outcome, names, lensAt("BLUE"), shot.action);
+  const umpire = describeOutcome(outcome, names, UMPIRE_LENS, shot.action);
+
+  it("gives the umpire everything", () => {
+    expect(umpire).toMatch(/יורים|\/\d+ פגיעות/);
+    expect(umpire).toContain('נק"פ');
+  });
+
+  it("gives the firer its own men and chance, and a report of the effect", () => {
+    expect(firer).toMatch(/\d+ יורים/);
+    expect(firer).toMatch(/%/);
+    expect(firer).not.toContain('נק"פ');
+  });
+
+  it("never tells the target how many men fired, at what chance, for what damage", () => {
+    expect(target).not.toMatch(/יורים/);
+    expect(target).not.toMatch(/%/);
+    expect(target).not.toContain('נק"פ');
+    // What it *is* told: what landed on its own men, counted.
+    expect(target).toMatch(/\d+ פגיעות/);
+    expect(target).toMatch(/\d+ נפגעים/);
   });
 });

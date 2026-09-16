@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Game, makeCommandGroup, makeInfantry, type GameRecording } from "../engine/index.js";
 import {
+  chargeWorkHe,
   describeAction,
   describeExecution,
   describeOutcome,
@@ -135,5 +136,28 @@ describe("a sector of observation in words", () => {
 
   it("quotes the arc as well as the bearing — a squad watches a frontage", () => {
     expect(describeSector({ bearing: 0, width: 60 })).toContain("60°");
+  });
+});
+
+describe("a charge's position is the first thing a shared reader must not print", () => {
+  const report = {
+    unitId: "RED-1",
+    type: "antiTank" as const,
+    position: { x: 120, y: 340 },
+    mine: { id: "m1" },
+  } as Parameters<typeof chargeWorkHe>[0];
+
+  it("says where by default — every reader of it today is filtered by side", () => {
+    expect(chargeWorkHe(report, "מחלקה א'/1")).toContain("(120, 340)");
+  });
+
+  it("can still be asked to leave the position out", () => {
+    // No production caller since rules decision 17 filtered the live log, but
+    // the option is what a *shared* reader would need — an umpire's ticker at
+    // the table, a spectator view — so it is pinned rather than trusted.
+    const quiet = chargeWorkHe(report, "מחלקה א'/1", { where: false });
+    expect(quiet).not.toContain("120");
+    expect(quiet).not.toContain("340");
+    expect(quiet).toContain("מחלקה א'/1");
   });
 });

@@ -113,8 +113,8 @@ export function Debrief({
     });
 
     if (!side) return row(false, full);
-    if (!actionVisibleTo(action, side, lens, sides)) return row(true, "");
-    const outcome = outcomeVisibleTo(action, side, sides, lens)
+    if (!actionVisibleTo(action, side, lens, sides, step.outcome)) return row(true, "");
+    const outcome = outcomeVisibleTo(action, side, sides, lens, step.outcome)
       ? describeOutcome(step.outcome, names, lens, action)
       : "";
     // An enemy step whose every line was redacted is not a step this side saw.
