@@ -9,12 +9,23 @@ import type {
   Unit,
 } from "./types.js";
 import type { SmokeSource } from "./data/smoke.js";
-import type { DirectFireOptions, DirectFireResult } from "./combat/directFire.js";
+import type {
+  DirectFireOptions,
+  DirectFireResult,
+  WeaponClass,
+} from "./combat/directFire.js";
 import type { DirectExplosiveResult } from "./combat/explosives.js";
 import type { IndirectFireResult } from "./combat/indirectFire.js";
 import type { AssaultResult } from "./combat/assault.js";
 import type { DetectionResult, Observation } from "./combat/detection.js";
-import { Game, type ChargeWorkReport, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
+import {
+  Game,
+  type ChargeWorkReport,
+  type MoveResult,
+  type Phase,
+  type SmokeOrder,
+  type WithCoveringFire,
+} from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { Terrain } from "./terrain.js";
@@ -62,6 +73,8 @@ export type RecordedAction =
   | { kind: "setCamouflage"; unitId: string; on: boolean }
   /** Null calls the work off; the charge itself is derived, not recorded. */
   | { kind: "layCharge"; unitId: string; type: Mine["type"] | null }
+  /** חיפוי: the shots it goes on to take are derived by the replay. */
+  | { kind: "setCovering"; unitId: string; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; unitId: string; on: boolean }
   | {
       kind: "setObservationSector";
@@ -128,15 +141,16 @@ export type ActionOutcome =
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
   | { kind: "moveUnit"; move: MoveResult }
-  | { kind: "fire"; result: DirectFireResult }
-  | { kind: "fireExplosive"; result: DirectExplosiveResult }
-  | { kind: "assault"; result: AssaultResult }
+  | { kind: "fire"; result: WithCoveringFire<DirectFireResult> }
+  | { kind: "fireExplosive"; result: WithCoveringFire<DirectExplosiveResult> }
+  | { kind: "assault"; result: WithCoveringFire<AssaultResult> }
   | { kind: "deploySmoke"; order: SmokeOrder }
   | { kind: "issueOrders"; accepted: boolean }
   | { kind: "setStandingOrder"; accepted: boolean }
   | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] }
   | { kind: "setCamouflage"; on: boolean }
   | { kind: "layCharge"; type: Mine["type"] | null }
+  | { kind: "setCovering"; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; on: boolean }
   | { kind: "setObservationSector"; sector: ObservationSector | null };
 
@@ -347,6 +361,10 @@ export function replayWithOutcomes(
       case "layCharge":
         game.layCharge(action.unitId, action.type);
         outcome = { kind: "layCharge", type: action.type };
+        break;
+      case "setCovering":
+        game.setCovering(action.unitId, action.on, action.weapon);
+        outcome = { kind: "setCovering", on: action.on, weapon: action.weapon };
         break;
       case "setObservationSector":
         game.setObservationSector(action.unitId, cloneForRecord(action.sector));

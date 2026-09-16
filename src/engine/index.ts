@@ -33,6 +33,7 @@ export type {
   VehicleState,
   Unit,
   ChargeWork,
+  CoveringPosture,
   ObservationSector,
   SmokeScreen,
   Mine,
@@ -150,6 +151,11 @@ export {
   MINE_TRIGGER_RADIUS_M,
   type MineDetonation,
 } from "./combat/mines.js";
+export {
+  COVERING_FIRE,
+  firstFiringPoint,
+  type CoveringFireResult,
+} from "./combat/covering.js";
 
 // Recording / replay
 export {
@@ -177,6 +183,7 @@ export {
 export {
   Game,
   HOLDING_FIRE,
+  HOLDING_COVERING_FIRE,
   LAY_CHARGE_REFUSAL,
   PHASES,
   PhaseError,
@@ -184,5 +191,6 @@ export {
   type GameOptions,
   type MoveResult,
   type ChargeWorkReport,
+  type WithCoveringFire,
   type SmokeOrder,
 } from "./game.js";

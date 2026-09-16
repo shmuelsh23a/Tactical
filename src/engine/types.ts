@@ -129,6 +129,26 @@ export interface Unit {
   canLayCharges?: boolean;
   /** The charge this force is laying, while it is laying one. */
   layingCharge?: ChargeWork;
+
+  // --- covering fire (חיפוי, rules decision 18) ---
+  /**
+   * Set while the force is holding its fire ready for the enemy to act rather
+   * than shooting at something now. Declared in advance, spends the force's
+   * action for the turn, and is consumed the moment it fires.
+   */
+  covering?: CoveringPosture;
+}
+
+/**
+ * A force watching for the enemy to move, fire or assault (חיפוי, rules
+ * decision 18). It is a posture rather than an order: the force has spent its
+ * action on it, and holds it until it fires, moves, or is told otherwise.
+ */
+export interface CoveringPosture {
+  /** What it will shoot with when the moment comes. */
+  weapon: "smallArms" | "sustainedMg";
+  /** The turn it was declared, for the narration. */
+  declaredTurn: number;
 }
 
 /**

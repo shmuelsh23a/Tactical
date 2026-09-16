@@ -1,8 +1,15 @@
 import { Rng } from "./rng.js";
 import { roll } from "./dice.js";
-import { bearingDegrees, distance, segmentIntersectsCircle, type Point } from "./geometry.js";
+import {
+  bearingDegrees,
+  distance,
+  lookupBand,
+  segmentIntersectsCircle,
+  type Point,
+} from "./geometry.js";
 import type {
   ChargeWork,
+  CoveringPosture,
   Mine,
   ObservationSector,
   PendingFireMission,
@@ -30,9 +37,17 @@ import {
   type Observation,
 } from "./combat/detection.js";
 import { OBSERVATION, OBSERVATION_SECTOR, SCOUTING } from "./data/concealment.js";
-import type { CoverState } from "./data/directFire.js";
+import {
+  SMALL_ARMS_BANDS,
+  SUSTAINED_MG_BANDS,
+  type CoverState,
+} from "./data/directFire.js";
 import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
 import { triggerMines, type MineDetonation } from "./combat/mines.js";
+import {
+  firstFiringPoint,
+  type CoveringFireResult,
+} from "./combat/covering.js";
 import {
   resolveDirectFire,
   type DirectFireOptions,
@@ -82,6 +97,14 @@ export class PhaseError extends Error {}
 export const HOLDING_FIRE = "holding fire";
 
 /**
+ * Refusal reason when a force is holding חיפוי: it has spent its action on
+ * watching, so it does not also get a deliberate shot (rules decision 18). To
+ * attack instead, stand it down first — which does not hand the action back,
+ * because the turn's action was spent the moment the posture was declared.
+ */
+export const HOLDING_COVERING_FIRE = "holding covering fire";
+
+/**
  * Why a force may not start laying a charge (rules decision 16). Short keys
  * rather than sentences, so the UI words them in Hebrew through `reasonHe`
  * exactly as it words an order's refusals.
@@ -100,7 +123,16 @@ export interface MoveResult {
   detection: DetectionResult;
   /** Charges triggered along the path walked. */
   mineDetonations: MineDetonation[];
+  /**
+   * Covering fire the bound drew (rules decision 18). The force was shot at
+   * where the shot says, and went on to where the move says: a bound is
+   * interrupted, never cancelled.
+   */
+  coveringFire: CoveringFireResult[];
 }
+
+/** A shot or an assault, with whatever covering fire it drew in reply. */
+export type WithCoveringFire<T> = T & { coveringFire: CoveringFireResult[] };
 
 /**
  * What became of a force's charge-laying work over a turn (rules decision 16):
@@ -200,6 +232,13 @@ export class Game {
    * and must not stamp the order clock, since no new order was received.
    */
   private executingOrders = false;
+
+  /**
+   * Set while covering fire is being resolved. A reaction is not an action:
+   * without this, two opposing covering forces would answer each other until
+   * the stack gave out (rules decision 18).
+   */
+  private reacting = false;
 
   /**
    * Ids are numbered per game, not per process: two games from the same seed
@@ -536,6 +575,11 @@ export class Game {
         this.standingOrders.set(unitId, { ...standing, destination: undefined });
       }
     }
+    // Up and moving is not watching: a force cannot carry חיפוי along with it
+    // (rules decision 18). Cleared before the bound, so the force is not still
+    // covering while the ground it is crossing is resolved.
+    delete unit.covering;
+
     const from = unit.position;
     unit.position = { ...to };
     unit.movedThisTurn += cost;
@@ -570,8 +614,14 @@ export class Game {
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
 
+    // …and last, what was watching for exactly this. The ground is tested
+    // before the enemy on purpose: a charge is already on the route, while a
+    // covering force has to see the mover to answer it, and a force the charge
+    // has just neutralised is a different target from the one that set out.
+    const coveringFire = this.answerWithCoveringFire(unit, "move", from);
+
     this.journal({ kind: "moveUnit", unitId, to, mode });
-    return { detection, mineDetonations: detonations };
+    return { detection, mineDetonations: detonations, coveringFire };
   }
 
   // ---- what each side knows ----
@@ -585,6 +635,17 @@ export class Game {
     const unit = this.units.find((u) => u.id === unitId);
     if (!unit || unit.side === side) return;
     this.intel.record(side, unitId, unit.position, this.turn, source, unit.neutralized);
+  }
+
+  /**
+   * Note a force seen somewhere other than where it now stands — a mover
+   * engaged mid-bound (rules decision 18). Everything else observes a force
+   * where it is, which is why {@link observe} reads the position itself.
+   */
+  private intelRecordAt(side: Side, unit: Unit, at: Point): void {
+    if (!this.trackIntel) return;
+    if (unit.side === side) return;
+    this.intel.record(side, unit.id, at, this.turn, "fire", unit.neutralized);
   }
 
   /**
@@ -698,6 +759,149 @@ export class Game {
     };
     unit.layingCharge = work;
     this.journal({ kind: "layCharge", unitId, type });
+  }
+
+  /**
+   * Whether this force's action for the turn is already gone: it fired, or it
+   * is holding חיפוי (rules decision 18). Holding it spends *every* turn it is
+   * held, not only the turn it was declared — which is what "cover or attack"
+   * means once the posture outlives a turn.
+   */
+  private actionSpent(unit: Unit): boolean {
+    return unit.firedThisTurn || unit.covering != null;
+  }
+
+  /**
+   * Hold a force's fire ready for the enemy to act, or stand it down (חיפוי).
+   * Rules decision 18 — the document's third action of phase 6.
+   *
+   * Declaring it **spends the force's action for the turn**: a force covers or
+   * attacks, never both, which is the whole of what makes it a choice. It then
+   * holds the posture until it fires, until it moves, or until it is told
+   * otherwise — the repo's usual grammar, where an order stands until replaced
+   * (decision 6) — and the first enemy action it can see and reach consumes it.
+   */
+  setCovering(unitId: string, on: boolean, weapon: WeaponClass = "smallArms"): void {
+    this.requirePhase("combat");
+    const unit = this.getUnit(unitId);
+    if (!on) {
+      delete unit.covering;
+      this.journal({ kind: "setCovering", unitId, on, weapon });
+      return;
+    }
+    if (unit.neutralized) throw new Error("neutralised");
+    if (unit.firedThisTurn) throw new Error("already acted");
+    if (fitSoldiers(unit) === 0) throw new Error("no fit shooters");
+
+    const posture: CoveringPosture = { weapon, declaredTurn: this.turn };
+    unit.covering = posture;
+    // The action is spent by *holding* the posture — see {@link actionSpent} —
+    // rather than by setting `firedThisTurn` here. That flag means "this force
+    // resolved a shot", and two other rules read it: a force in full cover
+    // that fired is exposed to partial (decision 7) and stands to its full eye
+    // height. A force watching has done neither, and must not be punished as
+    // though it had.
+    this.journal({ kind: "setCovering", unitId, on, weapon });
+  }
+
+  /**
+   * Every covering enemy's answer to `actor` acting (rules decision 18).
+   *
+   * **One owner for the whole reaction.** Moving, firing and assaulting all
+   * arrive here, so what a covering force may do is decided once rather than
+   * three times off three different pieces of state. A move passes the bound it
+   * walked and is shot at the first point of it the coverer could reach; a shot
+   * or an assault passes the single place the actor stands.
+   *
+   * Firing consumes the posture — the force has taken its shot and must be set
+   * to cover again — and a reaction never triggers another, or two covering
+   * forces would answer each other forever.
+   */
+  private answerWithCoveringFire(
+    actor: Unit,
+    trigger: CoveringFireResult["trigger"],
+    from?: Point,
+  ): CoveringFireResult[] {
+    if (this.reacting) return [];
+    const taken: CoveringFireResult[] = [];
+    const destination = { ...actor.position };
+    this.reacting = true;
+    try {
+      for (const coverer of this.units) {
+        const posture = coverer.covering;
+        if (!posture) continue;
+        if (coverer.side === actor.side) continue;
+        if (coverer.neutralized) continue;
+        // A force the ground or another coverer has already put down is not
+        // the target that set out: nobody spends a posture finishing it.
+        if (actor.neutralized) break;
+        // A standing order to hold fire is not broken by a posture: the player
+        // said this force does not shoot, and decision 6 means it (holdFire is
+        // enforced even against the player's own click).
+        if (this.isHoldingFire(coverer.id, actor.id)) continue;
+
+        const bands = posture.weapon === "sustainedMg" ? SUSTAINED_MG_BANDS : SMALL_ARMS_BANDS;
+        const canFireAt = (at: Point): boolean => {
+          actor.position = at;
+          const reaches = lookupBand(bands, distance(coverer.position, at)) != null;
+          return reaches && this.hasLineOfSight(coverer, actor);
+        };
+
+        const at = from
+          ? firstFiringPoint(from, destination, canFireAt)
+          : canFireAt(destination)
+            ? destination
+            : null;
+        actor.position = destination;
+        if (!at) continue;
+
+        // The shot is taken with the force standing where it was caught, and
+        // on the cover the ground gives *there*. `unit.cover` is only written
+        // at placement and at upkeep, so a force that has just broken out of a
+        // prepared position still carries that position's cover in the field —
+        // and a shot resolved against it would halve the hit chance for ground
+        // the force left two hundred metres back. Cover is read at the end of
+        // the turn (decision 12) because nothing used to shoot mid-bound; this
+        // is the exception the ruling anticipated. ⚠️ Ours, not the author's.
+        actor.position = { ...at };
+        const wasCover = actor.cover;
+        actor.cover = this.groundCoverAt(at);
+        const result = resolveDirectFire(this.rng, coverer, actor, {
+          weapon: posture.weapon,
+          turn: this.turn,
+          cover: actor.cover,
+          // A force caught on the move is the case the movement table is
+          // written for: +30% against a walker, -20% against a runner. Without
+          // it, running under covering fire is never worse than walking.
+          targetMovementModifier: from
+            ? MOVEMENT_PROFILES[actor.ranThisTurn ? "run" : "normal"].enemyHitModifier
+            : 0,
+          hasLineOfSight: true,
+        });
+        actor.cover = wasCover;
+        actor.position = destination;
+
+        if (!result.fired) continue;
+        delete coverer.covering;
+        // The contact is where the shot was taken, not where the bound ended:
+        // the coverer saw the force it engaged, and by construction may not be
+        // able to see where it went afterwards.
+        this.observe(actor.side, coverer.id, "fire");
+        this.intelRecordAt(coverer.side, actor, at);
+        taken.push({
+          coveringId: coverer.id,
+          targetId: actor.id,
+          trigger,
+          at: { ...at },
+          weapon: posture.weapon,
+          result,
+        });
+      }
+    } finally {
+      actor.position = destination;
+      this.reacting = false;
+    }
+    return taken;
   }
 
   /**
@@ -831,14 +1035,19 @@ export class Game {
     return range > order.engagementRange;
   }
 
-  fire(attackerId: string, targetId: string, opts: DirectFireOptions): DirectFireResult {
+  fire(
+    attackerId: string,
+    targetId: string,
+    opts: DirectFireOptions,
+  ): WithCoveringFire<DirectFireResult> {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    if (this.isHoldingFire(attackerId, targetId)) {
+    if (attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+      // A shot never taken draws no answer.
       return {
         fired: false,
-        reason: HOLDING_FIRE,
+        reason: attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE,
         range: distance(attacker.position, target.position),
         hitChance: 0,
         shooters: 0,
@@ -846,6 +1055,7 @@ export class Game {
         totalDamage: 0,
         newCasualties: 0,
         targetNeutralized: target.neutralized,
+        coveringFire: [],
       };
     }
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
@@ -858,8 +1068,9 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) this.exchangeContact(attacker, target);
+    const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     this.journal({ kind: "fire", attackerId, targetId, opts });
-    return fireResult;
+    return { ...fireResult, coveringFire };
   }
 
   fireExplosive(
@@ -867,18 +1078,19 @@ export class Game {
     attackerId: string,
     targetId: string,
     opts: { hasLineOfSight?: boolean; collateralIds?: string[] } = {},
-  ): DirectExplosiveResult {
+  ): WithCoveringFire<DirectExplosiveResult> {
     this.requirePhase("combat");
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    if (this.isHoldingFire(attackerId, targetId)) {
+    if (attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
-        reason: HOLDING_FIRE,
+        reason: attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE,
         range: distance(attacker.position, target.position),
         hit: false,
         hitChance: 0,
+        coveringFire: [],
       };
     }
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
@@ -887,8 +1099,9 @@ export class Game {
       turn: this.turn,
     });
     if (result.fired) this.exchangeContact(attacker, target);
+    const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
-    return result;
+    return { ...result, coveringFire };
   }
 
   /**
@@ -896,13 +1109,21 @@ export class Game {
    * movement-phase job, so this only checks that the attacker is already there
    * — see {@link ASSAULT_RANGE_M}.
    */
-  assault(attackerId: string, defenderId: string, grenades = 0): AssaultResult {
+  assault(
+    attackerId: string,
+    defenderId: string,
+    grenades = 0,
+  ): WithCoveringFire<AssaultResult> {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
-    if (attacker.neutralized || this.isHoldingFire(attackerId, defenderId)) {
+    if (attacker.neutralized || attacker.covering || this.isHoldingFire(attackerId, defenderId)) {
       return {
         fired: false,
-        reason: attacker.neutralized ? "attacker is neutralised" : HOLDING_FIRE,
+        reason: attacker.neutralized
+          ? "attacker is neutralised"
+          : attacker.covering
+            ? HOLDING_COVERING_FIRE
+            : HOLDING_FIRE,
         attackerId,
         defenderId,
         range: distance(attacker.position, this.getUnit(defenderId).position),
@@ -913,6 +1134,7 @@ export class Game {
         selfCasualties: 0,
         defenderCasualties: 0,
         defenderNeutralized: this.getUnit(defenderId).neutralized,
+        coveringFire: [],
       };
     }
     const result = resolveAssault(this.rng, attacker, this.getUnit(defenderId), {
@@ -920,8 +1142,9 @@ export class Game {
       turn: this.turn,
     });
     if (result.fired) this.exchangeContact(attacker, this.getUnit(defenderId));
+    const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
-    return result;
+    return { ...result, coveringFire };
   }
 
   /**
@@ -1100,7 +1323,7 @@ export class Game {
       if (!order.engage || order.holdFire) return null;
       return { ...base, reason: "target gone" };
     }
-    if (unit.firedThisTurn) return { ...base, reason: "already acted" };
+    if (this.actionSpent(unit)) return { ...base, reason: "already acted" };
     if (unit.neutralized) return { ...base, reason: "neutralised" };
 
     const engaged = this.engageWithWhatItHas(unit, target, order.engage?.weapon);
