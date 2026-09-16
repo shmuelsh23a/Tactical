@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `29e1cfe`, 2026-09-16.** This is the working note for whoever
+**Current as of `53bc60d`, 2026-09-16.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 373 tests, 20 files
+npm run check       lint + typecheck clean, 377 tests, 20 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -46,17 +46,15 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**One ⚠️ raised 2026-09-16 with decision 17, and unanswered:** a force is now
-told when a charge **it laid** goes off — that it fired, not who it caught or
-where. The charge is spent and its marker leaves the layer's map the same
-instant, so the alternative is watching it vanish with nothing in the log. The
-document rules on neither; this is ours. He may prefer the layer learn nothing
-until he looks.
+**Nothing.** The last one closed the same day it was raised: a force learns
+that a charge **it laid** has gone off only **if it can see it happen** — line
+of sight, not ownership (decision 17). Sight is the weaker test on purpose, so
+the layer who can only see the ground is told his charge fired, while a side
+holding a contact on the force that trod on it is told who.
 
-
-**Nothing.** Rules decision 15 (elevation and objects) closed on 2026-09-06
-in two steps: the shape — one sight test over real ground, eye heights, object
-cover — and then, from our suggestions, **Naismith** for climbing and **no hit
+Rules decision 15 (elevation and objects) closed on 2026-09-06 in two steps:
+the shape — one sight test over real ground, eye heights, object cover — and
+then, from our suggestions, **Naismith** for climbing and **no hit
 modifier for now**. Every figure he gave that day is "tentative, write it
 down" and sits on [balance.md](balance.md). The ODbL carve-out for the
 OpenStreetMap-derived file went into `LICENSE` the same day at his word. Do
@@ -67,6 +65,14 @@ shape and the two turns, and confirmed our reading of what the two turns cost.
 The only ⚠️ left in it is scaffolding rather than a rule — the demo hands
 RED-1 the `canLayCharges` flag so the rule can be played, and that line goes
 when force types arrive with echelon scaling.
+
+**A prepared position now protects from turn 1** (decision 12, ✅ author
+2026-09-16: "a force that prepared the position before battle should start dug
+in"). `addUnit` used to raise cover from the ground's objects only and leave
+`baseCover` to the first upkeep, so a defender who had prepared stood in the
+open through turn 1's exchange of fire. Latent for as long as nothing set
+`baseCover` at setup — the Tel Azeka scenario was the first thing that did, and
+its test found it the same hour it was written.
 
 Some are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
@@ -186,12 +192,29 @@ worth knowing because each was a rule with two halves:
   it as a sighting let a side read `נראה מנוטרל` off a three-turn-old mark its
   own map still drew alive — decision 13 had already ruled the other way.
 
-**Backlog 6 is closed.** A battle is now laid out by describing it:
+**Backlog 6 is closed.** A battle is laid out by describing it:
 `tools/make-scenario.py` takes a JSON spec and writes the scenario module, and
 the demo is its output — which is what keeps the tool honest, since the suite
-plays the generated battle. A second scenario is a spec file and nothing else.
-The app still opens exactly one battle, though: choosing between scenarios is
-UI that does not exist.
+plays the generated battle.
+
+**There are two maps now.** The second, Tel Azeka over the Elah valley
+(`tools/scenarios/tel-azeka.json`), was written to test the claim that a
+scenario is a spec file and nothing else, and it is also the only run so far of
+`--fetch-map` on a window nobody had fetched before. It teaches out of relief
+alone — one tree, no buildings — and it teaches the opposite of the demo: the
+tel cannot see its own eastern face, so the covered route up is the one
+Naismith charges 250–360 m of bound per 100 m of ground. Its test pins those
+claims the way the demo's does.
+
+Read the ground before placing anything on it. The lesson that map actually
+teaches was the opposite of the one it was picked for, and a throwaway probe
+over sight lines, heights and bound costs is what said so — half an hour, and
+it changed the whole battle.
+
+**The app still opens exactly one battle**, though: `src/app/scenario.ts` names
+the demo, and choosing between scenarios is UI that does not exist. Tel Azeka
+is generated, tested and unreachable in the hotseat — the smallest piece of
+work on this list, and the one that makes the second map worth having.
 
 Small things noticed and left: for an **ordered tank-round** engagement,
 `engaged.newCasualties` sums every unit caught in the blast against the
@@ -225,6 +248,11 @@ the code currently stands:
   two halves of a single rule applied at different layers or measured off
   different geometry — each half defensible alone. When you touch one half, go
   and read the other.
+- **A sealed recording of a game whose forces had `baseCover`, made before
+  2026-09-16, will fail `verifyRecording`.** Placement now gives a prepared
+  force its cover, so the first turn resolves differently. No such recording
+  exists in the repo — nothing set `baseCover` at setup before Tel Azeka — but
+  a recording saved from a scenario of your own might.
 - **`src/app/scenario.ts` is a seam, not the scenario.** The demo lives in
   `src/app/scenarios/yokneamIllit.ts`, which is generated — editing it is
   editing a build product, and the next run of the tool throws the edit away.

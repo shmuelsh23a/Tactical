@@ -506,6 +506,24 @@ on the stated reasoning, still awaiting the author's word.
       behind. This replaces the old "held still ⇒ in full cover" derivation:
       cover is now something a force has, or earns, not a side effect of a quiet
       turn.
+    - **A force that prepared its position before the battle starts dug in**
+      (✅ author, 2026-09-16). `baseCover` is in effect from placement, not from
+      the first upkeep, so a prepared defender is in its position for turn 1's
+      exchange of fire rather than standing in the open through it. This is the
+      other half of the camouflage rule below — a defender who prepared is
+      already at the full -50% to be detected, and now has the protection to
+      match it from the same moment.
+
+      Latent until 2026-09-16: `addUnit` raised a force's cover from the
+      ground's objects at once but left `baseCover` to `endTurnUnitUpkeep`,
+      and nothing in the repo set `baseCover` at setup, so nothing noticed
+      until the Tel Azeka scenario did.
+
+      **Dress a force for setup with `baseCover`, never with `cover`.**
+      Placement *raises* `cover`; upkeep *recomputes* it from `baseCover`, the
+      ground and the digging. A force handed a `cover` directly therefore holds
+      it for turn 1 and loses it at the first upkeep — the same shape as the
+      bug above, one field over.
     - **Camouflage is a command** (הסוואה): -10% to be detected every 2 turns,
       up to -50%. A moving force cannot be camouflaged and loses what it had
       banked. A defender may declare a force camouflaged at setup — read here as
@@ -910,12 +928,19 @@ on the stated reasoning, still awaiting the author's word.
     counts them, a side watching gets a report (decision 13's bands), and a
     side with no contact on the force is told nothing about it at all.
 
-    ⚠️ **A force is told when a charge it laid goes off**, without who it caught
-    or where. The document rules on neither, and this is **ours**. The charge is
-    spent and its marker leaves the layer's map the same instant, so the
-    alternative is watching it vanish with nothing in the log to say why; who it
-    went off *under* still needs eyes on that force. Say if you would rather the
-    layer learn nothing until he looks.
+    ✅ **A force is told when a charge it laid goes off — if it can see it
+    happen** (ruled by the author 2026-09-16). Not ownership, and not a
+    telephone: **line of sight**. A layer watching the ground he mined sees the
+    explosion; one who has pulled back behind a crest learns nothing until he
+    goes and looks, and his charge's marker simply leaves his map.
+
+    Sight is the weaker test on purpose — weaker than holding a contact, which
+    is a detection roll (decision 12). So the two readings differ: a side
+    *holding a contact* on the force that trod on it is told who; the layer who
+    can merely see the ground is told that his charge fired and no more. The
+    predicate is [`hasEyesOn`](src/app/hotseat.ts), and it asks the engine's own
+    `canObserve` rather than a second opinion — a neutralised squad is still
+    drawn on the map and is still not watching anything.
 
     **Enforced, not written down.** `pushLog`'s audience is a *required*
     argument, so a new log line cannot be added without saying who may read it
