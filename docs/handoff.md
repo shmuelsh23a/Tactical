@@ -46,18 +46,11 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**One, and it is the biggest thing on this page: חיפוי — covering fire.** The
+**Nothing.** חיפוי — covering fire — was found and closed the same day: the
 document names three actions in phase 6 (`ירי\חיפוי\הסתערות`) and the engine
-has two. The rule is a single line — *פגיעה במקרה של פעולה על ידי האויב: כמו
-ירי* — so how it resolves is settled and what triggers it is not: what counts
-as an enemy action, whether it is declared in advance, whether it interrupts a
-bound or waits for the fire phase, and whether it spends the force's one fire
-action. Found 2026-09-16 while answering his question about attacks of
-opportunity; he has the question. **Do not build it on a reading** — it is the
-first unimplemented rule the document actually states, which makes it a
-different kind of item from everything else on the backlog.
-
-Everything else is answered. The last one closed the same day it was raised: a force learns
+had two. It gives one line of rule, *פגיעה במקרה של פעולה על ידי האויב: כמו
+ירי*, so how it resolves was settled and what triggers it was not. He gave the
+four answers (decision 18) and it is built. The last one closed the same day it was raised: a force learns
 that a charge **it laid** has gone off only **if it can see it happen** — line
 of sight, not ownership (decision 17). Sight is the weaker test on purpose, so
 the layer who can only see the ground is told his charge fired, while a side
@@ -76,6 +69,34 @@ shape and the two turns, and confirmed our reading of what the two turns cost.
 The only ⚠️ left in it is scaffolding rather than a rule — the demo hands
 RED-1 the `canLayCharges` flag so the rule can be played, and that line goes
 when force types arrive with echelon scaling.
+
+**Covering fire is in** (decision 18, 2026-09-16). A force holds its action to
+answer the first enemy it sees move, fire or assault; the shot falls at the
+first point of the bound the coverer could reach, and the mover carries on to
+where it was going.
+
+It was the most expensive feature yet to get right, and every cost was a rule
+with two halves:
+
+- The live log keyed *how exactly losses are counted* off the force that
+  **fired** rather than the force that was **hit**, so a side read "no
+  casualties observed" about its own men. Found by driving it in the browser,
+  not by a test.
+- The shot was resolved against `unit.cover`, which is written only at
+  placement and at upkeep — so a force that had broken out of a prepared
+  position was shot at mid-bound as though still in it. Covering fire is the
+  exception the end-of-turn cover ruling anticipated, and the README paragraph
+  that predicted it had been deleted rather than acted on.
+- `MOVEMENT_PROFILES.enemyHitModifier` — the document's own +30%/-20% for
+  shooting at a moving force — had **no consumer in the engine** until this.
+  Without it, running under covering fire was never worse than walking.
+- Three of the four attack paths carried the rule and `fireExplosive` carried
+  neither half, so a force could declare חיפוי and still fire an RPG.
+- "Spends the force's action" was true only on the turn it was declared,
+  because `firedThisTurn` is cleared at upkeep while the posture is not. The
+  economy is derived now (`Game.actionSpent`), which also stops a watching
+  force being treated as one that has fired — that flag is read by two other
+  rules, and borrowing it stood the force up and halved its cover.
 
 **A prepared position now protects from turn 1, and is left behind when the
 force walks away** (decision 12, ✅ author 2026-09-16, two rulings the same

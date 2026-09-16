@@ -137,6 +137,7 @@ tweak later when we get to balancing — write it down". So: written down.
 | Indirect fire | **one mission + one screen per side per turn** | ✅ author, decision 8 | UI limit over an engine that models `roundsPerTurn`. Correct *for the platoon-leader slice* — a platoon commander calls for fire, he does not own a battery. Replaced by a real battery unit at battalion and above (backlog 3), so retune this only within the current echelon. |
 | Laying a charge in play | **2 turns** of work | ✅ author, decision 16 | [`data/engineering.ts`](../src/engine/data/engineering.ts). "Tentatively 2 turns" — his word, 2026-09-16. What the turns *cost* was ours and is now his (confirmed 2026-09-16): a turn in which it moves, fires, **is hit** or is neutralised loses the work outright rather than banking it, and starting the work replaces the force's standing order. Shorten the work and a charge becomes a routine move; let the work be banked across interruptions and the cost stops being two quiet turns at all. **Unbounded**: no stock, no cooldown — a force that keeps surviving may keep laying, and for a force that was going to sit still anyway the two turns are free. Raised with the author 2026-09-16 and **deferred to ammunition (backlog 12)** at his word — the limit belongs there, not here. |
 | Who may lay one in play | **an insurgent or special force** | ✅ author, decision 16 | A `canLayCharges` flag the scenario sets, until force *types* arrive with echelon scaling (backlog 3). The demo gives it to RED-1 so the rule can be played — ⚠️ ours, and one line to delete when types land. |
+| Covering-fire sampling step | **5 m** along the bound | ours, decision 18 | [`combat/covering.ts`](../src/engine/combat/covering.ts). How finely a bound is walked looking for the first place a covering force could shoot. It is an occlusion question, not a cover one: a gap between two objects narrower than 5 m can be stepped over by the sampler, so a mover can cross a narrow slot unshot. Smaller is more faithful and costs a sight test per step. |
 | Fog-of-war fallback radius | **300 m** (`SPOT_RANGE_M`) | ours | [`app/hotseat.ts`](../src/app/hotseat.ts) — only used when `trackIntel` is off |
 | What-if runs | **20** | ours | [`app/whatIf.ts`](../src/app/whatIf.ts) — a UI choice, not a rule |
 
@@ -152,6 +153,13 @@ tweak later when we get to balancing — write it down". So: written down.
   everything and BLUE sees nothing until it is fired on. That may be correct for
   a prepared defence; it is worth playing an attack that uses smoke and scouts
   before deciding.
+- **Covering fire has not been measured against a real attack.** The posture
+  holds until something sets it off, which on the demo map meant a squad
+  watched for six turns while the attacker climbed. It is not free — holding it
+  spends that force's action every one of those turns (decision 18) — but
+  whether "watch indefinitely" is too strong against an attack that has to
+  cross open ground is exactly the sort of thing only play will say. The lever
+  if it is: an expiry, or a cost to re-declare.
 - **A charge laid in play has not been measured yet.** Nobody has played the
   two turns out against a moving attack, so whether 2 turns is cheap or
   expensive is an open question rather than a recorded figure. The thing to

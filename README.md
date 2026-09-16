@@ -294,23 +294,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Standing orders: a force keeps to its last order until it is replaced
 - Battle recording: a game replays exactly from its seed and action log
 
-### Not implemented, and the document does describe it
-
-- **חיפוי — covering fire.** The document names three actions in phase 6,
-  `ירי\חיפוי\הסתערות`, and the engine has two of them. The rule itself is one
-  line — *פגיעה במקרה של פעולה על ידי האויב: כמו ירי* ("a hit in the case of an
-  action by the enemy: like fire") — so what it resolves *to* is settled, and
-  what it resolves *on* is not: what counts as an enemy action, whether the
-  force declares it in advance, whether it interrupts the enemy's move or waits
-  for the fire phase, and whether it spends the force's one fire action. Raised
-  with the author 2026-09-16; do not build it on a reading.
-
-  The nearest thing that exists is a standing order to **hold fire with an
-  engagement range** — an ambush that springs itself when the enemy comes
-  inside a distance — but that is chosen in advance and resolved in the fire
-  phase, not in reaction to a move. It also bears on rules decision 12: cover
-  is read at the end of the turn, which is right while nothing shoots mid-bound
-  and would need revisiting if something did.
+- Covering fire (חיפוי): a force holds its action to answer the first enemy it
+  sees move, fire or assault (rules decision 18)
 
 ## Rules decisions
 
@@ -984,6 +969,67 @@ on the stated reasoning, still awaiting the author's word.
     the only chokepoint the live log has. `src/invariants.test.ts` also catches
     the shape a reader reaches for from memory (a bare `Side` where an
     `Audience` belongs) and pins the panel's filter.
+
+18. ✅ **Covering fire (חיפוי)** — the document's third action of phase 6,
+    built 2026-09-16. The document gives the resolution in one line —
+    *פגיעה במקרה של פעולה על ידי האויב: כמו ירי*, "a hit in the case of an
+    action by the enemy: like fire" — and nothing else. The author gave the
+    four answers it does not, and they are the whole rule:
+
+    - **It triggers on an enemy moving, firing or assaulting.** All three, not
+      movement alone.
+    - **It is declared in advance** (`setCovering`, in the fire phase), not
+      chosen when the moment comes.
+    - **It resolves immediately, and the force it caught carries on.** On a
+      bound the shot is taken at the first point of the path the coverer could
+      see *and* reach — not where the bound ended, which the force goes on to
+      reach anyway. A bound is interrupted, never cancelled.
+    - **It spends the force's action**: a force covers or attacks in a turn,
+      never both, which is what makes it a choice. A force holding חיפוי is
+      refused a deliberate shot (`HOLDING_COVERING_FIRE`), and standing it
+      down does not hand the action back.
+
+    Two riders follow from the four and are ours, though neither is much of a
+    reading:
+
+    - **A reaction is not an action**, so covering fire never triggers covering
+      fire. Without that, two opposing covering forces answer each other until
+      the stack gives out.
+    - **Firing consumes the posture.** It answers once and must be declared
+      again — the XCom rule, and the one that stops a single force covering a
+      whole side's turn.
+
+    ⚠️ **The shot is resolved on the ground the force was caught on**, not on
+    the cover it is still carrying in the field. Cover is read at the end of
+    the turn (decision 12) precisely because nothing used to shoot mid-bound,
+    so a force that has broken out of a prepared position still holds that
+    position's cover all turn — and a covering shot resolved against it would
+    be halved for ground the force left two hundred metres back. Covering fire
+    is the exception the end-of-turn ruling anticipated. Ours.
+
+    ⚠️ **A force caught in a bound takes the movement modifier** — +30% against
+    a walker, -20% against a runner, the document's own numbers from the
+    movement table. They had no consumer in the engine until now, because
+    nothing had ever fired at a force *during* its move. Without them, running
+    under covering fire is never worse than walking, which would make the gait
+    control a trap.
+
+    ⚠️ **Two questions the four answers do not settle**, both ours for now:
+    a coverer that is itself the target of the trigger resolves the enemy's
+    attack *first* and answers only if it survives — an interrupt for the move
+    trigger and a reply for the other two; and covering fire engages an enemy
+    the covering side has never detected, where a standing order deliberately
+    will not (`orderedTargetFor` refuses to aim a force at something nobody has
+    seen). Defensible for a bound, since movement is what reveals; less so for
+    a shot at range.
+
+    A standing order to **hold fire** still wins over the posture: decision 6
+    enforces hold-fire even against the player's own click, so it is not to be
+    got round by declaring חיפוי. Mechanism:
+    [`combat/covering.ts`](src/engine/combat/covering.ts) for where along a
+    bound the shot falls, `Game.answerWithCoveringFire` for who may take it —
+    one owner, reached from all three triggers, rather than three copies of the
+    rule at three call sites.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
