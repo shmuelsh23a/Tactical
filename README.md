@@ -770,8 +770,8 @@ on the stated reasoning, still awaiting the author's word.
     is a flag on the force — `canLayCharges` — that a scenario sets, and only a
     force carrying it gets the control at all.
 
-    ⚠️ **What the two turns cost is ours, not the author's.** The force must
-    spend them doing nothing else: a turn in which it moves, fires, **is hit**
+    ✅ **What the two turns cost** (confirmed by the author 2026-09-16, from
+    our proposal). The force must spend them doing nothing else: a turn in which it moves, fires, **is hit**
     or is neutralised loses the work outright rather than banking it, and
     starting the work replaces the order the force was holding. That is the
     whole tradeoff — the charge is bought with two turns of a force that
@@ -783,18 +783,20 @@ on the stated reasoning, still awaiting the author's word.
     alternative would need a new flag set on a miss, which would change what
     `underFire` means for movement as well.
 
-    ⚠️ **Nothing limits how many charges a force lays.** There is no stock and
-    no cooldown: a force that survives two quiet turns may start again the
-    next. For a force that would sit still anyway — the demo's camouflaged
-    hold-fire ambusher is exactly one — the two turns cost it nothing it was
-    going to spend, so laying charges all battle is never worse than not. **A
-    question for the author**, and the natural answer (a stock of charges per
-    force) is ammunition, which is backlog 12.
+    **Nothing limits how many charges a force lays — deliberately, for now.**
+    There is no stock and no cooldown: a force that survives two quiet turns
+    may start again the next. For a force that would sit still anyway — the
+    demo's camouflaged hold-fire ambusher is exactly one — the two turns cost
+    it nothing it was going to spend, so laying charges all battle is never
+    worse than not. Put to the author 2026-09-16 and **deferred to
+    logistics/ammunition (backlog 12)** at his word: a stock of charges per
+    force is the same mechanism as rounds per force, and inventing a separate
+    one here would be a limit to unpick later. Do not add one before then.
 
-    ⚠️ **The charge is laid where the force stands**, not at a point it
-    chooses within reach. Nothing in the document gives a reach, and the
-    charge's own trigger radius (10 m, decision 10) already covers a squad's
-    frontage.
+    ✅ **The charge is laid where the force stands** (confirmed 2026-09-16),
+    not at a point it chooses within reach. Nothing in the document gives a
+    reach, and the charge's own trigger radius (10 m, decision 10) already
+    covers a squad's frontage.
 
     One rule, one owner: the work is judged at the end of the turn from the
     per-turn flags the force finished with (`progressChargeLaying` in

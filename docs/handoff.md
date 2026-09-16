@@ -54,7 +54,13 @@ down" and sits on [balance.md](balance.md). The ODbL carve-out for the
 OpenStreetMap-derived file went into `LICENSE` the same day at his word. Do
 not reopen a decision without him.
 
-Two are ✅ *as decisions* while their **numbers** are still ours. They belong to
+Decision 16 (laying charges) closed on 2026-09-16 the same way: he gave the
+shape and the two turns, and confirmed our reading of what the two turns cost.
+The only ⚠️ left in it is scaffolding rather than a rule — the demo hands
+RED-1 the `canLayCharges` flag so the rule can be played, and that line goes
+when force types arrive with echelon scaling.
+
+Some are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
 [balance.md](balance.md):
 
@@ -63,19 +69,10 @@ the balance pass, not to the rules list, and live on
 | Decision 9 | smoke radii **25 / 50 / 100 m** | The document sizes no screen. |
 | Decision 13 | casualty bands **0 / 1–2 / 3–5 / 6+** | He confirmed that reports are banded, not where the bands fall. |
 | Decision 15 | eye heights **1.5 / 2.5 / 0.5 m**, object cover, **8 m per metre climbed**, **30°** for vehicles | All his, all "tentative until balance". |
-| Decision 16 | laying a charge takes **2 turns** | "Tentatively", 2026-09-16. What the two turns *cost* is ours. |
+| Decision 16 | laying a charge takes **2 turns** | "Tentatively", 2026-09-16. What the two turns *cost*, and that the charge goes where the force stands, he confirmed the same day. |
 
 **Decision 11's riders** (no assault on armour, no ammunition tracking) remain
 assumptions he has not contradicted; ammunition is backlog 12's job.
-
-**One question is out with him and unanswered**, raised 2026-09-16 when
-decision 16 was built:
-
-- **Nothing limits how many charges a force lays.** No stock, no cooldown. For
-  a force that would sit still anyway — the demo's camouflaged hold-fire
-  ambusher is exactly one — the two turns cost nothing it was going to spend,
-  so laying charges all battle is never worse than not. The natural answer is a
-  stock per force, which is ammunition (backlog 12). Do not invent one; ask.
 
 One rules question is **open but not asked**, because nothing needs it yet:
 
@@ -85,6 +82,13 @@ One rules question is **open but not asked**, because nothing needs it yet:
 ## Do not re-propose
 
 Closed deliberately, with reasons that are not obvious from the code:
+
+- **A limit on how many charges a force may lay.** No stock and no cooldown is
+  deliberate: put to the author 2026-09-16 and **deferred to ammunition**
+  (backlog 12), because a stock of charges per force is the same mechanism as
+  rounds per force and a separate one here would only have to be unpicked. It
+  is a known dominated option in the meantime — for a force that was going to
+  sit still anyway the two turns are free (decision 16).
 
 - **An artillery battery as a standalone unit.** Indirect fire is off-map
   *because* the playable slice is the platoon-leader view — a platoon commander
