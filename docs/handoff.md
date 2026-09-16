@@ -92,11 +92,25 @@ with two halves:
   Without it, running under covering fire was never worse than walking.
 - Three of the four attack paths carried the rule and `fireExplosive` carried
   neither half, so a force could declare חיפוי and still fire an RPG.
+- The interrupt was only half built: a bound was interrupted at the point of
+  exposure, but a shot and an assault were *replied to* after the fact, so a
+  coverer that was itself the target could be dead before it answered. Both
+  are interrupts now (author, 2026-09-16).
 - "Spends the force's action" was true only on the turn it was declared,
   because `firedThisTurn` is cleared at upkeep while the posture is not. The
   economy is derived now (`Game.actionSpent`), which also stops a watching
   force being treated as one that has fired — that flag is read by two other
   rules, and borrowing it stood the force up and halved its cover.
+
+**One thing about covering fire to keep in mind when it is next played.** A
+force answers only an enemy its side has **detected** (author, 2026-09-16), and
+the roll that picks a mover up happens on the way into the *fire* phase — after
+the movement phase. So the first bound that breaks cover in front of a coverer
+is not answered; the ambush fires on the next one. That is the ruling working
+as given, not a bug, and it is pinned by a test — but it is the sort of thing
+that feels wrong at the table before it is explained, and the alternative (the
+coverer rolls its own look at the moment of the trigger) is a change he would
+have to make, not us.
 
 **A prepared position now protects from turn 1, and is left behind when the
 force walks away** (decision 12, ✅ author 2026-09-16, two rulings the same

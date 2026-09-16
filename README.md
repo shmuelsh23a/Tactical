@@ -1014,14 +1014,24 @@ on the stated reasoning, still awaiting the author's word.
     under covering fire is never worse than walking, which would make the gait
     control a trap.
 
-    ⚠️ **Two questions the four answers do not settle**, both ours for now:
-    a coverer that is itself the target of the trigger resolves the enemy's
-    attack *first* and answers only if it survives — an interrupt for the move
-    trigger and a reply for the other two; and covering fire engages an enemy
-    the covering side has never detected, where a standing order deliberately
-    will not (`orderedTargetFor` refuses to aim a force at something nobody has
-    seen). Defensible for a bound, since movement is what reveals; less so for
-    a shot at range.
+    ✅ **A shot and an assault are interrupted exactly as a bound is**
+    (author, 2026-09-16). The covering force answers *before* the enemy's
+    attack resolves, not after — so a coverer that is itself the target is not
+    dead before it replies. The attack still goes in, interrupted and never
+    cancelled, but with whatever the covering fire has left it: a force that
+    has just lost men has fewer shooters.
+
+    ✅ **A force answers only an enemy its side has detected** (author,
+    2026-09-16) — the same standard `orderedTargetFor` holds an order to, where
+    the engine refuses to aim a force at something nobody has seen.
+
+    **What that costs, and it is meant.** The enemy's chance to pick a mover up
+    is rolled on the way into the *fire* phase (`observeFromPositions`), which
+    is after the movement phase — so **the first bound that breaks cover in
+    front of a covering force is not answered**. The ambush fires on the next
+    one. A force that was already on its side's map is answered the moment it
+    moves, which is the common case once contact is made; a force coming out of
+    dead ground gets one bound free. Pinned by a test, both halves.
 
     A standing order to **hold fire** still wins over the posture: decision 6
     enforces hold-fire even against the player's own click, so it is not to be

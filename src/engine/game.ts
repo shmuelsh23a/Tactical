@@ -839,6 +839,14 @@ export class Game {
         // said this force does not shoot, and decision 6 means it (holdFire is
         // enforced even against the player's own click).
         if (this.isHoldingFire(coverer.id, actor.id)) continue;
+        // A force does not answer what its side has never seen (author,
+        // 2026-09-16). The same standard `orderedTargetFor` holds an order to:
+        // the engine must not aim a force at something nobody has detected.
+        // Note what this costs, and that it is meant: the enemy's chance to
+        // pick a mover up is rolled on the way into the *fire* phase, after
+        // the bound — so the first bound that breaks cover in front of a
+        // coverer is not answered. The ambush fires on the next one.
+        if (this.trackIntel && !this.knows(coverer.side, actor.id)) continue;
 
         const bands = posture.weapon === "sustainedMg" ? SUSTAINED_MG_BANDS : SMALL_ARMS_BANDS;
         const canFireAt = (at: Point): boolean => {
@@ -1058,6 +1066,12 @@ export class Game {
         coveringFire: [],
       };
     }
+    // Answered before the shot is resolved, not after: an interrupt, the same
+    // way a bound is interrupted (author, 2026-09-16). The attacker's own fire
+    // still happens — interrupted, never cancelled — but it happens with
+    // whatever the covering fire has just left it, since a force that has lost
+    // men has fewer shooters.
+    const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       ...opts,
@@ -1068,7 +1082,6 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) this.exchangeContact(attacker, target);
-    const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     this.journal({ kind: "fire", attackerId, targetId, opts });
     return { ...fireResult, coveringFire };
   }
@@ -1093,13 +1106,13 @@ export class Game {
         coveringFire: [],
       };
     }
+    const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
       turn: this.turn,
     });
     if (result.fired) this.exchangeContact(attacker, target);
-    const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return { ...result, coveringFire };
   }
@@ -1137,12 +1150,13 @@ export class Game {
         coveringFire: [],
       };
     }
+    // Interrupted before it goes in, like any other action (see `fire`).
+    const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const result = resolveAssault(this.rng, attacker, this.getUnit(defenderId), {
       grenades,
       turn: this.turn,
     });
     if (result.fired) this.exchangeContact(attacker, this.getUnit(defenderId));
-    const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
     return { ...result, coveringFire };
   }

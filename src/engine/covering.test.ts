@@ -112,6 +112,73 @@ describe("covering fire", () => {
     expect(running.result.hitChance).toBeLessThan(walking.result.hitChance);
   });
 
+  it("interrupts a shot rather than replying to it", () => {
+    // Proved by what the attacker has left when its own fire resolves: its
+    // soldiers are one point from going down, so the covering volley takes
+    // shooters off it. Answered afterwards, it would have fired at full
+    // strength (author, 2026-09-16 — "interrupt the same way").
+    const { g, red, blue } = covered(2, { x: 0, y: 0 }, { x: 0, y: 20 });
+    for (const s of g.getUnit(blue.id).soldiers!) s.damagePoints = 7;
+    g.setCovering(red.id, true);
+    toNextMovement(g);
+    g.advanceToPhase("combat");
+
+    const shooting = g.fire(blue.id, red.id, { weapon: "smallArms" });
+    expect(shooting.coveringFire[0]!.result.newCasualties).toBeGreaterThan(0);
+    expect(shooting.shooters).toBeLessThan(8);
+  });
+
+  it("interrupts an assault the same way", () => {
+    const { g, red, blue } = covered(2, { x: 0, y: 0 }, { x: 0, y: 20 });
+    for (const s of g.getUnit(blue.id).soldiers!) s.damagePoints = 7;
+    g.setCovering(red.id, true);
+    toNextMovement(g);
+    g.advanceToPhase("combat");
+
+    const assault = g.assault(blue.id, red.id, 0);
+    expect(assault.coveringFire[0]!.result.newCasualties).toBeGreaterThan(0);
+    // The assault still goes in — interrupted, never cancelled — but with
+    // fewer men than set out.
+    expect(assault.fired).toBe(true);
+  });
+
+  describe("with the knowledge model on", () => {
+    /** As `covered`, but the sides keep a picture of each other. */
+    function watched(seed = 1, redAt = { x: 0, y: 0 }, blueAt = { x: 0, y: 200 }) {
+      const g = new Game({ seed, enforceC2: false, trackIntel: true, terrain: FLAT_GROUND });
+      const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", redAt, 8));
+      const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", blueAt, 8));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      return { g, red, blue };
+    }
+
+    it("does not answer an enemy its side has never seen", () => {
+      // Author, 2026-09-16: only if detected. The same standard a standing
+      // order is held to — the engine must not aim a force at something
+      // nobody has seen.
+      const { g, red, blue } = watched();
+      expect(g.knows("RED", blue.id)).toBe(false);
+      g.setCovering(red.id, true);
+      toNextMovement(g);
+      expect(g.moveUnit(blue.id, { x: 0, y: 180 }, "normal").coveringFire).toEqual([]);
+      // Nothing was fired, so nothing was spent: it is still watching.
+      expect(g.getUnit(red.id).covering).toBeDefined();
+    });
+
+    it("answers once its side has the enemy on its map", () => {
+      const { g, red, blue } = watched();
+      // A shot puts both forces on each other's map (decision 12).
+      g.fire(red.id, blue.id, { weapon: "smallArms" });
+      expect(g.knows("RED", blue.id)).toBe(true);
+      toNextMovement(g);
+      g.advanceToPhase("combat");
+      g.setCovering(red.id, true);
+      toNextMovement(g);
+      expect(g.moveUnit(blue.id, { x: 0, y: 180 }, "normal").coveringFire).toHaveLength(1);
+    });
+  });
+
   it("is refused to a force that has already fired", () => {
     const { g, red, blue } = covered(1, { x: 0, y: 0 }, { x: 0, y: 100 });
     g.fire(red.id, blue.id, { weapon: "smallArms" });
