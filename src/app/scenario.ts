@@ -64,6 +64,13 @@ export function buildDemoScenario(seed = 2026): Scenario {
   const ambush = makeInfantry("RED-1", "RED", "squad", { x: 380, y: 336 }, 6, "מחלקה א'/1");
   ambush.camouflaging = true;
   ambush.camouflageTurns = CAMOUFLAGE_TURNS_AT_MAX;
+  // The one force on this map that lays charges during the battle (rules
+  // decision 16). The rule gives the work to an insurgent or special force,
+  // and force *types* do not exist yet — they arrive with echelon scaling
+  // (backlog 3) — so until they do, the scenario says which force is one.
+  // ⚠️ Ours, not the author's: the demo's RED is a conventional platoon, and
+  // this is here so the rule can be played rather than only tested.
+  ambush.canLayCharges = true;
   // Set before it is added: addUnit records the force as it stands, so a unit
   // dressed after the fact would replay undressed.
   game.addUnit(ambush);

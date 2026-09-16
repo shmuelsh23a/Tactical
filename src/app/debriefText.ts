@@ -1,6 +1,8 @@
-import { ASSAULT_RANGE_M, OBSERVATION_SECTOR, sectorBonus } from "../engine/index.js";
+import { ASSAULT_RANGE_M, CHARGE_LAYING, OBSERVATION_SECTOR, sectorBonus } from "../engine/index.js";
 import type {
   ActionOutcome,
+  ChargeWorkReport,
+  Mine,
   GameRecording,
   MovementMode,
   ObservationSector,
@@ -76,6 +78,17 @@ export function reasonHe(reason?: string): string {
       return "המטרה אינה עוד";
     case "could not fire":
       return "לא ניתן לירות";
+    // …a charge that could not be started (rules decision 16)
+    case "not a charge-laying force":
+      return "כוח זה אינו מניח מטענים";
+    case "no one left to lay it":
+      return "אין מי שיניח את המטען";
+    case "already moved this turn":
+      return "כבר נע בתור זה — הנחת מטען דורשת תור שלם";
+    case "was hit this turn":
+      return "נפגע בתור זה — לא ניתן להתחיל עבודה";
+    case "out of the order cycle":
+      return "מחוץ למחזור הפקודות";
     default:
       return reason ?? "לא ניתן לבצע";
   }
@@ -91,6 +104,38 @@ export function unitNames(recording: GameRecording): Map<string, string> {
 }
 
 const at = (p: { x: number; y: number }) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
+
+/** What a charge is called, by kind. */
+export const chargeHe = (type: Mine["type"]) =>
+  type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
+
+/**
+ * What became of a force's charge-laying work, in Hebrew (rules decision 16).
+ * Shared by the live log and the debrief, so the two read the same.
+ */
+export function chargeWorkHe(
+  report: ChargeWorkReport,
+  name: string,
+  /**
+   * Whether to say **where**. The debrief does — it is filtered to the
+   * reader's own forces. The live hotseat log does not: its entries are tagged
+   * with a side but shown to whoever is at the table, so a charge's position
+   * is the one thing not to print there.
+   */
+  opts: { where?: boolean } = {},
+): string {
+  const where = opts.where === false ? "" : ` ${at(report.position)}`;
+  if (report.mine) return `${name} סיים להניח ${chargeHe(report.type)}${where}`;
+  const why =
+    report.interrupted === "moved"
+      ? "זז ממקומו"
+      : report.interrupted === "fought"
+        ? "פתח באש"
+        : report.interrupted === "neutralized"
+          ? "נוטרל"
+          : "נפגע";
+  return `${name} הפסיק להניח ${chargeHe(report.type)} — ${why}, העבודה אבדה`;
+}
 
 /**
  * The eight points of the compass a bearing falls in. The engine measures a
@@ -281,6 +326,10 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${who(action.unitId)} ${action.on ? "מסווה את עמדתו" : "הפסיק הסוואה"}`;
     case "setScouting":
       return `${who(action.unitId)} ${action.on ? "יצא לסיור" : "חזר מסיור"}`;
+    case "layCharge":
+      return action.type
+        ? `${who(action.unitId)} מתחיל להניח ${chargeHe(action.type)}`
+        : `${who(action.unitId)} הפסיק להניח מטען`;
     case "setObservationSector":
       return action.sector
         ? `${who(action.unitId)} — גזרת תצפית: ${describeSector(action.sector)}`
@@ -351,6 +400,12 @@ export function describeOutcome(
       for (const seen of outcome.observed ?? []) {
         if (!lens.isOwn(seen.observerId)) continue;
         parts.push(`${who(seen.observerId)} איתר את ${who(seen.targetId)}`);
+      }
+      // What the reader's own engineering came to. An enemy charge going into
+      // the ground is precisely what he is not told (rules decision 16).
+      for (const report of outcome.chargeWork ?? []) {
+        if (!lens.isOwn(report.unitId)) continue;
+        parts.push(chargeWorkHe(report, who(report.unitId)));
       }
       for (const impact of outcome.resolved) {
         const off = Math.round(
@@ -465,6 +520,11 @@ export function describeOutcome(
 
     case "setScouting":
       return outcome.on ? "מגלה טוב יותר, נע בהליכה בלבד" : "חוזר לקצב רגיל";
+
+    case "layCharge":
+      return outcome.type
+        ? `${CHARGE_LAYING.turnsToLay} תורות עבודה — הכוח נשאר במקומו ואינו לוחם`
+        : "העבודה שנצברה אבדה";
 
     case "setObservationSector":
       return outcome.sector ? sectorWorthHe(outcome.sector) : "תצפית לכל הכיוונים";

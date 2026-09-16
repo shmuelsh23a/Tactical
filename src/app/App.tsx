@@ -2,6 +2,7 @@ import { useReducer, useRef, useState } from "react";
 import {
   ASSAULT_RANGE_M,
   CAMOUFLAGE,
+  CHARGE_LAYING,
   DIG_IN,
   MOVEMENT_PROFILES,
   OBSERVATION_SECTOR,
@@ -17,6 +18,7 @@ import {
   sealRecording,
   sectorBonus,
   verifyRecording,
+  type ChargeWorkReport,
   type GameRecording,
   type IndirectFireResult,
   type Observation,
@@ -31,6 +33,8 @@ import {
 } from "../engine/index.js";
 import {
   casualtyReport,
+  chargeHe,
+  chargeWorkHe,
   describeExecution,
   describeSector,
   describeStandingOrder,
@@ -292,6 +296,28 @@ export function App() {
     }
   }
 
+  /**
+   * Report what became of each force's charge-laying work as the turn closed
+   * (rules decision 16) — the charge that went in, or the work that was lost.
+   *
+   * **Without saying where.** The hotseat log is one shared list tagged by
+   * side, not a per-side view (`LogPanel` renders every entry), so a position
+   * printed here would hand the enemy a charge he has not found. The debrief
+   * is the place that may say where, because it *is* filtered — see
+   * `describeOutcome`'s phase step.
+   */
+  function logChargeWork(reports: ChargeWorkReport[]) {
+    for (const report of reports) {
+      const unit = game.units.find((u) => u.id === report.unitId);
+      if (!unit) continue;
+      pushLog(
+        chargeWorkHe(report, unit.name, { where: false }),
+        report.mine ? "info" : "fire",
+        unit.side,
+      );
+    }
+  }
+
   /** Log indirect fire and smoke that arrived while stepping between phases. */
   function logImpacts(resolved: IndirectFireResult[], smokeArrived: SmokeScreen[]) {
     for (const s of smokeArrived) {
@@ -405,6 +431,36 @@ export function App() {
       on
         ? `${selectedOwn.name} יוצא לסיור — תנועה בהליכה בלבד`
         : `${selectedOwn.name} חוזר מסיור`,
+      "info",
+      viewingSide,
+    );
+    force();
+  }
+
+  /**
+   * Set the selected force to laying a charge where it stands, or call the
+   * work off (rules decision 16). It takes {@link CHARGE_LAYING.turnsToLay}
+   * turns of standing still and staying out of the fight, and only a force
+   * trained for it may start.
+   */
+  function handleLayCharge(type: "antiPersonnel" | "antiTank") {
+    if (!selectedOwn || enginePhase !== "movement") return;
+    // The same button calls the work off when it is already laying that kind;
+    // the other button switches, which starts the count again from nothing.
+    const stopping = selectedOwn.layingCharge?.type === type;
+    const switching = selectedOwn.layingCharge && !stopping;
+    try {
+      game.layCharge(selectedOwn.id, stopping ? null : type);
+    } catch (e) {
+      pushLog(`${selectedOwn.name} — ${reasonHe((e as Error).message)}`, "info", viewingSide);
+      return;
+    }
+    pushLog(
+      stopping
+        ? `${selectedOwn.name} הפסיק להניח מטען — העבודה אבדה`
+        : switching
+          ? `${selectedOwn.name} מחליף ל${chargeHe(type)} — העבודה שנצברה אבדה, ${CHARGE_LAYING.turnsToLay} תורות מחדש`
+          : `${selectedOwn.name} מתחיל להניח ${chargeHe(type)} — ${CHARGE_LAYING.turnsToLay} תורות`,
       "info",
       viewingSide,
     );
@@ -677,7 +733,7 @@ export function App() {
       }
     } else {
       // End of turn: run upkeep + begin the next turn.
-      game.advanceToPhase("initiative");
+      logChargeWork(game.advanceToPhase("initiative").chargeWork);
       const order = game.initiativeOrder;
       setActivations(buildActivations(order));
       setActIndex(0);
@@ -1050,6 +1106,37 @@ export function App() {
                     {selectedOwn?.camouflaging ? "הפסק הסוואה" : "הסווה עמדה"}
                   </button>
 
+                  {/* Laying a charge in front of the position (rules decision
+                      16). Only a force trained for it — an insurgent or a
+                      special force — gets the control at all, so the panel
+                      stays as it was for everyone else. */}
+                  {selectedOwn?.canLayCharges && (
+                    <>
+                      <label>הנחת מטען:</label>
+                      <div className="seg">
+                        {(["antiPersonnel", "antiTank"] as const).map((type) => (
+                          <button
+                            key={type}
+                            className={selectedOwn.layingCharge?.type === type ? "on" : ""}
+                            onClick={() => handleLayCharge(type)}
+                            title={`${CHARGE_LAYING.turnsToLay} תורות עבודה, והפקודה הקודמת מתבטלת. הכוח חייב לעמוד במקומו ולהישאר מחוץ לקרב — תנועה, ירי או פגיעה בו מאבדות את העבודה.`}
+                          >
+                            {type === "antiTank" ? 'נ"ט' : 'נ"א'}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedOwn.layingCharge && (
+                        <p className="hint">
+                          מניח {chargeHe(selectedOwn.layingCharge.type)} —{" "}
+                          {turnsLeftHe(
+                            CHARGE_LAYING.turnsToLay - selectedOwn.layingCharge.turnsWorked,
+                          )}
+                          . תנועה, ירי או פגיעה בכוח יאבדו את העבודה.
+                        </p>
+                      )}
+                    </>
+                  )}
+
                   <p className="hint">
                     בחר כוח, ולחץ על המפה כדי לתת פקודה (בתוך הטווח המסומן). הפקודה
                     נשארת בתוקף — הכוח ממשיך אליה ומבצע את משימתו בכל תור עד שתוחלף.
@@ -1155,6 +1242,11 @@ export function App() {
       </div>
     </div>
   );
+}
+
+/** "One turn left" reads differently from "two turns left" in Hebrew. */
+function turnsLeftHe(turns: number): string {
+  return turns === 1 ? "נותר תור אחד" : `נותרו ${turns} תורות`;
 }
 
 interface OrderInfo {

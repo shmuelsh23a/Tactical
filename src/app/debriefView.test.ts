@@ -24,13 +24,17 @@ function battle(): GameRecording {
   const g = new Game({ seed: 5, enforceC2: false, trackIntel: true });
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 260 }, 8));
   g.addUnit(makeCommandGroup("BLUE-HQ", "BLUE", "platoon", { x: 0, y: 300 }, 3));
-  const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
+  // Flagged before it is added — addUnit records the force as it stands.
+  const redSquad = makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6);
+  redSquad.canLayCharges = true;
+  const red = g.addUnit(redSquad);
   g.addUnit(makeInfantry("RED-2", "RED", "squad", { x: 400, y: 0 }, 6));
 
   g.beginTurn();
   g.advanceToPhase("movement");
   g.setStandingOrder(blue.id, { gait: "normal", destination: { x: 0, y: 100 } });
   g.executeStandingOrders("BLUE");
+  g.layCharge(red.id, "antiPersonnel");
   g.advanceToPhase("combat");
   g.fire(red.id, blue.id, { weapon: "sustainedMg" });
   g.advanceToPhase("summary");
@@ -62,6 +66,14 @@ describe("what a side is shown of the battle", () => {
       expect(visible(index, "BLUE")).toBe(action.unit.side === "BLUE");
       expect(visible(index, "RED")).toBe(action.unit.side === "RED");
     }
+  });
+
+  it("never shows the enemy laying a charge", () => {
+    // The work is done out of sight; the charge is found on the ground by the
+    // search roll or not at all (rules decisions 10 and 16).
+    const work = find("layCharge")[0]!;
+    expect(visible(work.index, "RED")).toBe(true);
+    expect(visible(work.index, "BLUE")).toBe(false);
   });
 
   it("never shows the enemy's orders", () => {
@@ -124,6 +136,52 @@ describe("what a side is told an action produced", () => {
     expect(line).toMatch(/יורים/); // its own men, and its own chance
     expect(line).toContain("ללא תצפית על המטרה");
     expect(line).not.toMatch(/נפגעים|נוטרל/); // nothing about what it found
+  });
+
+  /**
+   * The other half of the charge rule's disclosure. Hiding the *decision* to
+   * lay one buys nothing if the line that reports the finished charge — the
+   * one carrying its position — reaches the enemy's debrief. So this drives a
+   * battle past the end of a turn, which is where that line is produced.
+   */
+  it("never tells the enemy a charge went into the ground", () => {
+    const g = new Game({ seed: 5, enforceC2: false, trackIntel: true });
+    g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 400 }, 8));
+    const layer = makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6);
+    layer.canLayCharges = true;
+    g.addUnit(layer);
+
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.layCharge("RED-1", "antiTank");
+    for (let turn = 0; turn < 2; turn++) {
+      g.advanceToPhase("summary");
+      g.advancePhase();
+      g.advanceToPhase("movement");
+    }
+    expect(g.mines).toHaveLength(1); // the work finished
+
+    const rec = g.toRecording();
+    const theirSides = unitSides(rec);
+    const theirNames = unitNames(rec);
+    const review = replayForReview(rec);
+    const step = review.steps.findIndex(
+      (s) => s.outcome.kind === "phase" && (s.outcome.chargeWork ?? []).some((w) => w.mine),
+    );
+    expect(step).toBeGreaterThan(-1);
+
+    const lens = (side: Side) => ({
+      isOwn: (id: string) => theirSides.get(id) === side,
+      // Worst case for the rule: the enemy is holding a contact on the layer.
+      mayKnow: () => true,
+    });
+    const outcome = review.steps[step]!.outcome;
+    const action = rec.actions[step]!;
+    const red = describeOutcome(outcome, theirNames, lens("RED"), action);
+    const blue = describeOutcome(outcome, theirNames, lens("BLUE"), action);
+    expect(red).toContain("סיים להניח");
+    expect(blue).not.toContain("מטען");
+    expect(blue).not.toContain("להניח");
   });
 
   it("does not tell a side what the enemy's own orders produced", () => {
