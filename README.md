@@ -168,11 +168,10 @@ Engine capability the UI does not reach yet — the next obvious work:
   — a range is the only condition the engine watches for. "Engage anything that
   appears on this axis", "hold fire until the artillery lands", or a fire plan
   tied to the indirect-fire missions would all need the order model widened.
-- **Charges cannot be laid during play** — they are placed when a scenario is
-  built. Laying them is an engineering action the document does not describe.
-- **A force cannot be told where to look.** Scouting raises what a force finds
-  everywhere at once; there is no sector, no observation post, and no way to
-  watch one approach rather than another.
+- **A force cannot be told to lay a charge as part of an order.** It can lay
+  one — `layCharge`, rules decision 16, with a control in the movement panel —
+  but the work is a decision taken force by force each time, not something a
+  standing order can carry.
 - **The reach is drawn, not the ring.** The selected force's movement range
   is the true shape of its bound over the ground (rules decision 15): the
   flat circle where the ground is flat, less where it climbs, and for a
@@ -750,6 +749,59 @@ on the stated reasoning, still awaiting the author's word.
     Figures: [`data/terrain.ts`](src/engine/data/terrain.ts). Mechanism:
     [`terrain.ts`](src/engine/terrain.ts), `Game.hasLineOfSight` now taking
     the two forces. Drawn by [`Relief.tsx`](src/app/components/Relief.tsx).
+
+16. ✅ **Charges are laid in setup, or laid in play at a cost in turns**
+    (ruled by the author 2026-09-16). The document describes charges only as
+    something already on the ground and never mentions engineering work during
+    a battle. The ruling has two halves:
+
+    - **The defender lays his minefields and IEDs during the setup phase.**
+      That is what `addMine` now is — it refuses once the first turn has begun,
+      so a charge cannot appear behind the enemy in mid-battle by a call the
+      player was never charged for.
+    - **An insurgent or a special force may lay a charge during play, and it
+      takes 2 turns** (tentative, like every figure — on
+      [balance.md](docs/balance.md)). `Game.layCharge(unitId, type)` sets the
+      work going in the movement phase; the charge goes into the ground armed
+      and undetected at the end of the second turn, where the work was begun.
+
+    **Selection of force types is deliberately not built.** The author's word:
+    it arrives with **echelon scaling** (backlog 3). Until then the capability
+    is a flag on the force — `canLayCharges` — that a scenario sets, and only a
+    force carrying it gets the control at all.
+
+    ⚠️ **What the two turns cost is ours, not the author's.** The force must
+    spend them doing nothing else: a turn in which it moves, fires, **is hit**
+    or is neutralised loses the work outright rather than banking it, and
+    starting the work replaces the order the force was holding. That is the
+    whole tradeoff — the charge is bought with two turns of a force that
+    neither manoeuvres nor shoots, and an enemy who finds the layer can take it
+    away by hitting him.
+
+    Note **hit**, not *fired on*: nothing in the engine marks a force that was
+    shot at and missed, so a force under ineffective fire goes on working. The
+    alternative would need a new flag set on a miss, which would change what
+    `underFire` means for movement as well.
+
+    ⚠️ **Nothing limits how many charges a force lays.** There is no stock and
+    no cooldown: a force that survives two quiet turns may start again the
+    next. For a force that would sit still anyway — the demo's camouflaged
+    hold-fire ambusher is exactly one — the two turns cost it nothing it was
+    going to spend, so laying charges all battle is never worse than not. **A
+    question for the author**, and the natural answer (a stock of charges per
+    force) is ammunition, which is backlog 12.
+
+    ⚠️ **The charge is laid where the force stands**, not at a point it
+    chooses within reach. Nothing in the document gives a reach, and the
+    charge's own trigger radius (10 m, decision 10) already covers a squad's
+    frontage.
+
+    One rule, one owner: the work is judged at the end of the turn from the
+    per-turn flags the force finished with (`progressChargeLaying` in
+    [`game.ts`](src/engine/game.ts)), rather than being cancelled at each of
+    the places a force might do something else — the two-halves trap this
+    repo keeps paying for. Figures:
+    [`data/engineering.ts`](src/engine/data/engineering.ts).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -135,6 +135,8 @@ tweak later when we get to balancing — write it down". So: written down.
 | Assault reach | **25 m** | ✅ author, decision 11 | [`combat/assault.ts`](../src/engine/combat/assault.ts) |
 | Grenades per assault | **0–3, no ammunition tracked** | ours, decision 11 | UI |
 | Indirect fire | **one mission + one screen per side per turn** | ✅ author, decision 8 | UI limit over an engine that models `roundsPerTurn`. Correct *for the platoon-leader slice* — a platoon commander calls for fire, he does not own a battery. Replaced by a real battery unit at battalion and above (backlog 3), so retune this only within the current echelon. |
+| Laying a charge in play | **2 turns** of work | ✅ author, decision 16 | [`data/engineering.ts`](../src/engine/data/engineering.ts). "Tentatively 2 turns" — his word, 2026-09-16. What the turns *cost* is ours: a turn in which it moves, fires, **is hit** or is neutralised loses the work outright rather than banking it, and starting the work replaces the force's standing order. Shorten the work and a charge becomes a routine move; let the work be banked across interruptions and the cost stops being two quiet turns at all. **Unbounded**: no stock, no cooldown — a force that keeps surviving may keep laying, and for a force that was going to sit still anyway the two turns are free. A stock per force is ammunition (backlog 12); flagged to the author. |
+| Who may lay one in play | **an insurgent or special force** | ✅ author, decision 16 | A `canLayCharges` flag the scenario sets, until force *types* arrive with echelon scaling (backlog 3). The demo gives it to RED-1 so the rule can be played — ⚠️ ours, and one line to delete when types land. |
 | Fog-of-war fallback radius | **300 m** (`SPOT_RANGE_M`) | ours | [`app/hotseat.ts`](../src/app/hotseat.ts) — only used when `trackIntel` is off |
 | What-if runs | **20** | ours | [`app/whatIf.ts`](../src/app/whatIf.ts) — a UI choice, not a rule |
 
@@ -150,6 +152,11 @@ tweak later when we get to balancing — write it down". So: written down.
   everything and BLUE sees nothing until it is fired on. That may be correct for
   a prepared defence; it is worth playing an attack that uses smoke and scouts
   before deciding.
+- **A charge laid in play has not been measured yet.** Nobody has played the
+  two turns out against a moving attack, so whether 2 turns is cheap or
+  expensive is an open question rather than a recorded figure. The thing to
+  measure when the balance pass comes: how often a layer survives two
+  uninterrupted turns within reach of the enemy's axis at all.
 - **Full camouflage at setup is strong.** The demo's forward RED squad starts at
   the -50% cap, which is the author's prepared-position reading. Against it, a
   walking searcher has 30% inside 20 m and a scout 40%.

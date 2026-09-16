@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `056d056`, 2026-09-06.** This is the working note for whoever
+**Current as of `6082298`, 2026-09-16.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 325 tests, 17 files
+npm run check       lint + typecheck clean, 345 tests, 18 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -63,17 +63,24 @@ the balance pass, not to the rules list, and live on
 | Decision 9 | smoke radii **25 / 50 / 100 m** | The document sizes no screen. |
 | Decision 13 | casualty bands **0 / 1–2 / 3–5 / 6+** | He confirmed that reports are banded, not where the bands fall. |
 | Decision 15 | eye heights **1.5 / 2.5 / 0.5 m**, object cover, **8 m per metre climbed**, **30°** for vehicles | All his, all "tentative until balance". |
+| Decision 16 | laying a charge takes **2 turns** | "Tentatively", 2026-09-16. What the two turns *cost* is ours. |
 
 **Decision 11's riders** (no assault on armour, no ammunition tracking) remain
 assumptions he has not contradicted; ammunition is backlog 12's job.
 
-Two rules questions are **open but not asked**, because nothing needs them
-yet — raise them the moment the work does:
+**One question is out with him and unanswered**, raised 2026-09-16 when
+decision 16 was built:
+
+- **Nothing limits how many charges a force lays.** No stock, no cooldown. For
+  a force that would sit still anyway — the demo's camouflaged hold-fire
+  ambusher is exactly one — the two turns cost nothing it was going to spend,
+  so laying charges all battle is never worse than not. The natural answer is a
+  stock per force, which is ammunition (backlog 12). Do not invent one; ask.
+
+One rules question is **open but not asked**, because nothing needs it yet:
 
 - **Roads as going.** The map draws roads and the engine ignores them. Faster
   along a road, a vehicle confined to one — the document does not raise it.
-- **Laying charges during play.** The document describes no engineering work.
-  Ask before building; it is the smallest item on the pick-up list.
 
 ## Do not re-propose
 
@@ -127,16 +134,22 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-1. **Laying charges during play.** Small and self-contained, but the document
-   does not describe engineering work at all — ask before building (see
-   *Waiting on the author*).
-2. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
+1. **Morale** (backlog 1). The neutralise rule is the only cohesion model; the
    posture system is the natural place to hang suppression.
-3. **A scenario tool.** Backlog 6 is otherwise done — real elevation, real
+2. **A scenario tool.** Backlog 6 is otherwise done — real elevation, real
    objects and roads, sight lines, cover and climb cost derived from them, the
    true reach drawn. What is left is picking a window and laying a battle out
    on it without editing `scenario.ts` by hand: the two fetch tools are the
    pattern (a tool that writes a module, provenance in its header).
+3. **The live combat log is not filtered by side.** `LogPanel` renders every
+   entry; an entry's `side` is a colour chip, not a filter. So RED's detections,
+   its posture changes and its charge work are all readable on BLUE's screen in
+   a hotseat game. The *debrief* enforces disclosure properly (two
+   compiler-checked switches in [`debriefView.ts`](../src/app/debriefView.ts));
+   the live log never has. Decision 16 works around it by leaving the charge's
+   position off the live line, which is a patch on one line and not the fix.
+   What a shared-screen hotseat log should hide is a rules question as much as
+   a code one.
 
 Small things noticed and left: the debrief has no *height* readout for a
 force; `fetch-osm.py` keeps a way whole when any vertex is inside, so Route 6
@@ -164,6 +177,10 @@ the code currently stands:
   two halves of a single rule applied at different layers or measured off
   different geometry — each half defensible alone. When you touch one half, go
   and read the other.
+- **`addMine` is setup only now** (decision 16). A test or tool that emplaced a
+  charge mid-game gets a `PhaseError`; in play a force lays one, which takes
+  turns. Every call site was already before `beginTurn`, so nothing had to
+  move — but a new one written from memory will fail.
 - **`addUnit` records the force as it stands.** Setting `camouflaging` or
   `baseCover` after adding a unit desyncs the recording from the live game — the
   replay gets an undressed unit. Set it before `addUnit`.
