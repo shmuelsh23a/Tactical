@@ -294,6 +294,24 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 - Standing orders: a force keeps to its last order until it is replaced
 - Battle recording: a game replays exactly from its seed and action log
 
+### Not implemented, and the document does describe it
+
+- **חיפוי — covering fire.** The document names three actions in phase 6,
+  `ירי\חיפוי\הסתערות`, and the engine has two of them. The rule itself is one
+  line — *פגיעה במקרה של פעולה על ידי האויב: כמו ירי* ("a hit in the case of an
+  action by the enemy: like fire") — so what it resolves *to* is settled, and
+  what it resolves *on* is not: what counts as an enemy action, whether the
+  force declares it in advance, whether it interrupts the enemy's move or waits
+  for the fire phase, and whether it spends the force's one fire action. Raised
+  with the author 2026-09-16; do not build it on a reading.
+
+  The nearest thing that exists is a standing order to **hold fire with an
+  engagement range** — an ambush that springs itself when the enemy comes
+  inside a distance — but that is chosen in advance and resolved in the fire
+  phase, not in reaction to a move. It also bears on rules decision 12: cover
+  is read at the end of the turn, which is right while nothing shoots mid-bound
+  and would need revisiting if something did.
+
 ## Rules decisions
 
 Where the document is silent or ambiguous, the reading is decided here rather
@@ -518,6 +536,24 @@ on the stated reasoning, still awaiting the author's word.
       ground's objects at once but left `baseCover` to `endTurnUnitUpkeep`,
       and nothing in the repo set `baseCover` at setup, so nothing noticed
       until the Tel Azeka scenario did.
+
+      **…and leaves it behind when it walks away** (✅ author, 2026-09-16).
+      Moving clears `baseCover` exactly as it clears the digging and the
+      camouflage: a prepared position is ground a force made ready, not a
+      property it carries. Before this a prepared defender that displaced took
+      its cover with it and was safer on the move than a force that had never
+      dug at all. What it does still get is whatever the *ground* offers where
+      it stops — the object it now stands against is the map's, not its own
+      work — which is what keeps "moving falls back to the ground, not to
+      nothing" true.
+
+      **Cover is read at the end of the turn, not on arrival** (✅ author,
+      2026-09-16). A force that moves into a building is behind it from the
+      next turn, not from the moment it arrives, and one that leaves is in the
+      open from the next turn. Confirmed as correct rather than changed. It
+      would need revisiting if **covering fire** (חיפוי) were ever built — see
+      the gap list — since a force shot at mid-bound would be resolved against
+      the cover it had where it started.
 
       **Dress a force for setup with `baseCover`, never with `cover`.**
       Placement *raises* `cover`; upkeep *recomputes* it from `baseCover`, the

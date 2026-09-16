@@ -46,7 +46,18 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Nothing.** The last one closed the same day it was raised: a force learns
+**One, and it is the biggest thing on this page: חיפוי — covering fire.** The
+document names three actions in phase 6 (`ירי\חיפוי\הסתערות`) and the engine
+has two. The rule is a single line — *פגיעה במקרה של פעולה על ידי האויב: כמו
+ירי* — so how it resolves is settled and what triggers it is not: what counts
+as an enemy action, whether it is declared in advance, whether it interrupts a
+bound or waits for the fire phase, and whether it spends the force's one fire
+action. Found 2026-09-16 while answering his question about attacks of
+opportunity; he has the question. **Do not build it on a reading** — it is the
+first unimplemented rule the document actually states, which makes it a
+different kind of item from everything else on the backlog.
+
+Everything else is answered. The last one closed the same day it was raised: a force learns
 that a charge **it laid** has gone off only **if it can see it happen** — line
 of sight, not ownership (decision 17). Sight is the weaker test on purpose, so
 the layer who can only see the ground is told his charge fired, while a side
@@ -66,13 +77,21 @@ The only ⚠️ left in it is scaffolding rather than a rule — the demo hands
 RED-1 the `canLayCharges` flag so the rule can be played, and that line goes
 when force types arrive with echelon scaling.
 
-**A prepared position now protects from turn 1** (decision 12, ✅ author
-2026-09-16: "a force that prepared the position before battle should start dug
-in"). `addUnit` used to raise cover from the ground's objects only and leave
+**A prepared position now protects from turn 1, and is left behind when the
+force walks away** (decision 12, ✅ author 2026-09-16, two rulings the same
+hour). `addUnit` used to raise cover from the ground's objects only and leave
 `baseCover` to the first upkeep, so a defender who had prepared stood in the
-open through turn 1's exchange of fire. Latent for as long as nothing set
-`baseCover` at setup — the Tel Azeka scenario was the first thing that did, and
-its test found it the same hour it was written.
+open through turn 1's exchange of fire; and nothing ever cleared `baseCover`,
+so that same defender could displace 800 m into the open and take its cover
+with it — safer on the move than a force that had never dug. Both halves were
+latent for as long as nothing set `baseCover` at setup. The Tel Azeka scenario
+was the first thing that did, and its test found the first half the same hour
+it was written.
+
+He also confirmed, rather than changed, that **cover is read at the end of the
+turn and not on arrival**: a force that moves into a building is behind it from
+the next turn. That holds while nothing shoots mid-bound — which is why חיפוי
+above is not just another backlog item.
 
 Some are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
