@@ -291,6 +291,12 @@ the code currently stands:
   straight through it from the far side. `OWN_OBJECT_SIGHT_M` is twice the
   cover reach for exactly the wall-versus-building distinction; read
   `terrainBlocksSight`'s comment before touching either number.
+- **A zero-size Browser pane makes every map click land at (0, -1).** With the
+  pane hidden the page gets no layout at all — `innerWidth` is 0 — so a click
+  aimed as a fraction of `svg.map`'s rect maps to the origin, the order *is*
+  accepted, and the log shows a plausible-looking bound to nowhere. Set a
+  viewport (`resize_window` 1280×900) before aiming at map coordinates, and
+  re-measure the rect *after* the map is on screen rather than at a handoff.
 - **The console buffer in the Browser pane survives reloads.** After changing
   an export's shape (a component becoming a `memo`), the buffer shows
   "Component is not a function" with an *older* module timestamp than the
