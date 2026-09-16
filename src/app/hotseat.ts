@@ -1,4 +1,4 @@
-import { Game, distance, type Side, type Unit } from "../engine/index.js";
+import { Game, canObserve, distance, type Side, type Unit } from "../engine/index.js";
 
 /** The engine phases a player acts in, in turn order. */
 export type ActivationPhase = "targeting" | "movement" | "combat";
@@ -113,6 +113,25 @@ export function computeRevealed(game: Game, side: Side, spotRange = SPOT_RANGE_M
     }
   }
   return revealed;
+}
+
+/**
+ * Whether `side` has **eyes on** `unit` — any live force of its own with an
+ * unobstructed line to it (rules decision 15's one sight test).
+ *
+ * Weaker than holding a contact, and deliberately so: seeing is not the same as
+ * having *found* a force, which is a detection roll (decision 12). It is the
+ * right test for something a side watches happen rather than searches out —
+ * a charge it laid going off under somebody (rules decision 17).
+ */
+export function hasEyesOn(game: Game, side: Side, unit: Unit): boolean {
+  // `canObserve` rather than `isGone`: the engine's detection roll already owns
+  // the question of whether a force is in any state to be looking — a
+  // neutralised squad is still drawn on the map but is not watching anything —
+  // and asking it a second way here is how the two halves of one rule drift.
+  return game.units.some(
+    (u) => u.side === side && canObserve(u) && game.hasLineOfSight(u, unit),
+  );
 }
 
 /** The board as one side is entitled to see it. */

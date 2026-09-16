@@ -95,6 +95,7 @@ export {
   detectByUav,
   detectionChance,
   isHidden,
+  canObserve,
   observeFromPosition,
   sectorFocus,
   type DetectionResult,

@@ -113,8 +113,12 @@ export function sweepsGroundCrossed(mode: MovementMode): boolean {
   return mode === "normal";
 }
 
-/** Whether a force is in any state to be observing at all. */
-function canObserve(unit: Unit): boolean {
+/**
+ * Whether a force is in any state to be observing at all. Exported because it
+ * is the one owner of that question: anything asking "can this side see it"
+ * must agree with what the detection roll itself will do.
+ */
+export function canObserve(unit: Unit): boolean {
   if (unit.neutralized) return false;
   return !(unit.kind === "vehicle" && unit.vehicle?.destroyed);
 }

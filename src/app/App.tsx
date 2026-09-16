@@ -48,6 +48,7 @@ import {
   buildActivations,
   computeRevealed,
   disclose,
+  hasEyesOn,
   isGone,
   sideDefeated,
   sideView,
@@ -645,16 +646,19 @@ export function App() {
             pushLog(`${name} דרך על ${kind} — לא הופעל`, "info", onlyFor(side));
             continue;
           }
-          // Who it went off *under* is news only to a side with eyes on that
-          // force. **That it went off at all is the layer's**: his charge is
-          // spent, and its marker leaves his map the same instant — he would
-          // otherwise watch it vanish with nothing in the log to say why
-          // (⚠️ rules decision 17, ours; the document rules on neither).
+          // Who it went off *under* is news only to a side holding a contact on
+          // that force. **That it went off at all reaches the layer if he can
+          // see it happen** — ruled by the author 2026-09-16: line of sight,
+          // not ownership. A charge is not a telephone; a layer watching the
+          // ground he mined sees the explosion, and one who has moved off
+          // behind a crest learns nothing until he goes and looks (rules
+          // decision 17). Seeing is weaker than having found the force, so he
+          // is told his charge fired and not who trod on it.
           if (unit) {
             pushPerSide("casualty", side, (reader) =>
               mayKnowOf(reader, unit)
                 ? `${kind} התפוצץ תחת ${name}!`
-                : reader === det.side
+                : reader === det.side && hasEyesOn(game, reader, unit)
                   ? `${kind} שהונח הופעל`
                   : null,
             );
