@@ -37,6 +37,7 @@ import {
   chargeWorkHe,
   describeExecution,
   describeSector,
+  describeBound,
   describeStandingOrder,
   isRoutineOrderReason,
   reasonHe,
@@ -45,11 +46,15 @@ import {
 import { buildDemoScenario, type Scenario } from "./scenario.js";
 import {
   buildActivations,
+  computeRevealed,
+  disclose,
   isGone,
   sideDefeated,
   sideView,
+  SIDES,
   type Activation,
   type ActivationPhase,
+  type Audience,
   type LogEntry,
 } from "./hotseat.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
@@ -106,6 +111,7 @@ export function App() {
       id: ++logIdRef.current,
       turn: game.turn,
       kind: "info",
+      readers: SIDES,
       text: `תור ${game.turn} — יוזמה: ${initialOrder.join(" → ")}`,
     },
   ]);
@@ -146,9 +152,66 @@ export function App() {
   const missionSpent = (side: Side, kind: Mission) =>
     missionsUsed.current[`${side}-${kind}`] === game.turn;
 
-  function pushLog(text: string, kind: LogEntry["kind"], side?: Side) {
-    setLog((l) => [...l, { id: ++logIdRef.current, turn: game.turn, text, kind, ...(side ? { side } : {}) }]);
+  /**
+   * Write a line of the live log **and say who may read it** (rules decision
+   * 17). The audience is required: both players read this one list across a
+   * handoff, so a line without one would be a line the enemy reads by default
+   * — which is exactly the hole this closes.
+   */
+  function pushLog(text: string, kind: LogEntry["kind"], audience: Audience) {
+    const { readers, side } = disclose(audience);
+    setLog((l) => [
+      ...l,
+      { id: ++logIdRef.current, turn: game.turn, text, kind, readers, ...(side ? { side } : {}) },
+    ]);
   }
+
+  /** The umpire's bookkeeping: the turn, the phase, the result of the battle. */
+  const TABLE: Audience = { to: "table" };
+  /** Taken behind one side's own lines — orders, postures, what it picked up. */
+  const onlyFor = (side: Side): Audience => ({ to: "side", side });
+  /** An exchange both sides were in, in words both are entitled to. */
+  const sharedBy = (by: Side): Audience => ({ to: "both", by });
+
+  /**
+   * One line per reader, worded as each is entitled to read it (rules decisions
+   * 13 and 17): the owner of a force that took losses counts them, anybody
+   * watching gets a report, and a side that was not watching gets `null` and no
+   * line at all. Only one of the copies can ever reach a given screen.
+   */
+  function pushPerSide(kind: LogEntry["kind"], by: Side, text: (reader: Side) => string | null) {
+    for (const reader of SIDES) {
+      const line = text(reader);
+      if (line != null) pushLog(line, kind, { to: "side", side: reader, by });
+    }
+  }
+
+  /**
+   * Whether `reader` is entitled to know what became of `unit`: its own force
+   * always, an enemy's only while it is holding a contact on it. The live
+   * counterpart of the debrief's lens (rules decision 13).
+   *
+   * **A stale mark is not a sighting.** `game.knows` says a contact record
+   * exists, not that anybody is looking now — and decision 13 is explicit that
+   * a stale contact carries the state it was last seen in, "a squad neutralised
+   * after it dropped out of sight still reads as a live mark until somebody
+   * looks again". So the enemy branch asks for a report from *this* turn, the
+   * same `seenNow` test `sideView` draws the map with. Without it a side would
+   * read `נראה מנוטרל` in the log off a three-turn-old mark that its own map
+   * still draws alive — two halves of one rule measured off different geometry,
+   * which is the trap this repo keeps paying for.
+   *
+   * Without the knowledge model the ledger is never written, so `knows` would
+   * answer "no" forever and a side would be told nothing about a force it can
+   * see drawn on its own map. `sideView` has the same fallback for the same
+   * reason: the flat spotting radius stands in for the ledger.
+   */
+  const mayKnowOf = (reader: Side, unit: Unit) => {
+    if (unit.side === reader) return true;
+    if (!game.trackIntel) return computeRevealed(game, reader).has(unit.id);
+    const contact = game.contactFor(reader, unit.id);
+    return contact != null && contact.lastSeenTurn >= game.turn;
+  };
 
   const currentActivation =
     stage === "activation" && actIndex < activations.length ? activations[actIndex] : null;
@@ -173,13 +236,10 @@ export function App() {
   const selectedCanManoeuvre = selectedOwn ? !awaitingOrders.has(selectedOwn.id) : false;
 
   const nameOf = (id: string) => game.units.find((u) => u.id === id)?.name ?? id;
-  /**
-   * How losses read to the side at the screen: exactly for its own forces, as a
-   * report for anyone else's (rules decision 13). The umpire's exact numbers are
-   * in the debrief, which is where the whole picture belongs.
-   */
-  const lossesOf = (unit: Unit, casualties: number) =>
-    casualtyReport(casualties, unit.side === viewingSide);
+  // `lossesOf` lived here: it worded losses from whoever happened to be at the
+  // screen and then wrote that line for the whole table, which is how a RED
+  // casualty count reached BLUE. A line both sides read is now worded once per
+  // reader instead (`pushPerSide`) — rules decision 17.
   /** Enemies this side can currently see — the only ones an order may name. */
   const visibleEnemies = visibleUnits.filter((u) => u.side !== viewingSide && !u.neutralized);
   const selectedOrder = selectedOwn ? game.standingOrderFor(selectedOwn.id) : undefined;
@@ -248,7 +308,7 @@ export function App() {
           ? "כבר הונח מסך עשן בתור זה"
           : "כבר סומנה משימת אש בתור זה",
         "info",
-        viewingSide,
+        onlyFor(viewingSide),
       );
       return;
     }
@@ -261,19 +321,21 @@ export function App() {
             ? `${what} הונח — ${order.durationTurns} תורות`
             : `${what} סומן — יגיע בתור ${order.arrivesOnTurn}`,
           "fire",
-          viewingSide,
+          // A screen the enemy can see is on the map; that *this* side laid it,
+          // from what, and when the next one arrives, is its own fire plan.
+          onlyFor(viewingSide),
         );
       } else {
         const m = game.queueIndirectFire(tube, viewingSide, { x, y });
         pushLog(
           `משימת אש — ${tubeHe[tube]}, פגיעה צפויה בתור ${m.resolvesOnTurn}`,
           "fire",
-          viewingSide,
+          onlyFor(viewingSide),
         );
       }
       missionsUsed.current[`${viewingSide}-${mission}`] = game.turn;
     } catch (err) {
-      pushLog((err as Error).message, "info", viewingSide);
+      pushLog((err as Error).message, "info", onlyFor(viewingSide));
     }
     force();
   }
@@ -292,7 +354,9 @@ export function App() {
       const key = `${observer.side}:${targetId}`;
       if (reported.current.has(key)) continue;
       reported.current.add(key);
-      pushLog(`${observer.name} איתר את ${nameOf(targetId)}`, "info", observer.side);
+      // That it has been spotted, and by whom, is the one thing a force does
+      // not learn (rules decision 17).
+      pushLog(`${observer.name} איתר את ${nameOf(targetId)}`, "info", onlyFor(observer.side));
     }
   }
 
@@ -300,50 +364,84 @@ export function App() {
    * Report what became of each force's charge-laying work as the turn closed
    * (rules decision 16) — the charge that went in, or the work that was lost.
    *
-   * **Without saying where.** The hotseat log is one shared list tagged by
-   * side, not a per-side view (`LogPanel` renders every entry), so a position
-   * printed here would hand the enemy a charge he has not found. The debrief
-   * is the place that may say where, because it *is* filtered — see
-   * `describeOutcome`'s phase step.
+   * **And where**, now that the log is filtered (rules decision 17). Decision
+   * 16 left the position off this line because every entry was readable from
+   * both sides of the table; the line is written for the laying side alone, so
+   * it says what the debrief has always been allowed to say.
    */
   function logChargeWork(reports: ChargeWorkReport[]) {
     for (const report of reports) {
       const unit = game.units.find((u) => u.id === report.unitId);
       if (!unit) continue;
-      pushLog(
-        chargeWorkHe(report, unit.name, { where: false }),
-        report.mine ? "info" : "fire",
-        unit.side,
-      );
+      pushLog(chargeWorkHe(report, unit.name), report.mine ? "info" : "fire", onlyFor(unit.side));
     }
   }
 
-  /** Log indirect fire and smoke that arrived while stepping between phases. */
+  /**
+   * Log indirect fire and smoke that arrived while stepping between phases.
+   *
+   * A screen on the map and a round coming down are plain to the whole table.
+   * **How far the round fell from its aim point is not** — that measures the
+   * shell against the gunner's own aim, so only the side that called the
+   * mission is told it (rules decision 17). Who it caught follows the same rule
+   * as any other loss: its owner counts, a watcher gets a report, and a side
+   * with no eyes on the force is told nothing about it at all.
+   */
   function logImpacts(resolved: IndirectFireResult[], smokeArrived: SmokeScreen[]) {
     for (const s of smokeArrived) {
-      pushLog(`מסך עשן ירד — רדיוס ${s.radius}מ', ${s.turnsRemaining} תורות`, "fire");
+      pushLog(`מסך עשן ירד — רדיוס ${s.radius}מ', ${s.turnsRemaining} תורות`, "fire", TABLE);
     }
     for (const r of resolved) {
       const off = Math.round(distance(r.aim, r.dispersion.impact));
       const weapon = tubeHe[r.weapon as Tube] ?? r.weapon;
-      pushLog(
-        off > 0 ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה` : `${weapon}: פגיעה מדויקת במטרה`,
-        "fire",
-      );
+      const fell = `${weapon}: נחיתה`;
+      if (r.side) {
+        pushPerSide("fire", r.side, (reader) =>
+          reader !== r.side
+            ? fell
+            : off > 0
+              ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה`
+              : `${weapon}: פגיעה מדויקת במטרה`,
+        );
+      } else {
+        pushLog(fell, "fire", TABLE);
+      }
       for (const hit of r.blast.targets) {
         if (!hit.caught) continue;
-        const name = game.units.find((u) => u.id === hit.unitId)?.name ?? hit.unitId;
         const victim = game.units.find((u) => u.id === hit.unitId);
-        pushLog(
-          victim && victim.side !== viewingSide
-            ? `${name} נפגע מ${weapon} — ${lossesOf(victim, hit.newCasualties)}`
-            : `${name} נפגע מ${weapon}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`,
-          "casualty",
-        );
-        if (hit.neutralized) pushLog(`${name} נוטרל!`, "casualty");
+        if (!victim) continue;
+        logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, r.side, `נפגע מ${weapon}`);
       }
     }
     if (resolved.length) checkVictory();
+  }
+
+  /**
+   * What a force caught, worded for each side that is entitled to hear it
+   * (rules decisions 13 and 17): its owner reads the exact damage and count, a
+   * side watching it reads a report, and a side with no contact on it reads
+   * nothing. `by` is whose colour the line flies — the side that caused it,
+   * where there is one.
+   */
+  function logLosses(
+    victim: Unit,
+    casualties: number,
+    damage: number,
+    neutralized: boolean,
+    by: Side | undefined,
+    what: string,
+  ) {
+    pushPerSide("casualty", by ?? victim.side, (reader) => {
+      if (!mayKnowOf(reader, victim)) return null;
+      return victim.side === reader
+        ? `${victim.name} ${what}: ${damage} נק"פ, ${casualties} נפגעים`
+        : `${victim.name} ${what} — ${casualtyReport(casualties, false)}`;
+    });
+    if (!neutralized) return;
+    pushPerSide("casualty", by ?? victim.side, (reader) => {
+      if (!mayKnowOf(reader, victim)) return null;
+      return victim.side === reader ? `${victim.name} נוטרל!` : `${victim.name} נראה מנוטרל`;
+    });
   }
 
   const smokeInFlight = game.pendingSmoke.filter((m) => m.side === viewingSide);
@@ -386,7 +484,7 @@ export function App() {
   function aimSectorAt(unit: Unit, x: number, y: number) {
     game.watchTowards(unit.id, { x, y }, sectorWidth);
     const sector = game.getUnit(unit.id).observationSector!;
-    pushLog(`${unit.name} — גזרת תצפית: ${describeSector(sector)}`, "info", viewingSide);
+    pushLog(`${unit.name} — גזרת תצפית: ${describeSector(sector)}`, "info", onlyFor(viewingSide));
     setAimingSector(false);
     force();
   }
@@ -395,7 +493,7 @@ export function App() {
   function handleClearSector() {
     if (!selectedOwn || enginePhase !== "movement") return;
     game.setObservationSector(selectedOwn.id, null);
-    pushLog(`${selectedOwn.name} — תצפית מעגלית`, "info", viewingSide);
+    pushLog(`${selectedOwn.name} — תצפית מעגלית`, "info", onlyFor(viewingSide));
     setAimingSector(false);
     force();
   }
@@ -414,7 +512,7 @@ export function App() {
         ? `${selectedOwn.name} מסווה את עמדתו`
         : `${selectedOwn.name} הפסיק הסוואה — ההסוואה שנצברה אבדה`,
       "info",
-      viewingSide,
+      onlyFor(viewingSide),
     );
     force();
   }
@@ -432,7 +530,7 @@ export function App() {
         ? `${selectedOwn.name} יוצא לסיור — תנועה בהליכה בלבד`
         : `${selectedOwn.name} חוזר מסיור`,
       "info",
-      viewingSide,
+      onlyFor(viewingSide),
     );
     force();
   }
@@ -452,7 +550,7 @@ export function App() {
     try {
       game.layCharge(selectedOwn.id, stopping ? null : type);
     } catch (e) {
-      pushLog(`${selectedOwn.name} — ${reasonHe((e as Error).message)}`, "info", viewingSide);
+      pushLog(`${selectedOwn.name} — ${reasonHe((e as Error).message)}`, "info", onlyFor(viewingSide));
       return;
     }
     pushLog(
@@ -462,7 +560,7 @@ export function App() {
           ? `${selectedOwn.name} מחליף ל${chargeHe(type)} — העבודה שנצברה אבדה, ${CHARGE_LAYING.turnsToLay} תורות מחדש`
           : `${selectedOwn.name} מתחיל להניח ${chargeHe(type)} — ${CHARGE_LAYING.turnsToLay} תורות`,
       "info",
-      viewingSide,
+      onlyFor(viewingSide),
     );
     force();
   }
@@ -485,15 +583,16 @@ export function App() {
         `${unit.name} מחוץ למחזור הפקודות — ממשיך בפקודה הקודמת` +
           (next != null ? ` (פקודה חדשה: תור ${next})` : ""),
         "info",
-        viewingSide,
+        onlyFor(viewingSide),
       );
       return;
     }
     const next = game.nextOrderTurn(unit.id);
     game.setStandingOrder(unit.id, order);
-    pushLog(`${unit.name} — פקודה: ${describeStandingOrder(order, nameOf)}`, "move", viewingSide);
+    // An order is not something the enemy can watch being given.
+    pushLog(`${unit.name} — פקודה: ${describeStandingOrder(order, nameOf)}`, "move", onlyFor(viewingSide));
     if (next != null && next > game.turn + 1) {
-      pushLog(`${unit.name} — פקודה חדשה רק בתור ${next}`, "info", viewingSide);
+      pushLog(`${unit.name} — פקודה חדשה רק בתור ${next}`, "info", onlyFor(viewingSide));
     }
     runStandingOrders();
     force();
@@ -503,12 +602,12 @@ export function App() {
   function moveCommandGroup(unit: Unit, x: number, y: number) {
     try {
       const { detection: det } = game.moveUnit(unit.id, { x, y }, gait);
-      pushLog(`${unit.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", viewingSide);
+      pushLog(`${unit.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", onlyFor(viewingSide));
       if (det.spottedUnitIds.length) {
-        pushLog(`גילוי: ${det.spottedUnitIds.map(nameOf).join(", ")}`, "info", viewingSide);
+        pushLog(`גילוי: ${det.spottedUnitIds.map(nameOf).join(", ")}`, "info", onlyFor(viewingSide));
       }
     } catch (err) {
-      pushLog((err as Error).message, "info", viewingSide);
+      pushLog((err as Error).message, "info", onlyFor(viewingSide));
     }
     force();
   }
@@ -523,49 +622,71 @@ export function App() {
       const unit = game.units.find((u) => u.id === done.unitId);
       const name = unit?.name ?? done.unitId;
       if (done.moved) {
-        pushLog(describeExecution(done, nameOf), "move", side);
+        // The bound, what it picked up and what it walked onto are this side's
+        // own business; the enemy reads a move it was watching off the map,
+        // where the mark is properly stale (rules decision 17).
+        // The bound only: `describeExecution` reports an engagement ahead of a
+        // move, so asking it here would print the shot under the move branch
+        // and again below if the engine ever sets both in one execution.
+        const bound = describeBound(done, nameOf);
+        if (bound) pushLog(bound, "move", onlyFor(side));
         const { detection, mineDetonations } = done.moved.result;
         if (detection.spottedUnitIds.length) {
-          pushLog(`גילוי: ${detection.spottedUnitIds.map(nameOf).join(", ")}`, "info", side);
+          pushLog(`גילוי: ${detection.spottedUnitIds.map(nameOf).join(", ")}`, "info", onlyFor(side));
         }
         if (detection.foundMineIds.length) {
-          pushLog(`${name} איתר ${detection.foundMineIds.length} מטענים`, "info", side);
+          pushLog(`${name} איתר ${detection.foundMineIds.length} מטענים`, "info", onlyFor(side));
         }
         for (const det of mineDetonations) {
           const kind = det.type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
           if (!det.activated) {
-            pushLog(`${name} דרך על ${kind} — לא הופעל`, "info", side);
+            // Nothing happened and nothing was heard: a dud is noticed only by
+            // the force that trod on it.
+            pushLog(`${name} דרך על ${kind} — לא הופעל`, "info", onlyFor(side));
             continue;
           }
-          pushLog(`${kind} התפוצץ תחת ${name}!`, "casualty", side);
+          // Who it went off *under* is news only to a side with eyes on that
+          // force. **That it went off at all is the layer's**: his charge is
+          // spent, and its marker leaves his map the same instant — he would
+          // otherwise watch it vanish with nothing in the log to say why
+          // (⚠️ rules decision 17, ours; the document rules on neither).
+          if (unit) {
+            pushPerSide("casualty", side, (reader) =>
+              mayKnowOf(reader, unit)
+                ? `${kind} התפוצץ תחת ${name}!`
+                : reader === det.side
+                  ? `${kind} שהונח הופעל`
+                  : null,
+            );
+          }
           for (const hit of det.blast?.targets ?? []) {
             if (!hit.caught) continue;
             const victim = game.units.find((u) => u.id === hit.unitId);
-            const label = victim?.name ?? hit.unitId;
-            pushLog(
-              victim && victim.side !== side
-                ? `${label} — ${lossesOf(victim, hit.newCasualties)}`
-                : `${label}: ${hit.damage} נק"פ, ${hit.newCasualties} נפגעים`,
-              "casualty",
-              side,
-            );
-            if (hit.neutralized) pushLog(`${label} נוטרל!`, "casualty", side);
+            if (!victim) continue;
+            logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, side, `נפגע מ${kind}`);
           }
         }
       }
       if (done.engaged) {
-        const engaged = game.units.find((u) => u.id === done.engaged!.targetId);
-        pushLog(
-          describeExecution(done, nameOf, engaged?.side === side),
-          done.engaged.newCasualties > 0 ? "casualty" : "fire",
-          side,
+        const engagement = done.engaged;
+        const engaged = game.units.find((u) => u.id === engagement.targetId);
+        // Being fired on is always known, and firing puts the firer on the
+        // target's map anyway (rules decision 13) — so an engagement under
+        // orders crosses, worded as each side is entitled to read it.
+        pushPerSide(engagement.newCasualties > 0 ? "casualty" : "fire", side, (reader) =>
+          describeExecution(done, nameOf, engaged?.side === reader ? "target" : "firer"),
         );
         if (engaged?.neutralized) {
-          pushLog(`${engaged.name} ${engaged.side === side ? "נוטרל!" : "נראה מנוטרל"}`, "casualty", side);
+          const down = engaged;
+          pushPerSide("casualty", side, (reader) =>
+            mayKnowOf(reader, down)
+              ? `${down.name} ${down.side === reader ? "נוטרל!" : "נראה מנוטרל"}`
+              : null,
+          );
         }
       }
       if (done.reason && !isRoutineOrderReason(done.reason)) {
-        pushLog(`${name}: ${reasonHe(done.reason)}`, "info", side);
+        pushLog(`${name}: ${reasonHe(done.reason)}`, "info", onlyFor(side));
       }
     }
     checkVictory();
@@ -576,7 +697,7 @@ export function App() {
     // One action per force per fire phase. (A command group may fire too, but
     // only with its small personnel — i.e. fitSoldiers attack rolls.)
     if (selectedOwn.firedThisTurn) {
-      pushLog(`${selectedOwn.name} כבר ביצע פעולה בשלב הירי`, "fire", viewingSide);
+      pushLog(`${selectedOwn.name} כבר ביצע פעולה בשלב הירי`, "fire", onlyFor(viewingSide));
       return;
     }
     const target = game.units.find((u) => u.id === enemyId);
@@ -592,28 +713,52 @@ export function App() {
       // smoke on the map.
       if (selectedOwn.kind === "vehicle") {
         const r = game.fireExplosive("tankRound", selectedOwn.id, target.id);
-        if (!r.fired) pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
-        else if (!r.hit) pushLog(`${selectedOwn.name} ירה פגז — החטאה`, "fire", viewingSide);
-        else pushLog(`${selectedOwn.name} פגע ב${target.name} בפגז טנק`, "casualty", viewingSide);
+        // A shot that was never taken is the firer's own bookkeeping; a round
+        // going downrange is an exchange both sides are in (decisions 13, 17).
+        if (!r.fired) pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
+        else if (!r.hit) pushLog(`${selectedOwn.name} ירה פגז — החטאה`, "fire", sharedBy(viewingSide));
+        else
+          pushLog(
+            `${selectedOwn.name} פגע ב${target.name} בפגז טנק`,
+            "casualty",
+            sharedBy(viewingSide),
+          );
       } else {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.
         const r = game.fire(selectedOwn.id, target.id, { weapon });
         if (!r.fired) {
-          pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
+          pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
         } else {
-          pushLog(
-            `${selectedOwn.name} → ${target.name}: ${r.shooters} יורים ב-${Math.round(
-              r.hitChance * 100,
-            )}% — ${lossesOf(target, r.newCasualties)}`,
-            r.newCasualties > 0 ? "casualty" : "fire",
-            viewingSide,
+          // The two readers are told different things, and not just in tone.
+          // **How many of its men fired and at what chance is the firer's own
+          // business** (rules decision 13) — `shooters` is the force's exact
+          // fit strength, so printing it at the target would hand over, every
+          // turn, the very state the casualty bands exist to hide. The target
+          // is told what landed on its own men instead, which is what
+          // `describeExecution` gives it in the debrief.
+          const who = `${selectedOwn.name} → ${target.name}`;
+          pushPerSide(r.newCasualties > 0 ? "casualty" : "fire", viewingSide, (reader) =>
+            target.side === reader
+              ? `${who}: ${r.hits} פגיעות — ${casualtyReport(r.newCasualties, true)}`
+              : `${who}: ${r.shooters} יורים ב-${Math.round(r.hitChance * 100)}% — ${casualtyReport(
+                  r.newCasualties,
+                  false,
+                )}`,
           );
         }
       }
-      if (target.neutralized) pushLog(`${target.name} נראה מנוטרל`, "casualty", viewingSide);
+      if (target.neutralized) {
+        pushPerSide("casualty", viewingSide, (reader) =>
+          !mayKnowOf(reader, target)
+            ? null
+            : target.side === reader
+              ? `${target.name} נוטרל!`
+              : `${target.name} נראה מנוטרל`,
+        );
+      }
     } catch (err) {
-      pushLog((err as Error).message, "fire", viewingSide);
+      pushLog((err as Error).message, "fire", onlyFor(viewingSide));
     }
     checkVictory();
     force();
@@ -624,26 +769,40 @@ export function App() {
     try {
       const r = game.assault(attacker.id, target.id, grenades);
       if (!r.fired) {
-        pushLog(`${attacker.name}: ${reasonHe(r.reason)}`, "fire", viewingSide);
+        pushLog(`${attacker.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
       } else {
-        pushLog(
-          `${attacker.name} הסתער על ${target.name}: ${r.fireHits} פגיעות אש` +
-            (grenades > 0 ? `, ${r.grenadeHits}/${grenades} רימונים` : "") +
-            `, ${lossesOf(target, r.defenderCasualties)}`,
-          r.defenderCasualties > 0 ? "casualty" : "fire",
-          viewingSide,
+        // Same split as direct fire: what the attacker threw is its own
+        // ammunition state, what landed is the defender's to count.
+        const went = `${attacker.name} הסתער על ${target.name}`;
+        pushPerSide(r.defenderCasualties > 0 ? "casualty" : "fire", viewingSide, (reader) =>
+          target.side === reader
+            ? `${went}: ${r.fireHits} פגיעות אש` +
+              (r.grenadeHits > 0 ? `, ${r.grenadeHits} פגיעות רימון` : "") +
+              `, ${casualtyReport(r.defenderCasualties, true)}`
+            : `${went}` +
+              (grenades > 0 ? ` עם ${grenades} רימונים` : "") +
+              `, ${casualtyReport(r.defenderCasualties, false)}`,
         );
         if (r.selfCasualties > 0) {
+          // What a force did to itself with its own grenades is its own to know.
           pushLog(
             `${attacker.name} ספג ${r.selfCasualties} נפגעים מרימוני עצמו`,
             "casualty",
-            viewingSide,
+            onlyFor(viewingSide),
           );
         }
-        if (r.defenderNeutralized) pushLog(`${target.name} נראה מנוטרל`, "casualty", viewingSide);
+        if (r.defenderNeutralized) {
+          pushPerSide("casualty", viewingSide, (reader) =>
+            !mayKnowOf(reader, target)
+              ? null
+              : target.side === reader
+                ? `${target.name} נוטרל!`
+                : `${target.name} נראה מנוטרל`,
+          );
+        }
       }
     } catch (err) {
-      pushLog((err as Error).message, "fire", viewingSide);
+      pushLog((err as Error).message, "fire", onlyFor(viewingSide));
     }
     checkVictory();
     force();
@@ -665,7 +824,7 @@ export function App() {
     link.download = `${scn.title} — תור ${game.turn}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    pushLog(`הקרב נשמר להקלטה (${recording.actions.length} פעולות)`, "info");
+    pushLog(`הקרב נשמר להקלטה (${recording.actions.length} פעולות)`, "info", TABLE);
   }
 
   /** Read a saved recording and hand it to the debrief view. */
@@ -681,11 +840,12 @@ export function App() {
             (check.firstDivergence?.index ?? 0) + 1
           }`,
           "info",
+          TABLE,
         );
       }
       setDebrief(parsed);
     } catch (err) {
-      pushLog(`טעינת ההקלטה נכשלה: ${(err as Error).message}`, "info");
+      pushLog(`טעינת ההקלטה נכשלה: ${(err as Error).message}`, "info", TABLE);
       force();
     }
   }
@@ -696,7 +856,7 @@ export function App() {
         const win = side === "RED" ? "BLUE" : "RED";
         setWinner(win);
         setStage("gameover");
-        pushLog(`צד ${side} נוטרל — ניצחון ל${win}`, "info");
+        pushLog(`צד ${side} נוטרל — ניצחון ל${win}`, "info", TABLE);
       }
     }
   }
@@ -719,7 +879,7 @@ export function App() {
         // Stepping into movement crosses resolvePriorArty, where fire missions
         // marked on an earlier turn come down.
         const { resolved, smokeArrived, observed } = game.advanceToPhase(to);
-        pushLog(`מעבר ל${phaseLabelHe[to]}`, "phase");
+        pushLog(`מעבר ל${phaseLabelHe[to]}`, "phase", TABLE);
         logImpacts(resolved, smokeArrived);
         logNewContacts(observed);
       }
@@ -738,7 +898,7 @@ export function App() {
       setActivations(buildActivations(order));
       setActIndex(0);
       setStage("initiative");
-      pushLog(`תור ${game.turn} — יוזמה: ${order.join(" → ")}`, "info");
+      pushLog(`תור ${game.turn} — יוזמה: ${order.join(" → ")}`, "info", TABLE);
     }
     force();
   }
@@ -1237,7 +1397,15 @@ export function App() {
             </div>
           )}
 
-          <LogPanel log={log} />
+          {/*
+            Nobody owns the screen during a handoff or on the initiative panel:
+            `viewingSide` is already the *incoming* side there, while the device
+            is still in the outgoing player's hands (rules decision 17).
+          */}
+          <LogPanel
+            log={log}
+            reader={stage === "activation" && !showHandoff ? viewingSide : null}
+          />
         </aside>
       </div>
     </div>

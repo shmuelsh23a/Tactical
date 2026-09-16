@@ -96,3 +96,39 @@ describe("disclosure: the debrief cannot leak what a side never saw", () => {
     expect(guardsIn("engine/recording.ts")).toBe(1); // how it replays
   });
 });
+
+describe("disclosure: the live log cannot leak what a side never saw", () => {
+  const appText = files.find((f) => f.rel === "app/App.tsx")!.text;
+
+  it("gives every log line an audience", () => {
+    // `pushLog`'s third argument is required, so a line without one does not
+    // compile — but a call passing a bare `Side` where an `Audience` belongs
+    // used to be the whole bug, and it is the shape a reader reaches for from
+    // memory. Catch it as text as well (rules decision 17).
+    const calls = [...code(appText).matchAll(/pushLog\(/g)];
+    expect(calls.length).toBeGreaterThan(20);
+    const bareSide = code(appText).match(
+      /pushLog\([^;]*?,\s*"[a-z]+",\s*(viewingSide|side|unit\.side|observer\.side)\s*,?\s*\)/g,
+    );
+    expect(bareSide).toBeNull();
+  });
+
+  it("keeps the panel filtering on the reader, not on the chip", () => {
+    // The chip is decoration; `readers` is the rule. A panel that stopped
+    // filtering would still render, look right, and show both sides everything
+    // — which is exactly the state this replaced.
+    const panel = files.find((f) => f.rel === "app/components/LogPanel.tsx")!.text;
+    expect(code(panel)).toMatch(/readableBy\(\s*e\s*,\s*reader\s*\)/);
+  });
+
+  it("gives the panel no reader while nobody has claimed the screen", () => {
+    // `viewingSide` is the *incoming* activation's side, and at a handoff the
+    // device is still in the outgoing player's hands — so a panel filtered to
+    // `viewingSide` there shows him the next side's private log. The gate is
+    // the same `!showHandoff` every other sidebar block is already under.
+    const reader = code(appText).match(/reader=\{[^}]*\}/s);
+    expect(reader).not.toBeNull();
+    expect(reader![0]).toContain("!showHandoff");
+    expect(reader![0]).toContain("null");
+  });
+});

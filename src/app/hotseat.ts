@@ -9,11 +9,77 @@ export interface Activation {
   side: Side;
 }
 
+/** Both sides, in a fixed order, for anything that has to visit each in turn. */
+export const SIDES: readonly Side[] = ["RED", "BLUE"];
+
+/**
+ * Who at the table may read a line of the live log (rules decision 17).
+ *
+ * The hotseat log is one list on one screen that both players read across a
+ * handoff, so a line's `side` is a **colour chip, not a filter** — it says who
+ * acted. What a side is *entitled* to read is this, and it is a required
+ * argument of `pushLog` for the same reason the four `RecordedAction` switches
+ * are exhaustive: a new log line cannot be added without saying who may see it.
+ *
+ * The three cases mirror `debriefView.ts`, so the live log and the debrief
+ * draw the same line: the umpire's bookkeeping, a decision taken behind one's
+ * own lines, and an exchange both sides were in.
+ */
+export type Audience =
+  /** Turn structure, victory and the operator's own bookkeeping. No chip. */
+  | { to: "table" }
+  /**
+   * Read by one side only. `by` is whose colour it carries, for the copy of a
+   * shared event worded for the other side to read — "RED fired" as BLUE is
+   * entitled to read it still flies RED's chip.
+   */
+  | { to: "side"; side: Side; by?: Side }
+  /** An exchange both sides were in, in words both are entitled to. */
+  | { to: "both"; by: Side };
+
+/** The readers and the colour chip a log line takes from its audience. */
+export function disclose(audience: Audience): { readers: readonly Side[]; side?: Side } {
+  switch (audience.to) {
+    case "table":
+      return { readers: SIDES };
+    case "side":
+      return { readers: [audience.side], side: audience.by ?? audience.side };
+    case "both":
+      return { readers: SIDES, side: audience.by };
+    default: {
+      // Exhaustiveness: a new audience must say who reads it (decision 17).
+      const never: never = audience;
+      throw new Error(`Unhandled audience: ${JSON.stringify(never)}`);
+    }
+  }
+}
+
+/**
+ * Whether `reader` may read a line — and `null` means **nobody has claimed the
+ * screen yet**: a handoff, or the initiative panel between turns.
+ *
+ * That case is not a detail. `viewingSide` follows the *incoming* activation,
+ * and the handoff screen exists because the player physically holding the
+ * device at that moment is the **outgoing** one. Filtering to `viewingSide`
+ * there would show him the next side's private log — the same hole, mirrored.
+ * Until somebody presses "ready", only what belongs to the table is on screen.
+ */
+export function readableBy(entry: LogEntry, reader: Side | null): boolean {
+  // `SIDES.every` rather than a length test: it says what is meant — readable
+  // by everyone — without leaning on `readers` being duplicate-free.
+  return reader == null
+    ? SIDES.every((side) => entry.readers.includes(side))
+    : entry.readers.includes(reader);
+}
+
 /** A line in the combat/event log. */
 export interface LogEntry {
   id: number;
   turn: number;
+  /** Whose colour the line flies — who acted, not who may read it. */
   side?: Side;
+  /** The sides entitled to read the line (rules decision 17). Never empty. */
+  readers: readonly Side[];
   text: string;
   kind: "info" | "move" | "fire" | "casualty" | "phase";
 }
