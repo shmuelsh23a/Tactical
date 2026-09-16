@@ -2,6 +2,7 @@ import { Rng } from "./rng.js";
 import { roll } from "./dice.js";
 import { bearingDegrees, distance, segmentIntersectsCircle, type Point } from "./geometry.js";
 import type {
+  ChargeWork,
   Mine,
   ObservationSector,
   PendingFireMission,
@@ -20,6 +21,7 @@ import {
   type SmokeSource,
 } from "./data/smoke.js";
 import { orderInterval } from "./data/c2.js";
+import { CHARGE_LAYING } from "./data/engineering.js";
 import {
   detectByMovement,
   detectByUav,
@@ -44,6 +46,7 @@ import {
 import { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
+import { fitSoldiers } from "./units.js";
 import {
   FLAT_GROUND,
   betterCover,
@@ -78,11 +81,44 @@ export class PhaseError extends Error {}
 /** Refusal reason when a force is under orders to hold its fire. */
 export const HOLDING_FIRE = "holding fire";
 
+/**
+ * Why a force may not start laying a charge (rules decision 16). Short keys
+ * rather than sentences, so the UI words them in Hebrew through `reasonHe`
+ * exactly as it words an order's refusals.
+ */
+export const LAY_CHARGE_REFUSAL = {
+  untrained: "not a charge-laying force",
+  neutralised: "neutralised",
+  noOneLeft: "no one left to lay it",
+  alreadyMoved: "already moved this turn",
+  underFire: "was hit this turn",
+  noOrders: "out of the order cycle",
+} as const;
+
 /** What a move turned up: what the force saw, and what it set off. */
 export interface MoveResult {
   detection: DetectionResult;
   /** Charges triggered along the path walked. */
   mineDetonations: MineDetonation[];
+}
+
+/**
+ * What became of a force's charge-laying work over a turn (rules decision 16):
+ * the charge went into the ground, or the work was lost. Reported by the step
+ * that crosses the end of the turn, so the player is told either way.
+ */
+export interface ChargeWorkReport {
+  unitId: string;
+  type: Mine["type"];
+  position: Point;
+  /** The charge that went in, on the turn the work was finished. */
+  mine?: Mine;
+  /**
+   * What cost the force the work, when it lost it. `"hit"` is fire that
+   * *landed*: a force shot at and missed goes on working — nothing in the
+   * engine marks a force that was merely shot at.
+   */
+  interrupted?: "moved" | "fought" | "hit" | "neutralized";
 }
 
 /** What a call for smoke produced: a screen on the map, or one still in flight. */
@@ -239,7 +275,20 @@ export class Game {
     return unit;
   }
 
+  /**
+   * Put a charge on the ground before the battle.
+   *
+   * This is the **setup** act: the defending player lays his minefields and
+   * IEDs while the game is being laid out (rules decision 16). Once the first
+   * turn has begun a charge only reaches the ground the slow way, by a force
+   * laying it — see {@link layCharge}.
+   */
   addMine(mine: Omit<Mine, "id">): Mine {
+    if (this.turn > 0) {
+      throw new PhaseError(
+        "Charges are emplaced during setup; in play a force lays one (layCharge)",
+      );
+    }
     const m: Mine = { ...mine, id: this.nextId("mine") };
     this.mines.push(m);
     // The id is not recorded: replay regenerates it from its own counter, and
@@ -282,12 +331,15 @@ export class Game {
     resolved?: IndirectFireResult[];
     smokeArrived?: SmokeScreen[];
     observed?: Observation[];
+    chargeWork?: ChargeWorkReport[];
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
-        this.endOfTurnUpkeep();
+        // The turn ends here, and with it any charge-laying work that was
+        // going on: the step that closes the turn reports what became of it.
+        const chargeWork = this.endOfTurnUpkeep();
         this.beginTurn();
-        return { phase: this.phase };
+        return { phase: this.phase, chargeWork };
       }
       const idx = PHASES.indexOf(this.phase);
       this.phase = PHASES[idx + 1]!;
@@ -322,10 +374,12 @@ export class Game {
     resolved: IndirectFireResult[];
     smokeArrived: SmokeScreen[];
     observed: Observation[];
+    chargeWork: ChargeWorkReport[];
   } {
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
     const observed: Observation[] = [];
+    const chargeWork: ChargeWorkReport[] = [];
     this.internally(() => {
       let guard = 0;
       while (this.phase !== target) {
@@ -333,11 +387,12 @@ export class Game {
         if (step.resolved) resolved.push(...step.resolved);
         if (step.smokeArrived) smokeArrived.push(...step.smokeArrived);
         if (step.observed) observed.push(...step.observed);
+        if (step.chargeWork) chargeWork.push(...step.chargeWork);
         if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
       }
     });
     this.journal({ kind: "advanceToPhase", target });
-    return { phase: this.phase, resolved, smokeArrived, observed };
+    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork };
   }
 
   private requirePhase(p: Phase): void {
@@ -551,6 +606,78 @@ export class Game {
     unit.camouflaging = on;
     if (!on) unit.camouflageTurns = 0;
     this.journal({ kind: "setCamouflage", unitId, on });
+  }
+
+  /**
+   * Set a force to laying a charge where it stands, or call the work off
+   * (הנחת מטען). Rules decision 16.
+   *
+   * The work takes {@link CHARGE_LAYING.turnsToLay} turns and the force must
+   * spend them doing nothing else: a turn in which it moves, fires, **is hit**
+   * or is neutralised loses the work outright — it is not banked and resumed.
+   * What that buys is a charge on ground the enemy has not yet reached, laid
+   * in front of him during the battle rather than before it.
+   *
+   * Setting the work going is an **order**, and replaces the one the force was
+   * holding: a standing order to advance or to engage would be executed on the
+   * next activation and take the work away again on the turn it was
+   * commissioned.
+   *
+   * The refusals here are the states already known to be fatal *this* turn —
+   * they stop the player spending an order on work that cannot survive to the
+   * end of it. They do not judge the work: {@link progressChargeLaying} is the
+   * one place that does.
+   *
+   * Who may: only a force flagged `canLayCharges` — an insurgent or special
+   * force. Until force types exist (echelon scaling, backlog 3) the scenario
+   * sets the flag.
+   *
+   * Passing `null` calls the work off, and what has been banked is lost.
+   */
+  layCharge(unitId: string, type: Mine["type"] | null): void {
+    this.requirePhase("movement");
+    const unit = this.getUnit(unitId);
+
+    if (type === null) {
+      delete unit.layingCharge;
+      this.journal({ kind: "layCharge", unitId, type });
+      return;
+    }
+    // Refusals are short keys, not sentences: they are shown to a Hebrew
+    // player through `reasonHe`, the way an order's refusals are.
+    if (!unit.canLayCharges) throw new Error(LAY_CHARGE_REFUSAL.untrained);
+    if (unit.neutralized) throw new Error(LAY_CHARGE_REFUSAL.neutralised);
+    if (fitSoldiers(unit) === 0) throw new Error(LAY_CHARGE_REFUSAL.noOneLeft);
+    // The turn has to be spent on the work, so a force that has already used
+    // some of its bound cannot start one with what is left of it.
+    if (unit.movedThisTurn > 0) throw new Error(LAY_CHARGE_REFUSAL.alreadyMoved);
+    // …and one that has already been hit this turn would lose the work at the
+    // end of it whatever it does now.
+    if (unit.hitThisTurn || unit.underFire) throw new Error(LAY_CHARGE_REFUSAL.underFire);
+    // C2: setting a force to a task is an order like any other, and is gated
+    // the same way manoeuvre is — checked from where it stands, stamped only
+    // once the work actually begins.
+    const needsNewOrders = !this.isUnderOrders(unitId);
+    if (!this.canManoeuvre(unitId)) throw new Error(LAY_CHARGE_REFUSAL.noOrders);
+    if (needsNewOrders && this.canReceiveOrders(unitId)) this.lastOrderTurn.set(unitId, this.turn);
+
+    // The work replaces whatever the force was told to do: a live destination
+    // would be marched off on the next activation, and a live target engaged
+    // in the fire phase — either of which throws the work away.
+    const standing = this.standingOrders.get(unitId);
+    if (standing) {
+      const { destination: _d, engage: _e, ...held } = standing;
+      this.standingOrders.set(unitId, held);
+    }
+
+    const work: ChargeWork = {
+      type,
+      position: { ...unit.position },
+      turnsWorked: 0,
+      startedTurn: this.turn,
+    };
+    unit.layingCharge = work;
+    this.journal({ kind: "layCharge", unitId, type });
   }
 
   /**
@@ -1101,11 +1228,65 @@ export class Game {
 
   // ---- upkeep ----
 
-  private endOfTurnUpkeep(): void {
+  private endOfTurnUpkeep(): ChargeWorkReport[] {
     // A report nobody has refreshed for three turns is no longer a contact.
     this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
     applyBleeding(this.rng, this.units, this.turn);
     this.smoke = decaySmoke(this.smoke);
+    // Before the per-turn flags are cleared: the work is judged on what the
+    // force did with the turn it has just finished.
+    const chargeWork = this.progressChargeLaying();
     endTurnUnitUpkeep(this.units, (at) => coverFromObjects(this.terrain, at));
+    return chargeWork;
+  }
+
+  /**
+   * Carry each force's charge-laying work through the end of a turn: another
+   * turn banked, the charge in the ground, or the work lost (rules decision
+   * 16).
+   *
+   * **One owner for the whole rule.** The work is judged here, from the
+   * per-turn flags the force finished the turn with, rather than being
+   * cancelled at each of the places a force might do something else — a rule
+   * with two halves at two layers is exactly the bug this repo keeps shipping.
+   * Which is why it runs before `endTurnUnitUpkeep` clears those flags.
+   *
+   * The charge is created directly rather than through {@link addMine}: it is
+   * derived from the recorded decision to lay it, so journalling it again
+   * would add an action the replay never took. Ids still come from the game's
+   * own counter, so a replay numbers it identically.
+   */
+  private progressChargeLaying(): ChargeWorkReport[] {
+    const reports: ChargeWorkReport[] = [];
+    for (const unit of this.units) {
+      const work = unit.layingCharge;
+      if (!work) continue;
+      const interrupted =
+        unit.neutralized ? "neutralized"
+        : unit.movedThisTurn > 0 ? "moved"
+        : unit.firedThisTurn ? "fought"
+        : unit.hitThisTurn || unit.underFire ? "hit"
+        : undefined;
+      if (interrupted) {
+        delete unit.layingCharge;
+        reports.push({ unitId: unit.id, type: work.type, position: work.position, interrupted });
+        continue;
+      }
+      work.turnsWorked += 1;
+      if (work.turnsWorked < CHARGE_LAYING.turnsToLay) continue;
+
+      const mine: Mine = {
+        id: this.nextId("mine"),
+        side: unit.side,
+        type: work.type,
+        position: { ...work.position },
+        armed: true,
+        detected: false,
+      };
+      this.mines.push(mine);
+      delete unit.layingCharge;
+      reports.push({ unitId: unit.id, type: work.type, position: work.position, mine });
+    }
+    return reports;
   }
 }

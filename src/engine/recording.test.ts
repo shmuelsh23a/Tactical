@@ -23,7 +23,12 @@ function playDemo(seed = 2026): Game {
   // whether the first one survives the approach intact.
   const closer = g.addUnit(makeInfantry("BLUE-2", "BLUE", "squad", { x: 0, y: 80 }, 8));
   g.addUnit(makeCommandGroup("BLUE-HQ", "BLUE", "platoon", { x: 0, y: 380 }, 3));
-  const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 60 }, 6));
+  // RED's squad lays charges (rules decision 16). Flagged before it is added:
+  // addUnit records the force as it stands, and a replay of an undressed one
+  // would refuse the order.
+  const redSquad = makeInfantry("RED-1", "RED", "squad", { x: 0, y: 60 }, 6);
+  redSquad.canLayCharges = true;
+  const red = g.addUnit(redSquad);
   g.addUnit(makeVehicle("RED-TANK", "RED", { x: 120, y: 40 }));
   g.addMine({
     side: "RED",
@@ -46,6 +51,9 @@ function playDemo(seed = 2026): Game {
   g.advanceToPhase("movement");
   g.moveUnit(blue.id, { x: 0, y: 210 }, "run"); // walks the charge
   g.issueOrders(red.id);
+  // …and RED starts laying one of its own. It is about to be assaulted, so the
+  // work will be lost — which is the other half of the rule, replayed too.
+  g.layCharge(red.id, "antiPersonnel");
 
   g.advanceToPhase("combat");
   g.fire(blue.id, red.id, { weapon: "smallArms" });

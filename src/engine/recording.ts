@@ -14,7 +14,7 @@ import type { DirectExplosiveResult } from "./combat/explosives.js";
 import type { IndirectFireResult } from "./combat/indirectFire.js";
 import type { AssaultResult } from "./combat/assault.js";
 import type { DetectionResult, Observation } from "./combat/detection.js";
-import { Game, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
+import { Game, type ChargeWorkReport, type MoveResult, type Phase, type SmokeOrder } from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { Terrain } from "./terrain.js";
@@ -60,6 +60,8 @@ export type RecordedAction =
   | { kind: "setStandingOrder"; unitId: string; order: Omit<StandingOrder, "issuedTurn"> }
   | { kind: "executeStandingOrders"; side: Side }
   | { kind: "setCamouflage"; unitId: string; on: boolean }
+  /** Null calls the work off; the charge itself is derived, not recorded. */
+  | { kind: "layCharge"; unitId: string; type: Mine["type"] | null }
   | { kind: "setScouting"; unitId: string; on: boolean }
   | {
       kind: "setObservationSector";
@@ -115,6 +117,13 @@ export type ActionOutcome =
       smokeArrived: SmokeScreen[];
       /** What the forces in position saw on the way into the fire phase. */
       observed: Observation[];
+      /**
+       * Charge-laying work that finished or was lost as the turn closed
+       * (rules decision 16). Optional: a step that crossed no end of turn
+       * carries none, and a recording replayed before the module existed
+       * produces none either.
+       */
+      chargeWork?: ChargeWorkReport[];
     }
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
@@ -127,6 +136,7 @@ export type ActionOutcome =
   | { kind: "setStandingOrder"; accepted: boolean }
   | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] }
   | { kind: "setCamouflage"; on: boolean }
+  | { kind: "layCharge"; type: Mine["type"] | null }
   | { kind: "setScouting"; on: boolean }
   | { kind: "setObservationSector"; sector: ObservationSector | null };
 
@@ -246,6 +256,7 @@ export function replayWithOutcomes(
           resolved: r.resolved ?? [],
           smokeArrived: r.smokeArrived ?? [],
           observed: r.observed ?? [],
+          chargeWork: r.chargeWork ?? [],
         };
         break;
       }
@@ -257,6 +268,7 @@ export function replayWithOutcomes(
           resolved: r.resolved,
           smokeArrived: r.smokeArrived,
           observed: r.observed,
+          chargeWork: r.chargeWork ?? [],
         };
         break;
       }
@@ -331,6 +343,10 @@ export function replayWithOutcomes(
       case "setScouting":
         game.setScouting(action.unitId, action.on);
         outcome = { kind: "setScouting", on: action.on };
+        break;
+      case "layCharge":
+        game.layCharge(action.unitId, action.type);
+        outcome = { kind: "layCharge", type: action.type };
         break;
       case "setObservationSector":
         game.setObservationSector(action.unitId, cloneForRecord(action.sector));

@@ -32,6 +32,7 @@ export type {
   TankPart,
   VehicleState,
   Unit,
+  ChargeWork,
   ObservationSector,
   SmokeScreen,
   Mine,
@@ -68,6 +69,7 @@ export { UAV_PROFILES, FIXED_WING_MISS_REDUCTION, type UavProfile } from "./data
 export { ARMOR_TABLE, MOBILITY_THRESHOLDS, HE_VS_ARMOR, type ArmorRow } from "./data/armor.js";
 export { ARTILLERY_DISPERSION } from "./data/artillery.js";
 export { C2_TABLE, orderInterval } from "./data/c2.js";
+export { CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
 
 // Combat resolvers
@@ -174,10 +176,12 @@ export {
 export {
   Game,
   HOLDING_FIRE,
+  LAY_CHARGE_REFUSAL,
   PHASES,
   PhaseError,
   type Phase,
   type GameOptions,
   type MoveResult,
+  type ChargeWorkReport,
   type SmokeOrder,
 } from "./game.js";

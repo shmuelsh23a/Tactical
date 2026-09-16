@@ -118,6 +118,34 @@ export interface Unit {
    * anywhere (rules decision 14).
    */
   observationSector?: ObservationSector;
+
+  // --- engineering (rules decision 16) ---
+  /**
+   * Whether this force may lay a charge during play. Off for an ordinary
+   * force: the work belongs to an **insurgent or special force**, and until
+   * force *types* exist — they arrive with echelon scaling (backlog 3) — this
+   * flag is how a scenario says which force is one.
+   */
+  canLayCharges?: boolean;
+  /** The charge this force is laying, while it is laying one. */
+  layingCharge?: ChargeWork;
+}
+
+/**
+ * A charge being laid during play (rules decision 16).
+ *
+ * The position is stamped when the work is begun, not read when it finishes:
+ * a force cannot move without losing the work, so the two are the same place —
+ * but the charge belongs to the ground that was prepared, not to wherever the
+ * unit object happens to be by the time the turn ends.
+ */
+export interface ChargeWork {
+  type: Mine["type"];
+  position: Point;
+  /** Turns of work banked. Counted at the end of each turn it survived. */
+  turnsWorked: number;
+  /** The turn the work was begun, for the narration. */
+  startedTurn: number;
 }
 
 /**
