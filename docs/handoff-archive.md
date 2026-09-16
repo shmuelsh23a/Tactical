@@ -180,3 +180,107 @@ each verified in play:
 6. **What-if** (`4c01fa8`) — re-fight the same decisions under other dice,
    skipping decisions the alternate history has made impossible and reporting
    how many were skipped.
+
+
+## 2026-09-16 — the day of the two-halves bugs
+
+Six rulings in one day (decisions 16, 17, 18, and two riders on 12), and almost
+every defect found along the way was the same shape: one rule applied in two
+places, off different state, each half defensible alone. Kept here because the
+pattern is the point, not the individual bugs.
+
+### Covering fire (decision 18)
+
+It was the most expensive feature yet to get right, and every cost was a rule
+with two halves:
+
+- The live log keyed *how exactly losses are counted* off the force that
+  **fired** rather than the force that was **hit**, so a side read "no
+  casualties observed" about its own men. Found by driving it in the browser,
+  not by a test.
+- The shot was resolved against `unit.cover`, which is written only at
+  placement and at upkeep — so a force that had broken out of a prepared
+  position was shot at mid-bound as though still in it. Covering fire is the
+  exception the end-of-turn cover ruling anticipated, and the README paragraph
+  that predicted it had been deleted rather than acted on.
+- `MOVEMENT_PROFILES.enemyHitModifier` — the document's own +30%/-20% for
+  shooting at a moving force — had **no consumer in the engine** until this.
+  Without it, running under covering fire was never worse than walking.
+- Three of the four attack paths carried the rule and `fireExplosive` carried
+  neither half, so a force could declare חיפוי and still fire an RPG.
+- The interrupt was only half built: a bound was interrupted at the point of
+  exposure, but a shot and an assault were *replied to* after the fact, so a
+  coverer that was itself the target could be dead before it answered. Both
+  are interrupts now (author, 2026-09-16).
+- "Spends the force's action" was true only on the turn it was declared,
+  because `firedThisTurn` is cleared at upkeep while the posture is not. The
+  economy is derived now (`Game.actionSpent`), which also stops a watching
+  force being treated as one that has fired — that flag is read by two other
+  rules, and borrowing it stood the force up and halved its cover.
+
+### The live log's side filter (decision 17)
+
+Chasing it turned up four things the filter alone would not have fixed, each
+worth knowing because each was a rule with two halves:
+
+- The log **baked exact-vs-banded losses from whoever was viewing** when the
+  line was written, then showed that line to everybody.
+- The fire line printed `${shooters} יורים` — the firer's **exact fit
+  strength** — to the target, which makes banding its casualties pointless.
+- The debrief hid `executeStandingOrders` from the enemy **wholesale**, so a
+  force shot at under a standing order was never told; and the **לקחים** panel
+  read only explicit `fire` / `assault` actions, so the same ambush left
+  `hitByUnseen` at nought.
+- Filtering to `viewingSide` at a **handoff** shows the outgoing player the
+  incoming side's private log — `viewingSide` is already the incoming side
+  there. The panel takes a nullable reader for exactly this.
+- **A shot has three readers, not two.** The debrief's `exact` means "the
+  reader owns the target", which is true of the umpire *and* of the force being
+  shot at — so the side under fire read the firer's exact strength, its hit
+  chance and the damage it took. `Lens.side` is required now (`null` is the
+  umpire) so a lens has to say which it is; before, a lens built without one
+  silently became the umpire.
+- **`knows` is not "is looking now".** It says a contact record exists. Reading
+  it as a sighting let a side read `נראה מנוטרל` off a three-turn-old mark its
+  own map still drew alive — decision 13 had already ruled the other way.
+
+**Backlog 6 is closed.** A battle is laid out by describing it:
+`tools/make-scenario.py` takes a JSON spec and writes the scenario module, and
+the demo is its output — which is what keeps the tool honest, since the suite
+plays the generated battle.
+
+**There are two maps now.** The second, Tel Azeka over the Elah valley
+(`tools/scenarios/tel-azeka.json`), was written to test the claim that a
+scenario is a spec file and nothing else, and it is also the only run so far of
+`--fetch-map` on a window nobody had fetched before. It teaches out of relief
+alone — one tree, no buildings — and it teaches the opposite of the demo: the
+tel cannot see its own eastern face, so the covered route up is the one
+Naismith charges 250–360 m of bound per 100 m of ground. Its test pins those
+claims the way the demo's does.
+
+Read the ground before placing anything on it. The lesson that map actually
+teaches was the opposite of the one it was picked for, and a throwaway probe
+over sight lines, heights and bound costs is what said so — half an hour, and
+it changed the whole battle.
+
+**The app still opens exactly one battle**, though: `src/app/scenario.ts` names
+the demo, and choosing between scenarios is UI that does not exist. Tel Azeka
+is generated, tested and unreachable in the hotseat — the smallest piece of
+work on this list, and the one that makes the second map worth having.
+
+Small things noticed and left: for an **ordered tank-round** engagement,
+`engaged.newCasualties` sums every unit caught in the blast against the
+target's id (`game.ts`), so the firer's own men caught in its own burst land in
+the debrief's `inflicted` rather than `suffered` — pre-existing normalisation,
+newly visible now that the לקחים panel counts ordered engagements; a tank round
+that hits reports no casualties in the live log at all (`handleFireAt`'s `fireExplosive` branch) — pre-existing,
+and now a two-line fix since `logLosses` exists; the debrief has no *height*
+readout for a force; `fetch-osm.py` keeps a way whole when any vertex is inside, so Route 6
+carries 1.3 km of off-map points that the SVG clips — file size only.
+
+Two I would *not* rush: **echelon scaling** (backlog 3) touches the C2 model
+everywhere and has since picked up the artillery battery, which makes it larger
+rather than more urgent; and **OPORD mode** (backlog 13) is a research project
+with a section of its own in the README.
+
+
