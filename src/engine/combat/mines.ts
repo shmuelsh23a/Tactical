@@ -1,6 +1,6 @@
 import { Rng } from "../rng.js";
 import { segmentIntersectsCircle, type Point } from "../geometry.js";
-import type { Mine, MovementMode, Unit } from "../types.js";
+import type { Mine, MovementMode, Side, Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
 
@@ -30,6 +30,12 @@ const MINE_WEAPON: Record<Mine["type"], string> = {
 export interface MineDetonation {
   mineId: string;
   type: Mine["type"];
+  /**
+   * The side that laid it. The charge is spent and removed the moment it fires,
+   * so a caller that wants to tell its owner anything has to be told here —
+   * there is nothing left to look up (rules decision 17).
+   */
+  side: Side;
   position: Point;
   /** The charge fired — it may be triggered and still fail its activation roll. */
   activated: boolean;
@@ -65,13 +71,20 @@ export function triggerMines(
     const weapon = EXPLOSIVES[weaponKey];
     const activated = rng.chance(weapon?.activationChance ?? 1);
     if (!activated) {
-      detonations.push({ mineId: mine.id, type: mine.type, position: mine.position, activated });
+      detonations.push({
+        mineId: mine.id,
+        type: mine.type,
+        side: mine.side,
+        position: mine.position,
+        activated,
+      });
       continue;
     }
 
     detonations.push({
       mineId: mine.id,
       type: mine.type,
+      side: mine.side,
       position: mine.position,
       activated,
       blast: resolveBlast(rng, weaponKey, mine.position, allUnits, turn),

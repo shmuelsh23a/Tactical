@@ -446,13 +446,17 @@ export class Game {
   private resolveDueFireMissions(): IndirectFireResult[] {
     const due = this.pendingFire.filter((m) => m.resolvesOnTurn <= this.turn);
     this.pendingFire = this.pendingFire.filter((m) => m.resolvesOnTurn > this.turn);
-    return due.map((m) =>
-      resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
+    return due.map((m) => ({
+      ...resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
         firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
         fixedWingObserved: m.observedByUav,
         turn: this.turn,
       }),
-    );
+      // Who called it, so a report can say how far it fell from the aim point
+      // to the side that aimed it and no further (rules decision 17). After the
+      // spread, so the mission stays the authority if the resolver ever sets it.
+      side: m.side,
+    }));
   }
 
   // ---- movement phase ----

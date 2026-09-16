@@ -1,12 +1,20 @@
 import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
-import type { Unit } from "../types.js";
+import type { Side, Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveDispersion, type DispersionResult } from "./artillery.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
 
 export interface IndirectFireResult {
   weapon: string;
+  /**
+   * The side that called the mission, when the caller knows it — `Game` fills
+   * it in as a due mission resolves. It is what lets a report say how far the
+   * round fell from its **aim point** to the side that aimed it and no further:
+   * the fall of shot is plain to everyone, the miss is the gunner's own
+   * business (rules decisions 13 and 17).
+   */
+  side?: Side;
   aim: Point;
   dispersion: DispersionResult;
   blast: BlastResult;
