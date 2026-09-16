@@ -1,0 +1,65 @@
+{
+  "slug": "yokneamIllit",
+  "title": "תרגיל הדגמה — מגע ראשון",
+  "seed": 2026,
+  "trackIntel": true,
+  "enforceC2": true,
+  "window": {
+    "lat": 32.645,
+    "lon": 35.085,
+    "width": 900,
+    "height": 800,
+    "spacing": 10,
+    "place": "The southern edge of Yokneam Illit on Ramat Menashe (יקנעם עילית, רמת מנשה): the town's houses on the hill in the south-east, Route 6 (כביש 6) in the west, low ground to the north.",
+    "heightfield": "ramatMenashe",
+    "objects": "ramatMenasheObjects",
+    "constant": "RAMAT_MENASHE"
+  },
+  "about": [
+    "A small hotseat demonstration: a BLUE infantry platoon in the low ground to",
+    "the north attacking a RED position on the town's edge to the south, held by",
+    "two squads and a tank. The hill's shoulder hides the slope below it from",
+    "every RED position, so BLUE's first bound is unseen and it comes into view",
+    "as it reaches the shoulder — to the forward squad, the flank squad on the",
+    "north-east ridge and the tank alike.",
+    "",
+    "One lesson the ground teaches on its own: the tank's hatches see over the",
+    "shoulder to the far low ground where BLUE starts, 440 m off, and not the",
+    "slope just below it where the attack actually climbs — dead ground is",
+    "nearer than it looks.",
+    "",
+    "The player is the platoon leader: they manoeuvre the squads and control",
+    "their own command group. Played with the knowledge model on, so each side",
+    "sees what it has detected — the document's own rolls — rather than",
+    "everything within a radius.",
+    "",
+    "RED's forward squad lies on the shoulder in the open and prepared its",
+    "position before the battle, so it starts fully camouflaged (rules decision",
+    "12): BLUE will not find it by looking. It is also the one force here that",
+    "lays charges during the battle (rules decision 16) — the rule gives that",
+    "work to an insurgent or special force, and until force types arrive with",
+    "echelon scaling the scenario is what says which force is one.",
+    "",
+    "⚠️ That last part is ours, not the author's: the demo's RED is a",
+    "conventional platoon, and the flag is here so the rule can be played",
+    "rather than only tested. One line to delete when force types land."
+  ],
+  "forces": [
+    { "id": "BLUE-1", "name": "כיתה 1", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [250, 80] },
+    { "id": "BLUE-2", "name": "כיתה 2", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [400, 60] },
+    { "id": "BLUE-3", "name": "כיתה 3", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [460, 70] },
+    { "id": "BLUE-HQ", "name": "חפ\"ק מ\"מ", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [400, 20] },
+
+    { "id": "RED-1", "name": "מחלקה א'/1", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 6, "at": [380, 336], "camouflaged": true, "canLayCharges": true },
+    { "id": "RED-2", "name": "מחלקה א'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [700, 260], "note": "The second squad holds the ridge coming down from the north-east, on the flank of the axis." },
+    { "id": "RED-TANK", "name": "טנק", "side": "RED", "kind": "vehicle", "at": [520, 500], "facing": 270, "note": "In a street on the hilltop behind the crest. It stands 4.6 m from the nearest house — outside the 3 m cover reach on purpose, since full cover would drop its eye to 0.5 m and switch the far-low-ground lesson off (src/app/scenario.test.ts pins it)." },
+    { "id": "RED-HQ", "name": "חפ\"ק מ\"מ", "side": "RED", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [436, 599], "note": "In one of the houses on the reverse slope: it sees none of the shoulder." }
+  ],
+  "charges": [
+    { "side": "RED", "type": "antiPersonnel", "at": [330, 240] },
+    { "side": "RED", "type": "antiPersonnel", "at": [400, 230] },
+    { "side": "RED", "type": "antiPersonnel", "at": [470, 250] },
+    { "side": "RED", "type": "antiPersonnel", "at": [560, 230] },
+    { "side": "RED", "type": "antiTank", "at": [450, 300] }
+  ]
+}

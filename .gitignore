@@ -6,3 +6,6 @@ dist/
 # Per-developer Claude Code settings (permissions etc). The shared
 # .claude/settings.json and launch.json stay tracked.
 .claude/settings.local.json
+
+# Python bytecode from the tools in tools/.
+__pycache__/
