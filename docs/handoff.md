@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `6082298`, 2026-09-16.** This is the working note for whoever
+**Current as of `29e1cfe`, 2026-09-16.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 345 tests, 18 files
+npm run check       lint + typecheck clean, 373 tests, 20 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -45,6 +45,14 @@ call the project's npm scripts and a reviewer that reads
 here from AGENTS.md alone.
 
 ## Waiting on the author
+
+**One ⚠️ raised 2026-09-16 with decision 17, and unanswered:** a force is now
+told when a charge **it laid** goes off — that it fired, not who it caught or
+where. The charge is spent and its marker leaves the layer's map the same
+instant, so the alternative is watching it vanish with nothing in the log. The
+document rules on neither; this is ours. He may prefer the layer learn nothing
+until he looks.
+
 
 **Nothing.** Rules decision 15 (elevation and objects) closed on 2026-09-06
 in two steps: the shape — one sight test over real ground, eye heights, object
@@ -145,15 +153,38 @@ Measurements that cost real time and are already recorded:
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
-2. **The live combat log is not filtered by side.** `LogPanel` renders every
-   entry; an entry's `side` is a colour chip, not a filter. So RED's detections,
-   its posture changes and its charge work are all readable on BLUE's screen in
-   a hotseat game. The *debrief* enforces disclosure properly (two
-   compiler-checked switches in [`debriefView.ts`](../src/app/debriefView.ts));
-   the live log never has. Decision 16 works around it by leaving the charge's
-   position off the live line, which is a patch on one line and not the fix.
-   What a shared-screen hotseat log should hide is a rules question as much as
-   a code one.
+2. **A scenario picker.** `tools/make-scenario.py` writes a scenario module
+   from a spec, so a second battle is a spec file — but the app still opens
+   exactly one. Choosing between them is UI that does not exist.
+
+**The live log is filtered by side now** (rules decision 17, 2026-09-16), so
+that item is off this list. `LogEntry` carries `readers`, `pushLog` takes a
+required audience, and `LogPanel` renders only what the side at the screen may
+read. See decision 17 for the three cases and the author's three rulings.
+
+Chasing it turned up four things the filter alone would not have fixed, each
+worth knowing because each was a rule with two halves:
+
+- The log **baked exact-vs-banded losses from whoever was viewing** when the
+  line was written, then showed that line to everybody.
+- The fire line printed `${shooters} יורים` — the firer's **exact fit
+  strength** — to the target, which makes banding its casualties pointless.
+- The debrief hid `executeStandingOrders` from the enemy **wholesale**, so a
+  force shot at under a standing order was never told; and the **לקחים** panel
+  read only explicit `fire` / `assault` actions, so the same ambush left
+  `hitByUnseen` at nought.
+- Filtering to `viewingSide` at a **handoff** shows the outgoing player the
+  incoming side's private log — `viewingSide` is already the incoming side
+  there. The panel takes a nullable reader for exactly this.
+- **A shot has three readers, not two.** The debrief's `exact` means "the
+  reader owns the target", which is true of the umpire *and* of the force being
+  shot at — so the side under fire read the firer's exact strength, its hit
+  chance and the damage it took. `Lens.side` is required now (`null` is the
+  umpire) so a lens has to say which it is; before, a lens built without one
+  silently became the umpire.
+- **`knows` is not "is looking now".** It says a contact record exists. Reading
+  it as a sighting let a side read `נראה מנוטרל` off a three-turn-old mark its
+  own map still drew alive — decision 13 had already ruled the other way.
 
 **Backlog 6 is closed.** A battle is now laid out by describing it:
 `tools/make-scenario.py` takes a JSON spec and writes the scenario module, and
@@ -162,8 +193,14 @@ plays the generated battle. A second scenario is a spec file and nothing else.
 The app still opens exactly one battle, though: choosing between scenarios is
 UI that does not exist.
 
-Small things noticed and left: the debrief has no *height* readout for a
-force; `fetch-osm.py` keeps a way whole when any vertex is inside, so Route 6
+Small things noticed and left: for an **ordered tank-round** engagement,
+`engaged.newCasualties` sums every unit caught in the blast against the
+target's id (`game.ts`), so the firer's own men caught in its own burst land in
+the debrief's `inflicted` rather than `suffered` — pre-existing normalisation,
+newly visible now that the לקחים panel counts ordered engagements; a tank round
+that hits reports no casualties in the live log at all (`handleFireAt`'s `fireExplosive` branch) — pre-existing,
+and now a two-line fix since `logLosses` exists; the debrief has no *height*
+readout for a force; `fetch-osm.py` keeps a way whole when any vertex is inside, so Route 6
 carries 1.3 km of off-map points that the SVG clips — file size only.
 
 Two I would *not* rush: **echelon scaling** (backlog 3) touches the C2 model
@@ -213,6 +250,14 @@ the code currently stands:
   eye to 0.5 m and switch off the "far low ground" lesson.
   `src/app/scenario.test.ts` pins it — if a regenerated map fails there, move
   the tank, do not loosen the test.
+- **A log line without an audience does not compile, and that is deliberate.**
+  `pushLog`'s third argument says who may read the line (rules decision 17).
+  Reaching for the old `pushLog(text, kind, viewingSide)` shape passes a `Side`
+  where an `Audience` belongs — the compiler says so, and
+  `src/invariants.test.ts` catches it as text too. Use `onlyFor(side)` for a
+  decision behind one's own lines, `sharedBy(side)` for an exchange both sides
+  were in, `TABLE` for the umpire's bookkeeping, and `pushPerSide` when the two
+  sides are entitled to different words — which is every line carrying losses.
 - **A force's own object is left off its sight line for 6 m only.** The first
   cut skipped the whole object and let a squad against a house be seen
   straight through it from the far side. `OWN_OBJECT_SIGHT_M` is twice the

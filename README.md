@@ -793,6 +793,12 @@ on the stated reasoning, still awaiting the author's word.
     force is the same mechanism as rounds per force, and inventing a separate
     one here would be a limit to unpick later. Do not add one before then.
 
+    **The live log now says where, too.** This decision originally left the
+    charge's position off the live log line, because every entry in that log
+    was readable from both sides of the table — a patch on one line rather than
+    a fix. Decision 17 filtered the log by side, so the reason is gone and the
+    line says what the debrief has always been allowed to say.
+
     ✅ **The charge is laid where the force stands** (confirmed 2026-09-16),
     not at a point it chooses within reach. Nothing in the document gives a
     reach, and the charge's own trigger radius (10 m, decision 10) already
@@ -804,6 +810,119 @@ on the stated reasoning, still awaiting the author's word.
     the places a force might do something else — the two-halves trap this
     repo keeps paying for. Figures:
     [`data/engineering.ts`](src/engine/data/engineering.ts).
+
+17. ✅ **What the live hotseat log may show each side** (drawn 2026-09-16,
+    **confirmed with the author the same day**). The live combat log was the
+    last place in the game that did not filter by side. Both players read one
+    list on one screen across a handoff — the handoff screen covers the map,
+    not the sidebar — and an entry's `side` was a colour chip, never a filter.
+    So RED's detections, its postures, its orders and its fire plan were all
+    readable on BLUE's screen, and were readable *before* the incoming player
+    had even pressed "ready".
+
+    The debrief had drawn this line properly since decision 13; the live log
+    now draws the same one, in three cases that mirror
+    [`debriefView.ts`](src/app/debriefView.ts):
+
+    - **The umpire's bookkeeping goes to the table** — turn, phase, initiative,
+      victory, and the operator's own recording controls. Turns and phases are
+      not intelligence (decision 13), and so are the things on the map anybody
+      can look at: a smoke screen coming down, a round landing.
+    - **A decision taken behind one's own lines is that side's alone** — orders
+      and the refusals that answer them, postures (camouflage, scouting, sector
+      of observation), charge-laying work, fire missions and smoke *as marked*,
+      what a force picked up (`איתר`, `גילוי`, charges found), and every engine
+      error the player's own click produced. An order is not something the
+      enemy can watch being given.
+    - **An exchange both sides were in crosses, worded once per reader** —
+      direct fire, an assault, an engagement fired under a standing order, a
+      charge going off. Being fired on is always known (decision 13), and
+      firing puts the firer on the target's map anyway (decision 12). The line
+      still flies the *acting* side's colour on both screens.
+
+      **But the two readers are told different things, not merely in tone.**
+      How many men fired and at what chance is the firer's own business
+      (decision 13) — and `shooters` is the force's *exact fit strength*, so
+      printing it at the target would hand over, every turn it is shot at, the
+      very state the casualty bands exist to hide. The target is told what
+      landed on its own men instead. The same split governs an assault: grenades
+      **thrown** are the attacker's ammunition state, grenades that **hit** are
+      the defender's to count, and what a force did to itself with its own
+      grenades is nobody else's business.
+
+      **A shot has three readers, not two** — and the debrief was reading it
+      with two. `exact` there means "the reader owns the target", which is true
+      of the umpire *and* of the force being shot at, so one flag could not
+      separate *entitled to the whole picture* from *entitled to count its own
+      dead*: the side under fire was reading the firer's exact strength, its hit
+      chance and the damage it took. `Lens.side` is now **required** (`null` is
+      the umpire) so that a lens has to say which it is — a lens that could
+      leave it out would default to the umpire, the omission-defaults-to-visible
+      trap the `RecordedAction` switches exist to prevent. The same applies to
+      `describeExecution`, which is the path **most** fire in this game takes: a
+      hotseat battle journals *orders*, not shots.
+
+    **Nobody owns the screen until a player claims it.** `viewingSide` follows
+    the *incoming* activation, but the handoff screen exists precisely because
+    the device is still in the **outgoing** player's hands — so filtering the
+    log to `viewingSide` there would have shown him the next side's private
+    log, the same hole mirrored. During a handoff and on the initiative panel
+    the log shows only what belongs to the table.
+
+    Three consequences worth stating, since each was a question in its own
+    right:
+
+    - ✅ **Movement lines are own-side only.** The map already draws a detected
+      enemy **where it was last seen**; a log line would have given its current
+      endpoint, quietly undoing the staleness the map is careful about. The map
+      carries what the enemy may see of a move, and the log does not.
+    - ✅ **A stale mark is not a sighting.** The live log asks for a contact
+      reported *this turn* before it tells a side anything about an enemy force
+      — the same `seenNow` test the map is drawn with. `knows` only says a
+      contact record exists, and decision 13 already ruled that a stale contact
+      carries the state it was last seen in: without this a side would read
+      `נראה מנוטרל` off a three-turn-old mark that its own map still draws
+      alive.
+    - ✅ **How far a round fell from its aim point goes only to the gunner.**
+      The deviation measures the shell against the *firer's* aim, which is not
+      something the side underneath it is in a position to know. It is told
+      that the round fell. Applied to the debrief as well, so the two cannot
+      drift — `IndirectFireResult` now carries the side that called the mission
+      for exactly this.
+    - ✅ **A side is told what an engagement under a standing order did to
+      it.** Chasing the live-log split turned up the matching hole in the
+      debrief: `executeStandingOrders` was hidden from the enemy *wholesale*,
+      so a force shot at under a standing order was never told, contradicting
+      decision 13's "being fired on is always known". The step is now filtered
+      execution by execution (`executionVisibleTo`) rather than whole.
+
+      The **לקחים** panel had the same blind spot, and it mattered more there:
+      a hotseat battle journals *orders*, not shots, so the ambush the panel
+      exists to count usually arrives inside a standing-order step. Reading
+      only the explicit `fire` / `assault` actions left `hitByUnseen` at nought
+      for a side shot at under orders, and `suffered` short by those men.
+
+    **Losses are worded per reader, not per viewer.** The old log baked
+    exact-vs-banded from whoever happened to be at the screen when the line was
+    written, and then showed that line to everybody — so a RED casualty count
+    written during RED's activation was read by BLUE. A line both sides read is
+    now written once per reader: the owner of the force that took the losses
+    counts them, a side watching gets a report (decision 13's bands), and a
+    side with no contact on the force is told nothing about it at all.
+
+    ⚠️ **A force is told when a charge it laid goes off**, without who it caught
+    or where. The document rules on neither, and this is **ours**. The charge is
+    spent and its marker leaves the layer's map the same instant, so the
+    alternative is watching it vanish with nothing in the log to say why; who it
+    went off *under* still needs eyes on that force. Say if you would rather the
+    layer learn nothing until he looks.
+
+    **Enforced, not written down.** `pushLog`'s audience is a *required*
+    argument, so a new log line cannot be added without saying who may read it
+    — the same trick as the four exhaustive switches over `RecordedAction`, at
+    the only chokepoint the live log has. `src/invariants.test.ts` also catches
+    the shape a reader reaches for from memory (a bare `Side` where an
+    `Audience` belongs) and pins the panel's filter.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -51,8 +51,10 @@ this file:
 - [`src/invariants.test.ts`](src/invariants.test.ts) takes what a selector
   states badly: a relative import missing its `.js`, and a structural check that
   the compiler's own exhaustiveness guards have not been deleted.
-- The compiler fails on a new `RecordedAction` that any of the four switches
-  does not handle — `recording.ts` (replay), both in `debriefView.ts` (what a
+- The compiler fails on a log line written without an audience — `pushLog`'s
+  third argument — so the live log cannot regain the fog-of-war hole it had
+  (rules decision 17), and on a new `RecordedAction` that any of the four
+  switches does not handle — `recording.ts` (replay), both in `debriefView.ts` (what a
   side may see, and what it may learn of the result) and `describeAction` in
   `debriefText.ts` (its Hebrew narration). The disclosure rules cannot be
   skipped by omission, and an unnarrated action cannot print its raw object at
@@ -165,9 +167,20 @@ one it is in your reply, too.
   a side may see, and what it may be told the action produced (rules decision
   13). A new `RecordedAction` must be handled in both switches — the compiler
   now says so, rather than the omission defaulting to hidden.
+- **The live log is filtered by side too, and says so in its type.** The
+  hotseat log is one list both players read across a handoff, so
+  [`pushLog`](src/app/App.tsx) takes a **required** `Audience` — `TABLE` for the
+  umpire's bookkeeping, `onlyFor(side)` for a decision behind one's own lines,
+  `sharedBy(side)` for an exchange both sides were in — and `LogPanel` renders
+  only what the side at the screen may read (rules decision 17). A line whose
+  two readers are entitled to different words is written once per reader with
+  `pushPerSide`, never once from whoever happens to be viewing.
 - **A player is never shown a count of enemy losses.** Losses go through
   `casualtyReport(n, exact)`, exact only for the reader's own forces — the
   umpire's debrief view is the one place the tally belongs (rules decision 13).
+  The trap this rule has actually sprung: wording a line from `viewingSide` at
+  the moment it is written, and then showing that line to everybody. Ask who
+  will *read* it, not who is looking when you write it.
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.
