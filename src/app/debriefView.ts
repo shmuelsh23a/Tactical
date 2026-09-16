@@ -1,6 +1,7 @@
 import {
   replayWithOutcomes,
   type ActionOutcome,
+  type CoveringFireResult,
   type GameRecording,
   type RecordedAction,
   type ReplayStep,
@@ -111,11 +112,21 @@ export function outcomeVisibleTo(
     case "advanceToPhase":
       return true;
     case "moveUnit":
+      // A bound is the mover's own business — except when it walked into
+      // covering fire, which is the coverer's shot and always its to know
+      // (rules decisions 13 and 18). Without this the side that fired would
+      // watch its own ambush happen off-screen.
+      return (
+        own(action.unitId) ||
+        (outcome?.kind === "moveUnit" &&
+          outcome.move.coveringFire.some((c) => own(c.coveringId)))
+      );
     case "issueOrders":
     case "setStandingOrder":
     case "setCamouflage":
     case "setScouting":
     case "layCharge":
+    case "setCovering":
     case "setObservationSector":
       return own(action.unitId);
     case "executeStandingOrders":
@@ -202,6 +213,9 @@ export function actionVisibleTo(
     // found the way any charge is found — by the search roll on the ground,
     // not by having watched it go in (rules decisions 10 and 16).
     case "layCharge":
+    // Declaring חיפוי is a decision taken in a position, and the enemy learns
+    // of it the way it learns of any other — by being shot at (decision 18).
+    case "setCovering":
     case "setObservationSector":
       return own(action.unitId);
     case "executeStandingOrders":
@@ -251,6 +265,26 @@ export interface Lessons {
  * Work the lessons out over the first `upTo` actions, so scrubbing the timeline
  * shows the picture as it stood at that point rather than only at the end.
  */
+/**
+ * Every covering-fire shot an outcome carries, wherever it hangs. A reaction
+ * is reported by the action that provoked it, and that can be a bound, a shot,
+ * an assault, or a bound taken under standing orders (rules decision 18).
+ */
+function coveringFireIn(outcome: ActionOutcome): CoveringFireResult[] {
+  switch (outcome.kind) {
+    case "moveUnit":
+      return outcome.move.coveringFire;
+    case "fire":
+    case "fireExplosive":
+    case "assault":
+      return outcome.result.coveringFire;
+    case "executeStandingOrders":
+      return outcome.executions.flatMap((done) => done.moved?.result.coveringFire ?? []);
+    default:
+      return [];
+  }
+}
+
 export function lessonsFor(
   side: Side,
   upTo: number,
@@ -306,6 +340,16 @@ export function lessonsFor(
         if (!done.engaged) continue;
         shot(done.unitId, done.engaged.targetId);
       }
+    }
+    // …and the same again for covering fire, which is the purest form of the
+    // thing this panel counts: a force shot at by something it had never seen
+    // (rules decision 18). It arrives hanging off whatever the enemy did —
+    // a bound, a shot, an assault — and off an ordered bound as well, so every
+    // carrier is read rather than the obvious one.
+    for (const shotBack of coveringFireIn(outcome)) {
+      if (!shotBack.result.fired) continue;
+      shot(shotBack.coveringId, shotBack.targetId);
+      count(shotBack.targetId, shotBack.result.newCasualties);
     }
 
     switch (outcome.kind) {

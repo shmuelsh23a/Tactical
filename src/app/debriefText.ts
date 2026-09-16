@@ -2,6 +2,7 @@ import { ASSAULT_RANGE_M, CHARGE_LAYING, OBSERVATION_SECTOR, sectorBonus } from 
 import type {
   ActionOutcome,
   ChargeWorkReport,
+  CoveringFireResult,
   Mine,
   GameRecording,
   MovementMode,
@@ -64,6 +65,8 @@ export function reasonHe(reason?: string): string {
       return "הכוח מנוטרל";
     case "holding fire":
       return "הכוח בפקודת אחזקת אש";
+    case "holding covering fire":
+      return "הכוח בחיפוי — הפעולה לתור זה נוצלה";
     // …an order that could not be carried out
     case "neutralised":
       return "מנוטרל";
@@ -105,6 +108,26 @@ export function unitNames(recording: GameRecording): Map<string, string> {
 }
 
 const at = (p: { x: number; y: number }) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
+
+/**
+ * Covering fire that answered an action (rules decision 18), for the reader
+ * who owns the force that fired or the force that was fired on — the lens
+ * decides which of those the reader is, and a shot nobody of his was part of
+ * never reaches him.
+ */
+export function coveringFireHe(
+  shot: CoveringFireResult,
+  who: (id: string) => string,
+  exact: boolean,
+): string {
+  const trigger =
+    shot.trigger === "move" ? "בתנועה" : shot.trigger === "fire" ? "בפתיחת אש" : "בהסתערות";
+  if (!shot.result.fired) return `${who(shot.coveringId)} בחיפוי — ${reasonHe(shot.result.reason)}`;
+  return (
+    `${who(shot.coveringId)} מחפה — אש על ${who(shot.targetId)} ${trigger} ` +
+    `(${term(weaponHe, shot.weapon)}), ${casualtyReport(shot.result.newCasualties, exact)}`
+  );
+}
 
 /** What a charge is called, by kind. */
 export const chargeHe = (type: Mine["type"]) =>
@@ -388,6 +411,10 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return action.type
         ? `${who(action.unitId)} מתחיל להניח ${chargeHe(action.type)}`
         : `${who(action.unitId)} הפסיק להניח מטען`;
+    case "setCovering":
+      return action.on
+        ? `${who(action.unitId)} בחיפוי (${term(weaponHe, action.weapon)})`
+        : `${who(action.unitId)} ירד מחיפוי`;
     case "setObservationSector":
       return action.sector
         ? `${who(action.unitId)} — גזרת תצפית: ${describeSector(action.sector)}`
@@ -509,7 +536,18 @@ export function describeOutcome(
 
     case "moveUnit": {
       const bits: string[] = [];
-      const { detection, mineDetonations } = outcome.move;
+      const { detection, mineDetonations, coveringFire } = outcome.move;
+      // **A bound has two readers now.** The mover's side reads what the bound
+      // found; the side whose covering fire answered it reads its own shot and
+      // nothing else — what the *enemy* spotted and how many of this reader's
+      // charges it walked past are not the coverer's to learn by having pulled
+      // a trigger (rules decisions 13 and 18).
+      const mine = lens.isOwn(action?.kind === "moveUnit" ? action.unitId : "");
+      for (const shot of coveringFire) {
+        if (!lens.isOwn(shot.coveringId) && !lens.isOwn(shot.targetId)) continue;
+        bits.push(coveringFireHe(shot, who, lens.isOwn(shot.targetId)));
+      }
+      if (!mine) return bits.join(" · ");
       if (detection.spottedUnitIds.length) {
         bits.push(`גילוי: ${detection.spottedUnitIds.map(who).join(", ")}`);
       }
@@ -609,6 +647,11 @@ export function describeOutcome(
       return outcome.type
         ? `${CHARGE_LAYING.turnsToLay} תורות עבודה — הכוח נשאר במקומו ואינו לוחם`
         : "העבודה שנצברה אבדה";
+
+    case "setCovering":
+      return outcome.on
+        ? "אוחז באש עד שהאויב יזוז, יירה או יסתער — הפעולה לתור זה"
+        : "חזר לאש רגילה";
 
     case "setObservationSector":
       return outcome.sector ? sectorWorthHe(outcome.sector) : "תצפית לכל הכיוונים";

@@ -19,6 +19,7 @@ import {
   sectorBonus,
   verifyRecording,
   type ChargeWorkReport,
+  type CoveringFireResult,
   type GameRecording,
   type IndirectFireResult,
   type Observation,
@@ -35,6 +36,7 @@ import {
   casualtyReport,
   chargeHe,
   chargeWorkHe,
+  coveringFireHe,
   describeExecution,
   describeSector,
   describeBound,
@@ -388,6 +390,31 @@ export function App() {
    * as any other loss: its owner counts, a watcher gets a report, and a side
    * with no eyes on the force is told nothing about it at all.
    */
+  function logCoveringFire(shots: CoveringFireResult[]) {
+    for (const shot of shots) {
+      if (!shot.result.fired) continue;
+      const coverer = game.units.find((u) => u.id === shot.coveringId);
+      const target = game.units.find((u) => u.id === shot.targetId);
+      if (!coverer || !target) continue;
+      // Both forces in it are entitled to a line — the one that fired counts
+      // its own effect, the one that walked into it knows it was shot at — and
+      // a third side gets nothing (rules decisions 13, 17 and 18). An ambush
+      // springing is the loudest thing on the map; what it achieved is still
+      // only the firer's to count.
+      pushPerSide("fire", coverer.side, (reader) => {
+        // Who may *see* the shot is the coverer's business; how exactly the
+        // losses are counted is the **target's** owner's, because they are his
+        // men (rules decision 13). Keying both off the firer told a side its
+        // own casualties were "observed" rather than counted.
+        const sawTheFirer = reader === coverer.side || mayKnowOf(reader, coverer);
+        if (!sawTheFirer) {
+          return reader === target.side ? `${nameOf(shot.targetId)} נתקל באש חיפוי!` : null;
+        }
+        return coveringFireHe(shot, nameOf, reader === target.side);
+      });
+    }
+  }
+
   function logImpacts(resolved: IndirectFireResult[], smokeArrived: SmokeScreen[]) {
     for (const s of smokeArrived) {
       pushLog(`מסך עשן ירד — רדיוס ${s.radius}מ', ${s.turnsRemaining} תורות`, "fire", TABLE);
@@ -566,6 +593,30 @@ export function App() {
     force();
   }
 
+  /**
+   * Put the selected force into חיפוי, or stand it down (rules decision 18).
+   * It spends the turn's action, so standing down does not hand it back — the
+   * button only stops the force watching.
+   */
+  function handleCovering() {
+    if (!selectedOwn || enginePhase !== "combat") return;
+    const on = !selectedOwn.covering;
+    try {
+      game.setCovering(selectedOwn.id, on, weapon);
+    } catch (e) {
+      pushLog(`${selectedOwn.name} — ${reasonHe((e as Error).message)}`, "info", onlyFor(viewingSide));
+      return;
+    }
+    pushLog(
+      on
+        ? `${selectedOwn.name} בחיפוי — יענה לתנועה, לאש או להסתערות`
+        : `${selectedOwn.name} ירד מחיפוי — הפעולה לתור זה כבר נוצלה`,
+      "info",
+      onlyFor(viewingSide),
+    );
+    force();
+  }
+
   /** Order the force to stay where it is — and, if a task is set, to fight from there. */
   function handleHoldOrder() {
     if (!selectedOwn || enginePhase !== "movement" || selectedOwn.kind === "command") return;
@@ -602,7 +653,8 @@ export function App() {
   /** The one force the player still drives by hand. */
   function moveCommandGroup(unit: Unit, x: number, y: number) {
     try {
-      const { detection: det } = game.moveUnit(unit.id, { x, y }, gait);
+      const { detection: det, coveringFire } = game.moveUnit(unit.id, { x, y }, gait);
+      logCoveringFire(coveringFire);
       pushLog(`${unit.name} נע (${gait === "run" ? "ריצה" : "רגיל"})`, "move", onlyFor(viewingSide));
       if (det.spottedUnitIds.length) {
         pushLog(`גילוי: ${det.spottedUnitIds.map(nameOf).join(", ")}`, "info", onlyFor(viewingSide));
@@ -631,7 +683,8 @@ export function App() {
         // and again below if the engine ever sets both in one execution.
         const bound = describeBound(done, nameOf);
         if (bound) pushLog(bound, "move", onlyFor(side));
-        const { detection, mineDetonations } = done.moved.result;
+        const { detection, mineDetonations, coveringFire } = done.moved.result;
+        logCoveringFire(coveringFire);
         if (detection.spottedUnitIds.length) {
           pushLog(`גילוי: ${detection.spottedUnitIds.map(nameOf).join(", ")}`, "info", onlyFor(side));
         }
@@ -731,6 +784,7 @@ export function App() {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.
         const r = game.fire(selectedOwn.id, target.id, { weapon });
+        logCoveringFire(r.coveringFire);
         if (!r.fired) {
           pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
         } else {
@@ -772,6 +826,7 @@ export function App() {
   function handleAssault(attacker: Unit, target: Unit) {
     try {
       const r = game.assault(attacker.id, target.id, grenades);
+      logCoveringFire(r.coveringFire);
       if (!r.fired) {
         pushLog(`${attacker.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
       } else {
@@ -1327,6 +1382,18 @@ export function App() {
                       הסתערות
                     </button>
                   </div>
+
+                  {/* חיפוי: the document's third action of phase 6. Spends the
+                      force's action, and answers the first enemy it sees move,
+                      fire or assault (rules decision 18). */}
+                  <button
+                    className={`btn-ghost${selectedOwn?.covering ? " on" : ""}`}
+                    disabled={!selectedOwn || (!selectedOwn.covering && selectedOwn.firedThisTurn)}
+                    onClick={handleCovering}
+                    title={`חיפוי: הכוח אינו יורה עכשיו, אלא בראשון מאויביו שינוע, יירה או יסתער — בטווח ובקו ראייה. הפעולה של התור מנוצלת על כך, והירי מסיים את החיפוי.`}
+                  >
+                    {selectedOwn?.covering ? "רד מחיפוי" : "חפה"}
+                  </button>
 
                   {combatAction === "fire" ? (
                     <>
