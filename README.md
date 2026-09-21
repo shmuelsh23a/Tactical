@@ -1083,7 +1083,9 @@ Still modelled by reasonable assumption (flag if you want them changed):
 - **UI uses NATO symbology (APP-6 / MIL-STD-2525)** for all units and control
   measures on the map.
 - **Deterministic core preserved.** New systems draw from the single seeded RNG
-  so replays, networked play, and recordings stay reproducible.
+  so replays, networked play, and recordings stay reproducible. An AI player
+  (backlog 15) is not an exception to this: it chooses *decisions*, in the same
+  places a human chooses them, and every outcome is still rolled by the engine.
 
 ## Roadmap
 
@@ -1095,6 +1097,8 @@ Still modelled by reasonable assumption (flag if you want them changed):
   **single-player vs AI**. Both already supported by the seed-driven design.
   The AI opponent and backlog item 13 (OPORD mode) are the same engine seam
   seen from two directions: something other than a human emitting the actions.
+  The opponent itself is specified in **backlog 15**, which settles the shape
+  and names what it is not allowed to touch.
 
 ### Later development iterations (unordered backlog)
 
@@ -1213,3 +1217,88 @@ Each is intended to be an independent, toggleable module:
     What is missing is the rest of the picture — what a side learned from a
     shot it fired (how many casualties it actually caused), and a debrief view
     that reads the ledger instead of the truth.
+
+15. **An AI player for single-player sessions** — the opponent is a model at the
+    action seam, and every mechanic stays deterministic. Decided 2026-09-21.
+
+    Single-player has been a Stage 3 line since the beginning; what was missing
+    was a way to have something other than a human emit actions without putting
+    a coin-flip inside the rules. The intended vehicle is **Jev** from TypeSafe
+    AI — a *System One* model, in early access since 2026-09-15: typed questions
+    in (`noul` yes/no, `choice` among named options, `score` on a rubric), typed
+    decisions with calibrated confidence out, and **no string generation at all**.
+
+    **Why this shape rather than a chat model.** Three of backlog 13's five open
+    questions answer themselves:
+
+    - **Adjudication** is forced to the option that item already calls safest.
+      Jev can only pick among alternatives it is handed, so it cannot argue for
+      an outcome the tables do not cover — the engine stays the referee because
+      nothing else is on offer.
+    - **Latency** is 70–500 ms a call rather than seconds, which is what makes
+      "every subordinate reasons" affordable instead of a budget question.
+    - **Parsing** disappears. The answer is already typed, so a `choice` over
+      objectives *is* a `setStandingOrder`; nothing is read out of prose, and
+      there is no layer that can misread it.
+
+    The mapping onto what a force can be told is close enough to be suspicious
+    of: a standing order is an objective, a gait, a task (advance, advance and
+    engage, hold and engage, hold fire) and an optional engagement range —
+    three `choice`s and a `score`. "Spring the ambush now?" is a `noul`.
+
+    **Where it lives, and where it must never.** The app layer. Not
+    `src/engine/`, which is already closed to it three ways: eslint refuses node
+    globals and app imports inside the engine,
+    [`tsconfig.engine.json`](tsconfig.engine.json) sets `"types": []` so the
+    standalone build cannot acquire them, and the engine has to replay
+    bit-for-bit from a seed. The AI emits the same actions a player clicks.
+
+    **What "the mechanics stay deterministic" means precisely.** No rule ever
+    consults the model. Every roll still comes from `Rng`; hit resolution,
+    detection, casualty bands and dispersion are the document's numbers and are
+    not on offer to it. The model chooses decisions exactly where a human
+    chooses them, and the recording holds decisions rather than outcomes
+    (backlog 7), so an AI-fought battle replays like any other — and
+    **תוכנית או מזל?** still works on one, because it re-rolls the dice over
+    fixed decisions.
+
+    That last point is also a hard rule: **the model is never called during a
+    replay, a `verifyRecording`, or a what-if run.** Jev exports no seed and no
+    temperature — checked against the SDK's own types, 2026-09-21 — so re-asking
+    it the same question may decide differently. Harmless in play, fatal in a
+    replay. This wants a test rather than this paragraph, the moment there is
+    code to point one at. A recording of an AI game carries the **model id and
+    the question-set version**, which is what backlog 13 already asks for.
+
+    **The trap, written down before it is sprung.** The AI is fed
+    `sideView(game, side)` — the contact ledger that side is entitled to — and
+    **never `game.units`**. An opponent reading the umpire's map is an
+    omniscient cheat that would quietly undo rules decisions 12 and 13, and not
+    one existing test would fail. It is this repo's worst bug shape (one rule
+    read off two different states) at the largest scale it could occur at, so it
+    gets its own test and not a comment.
+
+    **Toggleable, like everything else** — a flag on `GameOptions` in the
+    `enforceC2` mould. With it off the hotseat plays exactly as it does today,
+    and the game stays fully playable with no network and no API key.
+
+    **Open, deliberately** (⚠️):
+
+    - **It returns no explanation, and this is a teaching instrument.** The
+      debrief exists to tell a plan apart from its luck; an opponent that cannot
+      say why it chose the eastern axis teaches less than a scripted one that
+      can. Whether the AI must log a rationale — and what produces it, since Jev
+      structurally cannot — is unsettled.
+    - **Which decisions it gets.** The first slice is standing orders, once per
+      side per turn. Whether it also marks indirect fire, sites smoke, sets
+      observation sectors and lays charges is open.
+    - **How it is held to C2.** A human is gated by rules decision 6 on how
+      often a force may receive new orders. The AI has to be gated identically,
+      or it is not playing the same game as the player.
+    - **Dependency risk.** Hosted API only, no published weights, no
+      self-hosting, and a fortnight old. The toggle is also the fallback.
+
+    **First slice to build**: one call per side per turn, fed only that side's
+    contact ledger, emitting `setStandingOrder` per force — measurable against
+    the demo scenario's scripted RED, which is the comparison that says whether
+    any of this is worth keeping.

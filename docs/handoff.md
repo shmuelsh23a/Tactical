@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `9bf1820`, 2026-09-16.** This is the working note for whoever
+**Current as of `13373d2`, 2026-09-21.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -181,6 +181,13 @@ Measurements that cost real time and are already recorded:
 - **Node support windows** (from `nodejs/Release`, checked 2026-09-05): 20 went
   EOL **2026-04-30**, 22 ends 2027-04-30, 24 ends **2028-04-30** and leaves
   Active LTS on 2026-10-20. That is why the pin is 24 and not 22.
+- **What Jev actually exposes** (from `typesafe-ai/typesafe-sdk-js`, read
+  2026-09-21, for backlog 15): three question kinds — `noul`, `choice`, `score`
+  — answers carrying a confidence and per-label probabilities, and **no seed and
+  no temperature among the exported types**. Hosted API, Node 20+,
+  `TYPESAFE_API_KEY`, no published weights and no self-hosting. The vendor's own
+  documentation site was unreachable from a sandboxed session, so the SDK source
+  on GitHub is the reference that can actually be read.
 
 ## What I would pick up next
 
@@ -193,7 +200,16 @@ Measurements that cost real time and are already recorded:
    before building, the way decision 15 was got.
 2. **A scenario picker.** `tools/make-scenario.py` writes a scenario module
    from a spec, so a second battle is a spec file — but the app still opens
-   exactly one. Choosing between them is UI that does not exist.
+   exactly one. Choosing between them is UI that does not exist. Note that
+   both generated modules already exist: Tel Azeka is on disk and reachable
+   only from its own test.
+3. **The AI player** (backlog 15, added 2026-09-21). Unlike morale this is
+   **unblocked** — it invents no rule, so it needs no ruling — but it is Stage 3
+   work while the repo is mid-Stage 2, and it brings a hosted third-party
+   dependency with it. The item names the shape, the first slice, and the four
+   things still open. Read it before touching any of it, particularly the part
+   about `sideView` versus `game.units`: that mistake would pass every test in
+   the suite.
 
 **The live log is filtered by side now** (rules decision 17, 2026-09-16), so
 that item is off this list. `LogEntry` carries `readers`, `pushLog` takes a
