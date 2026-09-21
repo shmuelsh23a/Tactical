@@ -1112,8 +1112,9 @@ Still modelled by reasonable assumption (flag if you want them changed):
   **single-player vs AI**. Both already supported by the seed-driven design.
   The AI opponent and backlog item 13 (OPORD mode) are the same engine seam
   seen from two directions: something other than a human emitting the actions.
-  The opponent itself is specified in **backlog 15**, which settles the shape
-  and names what it is not allowed to touch.
+  The opponent itself is specified in **backlog 15** — which also covers the
+  simulated subordinates under *every* player once echelons scale, and names
+  what neither is allowed to touch.
 - **Stage 4 — the app proper: mobile and desktop.** The browser build is the
   development shell. What ports for free is the part that matters: the engine
   has **no runtime dependencies**, no DOM and no node globals — `build:engine`
@@ -1154,6 +1155,13 @@ Each is intended to be an independent, toggleable module:
    calls for fire rather than owning it. At battalion and above the battery is a
    unit on the map, with the rates of fire the data already holds and a position
    that can be counter-batteried (rules decision 8).
+
+   **It also carries the simulated subordinates** (backlog 15). Above company
+   the levels below the player's pieces stop being a strength number and start
+   having to decide how to execute what they were told; the model supplies the
+   decisions and the engine resolves them, on both sides, including under the
+   human. There is nothing to simulate until this item exists, and this item is
+   not finished without it.
 4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
@@ -1260,8 +1268,10 @@ Each is intended to be an independent, toggleable module:
     shot it fired (how many casualties it actually caused), and a debrief view
     that reads the ledger instead of the truth.
 
-15. **An AI player for single-player sessions** — the opponent is a model at the
-    action seam, and every mechanic stays deterministic. Decided 2026-09-21.
+15. **An AI commander — the opponent in single-player, and the simulated
+    subordinates under every player.** Decisions come from a model at the
+    action seam; outcomes stay deterministic mechanics throughout. Decided
+    2026-09-21.
 
     Single-player has been a Stage 3 line since the beginning; what was missing
     was a way to have something other than a human emit actions without putting
@@ -1269,6 +1279,47 @@ Each is intended to be an independent, toggleable module:
     AI — a *System One* model, in early access since 2026-09-15: typed questions
     in (`noul` yes/no, `choice` among named options, `score` on a rubric), typed
     decisions with calibrated confidence out, and **no string generation at all**.
+
+    **Two jobs, not one — and the second is the larger.** In single-player the
+    model is the opponent. But the **level of control** principle above says a
+    player commands one echelon and directly moves the one below it, with
+    everything further down *abstracted* — and today "abstracted" means
+    "absent": a squad is an atom with a strength number and no judgement inside
+    it. That holds only while the playable slice is the platoon. **Above
+    company, the subordinate levels have to be simulated** (author,
+    2026-09-21): a company commander moves platoons, and each platoon commander
+    still has to decide how to carry out the order it was given — which squad
+    leads, where the base of fire goes, whether to break contact. Those
+    decisions are the model's too, on **both sides, including underneath the
+    human player**.
+
+    That is what this is actually for, and it reframes the rest of the item:
+
+    - **It settles the latency question above rather than merely surviving
+      it.** A brigade's worth of subordinates each reasoning every turn is
+      affordable at 70–500 ms and a fraction of a cent a call; the same thing
+      through a frontier chat model is not.
+    - **The deterministic line does not move, because it is the same line.** A
+      subordinate *decides*; the engine *resolves*. Its decision enters the
+      recording exactly as a player's order does, and every outcome still comes
+      from `Rng` and the document's tables. This is also what turns the
+      never-during-a-replay rule below from a nicety into the thing protecting
+      **every** recording rather than only single-player ones: two humans
+      fighting a company action would each have simulated subordinates under
+      them.
+    - **The fog-of-war rule tightens rather than loosens.** A subordinate gets
+      neither `game.units` nor, arguably, the whole of `sideView(game, side)`:
+      it should reason from what *it* can see, which is stricter than the
+      opponent case and has nothing behind it yet (⚠️).
+    - **C2 is where the judgement earns its keep.** Rules decision 6 already
+      says a force out of contact goes on with the order it holds — precisely
+      the gap a simulated commander fills, and the existing rule gives it the
+      room without anything new being invented.
+
+    **It arrives with echelon scaling (backlog 3), not before** — the same
+    dependency the artillery battery carries (rules decision 8), and for the
+    same reason: there are no subordinate levels to simulate until there are
+    echelons to command.
 
     **Why this shape rather than a chat model.** Three of backlog 13's five open
     questions answer themselves:
@@ -1329,8 +1380,13 @@ Each is intended to be an independent, toggleable module:
     - **It returns no explanation, and this is a teaching instrument.** The
       debrief exists to tell a plan apart from its luck; an opponent that cannot
       say why it chose the eastern axis teaches less than a scripted one that
-      can. Whether the AI must log a rationale — and what produces it, since Jev
-      structurally cannot — is unsettled.
+      can. Simulated subordinates sharpen this considerably: a debrief that
+      cannot say why *your own* platoon did what it did is a harder gap to
+      accept than one about the enemy. What a subordinate **decided** is
+      narratable through the existing Hebrew layer
+      ([`debriefText.ts`](src/app/debriefText.ts)) with no rationale at all —
+      whether that is enough is unsettled, as is what would produce a rationale,
+      since Jev structurally cannot.
     - **Which decisions it gets.** The first slice is standing orders, once per
       side per turn. Whether it also marks indirect fire, sites smoke, sets
       observation sectors and lays charges is open.

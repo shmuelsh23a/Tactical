@@ -79,9 +79,15 @@ drawn from `Rng` it is a seed plus a template.
 
 ### An AI player, and why a System One model fits the seam
 
-Backlog 15 (decided 2026-09-21): the opponent is a model at the action seam,
-emitting the same actions a player clicks, with nothing about the mechanics
-moving. TypeSafe's **Jev** is the intended vehicle — typed questions in, typed
+Backlog 15 (decided 2026-09-21): a model at the action seam, emitting the same
+actions a player clicks, with nothing about the mechanics moving. It has **two
+jobs**, and the author named the second the same day: the opponent in
+single-player, and the **simulated subordinates under every player** once
+echelons scale above company — a platoon commander under a human's order still
+has to decide how to carry it out. That is the larger job, it arrives with
+echelon scaling (backlog 3), and it is what turns the never-call-during-a-replay
+rule from a nicety into the thing protecting every recording rather than only
+single-player ones. TypeSafe's **Jev** is the intended vehicle — typed questions in, typed
 decisions with a confidence out, no string generation — which answers three of
 backlog 13's five open questions by construction: it can only choose among
 alternatives it is handed, it is fast enough that every subordinate reasoning

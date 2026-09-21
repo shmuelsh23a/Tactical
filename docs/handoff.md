@@ -164,8 +164,8 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Ordered. The first three all want a word from him first; the fourth does
-not, and is the one to take if he is not about.**
+**Ordered. The first two want a word from him before anything is built; the
+third does not.**
 
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
@@ -180,28 +180,15 @@ not, and is the one to take if he is not about.**
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
-3. **The AI player** (backlog 15). Unblocked — it invents no rule, so it needs
-   no ruling — but it is Stage 3 work while the repo is mid-Stage 2, and it
-   brings a hosted third-party dependency with it. The item names the shape,
-   the first slice, and the four things still open. Read it before touching
-   any of it, particularly the part about `sideView` versus `game.units`: that
-   mistake would pass every test in the suite.
-
-**If you want something finishable in one sitting**, in rough order of value:
-
-- **A tank round that hits reports no casualties in the live log.** Still
-  there, and still the two-line fix the 2026-09-16 notes called it:
-  `handleFireAt`'s `fireExplosive` branch in `App.tsx` logs
-  `פגע ב… בפגז טנק` and stops, while the small-arms branch beside it goes
-  through `logLosses`. Mind the audience argument and `casualtyReport` — the
-  two readers are entitled to different words.
-- **Play covering fire against a real attack.** Decision 18 shipped with tests
-  on 2026-09-16 and has never been driven in the browser;
-  [balance.md](balance.md) says so. The bound-late behaviour in the traps
-  below is the thing to watch for, and Tel Azeka is reachable now.
-- **A force cannot be told to lay a charge as part of an order** (README,
-  Stage 2). Looks small, is not: widening `StandingOrder` means the compiler
-  wants all four switches over `RecordedAction`, plus recording compatibility.
+3. **The AI commander** (backlog 15). Unblocked — it invents no rule, so it
+   needs no ruling — but it is Stage 3 work while the repo is mid-Stage 2, and
+   it brings a hosted third-party dependency with it. Note the item covers two
+   jobs: the opponent in single-player, and the **simulated subordinates under
+   every player** once echelons scale past company (author, 2026-09-21), where
+   a platoon commander under a human's order still has to decide how to carry
+   it out. The second is the larger job and arrives with backlog 3. Read the
+   item before touching any of it, particularly the part about `sideView`
+   versus `game.units`: that mistake would pass every test in the suite.
 
 **The scenario picker is built** (2026-09-21), so that item is off this list.
 `בחר קרב` in the header lists the catalogue in
