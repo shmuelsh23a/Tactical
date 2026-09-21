@@ -4,8 +4,9 @@ A deterministic, fully-tested **TypeScript rules engine** implementing the
 tabletop tactical wargame described in [`Tactical - Mechanics.docx`](Tactical%20-%20Mechanics.docx)
 (Hebrew; readable as Markdown at
 [`docs/mechanics.he.md`](docs/mechanics.he.md)). Stage 1 — the engine — is
-complete; stage 2, the hotseat browser game on top of it, is in progress. Mobile
-and networked/single-player modes sit on the same module later.
+complete; stage 2, the hotseat browser game on top of it, is in progress. The
+browser is the **development shell**, not the destination: mobile, desktop and
+networked/single-player modes sit on the same module later (stages 3 and 4).
 
 Working on this repo with an AI assistant? Start with [AGENTS.md](AGENTS.md), then
 [docs/handoff.md](docs/handoff.md) for where the work stands.
@@ -1113,6 +1114,33 @@ Still modelled by reasonable assumption (flag if you want them changed):
   seen from two directions: something other than a human emitting the actions.
   The opponent itself is specified in **backlog 15**, which settles the shape
   and names what it is not allowed to touch.
+- **Stage 4 — the app proper: mobile and desktop.** The browser build is the
+  development shell. What ports for free is the part that matters: the engine
+  has **no runtime dependencies**, no DOM and no node globals — `build:engine`
+  emits it standalone with `"types": []` precisely so it cannot acquire any —
+  so every platform runs the same rules and the same seeded rng, and a
+  networked game can send decisions rather than state.
+
+  What does **not** port is the app layer, and it is worth being honest about
+  which parts:
+
+  - **The map is SVG.** One window already carries over 200 OpenStreetMap
+    footprints (`src/app/scenario.test.ts` pins that), redrawn through
+    milsymbol on every state change — which is already the reason a browser
+    driving script cannot click more than about eight times in one go. A phone
+    wants canvas or WebGL, and that is a rewrite of `MapView`, not a port.
+  - **Hotseat is the mode that ports best**, not the worst: one device passed
+    between two players is a phone's natural shape, and the handoff overlay
+    that hides the board already exists.
+  - **Ground becomes a service.** `fetch-dtm.py` and `fetch-osm.py` are Python
+    dev tools run deliberately; an app that lets a player choose their own
+    ground has to fetch, cache and hold tiles at runtime, and decide what
+    happens with no signal. See backlog 17.
+  - **The data licences travel with it.** The OpenStreetMap and SRTM carve-out
+    in [`LICENSE`](LICENSE) is written per file. Ground fetched at runtime
+    cannot be listed per file, so that clause needs generalising before any
+    such build ships, and the attribution the map already draws has to survive
+    into the native UI.
 
 ### Later development iterations (unordered backlog)
 
@@ -1316,3 +1344,92 @@ Each is intended to be an independent, toggleable module:
     contact ledger, emitting `setStandingOrder` per force — measurable against
     the demo scenario's scripted RED, which is the comparison that says whether
     any of this is worth keeping.
+
+16. **Campaigns — battles that remember the last one.** A pre-built series
+    rather than a single engagement: the same force fights again on the next
+    piece of ground, and what happened to it carries over.
+
+    **The engine has no concept of state between battles.** Every `Game` is
+    built from nothing by a scenario, which is why a campaign is a genuinely
+    new idea here rather than a menu over existing ones. The carrier is
+    already built, though: a recording reconstructs a battle exactly from its
+    seed and decisions (backlog 7), so a campaign is a chain of recordings
+    plus a statement of what the next scenario inherits from the last.
+
+    **What carries is the whole design, and it is mostly a balance question**
+    (⚠️): casualties and which forces still exist; ammunition, once backlog 12
+    exists to track it; ground gained, if the next battle is on the same
+    window; and whether a force that broke is the same force next time, which
+    is backlog 1's business. Attrition carried between battles is the single
+    most balance-sensitive decision in this whole direction — a campaign that
+    carries losses forward can be lost by turn three of battle one.
+
+    It also needs an **outcome worth carrying**, which is backlog 18.
+
+17. **The mission builder — pick real ground, set the mission, get a battle.**
+    The other half of the pre-built library: rather than playing what someone
+    laid out, the player chooses a piece of the real world and the terms of the
+    fight, and the scenario is generated on it.
+
+    **The tooling half is nearly built.** `tools/fetch-dtm.py` and
+    `tools/fetch-osm.py` already cut any window from public elevation and
+    OpenStreetMap data; `tools/make-scenario.py` already refuses everything a
+    builder would have to enforce — a force off the map, a duplicate id, a key
+    given to the wrong kind of force, a window that is not the one the relief
+    was cut to; and the battle picker already opens whatever comes out. Three
+    things stand between that and a feature: they are Python dev tools rather
+    than a runtime service (see Stage 4), the **spec** is the truth so a
+    builder must write one rather than a module, and refetching a window moves
+    the data under any layout already placed on it.
+
+    **The interesting half is constraint satisfaction, and the engine can
+    already answer it.** `hasLineOfSight` takes two forces over real relief,
+    `boundCost` prices a climb, `coverAgainst` reads what a force is behind —
+    so "put the defender where it holds the ridge, give the attacker one
+    covered approach, and make that approach the slow one" is a search over
+    placements *scored by the rules themselves* rather than a set of invented
+    heuristics. Draw the search from `Rng` and a generated battle is a seed
+    plus a template: reproducible, and replayable like every other game.
+
+    **What it cannot invent** (⚠️): force ratios, and what counts as a fair or
+    an instructive start. Those are balance decisions the document does not
+    make, and they are the part to put to the author rather than to tune.
+
+    Two of the mission parameters this is meant to take — the **objective** and
+    the **mission type** — do not exist in the engine yet (backlog 18), and a
+    third, **the conditions**, does not exist either (backlog 19). Starting
+    positions are the only one of the four that is already scenario layout.
+
+18. **Mission and victory conditions — something to win other than a
+    massacre.** Today a side is beaten when **every one of its forces is
+    neutralised or gone** (`sideDefeated`), and nothing else ends a battle:
+    no objective, no time limit, no ground to take or hold.
+
+    **The document is silent on all of it** (⚠️ — checked, not assumed: it
+    names no משימה, no victory condition and no objective; its only use of
+    מטרה is "target"). So seize / hold / delay / screen / raid, an objective
+    on the ground, a turn limit, a withdrawal condition and what a draw is are
+    all ours, and they want the author's shape before they are built — the way
+    decision 15 was got, and for the same reason.
+
+    This is the blocker under both items above: a campaign needs a result to
+    carry forward, and a mission builder that takes "objectives" as a
+    parameter needs objectives to mean something. It is also what the debrief
+    would measure a plan against instead of a body count.
+
+19. **Weather, light and visibility.** Night, rain, fog, low cloud, wind —
+    conditions as a parameter of the battle rather than a permanent noon.
+
+    **The document has no weather and no light at all** (⚠️ — its only
+    visibility rule is smoke: `אין ירי לתוך\דרך עשן`). Every number would be
+    ours, which puts this beside morale (backlog 1) rather than beside a rule
+    waiting to be implemented: get the shape from the author first.
+
+    The smoke rule is the **precedent worth copying** when it is built: the
+    engine derives sight from the screens on the map rather than the app
+    asserting a modifier, so conditions should reach the rules through
+    `hasLineOfSight` and the detection bands, not as a flat penalty bolted on
+    at a call site. Everything they would touch is already in one place — the
+    300 m visible band and the 20 m hidden one, the eye heights of rules
+    decision 15, camouflage and cover, and smoke's own duration, which wind
+    would presumably move.

@@ -46,7 +46,22 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Nothing.** Six rulings closed on 2026-09-16, every one of them the same day
+**Three things, all raised 2026-09-21, none of them blocking today's work.**
+
+1. **The `LICENSE` carve-out names two map files and there are now four.**
+   `src/app/maps/telAzeka.ts` (Terrain Tiles / SRTM) and
+   `telAzekaObjects.ts` (OpenStreetMap, ODbL) arrived with the Tel Azeka
+   scenario on 2026-09-16, and the third-party clause still lists only the
+   two Ramat Menashe files. The author wrote that clause himself on
+   2026-09-06, so this is an omission rather than a decision — but it is his
+   file, and it was left alone rather than edited on his behalf. Two lines,
+   copying the existing pattern. It gets more pressing with backlog 17, where
+   ground is fetched at runtime and cannot be listed per file at all.
+2. **Mission and victory conditions** (backlog 18) — the shape, before
+   anything is built on a reading. The document names none.
+3. **Weather and light** (backlog 19) — same, and the same reason as morale.
+
+Six rulings closed on 2026-09-16, every one of them the same day
 it was raised — decisions 16, 17 and 18, and two riders on 12.
 
 The biggest was חיפוי, **covering fire**, which had been in the document all
@@ -198,13 +213,26 @@ Measurements that cost real time and are already recorded:
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
-2. **The AI player** (backlog 15, added 2026-09-21). Unlike morale this is
+2. **Mission and victory conditions** (backlog 18) — **ask first**, but this
+   is the one to ask about. It sits under the whole product direction: a
+   campaign needs a result to carry (backlog 16), a mission builder needs
+   "objective" to mean something (backlog 17), and the debrief would finally
+   measure a plan against its mission instead of a body count. Today a battle
+   ends only when one side is wiped out.
+3. **The AI player** (backlog 15, added 2026-09-21). Unlike morale this is
    **unblocked** — it invents no rule, so it needs no ruling — but it is Stage 3
    work while the repo is mid-Stage 2, and it brings a hosted third-party
    dependency with it. The item names the shape, the first slice, and the four
    things still open. Read it before touching any of it, particularly the part
    about `sideView` versus `game.units`: that mistake would pass every test in
    the suite.
+
+**The roadmap now carries the product direction** (2026-09-21): the browser
+build is the development shell, and **Stage 4** is the mobile and desktop app
+on the same engine. Backlog **16–19** are the four things the author described
+that the repo did not have — campaigns, a mission builder over real ground and
+mission parameters, mission and victory conditions, and weather. Two of the
+four are blocked on rulings, and the README says which.
 
 **The scenario picker is built** (2026-09-21), so that item is off this list.
 `בחר קרב` in the header lists the catalogue in
