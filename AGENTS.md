@@ -192,6 +192,13 @@ one it is in your reply, too.
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.
+- **Never cache anything on a `Unit`'s identity.** The engine is imperative
+  and mutates a force in place, so the same object reference is the squad
+  before and after it loses three men. A `React.memo` on a token, or a
+  `WeakMap` keyed on the unit, would go on drawing 8/8 over the casualties.
+  Cache on the *values* the thing being cached actually reads — that is what
+  `renderUnitSymbol` does, and `src/app/symbols.test.ts` pins the mutation
+  case so the shortcut cannot come back.
 - **`noUncheckedIndexedAccess` is on**: indexing an array yields `T | undefined`.
 - **The UI is Hebrew and RTL.** User-facing strings, log lines and labels are in
   Hebrew; keep new ones consistent with the existing phrasing.

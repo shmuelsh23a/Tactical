@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ScenarioEntry } from "../scenarios/types.js";
 
 interface ScenarioPickerProps {
@@ -30,11 +30,43 @@ export function ScenarioPicker({ scenarios, currentId, underWay, onPick }: Scena
   const [open, setOpen] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const pending = scenarios.find((s) => s.id === pendingId) ?? null;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const firstOptionRef = useRef<HTMLButtonElement>(null);
 
   function close() {
     setOpen(false);
     setPendingId(null);
   }
+
+  // Escape closes it, the same as clicking away — a modal that can only be
+  // dismissed with the mouse is one a keyboard cannot get out of. It cancels
+  // a pending switch with it, which is the safe direction: the battle stays.
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
+      setPendingId(null);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  // Opening moves focus into the card and closing hands it back to the button
+  // that opened it, so tabbing does not carry on behind the overlay. The
+  // `hasOpened` guard is the whole reason this is not two lines: without it
+  // the effect also runs on mount, where `open` is false, and the header
+  // button would take focus off the page the moment the game loaded.
+  const hasOpened = useRef(false);
+  useEffect(() => {
+    if (open) {
+      hasOpened.current = true;
+      firstOptionRef.current?.focus();
+    } else if (hasOpened.current) {
+      triggerRef.current?.focus();
+    }
+  }, [open]);
 
   function choose(entry: ScenarioEntry) {
     if (entry.id === currentId) {
@@ -51,19 +83,33 @@ export function ScenarioPicker({ scenarios, currentId, underWay, onPick }: Scena
 
   return (
     <>
-      <button className="btn-ghost" onClick={() => setOpen(true)} title="בחירת הקרב שייפתח">
+      <button
+        ref={triggerRef}
+        className="btn-ghost"
+        onClick={() => setOpen(true)}
+        title="בחירת הקרב שייפתח"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+      >
         בחר קרב
       </button>
 
       {open && (
         <div className="scenario-overlay" onClick={close}>
           {/* The card swallows the click so only the backdrop closes it. */}
-          <div className="scenario-card" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="scenario-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="בחירת קרב"
+          >
             <h2>בחר קרב</h2>
             <ul className="scenario-list">
-              {scenarios.map((s) => (
+              {scenarios.map((s, i) => (
                 <li key={s.id}>
                   <button
+                    ref={i === 0 ? firstOptionRef : undefined}
                     className={`scenario-option${s.id === currentId ? " current" : ""}`}
                     onClick={() => choose(s)}
                   >

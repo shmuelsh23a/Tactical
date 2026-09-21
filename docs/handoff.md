@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 419 tests, 21 files
+npm run check       lint + typecheck clean, 428 tests, 22 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -195,6 +195,15 @@ Measurements that cost real time and are already recorded:
 - **Node support windows** (from `nodejs/Release`, checked 2026-09-05): 20 went
   EOL **2026-04-30**, 22 ends 2027-04-30, 24 ends **2028-04-30** and leaves
   Active LTS on 2026-10-20. That is why the pin is 24 and not 22.
+- **What a NATO symbol costs to draw** (measured in the dev browser,
+  2026-09-21): **0.037 ms** per `renderUnitSymbol` call before it was cached,
+  **0.0006 ms** on a cache hit after — about 60×. Worth knowing what that does
+  *not* buy: at the 5–8 tokens a platoon battle draws it is well under a
+  millisecond per re-render either way, so this was never the cause of the
+  "ten button clicks in one script call is too many" ceiling further down
+  this file. That cause is still unmeasured. The cache earns its place at the
+  token counts echelon scaling (backlog 3) brings, and on a phone (Stage 4),
+  not on a desktop platoon.
 - **What Jev actually exposes** (from `typesafe-ai/typesafe-sdk-js`, read
   2026-09-21, for backlog 15): three question kinds — `noul`, `choice`, `score`
   — answers carrying a confidence and per-label probabilities, and **no seed and
