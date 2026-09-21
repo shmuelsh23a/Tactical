@@ -11,6 +11,123 @@ and why" — is what belongs below.
 
 ---
 
+## 2026-09-21 — the second battle becomes reachable, and the roadmap grows a product
+
+Ended at `5bef6a8`. 428 tests in 22 files, lint and typecheck clean (404 at the
+start of the day). No rules decisions: everything here is app, tooling or
+writing things down.
+
+### The scenario picker — the item 2026-09-16 called the smallest on the list
+
+`בחר קרב` in the header lists every battle by title and by one line about its
+ground. Tel Azeka had been generated, tested and unreachable in the hotseat for
+five days; it is playable now.
+
+**The line comes from the spec, not from the UI.** `make-scenario.py` gained a
+required `brief` key and refuses an empty one, and each generated module now
+exports its own catalogue entry — id, title, brief, builder — so the label the
+player picks by and the title the header draws are the same generated string.
+`src/app/scenario.ts` became the list of those entries, which makes adding a
+battle a spec, a run of the tool, and one hand-written line. The generator was
+checked against both committed modules first: byte-for-byte identical but the
+`Written` date.
+
+**Switching remounts `App` under the scenario's id** rather than resetting
+state piece by piece. The engine is a mutable instance in a ref with a turn's
+worth of React state beside it; a reset would need extending every time a piece
+of state was added, and the piece someone forgot would carry the last battle's
+state into the next one.
+
+One bug fixed on the way in: the header's controls reached the far end via
+`margin-inline-start: auto` on the first button, which works only while there
+is exactly one — a second button carrying it splits the free space instead.
+
+### What the licence was missing, and the check that now holds it
+
+The third-party carve-out named the two Ramat Menashe map modules and not the
+two Tel Azeka ones, which had shipped with the second scenario on 2026-09-16.
+Same data, same terms — OpenStreetMap under ODbL, AWS Terrain Tiles from SRTM
+— so the clause is grouped by source now and names all four.
+
+**Nothing in the build noticed for five days.** `src/invariants.test.ts` fails
+when a module under `src/app/maps/` is not named in `LICENSE`, and pins both
+attributions as text, since losing one is a breach rather than a typo. Checked
+by dropping a file from the clause and watching it go red — a test that cannot
+fail is not a check.
+
+### The roadmap gained a product, and four gaps under it
+
+The author's direction: the browser is the development stage, the destination
+is a full mobile and desktop app, with pre-built scenarios and campaigns on one
+side and generation from real-world terrain plus mission parameters on the
+other. **Stage 4** and backlog **16–19** are that, written down.
+
+The finding worth keeping: **three of the four mission parameters named do not
+exist as rules.** Starting positions are scenario layout and already work.
+Objectives and mission type do not exist — `sideDefeated` ends a battle only
+when a side is wiped out, and the document names no משימה, no objective and no
+victory condition. Weather does not exist either; the only visibility rule in
+the game is smoke. So the generator is blocked less on tooling than on rules,
+and the two rulings that unblock it are on the live handoff.
+
+The tooling half, by contrast, is nearly built — and the engine can already
+*score* a candidate layout, which is the part that surprised: `hasLineOfSight`
+over real relief, `boundCost` for a climb, `coverAgainst` for what a force is
+behind. "Give the attacker one covered approach and make it the slow one" is a
+search scored by the rules themselves rather than by invented heuristics, and
+drawn from `Rng` it is a seed plus a template.
+
+### An AI player, and why a System One model fits the seam
+
+Backlog 15 (decided 2026-09-21): the opponent is a model at the action seam,
+emitting the same actions a player clicks, with nothing about the mechanics
+moving. TypeSafe's **Jev** is the intended vehicle — typed questions in, typed
+decisions with a confidence out, no string generation — which answers three of
+backlog 13's five open questions by construction: it can only choose among
+alternatives it is handed, it is fast enough that every subordinate reasoning
+is not a budget question, and its answer is already typed, so a `choice` over
+objectives *is* a `setStandingOrder`.
+
+The item is mostly limits, written before there is code to get them wrong in:
+no rule consults the model; it is never called during a replay, a
+`verifyRecording` or a what-if (it has no seed and no temperature); it is fed
+`sideView(game, side)` and **never** `game.units`; it lives in the app layer;
+it is a `GameOptions` toggle. The open one that matters: Jev returns no
+explanation, and this is a teaching instrument.
+
+### A performance claim that did not survive being measured
+
+`Token` rendered a NATO symbol on every render of every token, uncached, while
+`Relief.tsx` had memoised the terrain layer long ago. Cached now, keyed on the
+four values the render reads — and emphatically not on the unit, because the
+engine mutates a force in place and the same reference is the squad before and
+after it loses three men. A `React.memo` on `Token` would draw 8/8 over the
+casualties; `symbols.test.ts` pins that case.
+
+**But the reason it was taken on was wrong.** Two notes said milsymbol
+re-rendering was why long click scripts time out. Measured: 0.037 ms a call
+before, 0.0006 ms after — about 60× on the hit, and under a millisecond per
+re-render either way at the 5–8 tokens a platoon battle draws. It earns its
+place at echelon scaling's token counts and on a phone, not on a desktop
+platoon, and the real cause of that ceiling is still unmeasured. Both figures
+are on the live handoff so nobody pays for them twice.
+
+The picker also closes on Escape now, with focus moving into the card and back
+to the button that opened it. The guard on that effect is the part worth
+reading: without it, it runs on mount too, where `open` is false, and the
+header button took focus off the page as the game loaded.
+
+### Also this session
+
+`driving-the-game.md` gained how to get a browser at all in a sandboxed
+session: Playwright's library needs `createRequire` because ESM ignores
+`NODE_PATH`, Chromium sits under a *versioned* directory rather than the one
+`PLAYWRIGHT_BROWSERS_PATH` implies, `playwright install` should not be run, and
+the dev server's own modules import inside `page.evaluate` — which is how the
+figures above were taken.
+
+---
+
 ## 2026-08-16 — sectors of observation, and the last five rules decisions
 
 Ended at `d61a646`. 281 tests, typecheck clean. The session closed rules
