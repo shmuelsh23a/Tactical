@@ -45,7 +45,7 @@ import {
   reasonHe,
   sectorWorthHe,
 } from "./debriefText.js";
-import { buildDemoScenario, type Scenario } from "./scenario.js";
+import { SCENARIOS, type Scenario, type ScenarioEntry } from "./scenario.js";
 import {
   buildActivations,
   computeRevealed,
@@ -64,6 +64,7 @@ import { MapView, orderOverlay } from "./components/MapView.js";
 import { Debrief } from "./Debrief.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
+import { ScenarioPicker } from "./components/ScenarioPicker.js";
 
 type Gait = "normal" | "run";
 type SmallArm = "smallArms" | "sustainedMg";
@@ -96,11 +97,17 @@ const smokeSourceHe: Record<SmokeSource, string> = {
   artillery: "פגז ארטילריה",
 };
 
-export function App() {
+interface AppProps {
+  /** The battle being fought. `Root` remounts this component when it changes. */
+  entry: ScenarioEntry;
+  onPickScenario: (id: string) => void;
+}
+
+export function App({ entry, onPickScenario }: AppProps) {
   // The engine lives in a ref (mutable, imperative); React state mirrors it.
   const initRef = useRef<{ scn: Scenario; order: Side[] } | null>(null);
   if (!initRef.current) {
-    const scn = buildDemoScenario();
+    const scn = entry.build();
     const { initiativeOrder } = scn.game.beginTurn();
     initRef.current = { scn, order: initiativeOrder };
   }
@@ -977,22 +984,32 @@ export function App() {
           <span className="sep">·</span>
           <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>
         </div>
-        <button className="btn-ghost" onClick={handleSaveRecording} title="שמירת הקרב לקובץ לצורך שחזור ותחקיר">
-          שמור הקלטה
-        </button>
-        <label className="btn-ghost" title="טעינת הקלטה שמורה לתחקיר">
-          טען לתחקיר
-          <input
-            type="file"
-            accept="application/json,.json"
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = ""; // allow re-loading the same file
-              if (file) void loadRecording(file);
-            }}
+        <div className="topbar-actions">
+          <ScenarioPicker
+            scenarios={SCENARIOS}
+            currentId={entry.id}
+            // Nothing has happened yet only on turn 1's initiative panel; from
+            // the first activation onwards a switch throws a battle away.
+            underWay={stage !== "initiative" || game.turn > 1}
+            onPick={onPickScenario}
           />
-        </label>
+          <button className="btn-ghost" onClick={handleSaveRecording} title="שמירת הקרב לקובץ לצורך שחזור ותחקיר">
+            שמור הקלטה
+          </button>
+          <label className="btn-ghost" title="טעינת הקלטה שמורה לתחקיר">
+            טען לתחקיר
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = ""; // allow re-loading the same file
+                if (file) void loadRecording(file);
+              }}
+            />
+          </label>
+        </div>
       </header>
 
       <div className="main">

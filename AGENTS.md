@@ -145,11 +145,16 @@ one it is in your reply, too.
   tool refuses what would otherwise compile and play *differently from what the
   spec says*: a force off the map, a duplicate id, a misspelt key, a key given
   to the wrong kind of force (`soldiers` on a command group), a fractional
-  count, a seed that is not a whole number, and a window that is not the one
-  the relief was cut to. It leaves the ground alone unless asked
-  (`--fetch-map`) — refetching moves the data under a layout already placed on
-  it. `src/app/scenario.ts` is only the seam that says *which* generated
-  scenario the app opens with.
+  count, a seed that is not a whole number, a title or a `brief` that is empty,
+  and a window that is not the one the relief was cut to. It leaves the ground
+  alone unless asked (`--fetch-map`) — refetching moves the data under a layout
+  already placed on it.
+
+  Each generated module also exports its own **catalogue entry** — id, title,
+  the spec's one-line `brief`, and its builder — and `src/app/scenario.ts` is
+  the list of them. So the picker's label and the header's title are the same
+  generated string, and **adding a battle to the app is one line in that
+  list**, after the spec and the tool have done the rest.
 
   Roads are `Terrain.roads`: drawn, carried by the recording, read by no rule —
   keep it that way unless the author rules on roads. `src/app/scenario.test.ts`

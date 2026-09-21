@@ -111,6 +111,18 @@ enemy: pick the action, choose how many grenades to throw, and the selected
 force is ringed with its 25 m reach (rules decision 11). The log reports assault
 fire, grenade hits, and any casualties the throwers inflict on themselves.
 
+**More than one battle, and somewhere to choose between them.** `בחר קרב` in
+the header lists every battle in the catalogue by its Hebrew title and the one
+line its spec carries about the ground, because the choice on offer is between
+two pieces of ground rather than two names. Two are in: **יקנעם עילית**, where
+the shoulder hides the attack's opening and the dead ground is nearer than it
+looks, and **תל עזקה**, where the covered route up the tel is the slow one and
+the comfortable ridge is in view of the summit for its whole length. Both are
+generated from specs, and each module exports its own catalogue entry, so the
+label the player picks by and the title on the header are one string. Opening
+another battle rebuilds the game and discards the one in progress — the picker
+says so, and points at **שמור הקלטה** first.
+
 **שמור הקלטה** in the header saves the battle as a recording — the seed plus the
 action log, a few kilobytes rather than a state dump, because the seeded engine
 can rebuild everything else. [`replayGame()`](src/engine/recording.ts) replays
@@ -228,9 +240,11 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   debriefView.ts    What each side may be shown of its own battle (decision 13)
   whatIf.ts         Re-fighting the same decisions under other dice
   hotseat.ts        Activation order, fog-of-war, victory check
-  scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
+  scenario.ts       The catalogue: which battles the app can open, and the default
+  Root.tsx          Which battle is open; remounts App when it changes
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
-  components/       MapView (SVG map + interaction), Handoff, LogPanel
+  components/       MapView (SVG map + interaction), Handoff, LogPanel,
+                    ScenarioPicker (choosing the battle)
 
 docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
 docs/handoff.md         State of play: what is waiting, what next (current only)

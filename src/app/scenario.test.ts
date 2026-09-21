@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildDemoScenario } from "./scenario.js";
+import { buildDemoScenario, DEFAULT_SCENARIO, scenarioById, SCENARIOS } from "./scenario.js";
 import { makeInfantry } from "../engine/index.js";
 
 /**
@@ -58,4 +58,74 @@ describe("the demo scenario on Ramat Menashe", () => {
     for (const id of ["RED-1", "RED-2", "RED-TANK"]) expect(game.getUnit(id).cover, id).toBe("none");
     expect(game.terrain.objects.length).toBeGreaterThan(200);
   });
+});
+
+/**
+ * The picker offers whatever is in the catalogue, so the catalogue is what has
+ * to be true: a battle listed there is one the app can actually open, and the
+ * line the player chose by is the line the header then draws.
+ */
+describe("the battle catalogue", () => {
+  it("lists at least two battles, since choosing between one is not a choice", () => {
+    expect(SCENARIOS.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("gives every battle a distinct id", () => {
+    const ids = SCENARIOS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("opens the demo by default, and the default is one of the listed battles", () => {
+    expect(SCENARIOS).toContain(DEFAULT_SCENARIO);
+    expect(DEFAULT_SCENARIO.build().title).toBe(buildDemoScenario().title);
+  });
+
+  it("falls back to the default rather than throwing on an id it does not know", () => {
+    // The id round-trips through the UI, so a stale one opens the demo instead
+    // of a blank screen.
+    expect(scenarioById("no-such-battle")).toBe(DEFAULT_SCENARIO);
+    for (const entry of SCENARIOS) expect(scenarioById(entry.id)).toBe(entry);
+  });
+
+  for (const entry of SCENARIOS) {
+    describe(entry.id, () => {
+      const scn = entry.build();
+
+      it("is labelled in Hebrew, with a line saying what its ground asks", () => {
+        // Both come from the spec through the generator; this catches a module
+        // edited by hand, which is the one way they could drift.
+        expect(entry.title.trim()).not.toBe("");
+        expect(entry.brief.trim()).not.toBe("");
+        for (const text of [entry.title, entry.brief]) expect(text).toMatch(/[\u0590-\u05FF]/);
+      });
+
+      it("carries the same title the header will draw", () => {
+        expect(scn.title).toBe(entry.title);
+      });
+
+      it("is a battle and not an empty map: both sides are on it, inside the window", () => {
+        for (const side of ["BLUE", "RED"] as const) {
+          expect(scn.game.units.filter((u) => u.side === side).length, side).toBeGreaterThan(0);
+        }
+        for (const u of scn.game.units) {
+          expect(u.position.x, u.id).toBeGreaterThanOrEqual(0);
+          expect(u.position.x, u.id).toBeLessThanOrEqual(scn.mapWidth);
+          expect(u.position.y, u.id).toBeGreaterThanOrEqual(0);
+          expect(u.position.y, u.id).toBeLessThanOrEqual(scn.mapHeight);
+        }
+      });
+
+      it("lays its ground under the battle, and the ground covers the window", () => {
+        // A battle on FLAT_GROUND would still play, and every lesson either of
+        // these maps teaches is relief — so an entry whose heightfield went
+        // missing is a broken battle rather than a plain one.
+        const hf = scn.game.terrain.heightfield;
+        expect(hf, entry.id).toBeDefined();
+        if (!hf) return;
+        expect(hf.heights.length).toBe(hf.columns * hf.rows);
+        expect((hf.columns - 1) * hf.spacing).toBeGreaterThanOrEqual(scn.mapWidth);
+        expect((hf.rows - 1) * hf.spacing).toBeGreaterThanOrEqual(scn.mapHeight);
+      });
+    });
+  }
 });

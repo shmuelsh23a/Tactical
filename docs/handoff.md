@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `13373d2`, 2026-09-21.** This is the working note for whoever
+**Current as of `1c91733`, 2026-09-21.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 404 tests, 21 files
+npm run check       lint + typecheck clean, 416 tests, 21 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -198,18 +198,19 @@ Measurements that cost real time and are already recorded:
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
-2. **A scenario picker.** `tools/make-scenario.py` writes a scenario module
-   from a spec, so a second battle is a spec file — but the app still opens
-   exactly one. Choosing between them is UI that does not exist. Note that
-   both generated modules already exist: Tel Azeka is on disk and reachable
-   only from its own test.
-3. **The AI player** (backlog 15, added 2026-09-21). Unlike morale this is
+2. **The AI player** (backlog 15, added 2026-09-21). Unlike morale this is
    **unblocked** — it invents no rule, so it needs no ruling — but it is Stage 3
    work while the repo is mid-Stage 2, and it brings a hosted third-party
    dependency with it. The item names the shape, the first slice, and the four
    things still open. Read it before touching any of it, particularly the part
    about `sideView` versus `game.units`: that mistake would pass every test in
    the suite.
+
+**The scenario picker is built** (2026-09-21), so that item is off this list.
+`בחר קרב` in the header lists the catalogue in
+[`scenario.ts`](../src/app/scenario.ts); each generated module exports its own
+entry, so adding a battle is a spec, a run of the tool, and one line in that
+list. Tel Azeka is reachable from the app now rather than only from its test.
 
 **The live log is filtered by side now** (rules decision 17, 2026-09-16), so
 that item is off this list. `LogEntry` carries `readers`, `pushLog` takes a
@@ -247,10 +248,21 @@ the code currently stands:
   force its cover, so the first turn resolves differently. No such recording
   exists in the repo — nothing set `baseCover` at setup before Tel Azeka — but
   a recording saved from a scenario of your own might.
-- **`src/app/scenario.ts` is a seam, not the scenario.** The demo lives in
-  `src/app/scenarios/yokneamIllit.ts`, which is generated — editing it is
-  editing a build product, and the next run of the tool throws the edit away.
-  The spec is `tools/scenarios/yokneam-illit.json`.
+- **`src/app/scenario.ts` is the catalogue, not a scenario.** The battles live
+  in `src/app/scenarios/`, and both are generated — editing one is editing a
+  build product, and the next run of the tool throws the edit away. The specs
+  are `tools/scenarios/*.json`. That now includes each module's **catalogue
+  entry**, so a title or a picker line is changed in the spec too.
+- **A new battle is not open to the player until it is in the catalogue.**
+  Running `make-scenario.py` writes a module that nothing imports. The one
+  hand-written step is adding its `*_BATTLE` export to `SCENARIOS` in
+  `src/app/scenario.ts`; `src/app/scenario.test.ts` checks what is in that
+  list, so it cannot tell you about a battle you left out of it.
+- **Switching battles remounts `App` on the scenario's id** ([`Root.tsx`](../src/app/Root.tsx)).
+  The engine is a mutable instance in a ref with a turn's worth of state beside
+  it, so a new battle is a new `App` rather than a reset that would have to be
+  extended every time a piece of state is added. Anything that must survive a
+  switch has to live in `Root`, above the key — nothing does yet.
 - **`addMine` is setup only now** (decision 16). A test or tool that emplaced a
   charge mid-game gets a `PhaseError`; in play a force lays one, which takes
   turns. Every call site was already before `beginTurn`, so nothing had to

@@ -20,7 +20,8 @@ The spec, in full — everything not marked optional is required:
 
     {
       "slug": "yokneamIllit",              module name: src/app/scenarios/<slug>.ts
-      "title": "...",                       shown in the app
+      "title": "...",                       shown in the app's header
+      "brief": "...",                       one Hebrew line for the battle picker
       "seed": 2026,                         default seed for the battle
       "trackIntel": true,                   optional (default true)
       "enforceC2": true,                    optional (default true)
@@ -116,7 +117,7 @@ FORCE_KEYS = {
     "camouflaged", "baseCover", "scouting", "canLayCharges", "note",
 }
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
-SPEC_KEYS = {"slug", "title", "seed", "trackIntel", "enforceC2", "about", "window", "forces", "charges"}
+SPEC_KEYS = {"slug", "title", "brief", "seed", "trackIntel", "enforceC2", "about", "window", "forces", "charges"}
 KINDS = {"infantry", "vehicle", "command"}
 # What each kind may carry beyond the common keys. A key spelt correctly but
 # given to the wrong kind is refused rather than dropped: `soldiers` on a
@@ -189,8 +190,16 @@ def to_metres(at: Any, window: dict[str, Any], where: str) -> tuple[float, float
 def parse(spec: dict[str, Any]) -> dict[str, Any]:
     """Validate the spec and resolve every position to window metres."""
     check_keys("spec", spec, SPEC_KEYS)
-    for key in ("slug", "title", "seed", "window", "forces"):
+    for key in ("slug", "title", "brief", "seed", "window", "forces"):
         require(key in spec, f"spec: missing {key}")
+    # The picker lists every battle by title and by this line. An empty one
+    # reaches the player as a bare name with nothing saying what the ground
+    # asks of them, so it is refused here rather than rendered blank.
+    for key in ("title", "brief"):
+        require(
+            isinstance(spec[key], str) and spec[key].strip() != "",
+            f"spec: {key} must be a non-empty string",
+        )
     # The slug becomes a file name and a function name.
     require(
         isinstance(spec["slug"], str) and SLUG.match(spec["slug"]) is not None,
@@ -319,6 +328,11 @@ def pascal(slug: str) -> str:
     return slug[:1].upper() + slug[1:]
 
 
+def screaming(slug: str) -> str:
+    """`telAzeka` -> `TEL_AZEKA`: the constant name for the battle's entry."""
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", slug).upper()
+
+
 def emit(spec: dict[str, Any], spec_path: Path) -> str:
     window = spec["window"]
     forces, charges = spec["forces"], spec["charges"]
@@ -339,7 +353,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         "// Written " + date.today().isoformat() + ".",
         "",
         'import { ' + import_list + ', type Terrain } from "../../engine/index.js";',
-        'import type { Scenario } from "./types.js";',
+        'import type { Scenario, ScenarioEntry } from "./types.js";',
         "import { " + constant + ' } from "../maps/' + window["heightfield"] + '.js";',
         "import { " + objects_constant + ", " + roads_constant
         + ' } from "../maps/' + window["objects"] + '.js";',
@@ -435,6 +449,20 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         "  return { game, mapWidth: " + num(window["width"]) + ", mapHeight: "
         + num(window["height"]) + ", title: " + ts(spec["title"]) + " };",
         "}",
+        "",
+    ]
+
+    lines += [
+        "/**",
+        " * This battle as the app's picker lists it. Generated with the rest, so the",
+        " * line the player chooses by and the title on the header cannot drift apart.",
+        " */",
+        "export const " + screaming(spec["slug"]) + "_BATTLE: ScenarioEntry = {",
+        "  id: " + ts(spec["slug"]) + ",",
+        "  title: " + ts(spec["title"]) + ",",
+        "  brief: " + ts(spec["brief"]) + ",",
+        "  build: build" + name + "Scenario,",
+        "};",
         "",
     ]
     return "\n".join(lines)

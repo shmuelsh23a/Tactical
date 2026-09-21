@@ -16,3 +16,22 @@ export interface Scenario {
   mapHeight: number;
   title: string;
 }
+
+/**
+ * A battle as the picker lists it: what to call it, one line saying what its
+ * ground asks of the player, and the builder behind both.
+ *
+ * Each generated module exports its own entry, so the label the player chooses
+ * by and the title drawn on the header are the same string rather than two
+ * that have to be kept in step. The catalogue in
+ * [`scenario.ts`](../scenario.ts) is then only a list of them.
+ */
+export interface ScenarioEntry {
+  /** The spec's slug, which also names the module and its build function. */
+  id: string;
+  /** Hebrew, and the same title the built `Scenario` carries. */
+  title: string;
+  /** One Hebrew line under the title in the picker. */
+  brief: string;
+  build: (seed?: number) => Scenario;
+}
