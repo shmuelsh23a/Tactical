@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 416 tests, 21 files
+npm run check       lint + typecheck clean, 419 tests, 21 files
 ```
 
 The demo scenario plays end to end in the browser, including the debrief. The
@@ -46,20 +46,19 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Three things, all raised 2026-09-21, none of them blocking today's work.**
+**Two things, both raised 2026-09-21, neither blocking today's work.**
 
-1. **The `LICENSE` carve-out names two map files and there are now four.**
-   `src/app/maps/telAzeka.ts` (Terrain Tiles / SRTM) and
-   `telAzekaObjects.ts` (OpenStreetMap, ODbL) arrived with the Tel Azeka
-   scenario on 2026-09-16, and the third-party clause still lists only the
-   two Ramat Menashe files. The author wrote that clause himself on
-   2026-09-06, so this is an omission rather than a decision — but it is his
-   file, and it was left alone rather than edited on his behalf. Two lines,
-   copying the existing pattern. It gets more pressing with backlog 17, where
-   ground is fetched at runtime and cannot be listed per file at all.
-2. **Mission and victory conditions** (backlog 18) — the shape, before
+1. **Mission and victory conditions** (backlog 18) — the shape, before
    anything is built on a reading. The document names none.
-3. **Weather and light** (backlog 19) — same, and the same reason as morale.
+2. **Weather and light** (backlog 19) — same, and the same reason as morale.
+
+The `LICENSE` carve-out closed the same day it was raised: it named the two
+Ramat Menashe map files and not the two Tel Azeka ones, which had shipped on
+2026-09-16 without it. ✅ author 2026-09-21, and it is now grouped by source
+rather than listed per file. **A test holds it** — `src/invariants.test.ts`
+fails when a module under `src/app/maps/` is not named there — so the next
+window cannot repeat it. The clause still lists files, though, which is what
+backlog 17 breaks: ground fetched at runtime cannot be named in advance.
 
 Six rulings closed on 2026-09-16, every one of them the same day
 it was raised — decisions 16, 17 and 18, and two riders on 12.
