@@ -164,6 +164,8 @@ export {
   sealRecording,
   verifyRecording,
   cloneForRecord,
+  RecordingError,
+  type RecordingProblem,
   type GameRecording,
   type RecordedAction,
   type ActionOutcome,

@@ -10,6 +10,42 @@ Start here: [AGENTS.md](../AGENTS.md) *Verifying a change in the actual game*
 has the two rules you cannot skip — hard-reload after an engine change, and
 dispatch clicks on `svg.map` itself.
 
+**Getting a browser at all**, when the session has no browser tool and only a
+sandbox to work in. A remote Claude Code container ships Chromium and the
+Playwright library already, and neither is where the obvious guess puts it:
+
+```js
+// ESM ignores NODE_PATH, so `import { chromium } from "playwright"` fails
+// even with the package installed globally. Resolve it by path instead.
+import { createRequire } from "node:module";
+const { chromium } = createRequire("/opt/node22/lib/node_modules/")("playwright");
+
+// PLAYWRIGHT_BROWSERS_PATH is /opt/pw-browsers, but the binary sits under a
+// *versioned* directory — `ls /opt/pw-browsers` for the current one.
+const browser = await chromium.launch({
+  executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+});
+```
+
+Do **not** run `playwright install`, and do not add it to `package.json`: it is
+the environment's tool for driving the app, not a dependency of the app. Keep
+the script outside the repo. Set a viewport (`{ width: 1280, height: 900 }`) on
+the page for the reason the zero-size-pane note below gives.
+
+**The dev server's modules are importable from the page**, which is the cheap
+way to measure something rather than argue about it:
+`const sym = await import('/src/app/symbols.ts')` inside `page.evaluate` hands
+back the live module, and the engine barrel comes back the same way, so a unit
+can be built and a function timed in the real browser. Warm the JIT with a few
+hundred calls before timing and take the best of three passes — the first
+measurement of anything here comes out around twice its settled cost.
+
+- **The app opens on the scenario picker, not the battle.** Load
+  `/?scenario=yokneamIllit` (or any spec's `slug`) to skip it; a reload keeps
+  the battle but, as always, not the game in progress. `החלף תרחיש` goes back —
+  once the first turn has started it asks for a second click
+  (`הקרב יאבד — לחץ שוב`) rather than a native `confirm`, which would block
+  the driver.
 - **A token's symbol image is large in map coordinates.** `elementFromPoint` at
   a spot near a unit hits the `<image>`, and `Token`'s handler calls
   `stopPropagation`, so the click never reaches the map — a move silently does
@@ -48,6 +84,10 @@ dispatch clicks on `svg.map` itself.
 - **The `.roster` list only exists during an activation**, not on the initiative
   panel — querying it to decide "has the app rendered?" gives a false negative
   at the start of a turn.
+- **A saved battle opens from the picker as well as the header.** Both inputs
+  go through `readRecording` (`src/app/recordingFile.ts`); the picker's is
+  `.picker input[type=file]`, and it shows a failed load in `.picker-error`
+  rather than in a log it does not have.
 - **Getting into the debrief without touching the disk.** `שמור הקלטה` triggers
   a download and `טען לתחקיר` is a file input, but both drive in-page, and this
   is the only cheap way to check anything in `Debrief.tsx`: patch

@@ -12,6 +12,7 @@ import type {
   StandingOrder,
   StandingOrderExecution,
 } from "../engine/index.js";
+import { RecordingLoadError, type LoadProblem } from "./recordingFile.js";
 
 /** Hebrew phase names, matching the ones the hotseat UI uses. */
 const phaseHe: Record<string, string> = {
@@ -726,4 +727,40 @@ export function recordingExtent(recording: GameRecording): { width: number; heig
   }
   const pad = 120;
   return { width: Math.max(400, maxX + pad), height: Math.max(400, maxY + pad) };
+}
+
+/** A recording that replays, but not the way it was fought (`verifyRecording`). */
+export function recordingDriftNote(firstDivergence: number): string {
+  return `אזהרה: ההקלטה נוצרה תחת חוקים אחרים — התוצאות משתנות מפעולה ${firstDivergence + 1}`;
+}
+
+/**
+ * A file that could not be opened for review at all. Anything that is not a
+ * `RecordingLoadError` — which `readRecording` should never let out — is
+ * still said in Hebrew rather than passing an engine's English to a player.
+ */
+export function recordingLoadFailed(err: unknown): string {
+  return `טעינת ההקלטה נכשלה: ${
+    err instanceof RecordingLoadError ? loadProblemHe(err.problem) : "לא ניתן לקרוא את הקובץ"
+  }`;
+}
+
+function loadProblemHe(problem: LoadProblem): string {
+  switch (problem.kind) {
+    case "notJson":
+      return "הקובץ אינו הקלטת קרב";
+    case "malformed":
+      return "הקובץ אינו הקלטת קרב תקינה — חסרים בו נתונים או שהם פגומים";
+    case "malformedTerrain":
+      return "המפה שבהקלטה פגומה — לא ניתן לשחזר עליה את הקרב";
+    case "unsupportedVersion":
+      return `ההקלטה נשמרה בגרסה ${problem.version}, שהמשחק אינו קורא`;
+    case "unreadable":
+      return "לא ניתן לשחזר את הקרב מההקלטה";
+    default: {
+      // Exhaustiveness: a new problem must be worded here.
+      const never: never = problem;
+      return never;
+    }
+  }
 }

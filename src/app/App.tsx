@@ -14,10 +14,8 @@ import {
   fitSoldiers,
   fullStrength,
   orderInterval,
-  replayGame,
   sealRecording,
   sectorBonus,
-  verifyRecording,
   type ChargeWorkReport,
   type CoveringFireResult,
   type GameRecording,
@@ -43,9 +41,11 @@ import {
   describeStandingOrder,
   isRoutineOrderReason,
   reasonHe,
+  recordingDriftNote,
+  recordingLoadFailed,
   sectorWorthHe,
 } from "./debriefText.js";
-import { buildDemoScenario, type Scenario } from "./scenario.js";
+import type { Scenario, ScenarioListing } from "./scenario.js";
 import {
   buildActivations,
   computeRevealed,
@@ -62,6 +62,7 @@ import {
 } from "./hotseat.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
 import { Debrief } from "./Debrief.js";
+import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
 
@@ -96,11 +97,19 @@ const smokeSourceHe: Record<SmokeSource, string> = {
   artillery: "פגז ארטילריה",
 };
 
-export function App() {
+interface AppProps {
+  /** The battle to fight. Built once, on the first render. */
+  scenario: ScenarioListing;
+  /** Back to the scenario picker; the battle in progress is dropped. */
+  onLeave: () => void;
+}
+
+export function App({ scenario, onLeave }: AppProps) {
   // The engine lives in a ref (mutable, imperative); React state mirrors it.
+  // Choosing another battle remounts this component rather than rebuilding it.
   const initRef = useRef<{ scn: Scenario; order: Side[] } | null>(null);
   if (!initRef.current) {
-    const scn = buildDemoScenario();
+    const scn = scenario.build();
     const { initiativeOrder } = scn.game.beginTurn();
     initRef.current = { scn, order: initiativeOrder };
   }
@@ -148,6 +157,16 @@ export function App() {
   const [winner, setWinner] = useState<Side | null>(null);
   /** A loaded recording being reviewed; the game is left untouched behind it. */
   const [debrief, setDebrief] = useState<GameRecording | null>(null);
+  /**
+   * Leaving drops the battle, so once anything has been done in it the first
+   * click only asks. An in-page second click rather than `window.confirm`: a
+   * native dialog blocks the browser scripts that drive this page.
+   *
+   * Disarmed on blur *and* whenever play moves on: Safari never focuses a
+   * clicked button, so blur alone would leave it armed for the rest of the
+   * battle, one stray click from losing it.
+   */
+  const [leaveArmed, setLeaveArmed] = useState(false);
 
   // One fire mission and one smoke screen per side per turn (see README rules
   // decision 8) — keyed `SIDE-he` / `SIDE-smoke` to the turn it was spent on.
@@ -295,6 +314,7 @@ export function App() {
   // ---- actions ----
 
   function handleContinue() {
+    setLeaveArmed(false);
     game.advanceToPhase("targeting");
     setStage("activation");
     setActIndex(0);
@@ -889,22 +909,11 @@ export function App() {
   /** Read a saved recording and hand it to the debrief view. */
   async function loadRecording(file: File) {
     try {
-      const parsed = JSON.parse(await file.text()) as GameRecording;
-      // Fail here rather than halfway through a replay.
-      replayGame(parsed, { upToAction: 0 });
-      const check = verifyRecording(parsed);
-      if (check.checked && !check.ok) {
-        pushLog(
-          `אזהרה: ההקלטה נוצרה תחת חוקים אחרים — התוצאות משתנות מפעולה ${
-            (check.firstDivergence?.index ?? 0) + 1
-          }`,
-          "info",
-          TABLE,
-        );
-      }
-      setDebrief(parsed);
+      const { recording, divergesAt } = await readRecording(file);
+      if (divergesAt != null) pushLog(recordingDriftNote(divergesAt), "info", TABLE);
+      setDebrief(recording);
     } catch (err) {
-      pushLog(`טעינת ההקלטה נכשלה: ${(err as Error).message}`, "info", TABLE);
+      pushLog(recordingLoadFailed(err), "info", TABLE);
       force();
     }
   }
@@ -921,6 +930,7 @@ export function App() {
   }
 
   function handleEndActivation() {
+    setLeaveArmed(false);
     setSelectedId(null);
     // The task is about the force in front of the player, not a standing panel
     // setting: handing over with "hold fire" still selected would quietly put
@@ -977,6 +987,18 @@ export function App() {
           <span className="sep">·</span>
           <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>
         </div>
+        <button
+          className={leaveArmed ? "btn-ghost btn-armed" : "btn-ghost"}
+          onClick={() => {
+            // Nothing is lost until the first turn has been started.
+            if (leaveArmed || (game.turn === 1 && stage === "initiative")) onLeave();
+            else setLeaveArmed(true);
+          }}
+          onBlur={() => setLeaveArmed(false)}
+          title="חזרה לבחירת תרחיש"
+        >
+          {leaveArmed ? "הקרב יאבד — לחץ שוב" : "החלף תרחיש"}
+        </button>
         <button className="btn-ghost" onClick={handleSaveRecording} title="שמירת הקרב לקובץ לצורך שחזור ותחקיר">
           שמור הקלטה
         </button>

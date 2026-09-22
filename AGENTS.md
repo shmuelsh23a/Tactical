@@ -15,6 +15,13 @@ project stands, what is waiting on the author, and what to take next — current
 state only. Why a past decision went the way it did is in
 [docs/handoff-archive.md](docs/handoff-archive.md).
 
+**`main` is not the only place work lives.** Sessions push to their own
+branches and nothing merges them for you, so the handoff on `main` can be days
+behind. Before taking anything from it, run `git fetch && git branch -r` and
+`git log main..origin/<branch>` on each other branch — the scenario picker was
+built twice, on consecutive days, because the second session read only
+`main`.
+
 ## Commands
 
 ```bash
@@ -49,8 +56,11 @@ this file:
   It carries **architectural rules only** — no style layer, nothing to argue
   about, and no mechanical diff across files that have never been linted.
 - [`src/invariants.test.ts`](src/invariants.test.ts) takes what a selector
-  states badly: a relative import missing its `.js`, and a structural check that
-  the compiler's own exhaustiveness guards have not been deleted.
+  states badly: a relative import missing its `.js`, a structural check that
+  the compiler's own exhaustiveness guards have not been deleted, and that
+  every module under `src/app/maps/` is still named in `LICENSE`'s third-party
+  carve-out — cutting a new window writes two more of them, and the carve-out
+  does not extend itself.
 - The compiler fails on a log line written without an audience — `pushLog`'s
   third argument — so the live log cannot regain the fog-of-war hole it had
   (rules decision 17), and on a new `RecordedAction` that any of the four
@@ -145,11 +155,14 @@ one it is in your reply, too.
   tool refuses what would otherwise compile and play *differently from what the
   spec says*: a force off the map, a duplicate id, a misspelt key, a key given
   to the wrong kind of force (`soldiers` on a command group), a fractional
-  count, a seed that is not a whole number, and a window that is not the one
-  the relief was cut to. It leaves the ground alone unless asked
-  (`--fetch-map`) — refetching moves the data under a layout already placed on
-  it. `src/app/scenario.ts` is only the seam that says *which* generated
-  scenario the app opens with.
+  count, a seed that is not a whole number, a title or a `brief` that is empty,
+  and a window that is not the one the relief was cut to. It leaves the ground
+  alone unless asked (`--fetch-map`) — refetching moves the data under a layout
+  already placed on it. `src/app/scenario.ts` is only the list of generated battles the
+  **scenario picker** offers (`SCENARIOS`); a new spec needs one line there, and
+  `src/app/scenarioCatalogue.test.ts` fails until it has it. A spec's `brief` is
+  the picker's text and **both players read it before taking a side** — write
+  a tasking there (who attacks, who holds, where), never forces or charges.
 
   Roads are `Terrain.roads`: drawn, carried by the recording, read by no rule —
   keep it that way unless the author rules on roads. `src/app/scenario.test.ts`
@@ -184,6 +197,17 @@ one it is in your reply, too.
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.
+  The engine says *what* went wrong as data and never in Hebrew — a refusal
+  reason, or a `RecordingError`'s `problem` for a file that is not a recording
+  — and the app words it there; an engine's English message is for a stack
+  trace, not a player.
+- **Never cache anything on a `Unit`'s identity.** The engine is imperative
+  and mutates a force in place, so the same object reference is the squad
+  before and after it loses three men. A `React.memo` on a token, or a
+  `WeakMap` keyed on the unit, would go on drawing 8/8 over the casualties.
+  Cache on the *values* the thing being cached actually reads — that is what
+  `renderUnitSymbol` does, and `src/app/symbols.test.ts` pins the mutation
+  case so the shortcut cannot come back.
 - **`noUncheckedIndexedAccess` is on**: indexing an array yields `T | undefined`.
 - **The UI is Hebrew and RTL.** User-facing strings, log lines and labels are in
   Hebrew; keep new ones consistent with the existing phrasing.
@@ -192,7 +216,9 @@ one it is in your reply, too.
 
 Engine changes are covered by tests, but anything the player sees should be
 driven in the browser before you call it done: start the `dev` preview, play the
-demo scenario to the situation you changed, and read the combat log back.
+demo scenario to the situation you changed, and read the combat log back. The
+app opens on the scenario picker; `/?scenario=yokneamIllit` goes straight into
+the demo.
 
 One trap: the `Game` instance is held in a React ref, so **Vite's hot reload
 will not pick up an engine change** — the old instance keeps running the old

@@ -4,8 +4,9 @@ A deterministic, fully-tested **TypeScript rules engine** implementing the
 tabletop tactical wargame described in [`Tactical - Mechanics.docx`](Tactical%20-%20Mechanics.docx)
 (Hebrew; readable as Markdown at
 [`docs/mechanics.he.md`](docs/mechanics.he.md)). Stage 1 — the engine — is
-complete; stage 2, the hotseat browser game on top of it, is in progress. Mobile
-and networked/single-player modes sit on the same module later.
+complete; stage 2, the hotseat browser game on top of it, is in progress. The
+browser is the **development shell**, not the destination: mobile, desktop and
+networked/single-player modes sit on the same module later (stages 3 and 4).
 
 Working on this repo with an AI assistant? Start with [AGENTS.md](AGENTS.md), then
 [docs/handoff.md](docs/handoff.md) for where the work stands.
@@ -110,6 +111,21 @@ In the fire phase a force can shoot or **assault** (הסתערות) a neighbouri
 enemy: pick the action, choose how many grenades to throw, and the selected
 force is ringed with its 25 m reach (rules decision 11). The log reports assault
 fire, grenade hits, and any casualties the throwers inflict on themselves.
+
+**More than one battle, and somewhere to choose between them.** The app opens
+on a **scenario picker**: every battle by its Hebrew title, its brief and the
+size of its ground, and `?scenario=<slug>` goes straight into one. Two are in:
+**יקנעם עילית**, where the shoulder hides the attack's opening and the dead
+ground is nearer than it looks, and **תל עזקה**, where the covered route up the
+tel is the slow one and the comfortable ridge is in view of the summit for its
+whole length. The brief says only who attacks and who holds, and where — both
+players read it before either has taken a side, so what the ground teaches is
+left for the ground to teach. Both are generated from specs, and each module
+exports its own listing, so the card the player picks by and the title on the
+header are one string. **החלף תרחיש** goes back to the picker, and once the
+first turn has started it asks for a second click, because the battle in
+progress is discarded — save it with **שמור הקלטה** first. A saved battle can
+also be opened for review straight from the picker.
 
 **שמור הקלטה** in the header saves the battle as a recording — the seed plus the
 action log, a few kilobytes rather than a state dump, because the seeded engine
@@ -228,9 +244,11 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   debriefView.ts    What each side may be shown of its own battle (decision 13)
   whatIf.ts         Re-fighting the same decisions under other dice
   hotseat.ts        Activation order, fog-of-war, victory check
-  scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
+  Root.tsx          Which battle: the scenario picker, or the game (?scenario=)
+  scenario.ts       The battles the picker offers, and the demo by name
+  scenarios/        Generated battles (tools/make-scenario.py), one per spec
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
-  components/       MapView (SVG map + interaction), Handoff, LogPanel
+  components/       MapView (SVG map + interaction), Handoff, LogPanel, ScenarioPicker
 
 docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
 docs/handoff.md         State of play: what is waiting, what next (current only)
@@ -1083,7 +1101,9 @@ Still modelled by reasonable assumption (flag if you want them changed):
 - **UI uses NATO symbology (APP-6 / MIL-STD-2525)** for all units and control
   measures on the map.
 - **Deterministic core preserved.** New systems draw from the single seeded RNG
-  so replays, networked play, and recordings stay reproducible.
+  so replays, networked play, and recordings stay reproducible. An AI player
+  (backlog 15) is not an exception to this: it chooses *decisions*, in the same
+  places a human chooses them, and every outcome is still rolled by the engine.
 
 ## Roadmap
 
@@ -1095,6 +1115,36 @@ Still modelled by reasonable assumption (flag if you want them changed):
   **single-player vs AI**. Both already supported by the seed-driven design.
   The AI opponent and backlog item 13 (OPORD mode) are the same engine seam
   seen from two directions: something other than a human emitting the actions.
+  The opponent itself is specified in **backlog 15** — which also covers the
+  simulated subordinates under *every* player once echelons scale, and names
+  what neither is allowed to touch.
+- **Stage 4 — the app proper: mobile and desktop.** The browser build is the
+  development shell. What ports for free is the part that matters: the engine
+  has **no runtime dependencies**, no DOM and no node globals — `build:engine`
+  emits it standalone with `"types": []` precisely so it cannot acquire any —
+  so every platform runs the same rules and the same seeded rng, and a
+  networked game can send decisions rather than state.
+
+  What does **not** port is the app layer, and it is worth being honest about
+  which parts:
+
+  - **The map is SVG.** One window already carries over 200 OpenStreetMap
+    footprints (`src/app/scenario.test.ts` pins that), redrawn through
+    milsymbol on every state change — which is already the reason a browser
+    driving script cannot click more than about eight times in one go. A phone
+    wants canvas or WebGL, and that is a rewrite of `MapView`, not a port.
+  - **Hotseat is the mode that ports best**, not the worst: one device passed
+    between two players is a phone's natural shape, and the handoff overlay
+    that hides the board already exists.
+  - **Ground becomes a service.** `fetch-dtm.py` and `fetch-osm.py` are Python
+    dev tools run deliberately; an app that lets a player choose their own
+    ground has to fetch, cache and hold tiles at runtime, and decide what
+    happens with no signal. See backlog 17.
+  - **The data licences travel with it.** The OpenStreetMap and SRTM carve-out
+    in [`LICENSE`](LICENSE) is written per file. Ground fetched at runtime
+    cannot be listed per file, so that clause needs generalising before any
+    such build ships, and the attribution the map already draws has to survive
+    into the native UI.
 
 ### Later development iterations (unordered backlog)
 
@@ -1108,6 +1158,13 @@ Each is intended to be an independent, toggleable module:
    calls for fire rather than owning it. At battalion and above the battery is a
    unit on the map, with the rates of fire the data already holds and a position
    that can be counter-batteried (rules decision 8).
+
+   **It also carries the simulated subordinates** (backlog 15). Above company
+   the levels below the player's pieces stop being a strength number and start
+   having to decide how to execute what they were told; the model supplies the
+   decisions and the engine resolves them, on both sides, including under the
+   human. There is nothing to simulate until this item exists, and this item is
+   not finished without it.
 4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
    fuller aerial-asset system.
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
@@ -1129,6 +1186,14 @@ Each is intended to be an independent, toggleable module:
    output ([`scenarios/yokneamIllit.ts`](src/app/scenarios/yokneamIllit.ts)
    from [`yokneam-illit.json`](tools/scenarios/yokneam-illit.json)), which is
    what keeps the tool honest: the suite plays the generated battle.
+
+   The app opens on a **scenario picker**: every spec under `tools/scenarios/`
+   is a card with its title, its `brief` and the size of its ground, and
+   `?scenario=<slug>` opens one directly; `טען לתחקיר` is on the picker too,
+   so a saved battle is reviewed without opening one first. The brief is generated from the spec
+   like everything else, and it is read by both players before either has taken
+   a side — so it is a tasking, never an order of battle. A spec that is not
+   offered fails `scenarioCatalogue.test.ts`.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
    to any prefix), `replayWithOutcomes()` also hands back what each action
@@ -1213,3 +1278,225 @@ Each is intended to be an independent, toggleable module:
     What is missing is the rest of the picture — what a side learned from a
     shot it fired (how many casualties it actually caused), and a debrief view
     that reads the ledger instead of the truth.
+
+15. **An AI commander — the opponent in single-player, and the simulated
+    subordinates under every player.** Decisions come from a model at the
+    action seam; outcomes stay deterministic mechanics throughout. Decided
+    2026-09-21.
+
+    Single-player has been a Stage 3 line since the beginning; what was missing
+    was a way to have something other than a human emit actions without putting
+    a coin-flip inside the rules. The intended vehicle is **Jev** from TypeSafe
+    AI — a *System One* model, in early access since 2026-09-15: typed questions
+    in (`noul` yes/no, `choice` among named options, `score` on a rubric), typed
+    decisions with calibrated confidence out, and **no string generation at all**.
+
+    **Two jobs, not one — and the second is the larger.** In single-player the
+    model is the opponent. But the **level of control** principle above says a
+    player commands one echelon and directly moves the one below it, with
+    everything further down *abstracted* — and today "abstracted" means
+    "absent": a squad is an atom with a strength number and no judgement inside
+    it. That holds only while the playable slice is the platoon. **Above
+    company, the subordinate levels have to be simulated** (author,
+    2026-09-21): a company commander moves platoons, and each platoon commander
+    still has to decide how to carry out the order it was given — which squad
+    leads, where the base of fire goes, whether to break contact. Those
+    decisions are the model's too, on **both sides, including underneath the
+    human player**.
+
+    That is what this is actually for, and it reframes the rest of the item:
+
+    - **It settles the latency question above rather than merely surviving
+      it.** A brigade's worth of subordinates each reasoning every turn is
+      affordable at 70–500 ms and a fraction of a cent a call; the same thing
+      through a frontier chat model is not.
+    - **The deterministic line does not move, because it is the same line.** A
+      subordinate *decides*; the engine *resolves*. Its decision enters the
+      recording exactly as a player's order does, and every outcome still comes
+      from `Rng` and the document's tables. This is also what turns the
+      never-during-a-replay rule below from a nicety into the thing protecting
+      **every** recording rather than only single-player ones: two humans
+      fighting a company action would each have simulated subordinates under
+      them.
+    - **The fog-of-war rule tightens rather than loosens.** A subordinate gets
+      neither `game.units` nor, arguably, the whole of `sideView(game, side)`:
+      it should reason from what *it* can see, which is stricter than the
+      opponent case and has nothing behind it yet (⚠️).
+    - **C2 is where the judgement earns its keep.** Rules decision 6 already
+      says a force out of contact goes on with the order it holds — precisely
+      the gap a simulated commander fills, and the existing rule gives it the
+      room without anything new being invented.
+
+    **It arrives with echelon scaling (backlog 3), not before** — the same
+    dependency the artillery battery carries (rules decision 8), and for the
+    same reason: there are no subordinate levels to simulate until there are
+    echelons to command.
+
+    **Why this shape rather than a chat model.** Three of backlog 13's five open
+    questions answer themselves:
+
+    - **Adjudication** is forced to the option that item already calls safest.
+      Jev can only pick among alternatives it is handed, so it cannot argue for
+      an outcome the tables do not cover — the engine stays the referee because
+      nothing else is on offer.
+    - **Latency** is 70–500 ms a call rather than seconds, which is what makes
+      "every subordinate reasons" affordable instead of a budget question.
+    - **Parsing** disappears. The answer is already typed, so a `choice` over
+      objectives *is* a `setStandingOrder`; nothing is read out of prose, and
+      there is no layer that can misread it.
+
+    The mapping onto what a force can be told is close enough to be suspicious
+    of: a standing order is an objective, a gait, a task (advance, advance and
+    engage, hold and engage, hold fire) and an optional engagement range —
+    three `choice`s and a `score`. "Spring the ambush now?" is a `noul`.
+
+    **Where it lives, and where it must never.** The app layer. Not
+    `src/engine/`, which is already closed to it three ways: eslint refuses node
+    globals and app imports inside the engine,
+    [`tsconfig.engine.json`](tsconfig.engine.json) sets `"types": []` so the
+    standalone build cannot acquire them, and the engine has to replay
+    bit-for-bit from a seed. The AI emits the same actions a player clicks.
+
+    **What "the mechanics stay deterministic" means precisely.** No rule ever
+    consults the model. Every roll still comes from `Rng`; hit resolution,
+    detection, casualty bands and dispersion are the document's numbers and are
+    not on offer to it. The model chooses decisions exactly where a human
+    chooses them, and the recording holds decisions rather than outcomes
+    (backlog 7), so an AI-fought battle replays like any other — and
+    **תוכנית או מזל?** still works on one, because it re-rolls the dice over
+    fixed decisions.
+
+    That last point is also a hard rule: **the model is never called during a
+    replay, a `verifyRecording`, or a what-if run.** Jev exports no seed and no
+    temperature — checked against the SDK's own types, 2026-09-21 — so re-asking
+    it the same question may decide differently. Harmless in play, fatal in a
+    replay. This wants a test rather than this paragraph, the moment there is
+    code to point one at. A recording of an AI game carries the **model id and
+    the question-set version**, which is what backlog 13 already asks for.
+
+    **The trap, written down before it is sprung.** The AI is fed
+    `sideView(game, side)` — the contact ledger that side is entitled to — and
+    **never `game.units`**. An opponent reading the umpire's map is an
+    omniscient cheat that would quietly undo rules decisions 12 and 13, and not
+    one existing test would fail. It is this repo's worst bug shape (one rule
+    read off two different states) at the largest scale it could occur at, so it
+    gets its own test and not a comment.
+
+    **Toggleable, like everything else** — a flag on `GameOptions` in the
+    `enforceC2` mould. With it off the hotseat plays exactly as it does today,
+    and the game stays fully playable with no network and no API key.
+
+    **Open, deliberately** (⚠️):
+
+    - **It returns no explanation, and this is a teaching instrument.** The
+      debrief exists to tell a plan apart from its luck; an opponent that cannot
+      say why it chose the eastern axis teaches less than a scripted one that
+      can. Simulated subordinates sharpen this considerably: a debrief that
+      cannot say why *your own* platoon did what it did is a harder gap to
+      accept than one about the enemy. What a subordinate **decided** is
+      narratable through the existing Hebrew layer
+      ([`debriefText.ts`](src/app/debriefText.ts)) with no rationale at all —
+      whether that is enough is unsettled, as is what would produce a rationale,
+      since Jev structurally cannot.
+    - **Which decisions it gets.** The first slice is standing orders, once per
+      side per turn. Whether it also marks indirect fire, sites smoke, sets
+      observation sectors and lays charges is open.
+    - **How it is held to C2.** A human is gated by rules decision 6 on how
+      often a force may receive new orders. The AI has to be gated identically,
+      or it is not playing the same game as the player.
+    - **Dependency risk.** Hosted API only, no published weights, no
+      self-hosting, and a fortnight old. The toggle is also the fallback.
+
+    **First slice to build**: one call per side per turn, fed only that side's
+    contact ledger, emitting `setStandingOrder` per force — measurable against
+    the demo scenario's scripted RED, which is the comparison that says whether
+    any of this is worth keeping.
+
+16. **Campaigns — battles that remember the last one.** A pre-built series
+    rather than a single engagement: the same force fights again on the next
+    piece of ground, and what happened to it carries over.
+
+    **The engine has no concept of state between battles.** Every `Game` is
+    built from nothing by a scenario, which is why a campaign is a genuinely
+    new idea here rather than a menu over existing ones. The carrier is
+    already built, though: a recording reconstructs a battle exactly from its
+    seed and decisions (backlog 7), so a campaign is a chain of recordings
+    plus a statement of what the next scenario inherits from the last.
+
+    **What carries is the whole design, and it is mostly a balance question**
+    (⚠️): casualties and which forces still exist; ammunition, once backlog 12
+    exists to track it; ground gained, if the next battle is on the same
+    window; and whether a force that broke is the same force next time, which
+    is backlog 1's business. Attrition carried between battles is the single
+    most balance-sensitive decision in this whole direction — a campaign that
+    carries losses forward can be lost by turn three of battle one.
+
+    It also needs an **outcome worth carrying**, which is backlog 18.
+
+17. **The mission builder — pick real ground, set the mission, get a battle.**
+    The other half of the pre-built library: rather than playing what someone
+    laid out, the player chooses a piece of the real world and the terms of the
+    fight, and the scenario is generated on it.
+
+    **The tooling half is nearly built.** `tools/fetch-dtm.py` and
+    `tools/fetch-osm.py` already cut any window from public elevation and
+    OpenStreetMap data; `tools/make-scenario.py` already refuses everything a
+    builder would have to enforce — a force off the map, a duplicate id, a key
+    given to the wrong kind of force, a window that is not the one the relief
+    was cut to; and the battle picker already opens whatever comes out. Three
+    things stand between that and a feature: they are Python dev tools rather
+    than a runtime service (see Stage 4), the **spec** is the truth so a
+    builder must write one rather than a module, and refetching a window moves
+    the data under any layout already placed on it.
+
+    **The interesting half is constraint satisfaction, and the engine can
+    already answer it.** `hasLineOfSight` takes two forces over real relief,
+    `boundCost` prices a climb, `coverAgainst` reads what a force is behind —
+    so "put the defender where it holds the ridge, give the attacker one
+    covered approach, and make that approach the slow one" is a search over
+    placements *scored by the rules themselves* rather than a set of invented
+    heuristics. Draw the search from `Rng` and a generated battle is a seed
+    plus a template: reproducible, and replayable like every other game.
+
+    **What it cannot invent** (⚠️): force ratios, and what counts as a fair or
+    an instructive start. Those are balance decisions the document does not
+    make, and they are the part to put to the author rather than to tune.
+
+    Two of the mission parameters this is meant to take — the **objective** and
+    the **mission type** — do not exist in the engine yet (backlog 18), and a
+    third, **the conditions**, does not exist either (backlog 19). Starting
+    positions are the only one of the four that is already scenario layout.
+
+18. **Mission and victory conditions — something to win other than a
+    massacre.** Today a side is beaten when **every one of its forces is
+    neutralised or gone** (`sideDefeated`), and nothing else ends a battle:
+    no objective, no time limit, no ground to take or hold.
+
+    **The document is silent on all of it** (⚠️ — checked, not assumed: it
+    names no משימה, no victory condition and no objective; its only use of
+    מטרה is "target"). So seize / hold / delay / screen / raid, an objective
+    on the ground, a turn limit, a withdrawal condition and what a draw is are
+    all ours, and they want the author's shape before they are built — the way
+    decision 15 was got, and for the same reason.
+
+    This is the blocker under both items above: a campaign needs a result to
+    carry forward, and a mission builder that takes "objectives" as a
+    parameter needs objectives to mean something. It is also what the debrief
+    would measure a plan against instead of a body count.
+
+19. **Weather, light and visibility.** Night, rain, fog, low cloud, wind —
+    conditions as a parameter of the battle rather than a permanent noon.
+
+    **The document has no weather and no light at all** (⚠️ — its only
+    visibility rule is smoke: `אין ירי לתוך\דרך עשן`). Every number would be
+    ours, which puts this beside morale (backlog 1) rather than beside a rule
+    waiting to be implemented: get the shape from the author first.
+
+    The smoke rule is the **precedent worth copying** when it is built: the
+    engine derives sight from the screens on the map rather than the app
+    asserting a modifier, so conditions should reach the rules through
+    `hasLineOfSight` and the detection bands, not as a flat penalty bolted on
+    at a call site. Everything they would touch is already in one place — the
+    300 m visible band and the 20 m hidden one, the eye heights of rules
+    decision 15, camouflage and cover, and smoke's own duration, which wind
+    would presumably move.

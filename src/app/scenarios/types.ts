@@ -16,3 +16,24 @@ export interface Scenario {
   mapHeight: number;
   title: string;
 }
+
+/**
+ * A battle as the scenario picker offers it: enough to choose by, and a way
+ * to build it. Generated beside the builder from the same spec; the title and
+ * the extent are written into both, and `scenarioCatalogue.test.ts` pins that
+ * the card and the battle it builds agree.
+ */
+export interface ScenarioListing {
+  /** The spec's slug; also what `?scenario=` names. */
+  id: string;
+  title: string;
+  /**
+   * Read by both players before either has taken a side, so it is a tasking —
+   * who attacks, who holds, where — and never what a side would have to find
+   * out for itself.
+   */
+  brief: string;
+  mapWidth: number;
+  mapHeight: number;
+  build: (seed?: number) => Scenario;
+}

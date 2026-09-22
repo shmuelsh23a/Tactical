@@ -56,9 +56,12 @@ function times(n: number): string {
 export function Debrief({
   recording,
   onClose,
+  closeLabel = "חזרה למשחק",
 }: {
   recording: GameRecording;
   onClose: () => void;
+  /** Where closing goes: the battle behind it, or the scenario picker. */
+  closeLabel?: string;
 }) {
   const total = recording.actions.length;
   const [index, setIndex] = useState(total);
@@ -152,7 +155,7 @@ export function Debrief({
           <span>זרע {recording.seed}</span>
         </div>
         <button className="btn-ghost" onClick={onClose}>
-          חזרה למשחק
+          {closeLabel}
         </button>
       </header>
 

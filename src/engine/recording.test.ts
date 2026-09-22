@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Game } from "./game.js";
 import {
+  RecordingError,
   replayGame,
   replayWithOutcomes,
   sealRecording,
@@ -363,6 +364,70 @@ describe("battle recording", () => {
   it("refuses a recording from an unknown format version", () => {
     const bad = { version: 99, seed: 1, sides: [], enforceC2: true, actions: [] };
     expect(() => replayGame(bad as unknown as GameRecording)).toThrow(/version/);
+  });
+
+  it("names what is wrong with a file that is not a recording, before building a game", () => {
+    // Said as data, so the app can word it for a player; a TypeError from
+    // inside Game is what these produced before the header was checked.
+    const good = { version: 1, seed: 1, sides: ["BLUE", "RED"], enforceC2: true, actions: [] };
+    const problem = (r: unknown) => {
+      try {
+        replayGame(r as GameRecording);
+      } catch (err) {
+        return err instanceof RecordingError ? err.problem : err;
+      }
+      return "accepted";
+    };
+    expect(problem(good)).toBe("accepted");
+    expect(problem({ ...good, trackIntel: true, digests: [] })).toBe("accepted");
+    expect(problem({ ...good, version: 2 })).toEqual({ kind: "unsupportedVersion", version: 2 });
+    expect(problem({})).toEqual({ kind: "malformed", field: "version" });
+    expect(problem(null)).toEqual({ kind: "malformed", field: "recording" });
+    expect(problem([])).toEqual({ kind: "malformed", field: "recording" });
+    expect(problem({ ...good, seed: "1" })).toEqual({ kind: "malformed", field: "seed" });
+    expect(problem({ ...good, sides: ["GREEN"] })).toEqual({ kind: "malformed", field: "sides" });
+    expect(problem({ ...good, enforceC2: undefined })).toEqual({ kind: "malformed", field: "enforceC2" });
+    expect(problem({ ...good, terrain: 3 })).toEqual({ kind: "malformedTerrain", field: "terrain" });
+    expect(problem({ ...good, actions: {} })).toEqual({ kind: "malformed", field: "actions" });
+  });
+
+  it("checks the ground a recording carries, down to the first bad value", () => {
+    // The debrief draws all of it and the sight rule reads the grid; neither
+    // would fail on a short grid — a missing height reads as sea level — so
+    // the load has to be the place that notices.
+    const hf = { spacing: 10, columns: 2, rows: 2, heights: [1, 2, 3, 4] };
+    const house = { id: "b1", kind: "building", footprint: { shape: "polygon", points: [{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 5 }] } };
+    const tree = { id: "t1", kind: "tree", footprint: { shape: "circle", center: { x: 9, y: 9 }, radius: 3 } };
+    const road = { id: "r1", kind: "track", width: 3, points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] };
+    const ground = { heightfield: hf, objects: [house, tree], roads: [road] };
+    const faultIn = (terrain: unknown) => {
+      try {
+        replayGame({ version: 1, seed: 1, sides: ["BLUE", "RED"], enforceC2: true, terrain, actions: [] } as unknown as GameRecording);
+      } catch (err) {
+        return err instanceof RecordingError && err.problem.kind === "malformedTerrain" ? err.problem.field : err;
+      }
+      return null;
+    };
+    expect(faultIn(ground)).toBeNull();
+    expect(faultIn({ objects: [] })).toBeNull();
+    expect(faultIn({ ...ground, heightfield: { ...hf, heights: [1, 2, 3] } })).toBe("terrain.heightfield.heights");
+    expect(faultIn({ ...ground, heightfield: { ...hf, heights: [1, 2, 3, null] } })).toBe("terrain.heightfield.heights");
+    expect(faultIn({ ...ground, heightfield: { ...hf, spacing: 0 } })).toBe("terrain.heightfield.spacing");
+    expect(faultIn({ ...ground, heightfield: { ...hf, rows: 1.5 } })).toBe("terrain.heightfield.rows");
+    expect(faultIn({ ...ground, heightfield: { ...hf, origin: { x: 1 } } })).toBe("terrain.heightfield.origin");
+    expect(faultIn({ ...ground, objects: undefined })).toBe("terrain.objects");
+    expect(faultIn({ ...ground, objects: [house, { ...tree, kind: "hedge" }] })).toBe("terrain.objects[1].kind");
+    expect(faultIn({ ...ground, objects: [{ ...house, height: -1 }] })).toBe("terrain.objects[0].height");
+    expect(
+      faultIn({ ...ground, objects: [{ ...house, footprint: { shape: "polygon", points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] } }] }),
+    ).toBe("terrain.objects[0].footprint");
+    expect(faultIn({ ...ground, objects: [{ ...tree, footprint: { shape: "circle", center: { x: 0, y: 0 } } }] })).toBe(
+      "terrain.objects[0].footprint",
+    );
+    expect(faultIn({ ...ground, roads: [{ ...road, kind: "canal" }] })).toBe("terrain.roads[0].kind");
+    expect(faultIn({ ...ground, roads: [{ ...road, points: [{ x: 0, y: 0 }] }] })).toBe("terrain.roads[0].points");
+    // A field this engine does not know is not damage: a later map may add one.
+    expect(faultIn({ ...ground, objects: [{ ...house, levels: 2 }], lighting: "dusk" })).toBeNull();
   });
 });
 
