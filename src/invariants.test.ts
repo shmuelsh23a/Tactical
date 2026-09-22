@@ -132,3 +132,35 @@ describe("disclosure: the live log cannot leak what a side never saw", () => {
     expect(reader![0]).toContain("null");
   });
 });
+
+/**
+ * The ground is third-party data, and the licence has to keep saying so.
+ *
+ * Everything under `src/app/maps/` is fetched from OpenStreetMap (ODbL) or
+ * from the AWS Terrain Tiles (SRTM, public domain), and `LICENSE` carves it
+ * out of the proprietary terms **by naming each file**. Cutting a new window
+ * writes two more modules, and the carve-out does not extend itself: Tel Azeka
+ * shipped on 2026-09-16 and was not added to it until five days later, which
+ * nothing in the build noticed. This is that nothing.
+ */
+describe("the third-party data carve-out", () => {
+  const licence = readFileSync(fileURLToPath(new URL("../LICENSE", import.meta.url)), "utf8");
+  const maps = readdirSync(join(SRC, "app", "maps")).filter((f) => /\.tsx?$/.test(f));
+
+  it("has a map to cover in the first place", () => {
+    expect(maps.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("names every generated map module", () => {
+    for (const file of maps) expect(licence, file).toContain(`src/app/maps/${file}`);
+  });
+
+  it("still states both sets of terms the data came with", () => {
+    // Losing either attribution is a licence breach rather than a typo, so the
+    // words are pinned and not just the file names.
+    expect(licence).toContain("OpenStreetMap");
+    expect(licence).toContain("ODbL");
+    expect(licence).toContain("Terrain Tiles courtesy of Mapzen");
+    expect(licence).toContain("SRTM");
+  });
+});

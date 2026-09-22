@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of the scenario picker, 2026-09-22.** This is the working note for whoever
+**Current as of the merge of the 2026-09-21 and 2026-09-22 sessions.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 414 tests, 23 files
+npm run check       lint + typecheck clean, 432 tests, 24 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -48,65 +48,29 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Nothing.** Six rulings closed on 2026-09-16, every one of them the same day
-it was raised — decisions 16, 17 and 18, and two riders on 12.
+**Two things, both raised 2026-09-21, neither blocking today's work.**
 
-The biggest was חיפוי, **covering fire**, which had been in the document all
-along and never in the engine: phase 6 is `ירי\חיפוי\הסתערות` and we had two
-of the three. The document gives one line, *פגיעה במקרה של פעולה על ידי האויב:
-כמו ירי*, so how it resolves was settled and what triggers it was not; he gave
-the four answers, and decision 18 is built on them.
+1. **Mission and victory conditions** (backlog 18) — the shape, before
+   anything is built on a reading. Today a battle ends only when one side is
+   wiped out (`sideDefeated`), and the document names no משימה, no objective
+   and no victory condition. This is the load-bearing one: backlog 16 needs a
+   result to carry forward and backlog 17 needs "objective" to mean something.
+2. **Weather and light** (backlog 19) — same, and the same reason as morale:
+   the document has none of it, so every number would be ours.
 
-The smallest was a charge telling the man who laid it: he learns it has gone
-off only **if he can see it happen** — line of sight, not ownership (decision
-17). Sight is the weaker test on purpose, so the layer who can only see the
-ground is told his charge fired, while a side holding a contact on the force
-that trod on it is told who.
+Everything raised before those two is closed. The **`LICENSE` carve-out** was
+raised and settled the same day (✅ 2026-09-21): it named the two Ramat Menashe
+map modules and not the two Tel Azeka ones, which had shipped on 2026-09-16
+without it. It is grouped by source now, and `src/invariants.test.ts` fails
+when a module under `src/app/maps/` is missing from it, so the next window
+cannot repeat the omission. The clause still works by **naming files**, which
+is exactly what backlog 17 breaks — ground fetched at runtime cannot be named
+in advance.
 
-Rules decision 15 (elevation and objects) closed on 2026-09-06 in two steps:
-the shape — one sight test over real ground, eye heights, object cover — and
-then, from our suggestions, **Naismith** for climbing and **no hit
-modifier for now**. Every figure he gave that day is "tentative, write it
-down" and sits on [balance.md](balance.md). The ODbL carve-out for the
-OpenStreetMap-derived file went into `LICENSE` the same day at his word. Do
-not reopen a decision without him.
-
-Decision 16 (laying charges) closed on 2026-09-16 the same way: he gave the
-shape and the two turns, and confirmed our reading of what the two turns cost.
-The only ⚠️ left in it is scaffolding rather than a rule — the demo hands
-RED-1 the `canLayCharges` flag so the rule can be played, and that line goes
-when force types arrive with echelon scaling.
-
-**Covering fire is in** (decision 18, 2026-09-16). A force holds its action to
-answer the first enemy it sees move, fire or assault; the shot falls at the
-first point of the bound the coverer could reach, and the mover carries on to
-where it was going.
-
-**One thing about covering fire to keep in mind when it is next played.** A
-force answers only an enemy its side has **detected** (author, 2026-09-16), and
-the roll that picks a mover up happens on the way into the *fire* phase — after
-the movement phase. So the first bound that breaks cover in front of a coverer
-is not answered; the ambush fires on the next one. That is the ruling working
-as given, not a bug, and it is pinned by a test — but it is the sort of thing
-that feels wrong at the table before it is explained, and the alternative (the
-coverer rolls its own look at the moment of the trigger) is a change he would
-have to make, not us.
-
-**A prepared position now protects from turn 1, and is left behind when the
-force walks away** (decision 12, ✅ author 2026-09-16, two rulings the same
-hour). `addUnit` used to raise cover from the ground's objects only and leave
-`baseCover` to the first upkeep, so a defender who had prepared stood in the
-open through turn 1's exchange of fire; and nothing ever cleared `baseCover`,
-so that same defender could displace 800 m into the open and take its cover
-with it — safer on the move than a force that had never dug. Both halves were
-latent for as long as nothing set `baseCover` at setup. The Tel Azeka scenario
-was the first thing that did, and its test found the first half the same hour
-it was written.
-
-He also confirmed, rather than changed, that **cover is read at the end of the
-turn and not on arrival**: a force that moves into a building is behind it from
-the next turn. That holds while nothing shoots mid-bound — which is why חיפוי
-above is not just another backlog item.
+Six rulings closed on 2026-09-16 (decisions 16, 17 and 18, and two riders on
+12), and rules decision 15 on 2026-09-06. The reasoning behind all of them is
+in [handoff-archive.md](handoff-archive.md), and the figures he gave are on
+[balance.md](balance.md). **Do not reopen a decision without him.**
 
 Some are ✅ *as decisions* while their **numbers** are still ours. They belong to
 the balance pass, not to the rules list, and live on
@@ -183,21 +147,71 @@ Measurements that cost real time and are already recorded:
 - **Node support windows** (from `nodejs/Release`, checked 2026-09-05): 20 went
   EOL **2026-04-30**, 22 ends 2027-04-30, 24 ends **2028-04-30** and leaves
   Active LTS on 2026-10-20. That is why the pin is 24 and not 22.
+- **What a NATO symbol costs to draw** (measured in the dev browser,
+  2026-09-21): **0.037 ms** per `renderUnitSymbol` call before it was cached,
+  **0.0006 ms** on a cache hit after — about 60×. Worth knowing what that does
+  *not* buy: at the 5–8 tokens a platoon battle draws it is well under a
+  millisecond per re-render either way, so this was never the cause of the
+  "ten button clicks in one script call is too many" ceiling further down
+  this file. That cause is still unmeasured. The cache earns its place at the
+  token counts echelon scaling (backlog 3) brings, and on a phone (Stage 4),
+  not on a desktop platoon.
+- **What Jev actually exposes** (from `typesafe-ai/typesafe-sdk-js`, read
+  2026-09-21, for backlog 15): three question kinds — `noul`, `choice`, `score`
+  — answers carrying a confidence and per-label probabilities, and **no seed and
+  no temperature among the exported types**. Hosted API, Node 20+,
+  `TYPESAFE_API_KEY`, no published weights and no self-hosting. The vendor's own
+  documentation site was unreachable from a sandboxed session, so the SDK source
+  on GitHub is the reference that can actually be read.
 
 ## What I would pick up next
 
-1. **Morale** (backlog 1) — but **ask first**. The neutralise rule is the only
+**Ordered. The first two want a word from him before anything is built; the
+third does not.**
+
+1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
+   about this one first.** It sits under the whole product direction: a
+   campaign needs a result to carry (16), a mission builder needs "objective"
+   to mean something (17), and the debrief would finally measure a plan
+   against its mission instead of a body count. Today `sideDefeated` ends a
+   battle only when a side is wiped out.
+2. **Morale** (backlog 1) — but **ask first**. The neutralise rule is the only
    cohesion model and the posture system is the natural place to hang
    suppression, so the work is clear. The problem is that the mechanics
    document says *nothing* about morale: not מורל, not שבירה, not דיכוי, not a
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
+3. **The AI commander** (backlog 15). Unblocked — it invents no rule, so it
+   needs no ruling — but it is Stage 3 work while the repo is mid-Stage 2, and
+   it brings a hosted third-party dependency with it. Note the item covers two
+   jobs: the opponent in single-player, and the **simulated subordinates under
+   every player** once echelons scale past company (author, 2026-09-21), where
+   a platoon commander under a human's order still has to decide how to carry
+   it out. The second is the larger job and arrives with backlog 3. Read the
+   item before touching any of it, particularly the part about `sideView`
+   versus `game.units`: that mistake would pass every test in the suite.
 
-**The live log is filtered by side now** (rules decision 17, 2026-09-16), so
-that item is off this list. `LogEntry` carries `readers`, `pushLog` takes a
-required audience, and `LogPanel` renders only what the side at the screen may
-read. See decision 17 for the three cases and the author's three rulings.
+**The scenario picker is built**, so that item is off this list. It was built
+twice: once on 2026-09-21 as a `בחר קרב` dialog in the header, and again on
+2026-09-22 as the opening screen, by a session that started from `main` and
+never saw the first branch. The merge kept the **opening screen and its
+briefs** (the author's choice): a brief is a tasking both players read before
+taking a side, so it names no forces and does not give away the ground's
+lesson. From the first build it kept the catalogue tests (Hebrew labels,
+forces inside the window, ground covering it); its dialog, keyboard close and
+ground-lesson briefs went. Adding a battle is a spec, a run of the tool, and
+one line in [`scenario.ts`](../src/app/scenario.ts).
+
+**The roadmap now carries the product direction** (2026-09-21): the browser
+build is the development shell, and **Stage 4** is the mobile and desktop app
+on the same engine. Backlog **16–19** are the four things the author described
+that the repo did not have — campaigns, a mission builder over real ground and
+mission parameters, mission and victory conditions, and weather.
+
+**The live log is filtered by side** (rules decision 17, 2026-09-16).
+`LogEntry` carries `readers`, `pushLog` takes a required audience, and
+`LogPanel` renders only what the side at the screen may read.
 
 ## Traps that cost real time
 
@@ -211,6 +225,23 @@ the code currently stands:
 - **Sealed recordings made before 2026-08-16 that cross a minefield will fail
   `verifyRecording`.** Decision 10 changed how many rng draws a move near a
   charge makes. That is the tool doing its job, not a regression.
+- **Covering fire answers a bound *late*, and that is the ruling working.** A
+  force answers only an enemy its side has **detected** (author, 2026-09-16),
+  and the roll that picks a mover up happens on the way into the *fire* phase,
+  after movement. So the first bound that breaks cover in front of a coverer is
+  not answered; the ambush fires on the next one. A force already on its side's
+  map is answered the moment it moves. Both halves are pinned by tests. It is
+  the sort of thing that reads as broken at the table before it is explained,
+  and the alternative — the coverer rolling its own look at the moment of the
+  trigger — is a change he would have to make, not us.
+- **Measure before believing a performance claim, including this file's.**
+  Caching the drawn NATO symbol was taken on because two notes here said
+  milsymbol re-rendering was why long click scripts time out. It is 0.037 ms a
+  call, which at a platoon's 5–8 tokens is under a millisecond per re-render:
+  real, worth caching for what echelon scaling and a phone will bring, and
+  **not** the cause of that ceiling. The cause is still unmeasured. The dev
+  server's modules import inside `page.evaluate`, so timing something takes
+  about ten minutes — see [driving-the-game.md](driving-the-game.md).
 - **A rule with two halves is where the bugs have actually been — every time.**
   Three of the five decisions settled on 2026-08-16 turned up real defects this
   way; on 2026-09-16 it was **eleven**, across three features, and not one of
@@ -239,6 +270,13 @@ the code currently stands:
   `src/app/scenarios/yokneamIllit.ts`, which is generated — editing it is
   editing a build product, and the next run of the tool throws the edit away.
   The spec is `tools/scenarios/yokneam-illit.json`.
+- **Switching battles remounts `App`** ([`Root.tsx`](../src/app/Root.tsx)),
+  keyed on the scenario and a pick counter, so picking the same battle again
+  is still a new game. The engine is a mutable instance in a ref with a turn's
+  worth of state beside it, so a new battle is a new `App` rather than a reset
+  that would have to be extended every time a piece of state is added.
+  Anything that must survive a switch has to live in `Root`, above the key —
+  today that is only a debrief opened from the picker.
 - **`addMine` is setup only now** (decision 16). A test or tool that emplaced a
   charge mid-game gets a `PhaseError`; in play a force lays one, which takes
   turns. Every call site was already before `beginTurn`, so nothing had to

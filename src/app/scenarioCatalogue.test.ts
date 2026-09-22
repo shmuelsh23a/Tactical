@@ -41,6 +41,42 @@ describe("the scenario catalogue", () => {
     expect(b.game.turn).toBe(0);
   });
 
+  // From the 2026-09-21 session's catalogue tests, which reached the same
+  // picker by another road: what makes a listed battle a battle.
+  for (const listing of SCENARIOS) {
+    describe(listing.id, () => {
+      const scn = listing.build();
+
+      it("is labelled in Hebrew", () => {
+        for (const text of [listing.title, listing.brief]) expect(text).toMatch(/[\u0590-\u05FF]/);
+      });
+
+      it("is a battle and not an empty map: both sides are on it, inside the window", () => {
+        for (const side of ["BLUE", "RED"] as const) {
+          expect(scn.game.units.filter((u) => u.side === side).length, side).toBeGreaterThan(0);
+        }
+        for (const u of scn.game.units) {
+          expect(u.position.x, u.id).toBeGreaterThanOrEqual(0);
+          expect(u.position.x, u.id).toBeLessThanOrEqual(scn.mapWidth);
+          expect(u.position.y, u.id).toBeGreaterThanOrEqual(0);
+          expect(u.position.y, u.id).toBeLessThanOrEqual(scn.mapHeight);
+        }
+      });
+
+      it("lays its ground under the battle, and the ground covers the window", () => {
+        // A battle on flat ground would still play, and every lesson either of
+        // these maps teaches is relief — so a listing whose heightfield went
+        // missing is a broken battle rather than a plain one.
+        const hf = scn.game.terrain.heightfield;
+        expect(hf, listing.id).toBeDefined();
+        if (!hf) return;
+        expect(hf.heights.length).toBe(hf.columns * hf.rows);
+        expect((hf.columns - 1) * hf.spacing).toBeGreaterThanOrEqual(scn.mapWidth);
+        expect((hf.rows - 1) * hf.spacing).toBeGreaterThanOrEqual(scn.mapHeight);
+      });
+    });
+  }
+
   it("opens the picker for an address that names no battle", () => {
     expect(findScenario(null)).toBeUndefined();
     expect(findScenario("nowhere")).toBeUndefined();
