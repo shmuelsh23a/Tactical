@@ -421,7 +421,7 @@ export class Game {
       // The turn's ledgers start clean: casualties are found against this.
       this.turnSnapshot = snapshotSoldiers(this.units);
       this.stress.clear();
-      refreshMoraleStates(this.units);
+      refreshMoraleStates(this.units, this.turn);
     }
     this.journal({ kind: "beginTurn" });
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
@@ -571,7 +571,7 @@ export class Game {
       });
       // Everyone the rounds came down on was shelled, caught or not.
       for (const hit of fired.blast.targets) {
-        this.noteFire(this.getUnit(hit.unitId), { kind: "indirect" }, SUPPRESSION.indirect);
+        this.noteFire(this.getUnit(hit.unitId), "indirect", SUPPRESSION.indirect);
       }
       return {
         ...fired,
@@ -601,10 +601,12 @@ export class Game {
     }
     // Morale (rules decision 19): a routing force is the engine's to move, and
     // a pinned one moves only to get out — under a withdrawal order.
+    if (unit.surrendered) throw new Error(MORALE_REFUSAL.surrendered);
     if (!this.executingOrders && unit.routing) throw new Error(MORALE_REFUSAL.routing);
     if (
       suppressionLevel(unit) === "pinned" &&
-      !(this.executingOrders && (unit.routing || this.standingOrders.get(unitId)?.withdraw))
+      !(this.executingOrders && (unit.routing || this.standingOrders.get(unitId)?.withdraw)) &&
+      !(unit.kind === "command" && !this.executingOrders && this.fallsBack(unit, to))
     ) {
       throw new Error(MORALE_REFUSAL.pinned);
     }
@@ -693,7 +695,7 @@ export class Game {
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
     for (const d of detonations) {
       for (const hit of d.blast?.targets ?? []) {
-        this.noteFire(this.getUnit(hit.unitId), { kind: "mine" }, SUPPRESSION.mine);
+        this.noteFire(this.getUnit(hit.unitId), "mine", SUPPRESSION.mine);
       }
     }
 
@@ -767,6 +769,10 @@ export class Game {
    */
   setCamouflage(unitId: string, on: boolean): void {
     const unit = this.getUnit(unitId);
+    // A force that broke is the engine's: the player sets it to nothing.
+    if (on && (unit.routing || unit.surrendered)) {
+      throw new Error(unit.surrendered ? MORALE_REFUSAL.surrendered : MORALE_REFUSAL.routing);
+    }
     unit.camouflaging = on;
     if (!on) unit.camouflageTurns = 0;
     this.journal({ kind: "setCamouflage", unitId, on });
@@ -979,7 +985,8 @@ export class Game {
 
         if (!result.fired) continue;
         delete coverer.covering;
-        this.noteFire(actor, { kind: "direct", from: coverer.position }, this.directSuppression(posture.weapon, result.hits));
+        // Where it was caught, not where the bound ended (flanking reads it).
+        this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at);
         this.stress.credit(coverer, result.newCasualties, result.targetNeutralized && !wasNeutralized);
         // The contact is where the shot was taken, not where the bound ended:
         // the coverer saw the force it engaged, and by construction may not be
@@ -1008,7 +1015,12 @@ export class Game {
    * while it does (rules decision 12).
    */
   setScouting(unitId: string, on: boolean): void {
-    this.getUnit(unitId).scouting = on;
+    const unit = this.getUnit(unitId);
+    // Scouting would make a rout walk: refused, like every other order to it.
+    if (on && (unit.routing || unit.surrendered)) {
+      throw new Error(unit.surrendered ? MORALE_REFUSAL.surrendered : MORALE_REFUSAL.routing);
+    }
+    unit.scouting = on;
     this.journal({ kind: "setScouting", unitId, on });
   }
 
@@ -1175,7 +1187,7 @@ export class Game {
     });
     if (fireResult.fired) {
       this.exchangeContact(attacker, target);
-      this.noteFire(target, { kind: "direct", from: attacker.position }, this.directSuppression(opts.weapon, fireResult.hits));
+      this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fire", attackerId, targetId, opts });
@@ -1216,12 +1228,13 @@ export class Game {
       const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);
       this.noteFire(
         target,
-        { kind: "explosive", from: attacker.position },
+        "explosive",
         SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0),
+        attacker.position,
       );
       for (const t of caught) {
         if (t.unitId !== target.id) {
-          this.noteFire(this.getUnit(t.unitId), { kind: "explosive", from: attacker.position }, SUPPRESSION.explosive);
+          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position);
         }
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
@@ -1276,7 +1289,7 @@ export class Game {
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
-      this.noteFire(defender, { kind: "assault", from: attacker.position }, SUPPRESSION.assault);
+      this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position);
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
     }
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
@@ -1652,6 +1665,13 @@ export class Game {
       perceives: (side, unit) => !this.trackIntel || this.knows(side, unit.id),
       sees: (observer, target) => this.hasLineOfSight(observer, target),
       withdrawing: (unit) => this.standingOrders.get(unit.id)?.withdraw === true,
+      // Watching *now*: a contact refreshed this turn. Without the knowledge
+      // model there is no fog to respect, and a line of sight from any of its
+      // forces is what watching means.
+      watching: (side, unit) =>
+        this.trackIntel
+          ? (this.contactFor(side, unit.id)?.lastSeenTurn ?? -1) >= this.turn
+          : this.units.some((u) => u.side === side && !u.neutralized && this.hasLineOfSight(u, unit)),
     });
     for (const { unitId, to } of step.routs) {
       const unit = this.getUnit(unitId);
@@ -1669,6 +1689,23 @@ export class Game {
     }
     for (const unitId of step.recovered) this.standingOrders.delete(unitId);
     return step.reports;
+  }
+
+  /**
+   * Whether a bound to `to` takes the force further from the nearest enemy its
+   * side knows of. The command group is driven by hand rather than by orders,
+   * so this is how it withdraws when pinned: the player may move it, but only
+   * back (rules decision 19).
+   */
+  private fallsBack(unit: Unit, to: Point): boolean {
+    const known = this.units.filter(
+      (u) => u.side !== unit.side && !u.neutralized && (!this.trackIntel || this.knows(unit.side, u.id)),
+    );
+    if (known.length === 0) return true;
+    const nearest = known.reduce((a, b) =>
+      distance(a.position, unit.position) <= distance(b.position, unit.position) ? a : b,
+    );
+    return distance(to, nearest.position) > distance(unit.position, nearest.position);
   }
 
   /** Everything a force was doing that a broken force stops doing. */
@@ -1691,9 +1728,15 @@ export class Game {
     };
   }
 
-  /** Fire arrived at `target`: note it for the morale step and suppress the force now. */
-  private noteFire(target: Unit, note: FireNote, suppression: number): void {
+  /**
+   * Fire arrived at `target`: note it for the morale step and suppress the
+   * force now. `from` is the firer, when there is one on the map; `at` is
+   * where the target stood when the shot was taken, if not where it stands
+   * now — the bearing is fixed here, so flanking is judged on the shot.
+   */
+  private noteFire(target: Unit, kind: FireNote["kind"], suppression: number, from?: Point, at?: Point): void {
     if (!this.morale) return;
+    const note: FireNote = from ? { kind, bearing: bearingDegrees(at ?? target.position, from) } : { kind };
     this.stress.firedOn(target, note);
     addSuppression(target, suppression);
   }

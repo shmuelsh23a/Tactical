@@ -1,5 +1,5 @@
 import { Rng } from "./rng.js";
-import { angleBetween, bearingDegrees, distance, withinArc, type Point } from "./geometry.js";
+import { angleBetween, bearingDegrees, distance, type Point } from "./geometry.js";
 import type { Echelon, MoraleState, Side, Soldier, SoldierMorale, Traits, Unit } from "./types.js";
 import {
   ARMOUR_COMFORT_M,
@@ -156,6 +156,12 @@ export function suppressionLevel(unit: Unit): SuppressionLevel {
   return "none";
 }
 
+/** What suppression does to a force's aim: 1, or the suppressed or pinned factor. */
+export function suppressionAccuracy(unit: Unit): number {
+  const level = suppressionLevel(unit);
+  return level === "none" ? 1 : SUPPRESSION_EFFECT[level].accuracy;
+}
+
 /**
  * How well each of the force's ready men shoots, as a factor on the hit
  * chance, in the order {@link readySoldiers} lists them. The force's
@@ -163,8 +169,7 @@ export function suppressionLevel(unit: Unit): SuppressionLevel {
  * sharpens — his. All 1 without morale.
  */
 export function shooterAccuracy(unit: Unit): number[] {
-  const level = suppressionLevel(unit);
-  const force = level === "none" ? 1 : SUPPRESSION_EFFECT[level].accuracy;
+  const force = suppressionAccuracy(unit);
   return readySoldiers(unit).map((s) => {
     const state = s.morale?.state ?? "steady";
     const own = state === "heroic" ? HEROIC.accuracy : state === "broken" ? 0 : STATE_ACCURACY[state];
@@ -276,13 +281,20 @@ function bandFor(effective: number): MoraleState {
  * Put every man who is neither broken nor a hero in the band his effective
  * morale falls in. No dice: the live leader bonus moves with the leaders, so
  * the bands are refreshed at the start of every turn as well as by the step.
+ * Given the turn about to be played, it also ends a hero's spell that has run.
  */
-export function refreshMoraleStates(units: readonly Unit[]): void {
+export function refreshMoraleStates(units: readonly Unit[], turn?: number): void {
   for (const u of units) {
     if (u.surrendered) continue;
     for (const s of u.soldiers ?? []) {
       const m = s.morale;
-      if (!m || s.neutralized || m.state === "broken" || m.state === "heroic") continue;
+      if (!m || s.neutralized) continue;
+      // A hero's moment is over once the turns it was good for are played.
+      if (m.state === "heroic" && turn != null && (m.heroicUntilTurn ?? 0) < turn) {
+        m.state = "steady";
+        delete m.heroicUntilTurn;
+      }
+      if (m.state === "broken" || m.state === "heroic") continue;
       m.state = bandFor(effectiveMorale(units, u, s));
     }
   }
@@ -413,8 +425,13 @@ export function sideBroken(units: readonly Unit[], side: Side): boolean {
 /** One burst of fire that arrived at a force this turn. */
 export interface FireNote {
   kind: "direct" | "explosive" | "assault" | "indirect" | "mine";
-  /** Where it came from, when it came from somebody on the map. */
-  from?: Point;
+  /**
+   * The bearing from the force to whoever fired, taken **where the force was
+   * when the shot was taken** — a force caught mid-bound is judged on the
+   * geometry of that shot, not of where it ended the turn. Absent for fire
+   * from off the map (shells) or the ground (charges).
+   */
+  bearing?: number;
 }
 
 interface UnitStress {
@@ -491,6 +508,12 @@ export interface MoraleContext {
   sees: (observer: Unit, target: Unit) => boolean;
   /** Whether the force is under a withdrawal order this turn. */
   withdrawing: (unit: Unit) => boolean;
+  /**
+   * Whether `side` is watching `unit` right now — the one test for whether a
+   * side is told of an enemy force routing or surrendering, in the live log
+   * and the debrief alike (rules decision 19).
+   */
+  watching: (side: Side, unit: Unit) => boolean;
 }
 
 /** Something the morale step did that a player should be told about. */
@@ -501,6 +524,12 @@ export interface MoraleReport {
   soldiers?: number;
   /** The force whose leader did the rallying. */
   rallierId?: string;
+  /**
+   * For a rout or a surrender: the enemy sides that watched it happen. The
+   * engine decides this once, so the live log and the debrief cannot tell a
+   * side two different things. Nothing else is ever shown to the enemy.
+   */
+  seenBy?: Side[];
 }
 
 export interface MoraleStepResult {
@@ -519,12 +548,10 @@ function soldiersWithPools(unit: Unit): Soldier[] {
 
 /** Fired on from two directions 90° or more apart, or from outside the sector it watches. */
 function wasFlanked(unit: Unit, notes: FireNote[]): boolean {
-  const bearings = notes.filter((n) => n.from).map((n) => bearingDegrees(unit.position, n.from!));
+  const bearings = notes.flatMap((n) => (n.bearing == null ? [] : [n.bearing]));
   if (bearings.length === 0) return false;
   const sector = unit.observationSector;
-  if (sector && notes.some((n) => n.from && !withinArc(unit.position, n.from, sector.bearing, sector.width))) {
-    return true;
-  }
+  if (sector && bearings.some((b) => angleBetween(b, sector.bearing) > sector.width / 2)) return true;
   for (let i = 0; i < bearings.length; i++) {
     for (let j = i + 1; j < bearings.length; j++) {
       if (angleBetween(bearings[i]!, bearings[j]!) >= 90) return true;
@@ -669,6 +696,13 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
   }
 
   // --- 3. Tests ---
+  // Every man's effective morale is read before anyone is tested: a squad
+  // leader who breaks costs his men from the next turn, like any other
+  // breaking — not halfway down this loop, depending on where he stood in it.
+  const effectiveBefore = new Map<Soldier, number>();
+  for (const u of inPlay) {
+    for (const s of soldiersWithPools(u)) effectiveBefore.set(s, effectiveMorale(units, u, s));
+  }
   const brokeNow = new Map<string, number>();
   for (const u of inPlay) {
     const exp = EXPERIENCE[u.experience ?? "regular"];
@@ -678,11 +712,11 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
       const m = s.morale!;
       if (m.state === "broken") continue;
       if (m.state === "heroic") {
-        if ((m.heroicUntilTurn ?? 0) > turn) continue;
+        if ((m.heroicUntilTurn ?? 0) >= turn) continue;
         m.state = "steady";
         delete m.heroicUntilTurn;
       }
-      const effective = effectiveMorale(units, u, s);
+      const effective = effectiveBefore.get(s) ?? effectiveMorale(units, u, s);
       if (effective <= THRESHOLDS.broken || isDry(m)) {
         m.state = "broken";
         broke += 1;
@@ -728,7 +762,9 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
       if (m.state !== "broken" || isDry(m) || cornered) continue;
       let best: { soldier: Soldier; unit: Unit } | undefined;
       for (const other of units) {
-        if (other.side !== u.side || other.surrendered || other.routing) continue;
+        // A force's own leader rallies it even while it runs — he is with it;
+        // a commander from another force must not himself be running.
+        if (other.side !== u.side || other.surrendered || (other.routing && other !== u)) continue;
         const reach = other === u || (other.kind === "command" && distance(other.position, u.position) <= RALLY.commanderRange);
         if (!reach) continue;
         for (const l of other.soldiers ?? []) {
@@ -757,6 +793,8 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
 
   // --- 6. Forces: break and run, give up, or come back ---
   const brokeAndWent: Unit[] = [];
+  const sides = [...new Set(units.map((x) => x.side))];
+  const watchers = (u: Unit): Side[] => sides.filter((side) => side !== u.side && ctx.watching(side, u));
   for (const u of inPlay) {
     if (u.neutralized) continue;
     if (forceBroken(units, u)) {
@@ -766,13 +804,13 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
         u.neutralized = true;
         u.canOnlyRetreat = false;
         result.surrendered.push(u.id);
-        result.reports.push({ unitId: u.id, kind: "surrendered" });
+        result.reports.push({ unitId: u.id, kind: "surrendered", seenBy: watchers(u) });
         brokeAndWent.push(u);
       } else if (!u.routing) {
         u.routing = true;
         for (const s of soldiersWithPools(u)) drain(s.morale!, LOSS.rout);
         result.routs.push({ unitId: u.id, to: routDestination(units, u) });
-        result.reports.push({ unitId: u.id, kind: "routed" });
+        result.reports.push({ unitId: u.id, kind: "routed", seenBy: watchers(u) });
         brokeAndWent.push(u);
       }
     } else if (u.routing) {
@@ -785,8 +823,10 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
   // --- 7. What the breaking does to the men who saw it — felt now, tested next turn ---
   for (const u of inPlay) {
     if (u.surrendered) continue;
+    // Seen, not merely near: a squad behind the crest does not know the one
+    // on the other side of it has gone.
     const sawFriendsGo = brokeAndWent.some(
-      (b) => b !== u && b.side === u.side && distance(b.position, u.position) <= CONTAGION_M,
+      (b) => b !== u && b.side === u.side && distance(b.position, u.position) <= CONTAGION_M && ctx.sees(u, b),
     );
     const comradesBroke = brokeNow.get(u.id) ?? 0;
     if (!sawFriendsGo && comradesBroke === 0) continue;

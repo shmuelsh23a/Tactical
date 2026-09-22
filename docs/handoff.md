@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 475 tests, 26 files
+npm run check       lint + typecheck clean, 485 tests, 26 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved

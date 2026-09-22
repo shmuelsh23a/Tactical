@@ -448,8 +448,9 @@ export function App({ scenario, onLeave }: AppProps) {
   /**
    * What morale did as the turn closed (rules decision 19). A force's own side
    * reads all of it — who broke, who stood up, who was rallied. The enemy
-   * reads only what it can watch: a force it has eyes on running, or giving
-   * itself up — never how many of its men broke.
+   * reads only what it watched: a rout or a surrender the engine says it saw
+   * (`seenBy`, the same answer the debrief reads) — never how many of its
+   * men broke, and nothing of a force it had not found.
    */
   function logMorale(reports: MoraleReport[]) {
     for (const report of reports) {
@@ -458,7 +459,7 @@ export function App({ scenario, onLeave }: AppProps) {
       pushPerSide("casualty", unit.side, (reader) =>
         reader === unit.side
           ? moraleReportHe(report, nameOf, true)
-          : hasEyesOn(game, reader, unit)
+          : report.seenBy?.includes(reader)
             ? moraleReportHe(report, nameOf, false)
             : null,
       );
@@ -963,17 +964,23 @@ export function App({ scenario, onLeave }: AppProps) {
   }
 
   function checkVictory() {
-    for (const side of ["RED", "BLUE"] as Side[]) {
-      if (sideDefeated(game, side)) {
-        const win = side === "RED" ? "BLUE" : "RED";
-        setWinner(win);
-        setStage("gameover");
-        // A side that broke still has forces on the map; it has stopped
-        // fighting, which is a different thing to say (rules decision 19).
-        const how = game.sideBroken(side) ? "נשבר" : "נוטרל";
-        pushLog(`צד ${side} ${how} — ניצחון ל${win}`, "info", TABLE);
-      }
+    const beaten = SIDES.filter((side) => sideDefeated(game, side));
+    if (beaten.length === 0) return;
+    // A side that broke still has forces on the map; it has stopped fighting,
+    // which is a different thing to say (rules decision 19).
+    const how = (side: Side) => (game.sideBroken(side) ? "נשבר" : "נוטרל");
+    setStage("gameover");
+    if (beaten.length === SIDES.length) {
+      // Both at once — one morale step judges both sides, so it can happen.
+      // ⚠️ A draw is ours: the document has no victory conditions (backlog 18).
+      setWinner(null);
+      pushLog(`שני הצדדים יצאו מהקרב (${SIDES.map((s) => `${s} ${how(s)}`).join(", ")}) — תיקו`, "info", TABLE);
+      return;
     }
+    const side = beaten[0]!;
+    const win = side === "RED" ? "BLUE" : "RED";
+    setWinner(win);
+    pushLog(`צד ${side} ${how(side)} — ניצחון ל${win}`, "info", TABLE);
   }
 
   function handleEndActivation() {
@@ -1555,7 +1562,7 @@ export function App({ scenario, onLeave }: AppProps) {
           {stage === "gameover" && (
             <div className="panel">
               <h3>סיום</h3>
-              <p className="victory">ניצחון לצד {winner}!</p>
+              <p className="victory">{winner ? `ניצחון לצד ${winner}!` : "תיקו"}</p>
             </div>
           )}
 

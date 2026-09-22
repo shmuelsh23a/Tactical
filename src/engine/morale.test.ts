@@ -20,6 +20,7 @@ import {
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
 import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, RALLY, SUPPRESSION } from "./data/morale.js";
+import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
 class ScriptedRng extends Rng {
@@ -60,6 +61,7 @@ function context(units: Unit[], rng: Rng, over: Partial<MoraleContext> = {}): Mo
     perceives: () => true,
     sees: () => true,
     withdrawing: () => false,
+    watching: () => true,
     ...over,
   };
 }
@@ -476,7 +478,7 @@ describe("the game plays it", () => {
     g.beginTurn();
     blue.soldiers!.slice(0, 5).forEach((s) => (s.morale!.state = "broken"));
     const { morale } = endTurn(g);
-    expect(morale).toContainEqual({ unitId: blue.id, kind: "routed" });
+    expect(morale).toContainEqual(expect.objectContaining({ unitId: blue.id, kind: "routed" }));
   });
 
   it("effective morale is what the thresholds read", () => {
@@ -484,5 +486,120 @@ describe("the game plays it", () => {
     const man = blue.soldiers![3]!;
     blue.suppression = SUPPRESSION.pinned;
     expect(effectiveMorale(g.units, blue, man)).toBe(man.morale!.will + leaderBonus(g.units, blue, man) - 10);
+  });
+});
+
+describe("review fixes: halves of one rule agree", () => {
+  it("a squad leader who breaks costs his men next turn, not halfway through this one's tests", () => {
+    // Leadership 27: +9 to his men while he holds, -9 once he breaks. He is
+    // first in the squad and breaks without a roll (pool 1 + a restful 4 + half
+    // a comrade's charisma 4 = 9). His men stand at 15 + 4 + 9 = 28 and pass
+    // their tests on 1s. Felt at once, his break would drop them to 10 and
+    // break them with no test at all — because of where he stood in the list.
+    const u = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 3), 15, { intelligence: 9, wisdom: 9, charisma: 9 });
+    u.soldiers![0]!.morale = { will: 1, ceiling: 60, state: "shaken", timesRallied: 0 };
+    for (const m of u.soldiers!.slice(1)) m.morale!.ceiling = 60;
+    const rolls = new ScriptedRng([1, 1]);
+    resolveMorale(context([u], rolls));
+    expect(u.soldiers![0]!.morale!.state).toBe("broken");
+    expect(u.soldiers![1]!.morale!.state).not.toBe("broken");
+    expect(u.soldiers![2]!.morale!.state).not.toBe("broken");
+    expect(rolls.drawn).toBe(2);
+  });
+
+  it("a routing force's own leader can rally it", () => {
+    const s = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 4), 60, { intelligence: 8, wisdom: 8, charisma: 8 });
+    s.routing = true;
+    s.soldiers![3]!.morale!.state = "broken";
+    resolveMorale(context([s], new ScriptedRng([1])));
+    expect(s.soldiers![3]!.morale!.timesRallied).toBe(1);
+  });
+
+  it("a hero is spared three tests, and his spell ends when the next turn begins", () => {
+    const u = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 1), 25);
+    u.soldiers![0]!.leader = false;
+    u.soldiers![0]!.morale = { will: 25, ceiling: 25, state: "heroic", heroicUntilTurn: 4, timesRallied: 0 };
+    const rolls = new ScriptedRng(Array(10).fill(1));
+    for (const turn of [2, 3, 4]) resolveMorale(context([u], rolls, { turn }));
+    expect(rolls.drawn).toBe(0);
+    resolveMorale(context([u], rolls, { turn: 5 }));
+    expect(rolls.drawn).toBe(1);
+  });
+
+  it("flanking is judged where the force was shot, from the bearing noted then", () => {
+    const u = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 2), 80);
+    const ctx = context([u], new ScriptedRng(Array(10).fill(1)));
+    ctx.stress.firedOn(u, { kind: "direct", bearing: 90 });
+    ctx.stress.firedOn(u, { kind: "direct", bearing: 200 });
+    resolveMorale(ctx);
+    // fired on 1 + flanked 8, less nothing back: 71.
+    expect(u.soldiers![1]!.morale!.will).toBe(71);
+  });
+
+  it("friends breaking out of sight do not shake a force", () => {
+    const s = dressed(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 0 }, 2), 60);
+    for (const m of s.soldiers!) m.morale!.state = "broken";
+    const next = dressed(makeInfantry("B2", "BLUE", "squad", { x: 150, y: 0 }, 2), 70);
+    resolveMorale(context([s, next], new ScriptedRng(Array(10).fill(1)), { sees: () => false }));
+    expect(next.soldiers![1]!.morale!.will).toBe(70);
+  });
+
+  it("a rout is reported to the sides that watched it — and only those", () => {
+    const s = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 2), 60);
+    for (const m of s.soldiers!) m.morale!.state = "broken";
+    const red = makeInfantry("R", "RED", "squad", { x: 0, y: 400 }, 8);
+    const watched = resolveMorale(context([s, red], new ScriptedRng([])));
+    expect(watched.reports.find((r) => r.kind === "routed")!.seenBy).toEqual(["RED"]);
+    s.routing = false;
+    const blind = resolveMorale(context([s, red], new ScriptedRng([]), { watching: () => false }));
+    expect(blind.reports.find((r) => r.kind === "routed")!.seenBy).toEqual([]);
+  });
+
+  it("with the knowledge model on, a side that never found the force is not told it ran", () => {
+    const g = new Game({ seed: 21, morale: true, enforceC2: false, trackIntel: true });
+    const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 250 }, 8));
+    g.beginTurn();
+    blue.soldiers!.slice(0, 5).forEach((s) => (s.morale!.state = "broken"));
+    const { morale } = endTurn(g);
+    expect(g.knows("RED", blue.id)).toBe(false);
+    expect(morale.find((r) => r.kind === "routed")!.seenBy).toEqual([]);
+  });
+
+  it("a pinned team aims its RPG worse", () => {
+    const g = new Game({ seed: 3, morale: true });
+    const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 4));
+    const t = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 100 }));
+    const clear = resolveDirectExplosive(new Rng(1), "rpgVsArmor", a, t);
+    a.suppression = SUPPRESSION.pinned;
+    const pinned = resolveDirectExplosive(new Rng(1), "rpgVsArmor", a, t);
+    expect(pinned.hitChance).toBeCloseTo(clear.hitChance * 0.5, 10);
+  });
+
+  it("a broken force is set to nothing by the player: no scouting, no camouflage, no move once it gave up", () => {
+    const g = new Game({ seed: 21, morale: true, enforceC2: false });
+    const u = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    u.routing = true;
+    expect(() => g.setScouting(u.id, true)).toThrow("routing");
+    expect(() => g.setCamouflage(u.id, true)).toThrow("routing");
+    u.routing = false;
+    u.surrendered = true;
+    u.neutralized = true;
+    u.canOnlyRetreat = true; // as the attrition rule would set it later
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    expect(() => g.moveUnit(u.id, { x: 0, y: 10 })).toThrow("surrendered");
+  });
+
+  it("a pinned command group may be moved by hand, but only back", () => {
+    const g = new Game({ seed: 21, morale: true, enforceC2: false });
+    const hq = g.addUnit(makeCommandGroup("HQ", "BLUE", "platoon", { x: 0, y: 0 }));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 200 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    hq.suppression = SUPPRESSION.pinned;
+    expect(() => g.moveUnit(hq.id, { x: 0, y: 10 })).toThrow("pinned");
+    g.moveUnit(hq.id, { x: 0, y: -20 });
+    expect(hq.position.y).toBe(-20);
   });
 });

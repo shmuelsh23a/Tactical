@@ -130,11 +130,18 @@ describe("the debrief tells each side what it may know of morale", () => {
     )!;
     expect(step).toBeDefined();
     const blue = { isOwn: (id: string) => id === "B", mayKnow: (id: string) => id === "B", side: "BLUE" as const };
-    const redBlind = { isOwn: (id: string) => id === "R", mayKnow: (id: string) => id === "R", side: "RED" as const };
-    const redWatching = { ...redBlind, mayKnow: () => true };
+    // Even a lens that holds a contact is told only what the engine says its
+    // side watched — the `seenBy` the live log reads too.
+    const red = { isOwn: (id: string) => id === "R", mayKnow: () => true, side: "RED" as const };
+    if (step.outcome.kind !== "phase") throw new Error("not a phase step");
+    const unseen = {
+      ...step.outcome,
+      morale: step.outcome.morale!.map((r) => ({ ...r, seenBy: [] })),
+    };
+    expect(step.outcome.morale!.find((r) => r.kind === "routed")!.seenBy).toEqual(["RED"]);
     expect(describeOutcome(step.outcome, names, blue)).toContain("כיתה נשבר");
-    expect(describeOutcome(step.outcome, names, redBlind)).not.toContain("כיתה");
-    const seen = describeOutcome(step.outcome, names, redWatching);
+    expect(describeOutcome(unseen, names, red)).not.toContain("כיתה");
+    const seen = describeOutcome(step.outcome, names, red);
     expect(seen).toContain("כיתה נראה נסוג בבהלה");
     // …and never how many of its men broke.
     expect(seen).not.toContain("נשברו");

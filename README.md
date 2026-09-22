@@ -1114,9 +1114,13 @@ on the stated reasoning, still awaiting the author's word.
       early in the fire phase shoots worse later in it.
     - ✅ **States, not numbers, on screen**, and only one's own. The enemy is
       shown behaviour — a force running, or giving itself up — and only one it
-      has eyes on. Its men's traits and pools, and its suppression, are
-      stripped from the side's view of it (`outsideView`), and a stale mark
-      shows neither.
+      is **watching that turn**: a contact refreshed this turn with the
+      knowledge model on, a line of sight without it. The engine decides that
+      once, in the report's `seenBy`, and the live log and the debrief both
+      read it — so a force the side never found cannot be named by its rout.
+      Its men's traits and pools, its motivation, experience and suppression
+      are stripped from the side's view of it (`outsideView`), and a stale mark
+      shows no rout.
     - ✅ **Recovery is hard and capped: the pool of will.** Every loss takes the
       ceiling a man can recover to down by half of it (⚠️ the share), so at best
       half of what a fight takes ever comes back, and **a pool that reaches the
@@ -1142,7 +1146,8 @@ on the stated reasoning, still awaiting the author's word.
       it is (−6 him, −1 each comrade), which is what keeps morale from
       out-killing the dice — see *measured* below.
     - **Contagion** (Total War): a friendly force within 200 m routing or
-      surrendering costs every man who saw it 8, and each comrade who breaks
+      surrendering costs every man who saw it — a line of sight, not only the
+      distance — 8, and each comrade who breaks
       costs his squad 4. Felt at once, tested next turn.
     - **Heroic response** (Close Combat, Darkest Dungeon): a failed test is
       heroism instead of a break on d100 ≤ 2 × luck — luck's only job here. The
@@ -1165,11 +1170,15 @@ on the stated reasoning, still awaiting the author's word.
     - **Voluntary withdrawal** (Company of Heroes): the `withdraw` standing
       order (נסיגה). The force falls back without firing, can move even when
       pinned, and its men skip the periodic tests — it costs no morale. The
-      rout is what waiting too long buys.
+      rout is what waiting too long buys. The command group, driven by hand
+      rather than by orders, withdraws the same way: pinned, it may still be
+      moved, but only further from the nearest enemy its side knows of.
     - **The side breaks** (Close Combat): two thirds of its fighting strength
       down, broken, routed, surrendered or neutralised (command groups do not
       count), and the battle is over for it — `sideDefeated` says so and the
-      log says **נשבר** rather than נוטרל.
+      log says **נשבר** rather than נוטרל. ⚠️ Both sides can break in the same
+      summary step; that is a **draw** (תיקו), ours until backlog 18 says what
+      a result is.
 
     **Mechanism, one owner.** The slow layer is judged once per turn in the
     summary phase (סיכום והתארגנות — the document's turn already has a
@@ -1179,7 +1188,12 @@ on the stated reasoning, still awaiting the author's word.
     stood when the turn began. **Casualties are found by comparing the two**,
     whatever caused them, so a new way of hurting a force cannot forget to tell
     morale; a new way of *shooting at* one must still call `noteFire` for the
-    suppression and the flank.
+    suppression and the flank (the bearing is fixed there, where the force
+    was when it was shot — a force caught mid-bound is flanked or not by that
+    shot, not by where it ended the turn). Every man's effective morale is read
+    **before** anyone is tested, so the order forces and men are listed in
+    cannot decide who breaks: a squad leader who breaks costs his men from the
+    next turn, like any other breaking.
 
     **Determinism.** The men's traits and pools are drawn from **their own
     stream**, seeded by the game's seed and the force's id, not from the game's

@@ -575,10 +575,11 @@ export function describeOutcome(
         parts.push(chargeWorkHe(report, who(report.unitId)));
       }
       // Morale (rules decision 19): the reader's own forces in full; of the
-      // enemy's, only a rout or a surrender, and only of a force he holds.
+      // enemy's, only a rout or a surrender the engine says his side watched —
+      // the same `seenBy` the live log read, so the two cannot disagree.
       for (const report of outcome.morale ?? []) {
         const own = lens.isOwn(report.unitId);
-        if (!own && !lens.mayKnow(report.unitId)) continue;
+        if (!own && lens.side != null && !report.seenBy?.includes(lens.side)) continue;
         const line = moraleReportHe(report, who, own);
         if (line) parts.push(line);
       }
