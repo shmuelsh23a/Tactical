@@ -78,6 +78,22 @@ import {
 import { SLOPE } from "./data/terrain.js";
 import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
 import { hasArrived, type StandingOrder, type StandingOrderExecution } from "./orders.js";
+import {
+  StressLedger,
+  addSuppression,
+  forceMorale,
+  generateMorale,
+  refreshMoraleStates,
+  resolveMorale,
+  sideBroken,
+  snapshotSoldiers,
+  suppressionLevel,
+  type FireNote,
+  type ForceMorale,
+  type MoraleReport,
+  type SoldierSnapshot,
+} from "./morale.js";
+import { SUPPRESSION } from "./data/morale.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -116,6 +132,22 @@ export const LAY_CHARGE_REFUSAL = {
   alreadyMoved: "already moved this turn",
   underFire: "was hit this turn",
   noOrders: "out of the order cycle",
+  routing: "routing",
+} as const;
+
+/**
+ * Why a force may not act, when the reason is its morale (rules decision 19).
+ * Short keys, worded in Hebrew by the app's `reasonHe` like every other refusal.
+ */
+export const MORALE_REFUSAL = {
+  /** Broke and is running; the engine has it until it is rallied. */
+  routing: "routing",
+  /** Gave itself up. */
+  surrendered: "surrendered",
+  /** Falling back under a withdrawal order, which is not a time to fight. */
+  withdrawing: "withdrawing",
+  /** Pinned by fire: it moves only to withdraw. */
+  pinned: "pinned",
 } as const;
 
 /** What a move turned up: what the force saw, and what it set off. */
@@ -195,6 +227,14 @@ export interface GameOptions {
    * game as it was before the map had any ground at all.
    */
   terrain?: Terrain;
+  /**
+   * Whether the game is played with morale (rules decision 19): soldiers get
+   * traits and a pool of will, fire suppresses, men break and are rallied,
+   * forces rout or surrender and a side can break. Off by default, and a game
+   * without it plays exactly as it did before morale existed — no extra rng
+   * draws, no slower forces, no worse aim.
+   */
+  morale?: boolean;
 }
 
 /**
@@ -208,6 +248,7 @@ export class Game {
   readonly enforceC2: boolean;
   readonly trackIntel: boolean;
   readonly terrain: Terrain;
+  readonly morale: boolean;
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -225,6 +266,11 @@ export class Game {
 
   /** The order each force is still working to, until new ones reach it. */
   private standingOrders = new Map<string, StandingOrder>();
+
+  /** What this turn's fire did to each force, for the morale step (decision 19). */
+  private readonly stress = new StressLedger();
+  /** Every soldier as he stood when the turn began, for the morale step. */
+  private turnSnapshot: SoldierSnapshot = new Map();
 
   /**
    * Set while the engine is carrying out a standing order. Execution bypasses
@@ -280,6 +326,7 @@ export class Game {
     this.enforceC2 = opts.enforceC2 ?? true;
     this.trackIntel = opts.trackIntel ?? false;
     this.terrain = opts.terrain ?? FLAT_GROUND;
+    this.morale = opts.morale ?? false;
   }
 
   /**
@@ -293,6 +340,7 @@ export class Game {
       sides: [...this.sides],
       enforceC2: this.enforceC2,
       trackIntel: this.trackIntel,
+      ...(this.morale ? { morale: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -325,6 +373,10 @@ export class Game {
       betterCover(unit.cover, unit.baseCover),
       coverFromObjects(this.terrain, unit.position),
     );
+    // Its men's traits and pools, from their own stream — see `unitSeed` for
+    // why not the game's rng. Before the journal entry, like the cover: the
+    // recording carries the men as they were drawn, and a replay keeps them.
+    if (this.morale) generateMorale(unit, this.seed);
     this.units.push(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
@@ -365,6 +417,12 @@ export class Game {
     this.turn += 1;
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
+    if (this.morale) {
+      // The turn's ledgers start clean: casualties are found against this.
+      this.turnSnapshot = snapshotSoldiers(this.units);
+      this.stress.clear();
+      refreshMoraleStates(this.units);
+    }
     this.journal({ kind: "beginTurn" });
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
   }
@@ -387,14 +445,15 @@ export class Game {
     smokeArrived?: SmokeScreen[];
     observed?: Observation[];
     chargeWork?: ChargeWorkReport[];
+    morale?: MoraleReport[];
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
-        const chargeWork = this.endOfTurnUpkeep();
+        const { chargeWork, morale } = this.endOfTurnUpkeep();
         this.beginTurn();
-        return { phase: this.phase, chargeWork };
+        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}) };
       }
       const idx = PHASES.indexOf(this.phase);
       this.phase = PHASES[idx + 1]!;
@@ -430,11 +489,13 @@ export class Game {
     smokeArrived: SmokeScreen[];
     observed: Observation[];
     chargeWork: ChargeWorkReport[];
+    morale: MoraleReport[];
   } {
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
     const observed: Observation[] = [];
     const chargeWork: ChargeWorkReport[] = [];
+    const morale: MoraleReport[] = [];
     this.internally(() => {
       let guard = 0;
       while (this.phase !== target) {
@@ -443,11 +504,12 @@ export class Game {
         if (step.smokeArrived) smokeArrived.push(...step.smokeArrived);
         if (step.observed) observed.push(...step.observed);
         if (step.chargeWork) chargeWork.push(...step.chargeWork);
+        if (step.morale) morale.push(...step.morale);
         if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
       }
     });
     this.journal({ kind: "advanceToPhase", target });
-    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork };
+    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale };
   }
 
   private requirePhase(p: Phase): void {
@@ -501,17 +563,24 @@ export class Game {
   private resolveDueFireMissions(): IndirectFireResult[] {
     const due = this.pendingFire.filter((m) => m.resolvesOnTurn <= this.turn);
     this.pendingFire = this.pendingFire.filter((m) => m.resolvesOnTurn > this.turn);
-    return due.map((m) => ({
-      ...resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
+    return due.map((m) => {
+      const fired = resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
         firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
         fixedWingObserved: m.observedByUav,
         turn: this.turn,
-      }),
-      // Who called it, so a report can say how far it fell from the aim point
-      // to the side that aimed it and no further (rules decision 17). After the
-      // spread, so the mission stays the authority if the resolver ever sets it.
-      side: m.side,
-    }));
+      });
+      // Everyone the rounds came down on was shelled, caught or not.
+      for (const hit of fired.blast.targets) {
+        this.noteFire(this.getUnit(hit.unitId), { kind: "indirect" }, SUPPRESSION.indirect);
+      }
+      return {
+        ...fired,
+        // Who called it, so a report can say how far it fell from the aim point
+        // to the side that aimed it and no further (rules decision 17). After the
+        // spread, so the mission stays the authority if the resolver ever sets it.
+        side: m.side,
+      };
+    });
   }
 
   // ---- movement phase ----
@@ -530,6 +599,15 @@ export class Game {
     if (unit.movementBlocked) {
       throw new Error(`${unitId} was hit last turn and cannot move this turn`);
     }
+    // Morale (rules decision 19): a routing force is the engine's to move, and
+    // a pinned one moves only to get out — under a withdrawal order.
+    if (!this.executingOrders && unit.routing) throw new Error(MORALE_REFUSAL.routing);
+    if (
+      suppressionLevel(unit) === "pinned" &&
+      !(this.executingOrders && (unit.routing || this.standingOrders.get(unitId)?.withdraw))
+    ) {
+      throw new Error(MORALE_REFUSAL.pinned);
+    }
     // C2: manoeuvre needs orders. The interval is measured from where the unit
     // stands when the order reaches it, so this is checked before it moves —
     // and the order is only stamped once the move actually goes through.
@@ -542,7 +620,7 @@ export class Game {
     // A scouting force walks, whatever gait the move asked for.
     const gait = this.gaitFor(unit, mode);
     const profile = MOVEMENT_PROFILES[gait];
-    const cap = profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1);
+    const cap = profile.maxDistance * this.paceFactor(unit);
     const dist = distance(unit.position, to);
     // A vehicle will not take a grade it cannot climb (rules decision 15).
     if (unit.kind === "vehicle") {
@@ -613,6 +691,11 @@ export class Game {
       this.turn,
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
+    for (const d of detonations) {
+      for (const hit of d.blast?.targets ?? []) {
+        this.noteFire(this.getUnit(hit.unitId), { kind: "mine" }, SUPPRESSION.mine);
+      }
+    }
 
     // …and last, what was watching for exactly this. The ground is tested
     // before the enemy on purpose: a charge is already on the route, while a
@@ -728,6 +811,7 @@ export class Game {
     // player through `reasonHe`, the way an order's refusals are.
     if (!unit.canLayCharges) throw new Error(LAY_CHARGE_REFUSAL.untrained);
     if (unit.neutralized) throw new Error(LAY_CHARGE_REFUSAL.neutralised);
+    if (unit.routing) throw new Error(LAY_CHARGE_REFUSAL.routing);
     if (fitSoldiers(unit) === 0) throw new Error(LAY_CHARGE_REFUSAL.noOneLeft);
     // The turn has to be spent on the work, so a force that has already used
     // some of its bound cannot start one with what is left of it.
@@ -790,6 +874,8 @@ export class Game {
       return;
     }
     if (unit.neutralized) throw new Error("neutralised");
+    const moraleRefusal = this.moraleRefusal(unit);
+    if (moraleRefusal) throw new Error(moraleRefusal);
     if (unit.firedThisTurn) throw new Error("already acted");
     if (fitSoldiers(unit) === 0) throw new Error("no fit shooters");
 
@@ -832,6 +918,7 @@ export class Game {
         if (!posture) continue;
         if (coverer.side === actor.side) continue;
         if (coverer.neutralized) continue;
+        if (this.moraleRefusal(coverer)) continue;
         // A force the ground or another coverer has already put down is not
         // the target that set out: nobody spends a posture finishing it.
         if (actor.neutralized) break;
@@ -872,6 +959,7 @@ export class Game {
         // the turn (decision 12) because nothing used to shoot mid-bound; this
         // is the exception the ruling anticipated. ⚠️ Ours, not the author's.
         actor.position = { ...at };
+        const wasNeutralized = actor.neutralized;
         const wasCover = actor.cover;
         actor.cover = this.groundCoverAt(at);
         const result = resolveDirectFire(this.rng, coverer, actor, {
@@ -891,6 +979,8 @@ export class Game {
 
         if (!result.fired) continue;
         delete coverer.covering;
+        this.noteFire(actor, { kind: "direct", from: coverer.position }, this.directSuppression(posture.weapon, result.hits));
+        this.stress.credit(coverer, result.newCasualties, result.targetNeutralized && !wasNeutralized);
         // The contact is where the shot was taken, not where the bound ended:
         // the coverer saw the force it engaged, and by construction may not be
         // able to see where it went afterwards.
@@ -1051,11 +1141,12 @@ export class Game {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    if (attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    const moraleRefusal = this.moraleRefusal(attacker);
+    if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       // A shot never taken draws no answer.
       return {
         fired: false,
-        reason: attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE,
+        reason: moraleRefusal ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hitChance: 0,
         shooters: 0,
@@ -1072,6 +1163,7 @@ export class Game {
     // whatever the covering fire has just left it, since a force that has lost
     // men has fewer shooters.
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
+    const targetWasNeutralized = target.neutralized;
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       ...opts,
@@ -1081,7 +1173,11 @@ export class Game {
       // it out from the smoke on the map.
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
-    if (fireResult.fired) this.exchangeContact(attacker, target);
+    if (fireResult.fired) {
+      this.exchangeContact(attacker, target);
+      this.noteFire(target, { kind: "direct", from: attacker.position }, this.directSuppression(opts.weapon, fireResult.hits));
+      this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
+    }
     this.journal({ kind: "fire", attackerId, targetId, opts });
     return { ...fireResult, coveringFire };
   }
@@ -1096,10 +1192,11 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    if (attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    const moraleRefusal = this.moraleRefusal(attacker);
+    if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
-        reason: attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE,
+        reason: moraleRefusal ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hit: false,
         hitChance: 0,
@@ -1107,12 +1204,28 @@ export class Game {
       };
     }
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
+    const targetWasNeutralized = target.neutralized;
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
       turn: this.turn,
     });
-    if (result.fired) this.exchangeContact(attacker, target);
+    if (result.fired) {
+      this.exchangeContact(attacker, target);
+      const caught = result.blast?.targets ?? [];
+      const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);
+      this.noteFire(
+        target,
+        { kind: "explosive", from: attacker.position },
+        SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0),
+      );
+      for (const t of caught) {
+        if (t.unitId !== target.id) {
+          this.noteFire(this.getUnit(t.unitId), { kind: "explosive", from: attacker.position }, SUPPRESSION.explosive);
+        }
+      }
+      this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
+    }
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return { ...result, coveringFire };
   }
@@ -1129,11 +1242,14 @@ export class Game {
   ): WithCoveringFire<AssaultResult> {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
-    if (attacker.neutralized || attacker.covering || this.isHoldingFire(attackerId, defenderId)) {
+    const moraleRefusal = attacker.neutralized ? undefined : this.moraleRefusal(attacker);
+    if (attacker.neutralized || moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, defenderId)) {
       return {
         fired: false,
         reason: attacker.neutralized
           ? "attacker is neutralised"
+          : moraleRefusal
+            ? moraleRefusal
           : attacker.covering
             ? HOLDING_COVERING_FIRE
             : HOLDING_FIRE,
@@ -1152,11 +1268,17 @@ export class Game {
     }
     // Interrupted before it goes in, like any other action (see `fire`).
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
-    const result = resolveAssault(this.rng, attacker, this.getUnit(defenderId), {
+    const defender = this.getUnit(defenderId);
+    const defenderWasNeutralized = defender.neutralized;
+    const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
       turn: this.turn,
     });
-    if (result.fired) this.exchangeContact(attacker, this.getUnit(defenderId));
+    if (result.fired) {
+      this.exchangeContact(attacker, defender);
+      this.noteFire(defender, { kind: "assault", from: attacker.position }, SUPPRESSION.assault);
+      this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
+    }
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
     return { ...result, coveringFire };
   }
@@ -1234,6 +1356,9 @@ export class Game {
    */
   setStandingOrder(unitId: string, order: Omit<StandingOrder, "issuedTurn">): boolean {
     const unit = this.getUnit(unitId);
+    // A routing force is the engine's until it is rallied, and a force that
+    // surrendered takes no more orders at all (rules decision 19).
+    if (unit.routing || unit.surrendered) return false;
     if (!this.isUnderOrders(unitId) && !this.canReceiveOrders(unitId)) return false;
     this.standingOrders.set(unitId, { ...cloneForRecord(order), issuedTurn: this.turn });
     this.lastOrderTurn.set(unitId, this.turn);
@@ -1290,12 +1415,14 @@ export class Game {
     if (!order.destination) return null; // holding
     if (unit.neutralized && !unit.canOnlyRetreat) return { ...base, reason: "neutralised" };
     if (unit.movementBlocked) return { ...base, reason: "hit last turn" };
+    if (unit.surrendered) return { ...base, reason: MORALE_REFUSAL.surrendered };
+    if (suppressionLevel(unit) === "pinned" && !order.withdraw && !unit.routing) {
+      return { ...base, reason: MORALE_REFUSAL.pinned };
+    }
 
     const gait = this.gaitFor(unit, order.gait);
     const profile = MOVEMENT_PROFILES[gait];
-    const cap =
-      profile.maxDistance * (unit.underFire ? UNDER_FIRE_SPEED_MULTIPLIER : 1) -
-      unit.movedThisTurn;
+    const cap = profile.maxDistance * this.paceFactor(unit) - unit.movedThisTurn;
     // The same tolerance moveUnit measures a bound with: a force that has spent
     // its budget is done for the turn, and must not creep the rounding error
     // left over from the bound it just made — a zero-length "move" would report
@@ -1314,9 +1441,14 @@ export class Game {
     const result = this.moveUnit(unit.id, to, gait);
 
     const arrived = hasArrived(unit.position, order.destination);
-    // Reaching the objective turns "advance" into "hold at the objective".
-    if (arrived) this.standingOrders.set(unit.id, { ...order, destination: undefined });
-    return { ...base, moved: { to, arrived, result } };
+    // Reaching the objective turns "advance" into "hold at the objective" — and
+    // a withdrawal into holding where it fell back to, so its men are tested
+    // again like anyone else's. A rout stays a rout until it is rallied.
+    if (arrived) {
+      const { destination: _d, withdraw, ...held } = order;
+      this.standingOrders.set(unit.id, unit.routing && withdraw ? { ...held, withdraw } : held);
+    }
+    return { ...base, moved: { to, arrived, result, ...(order.withdraw ? { withdrawing: true } : {}) } };
   }
 
   /**
@@ -1330,6 +1462,8 @@ export class Game {
    */
   private engageUnderOrder(unit: Unit, order: StandingOrder): StandingOrderExecution | null {
     const base: StandingOrderExecution = { unitId: unit.id };
+    // Falling back is not fighting, and a force that broke does not fight.
+    if (order.withdraw || unit.routing || unit.surrendered) return null;
     const target = this.orderedTargetFor(unit, order);
     if (!target) {
       // Nothing to do: no task, or a task whose conditions are not met — a
@@ -1485,7 +1619,7 @@ export class Game {
 
   // ---- upkeep ----
 
-  private endOfTurnUpkeep(): ChargeWorkReport[] {
+  private endOfTurnUpkeep(): { chargeWork: ChargeWorkReport[]; morale: MoraleReport[] } {
     // A report nobody has refreshed for three turns is no longer a contact.
     this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
     applyBleeding(this.rng, this.units, this.turn);
@@ -1493,8 +1627,113 @@ export class Game {
     // Before the per-turn flags are cleared: the work is judged on what the
     // force did with the turn it has just finished.
     const chargeWork = this.progressChargeLaying();
+    // After the bleeding, so a man who bled out this turn is counted as lost;
+    // before the flags clear, for the same reason as the charge work.
+    const morale = this.morale ? this.resolveTurnMorale() : [];
     endTurnUnitUpkeep(this.units, (at) => coverFromObjects(this.terrain, at));
-    return chargeWork;
+    return { chargeWork, morale };
+  }
+
+  // ---- morale (rules decision 19) ----
+
+  /**
+   * The turn's morale step, and what it does to the forces that broke or came
+   * back: a routing force is given the engine's own withdrawal order and
+   * stops whatever it was doing; a surrendered one is out; a rallied one holds
+   * where it is until its commander gives it something else.
+   */
+  private resolveTurnMorale(): MoraleReport[] {
+    const step = resolveMorale({
+      rng: this.rng,
+      turn: this.turn,
+      units: this.units,
+      stress: this.stress,
+      snapshot: this.turnSnapshot,
+      perceives: (side, unit) => !this.trackIntel || this.knows(side, unit.id),
+      sees: (observer, target) => this.hasLineOfSight(observer, target),
+      withdrawing: (unit) => this.standingOrders.get(unit.id)?.withdraw === true,
+    });
+    for (const { unitId, to } of step.routs) {
+      const unit = this.getUnit(unitId);
+      this.abandonWork(unit);
+      this.standingOrders.set(unitId, {
+        issuedTurn: this.turn,
+        gait: "run",
+        destination: this.onTheMap(to),
+        withdraw: true,
+      });
+    }
+    for (const unitId of step.surrendered) {
+      this.abandonWork(this.getUnit(unitId));
+      this.standingOrders.delete(unitId);
+    }
+    for (const unitId of step.recovered) this.standingOrders.delete(unitId);
+    return step.reports;
+  }
+
+  /** Everything a force was doing that a broken force stops doing. */
+  private abandonWork(unit: Unit): void {
+    delete unit.covering;
+    delete unit.layingCharge;
+    unit.camouflaging = false;
+    unit.scouting = false;
+  }
+
+  /** Keep a point on the ground the battle is fought on, where the ground has an edge. */
+  private onTheMap(p: Point): Point {
+    const hf = this.terrain.heightfield;
+    if (!hf) return p;
+    const ox = hf.origin?.x ?? 0;
+    const oy = hf.origin?.y ?? 0;
+    return {
+      x: Math.max(ox, Math.min(ox + (hf.columns - 1) * hf.spacing, p.x)),
+      y: Math.max(oy, Math.min(oy + (hf.rows - 1) * hf.spacing, p.y)),
+    };
+  }
+
+  /** Fire arrived at `target`: note it for the morale step and suppress the force now. */
+  private noteFire(target: Unit, note: FireNote, suppression: number): void {
+    if (!this.morale) return;
+    this.stress.firedOn(target, note);
+    addSuppression(target, suppression);
+  }
+
+  /** What a burst of direct fire suppresses: more for every hit, more again from a machine gun. */
+  private directSuppression(weapon: WeaponClass, hits: number): number {
+    const burst = SUPPRESSION.directFire + SUPPRESSION.perHit * hits;
+    return weapon === "sustainedMg" ? burst * SUPPRESSION.sustainedMgFactor : burst;
+  }
+
+  /**
+   * Why a force's morale keeps it from acting, if it does: it is routing, it
+   * surrendered, or it is falling back under a withdrawal order.
+   */
+  moraleRefusal(unit: Unit): string | undefined {
+    if (unit.surrendered) return MORALE_REFUSAL.surrendered;
+    if (unit.routing) return MORALE_REFUSAL.routing;
+    if (this.standingOrders.get(unit.id)?.withdraw) return MORALE_REFUSAL.withdrawing;
+    return undefined;
+  }
+
+  /**
+   * The share of its gait a force can make this turn: half under fire (the
+   * document's rule) or suppressed (ours) — the two are one slowing, not two.
+   */
+  private paceFactor(unit: Unit): number {
+    return unit.underFire || suppressionLevel(unit) !== "none" ? UNDER_FIRE_SPEED_MULTIPLIER : 1;
+  }
+
+  /** A force's morale as its own side may see it; undefined without morale. */
+  forceMorale(unitId: string): ForceMorale | undefined {
+    return forceMorale(this.units, this.getUnit(unitId));
+  }
+
+  /**
+   * Whether `side` has broken (rules decision 19) — the battle is over for it
+   * though it still has forces on the map. Always false without morale.
+   */
+  sideBroken(side: Side): boolean {
+    return this.morale && sideBroken(this.units, side);
   }
 
   /**

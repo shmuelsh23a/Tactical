@@ -9,7 +9,8 @@ import {
   COVER_MODIFIERS,
   type CoverState,
 } from "../data/directFire.js";
-import { fitSoldiers, selectHitSoldier, damageSoldier, refreshUnitStatus } from "../units.js";
+import { selectHitSoldier, damageSoldier, refreshUnitStatus } from "../units.js";
+import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 export type WeaponClass = "smallArms" | "sustainedMg";
 
@@ -89,7 +90,11 @@ export function resolveDirectFire(
     (band.value + (opts.targetMovementModifier ?? 0)) * (1 + COVER_MODIFIERS[cover]),
   );
 
-  const available = fitSoldiers(attacker);
+  // The men who will still fight — a broken man keeps his head down — each
+  // shooting as well as his force's suppression and his own nerve let him
+  // (rules decision 19). Without morale: every fit man, at the table's chance.
+  const available = readySoldiers(attacker).length;
+  const accuracy = shooterAccuracy(attacker);
   const shooters = Math.max(0, Math.min(opts.shooters ?? available, available));
   if (shooters === 0) return { ...base, reason: "no fit shooters", hitChance };
 
@@ -98,7 +103,7 @@ export function resolveDirectFire(
   let newCasualties = 0;
   const turn = opts.turn ?? 0;
   for (let i = 0; i < shooters; i++) {
-    if (!rng.chance(hitChance)) continue;
+    if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
     hits++;
     const dmg = roll(rng, DIRECT_FIRE_DAMAGE_DICE);
     totalDamage += dmg;

@@ -5,6 +5,7 @@
   "seed": 1948,
   "trackIntel": true,
   "enforceC2": true,
+  "morale": true,
   "window": {
     "lat": 31.6985,
     "lon": 34.9355,

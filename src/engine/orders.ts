@@ -44,6 +44,15 @@ export interface StandingOrder {
    * Only read while {@link holdFire} is set.
    */
   engagementRange?: number;
+  /**
+   * Withdraw (נסיגה, rules decision 19): fall back to the destination without
+   * fighting. The force does not fire while it goes, a pinned force may still
+   * go, and its men are spared the periodic morale test — they are already
+   * doing what a wavering soldier wants to. A planned withdrawal costs no
+   * morale; a rout, which is what waiting too long ends in, costs a great deal.
+   * The engine also gives this order to a force that breaks.
+   */
+  withdraw?: boolean;
 }
 
 /** Close enough to count as arrived, in metres. */
@@ -78,7 +87,13 @@ export interface StandingOrderExecution {
    * carries what the bound turned up — spotted enemy, charges walked onto —
    * so a caller can report it exactly as it would a hand-driven move.
    */
-  moved?: { to: Point; arrived: boolean; result: MoveResult };
+  moved?: {
+    to: Point;
+    arrived: boolean;
+    result: MoveResult;
+    /** The bound was a withdrawal — ordered, or a rout (rules decision 19). */
+    withdrawing?: boolean;
+  };
   /** Set when the force engaged the target its order names. */
   engaged?: { targetId: string; hits: number; newCasualties: number; hitChance: number };
   /** Why nothing happened, when nothing did. */

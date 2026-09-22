@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of the merge of the 2026-09-21 and 2026-09-22 sessions.** This is the working note for whoever
+**Current as of the morale session, 2026-09-22 (rules decision 19).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 432 tests, 24 files
+npm run check       lint + typecheck clean, 475 tests, 26 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -48,7 +48,16 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Two things, both raised 2026-09-21, neither blocking today's work.**
+**Morale is built (rules decision 19), and the author's next session is the
+traits.** He said so on 2026-09-22: strength, intelligence, wisdom, agility,
+charisma and luck are drawn for every man now, but only wisdom, luck and a
+leader's intelligence and charisma do anything — through morale. What the
+others do to shooting, movement, detection and the rest is the next ruling;
+build nothing on them before it. Also his, and not built: **campaigns carry
+the pool of will, and only rest refills it** (backlog 16), and **taking the
+objective** as a morale gain, which needs backlog 18 first.
+
+**Two further things, both raised 2026-09-21, neither blocking today's work.**
 
 1. **Mission and victory conditions** (backlog 18) — the shape, before
    anything is built on a reading. Today a battle ends only when one side is
@@ -82,6 +91,7 @@ the balance pass, not to the rules list, and live on
 | Decision 13 | casualty bands **0 / 1–2 / 3–5 / 6+** | He confirmed that reports are banded, not where the bands fall. |
 | Decision 15 | eye heights **1.5 / 2.5 / 0.5 m**, object cover, **8 m per metre climbed**, **30°** for vehicles | All his, all "tentative until balance". |
 | Decision 16 | laying a charge takes **2 turns** | "Tentatively", 2026-09-16. What the two turns *cost*, and that the charge goes where the force stands, he confirmed the same day. |
+| Decision 19 | **every morale number** — losses, gains, test, rally, suppression, reach, breaking points | The shape is his; not one magnitude is. The whole table is on [balance.md](balance.md), with the one measurement that shaped it. |
 
 **Decision 11's riders** (no assault on armour, no ammunition tracking) remain
 assumptions he has not contradicted; ammunition is backlog 12's job.
@@ -175,13 +185,7 @@ third does not.**
    to mean something (17), and the debrief would finally measure a plan
    against its mission instead of a body count. Today `sideDefeated` ends a
    battle only when a side is wiped out.
-2. **Morale** (backlog 1) — but **ask first**. The neutralise rule is the only
-   cohesion model and the posture system is the natural place to hang
-   suppression, so the work is clear. The problem is that the mechanics
-   document says *nothing* about morale: not מורל, not שבירה, not דיכוי, not a
-   table. Every number and every state transition would be ours, which is a
-   larger pile of assumptions than any decision so far. Get the shape from him
-   before building, the way decision 15 was got.
+2. **The traits' other rules** — the author's next session. Wait for it.
 3. **The AI commander** (backlog 15). Unblocked — it invents no rule, so it
    needs no ruling — but it is Stage 3 work while the repo is mid-Stage 2, and
    it brings a hosted third-party dependency with it. Note the item covers two
@@ -191,6 +195,13 @@ third does not.**
    it out. The second is the larger job and arrives with backlog 3. Read the
    item before touching any of it, particularly the part about `sideView`
    versus `game.units`: that mistake would pass every test in the suite.
+
+**Morale is built** (rules decision 19, 2026-09-22), so that item is off this
+list: the author gave the shape, compared it with Total War, Company of
+Heroes, XCOM, Close Combat, Combat Mission, ASL, Steel Division, Battle
+Brothers and Darkest Dungeon, and took every suggestion. Both scenarios play
+with it on. It was driven in the demo to a break and a rally; nobody has yet
+*played* an attack under it (see balance.md).
 
 **The scenario picker is built**, so that item is off this list. It was built
 twice: once on 2026-09-21 as a `בחר קרב` dialog in the header, and again on
@@ -218,6 +229,21 @@ mission parameters, mission and victory conditions, and weather.
 Browser-driving traps live in [driving-the-game.md](driving-the-game.md) and
 testing ones in [AGENTS.md](../AGENTS.md). These are the ones specific to where
 the code currently stands:
+
+- **A force's men are drawn from their own rng, not the game's** (rules
+  decision 19). `generateMorale` seeds from the game's seed and the force's
+  id, because a recording carries the men as drawn and a replay does not draw
+  them again. Move that draw onto `game.rng` and every recording diverges
+  after setup — the digests will say so, but the reason will not be obvious.
+- **Morale finds casualties by itself; suppression does not.** The morale step
+  compares every soldier with the snapshot taken when the turn began, so any
+  way of hurting a force is counted. But *being shot at* — suppression, and
+  which way the fire came from for flanking — is only known where the engine
+  calls `noteFire`. A new way to fire at a force must call it, or it will kill
+  without frightening anyone.
+- **Tests that end a turn need two steps.** `advanceToPhase("initiative")`
+  straight after `beginTurn()` does nothing — the game is already there. Go to
+  `summary` first; `morale.test.ts` has an `endTurn` helper.
 
 - **Recordings saved from the demo before Naismith (2026-09-06) replay
   differently**: an order's bound now stops short uphill, so every position

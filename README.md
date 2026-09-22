@@ -314,6 +314,9 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 
 - Covering fire (חיפוי): a force holds its action to answer the first enemy it
   sees move, fire or assault (rules decision 18)
+- Morale and suppression — **not from the document**, which has none: traits,
+  a pool of will, leaders, tests, rallies, routs, surrender and a side that
+  breaks (rules decision 19, a module like the others)
 
 ## Rules decisions
 
@@ -1059,6 +1062,145 @@ on the stated reasoning, still awaiting the author's word.
     one owner, reached from all three triggers, rather than three copies of the
     rule at three call sites.
 
+19. ✅ **Morale (מורל) and suppression (דיכוי)** — the shape given by the author
+    on 2026-09-22, built the same day. **The document has no morale at all**:
+    not מורל, not שבירה, not דיכוי, not a table. So the *shape* below is his
+    (✅) and **every number is ours** (⚠️), all of them in one file,
+    [`data/morale.ts`](src/engine/data/morale.ts), and on
+    [balance.md](docs/balance.md). A module like the others: `morale: true`
+    on `GameOptions` (and in a scenario spec). Without it a game plays exactly
+    as before — no extra draws, no slower forces, no worse aim — and 432
+    existing tests passed untouched to prove it.
+
+    What he set:
+
+    - ✅ **Six traits per soldier**, 1–10: strength, intelligence, wisdom,
+      agility, charisma, luck. (Drawn as the rounded-up mean of two d10, so most
+      men are average — ⚠️ ours.) Only wisdom, luck and a leader's intelligence
+      and charisma do anything yet; the rest wait for the next session's rules.
+    - ✅ **Leadership = intelligence + wisdom + charisma**, for leaders only: a
+      squad's first man is its squad leader, a command group's is its
+      commander. A regular soldier has no leadership.
+    - ✅ **A starting pool between the scenario's minimum and 100.** The minimum
+      is the force's `motivation` (poor 40 · low 50 · normal 60 · high 70 ·
+      fanatic 85 ⚠️), and the draw is the mean of two, so most men start
+      mid-range.
+    - ✅ **A live leader bonus, up to battalion.** Not added to the pool at the
+      start: it is recomputed every time it is read, so it disappears the moment
+      the leader is lost or out of reach. Each leader whose reach covers the man
+      adds leadership ÷ 3, halved for each link already counted below him, capped
+      at ±15 (⚠️). A squad leader covers his squad; a command group's commander
+      covers every lower echelon of his side within the every-turn band of the
+      פו"ש table (300 m platoon, 500 m company; 1000 m battalion ⚠️). **A broken
+      leader counts against his men.**
+    - ✅ **Out of every leader's reach, half the charisma** (1–5) of the most
+      charismatic comrade within 50 m (⚠️ the radius), and never his own.
+    - ✅ **Thresholds on effective morale** (pool + leader bonus − what
+      suppression is doing to his nerve): **≤ 50 wavering**, tested every 3 turns
+      (⚠️ the interval); **≤ 30 shaken**, tested every turn; **≤ 10, or a failed
+      test: broken.** A broken soldier keeps his head down: he does not shoot.
+    - ✅ **Losing a commander hits hard**: −15 when a man's own squad leader goes
+      down, −10 when a commander whose reach covered him does, on top of the
+      bonus that vanishes with him.
+    - ✅ **Aggregation at higher echelons**: a force's morale is its men's. The
+      same rule reads a squad or a company fielded as one force.
+    - ✅ **A separate suppression layer.** A force-level count, added the moment
+      fire arrives (a burst 10 + 5 per hit, ×1.5 from a sustained MG; shells 25,
+      an RPG 15–30, a charge 20, an assault 30 ⚠️) and **halved at every end of
+      turn**. ≥ 15 **suppressed**: half pace (the same slowing as the
+      document's under-fire rule, never both), three-quarter accuracy, −5 to
+      nerve. ≥ 40 **pinned**: moves only to withdraw, half accuracy, −10.
+      Because it lands with the fire, **firing first matters**: a squad shot at
+      early in the fire phase shoots worse later in it.
+    - ✅ **States, not numbers, on screen**, and only one's own. The enemy is
+      shown behaviour — a force running, or giving itself up — and only one it
+      has eyes on. Its men's traits and pools, and its suppression, are
+      stripped from the side's view of it (`outsideView`), and a stale mark
+      shows neither.
+    - ✅ **Recovery is hard and capped: the pool of will.** Every loss takes the
+      ceiling a man can recover to down by half of it (⚠️ the share), so at best
+      half of what a fight takes ever comes back, and **a pool that reaches the
+      bottom is dry — broken for good, never rallied.** A quiet turn gives back
+      2, a turn well clear of the enemy 4, drawing blood 3, putting an enemy force
+      out 6 — never past the ceiling.
+    - ✅ **A broken man can be rallied by a leader, and it is hard.** Chance =
+      2 × leadership + experience − 15 per earlier rally − 20 under fire (⚠️):
+      about one in three at average leadership the first time, almost never the
+      third. His own squad leader can try; a commander must **come to him**
+      (within 50 m ⚠️). Nobody rallies a man with the enemy on top of him.
+
+    What the author accepted from the comparison with other games (✅ that they
+    are in; ⚠️ every number):
+
+    - **Tests triggered by events** (Battle Brothers, XCOM) as well as by the
+      clock: a turn that costs a man 12 or more (⚠️) tests him there and then.
+      What costs what is in `LOSS` / `GAIN`: fired on, shelled, wounded, a
+      comrade hit or down, a friend nearby down, flanked (fire from two
+      directions 90° apart, or from outside the sector the force watches),
+      outnumbered 2:1 by what it *knows of*, enemy armour in sight with none of
+      its own, friends breaking. A light 1d4 hit is priced as the light wound
+      it is (−6 him, −1 each comrade), which is what keeps morale from
+      out-killing the dice — see *measured* below.
+    - **Contagion** (Total War): a friendly force within 200 m routing or
+      surrendering costs every man who saw it 8, and each comrade who breaks
+      costs his squad 4. Felt at once, tested next turn.
+    - **Heroic response** (Close Combat, Darkest Dungeon): a failed test is
+      heroism instead of a break on d100 ≤ 2 × luck — luck's only job here. The
+      hero is untested for 3 turns, shoots ×1.25, and his squad draws +5.
+    - **Morale changes performance** (Steel Division): each man shoots at his
+      state's accuracy — wavering ×0.9, shaken ×0.75 — on top of suppression.
+    - **Motivation and experience** per force (Combat Mission): experience
+      (green · regular · veteran · elite) adds −10 / 0 / +10 / +15 to every test
+      and rally, and scales suppression ×1.25 / 1 / 0.8 / 0.7.
+    - **Forces break.** Broken men and casualties at half its strength, or its
+      standing men averaging ≤ 10, and the force goes: it **routs** to its
+      command group (or 200 m away from the nearest enemy if it has none), under
+      an order the engine gives it — it takes no orders, fires at nothing, and
+      loses 10 more — until enough of it is rallied, when it holds where it is.
+    - **Cornered** (ASL's desperation morale): a force that breaks with an enemy
+      within 50 m **surrenders** instead, and its broken men cannot be rallied.
+      So the author's three outcomes are placed rather than rolled: a broken
+      *man* stops responding; a broken *force* runs, or surrenders where it
+      cannot.
+    - **Voluntary withdrawal** (Company of Heroes): the `withdraw` standing
+      order (נסיגה). The force falls back without firing, can move even when
+      pinned, and its men skip the periodic tests — it costs no morale. The
+      rout is what waiting too long buys.
+    - **The side breaks** (Close Combat): two thirds of its fighting strength
+      down, broken, routed, surrendered or neutralised (command groups do not
+      count), and the battle is over for it — `sideDefeated` says so and the
+      log says **נשבר** rather than נוטרל.
+
+    **Mechanism, one owner.** The slow layer is judged once per turn in the
+    summary phase (סיכום והתארגנות — the document's turn already has a
+    reorganisation step), by `resolveMorale` in
+    [`morale.ts`](src/engine/morale.ts). It reads two ledgers kept as fire is
+    resolved: which forces were shot at and from where, and every soldier as he
+    stood when the turn began. **Casualties are found by comparing the two**,
+    whatever caused them, so a new way of hurting a force cannot forget to tell
+    morale; a new way of *shooting at* one must still call `noteFire` for the
+    suppression and the flank.
+
+    **Determinism.** The men's traits and pools are drawn from **their own
+    stream**, seeded by the game's seed and the force's id, not from the game's
+    rng. A recording carries each force as it was added, so a replay does not
+    draw them again, and drawn from the main stream every roll after setup
+    would have diverged. Tests and rallies draw from the main stream, and only
+    when one is actually taken.
+
+    **Measured** (300 seeds, two squads trading rifle fire at 150 m, both
+    command groups 200 m back): without morale the loser is neutralised at a
+    median turn 12, 4.1 men down. With it, a median turn 11 — **273 of 300 end
+    in a rout**, at 2.3 men down and 2.5 broken. The first cut, which charged
+    every 1d4 hit as a serious wound, routed a squad at turn 7 with **0.9 men
+    down**: morale was out-killing the dice, which is the thing to watch in any
+    re-tune. Under a sustained MG at the same range: turn 4 either way, 124 of
+    300 routing before the attrition rule gets there.
+
+    Campaigns (✅ the author's word, not built): the pool carries between
+    battles and **only rest refills it** — how, is the campaign discussion
+    (backlog 16).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1150,7 +1292,11 @@ Still modelled by reasonable assumption (flag if you want them changed):
 
 Each is intended to be an independent, toggleable module:
 
-1. **Troop morale** — suppression/cohesion states beyond the current neutralise rule.
+1. ✅ **Troop morale** — built 2026-09-22 as rules decision 19: traits, the
+   pool of will, the live leader bonus, suppression, tests, rallies, routs,
+   surrender and the side's breaking point. Every number is ours and awaits
+   the balance pass. Campaign carry-over (the pool refilled only by rest)
+   waits for backlog 16.
 2. **Individual soldier generator** — named soldiers with attributes/roles.
 3. **Echelon scaling** — platoons, companies, battalions, brigade (ties into the
    level-of-control selector and the C2 model). **Carries the artillery battery
@@ -1427,7 +1573,9 @@ Each is intended to be an independent, toggleable module:
     (⚠️): casualties and which forces still exist; ammunition, once backlog 12
     exists to track it; ground gained, if the next battle is on the same
     window; and whether a force that broke is the same force next time, which
-    is backlog 1's business. Attrition carried between battles is the single
+    is backlog 1's business — and the author has answered part of that
+    (2026-09-22): a man's pool of will carries into the next battle and
+    **only rest refills it** (rules decision 19). Attrition carried between battles is the single
     most balance-sensitive decision in this whole direction — a campaign that
     carries losses forward can be lost by turn three of battle one.
 
@@ -1469,8 +1617,11 @@ Each is intended to be an independent, toggleable module:
 
 18. **Mission and victory conditions — something to win other than a
     massacre.** Today a side is beaten when **every one of its forces is
-    neutralised or gone** (`sideDefeated`), and nothing else ends a battle:
-    no objective, no time limit, no ground to take or hold.
+    neutralised or gone** (`sideDefeated`) or, played with morale, when it
+    **breaks** (rules decision 19) — and nothing else ends a battle: no
+    objective, no time limit, no ground to take or hold. Morale also has a
+    gain waiting for this item: taking an objective is the one positive event
+    the author named that has nothing to read yet.
 
     **The document is silent on all of it** (⚠️ — checked, not assumed: it
     names no משימה, no victory condition and no objective; its only use of

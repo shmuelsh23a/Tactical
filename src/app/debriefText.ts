@@ -3,6 +3,10 @@ import type {
   ActionOutcome,
   ChargeWorkReport,
   CoveringFireResult,
+  ForceMoraleState,
+  MoraleReport,
+  MoraleState,
+  SuppressionLevel,
   Mine,
   GameRecording,
   MovementMode,
@@ -94,6 +98,15 @@ export function reasonHe(reason?: string): string {
       return "נפגע בתור זה — לא ניתן להתחיל עבודה";
     case "out of the order cycle":
       return "מחוץ למחזור הפקודות";
+    // …morale (rules decision 19)
+    case "routing":
+      return "הכוח נשבר ונסוג בבהלה — אינו מקבל פקודות";
+    case "surrendered":
+      return "הכוח נכנע";
+    case "withdrawing":
+      return "הכוח בנסיגה — אינו פותח באש";
+    case "pinned":
+      return "מרותק תחת אש — יכול רק לסגת";
     default:
       return reason ?? "לא ניתן לבצע";
   }
@@ -161,6 +174,64 @@ export function chargeWorkHe(
           ? "נוטרל"
           : "נפגע";
   return `${name} הפסיק להניח ${chargeHe(report.type)} — ${why}, העבודה אבדה`;
+}
+
+/** A soldier's state, as his own side sees it (rules decision 19: states, not numbers). */
+export const moraleStateHe: Record<MoraleState, string> = {
+  steady: "יציב",
+  wavering: "מהסס",
+  shaken: "מעורער",
+  broken: "שבור",
+  heroic: "גיבור",
+};
+
+/** A force's state, aggregated from its men. */
+export const forceMoraleHe: Record<ForceMoraleState, string> = {
+  steady: "יציב",
+  wavering: "מהסס",
+  shaken: "מעורער",
+  broken: "נשבר",
+  routing: "נסוג בבהלה",
+  surrendered: "נכנע",
+};
+
+export const suppressionHe: Record<SuppressionLevel, string> = {
+  none: "",
+  suppressed: "מדוכא — חצי קצב, דיוק ירוד",
+  pinned: "מרותק — נע רק בנסיגה",
+};
+
+/**
+ * What morale did to a force as the turn closed (rules decision 19). `own` is
+ * whether the reader owns the force: the enemy is only ever shown what can be
+ * *watched* — a force running, or giving itself up — and never how many of
+ * its men broke, or that a hero stood up among them.
+ */
+export function moraleReportHe(report: MoraleReport, who: (id: string) => string, own: boolean): string | null {
+  const name = who(report.unitId);
+  const n = report.soldiers ?? 0;
+  switch (report.kind) {
+    case "routed":
+      return own ? `${name} נשבר — נסוג בבהלה אל המפקד` : `${name} נראה נסוג בבהלה`;
+    case "surrendered":
+      return own ? `${name} נשבר תחת האויב ונכנע` : `${name} נראה נכנע`;
+    case "broke":
+      if (!own) return null;
+      return n === 1 ? `${name}: לוחם אחד נשבר` : `${name}: ${n} לוחמים נשברו`;
+    case "heroic":
+      return own ? `${name}: לוחם עמד בגבורה במקום להישבר` : null;
+    case "rallied":
+      if (!own) return null;
+      return `${name}: ${n === 1 ? "לוחם אחד חזר" : `${n} לוחמים חזרו`} ללחימה${
+        report.rallierId && report.rallierId !== report.unitId ? ` (ארגון מחדש בידי ${who(report.rallierId)})` : ""
+      }`;
+    case "recovered":
+      return own ? `${name} התארגן מחדש — שב לפיקוד` : null;
+    default: {
+      const never: never = report.kind;
+      throw new Error(`Unhandled morale report: ${String(never)}`);
+    }
+  }
 }
 
 /**
@@ -280,9 +351,12 @@ export function describeStandingOrder(
 ): string {
   const parts = [
     order.destination
-      ? `התקדם ל${at(order.destination)} ב${gaitHe[order.gait]}`
+      ? `${order.withdraw ? "סגת" : "התקדם"} ל${at(order.destination)} ב${gaitHe[order.gait]}`
       : "החזק מקום",
   ];
+  // Falling back is not fighting: the engine does not engage under it, so the
+  // order says so rather than listing a task it will not carry out.
+  if (order.withdraw) return [...parts, "ללא פתיחה באש"].join(" · ");
   const engaging = order.engage
     ? `${nameOf(order.engage.targetId)} ב${term(weaponHe, order.engage.weapon)}`
     : null;
@@ -317,6 +391,11 @@ export function isRoutineOrderReason(reason?: string): boolean {
 export function describeBound(done: StandingOrderExecution, nameOf: NameOf): string | null {
   if (!done.moved) return null;
   const name = nameOf(done.unitId);
+  if (done.moved.withdrawing) {
+    return done.moved.arrived
+      ? `${name} השלים נסיגה ל${at(done.moved.to)}`
+      : `${name} נסוג לפי פקודה ל${at(done.moved.to)}`;
+  }
   return done.moved.arrived
     ? `${name} הגיע ליעד ${at(done.moved.to)}`
     : `${name} מתקדם לפי פקודה ל${at(done.moved.to)}`;
@@ -494,6 +573,14 @@ export function describeOutcome(
       for (const report of outcome.chargeWork ?? []) {
         if (!lens.isOwn(report.unitId)) continue;
         parts.push(chargeWorkHe(report, who(report.unitId)));
+      }
+      // Morale (rules decision 19): the reader's own forces in full; of the
+      // enemy's, only a rout or a surrender, and only of a force he holds.
+      for (const report of outcome.morale ?? []) {
+        const own = lens.isOwn(report.unitId);
+        if (!own && !lens.mayKnow(report.unitId)) continue;
+        const line = moraleReportHe(report, who, own);
+        if (line) parts.push(line);
       }
       for (const impact of outcome.resolved) {
         const off = Math.round(

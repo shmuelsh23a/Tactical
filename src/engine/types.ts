@@ -12,6 +12,51 @@ export type Echelon = "squad" | "platoon" | "company" | "battalion" | "brigade";
 export type MovementMode = "normal" | "run";
 
 /**
+ * A soldier's six traits, each 1–10 (author, 2026-09-22). Only wisdom, luck and
+ * — for a leader — intelligence and charisma do anything yet, all through
+ * morale (rules decision 19); the rest wait for the rules that read them.
+ */
+export interface Traits {
+  strength: number;
+  intelligence: number;
+  wisdom: number;
+  agility: number;
+  charisma: number;
+  luck: number;
+}
+
+/** How a soldier is holding up, as his own side is allowed to see it (decision 19). */
+export type MoraleState = "steady" | "wavering" | "shaken" | "broken" | "heroic";
+
+/**
+ * A soldier's pool of will (rules decision 19). `will` is what he has left;
+ * `ceiling` is the most it can ever come back to in this battle, and it only
+ * falls — a pool that has been drained is never refilled.
+ */
+export interface SoldierMorale {
+  will: number;
+  ceiling: number;
+  /**
+   * The state as of the last morale step. `broken` and `heroic` are sticky —
+   * set by a test, cleared by a rally or by time — and the rest are read off
+   * his effective morale.
+   */
+  state: MoraleState;
+  /** Last turn he was tested, for the every-few-turns rule. */
+  lastTestTurn?: number;
+  /** The turn a heroic response wears off. */
+  heroicUntilTurn?: number;
+  /** Times a leader has brought him back; each makes the next harder. */
+  timesRallied: number;
+}
+
+/** How motivated a force is: sets the floor of its men's starting pool. */
+export type Motivation = "poor" | "low" | "normal" | "high" | "fanatic";
+
+/** How trained and blooded a force is: steadies its tests and its nerve under fire. */
+export type Experience = "green" | "regular" | "veteran" | "elite";
+
+/**
  * A single dismounted soldier inside an infantry unit. Damage is tracked in
  * "damage points" (נק"פ) per the casualty rules:
  *   - from 5 nq"p the wound worsens by 1d4 every 5 turns,
@@ -23,6 +68,15 @@ export interface Soldier {
   neutralized: boolean;
   /** Turn index on which this soldier first reached the bleeding threshold. */
   bleedingSinceTurn?: number;
+  /** Drawn when the game is played with morale (rules decision 19). */
+  traits?: Traits;
+  /**
+   * The force's leader: a squad's squad leader, a command group's commander.
+   * Only a leader has leadership (intelligence + wisdom + charisma).
+   */
+  leader?: boolean;
+  /** His pool of will; present only when the game is played with morale. */
+  morale?: SoldierMorale;
 }
 
 /** Parts of an armoured vehicle, per the armour-damage table (טבלת נזק שריון). */
@@ -137,6 +191,25 @@ export interface Unit {
    * action for the turn, and is consumed the moment it fires.
    */
   covering?: CoveringPosture;
+
+  // --- morale (rules decision 19) — absent unless the game plays it ---
+  /** How motivated the force is; "normal" when not given. */
+  motivation?: Motivation;
+  /** How experienced the force is; "regular" when not given. */
+  experience?: Experience;
+  /**
+   * How hard it is being shot at (דיכוי): added as fire arrives, halved at the
+   * end of every turn. Suppressed at 15, pinned at 40.
+   */
+  suppression?: number;
+  /**
+   * The force broke and is running. The engine has taken it — it runs to its
+   * commander, does not fire and cannot be given orders — until a leader
+   * rallies enough of it.
+   */
+  routing?: boolean;
+  /** The force broke with the enemy on top of it and gave itself up. */
+  surrendered?: boolean;
 }
 
 /**
