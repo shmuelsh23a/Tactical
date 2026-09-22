@@ -21,6 +21,7 @@ The spec, in full — everything not marked optional is required:
     {
       "slug": "yokneamIllit",              module name: src/app/scenarios/<slug>.ts
       "title": "...",                       shown in the app
+      "brief": "...",                       the picker's line on it (see below)
       "seed": 2026,                         default seed for the battle
       "trackIntel": true,                   optional (default true)
       "enforceC2": true,                    optional (default true)
@@ -54,6 +55,12 @@ A force may also carry, all optional:
     "baseCover": "partial"|"full" protection it holds without digging
     "scouting": true              out scouting from the start
     "canLayCharges": true         an insurgent or special force (decision 16)
+
+`brief` is the Hebrew the scenario picker shows under the title, and it is read
+by **both players before either has taken a side** — so it is a tasking, not an
+intelligence summary: who attacks, who holds, and where. No order of battle, no
+charges, nothing a side would have to find out. `about` is the place for the
+lesson the ground teaches; it is for whoever maintains the battle, not a player.
 
 `at` is **metres east and south of the window's north-west corner**, the same
 frame as the heightfield and the map the app draws. It may instead be given as
@@ -116,7 +123,7 @@ FORCE_KEYS = {
     "camouflaged", "baseCover", "scouting", "canLayCharges", "note",
 }
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
-SPEC_KEYS = {"slug", "title", "seed", "trackIntel", "enforceC2", "about", "window", "forces", "charges"}
+SPEC_KEYS = {"slug", "title", "brief", "seed", "trackIntel", "enforceC2", "about", "window", "forces", "charges"}
 KINDS = {"infantry", "vehicle", "command"}
 # What each kind may carry beyond the common keys. A key spelt correctly but
 # given to the wrong kind is refused rather than dropped: `soldiers` on a
@@ -189,8 +196,13 @@ def to_metres(at: Any, window: dict[str, Any], where: str) -> tuple[float, float
 def parse(spec: dict[str, Any]) -> dict[str, Any]:
     """Validate the spec and resolve every position to window metres."""
     check_keys("spec", spec, SPEC_KEYS)
-    for key in ("slug", "title", "seed", "window", "forces"):
+    for key in ("slug", "title", "brief", "seed", "window", "forces"):
         require(key in spec, f"spec: missing {key}")
+    for key in ("title", "brief"):
+        require(
+            isinstance(spec[key], str) and spec[key].strip() != "",
+            f"spec: {key} must be a line of text (the picker shows it)",
+        )
     # The slug becomes a file name and a function name.
     require(
         isinstance(spec["slug"], str) and SLUG.match(spec["slug"]) is not None,
@@ -328,6 +340,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     name = pascal(spec["slug"])
 
     imports = ["Game", "makeCommandGroup", "makeInfantry", "makeVehicle"]
+    listing = spec["slug"] + "Listing"
     if any(f.get("camouflaged") is True for f in forces):
         imports.insert(0, "CAMOUFLAGE_TURNS_AT_MAX")
     import_list = ", ".join(imports)
@@ -339,7 +352,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         "// Written " + date.today().isoformat() + ".",
         "",
         'import { ' + import_list + ', type Terrain } from "../../engine/index.js";',
-        'import type { Scenario } from "./types.js";',
+        'import type { Scenario, ScenarioListing } from "./types.js";',
         "import { " + constant + ' } from "../maps/' + window["heightfield"] + '.js";',
         "import { " + objects_constant + ", " + roads_constant
         + ' } from "../maps/' + window["objects"] + '.js";',
@@ -435,6 +448,16 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         "  return { game, mapWidth: " + num(window["width"]) + ", mapHeight: "
         + num(window["height"]) + ", title: " + ts(spec["title"]) + " };",
         "}",
+        "",
+        "/** How the scenario picker offers this battle, before anything is built. */",
+        "export const " + listing + ": ScenarioListing = {",
+        "  id: " + ts(spec["slug"]) + ",",
+        "  title: " + ts(spec["title"]) + ",",
+        "  brief: " + ts(spec["brief"]) + ",",
+        "  mapWidth: " + num(window["width"]) + ",",
+        "  mapHeight: " + num(window["height"]) + ",",
+        "  build: build" + name + "Scenario,",
+        "};",
         "",
     ]
     return "\n".join(lines)

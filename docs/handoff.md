@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of `9bf1820`, 2026-09-16.** This is the working note for whoever
+**Current as of the scenario picker, 2026-09-22.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,10 +21,11 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 404 tests, 21 files
+npm run check       lint + typecheck clean, 408 tests, 22 files
 ```
 
-The demo scenario plays end to end in the browser, including the debrief. The
+The app opens on a **scenario picker** (Yokneam and Tel Azeka), and the demo
+plays end to end in the browser, including the debrief. The
 rule is that nothing is called done on tests alone: if a player can see it, it
 gets driven in the actual game first.
 
@@ -191,9 +192,10 @@ Measurements that cost real time and are already recorded:
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
-2. **A scenario picker.** `tools/make-scenario.py` writes a scenario module
-   from a spec, so a second battle is a spec file — but the app still opens
-   exactly one. Choosing between them is UI that does not exist.
+2. **Loading a recording from the picker.** `טען לתחקיר` lives in the game's
+   header, so to review a saved battle you first open *some* battle. The
+   debrief needs nothing from the scenario — the recording carries its own
+   ground — so it could sit on the picker too. Small, and not asked for.
 
 **The live log is filtered by side now** (rules decision 17, 2026-09-16), so
 that item is off this list. `LogEntry` carries `readers`, `pushLog` takes a
@@ -231,7 +233,12 @@ the code currently stands:
   force its cover, so the first turn resolves differently. No such recording
   exists in the repo — nothing set `baseCover` at setup before Tel Azeka — but
   a recording saved from a scenario of your own might.
-- **`src/app/scenario.ts` is a seam, not the scenario.** The demo lives in
+- **A new spec is not a playable battle until it is listed.** The tool writes
+  `<slug>Listing` beside the builder; add it to `SCENARIOS` in
+  `src/app/scenario.ts`. `scenarioCatalogue.test.ts` fails until you do, and a
+  spec without a `brief` is refused by the tool — the picker shows it to both
+  players, so it is a tasking, never forces or charges.
+- **`src/app/scenario.ts` is a list, not the scenario.** The demo lives in
   `src/app/scenarios/yokneamIllit.ts`, which is generated — editing it is
   editing a build product, and the next run of the tool throws the edit away.
   The spec is `tools/scenarios/yokneam-illit.json`.

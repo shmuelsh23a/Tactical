@@ -228,9 +228,11 @@ src/app/                Hotseat browser game (React + Vite + SVG)
   debriefView.ts    What each side may be shown of its own battle (decision 13)
   whatIf.ts         Re-fighting the same decisions under other dice
   hotseat.ts        Activation order, fog-of-war, victory check
-  scenario.ts       Demo scenario (BLUE platoon vs RED position + tank)
+  Root.tsx          Which battle: the scenario picker, or the game (?scenario=)
+  scenario.ts       The battles the picker offers, and the demo by name
+  scenarios/        Generated battles (tools/make-scenario.py), one per spec
   symbols.ts        APP-6/2525 SIDC per unit, rendered via milsymbol
-  components/       MapView (SVG map + interaction), Handoff, LogPanel
+  components/       MapView (SVG map + interaction), Handoff, LogPanel, ScenarioPicker
 
 docs/mechanics.he.md    The rules document as Markdown (+ table → code map)
 docs/handoff.md         State of play: what is waiting, what next (current only)
@@ -1129,6 +1131,13 @@ Each is intended to be an independent, toggleable module:
    output ([`scenarios/yokneamIllit.ts`](src/app/scenarios/yokneamIllit.ts)
    from [`yokneam-illit.json`](tools/scenarios/yokneam-illit.json)), which is
    what keeps the tool honest: the suite plays the generated battle.
+
+   The app opens on a **scenario picker**: every spec under `tools/scenarios/`
+   is a card with its title, its `brief` and the size of its ground, and
+   `?scenario=<slug>` opens one directly. The brief is generated from the spec
+   like everything else, and it is read by both players before either has taken
+   a side — so it is a tasking, never an order of battle. A spec that is not
+   offered fails `scenarioCatalogue.test.ts`.
 7. ✅ **Battle recording & debrief tool** — `game.toRecording()` captures the
    seed and action log, `replayGame()` reconstructs the game exactly (whole or
    to any prefix), `replayWithOutcomes()` also hands back what each action

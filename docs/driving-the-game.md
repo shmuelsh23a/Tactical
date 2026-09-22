@@ -10,6 +10,12 @@ Start here: [AGENTS.md](../AGENTS.md) *Verifying a change in the actual game*
 has the two rules you cannot skip — hard-reload after an engine change, and
 dispatch clicks on `svg.map` itself.
 
+- **The app opens on the scenario picker, not the battle.** Load
+  `/?scenario=yokneamIllit` (or any spec's `slug`) to skip it; a reload keeps
+  the battle but, as always, not the game in progress. `החלף תרחיש` goes back —
+  once the first turn has started it asks for a second click
+  (`הקרב יאבד — לחץ שוב`) rather than a native `confirm`, which would block
+  the driver.
 - **A token's symbol image is large in map coordinates.** `elementFromPoint` at
   a spot near a unit hits the `<image>`, and `Token`'s handler calls
   `stopPropagation`, so the click never reaches the map — a move silently does

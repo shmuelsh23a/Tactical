@@ -148,8 +148,11 @@ one it is in your reply, too.
   count, a seed that is not a whole number, and a window that is not the one
   the relief was cut to. It leaves the ground alone unless asked
   (`--fetch-map`) — refetching moves the data under a layout already placed on
-  it. `src/app/scenario.ts` is only the seam that says *which* generated
-  scenario the app opens with.
+  it. `src/app/scenario.ts` is only the list of generated battles the
+  **scenario picker** offers (`SCENARIOS`); a new spec needs one line there, and
+  `src/app/scenarioCatalogue.test.ts` fails until it has it. A spec's `brief` is
+  the picker's text and **both players read it before taking a side** — write
+  a tasking there (who attacks, who holds, where), never forces or charges.
 
   Roads are `Terrain.roads`: drawn, carried by the recording, read by no rule —
   keep it that way unless the author rules on roads. `src/app/scenario.test.ts`
@@ -192,7 +195,9 @@ one it is in your reply, too.
 
 Engine changes are covered by tests, but anything the player sees should be
 driven in the browser before you call it done: start the `dev` preview, play the
-demo scenario to the situation you changed, and read the combat log back.
+demo scenario to the situation you changed, and read the combat log back. The
+app opens on the scenario picker; `/?scenario=yokneamIllit` goes straight into
+the demo.
 
 One trap: the `Game` instance is held in a React ref, so **Vite's hot reload
 will not pick up an engine change** — the old instance keeps running the old

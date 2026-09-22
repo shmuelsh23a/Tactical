@@ -47,6 +47,8 @@ body {
 }
 .btn-ghost:hover { background: var(--panel-2); }
 label.btn-ghost { margin-inline-start: 0.4rem; }
+.btn-ghost + .btn-ghost { margin-inline-start: 0.4rem; }
+.btn-armed { border-color: var(--warn); color: var(--warn); }
 
 /* debrief */
 .scrubber { width: 100%; margin-top: 0.7rem; accent-color: var(--accent); }
@@ -283,3 +285,19 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .order-line circle { fill: none; stroke: var(--ok); stroke-width: 1.5; }
 /* The enemy the same order tells it to engage — drawn in the fire colour. */
 .order-line .order-engage { stroke: var(--warn); stroke-dasharray: 2 6; opacity: 0.75; }
+
+/* scenario picker */
+.picker { max-width: 44rem; margin: 0 auto; padding: 3rem 1rem; }
+.picker h1 { font-size: 1.4rem; margin: 0 0 1.5rem; }
+.picker-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.8rem; }
+.picker-card {
+  display: block; width: 100%; text-align: start;
+  padding: 1rem 1.2rem;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-inline-start: 3px solid var(--accent);
+  border-radius: 8px; cursor: pointer; font: inherit;
+}
+.picker-card:hover { background: var(--panel-2); }
+.picker-card h2 { font-size: 1.05rem; margin: 0 0 0.4rem; }
+.picker-card p { margin: 0 0 0.5rem; line-height: 1.5; }
+.picker-extent { color: var(--muted); font-size: 0.82rem; }
