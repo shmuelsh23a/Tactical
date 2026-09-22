@@ -83,6 +83,48 @@ export type RecordedAction =
       sector: ObservationSector | null;
     };
 
+/**
+ * Why a file could not be taken as a recording at all — before any action in
+ * it is replayed. Kept as data rather than as a sentence so the app can say it
+ * in the player's language; the `message` is for whoever reads a stack trace.
+ */
+export type RecordingProblem =
+  /** Saved by a format this engine does not read. */
+  | { kind: "unsupportedVersion"; version: number }
+  /** Not shaped like a recording: `field` is missing or of the wrong type. */
+  | { kind: "malformed"; field: string };
+
+export class RecordingError extends Error {
+  constructor(readonly problem: RecordingProblem) {
+    super(
+      problem.kind === "unsupportedVersion"
+        ? `Unsupported recording version: ${problem.version}`
+        : `Not a recording: ${problem.field} is missing or malformed`,
+    );
+  }
+}
+
+/**
+ * The header of a recording, checked before a game is built from it: anything
+ * that parses as JSON reaches here, and a field of the wrong type would
+ * otherwise surface as a TypeError from deep inside `Game`.
+ */
+function checkRecording(recording: unknown): asserts recording is GameRecording {
+  const r = recording as Partial<Record<keyof GameRecording, unknown>> | null;
+  const malformed = (field: string) => new RecordingError({ kind: "malformed", field });
+  if (typeof r !== "object" || r === null || Array.isArray(r)) throw malformed("recording");
+  // The version first: a newer format may be shaped differently, and saying
+  // so is more use than naming the first field it moved.
+  if (typeof r.version !== "number") throw malformed("version");
+  if (r.version !== 1) throw new RecordingError({ kind: "unsupportedVersion", version: r.version });
+  if (typeof r.seed !== "number" || !Number.isFinite(r.seed)) throw malformed("seed");
+  if (!Array.isArray(r.sides) || !r.sides.every((s) => s === "RED" || s === "BLUE")) throw malformed("sides");
+  if (typeof r.enforceC2 !== "boolean") throw malformed("enforceC2");
+  if (r.trackIntel !== undefined && typeof r.trackIntel !== "boolean") throw malformed("trackIntel");
+  if (r.terrain !== undefined && (typeof r.terrain !== "object" || r.terrain === null)) throw malformed("terrain");
+  if (!Array.isArray(r.actions)) throw malformed("actions");
+}
+
 export interface GameRecording {
   /** Format version, so an old recording can be recognised and migrated. */
   version: 1;
@@ -228,9 +270,7 @@ export function replayWithOutcomes(
     skipRejected?: boolean;
   } = {},
 ): { game: Game; steps: ReplayStep[]; skipped: SkippedAction[] } {
-  if (recording.version !== 1) {
-    throw new Error(`Unsupported recording version: ${recording.version}`);
-  }
+  checkRecording(recording);
   const game = new Game({
     seed: opts.seed ?? recording.seed,
     sides: recording.sides,

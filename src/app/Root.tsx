@@ -63,7 +63,7 @@ export function Root() {
               setLoadError(null);
               setReview(recording);
             },
-            (err: unknown) => setLoadError(recordingLoadFailed((err as Error).message)),
+            (err: unknown) => setLoadError(recordingLoadFailed(err)),
           );
         }}
         loadError={loadError}

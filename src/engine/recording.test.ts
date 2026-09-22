@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Game } from "./game.js";
 import {
+  RecordingError,
   replayGame,
   replayWithOutcomes,
   sealRecording,
@@ -363,6 +364,31 @@ describe("battle recording", () => {
   it("refuses a recording from an unknown format version", () => {
     const bad = { version: 99, seed: 1, sides: [], enforceC2: true, actions: [] };
     expect(() => replayGame(bad as unknown as GameRecording)).toThrow(/version/);
+  });
+
+  it("names what is wrong with a file that is not a recording, before building a game", () => {
+    // Said as data, so the app can word it for a player; a TypeError from
+    // inside Game is what these produced before the header was checked.
+    const good = { version: 1, seed: 1, sides: ["BLUE", "RED"], enforceC2: true, actions: [] };
+    const problem = (r: unknown) => {
+      try {
+        replayGame(r as GameRecording);
+      } catch (err) {
+        return err instanceof RecordingError ? err.problem : err;
+      }
+      return "accepted";
+    };
+    expect(problem(good)).toBe("accepted");
+    expect(problem({ ...good, trackIntel: true, digests: [] })).toBe("accepted");
+    expect(problem({ ...good, version: 2 })).toEqual({ kind: "unsupportedVersion", version: 2 });
+    expect(problem({})).toEqual({ kind: "malformed", field: "version" });
+    expect(problem(null)).toEqual({ kind: "malformed", field: "recording" });
+    expect(problem([])).toEqual({ kind: "malformed", field: "recording" });
+    expect(problem({ ...good, seed: "1" })).toEqual({ kind: "malformed", field: "seed" });
+    expect(problem({ ...good, sides: ["GREEN"] })).toEqual({ kind: "malformed", field: "sides" });
+    expect(problem({ ...good, enforceC2: undefined })).toEqual({ kind: "malformed", field: "enforceC2" });
+    expect(problem({ ...good, terrain: 3 })).toEqual({ kind: "malformed", field: "terrain" });
+    expect(problem({ ...good, actions: {} })).toEqual({ kind: "malformed", field: "actions" });
   });
 });
 

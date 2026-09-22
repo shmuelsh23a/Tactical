@@ -187,6 +187,10 @@ one it is in your reply, too.
 - **Hebrew phrasing lives in [`src/app/debriefText.ts`](src/app/debriefText.ts).**
   Orders, engine refusal reasons and action narration are worded once there and
   used by both the live log and the debrief, so the two cannot drift apart.
+  The engine says *what* went wrong as data and never in Hebrew — a refusal
+  reason, or a `RecordingError`'s `problem` for a file that is not a recording
+  — and the app words it there; an engine's English message is for a stack
+  trace, not a player.
 - **`noUncheckedIndexedAccess` is on**: indexing an array yields `T | undefined`.
 - **The UI is Hebrew and RTL.** User-facing strings, log lines and labels are in
   Hebrew; keep new ones consistent with the existing phrasing.

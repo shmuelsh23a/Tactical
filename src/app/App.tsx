@@ -913,7 +913,7 @@ export function App({ scenario, onLeave }: AppProps) {
       if (divergesAt != null) pushLog(recordingDriftNote(divergesAt), "info", TABLE);
       setDebrief(recording);
     } catch (err) {
-      pushLog(recordingLoadFailed((err as Error).message), "info", TABLE);
+      pushLog(recordingLoadFailed(err), "info", TABLE);
       force();
     }
   }
