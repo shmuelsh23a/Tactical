@@ -28,7 +28,8 @@ import {
 } from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
-import type { Terrain } from "./terrain.js";
+import type { MapLineKind, Terrain } from "./terrain.js";
+import { OBJECT_HEIGHT_M } from "./data/terrain.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -92,14 +93,22 @@ export type RecordingProblem =
   /** Saved by a format this engine does not read. */
   | { kind: "unsupportedVersion"; version: number }
   /** Not shaped like a recording: `field` is missing or of the wrong type. */
-  | { kind: "malformed"; field: string };
+  | { kind: "malformed"; field: string }
+  /**
+   * The ground it carries is damaged: `field` is the path to the first bad
+   * value (`terrain.objects[3].footprint`). Checked at load because nothing
+   * else reads the whole of it until the debrief draws it.
+   */
+  | { kind: "malformedTerrain"; field: string };
 
 export class RecordingError extends Error {
   constructor(readonly problem: RecordingProblem) {
     super(
       problem.kind === "unsupportedVersion"
         ? `Unsupported recording version: ${problem.version}`
-        : `Not a recording: ${problem.field} is missing or malformed`,
+        : problem.kind === "malformed"
+          ? `Not a recording: ${problem.field} is missing or malformed`
+          : `The recording's ground is damaged at ${problem.field}`,
     );
   }
 }
@@ -121,8 +130,79 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (!Array.isArray(r.sides) || !r.sides.every((s) => s === "RED" || s === "BLUE")) throw malformed("sides");
   if (typeof r.enforceC2 !== "boolean") throw malformed("enforceC2");
   if (r.trackIntel !== undefined && typeof r.trackIntel !== "boolean") throw malformed("trackIntel");
-  if (r.terrain !== undefined && (typeof r.terrain !== "object" || r.terrain === null)) throw malformed("terrain");
+  if (r.terrain !== undefined) {
+    const field = terrainFault(r.terrain);
+    if (field) throw new RecordingError({ kind: "malformedTerrain", field });
+  }
   if (!Array.isArray(r.actions)) throw malformed("actions");
+}
+
+/** Every kind of line a map may draw — a `Record` so a new kind cannot be missed. */
+const LINE_KINDS: Record<MapLineKind, true> = { motorway: true, street: true, track: true, path: true };
+
+const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+const isPoint = (v: unknown): boolean => {
+  const p = v as { x?: unknown; y?: unknown } | null;
+  return typeof p === "object" && p !== null && isFiniteNumber(p.x) && isFiniteNumber(p.y);
+};
+
+/**
+ * The path to the first value in a recording's ground that the engine or the
+ * map could not use, or null for sound ground. Everything the sight rule and
+ * the debrief read is checked — the grid against its own size, since a short
+ * `heights` would read as sea level rather than fail — and nothing more, so a
+ * recording saved with a field this engine does not know still loads.
+ */
+function terrainFault(terrain: unknown): string | null {
+  const t = terrain as Partial<Record<keyof Terrain, unknown>> | null;
+  if (typeof t !== "object" || t === null || Array.isArray(t)) return "terrain";
+
+  if (t.heightfield !== undefined) {
+    const at = "terrain.heightfield";
+    const hf = t.heightfield as Partial<Record<string, unknown>> | null;
+    if (typeof hf !== "object" || hf === null) return at;
+    if (hf.origin !== undefined && !isPoint(hf.origin)) return `${at}.origin`;
+    if (!isFiniteNumber(hf.spacing) || hf.spacing <= 0) return `${at}.spacing`;
+    for (const side of ["columns", "rows"] as const) {
+      const n = hf[side];
+      if (!isFiniteNumber(n) || !Number.isInteger(n) || n < 1) return `${at}.${side}`;
+    }
+    const cells = (hf.columns as number) * (hf.rows as number);
+    if (!Array.isArray(hf.heights) || hf.heights.length !== cells || !hf.heights.every(isFiniteNumber)) {
+      return `${at}.heights`;
+    }
+  }
+
+  if (!Array.isArray(t.objects)) return "terrain.objects";
+  for (const [i, o] of (t.objects as unknown[]).entries()) {
+    const at = `terrain.objects[${i}]`;
+    const obj = o as Partial<Record<string, unknown>> | null;
+    if (typeof obj !== "object" || obj === null) return at;
+    if (typeof obj.id !== "string") return `${at}.id`;
+    if (typeof obj.kind !== "string" || !Object.hasOwn(OBJECT_HEIGHT_M, obj.kind)) return `${at}.kind`;
+    if (obj.height !== undefined && (!isFiniteNumber(obj.height) || obj.height < 0)) return `${at}.height`;
+    const f = obj.footprint as Partial<Record<string, unknown>> | null;
+    const round = f?.shape === "circle" && isPoint(f.center) && isFiniteNumber(f.radius) && f.radius >= 0;
+    const drawn =
+      f?.shape === "polygon" && Array.isArray(f.points) && f.points.length >= 3 && f.points.every(isPoint);
+    if (!round && !drawn) return `${at}.footprint`;
+  }
+
+  if (t.roads !== undefined) {
+    if (!Array.isArray(t.roads)) return "terrain.roads";
+    for (const [i, r] of (t.roads as unknown[]).entries()) {
+      const at = `terrain.roads[${i}]`;
+      const line = r as Partial<Record<string, unknown>> | null;
+      if (typeof line !== "object" || line === null) return at;
+      if (typeof line.id !== "string") return `${at}.id`;
+      if (typeof line.kind !== "string" || !Object.hasOwn(LINE_KINDS, line.kind)) return `${at}.kind`;
+      if (!isFiniteNumber(line.width) || line.width < 0) return `${at}.width`;
+      if (!Array.isArray(line.points) || line.points.length < 2 || !line.points.every(isPoint)) {
+        return `${at}.points`;
+      }
+    }
+  }
+  return null;
 }
 
 export interface GameRecording {

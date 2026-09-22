@@ -40,6 +40,14 @@ describe("reading a saved battle", () => {
       ["{}", "malformed"],
       [JSON.stringify({ ...sealed, version: 7 }), "unsupportedVersion"],
       [JSON.stringify({ ...sealed, sides: "BLUE" }), "malformed"],
+      // The demo's own ground with one height cut off the end of the grid.
+      [
+        JSON.stringify({
+          ...sealed,
+          terrain: { ...sealed.terrain, heightfield: { ...sealed.terrain!.heightfield!, heights: sealed.terrain!.heightfield!.heights.slice(1) } },
+        }),
+        "malformedTerrain",
+      ],
     ];
     for (const [text, kind] of cases) {
       const { problem, said } = await refusal(text);

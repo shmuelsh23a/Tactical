@@ -751,6 +751,8 @@ function loadProblemHe(problem: LoadProblem): string {
       return "הקובץ אינו הקלטת קרב";
     case "malformed":
       return "הקובץ אינו הקלטת קרב תקינה — חסרים בו נתונים או שהם פגומים";
+    case "malformedTerrain":
+      return "המפה שבהקלטה פגומה — לא ניתן לשחזר עליה את הקרב";
     case "unsupportedVersion":
       return `ההקלטה נשמרה בגרסה ${problem.version}, שהמשחק אינו קורא`;
     case "unreadable":
