@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 485 tests, 26 files
+npm run check       lint + typecheck clean, 488 tests, 27 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -56,6 +56,20 @@ others do to shooting, movement, detection and the rest is the next ruling;
 build nothing on them before it. Also his, and not built: **campaigns carry
 the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
+
+**Five rules questions from the balance harness** (2026-09-22,
+[balance.md](balance.md), *The balance harness*). 2,400 headless battles between
+NATO-organised forces show an attack is close to a switch — a dug-in defender
+holds at 1:1, falls at 2:1 — and a winning attacker at 3–4:1 loses 0–8% of his
+men. Three rules do it, and all three are his to rule on, not ours to tune:
+**an assault is one-sided** (the defender never fires back), **ordinary fire
+ignores the document's movement modifier** (+30% walker / −20% runner — only
+covering fire applies it), and **a defender loses full cover the moment it
+fires**. Two more: the **initiative tie-break** always favours RED (55% of
+turns first; worth under 5 points of win rate, but a bias with no reason), and
+**`sideDefeated` counts command groups**, so without morale a battle whose
+fighting forces are all gone never ends. Rerun `npm run balance` after any
+answer changes a rule.
 
 **Two further things, both raised 2026-09-21, neither blocking today's work.**
 

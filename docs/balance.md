@@ -186,6 +186,149 @@ either way, 124/300 routs. **The first cut priced every 1d4 hit as a serious
 wound and routed squads at turn 7 with 0.9 men down** — morale out-killing the
 dice. That ratio is the thing to re-measure after any change to `LOSS`.
 
+## The balance harness: 2,400 battles, 2026-09-22
+
+`npm run balance` plays headless battles between **Western (NATO-organised)
+forces** and prints the table below. The harness is
+[`src/sim/balance.ts`](../src/sim/balance.ts) (checked by the suite), and the
+runner is [`tools/balance-sim.ts`](../tools/balance-sim.ts). Its options are
+listed at the top of the runner. **Rerun it after any change to a number on this
+page.**
+
+**The forces.**
+- Squad: 9 men.
+- Platoon: 3 squads, a 6-man weapons squad and a 3-man HQ, 36 men.
+- Company: 3 platoons, a 5-man HQ and one 60 mm mortar mission a turn, 113 men.
+
+The weapons squad fires small arms, because the document's table is
+נק"ל\מקלעים.
+
+**The doctrine** is a script, not a player:
+- Out of contact, everyone advances.
+- In contact, half the force bounds while the other half is the base of fire.
+- Every force fires at the nearest enemy its side knows of, and assaults inside
+  25 m.
+- Command groups follow 80 m behind their forces.
+- A defender holds a prepared position (partial cover, digging in from there)
+  and covers its front (חיפוי) when nothing is in reach.
+
+Fog of war and C2 are both on. The ground is **flat and open**, so what is being
+measured is the rules alone, played plainly: no smoke, no flanking, no use of
+ground.
+
+**The fights.**
+- `meeting`: mirror forces advance on each other.
+- `attack3`: about 3–4:1 on a prepared position — a squad on a fire team (9 v 4),
+  a platoon on a squad (36 v 9), a company on a platoon (113 v 36).
+- `attack2`: about 2:1 — 9 v 5, 36 v 18, 113 v 72.
+- `attack1`: 1:1.
+
+Each cell is 100 battles, seeds 1000–1099.
+
+**How a battle ends.**
+- `broke`: the loser's side broke.
+- `wiped`: every one of its units is out, the game's own rule.
+- `fightersGone`: every fighting force is out but a command group lives — see
+  finding 4.
+- `both`: both sides went in the same step, a draw.
+
+| Kind | Echelon | Morale | Men (B v R) | BLUE / RED / draw | Endings | Turns, median (p10–p90) | Loser down | Winner down | Routs | Surrenders | Heroes | Rallied | Pinned share |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| meeting | squad | on | 9 v 9 | 49% / 43% / 8% | broke 92, both 8 | 11 (8–13) | 35% | 11% | 0.51 | 0.44 | 0.64 | 0.21 | 27% |
+| meeting | squad | off | 9 v 9 | 56% / 43% / 1% | wiped 99, both 1 | 12 (9–15) | 61% | 25% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| meeting | platoon | on | 36 v 36 | 30% / 67% / 3% | broke 97, both 3 | 10 (9–11) | 36% | 20% | 0.11 | 1.59 | 1.20 | 0.09 | 62% |
+| meeting | platoon | off | 36 v 36 | 40% / 59% / 1% | fightersGone 98, wiped 1, both 1 | 11 (10–14) | 59% | 35% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| meeting | company | on | 113 v 113 | 53% / 35% / 12% | both 12, broke 88 | 10 (10–11) | 32% | 24% | 4.83 | 2.55 | 3.29 | 1.93 | 71% |
+| meeting | company | off | 113 v 113 | 55% / 42% / 3% | both 3, fightersGone 97 | 17 (15–20) | 73% | 64% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack3 | squad | on | 9 v 4 | 96% / 4% / 0% | broke 100 | 15 (13–18) | 35% | 2% | 0.46 | 0.15 | 0.23 | 0.09 | 5% |
+| attack3 | squad | off | 9 v 4 | 100% / 0% / 0% | wiped 100 | 15 (12–19) | 65% | 4% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack3 | platoon | on | 36 v 9 | 100% / 0% / 0% | broke 100 | 12 (11–13) | 36% | 0% | 0.53 | 0.23 | 0.31 | 0.20 | 55% |
+| attack3 | platoon | off | 36 v 9 | 100% / 0% / 0% | wiped 100 | 13 (12–14) | 65% | 1% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack3 | company | on | 113 v 36 | 100% / 0% / 0% | broke 100 | 11 (11–12) | 34% | 8% | 2.59 | 0.01 | 1.30 | 0.88 | 64% |
+| attack3 | company | off | 113 v 36 | 100% / 0% / 0% | fightersGone 62, wiped 38 | 13 (12–14) | 60% | 13% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack2 | squad | on | 9 v 5 | 86% / 11% / 3% | broke 97, both 3 | 17 (14–21) | 44% | 6% | 0.59 | 0.12 | 0.23 | 0.17 | 6% |
+| attack2 | squad | off | 9 v 5 | 97% / 3% / 0% | wiped 100 | 17 (15–21) | 69% | 10% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack2 | platoon | on | 36 v 18 | 100% / 0% / 0% | broke 100 | 15 (14–16) | 41% | 4% | 0.75 | 0.21 | 0.74 | 0.47 | 37% |
+| attack2 | platoon | off | 36 v 18 | 100% / 0% / 0% | wiped 100 | 16 (15–17) | 66% | 10% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack2 | company | on | 113 v 72 | 21% / 74% / 5% | broke 95, both 5 | 15 (14–16) | 27% | 22% | 8.80 | 0.03 | 3.96 | 3.83 | 55% |
+| attack2 | company | off | 113 v 72 | 53% / 43% / 4% | fightersGone 75, both 4, wiped 21 | 21 (19–23) | 71% | 57% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack1 | squad | on | 9 v 9 | 15% / 81% / 4% | broke 96, both 4 | 18 (15–22) | 27% | 8% | 0.93 | 0.09 | 0.38 | 0.49 | 8% |
+| attack1 | squad | off | 9 v 9 | 19% / 80% / 1% | wiped 99, both 1 | 22 (18–25) | 58% | 21% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack1 | platoon | on | 36 v 36 | 1% / 99% / 0% | broke 100 | 17 (15–18) | 26% | 15% | 1.85 | 1.20 | 1.45 | 1.26 | 60% |
+| attack1 | platoon | off | 36 v 36 | 7% / 93% / 0% | fightersGone 98, wiped 2 | 20 (19–23) | 59% | 29% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack1 | company | on | 113 v 113 | 0% / 99% / 1% | broke 99, both 1 | 14 (13–15) | 26% | 16% | 9.83 | 0.04 | 4.19 | 3.75 | 65% |
+| attack1 | company | off | 113 v 113 | 0% / 100% / 0% | fightersGone 100 | 19 (17–21) | 63% | 34% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+
+**What it says.**
+
+1. **Morale does what it was built for.** Without it:
+   - The loser of an even fight is destroyed to 59–73% of his men, and at
+     company scale the winner loses 64% as well, over 17 turns.
+   - With it, the loser breaks at **32–36%** at every echelon. The winner loses
+     11–24%, and battles last about 10 turns.
+
+   Breaking at about a third is the right order of magnitude for real units.
+2. **No side is favoured.** The mirror fights split within chance at 300
+   battles a cell (`--n 300 --kinds meeting --morale on`):
+
+   | | squad | platoon | company |
+   |---|---|---|---|
+   | as played | 43 / 49 / 8 | 41 / 53 / 5 | 46 / 42 / 12 |
+   | `--swap` | 43 / 49 / 8 | 43 / 52 / 5 | 44 / 41 / 15 |
+   | `--fair-ties` | 41 / 53 / 6 | 48 / 47 / 5 | 51 / 41 / 8 |
+   | `--fair-ties --swap` | 41 / 53 / 6 | 47 / 46 / 8 | 50 / 36 / 13 |
+
+   BLUE / RED / draw, in percent. The standard error on a share is about 3
+   points, and no lean survives both the swap and the fair ties. **The
+   initiative tie-break does favour RED**: `rollInitiative` gives a tie to the
+   side listed first, so RED moves and fires first on **55%** of turns. But
+   what that is worth in wins is below what 300 battles can detect (under ~5
+   points). It is still a bias with no reason behind it, and is ⚠️ open: the
+   document says 1d10 a side and nothing about ties.
+3. **An attack is close to a switch, and the attacker who wins barely
+   bleeds.**
+   - A dug-in defender holds 81–99% of the time at 1:1.
+   - At 2:1 the attack succeeds 86–100% at squad and platoon.
+   - At company level, 1.6:1 fails (21%) and 3:1 succeeds (100%). That is the
+     textbook 3:1 rule, but the platoon and squad fights tip at about 2:1.
+   - Worse, a successful attacker at 3–4:1 loses **0–8%** of his men against a
+     defender's 34–36%. Three rules combine to do it:
+     - **An assault is one-sided** (`resolveAssault`): only the attacker fires.
+       The defender does not reply unless it happened to be covering.
+     - **Ordinary fire never applies the document's movement modifier** (+30%
+       against a walker, −20% against a runner). Only covering fire does
+       (rules decision 18), so a bounding attacker is no easier to hit than a
+       stationary one.
+     - **Cover is lost the moment a defender fires**: the document's own rule
+       drops full cover to partial, −10%. A defender that shoots back is barely
+       protected.
+
+   All three are rules questions — ask the author, do not tune around them.
+4. **A battle without morale cannot end while a command group lives.**
+   `sideDefeated` ([`app/hotseat.ts`](../src/app/hotseat.ts)) wants **every**
+   unit neutralised, command groups included, and a hidden HQ with nobody left
+   to command is never found. **62–100%** of the platoon and company battles
+   without morale ended that way (`fightersGone`); the game itself would have
+   played on for ever. With morale on, `sideBroken` leaves command groups out
+   and catches it — and both scenarios play with morale — so this bites only a
+   game built without it. The fix is the same exclusion. ⚠️ Not made: it
+   changes a victory condition, which is backlog 18's and the author's.
+5. **Suppression piles up with numbers.** Every force shoots at the nearest
+   enemy, so several bursts land on the same one. In platoon and company
+   fights **55–71%** of the force-turns spent under suppression were pinned,
+   against 5–27% in squad fights. If that feels wrong in play, the lever is
+   `SUPPRESSION` (a cap per turn, or diminishing returns per extra firer), not
+   the thresholds.
+6. **Surrender is common where forces break at close range**: 1.6 squads in
+   an average platoon meeting engagement, against 0.1 routs, because the
+   bounding closes inside the 50 m `CORNERED_M` before the break comes. In
+   attacks the defender routs instead. Whether that is the feel wanted is the
+   author's call.
+7. **The rare events are rare**, as asked:
+   - Heroes: 0.2–4 per battle, rising with the number of men.
+   - Rallies: 0.1–3.8 men per battle, and mostly at company scale, where a
+     command group is near enough to get to them.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

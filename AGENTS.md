@@ -31,6 +31,7 @@ npm run build:engine # emit the engine as a standalone library -> dist/
 npm test             # vitest alone
 npm run typecheck    # strict tsc alone
 npm run lint         # the architectural rules alone
+npm run balance      # headless battles -> the table on docs/balance.md (not part of check)
 ```
 
 Node **24** — pinned in `.nvmrc`, declared in `engines`, and read from that same
