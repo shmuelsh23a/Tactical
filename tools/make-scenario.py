@@ -25,6 +25,7 @@ The spec, in full — everything not marked optional is required:
       "seed": 2026,                         default seed for the battle
       "trackIntel": true,                   optional (default true)
       "enforceC2": true,                    optional (default true)
+      "morale": true,                       optional (default false; decision 19)
       "about": ["prose..."],                optional: the module's doc comment
       "window": {
         "lat": 32.645, "lon": 35.085,       centre of the ground
@@ -55,6 +56,13 @@ A force may also carry, all optional:
     "baseCover": "partial"|"full" protection it holds without digging
     "scouting": true              out scouting from the start
     "canLayCharges": true         an insurgent or special force (decision 16)
+    "motivation": "normal"        poor|low|normal|high|fanatic - the floor of its
+                                  men's starting morale (decision 19)
+    "experience": "regular"       green|regular|veteran|elite (decision 19)
+
+`motivation` and `experience` are refused on a vehicle (a crew carries no
+morale yet) and in a battle played without `morale`, where they would do
+nothing at all.
 
 `brief` is the Hebrew the scenario picker shows under the title, and it is read
 by **both players before either has taken a side** — so it is a tasking, not an
@@ -121,9 +129,12 @@ WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing",
     "camouflaged", "baseCover", "scouting", "canLayCharges", "note",
+    "motivation", "experience",
 }
+MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
+EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
-SPEC_KEYS = {"slug", "title", "brief", "seed", "trackIntel", "enforceC2", "about", "window", "forces", "charges"}
+SPEC_KEYS = {"slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "about", "window", "forces", "charges"}
 KINDS = {"infantry", "vehicle", "command"}
 # What each kind may carry beyond the common keys. A key spelt correctly but
 # given to the wrong kind is refused rather than dropped: `soldiers` on a
@@ -216,6 +227,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     )
     require_bool(spec, "trackIntel", "spec")
     require_bool(spec, "enforceC2", "spec")
+    require_bool(spec, "morale", "spec")
     window = spec["window"]
     check_keys("window", window, WINDOW_KEYS)
     for key in ("lat", "lon", "width", "height", "heightfield", "objects", "constant"):
@@ -251,6 +263,12 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
             require(force["baseCover"] in COVER, f"{where}: baseCover must be one of {sorted(COVER)}")
         if "note" in force:
             require(isinstance(force["note"], str), f"{where}: note must be a line of text")
+        for key, allowed in (("motivation", MOTIVATIONS), ("experience", EXPERIENCES)):
+            if key not in force:
+                continue
+            require(force[key] in allowed, f"{where}: {key} must be one of {sorted(allowed)}")
+            require(kind != "vehicle", f"{where}: a vehicle's crew carries no {key}")
+            require(spec.get("morale") is True, f"{where}: {key} does nothing in a battle played without morale")
         x, y = to_metres(force["at"], window, where)
         require(
             0 <= x <= width and 0 <= y <= height,
@@ -382,6 +400,10 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         "    seed,",
         "    trackIntel: " + str(spec.get("trackIntel", True)).lower() + ",",
         "    enforceC2: " + str(spec.get("enforceC2", True)).lower() + ",",
+    ]
+    if spec.get("morale"):
+        lines.append("    morale: true,")
+    lines += [
         "    terrain: build" + name + "Terrain(),",
         "  });",
         "",
@@ -411,6 +433,10 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             dressing.append("scouting = true")
         if f.get("canLayCharges"):
             dressing.append("canLayCharges = true")
+        if "motivation" in f:
+            dressing.append("motivation = " + ts(f["motivation"]))
+        if "experience" in f:
+            dressing.append("experience = " + ts(f["experience"]))
 
         if "note" in f:
             lines.append("  // " + f["note"])

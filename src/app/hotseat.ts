@@ -160,7 +160,12 @@ export function sideView(game: Game, side: Side): SideView {
   if (!game.trackIntel) {
     const revealed = computeRevealed(game, side);
     return {
-      units: [...own, ...game.units.filter((u) => u.side !== side && !isGone(u) && revealed.has(u.id))],
+      units: [
+        ...own,
+        ...game.units
+          .filter((u) => u.side !== side && !isGone(u) && revealed.has(u.id))
+          .map((u) => outsideView(u, true)),
+      ],
       staleIds,
     };
   }
@@ -175,16 +180,40 @@ export function sideView(game: Game, side: Side): SideView {
     // was and how it looked when it was last seen, so a player cannot read a
     // force's current position — or its collapse — off a stale mark.
     enemies.push(
-      seenNow
-        ? truth
-        : {
-            ...truth,
-            position: { ...contact.lastKnownPosition },
-            neutralized: contact.lastKnownNeutralized,
-          },
+      outsideView(
+        seenNow
+          ? truth
+          : {
+              ...truth,
+              position: { ...contact.lastKnownPosition },
+              neutralized: contact.lastKnownNeutralized,
+            },
+        seenNow,
+      ),
     );
   }
   return { units: [...own, ...enemies], staleIds };
+}
+
+/**
+ * An enemy force as the other side may see it (rules decision 19): a force
+ * running or giving itself up is behaviour, and can be watched; how its men
+ * are holding up, what they are made of and how hard it is being suppressed
+ * is not. A stale mark shows neither — the rout may have happened since.
+ *
+ * Without morale the force carries none of it, and is returned as it is.
+ */
+export function outsideView(unit: Unit, seenNow: boolean): Unit {
+  if (!unit.soldiers?.some((s) => s.morale || s.traits) && unit.suppression == null && !unit.motivation && !unit.experience) {
+    return unit;
+  }
+  const { suppression: _s, motivation: _mo, experience: _ex, routing, surrendered, ...rest } = unit;
+  return {
+    ...rest,
+    ...(seenNow && routing ? { routing } : {}),
+    ...(seenNow && surrendered ? { surrendered } : {}),
+    soldiers: unit.soldiers?.map(({ traits: _t, morale: _m, leader: _l, ...s }) => s),
+  };
 }
 
 /** A destroyed vehicle is removed from play; neutralised infantry stays visible. */
@@ -192,8 +221,12 @@ export function isGone(u: Unit): boolean {
   return u.kind === "vehicle" && !!u.vehicle?.destroyed;
 }
 
-/** True when `side` has no units left able to fight. */
+/**
+ * True when `side` has no units left able to fight — or, played with morale,
+ * when it has broken (rules decision 19): two thirds of its fighting strength
+ * down, broken, routed or surrendered.
+ */
 export function sideDefeated(game: Game, side: Side): boolean {
   const units = game.units.filter((u) => u.side === side);
-  return units.length > 0 && units.every((u) => u.neutralized || isGone(u));
+  return units.length > 0 && (units.every((u) => u.neutralized || isGone(u)) || game.sideBroken(side));
 }

@@ -5,6 +5,7 @@
   "seed": 2026,
   "trackIntel": true,
   "enforceC2": true,
+  "morale": true,
   "window": {
     "lat": 32.645,
     "lon": 35.085,

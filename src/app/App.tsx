@@ -16,7 +16,10 @@ import {
   orderInterval,
   sealRecording,
   sectorBonus,
+  suppressionLevel,
   type ChargeWorkReport,
+  type ForceMorale,
+  type MoraleReport,
   type CoveringFireResult,
   type GameRecording,
   type IndirectFireResult,
@@ -39,7 +42,11 @@ import {
   describeSector,
   describeBound,
   describeStandingOrder,
+  forceMoraleHe,
   isRoutineOrderReason,
+  moraleReportHe,
+  moraleStateHe,
+  suppressionHe,
   reasonHe,
   recordingDriftNote,
   recordingLoadFailed,
@@ -80,7 +87,7 @@ type CombatAction = "fire" | "assault";
  * go: nothing in particular, engage a named force, or hold its fire until the
  * order is replaced (rules decisions 6 and 12).
  */
-type OrderTask = "advance" | "engage" | "holdFire";
+type OrderTask = "advance" | "engage" | "holdFire" | "withdraw";
 
 const phaseLabelHe: Record<ActivationPhase, string> = {
   targeting: "שלב סימון מטרות",
@@ -268,13 +275,15 @@ export function App({ scenario, onLeave }: AppProps) {
 
   /** The engage task the order controls are currently set to, if any. */
   function orderedEngagement(): StandingOrder["engage"] | undefined {
-    if (orderTask === "advance" || !orderTargetId) return undefined;
+    if (orderTask === "advance" || orderTask === "withdraw" || !orderTargetId) return undefined;
     const target = visibleEnemies.find((u) => u.id === orderTargetId);
     return target ? { targetId: target.id, weapon: orderWeapon } : undefined;
   }
 
   /** The task part of an order, as the panel currently reads. */
-  function orderedTask(): Pick<StandingOrder, "engage" | "holdFire"> {
+  function orderedTask(): Pick<StandingOrder, "engage" | "holdFire" | "withdraw"> {
+    // Falling back is the whole task: no target, no fire (rules decision 19).
+    if (orderTask === "withdraw") return { withdraw: true };
     if (orderTask !== "holdFire") return { engage: orderedEngagement() };
     // A held force opens up on the nearest enemy inside its line unless the
     // order names one — so the target list is offered here too.
@@ -292,7 +301,8 @@ export function App({ scenario, onLeave }: AppProps) {
     selectedOwn && enginePhase === "movement" && selectedCanManoeuvre
       ? Math.max(
           0,
-          MOVEMENT_PROFILES[effectiveGait].maxDistance * (selectedOwn.underFire ? 0.5 : 1) -
+          MOVEMENT_PROFILES[effectiveGait].maxDistance *
+            (selectedOwn.underFire || suppressionLevel(selectedOwn) !== "none" ? 0.5 : 1) -
             selectedOwn.movedThisTurn,
         )
       : null;
@@ -432,6 +442,27 @@ export function App({ scenario, onLeave }: AppProps) {
         }
         return coveringFireHe(shot, nameOf, reader === target.side);
       });
+    }
+  }
+
+  /**
+   * What morale did as the turn closed (rules decision 19). A force's own side
+   * reads all of it — who broke, who stood up, who was rallied. The enemy
+   * reads only what it watched: a rout or a surrender the engine says it saw
+   * (`seenBy`, the same answer the debrief reads) — never how many of its
+   * men broke, and nothing of a force it had not found.
+   */
+  function logMorale(reports: MoraleReport[]) {
+    for (const report of reports) {
+      const unit = game.units.find((u) => u.id === report.unitId);
+      if (!unit) continue;
+      pushPerSide("casualty", unit.side, (reader) =>
+        reader === unit.side
+          ? moraleReportHe(report, nameOf, true)
+          : report.seenBy?.includes(reader)
+            ? moraleReportHe(report, nameOf, false)
+            : null,
+      );
     }
   }
 
@@ -640,6 +671,9 @@ export function App({ scenario, onLeave }: AppProps) {
   /** Order the force to stay where it is — and, if a task is set, to fight from there. */
   function handleHoldOrder() {
     if (!selectedOwn || enginePhase !== "movement" || selectedOwn.kind === "command") return;
+    // A withdrawal is to somewhere: held in place it would be a force that
+    // never fires and is never tested, which is not an order anyone gives.
+    if (orderTask === "withdraw") return;
     issueOrder(selectedOwn, { gait: effectiveGait, ...orderedTask() });
   }
 
@@ -660,7 +694,16 @@ export function App({ scenario, onLeave }: AppProps) {
       return;
     }
     const next = game.nextOrderTurn(unit.id);
-    game.setStandingOrder(unit.id, order);
+    if (!game.setStandingOrder(unit.id, order)) {
+      // A force that broke is the engine's until it is rallied (rules decision 19).
+      pushLog(
+        `${unit.name} — ${reasonHe(unit.surrendered ? "surrendered" : unit.routing ? "routing" : "out of the order cycle")}`,
+        "info",
+        onlyFor(viewingSide),
+      );
+      force();
+      return;
+    }
     // An order is not something the enemy can watch being given.
     pushLog(`${unit.name} — פקודה: ${describeStandingOrder(order, nameOf)}`, "move", onlyFor(viewingSide));
     if (next != null && next > game.turn + 1) {
@@ -680,7 +723,9 @@ export function App({ scenario, onLeave }: AppProps) {
         pushLog(`גילוי: ${det.spottedUnitIds.map(nameOf).join(", ")}`, "info", onlyFor(viewingSide));
       }
     } catch (err) {
-      pushLog((err as Error).message, "info", onlyFor(viewingSide));
+      // The engine's refusals are keys where they can be worded (a pinned or
+      // routing command group); anything else is its own sentence.
+      pushLog(reasonHe((err as Error).message), "info", onlyFor(viewingSide));
     }
     force();
   }
@@ -919,14 +964,23 @@ export function App({ scenario, onLeave }: AppProps) {
   }
 
   function checkVictory() {
-    for (const side of ["RED", "BLUE"] as Side[]) {
-      if (sideDefeated(game, side)) {
-        const win = side === "RED" ? "BLUE" : "RED";
-        setWinner(win);
-        setStage("gameover");
-        pushLog(`צד ${side} נוטרל — ניצחון ל${win}`, "info", TABLE);
-      }
+    const beaten = SIDES.filter((side) => sideDefeated(game, side));
+    if (beaten.length === 0) return;
+    // A side that broke still has forces on the map; it has stopped fighting,
+    // which is a different thing to say (rules decision 19).
+    const how = (side: Side) => (game.sideBroken(side) ? "נשבר" : "נוטרל");
+    setStage("gameover");
+    if (beaten.length === SIDES.length) {
+      // Both at once — one morale step judges both sides, so it can happen.
+      // ⚠️ A draw is ours: the document has no victory conditions (backlog 18).
+      setWinner(null);
+      pushLog(`שני הצדדים יצאו מהקרב (${SIDES.map((s) => `${s} ${how(s)}`).join(", ")}) — תיקו`, "info", TABLE);
+      return;
     }
+    const side = beaten[0]!;
+    const win = side === "RED" ? "BLUE" : "RED";
+    setWinner(win);
+    pushLog(`צד ${side} ${how(side)} — ניצחון ל${win}`, "info", TABLE);
   }
 
   function handleEndActivation() {
@@ -962,7 +1016,11 @@ export function App({ scenario, onLeave }: AppProps) {
       }
     } else {
       // End of turn: run upkeep + begin the next turn.
-      logChargeWork(game.advanceToPhase("initiative").chargeWork);
+      const closed = game.advanceToPhase("initiative");
+      logChargeWork(closed.chargeWork);
+      logMorale(closed.morale);
+      // Morale can end a battle with no shot fired this step: a side breaks.
+      checkVictory();
       const order = game.initiativeOrder;
       setActivations(buildActivations(order));
       setActIndex(0);
@@ -1192,7 +1250,23 @@ export function App({ scenario, onLeave }: AppProps) {
                     >
                       אחזקת אש
                     </button>
+                    {game.morale && (
+                      <button
+                        className={orderTask === "withdraw" ? "on" : ""}
+                        onClick={() => setOrderTask("withdraw")}
+                        title="נסיגה מתוכננת: הכוח נסוג לנקודה שתסמן, בלי לפתוח באש"
+                      >
+                        נסיגה
+                      </button>
+                    )}
                   </div>
+                  {orderTask === "withdraw" && (
+                    <p className="hint">
+                      לחץ על המפה לנקודת הנסיגה. כוח נסוג אינו פותח באש, יכול לנוע גם כשהוא
+                      מרותק, ואנשיו אינם נבחנים במבחני מורל תקופתיים. נסיגה מתוכננת אינה
+                      עולה במורל — מנוסה, שבאה כשמחכים יותר מדי, עולה ביוקר.
+                    </p>
+                  )}
 
                   {orderTask === "holdFire" && (
                     <>
@@ -1231,7 +1305,7 @@ export function App({ scenario, onLeave }: AppProps) {
                     </>
                   )}
 
-                  {orderTask !== "advance" &&
+                  {orderTask !== "advance" && orderTask !== "withdraw" &&
                     (visibleEnemies.length === 0 ? (
                       orderTask === "engage" ? (
                         <p className="hint warn">אין אויב מזוהה — אי אפשר לקבוע מטרה בפקודה.</p>
@@ -1280,7 +1354,7 @@ export function App({ scenario, onLeave }: AppProps) {
 
                   <button
                     className="btn-ghost"
-                    disabled={!selectedOwn || selectedOwn.kind === "command"}
+                    disabled={!selectedOwn || selectedOwn.kind === "command" || orderTask === "withdraw"}
                     onClick={handleHoldOrder}
                     title="פקודה ללא תנועה: הכוח נשאר במקומו ומבצע את המשימה שנקבעה"
                   >
@@ -1468,6 +1542,7 @@ export function App({ scenario, onLeave }: AppProps) {
                 order={selectedOrder}
                 nameOf={nameOf}
                 terrain={game.terrain}
+                morale={selectedOwn ? game.forceMorale(selectedOwn.id) : undefined}
               />
 
               <button className="btn-primary" onClick={handleEndActivation}>
@@ -1475,6 +1550,7 @@ export function App({ scenario, onLeave }: AppProps) {
               </button>
 
               <Roster
+                game={game}
                 units={game.units.filter((u) => u.side === viewingSide)}
                 selectedId={selectedId}
                 awaitingOrders={awaitingOrders}
@@ -1486,7 +1562,7 @@ export function App({ scenario, onLeave }: AppProps) {
           {stage === "gameover" && (
             <div className="panel">
               <h3>סיום</h3>
-              <p className="victory">ניצחון לצד {winner}!</p>
+              <p className="victory">{winner ? `ניצחון לצד ${winner}!` : "תיקו"}</p>
             </div>
           )}
 
@@ -1534,6 +1610,7 @@ function SelectedUnitCard({
   order,
   nameOf,
   terrain,
+  morale,
 }: {
   unit: Unit | null;
   orderInfo: OrderInfo | null;
@@ -1541,6 +1618,8 @@ function SelectedUnitCard({
   order: StandingOrder | undefined;
   nameOf: (id: string) => string;
   terrain: Terrain;
+  /** How it is holding up; absent in a game played without morale. */
+  morale?: ForceMorale;
 }) {
   if (!unit) return <div className="unit-card empty">לא נבחר כוח</div>;
   return (
@@ -1575,11 +1654,41 @@ function SelectedUnitCard({
           </div>
         </>
       )}
-      {unit.neutralized && <div className="warn">מנוטרל</div>}
+      {unit.neutralized && !unit.surrendered && <div className="warn">מנוטרל</div>}
+      {morale && <MoraleLine unit={unit} morale={morale} />}
       {unit.movementBlocked && <div className="warn">נפגע — לא יכול לנוע</div>}
       {unit.firedThisTurn && <div className="warn">בוצעה פעולת ירי בתור זה</div>}
       <PostureLine unit={unit} terrain={terrain} />
     </div>
+  );
+}
+
+/**
+ * How the force is holding up (rules decision 19) — states, never numbers: the
+ * force as a whole, how hard it is being suppressed, and its men by state, so
+ * a commander can see a squad is coming apart before it goes.
+ */
+function MoraleLine({ unit, morale }: { unit: Unit; morale: ForceMorale }) {
+  const bad = morale.state !== "steady";
+  const men = (["heroic", "steady", "wavering", "shaken", "broken"] as const)
+    .filter((state) => morale.counts[state] > 0)
+    .map((state) => `${moraleStateHe[state]} ${morale.counts[state]}`)
+    .join(" · ");
+  const leader = unit.soldiers?.find((s) => s.leader);
+  return (
+    <>
+      <div className={bad ? "warn" : "ok"}>
+        מורל: {forceMoraleHe[morale.state]}
+        {morale.suppression !== "none" ? ` · ${suppressionHe[morale.suppression]}` : ""}
+      </div>
+      {men && <div className="muted">לוחמים: {men}</div>}
+      {leader && (
+        <div className="muted">
+          {unit.kind === "command" ? "המפקד" : "מפקד הכוח"}:{" "}
+          {leader.neutralized ? "נפגע — הכוח ללא מפקד" : leader.morale?.state === "broken" ? "שבור" : "בפיקוד"}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1633,11 +1742,13 @@ function PostureLine({ unit, terrain }: { unit: Unit; terrain: Terrain }) {
 }
 
 function Roster({
+  game,
   units,
   selectedId,
   awaitingOrders,
   onSelect,
 }: {
+  game: Scenario["game"];
   units: Unit[];
   selectedId: string | null;
   awaitingOrders: Set<string>;
@@ -1658,6 +1769,11 @@ function Roster({
             {u.name} —{" "}
             {u.kind === "vehicle" ? "טנק" : `${fitSoldiers(u)}/${fullStrength(u)}`}
             {u.firedThisTurn && " · ירה"}
+            {(() => {
+              // Only what needs the commander's eye: a force that is steady says nothing.
+              const morale = game.forceMorale(u.id);
+              return morale && morale.state !== "steady" ? ` · ${forceMoraleHe[morale.state]}` : "";
+            })()}
             {awaitingOrders.has(u.id) && ' · בפקודה קודמת'}
           </li>
         ))}

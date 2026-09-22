@@ -141,6 +141,51 @@ tweak later when we get to balancing — write it down". So: written down.
 | Fog-of-war fallback radius | **300 m** (`SPOT_RANGE_M`) | ours | [`app/hotseat.ts`](../src/app/hotseat.ts) — only used when `trackIntel` is off |
 | What-if runs | **20** | ours | [`app/whatIf.ts`](../src/app/whatIf.ts) — a UI choice, not a rule |
 
+## Morale and suppression (rules decision 19)
+
+**The whole section is ours.** The document has no morale; the author gave the
+shape on 2026-09-22 — six traits of 1–10, leadership as INT + WIS + CHA, a
+starting pool between the scenario's minimum and 100, a live leader bonus up
+to battalion, the 50 / 30 / 10 thresholds, a separate suppression layer, states
+on screen, hard and capped recovery, charisma ÷ 2 as the fallback — and every
+magnitude below filled it in. All of it lives in
+[`data/morale.ts`](../src/engine/data/morale.ts).
+
+| Figure | Value | Whose | What it does |
+|---|---|---|---|
+| Thresholds | **50 / 30 / 10** | author | Wavering (tested every few turns) / shaken (every turn) / broken. |
+| Fallback bonus | **charisma ÷ 2** | author | Out of every leader's reach. |
+| Leadership | **INT + WIS + CHA** | author | Leaders only. |
+| `TRAIT_DICE` | **⌈(d10 + d10) ÷ 2⌉** | ours | Traits 1–10, mostly average. |
+| `MOTIVATION_FLOOR` | **40 / 50 / 60 / 70 / 85** | ours | The scenario's minimum, by motivation (poor → fanatic); the pool is the mean of two draws from there to 100. |
+| `EXPERIENCE` | **−10 / 0 / +10 / +15** to tests; suppression **×1.25 / 1 / 0.8 / 0.7** | ours | Green → elite. |
+| `WAVERING_TEST_INTERVAL` | **3 turns** | ours | The author's "every few turns". |
+| `TEST` | pass on d100 ≤ **E + 30 + 2 × WIS** + experience | ours | ~90% at 50, ~70% at 30 for an average man. |
+| `EVENT_TEST_LOSS` | **12** | ours | A turn that costs a man this much tests him at once. |
+| `HEROIC` | d100 ≤ **2 × luck**; **3 turns**; +10 pool; squad +5; aim ×1.25 | ours | A failed test turned to heroism. |
+| `LEADER_BONUS` | leadership **÷ 3**, halved per link, **±15** cap | ours | The live chain-of-command bonus. |
+| `LEADER_REACH_M` | **300 / 500 / 1000 m** | platoon and company from the פו"ש table; battalion ours | How far a commander's bonus carries. |
+| `FALLBACK_RADIUS_M` | **50 m** | ours | Who counts as "closest" for the fallback. |
+| `LOSS` | fired on **1**, shelled **5**, hit **6**, comrade hit **1**, comrade down **6**, friend nearby down **2**, squad leader down **15**, commander down **10**, flanked **8**, outnumbered **3**, enemy armour **4**, friends broke **8**, comrade broke **4**, rout **10**; cap **30**/turn | ours | What a turn takes from a man. |
+| `GAIN` | drew blood **3**, put a force out **6**, quiet **2**, rest **4**, own armour beside **1** | ours | Never past the ceiling. |
+| `PERMANENT_LOSS_SHARE` | **½** | ours | Share of every loss that lowers the ceiling for good. At ceiling ≤ 10 a man is dry. |
+| `RALLY` | **2 × leadership** + experience − **15** per earlier rally − **20** under fire; commander within **50 m**; back to **20 + leadership ÷ 2** | ours | "Hard", the author's word. ~33% for an average leader, once. |
+| `CORNERED_M` | **50 m** | ours | Twice the assault range: break here and surrender. |
+| `ROUT_DISTANCE_M` | **200 m** | ours | How far a force with no commander runs. |
+| `FORCE_BREAK_SHARE` | **½** | ours | Broken + down; the document's own attrition fraction. |
+| `SIDE_BREAK_SHARE` | **⅔** | ours | The side's breaking point. |
+| `SUPPRESSION` | burst **10 + 5/hit**, MG **×1.5**, RPG **15 (+15 hit)**, shells **25**, charge **20**, assault **30**; max **100**; suppressed **15**, pinned **40**; halved every turn | ours | The fast layer. |
+| `SUPPRESSION_EFFECT` | suppressed aim **×0.75**, nerve **−5**; pinned **×0.5**, **−10** | ours | |
+| `STATE_ACCURACY` | wavering **×0.9**, shaken **×0.75** | ours | Morale changes performance. |
+
+**Measured, 2026-09-22** (300 seeds, two squads trading rifle fire at 150 m,
+command groups 200 m back): without morale the loser is neutralised at a median
+turn 12 (p10 9, p90 16), 4.1 men down; with it, median turn 11 (p10 7, p90 14),
+**273/300 routs**, 2.3 down and 2.5 broken. A sustained MG at 150 m: turn 4
+either way, 124/300 routs. **The first cut priced every 1d4 hit as a serious
+wound and routed squads at turn 7 with 0.9 men down** — morale out-killing the
+dice. That ratio is the thing to re-measure after any change to `LOSS`.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a
@@ -165,6 +210,11 @@ tweak later when we get to balancing — write it down". So: written down.
   expensive is an open question rather than a recorded figure. The thing to
   measure when the balance pass comes: how often a layer survives two
   uninterrupted turns within reach of the enemy's axis at all.
+- **Morale has not been played against a real attack.** It has been
+  measured in a symmetric firefight (above) and driven through the demo, where
+  RED's forward squad lost men to breaks after the attrition rule had already
+  taken it. Nobody has yet played an attack that uses the withdrawal order, a
+  commander walking up to rally, or the side breaking before it is wiped out.
 - **Full camouflage at setup is strong.** The demo's forward RED squad starts at
   the -50% cap, which is the author's prepared-position reading. Against it, a
   walking searcher has 30% inside 20 m and a scout 40%.

@@ -3,12 +3,8 @@ import { roll } from "../dice.js";
 import { distance } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
-import {
-  damageSoldier,
-  fitSoldiers,
-  refreshUnitStatus,
-  selectHitSoldier,
-} from "../units.js";
+import { damageSoldier, refreshUnitStatus, selectHitSoldier } from "../units.js";
+import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
  * How close a force has to be to assault. The document places the assault in
@@ -65,13 +61,14 @@ export function resolveAssault(
 
   if (range > ASSAULT_RANGE_M) return { ...result, reason: "out of assault range" };
   if (defender.kind === "vehicle") return { ...result, reason: "cannot assault armour" };
-  if (fitSoldiers(attacker) === 0) return { ...result, reason: "no fit shooters" };
+  if (readySoldiers(attacker).length === 0) return { ...result, reason: "no fit shooters" };
   result.fired = true;
 
   // Assault fire.
-  const shooters = fitSoldiers(attacker);
-  for (let i = 0; i < shooters; i++) {
-    if (!rng.chance(ASSAULT.fireHitChance)) continue;
+  // Only the men still willing go in, each as steady as he is (rules decision 19).
+  const accuracy = shooterAccuracy(attacker);
+  for (let i = 0; i < accuracy.length; i++) {
+    if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
     result.fireHits++;
     const dmg = roll(rng, ASSAULT.fireDamageDice);
     result.fireDamage += dmg;

@@ -133,6 +133,14 @@ one it is in your reply, too.
   it did not move, in cover because it dug, and hard to find because it
   camouflaged (rules decision 12). Don't assert cover at a call site: the engine
   derives it from the target (`coverAgainst`).
+- **Morale is judged once a turn, in one place** (`resolveMorale`, rules
+  decision 19). It finds casualties itself, by comparing every soldier with the
+  snapshot taken at `beginTurn`, so nothing that hurts a force has to report
+  to it. What it cannot find is **being shot at**: suppression and the
+  direction of fire (flanking) arrive only through `Game.noteFire`. A new way
+  of firing at a force must call it. And a force's men are drawn from their
+  own seeded stream (`unitSeed`), never from `game.rng` — a recording carries
+  them as drawn.
 - **Line of sight takes two forces, not two points.** `Game.hasLineOfSight`
   reads the ground from the map and the eye height from each force's posture
   (rules decision 15), so anything that asks "can A see B" passes the units.

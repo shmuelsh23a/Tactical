@@ -50,6 +50,7 @@ export function buildYokneamIllitScenario(seed = 2026): Scenario {
     seed,
     trackIntel: true,
     enforceC2: true,
+    morale: true,
     terrain: buildYokneamIllitTerrain(),
   });
 

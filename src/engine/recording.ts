@@ -27,6 +27,7 @@ import {
   type WithCoveringFire,
 } from "./game.js";
 import { stateDigest } from "./digest.js";
+import type { MoraleReport } from "./morale.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { MapLineKind, Terrain } from "./terrain.js";
 import { OBJECT_HEIGHT_M } from "./data/terrain.js";
@@ -130,6 +131,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (!Array.isArray(r.sides) || !r.sides.every((s) => s === "RED" || s === "BLUE")) throw malformed("sides");
   if (typeof r.enforceC2 !== "boolean") throw malformed("enforceC2");
   if (r.trackIntel !== undefined && typeof r.trackIntel !== "boolean") throw malformed("trackIntel");
+  if (r.morale !== undefined && typeof r.morale !== "boolean") throw malformed("morale");
   if (r.terrain !== undefined) {
     const field = terrainFault(r.terrain);
     if (field) throw new RecordingError({ kind: "malformedTerrain", field });
@@ -219,6 +221,12 @@ export interface GameRecording {
    */
   trackIntel?: boolean;
   /**
+   * Whether the game was played with morale (rules decision 19). Optional, and
+   * read as **off** when absent, for the same reason as `trackIntel`: a battle
+   * recorded before morale existed made none of its rolls.
+   */
+  morale?: boolean;
+  /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
    * had ground was played with every sight line clear.
@@ -259,6 +267,11 @@ export type ActionOutcome =
        * produces none either.
        */
       chargeWork?: ChargeWorkReport[];
+      /**
+       * What morale did as the turn closed (rules decision 19): men broken,
+       * heroes, rallies, routs, surrenders. Optional for the same reason.
+       */
+      morale?: MoraleReport[];
     }
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
@@ -356,6 +369,7 @@ export function replayWithOutcomes(
     sides: recording.sides,
     enforceC2: recording.enforceC2,
     trackIntel: recording.trackIntel ?? false,
+    morale: recording.morale ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 
@@ -391,6 +405,7 @@ export function replayWithOutcomes(
           smokeArrived: r.smokeArrived ?? [],
           observed: r.observed ?? [],
           chargeWork: r.chargeWork ?? [],
+          ...(r.morale ? { morale: r.morale } : {}),
         };
         break;
       }
@@ -403,6 +418,7 @@ export function replayWithOutcomes(
           smokeArrived: r.smokeArrived,
           observed: r.observed,
           chargeWork: r.chargeWork ?? [],
+          ...(game.morale ? { morale: r.morale } : {}),
         };
         break;
       }

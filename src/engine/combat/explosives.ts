@@ -12,6 +12,7 @@ import {
   fitSoldiers,
 } from "../units.js";
 import { resolveArmorHit } from "./armorDamage.js";
+import { suppressionAccuracy } from "../morale.js";
 
 export interface BlastTargetResult {
   unitId: string;
@@ -157,10 +158,11 @@ export function resolveDirectExplosive(
   if (!band) return { ...result, reason: "out of range" };
 
   result.fired = true;
-  result.hitChance = band.value;
+  // A suppressed or pinned team aims worse (rules decision 19); 1 without morale.
+  result.hitChance = Math.min(1, band.value * suppressionAccuracy(attacker));
   attacker.firedThisTurn = true;
 
-  if (!rng.chance(band.value)) return result; // missed
+  if (!rng.chance(result.hitChance)) return result; // missed
   result.hit = true;
 
   const candidates = [target, ...(opts.collateral ?? [])];

@@ -39,6 +39,11 @@ export type {
   Mine,
   PendingFireMission,
   PendingSmokeMission,
+  Traits,
+  MoraleState,
+  SoldierMorale,
+  Motivation,
+  Experience,
 } from "./types.js";
 export {
   fitSoldiers,
@@ -72,6 +77,7 @@ export { ARTILLERY_DISPERSION } from "./data/artillery.js";
 export { C2_TABLE, orderInterval } from "./data/c2.js";
 export { CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
+export * as MORALE_RULES from "./data/morale.js";
 
 // Combat resolvers
 export {
@@ -157,6 +163,35 @@ export {
   type CoveringFireResult,
 } from "./combat/covering.js";
 
+// Morale (rules decision 19)
+export {
+  effectiveMorale,
+  forceBroken,
+  forceMorale,
+  generateMorale,
+  hasMorale,
+  isCornered,
+  isDry,
+  leaderBonus,
+  leadership,
+  readySoldiers,
+  refreshMoraleStates,
+  resolveMorale,
+  shooterAccuracy,
+  sideBroken,
+  suppressionLevel,
+  unitSeed,
+  StressLedger,
+  type FireNote,
+  type ForceMorale,
+  type ForceMoraleState,
+  type MoraleContext,
+  type MoraleReport,
+  type MoraleStepResult,
+  type SoldierSnapshot,
+  type SuppressionLevel,
+} from "./morale.js";
+
 // Recording / replay
 export {
   replayGame,
@@ -187,6 +222,7 @@ export {
   HOLDING_FIRE,
   HOLDING_COVERING_FIRE,
   LAY_CHARGE_REFUSAL,
+  MORALE_REFUSAL,
   PHASES,
   PhaseError,
   type Phase,
