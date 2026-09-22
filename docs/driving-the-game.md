@@ -54,6 +54,10 @@ dispatch clicks on `svg.map` itself.
 - **The `.roster` list only exists during an activation**, not on the initiative
   panel — querying it to decide "has the app rendered?" gives a false negative
   at the start of a turn.
+- **A saved battle opens from the picker as well as the header.** Both inputs
+  go through `readRecording` (`src/app/recordingFile.ts`); the picker's is
+  `.picker input[type=file]`, and it shows a failed load in `.picker-error`
+  rather than in a log it does not have.
 - **Getting into the debrief without touching the disk.** `שמור הקלטה` triggers
   a download and `טען לתחקיר` is a file input, but both drive in-page, and this
   is the only cheap way to check anything in `Debrief.tsx`: patch

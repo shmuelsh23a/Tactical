@@ -727,3 +727,13 @@ export function recordingExtent(recording: GameRecording): { width: number; heig
   const pad = 120;
   return { width: Math.max(400, maxX + pad), height: Math.max(400, maxY + pad) };
 }
+
+/** A recording that replays, but not the way it was fought (`verifyRecording`). */
+export function recordingDriftNote(firstDivergence: number): string {
+  return `אזהרה: ההקלטה נוצרה תחת חוקים אחרים — התוצאות משתנות מפעולה ${firstDivergence + 1}`;
+}
+
+/** A file that could not be read as a recording at all. */
+export function recordingLoadFailed(reason: string): string {
+  return `טעינת ההקלטה נכשלה: ${reason}`;
+}

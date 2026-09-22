@@ -1,5 +1,9 @@
 import { useRef, useState } from "react";
+import type { GameRecording } from "../engine/index.js";
 import { App } from "./App.js";
+import { Debrief } from "./Debrief.js";
+import { recordingLoadFailed } from "./debriefText.js";
+import { readRecording } from "./recordingFile.js";
 import { ScenarioPicker } from "./components/ScenarioPicker.js";
 import { findScenario, SCENARIOS, type ScenarioListing } from "./scenario.js";
 
@@ -19,7 +23,7 @@ function remember(id: string | null) {
 
 /**
  * Which battle is being fought, if any. The picker when none is; the game
- * when one is.
+ * when one is; and a debrief opened from the picker, over it.
  *
  * The choice lives in the address (`?scenario=telAzeka`), so a reload comes
  * back to the same ground and a link or a browser script can open a battle
@@ -37,14 +41,32 @@ export function Root() {
     return listing ? { listing, round: 0 } : null;
   });
 
+  /** A recording opened from the picker; closing it comes back here. */
+  const [review, setReview] = useState<GameRecording | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   if (!picked) {
+    if (review) return <Debrief recording={review} onClose={() => setReview(null)} closeLabel="חזרה לבחירת תרחיש" />;
     return (
       <ScenarioPicker
         scenarios={SCENARIOS}
         onPick={(listing) => {
           remember(listing.id);
+          setLoadError(null);
           setPicked({ listing, round: ++rounds.current });
         }}
+        onLoadRecording={(file) => {
+          // A recording made under other rules still opens: the debrief
+          // says where it stops matching, so only a failure is said here.
+          readRecording(file).then(
+            ({ recording }) => {
+              setLoadError(null);
+              setReview(recording);
+            },
+            (err: unknown) => setLoadError(recordingLoadFailed((err as Error).message)),
+          );
+        }}
+        loadError={loadError}
       />
     );
   }

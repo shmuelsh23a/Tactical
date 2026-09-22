@@ -1134,7 +1134,8 @@ Each is intended to be an independent, toggleable module:
 
    The app opens on a **scenario picker**: every spec under `tools/scenarios/`
    is a card with its title, its `brief` and the size of its ground, and
-   `?scenario=<slug>` opens one directly. The brief is generated from the spec
+   `?scenario=<slug>` opens one directly; `טען לתחקיר` is on the picker too,
+   so a saved battle is reviewed without opening one first. The brief is generated from the spec
    like everything else, and it is read by both players before either has taken
    a side — so it is a tasking, never an order of battle. A spec that is not
    offered fails `scenarioCatalogue.test.ts`.

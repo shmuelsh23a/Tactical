@@ -21,10 +21,11 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 408 tests, 22 files
+npm run check       lint + typecheck clean, 411 tests, 23 files
 ```
 
-The app opens on a **scenario picker** (Yokneam and Tel Azeka), and the demo
+The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
+battle to review), and the demo
 plays end to end in the browser, including the debrief. The
 rule is that nothing is called done on tests alone: if a player can see it, it
 gets driven in the actual game first.
@@ -192,10 +193,6 @@ Measurements that cost real time and are already recorded:
    table. Every number and every state transition would be ours, which is a
    larger pile of assumptions than any decision so far. Get the shape from him
    before building, the way decision 15 was got.
-2. **Loading a recording from the picker.** `טען לתחקיר` lives in the game's
-   header, so to review a saved battle you first open *some* battle. The
-   debrief needs nothing from the scenario — the recording carries its own
-   ground — so it could sit on the picker too. Small, and not asked for.
 
 **The live log is filtered by side now** (rules decision 17, 2026-09-16), so
 that item is off this list. `LogEntry` carries `readers`, `pushLog` takes a

@@ -14,10 +14,8 @@ import {
   fitSoldiers,
   fullStrength,
   orderInterval,
-  replayGame,
   sealRecording,
   sectorBonus,
-  verifyRecording,
   type ChargeWorkReport,
   type CoveringFireResult,
   type GameRecording,
@@ -43,6 +41,8 @@ import {
   describeStandingOrder,
   isRoutineOrderReason,
   reasonHe,
+  recordingDriftNote,
+  recordingLoadFailed,
   sectorWorthHe,
 } from "./debriefText.js";
 import type { Scenario, ScenarioListing } from "./scenario.js";
@@ -62,6 +62,7 @@ import {
 } from "./hotseat.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
 import { Debrief } from "./Debrief.js";
+import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
 
@@ -908,22 +909,11 @@ export function App({ scenario, onLeave }: AppProps) {
   /** Read a saved recording and hand it to the debrief view. */
   async function loadRecording(file: File) {
     try {
-      const parsed = JSON.parse(await file.text()) as GameRecording;
-      // Fail here rather than halfway through a replay.
-      replayGame(parsed, { upToAction: 0 });
-      const check = verifyRecording(parsed);
-      if (check.checked && !check.ok) {
-        pushLog(
-          `אזהרה: ההקלטה נוצרה תחת חוקים אחרים — התוצאות משתנות מפעולה ${
-            (check.firstDivergence?.index ?? 0) + 1
-          }`,
-          "info",
-          TABLE,
-        );
-      }
-      setDebrief(parsed);
+      const { recording, divergesAt } = await readRecording(file);
+      if (divergesAt != null) pushLog(recordingDriftNote(divergesAt), "info", TABLE);
+      setDebrief(recording);
     } catch (err) {
-      pushLog(`טעינת ההקלטה נכשלה: ${(err as Error).message}`, "info", TABLE);
+      pushLog(recordingLoadFailed((err as Error).message), "info", TABLE);
       force();
     }
   }
