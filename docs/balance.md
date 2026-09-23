@@ -1470,6 +1470,46 @@ What it says:
 - None of this touches the attacker who wins without bleeding (0–3% at
   3–4:1). Seeing further only helps if the defender's fire can use it.
 
+**Rerun with the drill fixed** (same settings). The lead above was half of
+it: the drill gave the defender's squads a hold-fire order and its command
+groups none, so their covering fire answered anything the side had seen at
+300–400 m and gave them away. Counted over 100 platoon 1:1 battles, the
+defender's covering shots beyond 300 m came from command groups only, 125
+without OPs and 345 with them. `drill.ts` now gives a defending command group
+the squads' fire discipline.
+
+| Row | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| eleventh: rule on, the default plan | squad | 4% | 49% | 77% | 17% | 0% | 4/4 |
+| eleventh: rule on, the default plan | platoon | 1% | 67% | 100% | 8% | 0% | 3/4 |
+| eleventh: rule on, the default plan | company | 1% | 46% | 100% | 0% | 99% | 3/4 |
+| eleventh: attacker 2 mortar planned | company | 0% | 0% | 54% | 17% | 99% | 2/4 |
+| eleventh: attacker 4 mortar unplanned | company | 0% | 0% | 41% | 11% | 98% | 2/4 |
+| eleventh: none either side (the free bomb) | company | 0% | 0% | 42% | 26% | 50% | 2/4 |
+| plan: OPs | company | 10% | **83%** | 100% | 3% | 94% | 2/4 |
+| plan: displace, no alternate | company | 10% | 100% | 100% | 0% | 99% | 2/4 |
+| plan: displace to an alternate 150 m back | company | 4% | 100% | 100% | 0% | 99% | 2/4 |
+| plan: OPs + displace to an alternate | company | 21% | 100% | 100% | 3% | 97% | 2/4 |
+| plan: OPs | platoon | 1% | 59% | 100% | 8% | 0% | 3/4 |
+| plan: displace, no alternate | platoon | 1% | 67% | 100% | 8% | 0% | 3/4 |
+| plan: displace to an alternate 150 m back | platoon | 1% | 67% | 100% | 8% | 0% | 3/4 |
+| plan: OPs + displace to an alternate | platoon | 1% | 59% | 100% | 8% | 0% | 3/4 |
+| attacker unplanned; defender OPs | company | 0% | 3% | 64% | 17% | 83% | 2/4 |
+| the free bomb; defender OPs | company | 0% | 0% | 0% | 4% | 90% | 1/4 |
+
+- **At platoon the puzzle is gone**: OPs now help the defender a little (2:1
+  67% → 59%), as they should.
+- **At company OPs still help the attacker, more than before** (2:1 46% →
+  83%, and unplanned 3–4:1 41% → 64%). A platoon battle has no fire support,
+  so the second mechanism is almost certainly in the fire: the defender's
+  missions called on what its OPs see. **Not found yet.** The next step is the
+  same count as above for the defender's missions — when they are called, at
+  what range, and whether they land on anything.
+- With only the free bomb, OPs still win the defence outright (3–4:1: 42% →
+  0%).
+- The eleventh round's figures barely move with the fix (company 2:1 47% →
+  46%).
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

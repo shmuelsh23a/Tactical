@@ -99,11 +99,14 @@ What to put to him next, all from decision 38 and the twelfth round:
    weapon, an OP sees a moving force to 1,000 m, one alternate position a
    force, 25 m to be "in" a prepared position, and an alternate is partial
    cover for a force that had no prepared position.
-2. **OPs seemed to help the attacker in the harness, and it was the drill.**
-   The drill left defending command groups on covering fire without the
-   squads' hold-fire order, so an attacker seen sooner (through the OPs)
-   drew their fire at 300–400 m and gave them away. Fixed in `drill.ts`;
-   the rerun figures are on balance.md, *Twelfth round*.
+2. **OPs help the attacker at company in the harness, and we do not yet know
+   why.** Half of it was the drill (defending command groups had no hold-fire
+   order, so an attacker seen sooner drew their covering fire at 300–400 m);
+   fixed, and at platoon OPs now help the defender a little. At company they
+   still help the attacker, more than before (2:1 46% → 83%). The second cause
+   is almost certainly in the defender's fire missions. **Find it before
+   showing him numbers about OPs** — balance.md, *Twelfth round*, says what to
+   count next.
 3. **Displacing still hurts the defender, even to a prepared alternate**
    (company 2:1: 47% → 100%). It runs through the fire to get there and is
    seen moving. Doctrine displaces *between* volleys or at night; the drill
