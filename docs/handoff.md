@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23, after rules decisions 19–35 and the tenth balance round.** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–35 and the tenth balance round. The next session starts with the author's agenda, below.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -46,6 +46,59 @@ Instructions are vendor-neutral: [AGENTS.md](../AGENTS.md) is canonical,
 call the project's npm scripts and a reviewer that reads
 [review-checklist.md](review-checklist.md). Any assistant should be able to work
 here from AGENTS.md alone.
+
+## Next session: the agenda the author set (2026-09-23)
+
+Take these in order. The author said: "document this in a handoff document
+and start with them next session."
+
+**1. Close the artillery balance.** The five questions from the tenth round,
+with its tables on [balance.md](balance.md) (details under *Start here*
+below):
+1. **Rounds for effect per weapon.** Our suggestion: 6 for artillery (a
+   battery's volley) and 9–12 for mortars. With planned targets, that gives a
+   2:1 company attack 35–49%, meeting 3 of 4 targets. Today one default,
+   `DEFAULT_ROUNDS_FOR_EFFECT = 6`, serves both.
+2. **Planned targets for the attacker.** Registering the guns on the
+   objective before the battle is what makes the attack's fire work. Is it a
+   mission parameter?
+3. **Detection at range.** Nobody sees anybody before about 300 m, so fire
+   decides everything before contact (decision 12's ground).
+4. **Alternate positions**, so moving off a shelled position is worth
+   something.
+5. **The live UI's call for fire**, with the side's missions left. Today it
+   still queues single rounds, unrationed.
+
+**2. A minimum echelon for fire support** (author, 2026-09-23: "I'm thinking
+mortars for company and above, artillery for battalion and above, but we
+should test it"). This is **who may call** each weapon at all. It is a
+different question from decision 35, which is when the guns are on the map.
+To test it:
+- Run the harness at platoon and squad with and without mortar and
+  artillery missions (`--echelons platoon,squad --fires ...`). See whether
+  small fights stay balanced without them and are swamped with them.
+- Company with mortars only, against mortars and artillery.
+- Battalion is not in the harness yet. It arrives with echelon scaling
+  (backlog 3), so the artillery half can only be tested down to company
+  for now.
+- Then put the result to him. If he confirms it, it is a check in
+  `callForFire` and `GameOptions.fireSupport` against the echelon of the
+  force calling, and a rules decision.
+
+**3. The game's business plan.** Once the artillery balance is done, the
+author wants to talk about it. This is a conversation, not code. Come with
+what the repo already says about the product direction: the roadmap's Stage 4
+(mobile and desktop app on the same engine) and backlog 16–19 (campaigns,
+mission builder over real ground, mission and victory conditions, weather).
+
+**4. Direct-fire HE: tanks, RPGs, rifle grenades, ATGMs.** After the
+business plan, review it the way indirect fire was reviewed this session:
+- What the document's tables give: `resolveDirectExplosive` and the
+  `EXPLOSIVES` entries with `delivery: "directFire"`.
+- What decisions 29–31 already changed: they apply to indirect fire only, so
+  a tank round or an RPG still ignores cover, posture and roofs.
+- What the sources say.
+- The harness has no vehicles yet; that is the first thing to add.
 
 ## Waiting on the author
 
@@ -264,10 +317,11 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 **Ordered. The first three want a word from him before anything is built;
-the fourth does not.**
+the fourth does not.** The author's own agenda for the next session comes
+first: see *Next session* at the top.
 
-0. **The fire-support questions** the 2026-09-23 session ended on (see
-   *Start here*). Put them to him with the tenth round's tables.
+0. **The author's agenda** (*Next session*): the artillery balance, the
+   minimum echelon for fire support, the business plan, then direct-fire HE.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"
