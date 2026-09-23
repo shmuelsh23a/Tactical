@@ -78,10 +78,13 @@ export interface Soldier {
   /** His pool of will; present only when the game is played with morale. */
   morale?: SoldierMorale;
   /**
-   * How badly he was last hit by small arms (rules decision 26). Absent until
-   * he is; explosives' damage points do not set it.
+   * How badly he was last hit by small arms (rules decision 26), or by
+   * anything under a severity wound model on trial. Absent until he is;
+   * explosives' damage points do not set it.
    */
   wound?: "light" | "serious" | "killed";
+  /** What put him out of the fight, when a hit did (not bleeding). */
+  outBy?: "smallArms" | "explosive";
 }
 
 /** Parts of an armoured vehicle, per the armour-damage table (טבלת נזק שריון). */

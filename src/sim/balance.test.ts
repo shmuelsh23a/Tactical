@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { BATTLE_KINDS, CONFIGURATIONS, ECHELONS, MARKDOWN_HEADER, judge, markdownRow, runBattle, runCell } from "./balance.js";
+import {
+  BATTLE_KINDS,
+  CONFIGURATIONS,
+  ECHELONS,
+  FIRE_PLAN,
+  MARKDOWN_HEADER,
+  WOUND_CONFIGURATIONS,
+  judge,
+  markdownRow,
+  runBattle,
+  runCell,
+} from "./balance.js";
 
 /**
  * The balance harness is a tool, but a tool the suite keeps honest: a few
@@ -45,5 +56,19 @@ describe("the sweep over what is still open", () => {
     const v = judge("squad", CONFIGURATIONS[2]!.variants, 2);
     expect(v.met).toBeGreaterThanOrEqual(0);
     expect(v.met).toBeLessThanOrEqual(4);
+  });
+});
+
+describe("the fire plan, and what put the men out", () => {
+  it("brings the attacker's shells down on the objective, and counts who they put out", () => {
+    const quiet = runBattle(1000, "platoon", "attack3", { morale: true });
+    expect(quiet.outBy.explosive).toBe(0);
+    const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN }));
+    expect(shelled.some((r) => r.outBy.explosive > 0)).toBe(true);
+    for (const r of shelled) expect(r.outBy.explosive + r.outBy.smallArms).toBeLessThanOrEqual(r.down.RED + r.down.BLUE);
+  });
+
+  it("sweeps each wound model on trial, each distinct", () => {
+    expect(new Set(WOUND_CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(WOUND_CONFIGURATIONS.length);
   });
 });

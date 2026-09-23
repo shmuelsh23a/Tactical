@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Game, type GameOptions } from "./game.js";
-import { landHit, makeInfantry, makeVehicle } from "./units.js";
+import { landHit, makeInfantry, makeVehicle, woundHit } from "./units.js";
+import type { WoundModel } from "./data/variants.js";
 import { NOT_A_COAXIAL_WEAPON } from "./combat/directFire.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
 import { FIRING_FROM_COVER_MODIFIER } from "./data/directFire.js";
@@ -199,5 +200,67 @@ describe("decision 26: a small-arms hit rolls how bad it is", () => {
 
   it("asks the rng as many times as the document's 1d4 did", () => {
     expect(hitWith(3).script).toHaveLength(0);
+  });
+});
+
+describe("on trial: one wound rule for bullets and explosives", () => {
+  /** One hit on a squad of one, every die scripted, then the victim (index 0). */
+  function hitWith(dice: number[], die: string | null, model?: WoundModel, damageBefore = 0) {
+    const g = new Game({ seed: 1, enforceC2: false });
+    const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 1));
+    target.soldiers![0]!.damagePoints = damageBefore;
+    const script = [...dice, 0];
+    g.rng.int = () => script.shift()!;
+    const hit = woundHit(g.rng, target, 1, die, model);
+    return { hit, man: target.soldiers![0]!, script };
+  }
+
+  it("as it stands: an explosive takes its document die, out at 8", () => {
+    expect(hitWith([7], "1d8").hit).toEqual({ damage: 7, casualty: false });
+    const { hit, man } = hitWith([4, 4], "2d10");
+    expect(hit.casualty).toBe(true);
+    expect(man.outBy).toBe("explosive");
+    expect(man.wound).toBeUndefined();
+  });
+
+  it("as it stands: a bullet is the severity roll, and says so", () => {
+    const { man } = hitWith([9], null);
+    expect(man).toMatchObject({ wound: "killed", outBy: "smallArms" });
+  });
+
+  it("A: an explosive's severity is shifted by its die — artillery's 1d10 by 3", () => {
+    // 2 on the d10 is a light wound for a bullet; +3 makes it serious.
+    expect(hitWith([2], null, "severity").man.wound).toBe("light");
+    const { man } = hitWith([2], "1d10", "severity");
+    expect(man).toMatchObject({ wound: "serious", neutralized: true, outBy: "explosive" });
+    // …and 8 + 3 is capped at 10, a death.
+    expect(hitWith([8], "1d10", "severity").man.wound).toBe("killed");
+  });
+
+  it("A0: the same d10 for everything", () => {
+    expect(hitWith([2], "2d10", "flat").man.wound).toBe("light");
+  });
+
+  it("A refuses a die it has no shift for, rather than guess", () => {
+    expect(() => hitWith([2], "3d6", "severity")).toThrow(/No severity shift/);
+  });
+
+  it("B: every hit its document die — a bullet 1d4 — and out of the fight at 5", () => {
+    expect(hitWith([4], null, "dice").hit).toEqual({ damage: 4, casualty: false });
+    expect(hitWith([1], null, "dice", 4).man).toMatchObject({ neutralized: true, outBy: "smallArms" });
+    expect(hitWith([5], "1d8", "dice").hit.casualty).toBe(true);
+  });
+
+  it("asks the rng as the rules do: one roll of the die, then the victim", () => {
+    expect(hitWith([3], null, "severity").script).toHaveLength(0);
+    expect(hitWith([3, 3], "2d10", "dice").script).toHaveLength(0);
+  });
+
+  it("reaches a game's fire through its variants", () => {
+    const { g } = contact(false, { woundModel: "dice" });
+    expect(g.variants.woundModel).toBe("dice");
+    const r = g.fire("R", "B", { weapon: "smallArms" });
+    // Under B no single bullet puts a fresh man out.
+    expect(r.newCasualties).toBe(0);
   });
 });

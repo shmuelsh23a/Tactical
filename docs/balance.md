@@ -663,6 +663,120 @@ The mirror stays even (`--kinds meeting --drill western`, 200 battles a cell):
 | platoon | 46 / 51 / 4 | 9 | 41% / 21% |
 | company | 47 / 45 / 9 | 9 | 37% / 24% |
 
+## Fifth round: one wound rule for bullets and explosives, 2026-09-23
+
+The author wants **the same wound rule for a bullet and a fragment**. His
+guiding principle: **explosives cause most of the casualties in a modern war,
+about 75%**. Today the two are resolved differently. A bullet rolls the
+severity d10 (decision 26), so 60% of bullet hits put a man out. A fragment
+rolls its document die against 8 points, so a grenade's 1d6 never puts a man
+out in one hit, a mortar's 1d8 does 12.5% of the time, and artillery's 1d10
+30%.
+
+### The principle, checked
+
+He is right. Across the wars with good records, explosives caused about
+two-thirds to three-quarters of the wounds:
+
+| War | Explosive | Bullet | Source |
+|---|---|---|---|
+| WWII (US Army) | 73% | about 20–30% | Owens et al. 2008, citing the historical series; Beebe & DeBakey: shell fragments 53% of the wounded, 62% of those who died of wounds, small arms 32% and 20% |
+| Korea | 69% | about 27% | Owens et al. 2008; Reister |
+| Vietnam | 65% | about 30% | Owens et al. 2008 |
+| Iraq and Afghanistan, 2001–2005 | 78% | 18% | Owens et al. 2008, *J Trauma* 64(2) |
+| Iraq and Afghanistan, 2005–2009 | 74% | 20% | Belmont et al. 2012 |
+| Ukraine, 2022–2025 | 70–80% by artillery, then by drones | small | press and intelligence estimates, not medical series |
+
+Sources:
+- [Owens et al. 2008](https://pubmed.ncbi.nlm.nih.gov/18301189/)
+- [Belmont et al. 2012](https://pmc.ncbi.nlm.nih.gov/articles/PMC3862555/)
+- [the Army Medical Department's WWII and Korea wound-ballistics histories](https://achh.army.mil/history/book-korea-reister-ch3/)
+- [JMVH, *Understanding weapons effects*](https://jmvh.org/article/understanding-weapons-effects-a-fundamental-precept-in-the-professional-preparation-of-military-physicians/)
+- [Army Technology on drones in Ukraine](https://www.army-technology.com/news/drones-now-account-for-80-of-casualties-in-ukraine-russia-war/)
+
+One more finding bears directly on the rule. **A fragment wound is less
+likely to kill than a bullet wound**: about 10–20% against about 33%, from
+the wound-ballistics literature. Explosives cause most of the casualties
+because they hit many men from far away, not because each hit is worse.
+
+### The models on trial
+
+All four are in [`data/variants.ts`](../src/engine/data/variants.ts) as
+`woundModel` and can be swept with `npm run balance -- --sweep wounds`.
+- **As it stands**: the severity roll for a bullet, the document's die
+  against 8 for a fragment.
+- **A (`severity`)**: every hit rolls the d10 severity. An explosive adds a
+  shift for the size of its die: 1d6 +1, 1d8 +2, 1d10 +3, 2d10 +5.
+- **A0 (`flat`)**: A without the shift. Every hit, bullet or fragment, rolls
+  the same d10. This follows from the lethality finding above.
+- **B (`dice`)**: every hit rolls its document die, a bullet 1d4, and a man
+  is out at 5 points, where he starts bleeding.
+
+The harness now records **what put each man out** (`Soldier.outBy`). A
+company can also be given a **fire plan** (`--fires shells,bombs,lift`):
+rounds a turn on the objective, spread across the defender's frontage, until
+the attacker comes within the lift distance. Western drill, 100 battles a
+cell, the balance targets as before. *Out by HE* is the share of men put out
+by a hit that explosives put out, over the three attacks.
+
+**No fire plan.** The company still gets its one mortar bomb a turn on the
+nearest enemy it has seen.
+
+| Model | Squad | Platoon | Company: 1:1 / ~2:1 / 3–4:1 win, attacker down | Out by HE, company | Targets met |
+|---|---|---|---|---|---|
+| as it stands | 4/4 | 3/4 | 0% / 31% / 92%, 16% — 4/4 | 36% | **11/12** |
+| A: severity + shift | 4/4 | 3/4 | 0% / 19% / 66%, 28% — 2/4 | 62% | 9/12 |
+| A0: flat severity | 4/4 | 3/4 | 0% / 20% / 81%, 24% — 3/4 | 55% | **10/12** |
+| B: dice, out at 5 | 3/4 | 2/4 | 0% / 3% / 52%, 23% — 2/4 | 78% | 7/12 |
+
+**A fire plan of one mortar bomb a turn** on the objective, lifting at
+400 m (company only):
+
+| Model | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets met |
+|---|---|---|---|---|---|---|
+| as it stands | 1% | 59% | 100% | 3% | 59% | 3/4 |
+| A: severity + shift | 1% | 49% | 100% | 2% | 81% | 3/4 |
+| A0: flat severity | 1% | 50% | 99% | 4% | **76%** | 3/4 |
+| B: dice, out at 5 | 0% | 36% | 98% | 4% | 86% | 3/4 |
+
+**One artillery shell a turn** (`--fires 1,0`): the 2:1 attack wins 93–100%
+under every model, and explosives put out 86–95%. One shell and two bombs
+(`--fires 1,2`): 100%, and 96–98%. The first run, a battery's four shells and
+a mortar section's six bombs a turn, destroyed the defender before contact
+at every echelon, even at 1:1.
+
+### What it says
+
+- **B is out.** A bullet's 1d4 can never put a man out in one hit, so small
+  arms lose their effect and small-unit fights go wrong: platoon 2:1 wins
+  91%. It meets 7 of 12 targets.
+- **A and A0 leave squad and platoon fights unchanged.** Those fights have
+  no explosives except the assault's grenades. The whole difference is at
+  company level, where the mortar is.
+- **A0 is the rule the evidence supports.** It meets 10 of 12 targets
+  without a fire plan, and it is truly uniform: one die for every hit. With
+  one mortar bomb a turn on the objective, **explosives put out 76% of the
+  men**, which matches the author's figure. A's shift makes each fragment
+  deadlier than a bullet, which the wound data contradicts. It also costs
+  balance: 9 of 12, and a 3–4:1 company attack wins only 66%.
+- **How much weight explosives carry is decided by the blast, not the wound
+  rule.** One artillery shell a turn decides a 2:1 attack under every model.
+  The document's blast table catches 70% of the men within 50 m of a single
+  shell, and nothing reduces it:
+  - Cover does not protect against blast. A quick experiment (reverted, not
+    in the engine) cut the blast chance by half in partial cover and by
+    three-quarters in full cover. The 2:1 attack under one shell a turn
+    still won 67–89%.
+  - Nothing says whether a "round" is one shell or a battery's volley.
+
+  That is the next ruling, not a harness setting.
+
+**Recommendation (ours, for the author):**
+1. Adopt A0: one d10 severity for every hit, bullet or fragment. Explosives
+   dominate by how many men they hit, as they do in the data.
+2. Then rule on the blast: what cover does against it, and what one round
+   is.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

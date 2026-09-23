@@ -1,9 +1,9 @@
 import { Rng } from "../rng.js";
-import { roll } from "../dice.js";
 import { distance } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
-import { damageSoldier, landHit, refreshUnitStatus, selectHitSoldier } from "../units.js";
+import { refreshUnitStatus, woundHit } from "../units.js";
+import type { WoundModel } from "../data/variants.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -55,6 +55,8 @@ export function resolveAssault(
      * the assault landed.
      */
     replyChance?: number;
+    /** The wound model on trial (data/variants.ts); absent, the rules. */
+    wounds?: WoundModel;
   } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
@@ -86,7 +88,7 @@ export function resolveAssault(
   for (let i = 0; i < accuracy.length; i++) {
     if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
     result.fireHits++;
-    const hit = landHit(rng, defender, turn);
+    const hit = woundHit(rng, defender, turn, null, opts.wounds);
     result.fireDamage += hit.damage;
     if (hit.casualty) result.defenderCasualties++;
   }
@@ -96,15 +98,12 @@ export function resolveAssault(
   for (let i = 0; i < grenades; i++) {
     if (rng.chance(ASSAULT.grenadeHitChance)) {
       result.grenadeHits++;
-      const dmg = roll(rng, ASSAULT.grenadeDamageDice);
-      result.grenadeDamage += dmg;
-      const victim = selectHitSoldier(defender, rng);
-      if (victim && damageSoldier(victim, dmg, turn)) result.defenderCasualties++;
+      const hit = woundHit(rng, defender, turn, ASSAULT.grenadeDamageDice, opts.wounds);
+      result.grenadeDamage += hit.damage;
+      if (hit.casualty) result.defenderCasualties++;
     }
     if (rng.chance(ASSAULT.grenadeSelfHitChance)) {
-      const dmg = roll(rng, ASSAULT.grenadeDamageDice);
-      const friendly = selectHitSoldier(attacker, rng);
-      if (friendly && damageSoldier(friendly, dmg, turn)) result.selfCasualties++;
+      if (woundHit(rng, attacker, turn, ASSAULT.grenadeDamageDice, opts.wounds).casualty) result.selfCasualties++;
     }
   }
 
@@ -113,7 +112,7 @@ export function resolveAssault(
     for (const accuracy of replyAccuracy) {
       if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
       reply.hits++;
-      const hit = landHit(rng, attacker, turn);
+      const hit = woundHit(rng, attacker, turn, null, opts.wounds);
       reply.damage += hit.damage;
       if (hit.casualty) reply.casualties++;
     }

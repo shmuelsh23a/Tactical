@@ -57,6 +57,19 @@ build nothing on them before it. Also his, and not built: **campaigns carry
 the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
 
+**Fifth round, 2026-09-23: one wound rule for bullets and explosives.** The
+author wants the same wound rule for both. His principle is that explosives
+cause most modern casualties, about 75%, and the sources confirm it (65–78%
+since WWII; balance.md, *Fifth round*). Three models are on trial as
+`woundModel` in `data/variants.ts`. The recommendation is **A0**, one d10
+severity for every hit: 10 of 12 targets, and 76% of the men put out by
+explosives once a company has one mortar bomb a turn on the objective. B (the
+document's dice) breaks small-arms fights. The bigger open question is the
+blast table: one shell a turn decides an attack under any wound rule, because
+cover does not protect against blast and nothing says what one "round" is.
+The harness can now give a company a fire plan (`--fires`) and record what
+put each man out.
+
 **Fourth round, 2026-09-23: the squad drill.** The harness's squads now fight
 by a `SquadDrill` ([`app/drill.ts`](../src/app/drill.ts)) — data, carried out
 by one executor that sees only its side's view. That is the future default

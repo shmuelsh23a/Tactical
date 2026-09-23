@@ -6,11 +6,11 @@ import { EXPLOSIVES } from "../data/explosives.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
   applyComponentDamage,
-  damageSoldier,
   refreshUnitStatus,
-  selectHitSoldier,
   fitSoldiers,
+  woundHit,
 } from "../units.js";
+import type { WoundModel } from "../data/variants.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { suppressionAccuracy } from "../morale.js";
 
@@ -45,6 +45,7 @@ export function resolveBlast(
   impact: Point,
   candidates: Unit[],
   turn = 0,
+  wounds?: WoundModel,
 ): BlastResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -73,11 +74,10 @@ export function resolveBlast(
         if (!rng.chance(blastChance)) continue;
         res.caught = true;
         const die = weapon.damageDiceVsInfantry ?? weapon.damageDice;
-        const dmg = roll(rng, die);
-        res.damage += dmg;
         // Area effect on a force → random casualty among the fit soldiers.
-        const victim = selectHitSoldier(unit, rng);
-        if (victim && damageSoldier(victim, dmg, turn)) res.newCasualties++;
+        const hit = woundHit(rng, unit, turn, die, wounds);
+        res.damage += hit.damage;
+        if (hit.casualty) res.newCasualties++;
       }
       if (res.caught) {
         unit.hitThisTurn = true;
@@ -139,7 +139,7 @@ export function resolveDirectExplosive(
   weaponKey: string,
   attacker: Unit,
   target: Unit,
-  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number } = {},
+  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number; wounds?: WoundModel } = {},
 ): DirectExplosiveResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -166,6 +166,6 @@ export function resolveDirectExplosive(
   result.hit = true;
 
   const candidates = [target, ...(opts.collateral ?? [])];
-  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0);
+  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, opts.wounds);
   return result;
 }

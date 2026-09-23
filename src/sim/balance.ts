@@ -131,7 +131,31 @@ export interface BattleOptions {
    * scenarios' convention today; `full` is the open question (docs/balance.md).
    */
   preparedCover?: "partial" | "full";
+  /**
+   * A fire plan for the attacker (not in a meeting): each turn, this many
+   * shells and bombs on the objective — spread across the defender's
+   * frontage, a pre-planned target that needs no sighting — until its nearest
+   * fighting force is within `liftAt` metres of it (the fires lift). The
+   * company's one mortar mission a turn on what it has seen goes on as before.
+   */
+  fires?: FirePlan;
 }
+
+export interface FirePlan {
+  artillery: number;
+  mortar: number;
+  liftAt: number;
+}
+
+/**
+ * One mortar bomb a turn on the objective, lifting at 400 m (⚠️ ours): the
+ * plan docs/balance.md's fifth round measured with. Anything heavier decides
+ * the attack by itself — a single shell a turn takes a 2:1 attack from 20–60%
+ * to over 90%, whatever the wound rule — because the document's blast neither
+ * spares a man in cover nor thins with the number of rounds (the open question
+ * there).
+ */
+export const FIRE_PLAN: FirePlan = { artillery: 0, mortar: 1, liftAt: 400 };
 
 /**
  * How a battle ended, by the game's own rule (`sideDefeated`). `broke`: the
@@ -158,6 +182,8 @@ export interface BattleResult {
   pinnedTurns: number;
   /** Turns on which RED won the initiative. */
   redFirst: number;
+  /** Men put out by a hit, both sides together, by what hit them. */
+  outBy: { smallArms: number; explosive: number };
 }
 
 const other = (s: Side): Side => (s === "RED" ? "BLUE" : "RED");
@@ -208,6 +234,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     winner: "draw", ending: "timeout", turns: 0, men,
     down: { RED: 0, BLUE: 0 }, broken: { RED: 0, BLUE: 0 },
     routs: 0, surrenders: 0, heroes: 0, rallied: 0, suppressedTurns: 0, pinnedTurns: 0, redFirst: 0,
+    outBy: { smallArms: 0, explosive: 0 },
   };
   const note = (reports: MoraleReport[]) => {
     for (const rep of reports) {
@@ -246,6 +273,24 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
 
     // Targeting: a company calls one mortar mission a turn on the nearest enemy it knows of.
     g.advanceToPhase("targeting");
+    if (opts.fires && kind !== "meeting") {
+      const side = attackers[0]!;
+      const goal = objective[side];
+      const close = g.units
+        .filter((u) => u.side === side && u.kind !== "command" && !u.neutralized)
+        .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
+      if (!close) {
+        const from = { x: X, y: goal.y + (side === "BLUE" ? -3000 : 3000) };
+        const rounds = [
+          ...Array<string>(opts.fires.artillery).fill("artillery"),
+          ...Array<string>(opts.fires.mortar).fill("mortar"),
+        ];
+        rounds.forEach((w, i) => {
+          const across = ((i % 3) - 1) * 80;
+          g.queueIndirectFire(w, side, { x: goal.x + across, y: goal.y }, { firingFrom: from });
+        });
+      }
+    }
     if (echelon === "company") {
       for (const side of order) {
         const hq = g.units.find((u) => u.side === side && u.kind === "command" && !u.neutralized);
@@ -279,6 +324,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
   for (const u of g.units) {
     for (const s of u.soldiers ?? []) {
       if (s.neutralized) r.down[u.side]++;
+      if (s.neutralized && s.outBy) r.outBy[s.outBy]++;
       else if (s.morale?.state === "broken") r.broken[u.side]++;
     }
   }
@@ -308,6 +354,8 @@ export interface CellSummary {
   pinnedPct: number;
   /** Share of turns RED won the initiative. */
   redFirstPct: number;
+  /** Of the men put out by a hit, the share explosives put out. */
+  explosivePct: number;
 }
 
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
@@ -343,6 +391,11 @@ export function summarise(results: BattleResult[], echelon: Echelon, kind: Battl
     rallied: mean(results.map((x) => x.rallied)),
     pinnedPct: pressed ? (100 * pinned) / pressed : 0,
     redFirstPct: (100 * results.reduce((a, x) => a + x.redFirst, 0)) / Math.max(1, results.reduce((a, x) => a + x.turns, 0)),
+    explosivePct: (() => {
+      const he = results.reduce((a, x) => a + x.outBy.explosive, 0);
+      const all = he + results.reduce((a, x) => a + x.outBy.smallArms, 0);
+      return all ? (100 * he) / all : 0;
+    })(),
   };
 }
 
@@ -365,13 +418,13 @@ export function markdownRow(c: CellSummary): string {
     `| ${c.kind} | ${c.echelon} | ${c.morale ? "on" : "off"} | ${c.men.BLUE} v ${c.men.RED} | ` +
     `${pct(c.wins.BLUE)} / ${pct(c.wins.RED)} / ${pct(c.wins.draw)} | ${endings} | ` +
     `${c.medianTurns} (${c.p10Turns}–${c.p90Turns}) | ${Math.round(c.loserDownPct)}% | ${Math.round(c.winnerDownPct)}% | ` +
-    `${c.routs.toFixed(2)} | ${c.surrenders.toFixed(2)} | ${c.heroes.toFixed(2)} | ${c.rallied.toFixed(2)} | ${Math.round(c.pinnedPct)}% |`
+    `${c.routs.toFixed(2)} | ${c.surrenders.toFixed(2)} | ${c.heroes.toFixed(2)} | ${c.rallied.toFixed(2)} | ${Math.round(c.pinnedPct)}% | ${Math.round(c.explosivePct)}% |`
   );
 }
 
 export const MARKDOWN_HEADER =
-  "| Kind | Echelon | Morale | Men (B v R) | BLUE / RED / draw | Endings | Turns, median (p10–p90) | Loser down | Winner down | Routs | Surrenders | Heroes | Rallied | Pinned share |\n" +
-  "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
+  "| Kind | Echelon | Morale | Men (B v R) | BLUE / RED / draw | Endings | Turns, median (p10–p90) | Loser down | Winner down | Routs | Surrenders | Heroes | Rallied | Pinned share | Out by HE |\n" +
+  "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
 
 /**
  * What the sweep compares. After the third round (2026-09-23) the only thing
@@ -387,6 +440,18 @@ export const CONFIGURATIONS: readonly Configuration[] = ([undefined, 0.3, 0.5, 0
   name: `reply ${reply == null ? "none" : `${Math.round(reply * 100)}%`}`,
   variants: reply == null ? {} : { assaultReplyChance: reply },
 }));
+
+/**
+ * The wound models on trial (author, 2026-09-23: one rule for bullets and
+ * explosives), swept with `--sweep wounds`: the rules as they stand, then A,
+ * A without the shift, and B (data/variants.ts).
+ */
+export const WOUND_CONFIGURATIONS: readonly Configuration[] = [
+  { name: "as it stands", variants: {} },
+  { name: "A: severity + shift", variants: { woundModel: "severity" } },
+  { name: "A0: flat severity", variants: { woundModel: "flat" } },
+  { name: "B: document dice, out at 5", variants: { woundModel: "dice" } },
+];
 
 /**
  * What the sweep is judged against — written down **before** the first runs, so
@@ -416,6 +481,8 @@ export interface Verdict {
   attack2Win: number;
   attack3Win: number;
   attack3AttackerDown: number;
+  /** Of the men put out by a hit in the three attacks, the share explosives put out. */
+  explosivePct: number;
   met: number;
 }
 
@@ -426,15 +493,19 @@ export function judge(
   battles: number,
   preparedCover: "partial" | "full" = "partial",
   drill?: SquadDrill,
+  fires?: FirePlan,
 ): Verdict {
   const cell = (kind: BattleKind) =>
-    runCell(echelon, kind, { morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}) });
+    runCell(echelon, kind, {
+      morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
+    });
   const a1 = cell("attack1");
   const a2 = cell("attack2");
   const a3 = cell("attack3");
   const win = (c: CellSummary) => (100 * c.wins.BLUE) / c.battles;
   const attack3AttackerDown = a3.winnerDownPct;
-  const v = { echelon, attack1Win: win(a1), attack2Win: win(a2), attack3Win: win(a3), attack3AttackerDown };
+  const explosivePct = (a1.explosivePct + a2.explosivePct + a3.explosivePct) / 3;
+  const v = { echelon, attack1Win: win(a1), attack2Win: win(a2), attack3Win: win(a3), attack3AttackerDown, explosivePct };
   const met =
     Number(v.attack1Win <= TARGETS.attack1MaxWin) +
     Number(v.attack2Win >= TARGETS.attack2Win[0] && v.attack2Win <= TARGETS.attack2Win[1]) +
