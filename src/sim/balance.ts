@@ -1,11 +1,15 @@
 import { sideDefeated } from "../app/hotseat.js";
 import { DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import {
+  ECHELON_RANK,
+  FIRE_SUPPORT_MIN_ECHELON,
   Game,
   distance,
   makeCommandGroup,
   makeInfantry,
+  type Echelon as EngineEchelon,
   type FireAllotment,
+  type FireMethod,
   type Fuze,
   type GameOptions,
   type MoraleReport,
@@ -143,6 +147,31 @@ export interface BattleOptions {
   fires?: FirePlan;
   /** The defender's own mortar section, in an attack. */
   defenderFires?: DefenderFires;
+  /**
+   * Let either side call any weapon whatever the echelon — rules decision 37
+   * switched off, to measure what it prevents. Otherwise both sides command
+   * the battle's echelon, and a weapon it may not call is struck from the fire
+   * plans (see {@link callableAt}).
+   */
+  anyEchelon?: boolean;
+  /**
+   * Mission planning for the defender (rules decision 38), in an attack.
+   * `observationPosts`: its command groups watch as observation posts — or, at
+   * squad, the squad itself. `alternateAt`: each of its prepared squads has
+   * an alternate position prepared this many metres behind it, which the
+   * drill's displacement goes to.
+   */
+  defenderPlan?: { observationPosts?: boolean; alternateAt?: number };
+}
+
+/**
+ * Whether a commander at `echelon` may call `weapon` (rules decision 37): the
+ * harness strikes the rest from a fire plan before the battle, as the game
+ * would refuse them in it.
+ */
+export function callableAt(echelon: EngineEchelon, weapon: string): boolean {
+  const floor = FIRE_SUPPORT_MIN_ECHELON[weapon];
+  return !floor || ECHELON_RANK[echelon] >= ECHELON_RANK[floor];
 }
 
 /**
@@ -163,6 +192,8 @@ export interface FirePlan {
   registered?: boolean;
   /** How the rounds are fuzed (rules decision 31). Default impact. */
   fuze?: Fuze;
+  /** Adjust fire (default) or fire for effect at once (rules decision 39). */
+  method?: FireMethod;
 }
 
 /**
@@ -174,6 +205,8 @@ export interface FirePlan {
 export interface DefenderFires {
   missions: FireAllotment[];
   registeredAt?: number[];
+  /** Adjust fire (default) or fire for effect at once (rules decision 39). */
+  method?: FireMethod;
 }
 
 /** Four mortar missions of the default rounds for effect, lifting at 400 m (⚠️ ours). */
@@ -226,6 +259,7 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 /** One battle, played to an end or to {@link MAX_TURNS}. */
 export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
   const laid = layout(echelon, kind);
+  const callable = (weapon: string) => opts.anyEchelon || callableAt(echelon, weapon);
   // The defender's registered targets: on the line from its position toward
   // where the attacker starts. Swap relabels the sides, not the ground: the
   // defender stands where `laid.red` does whichever side it is.
@@ -248,20 +282,26 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     if (kind === "meeting") return [];
     const y0 = laid.red.find((f) => f.kind === "infantry")!.at.y;
     const toward = Math.sign(laid.blue.find((f) => f.kind === "infantry")!.at.y - y0);
-    const defender = (opts.defenderFires?.registeredAt ?? []).map((m) => ({
+    const defender = (callable("mortar") ? opts.defenderFires?.registeredAt ?? [] : []).map((m) => ({
       side: defenderSide,
       weapon: "mortar",
       at: { x: X, y: y0 + toward * m },
     }));
     const attacker = !opts.fires?.registered
       ? []
-      : opts.fires.missions.flatMap((a) => plannedTargets.map((at) => ({ side: attackerSide, weapon: a.weapon, at })));
+      : opts.fires.missions.filter((a) => callable(a.weapon)).flatMap((a) => plannedTargets.map((at) => ({ side: attackerSide, weapon: a.weapon, at })));
     return [...defender, ...attacker];
   })();
   // A side with fire missions assigned fires only those (rules decision 34).
   const fireSupport: Partial<Record<Side, FireAllotment[]>> = {};
-  if (opts.fires && kind !== "meeting") fireSupport[attackerSide] = opts.fires.missions;
-  if (opts.defenderFires && kind !== "meeting") fireSupport[defenderSide] = opts.defenderFires.missions;
+  // A plan struck bare leaves the side as it would be without one, free bomb
+  // and all, so its row compares with the baseline.
+  const allot = (side: Side, list: FireAllotment[] | undefined) => {
+    const kept = (list ?? []).filter((a) => callable(a.weapon));
+    if (kept.length && kind !== "meeting") fireSupport[side] = kept;
+  };
+  allot(attackerSide, opts.fires?.missions);
+  allot(defenderSide, opts.defenderFires?.missions);
   const gameOptions: GameOptions = {
     seed,
     morale: opts.morale,
@@ -270,6 +310,10 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),
     ...(Object.keys(fireSupport).length ? { fireSupport } : {}),
+    // Both players command the battle's echelon, whatever of it is on the map:
+    // the platoon defending against a company is one of its company's.
+    commandEchelon: { RED: echelon, BLUE: echelon },
+    ...(opts.anyEchelon ? { fireSupportByEchelon: false } : {}),
   };
   const g = new Game(gameOptions);
   const relabel = (fs: ForceSpec[], to: "B" | "R") => fs.map((f) => ({ ...f, id: to + f.id.slice(1) }));
@@ -282,6 +326,20 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         : makeInfantry(f.id, side, f.echelon, f.at, f.men);
     if (f.prepared) u.baseCover = opts.preparedCover ?? "partial";
     g.addUnit(u);
+  }
+  if (opts.defenderPlan && kind !== "meeting") {
+    const own = g.units.filter((u) => u.side === defenderSide);
+    const posts = own.some((u) => u.kind === "command") ? own.filter((u) => u.kind === "command") : own;
+    if (opts.defenderPlan.observationPosts) for (const u of posts) g.designateObservationPost(u.id);
+    const back = opts.defenderPlan.alternateAt;
+    if (back) {
+      const toward = Math.sign((g.units.find((u) => u.side === attackerSide)?.position.y ?? 0) - own[0]!.position.y);
+      for (const u of own) {
+        if (u.kind === "infantry" && u.baseCover !== "none") {
+          g.prepareAlternatePosition(u.id, { x: u.position.x, y: u.position.y - toward * back });
+        }
+      }
+    }
   }
 
   const men = { RED: 0, BLUE: 0 };
@@ -335,7 +393,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // Targeting. The engine has already carried on the missions in hand.
     g.advanceToPhase("targeting");
     // A side with missions assigned calls the next when its weapon is free.
-    const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze) => {
+    const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze, method?: FireMethod) => {
       for (const a of fireSupport[side] ?? []) {
         if ((g.fireMissionsLeft(side, a.weapon) ?? 0) <= 0) continue;
         if (g.fireMissions.some((m) => m.side === side && m.weapon === a.weapon && m.status === "adjusting")) continue;
@@ -348,6 +406,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         g.callForFire(side, a.weapon, aim, {
           firingFrom: { x: aim.x, y: ownY + back },
           ...(fuze ? { fuze } : {}),
+          ...(method ? { method } : {}),
         });
       }
     };
@@ -372,7 +431,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
           if (seen) return seen.lastKnownPosition;
           const called = g.fireMissions.filter((m) => m.side === attackerSide).length;
           return plannedTargets[called % plannedTargets.length]!;
-        }, opts.fires.fuze);
+        }, opts.fires.fuze, opts.fires.method);
       }
     }
     if (opts.defenderFires && kind !== "meeting") {
@@ -380,7 +439,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         const hq = g.units.find((u) => u.side === defenderSide && u.kind === "command" && !u.neutralized);
         const target = hq && nearestKnown(g, hq);
         return target ? g.contactFor(defenderSide, target)!.lastKnownPosition : undefined;
-      });
+      }, undefined, opts.defenderFires.method);
     }
     // A company without missions assigned calls one mortar bomb a turn on the
     // nearest enemy it knows of, as the harness always has.
@@ -577,11 +636,14 @@ export function judge(
   drill?: SquadDrill,
   fires?: FirePlan,
   defenderFires?: DefenderFires,
+  anyEchelon = false,
+  defenderPlan?: BattleOptions["defenderPlan"],
 ): Verdict {
   const cell = (kind: BattleKind) =>
     runCell(echelon, kind, {
       morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
-      ...(defenderFires ? { defenderFires } : {}),
+      ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}),
+      ...(defenderPlan ? { defenderPlan } : {}),
     });
   const a1 = cell("attack1");
   const a2 = cell("attack2");

@@ -1337,6 +1337,241 @@ within 300 m):
   missions start only once the attacker is inside that, and the attacker's
   planned fire lands before.
 
+## Eleventh round: who may call fire, 2026-09-23
+
+The author's agenda for this session, item 2: "I'm thinking mortars for
+company and above, artillery for battalion and above, but we should test it."
+This is **who may call** a weapon at all, not when its guns are on the map
+(decision 35). Battalion is not in the harness yet (echelon scaling, backlog
+3), so the artillery half is tested only down to company.
+
+Every row: Western drill, a defender prepared in full cover (with a roof),
+200 battles a cell, seeds from 1000, `--sweep`'s "reply none" row. The
+attacker's targets are planned (`registered=on`). "+ def" means the defender
+has 4 mortar missions of 6 on targets registered 200 m and 400 m out. These
+were run **before the rule existed**, so any echelon could call anything:
+
+| Attacker's fires | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| none | squad | 4% | 49% | 77% | 17% | 0% | **4/4** |
+| defender's mortars only | squad | 4% | 49% | 77% | 17% | 0% | 4/4 |
+| 2 mortar × 9 + def | squad | 82% | 93% | 97% | 5% | 63% | 1/4 |
+| 4 mortar × 9 + def | squad | 100% | 99% | 99% | 1% | 95% | 1/4 |
+| 2 artillery × 6 + 2 mortar × 9 + def | squad | 100% | 99% | 99% | 1% | 93% | 1/4 |
+| none | platoon | 2% | 67% | 100% | 8% | 0% | **3/4** |
+| defender's mortars only | platoon | 0% | 67% | 100% | 8% | 32% | 3/4 |
+| 2 mortar × 9 + def | platoon | 27% | 100% | 100% | 2% | 79% | 2/4 |
+| 4 mortar × 9 + def | platoon | 99% | 100% | 100% | 0% | 100% | 1/4 |
+| 2 artillery × 6 + 2 mortar × 9 + def | platoon | 98% | 100% | 100% | 0% | 99% | 1/4 |
+| none (the free bomb for both) | company | 0% | 15% | 55% | 24% | 46% | 2/4 |
+| defender's mortars only | company | 0% | 0% | 0% | 7% | 91% | 1/4 |
+| 2 mortar × 9 + def | company | 0% | 0% | 43% | 25% | 92% | 2/4 |
+| 4 mortar × 9 + def | company | 0% | 14% | 99% | 1% | 96% | 2/4 |
+| 2 artillery × 6 + 2 mortar × 9 + def | company | 0% | 35% | 100% | 1% | 96% | **3/4** |
+| 4 mortar × 12 + def | company | 2% | 56% | 100% | 0% | 97% | **3/4** |
+| 6 mortar × 9 + def | company | 1% | 46% | 100% | 0% | 96% | **3/4** |
+| 6 mortar × 12 + def | company | 11% | 83% | 100% | 0% | 97% | 2/4 |
+| 8 mortar × 9 + def | company | 1% | 46% | 100% | 0% | 96% | **3/4** |
+
+The company row with artillery reproduces the tenth round's 35%, so the two
+rounds measure the same thing.
+
+- **Any indirect fire swamps a squad or a platoon fight.** Two mortar
+  missions let a squad take a prepared position at 1:1 82% of the time.
+  Without fire, small fights meet their targets: 4 of 4 at squad and 3 of 4
+  at platoon.
+- **Mortars alone balance a company attack.** Four missions of 12, or six of
+  9, meet 3 of 4 company targets. The company doesn't need artillery, which
+  supports "artillery for battalion and above".
+- At squad the defender's registered mortars never fire (0% by HE): the
+  points 200 m and 400 m out lie outside where a squad fight happens.
+
+**The author's rulings** (2026-09-23): mortars at company and above,
+artillery at battalion and above (decision 37). Rounds for effect default to
+6 for artillery and 12 for mortars (decision 36).
+
+**The same under the rule as built**, where both sides command the battle's
+echelon and the harness strikes what they may not call
+(`npm run balance -- --sweep --n 200 --drill western --prepared-cover full
+--fires artillery=2,mortar=4,registered=on --defender-fires
+mortar=4,registered=200/400`; `--any-echelon` switches the rule off). The
+missions fire the new defaults, 12 for a mortar, on both sides:
+
+| Fires | Echelon | Struck | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|---|
+| attacker 2 artillery + 4 mortar planned, defender 4 mortar | squad | all | 4% | 49% | 77% | 17% | 0% | 4/4 |
+| the same | platoon | all | 2% | 67% | 100% | 8% | 0% | 3/4 |
+| the same | company | artillery | 1% | 47% | 100% | 0% | 98% | **3/4** |
+| attacker 2 mortar planned, defender 4 mortar | company | — | 0% | 0% | 55% | 18% | 96% | 2/4 |
+| attacker 4 mortar unplanned, defender 4 mortar | company | — | 0% | 0% | 41% | 12% | 96% | 2/4 |
+| none either side (the free bomb) | company | — | 0% | 15% | 55% | 24% | 46% | 2/4 |
+
+What is still missing is the tenth round's last finding: **a winning
+attacker barely bleeds** (0% at 3–4:1 with planned fire, against a target of
+10–30%), because nobody sees anybody before about 300 m. The author's answer
+is observation posts, set in mission planning (decision 38), and binoculars
+and UAVs later.
+
+## Twelfth round: the defender's mission plan, 2026-09-23
+
+Rules decision 38: registered targets, observation posts and alternate
+positions are the player's to set before the battle. The harness gives the
+defender a plan (`--defender-ops`, `--alternate <m>`):
+- its command groups are observation posts (at squad, the squad), and the
+  drill leaves an OP where it stands;
+- each prepared squad has an alternate position so many metres behind it,
+  and the drill's displacement (`--displace`) goes there.
+
+Western drill, full cover, 200 battles a cell, rules decision 37 on, the new
+defaults (12 rounds a mortar mission). Attacker: 4 mortar missions, planned.
+Defender: 4 mortar missions, registered 200 m and 400 m out.
+
+| Defender's plan | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| none | company | 1% | 47% | 100% | 0% | 98% | 3/4 |
+| OPs | company | 5% | 75% | 100% | 3% | 96% | 2/4 |
+| displace, no alternate | company | 8% | 100% | 100% | 0% | 99% | 2/4 |
+| displace to an alternate 150 m back | company | 4% | 100% | 100% | 0% | 99% | 2/4 |
+| OPs + displace to an alternate | company | 15% | 100% | 100% | 3% | 98% | 2/4 |
+| none | platoon | 2% | 67% | 100% | 8% | 0% | 3/4 |
+| OPs | platoon | 12% | 69% | 100% | 8% | 0% | 3/4 |
+| displace to an alternate 150 m back | platoon | 2% | 67% | 100% | 8% | 0% | 3/4 |
+| attacker unplanned; defender none | company | 0% | 0% | 41% | 12% | 96% | 2/4 |
+| attacker unplanned; defender OPs | company | 0% | 3% | 58% | 16% | 88% | 2/4 |
+| no missions either side (the free bomb); defender OPs | company | 0% | 0% | 0% | 3% | 95% | 1/4 |
+
+(Row "no missions either side" without OPs: 0% / 15% / 55%, from the
+eleventh round.)
+
+What it says:
+- **The OPs work as a rule.** In a company attack the defender first sees
+  the attacker at about 650 m instead of 300 m, from turn 1.
+- **Where the defender has only the free bomb, OPs win the defence
+  outright.** The attacker's 3–4:1 attack goes from 55% to 0%: a bomb a
+  turn on an attacker seen from 650 m.
+- **Everywhere else OPs *help the attacker*, and we do not yet know why.**
+  At company 2:1 the attacker's win goes from 47% to 75%. At platoon 1:1,
+  with no fire at all, it goes from 2% to 12%, and the attacker also first
+  sees the defender a little further out (300 m against 250 m). Ruled out so
+  far:
+  - the defender spending its missions early (holding them until the
+    attacker is inside 500 m changes nothing: 48% and 72%);
+  - the OP command groups standing inside the attacker's planned targets
+    (weapons squads as OPs give 66% at company, 12% at platoon);
+  - the defending squads firing early (none fire beyond 300 m either way).
+  The defending platoon's command group moves more with OPs (42 moves in 20
+  battles against 29). That is the lead to follow: something in the drill
+  reacts to an early contact.
+- **Displacing, even to a prepared alternate, still hurts the defender**
+  at company (2:1 goes from 47% to 100%). The alternate position gives it
+  cover when it gets there, but it runs through the attacker's fire to reach
+  it, and the attacker, now seeing it move, walks its missions onto it.
+  Displacement stays off by default.
+- None of this touches the attacker who wins without bleeding (0–3% at
+  3–4:1). Seeing further only helps if the defender's fire can use it.
+
+**Rerun with the drill fixed** (same settings). The lead above was half of
+it: the drill gave the defender's squads a hold-fire order and its command
+groups none, so their covering fire answered anything the side had seen at
+300–400 m and gave them away. Counted over 100 platoon 1:1 battles, the
+defender's covering shots beyond 300 m came from command groups only, 125
+without OPs and 345 with them. `drill.ts` now gives a defending command group
+the squads' fire discipline.
+
+| Row | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| eleventh: rule on, the default plan | squad | 4% | 49% | 77% | 17% | 0% | 4/4 |
+| eleventh: rule on, the default plan | platoon | 1% | 67% | 100% | 8% | 0% | 3/4 |
+| eleventh: rule on, the default plan | company | 1% | 46% | 100% | 0% | 99% | 3/4 |
+| eleventh: attacker 2 mortar planned | company | 0% | 0% | 54% | 17% | 99% | 2/4 |
+| eleventh: attacker 4 mortar unplanned | company | 0% | 0% | 41% | 11% | 98% | 2/4 |
+| eleventh: none either side (the free bomb) | company | 0% | 0% | 42% | 26% | 50% | 2/4 |
+| plan: OPs | company | 10% | **83%** | 100% | 3% | 94% | 2/4 |
+| plan: displace, no alternate | company | 10% | 100% | 100% | 0% | 99% | 2/4 |
+| plan: displace to an alternate 150 m back | company | 4% | 100% | 100% | 0% | 99% | 2/4 |
+| plan: OPs + displace to an alternate | company | 21% | 100% | 100% | 3% | 97% | 2/4 |
+| plan: OPs | platoon | 1% | 59% | 100% | 8% | 0% | 3/4 |
+| plan: displace, no alternate | platoon | 1% | 67% | 100% | 8% | 0% | 3/4 |
+| plan: displace to an alternate 150 m back | platoon | 1% | 67% | 100% | 8% | 0% | 3/4 |
+| plan: OPs + displace to an alternate | platoon | 1% | 59% | 100% | 8% | 0% | 3/4 |
+| attacker unplanned; defender OPs | company | 0% | 3% | 64% | 17% | 83% | 2/4 |
+| the free bomb; defender OPs | company | 0% | 0% | 0% | 4% | 90% | 1/4 |
+
+- **At platoon the puzzle is gone**: OPs now help the defender a little (2:1
+  67% → 59%), as they should.
+- **At company OPs still help the attacker, more than before** (2:1 46% →
+  83%, and unplanned 3–4:1 41% → 64%). The cause is found, below: it is a
+  rule, not the harness.
+- With only the free bomb, OPs still win the defence outright (3–4:1: 42% →
+  0%).
+
+**Why OPs help the attacker at company: seeing the target makes a mission
+slower.** Company 2:1, 60 battles a row, the defender's 4 mortar missions
+counted as they are called:
+
+| Defender | Attacker wins | Defender's calls | Median turn | Median gap to the attacker | Straight to effect |
+|---|---|---|---|---|---|
+| no missions, OPs or not | 60/60 | 0 | — | — | — |
+| missions, no OPs | 29/60 | 65 | 11 | 209 m | 65 of 65 |
+| missions, OPs | 49/60 | 142 | 6 | 452 m | 41 of 142 |
+| missions, OPs, but its fire counted as unobserved | **23/60** | 238 | 3 | 601 m | 238 of 238 |
+| missions held until the attacker is inside 300 m of the command group, no OPs / OPs | 53 / 56 of 60 | 36 / 25 | 11 | 209 m | all |
+
+- Decisions 33–34: a mission its side **sees** adjusts, one round at a time
+  (a mortar every second turn, up to 4), before its 12 rounds for effect. A
+  mission **nobody sees** fires for effect at once, at first-round accuracy.
+- Without OPs the defender sees the attacker only at about 200 m, where its
+  calls cannot be observed from the line, so every one goes straight to
+  effect. With OPs it sees the attacker at 450 m, its calls are observed, and
+  they adjust onto a force that keeps walking out from under them. The
+  missions are spent before the assault.
+- The same OPs with the fire counted as unobserved **help the defender**
+  (29 → 23 of 60). Holding the calls until the attacker is close makes it
+  worse, so the timing is not the lever; the method is.
+- **This is a rules question for the author.** In doctrine the observer
+  chooses the method in the call itself: *adjust fire*, or *fire for effect*
+  straight away when the target's location is good enough or surprise
+  matters. Today the engine chooses, and against a moving target it chooses
+  the slower one exactly when the side can see.
+- The eleventh round's figures barely move with the fix (company 2:1 47% →
+  46%).
+
+## Thirteenth round: the caller chooses the method, 2026-09-23
+
+The author's ruling on the twelfth round: **the caller chooses adjust fire or
+fire for effect at once** (decision 39); for a simulated lower echelon, Jev
+will. The harness takes `method=effect` in `--fires` and `--defender-fires`.
+
+Company, Western drill, full cover, 200 battles a cell, decision 37 on, the
+new defaults. Attacker 4 mortar missions, planned unless the row says so.
+Defender 4 mortar missions registered 200 m and 400 m out.
+
+| Defender | Attacker | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| adjusts, no OPs | planned | 1% | 46% | 100% | 0% | 99% | 3/4 |
+| fire for effect, no OPs | planned | 1% | 46% | 100% | 0% | 99% | 3/4 |
+| adjusts, OPs | planned | 10% | 83% | 100% | 3% | 94% | 2/4 |
+| **fire for effect, OPs** | planned | **2%** | **49%** | **99%** | **25%** | 98% | **4/4** |
+| fire for effect, OPs | unplanned, adjusts | 0% | 4% | 33% | 22% | 96% | 2/4 |
+| fire for effect, OPs | unplanned, fire for effect | 1% | 21% | 96% | 29% | 97% | 3/4 |
+
+- **Without OPs the method changes nothing**: the defender sees the
+  attacker only when its calls cannot be observed anyway, and those went
+  straight to effect already.
+- **With OPs and fire for effect the company meets all four targets** — the
+  first configuration in any round to do so. And the winning attacker
+  **bleeds**: 25% of its men at 3–4:1, inside the 10–30% target, where every
+  earlier row with fire support gave 0–4%. The defender seeing the attack
+  coming, and bringing its fire down at once, is what the tenth round was
+  missing.
+- An attacker without planned targets does better firing for effect too
+  (3–4:1: 33% → 96%). Adjusting onto a hidden defender that nobody of its
+  side can see was never possible; what it lost was the time.
+- So **the harness's best company configuration** is now: attacker 4 mortar
+  missions planned; defender 4 mortar missions registered, observation posts,
+  fire for effect. The harness's own default stays `adjust`, so every earlier
+  row reproduces.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

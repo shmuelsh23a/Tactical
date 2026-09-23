@@ -1,6 +1,7 @@
 import type { Fuze } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type {
+  Echelon,
   Mine,
   MovementMode,
   ObservationSector,
@@ -26,6 +27,7 @@ import {
   type Phase,
   type RegisteredTarget,
   type FireAllotment,
+  type FireMethod,
   type FireMission,
   type SmokeOrder,
   type WithCoveringFire,
@@ -68,9 +70,14 @@ export type RecordedAction =
       weaponKey: string;
       side: Side;
       target: Point;
-      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean };
+      /** `roundsForEffect` is absent only from a recording made before decision 36. */
+      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; method?: FireMethod; roundsForEffect?: number };
     }
   | { kind: "checkFire"; side: Side }
+  // Mission planning, before the first turn (rules decision 38).
+  | { kind: "registerTarget"; side: Side; weapon: string; at: Point }
+  | { kind: "designateObservationPost"; unitId: string }
+  | { kind: "prepareAlternatePosition"; unitId: string; at: Point }
   | { kind: "moveUnit"; unitId: string; to: Point; mode: MovementMode }
   | { kind: "fire"; attackerId: string; targetId: string; opts: DirectFireOptions }
   | {
@@ -128,6 +135,35 @@ export class RecordingError extends Error {
 }
 
 /**
+ * What a fire mission fired for effect before rules decision 36 split the
+ * default by weapon. A recording from then carries no number, in its
+ * allotments or its calls for fire, and fired this.
+ */
+const LEGACY_ROUNDS_FOR_EFFECT = 6;
+
+/**
+ * Whether a recording was made before rules decision 36: it lacks the
+ * decision 37 flag, which every later game writes while the rule is on, and
+ * it is on by default. An allotment's own number says nothing either way —
+ * one could be set before the decision too — and `withLegacyRounds` fills in
+ * only the ones that are missing. What it misreads is a later game played
+ * with the rule switched off, which only the harness plays and none is saved
+ * from.
+ */
+function madeBeforeDecision36(recording: GameRecording): boolean {
+  return recording.fireSupportByEchelon === undefined;
+}
+
+/** Allotments from a recording, with the number a pre-decision-36 one was played with. */
+function withLegacyRounds(fireSupport: Partial<Record<Side, FireAllotment[]>>): Partial<Record<Side, FireAllotment[]>> {
+  for (const list of Object.values(fireSupport)) {
+    if (!Array.isArray(list)) continue;
+    for (const a of list) if (a && a.roundsForEffect === undefined) a.roundsForEffect = LEGACY_ROUNDS_FOR_EFFECT;
+  }
+  return fireSupport;
+}
+
+/**
  * The header of a recording, checked before a game is built from it: anything
  * that parses as JSON reaches here, and a field of the wrong type would
  * otherwise surface as a TypeError from deep inside `Game`.
@@ -149,6 +185,10 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.fireSupport !== undefined && (typeof r.fireSupport !== "object" || r.fireSupport === null || Array.isArray(r.fireSupport))) {
     throw malformed("fireSupport");
   }
+  if (r.commandEchelon !== undefined && (typeof r.commandEchelon !== "object" || r.commandEchelon === null || Array.isArray(r.commandEchelon))) {
+    throw malformed("commandEchelon");
+  }
+  if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -258,6 +298,14 @@ export interface GameRecording {
   registeredTargets?: RegisteredTarget[];
   /** The fire missions each side was assigned (rules decision 34). Absent: none rationed. */
   fireSupport?: Partial<Record<Side, FireAllotment[]>>;
+  /** The echelon each side was declared to command (rules decision 37). Absent: read off its forces. */
+  commandEchelon?: Partial<Record<Side, Echelon>>;
+  /**
+   * Whether who may call a weapon depended on the echelon (rules decision 37).
+   * Read as **off** when absent: a battle recorded before the rule called
+   * whatever it liked, and still replays.
+   */
+  fireSupportByEchelon?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -398,6 +446,7 @@ export function replayWithOutcomes(
   } = {},
 ): { game: Game; steps: ReplayStep[]; skipped: SkippedAction[] } {
   checkRecording(recording);
+  const pre36 = madeBeforeDecision36(recording);
   const game = new Game({
     seed: opts.seed ?? recording.seed,
     sides: recording.sides,
@@ -406,7 +455,11 @@ export function replayWithOutcomes(
     morale: recording.morale ?? false,
     ...(recording.variants ? { variants: cloneForRecord(recording.variants) } : {}),
     ...(recording.registeredTargets ? { registeredTargets: cloneForRecord(recording.registeredTargets) } : {}),
-    ...(recording.fireSupport ? { fireSupport: cloneForRecord(recording.fireSupport) } : {}),
+    ...(recording.fireSupport
+      ? { fireSupport: pre36 ? withLegacyRounds(cloneForRecord(recording.fireSupport)) : cloneForRecord(recording.fireSupport) }
+      : {}),
+    ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
+    fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 
@@ -480,12 +533,41 @@ export function replayWithOutcomes(
         outcome = {
           kind: "callForFire",
           // As it stood when called: the live mission goes on changing.
-          mission: cloneForRecord(game.callForFire(action.side, action.weaponKey, action.target, action.opts)),
+          mission: cloneForRecord(
+            (() => {
+              const { roundsForEffect, ...opts } = action.opts;
+              if (roundsForEffect !== undefined) {
+                return game.replayCallForFire(action.side, action.weaponKey, action.target, opts, roundsForEffect);
+              }
+              // No number journalled: made before the call carried one.
+              // Before decision 36 that is the allotment's or 6; between it
+              // and the journalling, the allotment's or the weapon's default.
+              return pre36
+                ? game.replayCallForFire(
+                    action.side, action.weaponKey, action.target, opts,
+                    game.fireSupport[action.side]?.find((a) => a.weapon === action.weaponKey)?.roundsForEffect ??
+                      LEGACY_ROUNDS_FOR_EFFECT,
+                  )
+                : game.callForFire(action.side, action.weaponKey, action.target, opts);
+            })(),
+          ),
         };
         break;
       case "checkFire":
         game.checkFire(action.side);
         outcome = { kind: "checkFire" };
+        break;
+      case "registerTarget":
+        game.registerTarget(action.side, action.weapon, action.at);
+        outcome = { kind: "setup" };
+        break;
+      case "designateObservationPost":
+        game.designateObservationPost(action.unitId);
+        outcome = { kind: "setup" };
+        break;
+      case "prepareAlternatePosition":
+        game.prepareAlternatePosition(action.unitId, action.at);
+        outcome = { kind: "setup" };
         break;
       case "moveUnit":
         outcome = {

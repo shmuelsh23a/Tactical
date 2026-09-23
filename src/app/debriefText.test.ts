@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Game, makeCommandGroup, makeInfantry, type GameRecording } from "../engine/index.js";
 import {
   chargeWorkHe,
+  planningRefusalHe,
   describeAction,
   describeExecution,
   describeOutcome,
@@ -159,5 +160,21 @@ describe("a charge's position is the first thing a shared reader must not print"
     expect(quiet).not.toContain("120");
     expect(quiet).not.toContain("340");
     expect(quiet).toContain("מחלקה א'/1");
+  });
+});
+
+describe("planning and fire refusals, in the player's language (decisions 37–38)", () => {
+  it("says each one a player can meet in Hebrew", () => {
+    for (const english of [
+      "RED has registered 6 mortar targets, the most it may",
+      "R-1 already has its alternate position",
+      "R-1's alternate position must be more than 25 m from where it stands",
+      "R-TANK is a vehicle: an observation post is men on the ground",
+      "BLUE commands a platoon: mortar is called from company and above",
+      "BLUE has no mortar fire missions left",
+      "A registered target is set in mission planning, before the first turn",
+    ]) {
+      expect(planningRefusalHe(english)).toMatch(/[֐-׿]/);
+    }
   });
 });

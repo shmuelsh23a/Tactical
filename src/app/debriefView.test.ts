@@ -17,12 +17,16 @@ import {
   unitSides,
 } from "./debriefView.js";
 
+// A battalion commander on both sides, so the mortar and artillery these tests
+// fire are theirs to call (rules decision 37).
+const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
+
 /**
  * A battle with the knowledge model on: BLUE advances into RED, which is
  * sitting still (and therefore hidden) until it fires.
  */
 function battle(): GameRecording {
-  const g = new Game({ seed: 5, enforceC2: false, trackIntel: true });
+  const g = new Game({ commandEchelon: BATTALIONS, seed: 5, enforceC2: false, trackIntel: true });
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 260 }, 8));
   g.addUnit(makeCommandGroup("BLUE-HQ", "BLUE", "platoon", { x: 0, y: 300 }, 3));
   // Flagged before it is added — addUnit records the force as it stands.
@@ -147,7 +151,7 @@ describe("what a side is told an action produced", () => {
    * battle past the end of a turn, which is where that line is produced.
    */
   it("never tells the enemy a charge went into the ground", () => {
-    const g = new Game({ seed: 5, enforceC2: false, trackIntel: true });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 5, enforceC2: false, trackIntel: true });
     g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 400 }, 8));
     const layer = makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6);
     layer.canLayCharges = true;
@@ -324,7 +328,7 @@ describe("a sector of observation in the review", () => {
    * silently rather than leaking — this is the test that says which it is.
    */
   const rec2 = (() => {
-    const g = new Game({ seed: 4, enforceC2: false, trackIntel: true });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 4, enforceC2: false, trackIntel: true });
     const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 200, y: 0 }, 6));
     g.beginTurn();
@@ -410,7 +414,7 @@ function orderedBattle(): GameRecording {
   // count and a report — which is the whole point of the test below. With
   // small arms (a squad cannot fire ירי מקביל, decision 25) only 546, 550, 656
   // and 1055 of the first 1055 seeds produce a casualty at 120 m.
-  const g = new Game({ seed: 546, enforceC2: false, trackIntel: true });
+  const g = new Game({ commandEchelon: BATTALIONS, seed: 546, enforceC2: false, trackIntel: true });
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 120 }, 8));
   const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
 

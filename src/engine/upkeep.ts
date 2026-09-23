@@ -67,6 +67,7 @@ export function digInCover(stationaryTurns: number): CoverState {
 export function endTurnUnitUpkeep(
   units: Unit[],
   groundCover: (at: Point) => CoverState = () => "none",
+  preparedCover: (u: Unit) => CoverState = () => "none",
 ): void {
   for (const u of units) {
     u.movementBlocked = u.hitThisTurn;
@@ -87,6 +88,11 @@ export function endTurnUnitUpkeep(
       u.camouflaging = false;
       u.baseCover = "none";
     }
+    // …unless it has come to ground its side prepared: an alternate position
+    // (rules decision 38) is as ready as the one it left.
+    u.baseCover = betterCover(u.baseCover, preparedCover(u));
+    // An observation post that moved or fired is not watching any more.
+    if (u.movedThisTurn > 0 || u.firedThisTurn) delete u.observationPost;
     // Whatever the ground already gave it — a prepared position, or the
     // object it stands against — or better if it has dug.
     u.cover = betterCover(

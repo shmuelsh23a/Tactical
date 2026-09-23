@@ -2,6 +2,8 @@ import React, { useMemo, useRef } from "react";
 import type {
   Mine,
   Point,
+  PreparedPosition,
+  RegisteredTarget,
   PendingFireMission,
   PendingSmokeMission,
   Side,
@@ -10,7 +12,7 @@ import type {
   Terrain,
   Unit,
 } from "../../engine/index.js";
-import { MOVEMENT_PROFILES, reachFan } from "../../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 import { Relief, Roads, TerrainObjects } from "./Relief.js";
@@ -61,7 +63,7 @@ interface MapViewProps {
   units: Unit[];
   viewingSide: Side;
   selectedId: string | null;
-  phase: ActivationPhase | "other";
+  phase: ActivationPhase | "planning" | "other";
   /** Movement budget left (metres of flat going) for the selected unit, if moving — the fan's reach. */
   moveCap: number | null;
   /**
@@ -93,6 +95,13 @@ interface MapViewProps {
    * precisely what a side does not know (rules decisions 13 and 14).
    */
   allSectors?: boolean;
+  /**
+   * The viewing side's registered targets and alternate positions, from
+   * mission planning (rules decision 38) — its own only: the enemy's plan is
+   * exactly what it does not know.
+   */
+  registeredTargets?: readonly RegisteredTarget[];
+  alternatePositions?: readonly PreparedPosition[];
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
@@ -154,7 +163,7 @@ export function MapView(props: MapViewProps) {
     if (!svg) return;
     const m = clientToMap(svg, e.clientX, e.clientY);
     if (!m) return;
-    if (phase === "targeting") {
+    if (phase === "targeting" || phase === "planning") {
       props.onTargetAt(m.x, m.y);
     } else if (phase === "movement" && selected && selected.side === viewingSide) {
       props.onMoveTo(m.x, m.y);
@@ -252,6 +261,38 @@ export function MapView(props: MapViewProps) {
 
       {/* Marked aim points, own side only — an enemy sees nothing until it lands.
           Smoke shows the screen it will become, so it can be sited on a line. */}
+      {/* The side's own plan (rules decision 38): each registered target with
+          the reach its guns are on the mark in, each alternate position tied
+          to the force it was prepared for. */}
+      {(props.registeredTargets ?? []).map((t, i) => (
+        <g key={`reg-${i}`} className={`registered registered-${t.weapon}`}>
+          <circle cx={t.at.x} cy={t.at.y} r={ADJUSTMENT_RADIUS_M} className="registered-reach" />
+          <line x1={t.at.x - 14} y1={t.at.y - 14} x2={t.at.x + 14} y2={t.at.y + 14} />
+          <line x1={t.at.x - 14} y1={t.at.y + 14} x2={t.at.x + 14} y2={t.at.y - 14} />
+          <text x={t.at.x + 18} y={t.at.y - 10}>
+            {t.weapon === "mortar" ? "מרגמה" : "ארטילריה"} {i + 1}
+          </text>
+        </g>
+      ))}
+      {(props.alternatePositions ?? []).map((p) => {
+        const owner = units.find((u) => u.id === p.forUnitId);
+        return (
+          <g key={`alt-${p.forUnitId}`} className="alternate">
+            {owner && <line x1={owner.position.x} y1={owner.position.y} x2={p.at.x} y2={p.at.y} />}
+            <rect x={p.at.x - 12} y={p.at.y - 12} width={24} height={24} />
+            <text x={p.at.x + 16} y={p.at.y + 4}>חלופית</text>
+          </g>
+        );
+      })}
+      {units
+        .filter((u) => u.side === viewingSide && watchingAsPost(u) && !u.neutralized)
+        .map((u) => (
+          <g key={`op-${u.id}`} className="observation-post">
+            <circle cx={u.position.x} cy={u.position.y} r={34} />
+            <text x={u.position.x - 34} y={u.position.y - 38}>תצפית</text>
+          </g>
+        ))}
+
       {props.pendingFire.map((m) => (
         <AimPoint key={m.id} at={m.target} turn={m.resolvesOnTurn} />
       ))}
@@ -324,7 +365,7 @@ interface TokenProps {
   unit: Unit;
   viewingSide: Side;
   selected: boolean;
-  phase: ActivationPhase | "other";
+  phase: ActivationPhase | "planning" | "other";
   awaitingOrders: boolean;
   /** A last-known mark rather than a sighting — drawn faded, with a query ring. */
   stale: boolean;

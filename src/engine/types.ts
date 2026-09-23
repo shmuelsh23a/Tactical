@@ -185,6 +185,13 @@ export interface Unit {
    * anywhere (rules decision 14).
    */
   observationSector?: ObservationSector;
+  /**
+   * An observation post (תצפית), put out in mission planning (rules decision
+   * 38): while it stays put it sees a force on the move out to
+   * `OBSERVATION_POST_RANGE_M`. Moving or firing ends it — it has given itself
+   * away, or gone to do something else.
+   */
+  observationPost?: boolean;
 
   // --- engineering (rules decision 16) ---
   /**

@@ -11,6 +11,7 @@ import {
   sectorBonus,
 } from "../data/concealment.js";
 import { UAV_PROFILES } from "../data/uav.js";
+import { OBSERVATION_POST_RANGE_M } from "../data/planning.js";
 import type { MovementMode } from "../types.js";
 
 export interface DetectionResult {
@@ -46,6 +47,15 @@ export function sectorFocus(observer: Unit, target: Point): number {
     : -OBSERVATION_SECTOR.outsidePenalty;
 }
 
+/**
+ * Whether `unit` is watching as an observation post right now (rules decision
+ * 38): put out in planning, and not yet moved or fired — which ends it at
+ * once, though the flag is only cleared at upkeep.
+ */
+export function watchingAsPost(unit: Unit): boolean {
+  return !!unit.observationPost && unit.movedThisTurn === 0 && !unit.firedThisTurn;
+}
+
 /** The chance and the range at which `observer` may pick `target` up this turn. */
 export function detectionChance(
   observer: Unit,
@@ -65,7 +75,14 @@ export function detectionChance(
 
   const hidden = isHidden(target);
   const base = hidden ? profile.hiddenDetectChance : profile.visibleDetectChance;
-  const range = hidden ? profile.hiddenDetectRange : profile.visibleDetectRange;
+  // An observation post in place sees a force on the move much further out
+  // (rules decision 38); a hidden one it looks for like anybody else.
+  const range = hidden
+    ? profile.hiddenDetectRange
+    : // …and stops being one the moment it moves or fires, not at the turn's end.
+      watchingAsPost(observer) && !observerGait
+      ? Math.max(profile.visibleDetectRange, OBSERVATION_POST_RANGE_M)
+      : profile.visibleDetectRange;
 
   // What the target is doing about being seen. A force at a run is louder and
   // more conspicuous; cover and camouflage work the other way.

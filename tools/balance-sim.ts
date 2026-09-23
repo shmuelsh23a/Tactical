@@ -9,9 +9,12 @@
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
  *   npm run balance -- --fires artillery=2x6,mortar=4x6,fuze=airburst   # the attacker's fire missions: missions x rounds for effect
  *   npm run balance -- --defender-fires mortar=4x6,registered=200/400    # the defender's, and targets it registered
+ *   npm run balance -- --fires mortar=4,method=effect --defender-fires mortar=4,method=effect   # fire for effect at once (decision 39)
  *   npm run balance -- --displace 100                # a defender moves off a shelled position
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
+ *   npm run balance -- --defender-ops --alternate 150 --displace 100   # the defender's mission plan (decision 38)
+ *   npm run balance -- --any-echelon               # any side may call any weapon: rules decision 37 off
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -27,6 +30,7 @@ import {
   type DefenderFires,
   MARKDOWN_HEADER,
   TARGETS,
+  callableAt,
   judge,
   markdownRow,
   runCell,
@@ -89,6 +93,7 @@ const fires: FirePlan | undefined = (() => {
     else if (key === "lift" && /^\d+$/.test(v)) plan.liftAt = Number(v);
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
     else if (key === "registered" && (v === "on" || v === "off")) plan.registered = v === "on";
+    else if (key === "method" && (v === "adjust" || v === "effect")) plan.method = v;
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;
@@ -103,11 +108,27 @@ const defenderFires: DefenderFires | undefined = (() => {
     const [key = "", v = ""] = part.split("=");
     if (key === "artillery" || key === "mortar") d.missions.push(allotment(key, v));
     else if (key === "registered" && /^\d+(\/\d+)*$/.test(v)) d.registeredAt = v.split("/").map(Number);
+    else if (key === "method" && (v === "adjust" || v === "effect")) d.method = v;
     else throw new Error(`--defender-fires: cannot read "${part}"`);
   }
   return d;
 })();
 // --displace 100 — a defender moves off a shelled position, this far (drill.ts)
+// --any-echelon — rules decision 37 off. With it on, a weapon the battle's
+// echelon may not call is struck from the fire plans, and said so here.
+const anyEchelon = args.includes("--any-echelon");
+if (!anyEchelon) {
+  const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
+    .flatMap((a) => echelons.filter((e) => !callableAt(e, a.weapon)).map((e) => `${a.weapon} at ${e}`));
+  if (struck.length) console.log(`Struck by rules decision 37 (--any-echelon to keep them): ${[...new Set(struck)].join(", ")}\n`);
+}
+// --defender-ops, --alternate 150 — the defender's mission plan (rules
+// decision 38): observation posts, and alternate positions this far back.
+const alternateArg = value("--alternate");
+const defenderPlan =
+  args.includes("--defender-ops") || alternateArg
+    ? { observationPosts: args.includes("--defender-ops"), ...(alternateArg ? { alternateAt: Number(alternateArg) } : {}) }
+    : undefined;
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
@@ -121,7 +142,7 @@ if (args.includes("--sweep")) {
   for (const c of configurations) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires);
+      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires, anyEchelon, defenderPlan);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${r(v.explosivePct)} | ${v.met}/4 |`);
@@ -135,7 +156,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}) })));
       }
     }
   }

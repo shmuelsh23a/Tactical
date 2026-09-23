@@ -10,6 +10,11 @@ import { SHELL_VS_MEN } from "../data/explosives.js";
 import { DEFAULT_ROUNDS_FOR_EFFECT, INDIRECT_ACCURACY, MAX_ADJUSTING_ROUNDS, cepAfter } from "../data/artillery.js";
 import type { GameOptions } from "../game.js";
 import { replayGame, sealRecording, verifyRecording } from "../recording.js";
+import { makeCommandGroup } from "../units.js";
+
+// A battalion commander on both sides, so the mortar and artillery these tests
+// fire are theirs to call (rules decision 37).
+const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
 
 // Rules decisions 29–31: what a shell does to men, by posture, cover and fuze.
 
@@ -81,7 +86,7 @@ describe("a mission in play (decisions 30–34)", () => {
    * unless it is put beyond the observing range.
    */
   function setUp(opts: Partial<GameOptions> = {}, blueAt = 1500) {
-    const g = new Game({ seed: 4, enforceC2: false, ...opts });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 4, enforceC2: false, ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
     g.beginTurn();
@@ -194,8 +199,8 @@ describe("a mission in play (decisions 30–34)", () => {
     const { g } = setUp();
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { fuze: "proximity" as never })).toThrow(/fuze/);
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 1e9 })).toThrow(/rounds/);
-    expect(() => new Game({ seed: 1, registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] })).toThrow(/registered/);
-    expect(() => new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 0 }] } })).toThrow(/fireSupport/);
+    expect(() => new Game({ commandEchelon: BATTALIONS, seed: 1, registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] })).toThrow(/registered/);
+    expect(() => new Game({ commandEchelon: BATTALIONS, seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 0 }] } })).toThrow(/fireSupport/);
   });
 
   it("a position prepared in full cover has a roof against an air burst", () => {
@@ -214,7 +219,7 @@ describe("a mission in play (decisions 30–34)", () => {
 
 describe("fire missions (decision 34)", () => {
   function setUp(opts: Partial<GameOptions> = {}, blueAt = 1500) {
-    const g = new Game({ seed: 7, enforceC2: false, ...opts });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 7, enforceC2: false, ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
     g.beginTurn();
@@ -236,7 +241,7 @@ describe("fire missions (decision 34)", () => {
 
   it("adjusts with one round a turn, then fires its rounds for effect once, and is done", () => {
     const g = setUp();
-    expect(g.callForFire("BLUE", "mortar", { x: 0, y: 0 }).roundsForEffect).toBe(DEFAULT_ROUNDS_FOR_EFFECT);
+    expect(g.callForFire("BLUE", "mortar", { x: 0, y: 0 }).roundsForEffect).toBe(DEFAULT_ROUNDS_FOR_EFFECT.mortar);
     const landed = play(g, 12);
     const m = g.fireMissions[0]!;
     expect(m.status).toBe("done");
@@ -245,8 +250,8 @@ describe("fire missions (decision 34)", () => {
     // Single rounds, then one volley of six, then nothing.
     const sizes = landed.map((l) => l.rounds);
     expect(sizes.filter((n) => n === 1).length).toBe(m.adjustingRounds);
-    expect(sizes.filter((n) => n === 6).length).toBe(1);
-    expect(sizes.at(-1)).toBe(6);
+    expect(sizes.filter((n) => n === DEFAULT_ROUNDS_FOR_EFFECT.mortar).length).toBe(1);
+    expect(sizes.at(-1)).toBe(DEFAULT_ROUNDS_FOR_EFFECT.mortar);
     // It waits to see each adjusting round land before firing the next: a
     // mortar's lands the turn after, so they are two turns apart.
     const singles = landed.filter((l) => l.rounds === 1).map((l) => l.turn);
@@ -269,9 +274,9 @@ describe("fire missions (decision 34)", () => {
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 })).toThrow(/call for fire/);
     g.queueIndirectFire("mortar", "RED", { x: 0, y: 1500 });
     expect(
-      () => new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }, { weapon: "mortar", missions: 2 }] } }),
+      () => new Game({ commandEchelon: BATTALIONS, seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }, { weapon: "mortar", missions: 2 }] } }),
     ).toThrow(/one entry a weapon/);
-    expect(() => new Game({ seed: 1, fireSupport: { Blue: [] } as never })).toThrow(/fireSupport/);
+    expect(() => new Game({ commandEchelon: BATTALIONS, seed: 1, fireSupport: { Blue: [] } as never })).toThrow(/fireSupport/);
   });
 
   it("a force that has surrendered or is routing watches nothing for its side", () => {
@@ -318,5 +323,178 @@ describe("fire missions (decision 34)", () => {
     const again = replayGame(recording);
     expect(again.getUnit("R")).toEqual(g.getUnit("R"));
     expect(again.fireMissions).toEqual(g.fireMissions);
+  });
+});
+
+describe("the caller chooses the method (decision 39)", () => {
+  function setUp() {
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 7, enforceC2: false });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    // Close enough to watch the fall of shot, so adjusting is possible.
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 1500 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    return g;
+  }
+
+  it("fires for effect at once on a target its side can see, where adjusting would walk in first", () => {
+    const adjusted = setUp().callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    expect(adjusted.status).toBe("adjusting");
+    const g = setUp();
+    const effect = g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "effect" });
+    expect(effect.status).toBe("done");
+    expect(effect.method).toBe("effect");
+    expect(g.pendingFire[0]!.rounds).toBe(12);
+    expect(() => g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "guess" as never })).toThrow(/method/);
+  });
+
+  it("journals the method only when it is not the default, and replays it", () => {
+    const g = setUp();
+    g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "effect" });
+    g.callForFire("BLUE", "artillery", { x: 0, y: 0 });
+    const calls = g.toRecording().actions.filter((a) => a.kind === "callForFire");
+    expect(calls.map((a) => a.kind === "callForFire" && a.opts.method)).toEqual(["effect", undefined]);
+    const again = replayGame(g.toRecording());
+    expect(again.fireMissions).toEqual(g.fireMissions);
+    expect(again.pendingFire).toEqual(g.pendingFire);
+  });
+});
+
+describe("who may call fire (decisions 36–37)", () => {
+  /** A side commanding whatever its forces on the map say, unless `opts` declares otherwise. */
+  function setUp(opts: Partial<GameOptions> = {}, blueCommand?: "platoon" | "company" | "battalion") {
+    const g = new Game({ seed: 7, enforceC2: false, ...opts });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 1500 }, 8));
+    if (blueCommand) g.addUnit(makeCommandGroup("B-HQ", "BLUE", blueCommand, { x: 0, y: 1600 }, 3));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    return g;
+  }
+
+  it("fires 12 rounds for effect from a mortar and 6 from artillery by default", () => {
+    expect(DEFAULT_ROUNDS_FOR_EFFECT).toEqual({ mortar: 12, artillery: 6 });
+    const g = setUp({ commandEchelon: BATTALIONS });
+    expect(g.callForFire("BLUE", "mortar", { x: 0, y: 0 }).roundsForEffect).toBe(12);
+    expect(g.callForFire("BLUE", "artillery", { x: 0, y: 0 }).roundsForEffect).toBe(6);
+  });
+
+  it("writes the rounds for effect into the allotment, so a recording carries them", () => {
+    const g = setUp({ commandEchelon: BATTALIONS, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    expect(g.toRecording().fireSupport).toEqual({ BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 12 }] });
+  });
+
+  it("lets a company call mortars and not artillery, and a battalion both", () => {
+    const company = setUp({}, "company");
+    expect(company.commandEchelonOf("BLUE")).toBe("company");
+    expect(company.mayCall("BLUE", "mortar")).toBe(true);
+    expect(company.mayCall("BLUE", "artillery")).toBe(false);
+    expect(() => company.callForFire("BLUE", "artillery", { x: 0, y: 0 })).toThrow(/battalion and above/);
+    expect(() => company.queueIndirectFire("artillery", "BLUE", { x: 0, y: 0 })).toThrow(/battalion and above/);
+    company.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const battalion = setUp({}, "battalion");
+    expect(battalion.mayCall("BLUE", "artillery")).toBe(true);
+  });
+
+  it("gives a platoon or a squad no indirect fire at all, smoke from the tubes included", () => {
+    const platoon = setUp({}, "platoon");
+    expect(platoon.mayCall("BLUE", "mortar")).toBe(false);
+    expect(() => platoon.callForFire("BLUE", "mortar", { x: 0, y: 0 })).toThrow(/company and above/);
+    expect(() => platoon.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 })).toThrow(/company and above/);
+    expect(() => platoon.deploySmoke("mortar", "BLUE", { x: 0, y: 0 })).toThrow(/company and above/);
+    // A smoke grenade is the squad's own.
+    platoon.deploySmoke("grenade", "BLUE", { x: 0, y: 1400 });
+    expect(setUp().commandEchelonOf("RED")).toBe("squad");
+  });
+
+  it("reads a declared echelon over the forces on the map", () => {
+    const g = setUp({ commandEchelon: { BLUE: "company" } }, "platoon");
+    expect(g.commandEchelonOf("BLUE")).toBe("company");
+    expect(g.mayCall("BLUE", "mortar")).toBe(true);
+  });
+
+  it("refuses an allotment or a registered target a declared echelon may not call", () => {
+    expect(
+      () => new Game({ seed: 1, commandEchelon: { BLUE: "company" }, fireSupport: { BLUE: [{ weapon: "artillery", missions: 1 }] } }),
+    ).toThrow(/battalion and above/);
+    expect(
+      () => new Game({ seed: 1, commandEchelon: { BLUE: "platoon" }, registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }] }),
+    ).toThrow(/company and above/);
+    expect(() => new Game({ seed: 1, commandEchelon: { BLUE: "general" as never } })).toThrow(/commandEchelon/);
+  });
+
+  it("journals the rounds for effect, and replays a recording made before decision 36 at the 6 it fired", () => {
+    const g = setUp({ fireSupportByEchelon: false }, "platoon");
+    g.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const recording = g.toRecording();
+    const call = recording.actions.find((a) => a.kind === "callForFire");
+    expect(call?.kind === "callForFire" && call.opts.roundsForEffect).toBe(12);
+    // As a recording from before the decision has it: no number anywhere.
+    if (call?.kind === "callForFire") delete call.opts.roundsForEffect;
+    expect(replayGame(recording).fireMissions[0]!.roundsForEffect).toBe(6);
+
+    // Made between decision 36 and the journalling of the number: the rule's
+    // flag is in the header, so it fired the weapon's default, 12.
+    const between = setUp({}, "company");
+    between.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const mid = between.toRecording();
+    for (const a of mid.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
+    expect(replayGame(mid).fireMissions[0]!.roundsForEffect).toBe(12);
+
+    // Before decision 36 an allotment could name its own number: kept, while
+    // the other side's unrationed call still replays at the old 6.
+    const named = setUp({ fireSupportByEchelon: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1, roundsForEffect: 9 }] } }, "platoon");
+    named.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    named.callForFire("RED", "mortar", { x: 0, y: 1500 });
+    const namedOld = named.toRecording();
+    for (const a of namedOld.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
+    expect(replayGame(namedOld).fireMissions.map((m) => m.roundsForEffect)).toEqual([9, 6]);
+
+    const rationed = setUp({ fireSupportByEchelon: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }] } }, "platoon");
+    rationed.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const old = rationed.toRecording();
+    delete old.fireSupport!.BLUE![0]!.roundsForEffect;
+    for (const a of old.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
+    expect(replayGame(old).fireMissions[0]!.roundsForEffect).toBe(6);
+  });
+
+  it("takes a player's rounds for effect from the allotment or the weapon, never from the call", () => {
+    const g = setUp({ commandEchelon: BATTALIONS });
+    const m = g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { roundsForEffect: 100 } as never);
+    expect(m.roundsForEffect).toBe(12);
+    expect(() => g.callForFire("BLUE", "constructor", { x: 0, y: 0 })).toThrow(/indirect-fire/);
+  });
+
+  it("checks the fire plan before the first upkeep, so a refusal leaves the game untouched", () => {
+    const g = new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    expect(() => g.advancePhase()).toThrow(/company and above/);
+    expect(g.getUnit("B").stationaryTurns).toBe(0);
+    expect(g.turn).toBe(0);
+  });
+
+  it("refuses an undeclared side's fire plan when the first turn begins, once its forces say what it commands", () => {
+    const g = new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
+    expect(() => g.beginTurn()).toThrow(/company and above/);
+    const h = new Game({ seed: 1, registeredTargets: [{ side: "BLUE", weapon: "artillery", at: { x: 0, y: 0 } }] });
+    h.addUnit(makeCommandGroup("B-HQ", "BLUE", "company", { x: 0, y: 0 }, 3));
+    expect(() => h.beginTurn()).toThrow(/battalion and above/);
+    expect(() => new Game({ seed: 1, commandEchelon: { BLUE: "toString" as never } })).toThrow(/commandEchelon/);
+  });
+
+  it("is recorded, and a recording made before the rule still replays the fire it called", () => {
+    const g = setUp({ commandEchelon: { BLUE: "company" } }, "company");
+    g.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const recording = g.toRecording();
+    expect(recording.fireSupportByEchelon).toBe(true);
+    expect(recording.commandEchelon).toEqual({ BLUE: "company" });
+    expect(replayGame(recording).fireMissions).toEqual(g.fireMissions);
+
+    const before = setUp({ fireSupportByEchelon: false }, "platoon");
+    before.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 });
+    const old = before.toRecording();
+    expect(old.fireSupportByEchelon).toBeUndefined();
+    expect(replayGame(old).pendingFire).toEqual(before.pendingFire);
   });
 });

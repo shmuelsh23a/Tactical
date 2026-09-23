@@ -60,11 +60,16 @@ there: advance, advance and engage a named force, hold where you are and engage,
 or **hold fire** — enforced against the player's own click, and with an optional
 range at which the force springs the ambush by itself; the order the selected force is working to is written out on its card,
 and its objective and its target are both drawn on the map, **fixed faction colours** (BLUE always friendly/blue, RED always
-hostile/red, regardless of whose turn it is), and a **targeting phase**: each
-side marks one indirect-fire mission and one smoke screen per turn (see rules
-decision 8). A marked aim point is drawn only on its owner's map, with the turn
-it will land; the round scatters through the dispersion table on arrival and the
-combat log reports the miss distance and every casualty. Smoke comes from any of
+hostile/red, regardless of whose turn it is), **mission planning** before the
+first turn — each side in turn, behind the handoff screen, registers targets,
+puts out observation posts and prepares alternate positions, all drawn on its
+own map only (rules decision 38) — and a **targeting phase**: a side whose
+echelon may call mortars or artillery (decision 37) **calls for fire** — one
+call and one smoke screen a side a turn (decision 8), and one mission in hand
+a weapon — with its missions left, a fuze (impact or air burst) and a
+**check fire** (decisions 31 and 34). The engine adjusts a mission onto the mark and fires it for
+effect; a marked aim point is drawn only on its owner's map, with the turn it
+will land, and the combat log reports the miss distance and every casualty. Smoke comes from any of
 the document's three sources — a thrown רימון is in place at once, a פצמ"ר or
 פגז ארטילריה has to be fired and arrives with its weapon's שיהוי, each with its
 own screen size (rules decision 9); a screen in flight shows its future
@@ -1347,7 +1352,7 @@ on the stated reasoning, still awaiting the author's word.
       ×½ on their feet, ×0.36 once down. Under an air burst it counts for
       nothing (decision 31).
     - A mission can fire several rounds (`queueIndirectFire`'s `rounds`),
-      each scattered on its own. The live UI still fires one.
+      each scattered on its own. The live UI calls missions (decision 34).
     - ⚠️ ×0.36 is ours: prone ÷ standing lethal area for a 105 or 155 mm round.
     - Source: the US Army's posture test of the 1970s. 58% of the men were
       standing at the first impact, 29% two seconds later, none after eight.
@@ -1369,7 +1374,7 @@ on the stated reasoning, still awaiting the author's word.
       The two sources disagree on open holes. We followed FM 7-90, which is
       what the author agreed to.
     - The engine and the harness take a fuze (`queueIndirectFire`'s `fuze`).
-      The live UI does not offer one yet.
+      The live UI offers the choice when a side calls for fire.
 
     Decisions 29–31 change the outcome of any battle in which a shell lands on
     men, so a sealed recording of one made before them fails
@@ -1405,7 +1410,8 @@ on the stated reasoning, still awaiting the author's word.
 34. ✅ **At company and below, fire support is assigned missions** (author,
     2026-09-23). A side is given so many fire missions of each weapon
     (`GameOptions.fireSupport`), each firing a set number of rounds for
-    effect, **6 by default** (`DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
+    effect, by default **6 for artillery and 12 for a mortar** (decision 36,
+    `DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
     (`Game.callForFire`) runs itself:
     - one round to adjust, waiting to see where it lands before the next, until
       one is seen on the mark (decisions 32–33) — a mortar adjusts every
@@ -1420,20 +1426,119 @@ on the stated reasoning, still awaiting the author's word.
       refuses it). A side left out of `fireSupport` is not rationed.
     - **Ammunition** is the battalion's and above, set by the mission's
       parameters (backlog 12). It is not built.
-    - The debrief narrates a call for fire. **The live UI does not call
-      missions yet**: it still queues single rounds, one a turn (decision 8's
-      UI limit), unrationed.
-    - Why 6: a 6-gun battery's single volley, or a 3-tube section's two bombs
-      a tube. Doctrine often fires more: "seldom less than five rounds for each
-      mortar" (FM 7-90). In balance, 6 suits artillery and mortars want 9–12
-      (balance.md, *Tenth round*). One default for both is on the table for the
-      author.
+    - The debrief narrates a call for fire, and the live UI calls one: one
+      call a side a turn (decision 8's UI limit), and a weapon with a mission
+      in hand takes no other call until it is done or checked (a section or a battery fires one mission at a time — the UI's
+      rule and the harness's, not the engine's).
+    - Why 6 was the first default: a 6-gun battery's single volley.
+      Decision 36 split it by weapon.
 35. ✅ **Counter-battery fire exists only for guns on the map** (author,
     2026-09-23). Mortars are on the map at **company and above**, artillery at
     **battalion and above**. On the map they are units, and can be found and
     fired on; that arrives with echelon scaling (backlog 3). Off the map there
     is no counter-battery fire. Today every game is off-map for both, so
     there is none.
+36. ✅ **Rounds for effect by weapon: 6 for artillery, 12 for a mortar**
+    (author, 2026-09-23, after the tenth round). Artillery's 6 is a 6-gun
+    battery's single volley. A mortar's 12 is four bombs a tube from a 3-tube
+    section, nearer doctrine's "seldom less than five rounds for each mortar"
+    (FM 7-90). In balance, a company's 2:1 attack with mortars at 6 won 20%;
+    at 12 it wins 47–56%, in the 30–70% target band (balance.md, *Tenth* and
+    *Eleventh round*).
+    - An allotment may still set its own (`FireAllotment.roundsForEffect`).
+      The game writes the number into each allotment, so a recording carries
+      what it was played with.
+    - A call for fire journals its rounds for effect, so a replay fires what
+      was fired whatever the default has become. A recording made before
+      this decision carries no number, and replays at the 6 it was played
+      with.
+37. ✅ **Who may call fire: mortars at company and above, artillery at
+    battalion and above** (author, 2026-09-23, after the eleventh round).
+    Below that a fight has no indirect fire, and no smoke from the tubes: a
+    grenade's smoke is the squad's own. It is who may *call* a weapon, not
+    whether its guns are on the map (decision 35).
+    - The echelon is the one the side's player commands
+      (`GameOptions.commandEchelon`). Undeclared, it is the highest echelon
+      of the side's forces on the map (`Game.commandEchelonOf`). A harness
+      battle declares it, since a company's defending platoon may be the only
+      one of its company on the map.
+    - `callForFire`, `queueIndirectFire` and `deploySmoke` refuse a weapon
+      the side may not call (`Game.mayCall`, `FIRE_SUPPORT_MIN_ECHELON`). So
+      does an allotment or a registered target made for it: at once when the
+      echelon is declared, and when the first turn begins when it is read off
+      the forces. A force that is out still counts toward the echelon: losing
+      the company's command group does not make its player a platoon
+      commander.
+    - **Why:** in the harness, any indirect fire swamps a squad or a platoon
+      fight (two mortar missions take a prepared position at 1:1 82% of the
+      time), and mortars alone balance a company attack.
+    - **Both demo battles are platoon fights, so neither side has indirect
+      fire there any more.** The live UI offers only what a side may call.
+    - Recorded (`fireSupportByEchelon`). A recording made before the rule
+      reads it as off, so the fire it called is still allowed on replay.
+38. ✅ **Mission planning: registered targets, observation posts and
+    alternate positions are the player's to set before the battle** (author,
+    2026-09-23). They are command decisions, taken in mission planning, on
+    turn 0 (`Game.planning`), and journalled like any other action.
+    - **Registered targets** (`Game.registerTarget`). The attacker registers
+      targets as the defender does. A player registers them for their own echelon
+      and the one below. There is no artillery for platoon or squad
+      (decision 37). A target is registered where the player expects the enemy
+      and tells them nothing about whether it is there. At brigade and above a
+      player registers for two echelons below, on the enemy's estimated
+      positions, still without revealing the fog of war (not built: there is
+      no brigade yet). The side's guns start on the mark there (decision 32).
+      At most **6 a weapon** (`MAX_REGISTERED_TARGETS_PER_WEAPON`) is
+      ours.
+    - **Observation posts** (`Game.designateObservationPost`). A force set as
+      an OP that stays put sees a force *on the move* out to **1,000 m**
+      (`OBSERVATION_POST_RANGE_M`, ours), against the document's 300 m. A
+      hidden force it looks for like anybody else, in the 20 m band. Moving
+      or firing ends it at once (`watchingAsPost`). It is a force, not men detached from one. Not a
+      vehicle. The squad drill leaves a command group that is an OP where it
+      stands.
+    - **Alternate positions** (`Game.prepareAlternatePosition`). One per
+      force, prepared as its first position was (partial if it had
+      none), and more than 25 m from where the force stands — a position
+      prepared underfoot would be cover for nothing. Any force of the side
+      within 25 m of it holds that cover, the turn it arrives; not a vehicle,
+      and not the enemy. The drill's displacement goes there when there is
+      one. **There is no upper bound yet**: an attacker may prepare one on the
+      objective. A question for the author.
+    - **The numbers** — 6 targets a weapon, 1,000 m, one alternate a force,
+      25 m, partial for a force with none — were ours; **the author accepted
+      them on 2026-09-23, to be tested when the artillery is balanced** at
+      battalion (backlog 3), with the open questions: how far an alternate
+      position may be, whether one mission in hand a weapon is a rule, and
+      why displacing still hurts the defender.
+    - **Binoculars and UAVs** are for a later stage (backlog 4).
+    - **The live UI** has a planning stage before the first turn (see the
+      Stage 2 section above). The company battle on Tel Azeka
+      (`telAzekaCompany`) is the one where fire can be registered and called.
+    - An OP needs the knowledge model (`trackIntel`): without it a side sees
+      by a flat radius and the OP changes nothing. Every battle in the app
+      plays with it.
+39. ✅ **The caller chooses: adjust fire, or fire for effect at once**
+    (author, 2026-09-23, after the twelfth round). `callForFire`'s `method`:
+    - `adjust` (the default, and what decision 34 did alone): single rounds
+      walked onto the mark while the side can see them land, then the rounds
+      for effect;
+    - `effect`: every round for effect at once, at whatever accuracy the guns
+      have there — their best on a registered target or a mark earned,
+      first-round otherwise.
+    - A registered target goes straight to effect either way, and so does a
+      call nobody of the side can see, as before.
+    - **Why:** decision 34 let the engine choose, and it adjusted exactly when
+      the side could see — against a moving attacker, the slower method. With
+      observation posts the defender's missions were observed, adjusted, and
+      were spent before the assault (company 2:1 attack 46% → 83%). With the
+      choice, OPs and fire for effect meet all four company targets
+      (balance.md, *Thirteenth round*).
+    - The player chooses in the live UI (`שיטה`). For a simulated lower
+      echelon, Jev will (backlog 15).
+    - Journalled only when `effect`, so a call from before reads as the
+      adjusting it was.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1545,8 +1650,22 @@ Each is intended to be an independent, toggleable module:
    decisions and the engine resolves them, on both sides, including under the
    human. There is nothing to simulate until this item exists, and this item is
    not finished without it.
-4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
-   fuller aerial-asset system.
+
+   **The artillery is balanced here** (author, 2026-09-23). Artillery is
+   battalion's (decision 37), and the harness stops at company, so its
+   numbers — 6 rounds for effect, 270 m to 50 m, the missions — have never
+   been measured. When battalion arrives: balance the artillery, test the
+   mission-planning numbers the author accepted (decision 38), and settle
+   the open questions — how far an alternate position may be, whether one
+   mission in hand a weapon is a rule, and why displacing to an alternate
+   still hurts the defender (balance.md, *Twelfth round*).
+4. **UAVs, quadcopters and binoculars: seeing further** — expand the current
+   fixed-wing/drone assets into a fuller aerial-asset system, and give an
+   observer optics. The author, 2026-09-23: observation posts come first, set
+   in mission planning; **binoculars and UAVs at a later stage**. Both answer
+   the same gap: nobody sees anybody before about 300 m (decision 12's
+   detection), so fire decides a battle before small arms get a say
+   (balance.md, *Tenth* and *Eleventh round*).
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. ✅ **Map generation** — *real ground*: elevation from a public DTM and
    object footprints from OpenStreetMap, with line of sight and cover derived
@@ -1805,6 +1924,10 @@ Each is intended to be an independent, toggleable module:
     rather than every turn. At brigade size that is about 74 calls a turn
     against about 216 if every squad reasoned (docs/balance.md, *How the
     engine scales*).
+
+    **A simulated echelon's calls for fire are Jev's to decide** (author,
+    2026-09-23): whether to adjust or fire for effect at once (decision 39),
+    and so the rest of a call. The player decides for their own echelon.
 
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next

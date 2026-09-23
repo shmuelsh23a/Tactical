@@ -18,13 +18,21 @@ import type {
   Side,
   Unit,
 } from "./types.js";
-import type { MovementMode } from "./types.js";
+import type { Echelon, MovementMode } from "./types.js";
+import { ECHELON_RANK } from "./data/c2.js";
+import {
+  MAX_ALTERNATE_POSITIONS_PER_FORCE,
+  MAX_REGISTERED_TARGETS_PER_WEAPON,
+  PREPARED_POSITION_REACH_M,
+} from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
   DEFAULT_ROUNDS_FOR_EFFECT,
+  FIRE_SUPPORT_MIN_ECHELON,
+  defaultRoundsForEffect,
   MAX_ADJUSTING_ROUNDS,
   INDIRECT_ACCURACY,
   MAX_ROUNDS_PER_MISSION,
@@ -147,6 +155,21 @@ export interface RegisteredTarget {
 }
 type MarkEntry = RegisteredTarget;
 
+/** An indirect-fire weapon's key — its own, not one an object inherits ("constructor"). */
+const isIndirect = (weapon: string): boolean => Object.hasOwn(INDIRECT_ACCURACY, weapon);
+
+/**
+ * An alternate position a side prepared in mission planning (rules decision
+ * 38): ground made ready for `forUnitId` to fall back to. Any force of the
+ * side standing in it holds its prepared `cover`, as it would its first.
+ */
+export interface PreparedPosition {
+  side: Side;
+  forUnitId: string;
+  at: Point;
+  cover: CoverState;
+}
+
 /**
  * Fire missions a side is assigned at company level and below (rules decision
  * 34): `missions` of the weapon for the battle, each firing `roundsForEffect`
@@ -160,6 +183,14 @@ export interface FireAllotment {
 }
 
 /** A fire mission called in (rules decision 34): adjusting, then fired for effect. */
+/**
+ * How a call for fire asks for its rounds (rules decision 39): `adjust` walks
+ * single rounds onto the mark before firing for effect, `effect` fires for
+ * effect at once, at whatever accuracy the guns have there. The caller's
+ * choice, as the observer's is in doctrine.
+ */
+export type FireMethod = "adjust" | "effect";
+
 export interface FireMission {
   id: string;
   side: Side;
@@ -169,6 +200,8 @@ export interface FireMission {
   firingFrom?: Point;
   fuze?: Fuze;
   observedByUav?: boolean;
+  /** Fire for effect at once (rules decision 39). Absent: adjust. */
+  method?: "effect";
   /** Adjusting rounds fired so far. */
   adjustingRounds: number;
   /** The adjusting round in flight: the mission waits to see where it lands. */
@@ -321,10 +354,23 @@ export interface GameOptions {
   registeredTargets?: RegisteredTarget[];
   /**
    * The fire missions each side is assigned (rules decision 34). A side left
-   * out may call as many as it likes, each firing
-   * {@link DEFAULT_ROUNDS_FOR_EFFECT} for effect.
+   * out may call as many as it likes, each firing its weapon's
+   * {@link defaultRoundsForEffect} for effect (decision 36).
    */
   fireSupport?: Partial<Record<Side, FireAllotment[]>>;
+  /**
+   * The echelon each side's player commands (rules decision 37): what fire
+   * support it may call. A side left out commands the highest echelon of its
+   * forces on the map — which a harness battle, where a company's defending
+   * platoon is the only one on the map, has to say otherwise.
+   */
+  commandEchelon?: Partial<Record<Side, Echelon>>;
+  /**
+   * Whether who may call a weapon depends on the echelon commanding (rules
+   * decision 37). On by default; a recording made before the rule reads it as
+   * off, so the fire it called still replays.
+   */
+  fireSupportByEchelon?: boolean;
 }
 
 /**
@@ -340,10 +386,26 @@ export class Game {
   readonly terrain: Terrain;
   readonly morale: boolean;
   readonly variants: RuleVariants;
-  /** Targets registered before the battle (rules decision 32). */
+  /** Targets registered before the battle (rules decisions 32 and 38): with the options, then in planning. */
   readonly registeredTargets: RegisteredTarget[] = [];
   /** The fire missions each side was assigned (rules decision 34). */
   readonly fireSupport: Partial<Record<Side, FireAllotment[]>>;
+  /** The echelon each side was declared to command (rules decision 37). */
+  readonly commandEchelons: Partial<Record<Side, Echelon>>;
+  /** Whether rules decision 37 is in force: who may call a weapon depends on the echelon. */
+  readonly fireSupportByEchelon: boolean;
+  /**
+   * How many of {@link registeredTargets} came with the options rather than
+   * from mission planning — the recording's header carries those, its journal
+   * the rest.
+   */
+  private readonly presetTargets: number;
+  /** Alternate positions prepared in mission planning (rules decision 38). */
+  private readonly prepared: PreparedPosition[] = [];
+  /** Alternate positions prepared in mission planning — copies. */
+  get preparedPositions(): PreparedPosition[] {
+    return cloneForRecord(this.prepared);
+  }
   /** Every fire mission called, in the order called. */
   private readonly missions: FireMission[] = [];
   /** Every fire mission called, in the order called — copies: change them and nothing happens. */
@@ -431,13 +493,24 @@ export class Game {
     this.terrain = opts.terrain ?? FLAT_GROUND;
     this.morale = opts.morale ?? false;
     this.variants = opts.variants ?? {};
+    this.commandEchelons = { ...(opts.commandEchelon ?? {}) };
+    for (const [side, e] of Object.entries(this.commandEchelons)) {
+      if (!this.sides.includes(side as Side) || !Object.hasOwn(ECHELON_RANK, e)) {
+        throw new Error(`commandEchelon: cannot read ${side}: ${JSON.stringify(e)}`);
+      }
+    }
+    this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     for (const t of opts.registeredTargets ?? []) {
-      if (!this.sides.includes(t.side) || !INDIRECT_ACCURACY[t.weapon] || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
+      if (!this.sides.includes(t.side) || !isIndirect(t.weapon) || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
       }
+      // Before any force is on the map only a declared echelon can be checked;
+      // an undeclared one is checked when the side calls on the target.
+      if (this.commandEchelons[t.side]) this.requireMayCall(t.side, t.weapon);
       this.registeredTargets.push({ side: t.side, weapon: t.weapon, at: { x: t.at.x, y: t.at.y } });
     }
     this.onTheMark.push(...this.registeredTargets);
+    this.presetTargets = this.registeredTargets.length;
     this.fireSupport = cloneForRecord(opts.fireSupport ?? {});
     for (const [side, list] of Object.entries(this.fireSupport)) {
       if (!this.sides.includes(side as Side) || !Array.isArray(list)) {
@@ -445,9 +518,9 @@ export class Game {
       }
       const weapons = new Set<string>();
       for (const a of list) {
-        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT;
+        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT[a.weapon] ?? NaN;
         if (
-          !INDIRECT_ACCURACY[a.weapon] ||
+          !isIndirect(a.weapon) ||
           weapons.has(a.weapon) ||
           !Number.isInteger(a.missions) ||
           a.missions < 0 ||
@@ -458,7 +531,44 @@ export class Game {
           throw new Error(`fireSupport.${side}: cannot read ${JSON.stringify(a)} (one entry a weapon)`);
         }
         weapons.add(a.weapon);
+        // Written in, so the recording carries the number it was played with
+        // rather than whatever the default is when it is replayed.
+        a.roundsForEffect = rounds;
+        if (this.commandEchelons[side as Side]) this.requireMayCall(side as Side, a.weapon);
       }
+    }
+  }
+
+  /**
+   * The echelon `side`'s player commands (rules decision 37): as declared, or
+   * else the highest of its forces put on the map, and a squad's when it has
+   * none. A force that is out still counts: losing the company's command group
+   * does not make its player a platoon commander.
+   */
+  commandEchelonOf(side: Side): Echelon {
+    const declared = this.commandEchelons[side];
+    if (declared) return declared;
+    let top: Echelon = "squad";
+    for (const u of this.units) if (u.side === side && ECHELON_RANK[u.echelon] > ECHELON_RANK[top]) top = u.echelon;
+    return top;
+  }
+
+  /**
+   * Whether `side` may call `weapon` at all (rules decision 37): mortars at
+   * company and above, artillery at battalion and above. A weapon with no
+   * floor — a grenade's smoke — anybody may use.
+   */
+  mayCall(side: Side, weapon: string): boolean {
+    if (!this.fireSupportByEchelon) return true;
+    const floor = FIRE_SUPPORT_MIN_ECHELON[weapon];
+    return !floor || ECHELON_RANK[this.commandEchelonOf(side)] >= ECHELON_RANK[floor];
+  }
+
+  private requireMayCall(side: Side, weapon: string): void {
+    if (!this.mayCall(side, weapon)) {
+      throw new Error(
+        `${side} commands a ${this.commandEchelonOf(side)}: ${weapon} is called from ${FIRE_SUPPORT_MIN_ECHELON[weapon]} and above`,
+      );
     }
   }
 
@@ -475,8 +585,10 @@ export class Game {
       trackIntel: this.trackIntel,
       ...(this.morale ? { morale: true } : {}),
       ...(Object.keys(this.variants).length ? { variants: cloneForRecord(this.variants) } : {}),
-      ...(this.registeredTargets.length ? { registeredTargets: cloneForRecord(this.registeredTargets) } : {}),
+      ...(this.presetTargets ? { registeredTargets: cloneForRecord(this.registeredTargets.slice(0, this.presetTargets)) } : {}),
       ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.fireSupport) } : {}),
+      ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
+      ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -513,6 +625,9 @@ export class Game {
     // why not the game's rng. Before the journal entry, like the cover: the
     // recording carries the men as they were drawn, and a replay keeps them.
     if (this.morale) generateMorale(unit, this.seed);
+    // An observation post is put out in planning, not brought along
+    // (rules decision 38).
+    delete unit.observationPost;
     this.units.push(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
@@ -550,6 +665,7 @@ export class Game {
 
   /** Start the next turn: roll initiative and enter the initiative phase. */
   beginTurn(): { turn: number; initiativeOrder: Side[] } {
+    this.checkFirePlans();
     this.turn += 1;
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
@@ -561,6 +677,19 @@ export class Game {
     }
     this.journal({ kind: "beginTurn" });
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
+  }
+
+  /**
+   * As planning ends: now the forces are on the map, an undeclared side's
+   * echelon is known, and its fire plan is checked against it (decision 37).
+   * Before anything else moves, so a refusal leaves the game as it was.
+   */
+  private checkFirePlans(): void {
+    if (this.turn !== 0) return;
+    for (const [side, list] of Object.entries(this.fireSupport)) {
+      for (const a of list ?? []) if (a.missions > 0) this.requireMayCall(side as Side, a.weapon);
+    }
+    for (const t of this.registeredTargets) this.requireMayCall(t.side, t.weapon);
   }
 
   /**
@@ -593,6 +722,7 @@ export class Game {
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
+        this.checkFirePlans();
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
         const { chargeWork, morale } = this.endOfTurnUpkeep();
@@ -679,6 +809,101 @@ export class Game {
     return result;
   }
 
+  // ---- mission planning (rules decision 38) ----
+
+  /** Whether the battle is still being planned: before the first turn. */
+  get planning(): boolean {
+    return this.turn === 0;
+  }
+
+  private requirePlanning(what: string): void {
+    if (!this.planning) throw new PhaseError(`${what} is set in mission planning, before the first turn`);
+  }
+
+  /**
+   * Register a target (rules decisions 32 and 38): `side`'s guns of `weapon`
+   * start on the mark at `at`, so a mission there fires for effect at once. A
+   * command decision: the player registers where they expect the enemy, and
+   * learns nothing of whether it is there. Only a weapon the side may call
+   * (decision 37), and at most {@link MAX_REGISTERED_TARGETS_PER_WEAPON}.
+   */
+  registerTarget(side: Side, weapon: string, at: Point): RegisteredTarget {
+    this.requirePlanning("A registered target");
+    if (!this.sides.includes(side)) throw new Error(`no such side: ${side}`);
+    if (!isIndirect(weapon)) throw new Error(`${weapon} is not an indirect-fire weapon`);
+    if (!Number.isFinite(at?.x) || !Number.isFinite(at?.y)) throw new Error(`cannot register a target at ${JSON.stringify(at)}`);
+    this.requireMayCall(side, weapon);
+    const held = this.registeredTargets.filter((t) => t.side === side && t.weapon === weapon).length;
+    if (held >= MAX_REGISTERED_TARGETS_PER_WEAPON) {
+      throw new Error(`${side} has registered ${MAX_REGISTERED_TARGETS_PER_WEAPON} ${weapon} targets, the most it may`);
+    }
+    const target: RegisteredTarget = { side, weapon, at: { x: at.x, y: at.y } };
+    this.registeredTargets.push(target);
+    this.onTheMark.push({ side, weapon, at: { ...target.at } });
+    this.journal({ kind: "registerTarget", side, weapon, at: { ...target.at } });
+    return cloneForRecord(target);
+  }
+
+  /**
+   * Put out an observation post (rules decision 38): `unitId` watches from
+   * where it stands, and sees a force on the move out to
+   * {@link OBSERVATION_POST_RANGE_M} until it moves or fires.
+   */
+  designateObservationPost(unitId: string): void {
+    this.requirePlanning("An observation post");
+    const unit = this.getUnit(unitId);
+    if (unit.kind === "vehicle") throw new Error(`${unitId} is a vehicle: an observation post is men on the ground`);
+    unit.observationPost = true;
+    this.journal({ kind: "designateObservationPost", unitId });
+  }
+
+  /**
+   * Prepare an alternate position for `unitId` at `at` (rules decision 38):
+   * ground made ready as its first position was, so a force that has to move
+   * off a shelled position has somewhere to go. Its cover is the force's own
+   * prepared position's, or partial for a force that prepared none.
+   */
+  prepareAlternatePosition(unitId: string, at: Point): PreparedPosition {
+    this.requirePlanning("An alternate position");
+    const unit = this.getUnit(unitId);
+    if (unit.kind === "vehicle") throw new Error(`${unitId} is a vehicle: it does not prepare a position`);
+    if (!Number.isFinite(at?.x) || !Number.isFinite(at?.y)) throw new Error(`cannot prepare a position at ${JSON.stringify(at)}`);
+    // Elsewhere: a position prepared where the force already stands would be
+    // cover for nothing, which decision 12's digging does not give.
+    if (distance(at, unit.position) <= PREPARED_POSITION_REACH_M) {
+      throw new Error(`${unitId}'s alternate position must be more than ${PREPARED_POSITION_REACH_M} m from where it stands`);
+    }
+    if (this.prepared.filter((p) => p.forUnitId === unitId).length >= MAX_ALTERNATE_POSITIONS_PER_FORCE) {
+      throw new Error(`${unitId} already has its alternate position`);
+    }
+    const position: PreparedPosition = {
+      side: unit.side,
+      forUnitId: unitId,
+      at: { x: at.x, y: at.y },
+      cover: unit.baseCover === "none" ? "partial" : unit.baseCover,
+    };
+    this.prepared.push(position);
+    this.journal({ kind: "prepareAlternatePosition", unitId, at: { ...position.at } });
+    return cloneForRecord(position);
+  }
+
+  /** The alternate position prepared for `unitId`, if any — a copy. */
+  alternatePositionFor(unitId: string): PreparedPosition | undefined {
+    const p = this.prepared.find((q) => q.forUnitId === unitId);
+    return p && cloneForRecord(p);
+  }
+
+  /** The cover of the best position `unit`'s side prepared where it stands. */
+  private preparedCoverAt(unit: Unit): CoverState {
+    // Dug for men: a vehicle's cover is not a trench's.
+    if (unit.kind === "vehicle") return "none";
+    let best: CoverState = "none";
+    for (const p of this.prepared) {
+      if (p.side === unit.side && distance(p.at, unit.position) <= PREPARED_POSITION_REACH_M) best = betterCover(best, p.cover);
+    }
+    return best;
+  }
+
   // ---- targeting phase ----
 
   /** How many fire missions of `weapon` `side` has left; undefined when it is not rationed. */
@@ -703,23 +928,65 @@ export class Game {
     side: Side,
     weaponKey: string,
     target: Point,
-    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean } = {},
+    opts: {
+      firingFrom?: Point;
+      fuze?: Fuze;
+      observedByUav?: boolean;
+      /** Adjust fire (the default) or fire for effect at once (rules decision 39). */
+      method?: FireMethod;
+    } = {},
+  ): FireMission {
+    return this.callForFireWith(side, weaponKey, target, opts, undefined);
+  }
+
+  /**
+   * **Replay only**: a call for fire with the rounds for effect the recording
+   * journalled, whatever the allotment or today's default would give — the
+   * default has changed once (decision 36), and a replay must fire what was
+   * fired. A player's call takes its number from the allotment or the
+   * weapon, never from the caller.
+   */
+  replayCallForFire(
+    side: Side,
+    weaponKey: string,
+    target: Point,
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; method?: FireMethod },
+    roundsForEffect: number,
+  ): FireMission {
+    return this.callForFireWith(side, weaponKey, target, opts, roundsForEffect);
+  }
+
+  private callForFireWith(
+    side: Side,
+    weaponKey: string,
+    target: Point,
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; method?: FireMethod },
+    recordedRounds: number | undefined,
   ): FireMission {
     this.requirePhase("targeting");
-    if (!INDIRECT_ACCURACY[weaponKey]) throw new Error(`${weaponKey} is not an indirect-fire weapon`);
+    if (!isIndirect(weaponKey)) throw new Error(`${weaponKey} is not an indirect-fire weapon`);
+    this.requireMayCall(side, weaponKey);
     const left = this.fireMissionsLeft(side, weaponKey);
     if (left !== undefined && left <= 0) throw new Error(`${side} has no ${weaponKey} fire missions left`);
     if (opts.fuze !== undefined && !(opts.fuze in SHELL_VS_MEN)) throw new Error(`no such fuze: ${String(opts.fuze)}`);
+    if (opts.method !== undefined && opts.method !== "adjust" && opts.method !== "effect") {
+      throw new Error(`no such method of fire: ${String(opts.method)}`);
+    }
     const allotment = this.fireSupport[side]?.find((a) => a.weapon === weaponKey);
+    const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey);
+    if (!Number.isInteger(roundsForEffect) || roundsForEffect < 1 || roundsForEffect > MAX_ROUNDS_PER_MISSION) {
+      throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds for effect, not ${roundsForEffect}`);
+    }
     const mission: FireMission = {
       id: this.nextId("mission"),
       side,
       weapon: weaponKey,
       target: { x: target.x, y: target.y },
-      roundsForEffect: allotment?.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT,
+      roundsForEffect,
       ...(opts.firingFrom ? { firingFrom: { ...opts.firingFrom } } : {}),
       ...(opts.fuze && opts.fuze !== "impact" ? { fuze: opts.fuze } : {}),
       ...(opts.observedByUav ? { observedByUav: true } : {}),
+      ...(opts.method === "effect" ? { method: "effect" as const } : {}),
       adjustingRounds: 0,
       status: "adjusting",
     };
@@ -734,6 +1001,12 @@ export class Game {
         ...(mission.firingFrom ? { firingFrom: { ...mission.firingFrom } } : {}),
         ...(mission.fuze ? { fuze: mission.fuze } : {}),
         ...(mission.observedByUav ? { observedByUav: true } : {}),
+        // Only when not the default, so a call from before decision 39 reads
+        // as the adjusting it was.
+        ...(mission.method ? { method: mission.method } : {}),
+        // Always, unlike the defaults above: the default itself has changed
+        // once (decision 36), and a replay must fire what was fired.
+        roundsForEffect,
       },
     });
     this.stepFireMission(mission);
@@ -762,6 +1035,7 @@ export class Game {
     if (m.inFlight && this.pendingFire.some((f) => f.id === m.inFlight)) return;
     delete m.inFlight;
     const forEffect =
+      m.method === "effect" ||
       this.isOnTheMark(m.side, m.weapon, m.target) ||
       !this.observes(m.side, m.target, m.observedByUav ?? false) ||
       m.adjustingRounds >= MAX_ADJUSTING_ROUNDS;
@@ -796,7 +1070,7 @@ export class Game {
   ): PendingFireMission {
     this.requirePhase("targeting");
     const weapon = EXPLOSIVES[weaponKey];
-    if (!weapon || weapon.delivery !== "indirectFire" || !INDIRECT_ACCURACY[weaponKey]) {
+    if (!weapon || weapon.delivery !== "indirectFire" || !isIndirect(weaponKey)) {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     }
     // A side with its fire assigned as missions fires only those (rules
@@ -804,6 +1078,7 @@ export class Game {
     if (this.journalDepth === 0 && this.fireSupport[side]) {
       throw new Error(`${side}'s fire is assigned as missions: call for fire`);
     }
+    if (this.journalDepth === 0) this.requireMayCall(side, weaponKey);
     const rounds = opts.rounds ?? 1;
     if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds, not ${rounds}`);
@@ -1737,6 +2012,7 @@ export class Game {
     if (this.phase !== "targeting" && this.phase !== "combat") {
       throw new PhaseError(`Smoke can only be deployed in targeting or combat phases`);
     }
+    this.requireMayCall(side, source);
     const delay = EXPLOSIVES[source]?.impactDelayTurns ?? 0;
     const durationTurns = SMOKE_DURATION_TURNS[source];
     const common = { source, radius, durationTurns, arrivesOnTurn: this.turn + delay };
@@ -2069,7 +2345,11 @@ export class Game {
     // before the flags clear, for the same reason as the charge work.
     const morale = this.morale ? this.resolveTurnMorale() : [];
 
-    endTurnUnitUpkeep(this.units, (at) => coverFromObjects(this.terrain, at));
+    endTurnUnitUpkeep(
+      this.units,
+      (at) => coverFromObjects(this.terrain, at),
+      (u) => this.preparedCoverAt(u),
+    );
     return { chargeWork, morale };
   }
 

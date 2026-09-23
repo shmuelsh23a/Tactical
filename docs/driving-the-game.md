@@ -40,10 +40,18 @@ can be built and a function timed in the real browser. Warm the JIT with a few
 hundred calls before timing and take the best of three passes — the first
 measurement of anything here comes out around twice its settled cost.
 
+- **A battle opens on mission planning, not turn 1** (rules decision 38).
+  Each side plans behind the handoff screen: click `RED מוכן — הצג את המפה`,
+  then `סיים תכנון (RED)`, the same for BLUE, and only then `התחל תור`. A
+  driver that looks only for the three turn buttons below stalls here. While
+  planning, a map click registers a target or places the selected force's
+  alternate position, and a force is selected from the sidebar's `הכוחות שלי`
+  list, which is there during planning too.
 - **The app opens on the scenario picker, not the battle.** Load
   `/?scenario=yokneamIllit` (or any spec's `slug`) to skip it; a reload keeps
   the battle but, as always, not the game in progress. `החלף תרחיש` goes back —
-  once the first turn has started it asks for a second click
+  once anything has been planned or the first turn has started it asks for a
+  second click
   (`הקרב יאבד — לחץ שוב`) rather than a native `confirm`, which would block
   the driver.
 - **A token's symbol image is large in map coordinates.** `elementFromPoint` at
@@ -81,8 +89,8 @@ measurement of anything here comes out around twice its settled cost.
   pane hidden the page can take longer than the screenshot's 5 s to paint;
   `javascript_tool` clicks and `.sidebar li` / `.unit-card` text still work,
   and `.token-enemy` counts say what a side's map is showing.
-- **The `.roster` list only exists during an activation**, not on the initiative
-  panel — querying it to decide "has the app rendered?" gives a false negative
+- **The `.roster` list only exists during planning and an activation**, not on
+  the initiative panel (where the map is veiled too) — querying it to decide "has the app rendered?" gives a false negative
   at the start of a turn.
 - **A saved battle opens from the picker as well as the header.** Both inputs
   go through `readRecording` (`src/app/recordingFile.ts`); the picker's is

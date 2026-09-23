@@ -42,6 +42,14 @@ describe("what the enemy may see of a force's morale", () => {
     expect(own?.soldiers?.[0]?.morale).toBeDefined();
   });
 
+  it("does not say a force is an observation post (rules decision 38)", () => {
+    const g = new Game({ seed: 4 });
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.designateObservationPost("R");
+    expect(outsideView(red, true).observationPost).toBeUndefined();
+    expect(red.observationPost).toBe(true);
+  });
+
   it("a game without morale hands the force over untouched", () => {
     const g = new Game({ seed: 4 });
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));

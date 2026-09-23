@@ -1,6 +1,10 @@
 import { useReducer, useRef, useState } from "react";
 import {
+  ADJUSTMENT_RADIUS_M,
   ASSAULT_RANGE_M,
+  watchingAsPost,
+  MAX_REGISTERED_TARGETS_PER_WEAPON,
+  OBSERVATION_POST_RANGE_M,
   CAMOUFLAGE,
   CHARGE_LAYING,
   DIG_IN,
@@ -26,6 +30,9 @@ import {
   type Observation,
   type Side,
   type SmokeScreen,
+  type Echelon,
+  type FireMethod,
+  type Fuze,
   type SmokeSource,
   type StandingOrder,
   type Unit,
@@ -37,6 +44,7 @@ import {
   casualtyReport,
   chargeHe,
   chargeWorkHe,
+  planningRefusalHe,
   coveringFireHe,
   describeExecution,
   describeSector,
@@ -75,7 +83,13 @@ import { Handoff } from "./components/Handoff.js";
 
 type Gait = "normal" | "run";
 type SmallArm = "smallArms" | "sustainedMg";
-type Stage = "initiative" | "activation" | "gameover";
+type Stage = "planning" | "initiative" | "activation" | "gameover";
+/**
+ * What a click on the map does in mission planning (rules decision 38): mark a
+ * registered target, or place the selected force's alternate position. An
+ * observation post is a force, so it is set from the force's card instead.
+ */
+type PlanTool = "target" | "alternate" | "post";
 /** Indirect-fire tube the player is marking with. */
 type Tube = "mortar" | "artillery";
 /** What the marked point is for: high explosive, or a smoke screen. */
@@ -96,6 +110,8 @@ const phaseLabelHe: Record<ActivationPhase, string> = {
 };
 
 const tubeHe: Record<Tube, string> = { mortar: "מרגמה", artillery: "ארטילריה" };
+/** The echelon a side's player commands, as the fire-support note names it (rules decision 37). */
+const echelonHe: Record<Echelon, string> = { squad: "כיתה", platoon: "מחלקה", company: "פלוגה", battalion: "גדוד", brigade: "חטיבה" };
 
 /** Smoke by delivery means, in the document's own words (the עשן table). */
 const smokeSourceHe: Record<SmokeSource, string> = {
@@ -114,13 +130,11 @@ interface AppProps {
 export function App({ scenario, onLeave }: AppProps) {
   // The engine lives in a ref (mutable, imperative); React state mirrors it.
   // Choosing another battle remounts this component rather than rebuilding it.
-  const initRef = useRef<{ scn: Scenario; order: Side[] } | null>(null);
-  if (!initRef.current) {
-    const scn = scenario.build();
-    const { initiativeOrder } = scn.game.beginTurn();
-    initRef.current = { scn, order: initiativeOrder };
-  }
-  const { scn, order: initialOrder } = initRef.current;
+  // The first turn is not begun here: the battle opens on mission planning
+  // (rules decision 38), and begins when both sides have planned.
+  const initRef = useRef<{ scn: Scenario } | null>(null);
+  if (!initRef.current) initRef.current = { scn: scenario.build() };
+  const { scn } = initRef.current;
   const game = scn.game;
 
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -131,16 +145,26 @@ export function App({ scenario, onLeave }: AppProps) {
       turn: game.turn,
       kind: "info",
       readers: SIDES,
-      text: `תור ${game.turn} — יוזמה: ${initialOrder.join(" → ")}`,
+      text: "תכנון משימה — כל צד בתורו: מטרות רשומות, תצפיות ועמדות חלופיות",
     },
   ]);
 
-  const [stage, setStage] = useState<Stage>("initiative");
-  const [activations, setActivations] = useState<Activation[]>(() =>
-    buildActivations(initialOrder),
-  );
+  const [stage, setStage] = useState<Stage>("planning");
+  // Rolled when planning ends and the first turn begins.
+  const [activations, setActivations] = useState<Activation[]>([]);
   const [actIndex, setActIndex] = useState(0);
-  const [handoffTo, setHandoffTo] = useState<Side | null>(null);
+  // Planning starts behind the handoff screen too: the first side's plan is
+  // as much its own as any later turn.
+  const [handoffTo, setHandoffTo] = useState<Side | null>(SIDES[0]!);
+  /** Which side is planning, as an index into SIDES (rules decision 38). */
+  const [planningIndex, setPlanningIndex] = useState(0);
+  const [planTool, setPlanTool] = useState<PlanTool>("target");
+  /** Whether anything has been planned — until it has, leaving loses nothing. */
+  const [planned, setPlanned] = useState(false);
+  /** How mortar and artillery rounds are fuzed (rules decision 31). */
+  const [fuze, setFuze] = useState<Fuze>("impact");
+  /** Adjust fire, or fire for effect at once (rules decision 39). */
+  const [method, setMethod] = useState<FireMethod>("adjust");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gait, setGait] = useState<Gait>("normal");
   const [weapon, setWeapon] = useState<SmallArm>("smallArms");
@@ -242,9 +266,24 @@ export function App({ scenario, onLeave }: AppProps) {
     return contact != null && contact.lastSeenTurn >= game.turn;
   };
 
+  // What the side's commander may call at all (rules decision 37): a platoon
+  // has no mortars or artillery, and only a grenade's smoke.
+  const callableTubes = (side: Side) => (["mortar", "artillery"] as Tube[]).filter((t) => game.mayCall(side, t));
+  const callableSmoke = (side: Side) =>
+    (["grenade", "mortar", "artillery"] as SmokeSource[]).filter((s) => game.mayCall(side, s));
+
   const currentActivation =
     stage === "activation" && actIndex < activations.length ? activations[actIndex] : null;
-  const viewingSide: Side = currentActivation?.side ?? activations[0]?.side ?? "BLUE";
+  const planningSide: Side | null = stage === "planning" ? SIDES[planningIndex]! : null;
+  const viewingSide: Side = planningSide ?? currentActivation?.side ?? activations[0]?.side ?? "BLUE";
+  const tubes = callableTubes(viewingSide);
+  const smokes = callableSmoke(viewingSide);
+  // The choice held over from the other side's screen, or the first it may call.
+  const activeTube: Tube | undefined = tubes.includes(tube) ? tube : tubes[0];
+  const activeSmoke: SmokeSource = smokes.includes(smokeSource) ? smokeSource : smokes[0]!;
+  const activeMission: Mission = activeTube ? mission : "smoke";
+  // A side with nothing to call has no targets to register (rules decision 37).
+  const activePlanTool: PlanTool = planTool === "target" && tubes.length === 0 ? "post" : planTool;
   const enginePhase: ActivationPhase | "other" = currentActivation?.phase ?? "other";
 
   // Everything the player sees comes from here: their own forces, plus the
@@ -334,17 +373,31 @@ export function App({ scenario, onLeave }: AppProps) {
     force();
   }
 
-  /** Mark an aim point: a fire mission that lands later, or a smoke screen. */
+  /**
+   * A weapon's mission still in hand for the viewing side — adjusting, or
+   * waiting to see its last round land. A section or a battery fires one
+   * mission at a time, so the next call waits for it (the harness's rule too).
+   */
+  const missionInHand = (tube: Tube) =>
+    game.fireMissions.find((m) => m.side === viewingSide && m.weapon === tube && m.status === "adjusting");
+
+  /**
+   * Mark an aim point: a call for fire (rules decision 34) — adjusted onto the
+   * mark and then fired for effect by the engine, turn by turn — or a smoke
+   * screen.
+   */
   function handleTargetAt(x: number, y: number) {
+    if (stage === "planning") {
+      handlePlanAt(x, y);
+      return;
+    }
     if (enginePhase !== "targeting") return;
+    const mission = activeMission;
+    const smokeSource = activeSmoke;
+    // One fire mission and one smoke screen a side a turn (rules decision 8's
+    // UI limit), on top of one mission in hand a weapon.
     if (missionSpent(viewingSide, mission)) {
-      pushLog(
-        mission === "smoke"
-          ? "כבר הונח מסך עשן בתור זה"
-          : "כבר סומנה משימת אש בתור זה",
-        "info",
-        onlyFor(viewingSide),
-      );
+      pushLog(mission === "smoke" ? "כבר הונח מסך עשן בתור זה" : "כבר נקראה משימת אש בתור זה", "info", onlyFor(viewingSide));
       return;
     }
     try {
@@ -360,20 +413,113 @@ export function App({ scenario, onLeave }: AppProps) {
           // from what, and when the next one arrives, is its own fire plan.
           onlyFor(viewingSide),
         );
+        missionsUsed.current[`${viewingSide}-smoke`] = game.turn;
       } else {
-        const m = game.queueIndirectFire(tube, viewingSide, { x, y });
+        const tube = activeTube!;
+        if (missionInHand(tube)) {
+          pushLog(`משימת ${tubeHe[tube]} עדיין בביצוע — חדל אש כדי לפנות אותה`, "info", onlyFor(viewingSide));
+          return;
+        }
+        if (game.fireMissionsLeft(viewingSide, tube) === 0) {
+          pushLog(`לא נותרו משימות ${tubeHe[tube]}`, "info", onlyFor(viewingSide));
+          return;
+        }
+        // Asked before the call: once it lands, the guns are on the mark anyway.
+        const onMark = game.isOnTheMark(viewingSide, tube, { x, y });
+        const m = game.callForFire(viewingSide, tube, { x, y }, {
+          ...(fuze === "impact" ? {} : { fuze }),
+          ...(method === "effect" ? { method } : {}),
+        });
         pushLog(
-          `משימת אש — ${tubeHe[tube]}, פגיעה צפויה בתור ${m.resolvesOnTurn}`,
+          m.status !== "done"
+            ? `בקשת אש — ${tubeHe[tube]}: פגז תיקון, ואחריו ${m.roundsForEffect} פגזים לאפקט`
+            : method === "effect" && !onMark
+              ? `בקשת אש — ${tubeHe[tube]}: אש לאפקט מייד (${m.roundsForEffect} פגזים)`
+              : onMark
+              ? `בקשת אש — ${tubeHe[tube]}: על מטרה רשומה, אש לאפקט (${m.roundsForEffect} פגזים)`
+              : // Nobody of the side can see the aim point to adjust (decision 33).
+                `בקשת אש — ${tubeHe[tube]}: אין תצפית על המטרה, אש לאפקט ללא תיקון (${m.roundsForEffect} פגזים)`,
           "fire",
           onlyFor(viewingSide),
         );
+        missionsUsed.current[`${viewingSide}-he`] = game.turn;
       }
-      missionsUsed.current[`${viewingSide}-${mission}`] = game.turn;
     } catch (err) {
-      pushLog((err as Error).message, "info", onlyFor(viewingSide));
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
     }
     force();
   }
+
+  /** Check fire (rules decision 34): the side's missions in hand stop, and what has not landed is not fired. */
+  function handleCheckFire() {
+    game.checkFire(viewingSide);
+    pushLog("חדל אש — המשימות שבביצוע נעצרו", "fire", onlyFor(viewingSide));
+    force();
+  }
+
+  // ---- mission planning (rules decision 38) ----
+
+  /** A click on the map while planning: a registered target, or the selected force's alternate position. */
+  function handlePlanAt(x: number, y: number) {
+    const side = viewingSide;
+    try {
+      if (activePlanTool === "target") {
+        const tube = activeTube;
+        if (!tube) return;
+        game.registerTarget(side, tube, { x, y });
+        pushLog(`מטרה רשומה ל${tubeHe[tube]} (${Math.round(x)}, ${Math.round(y)})`, "info", onlyFor(side));
+      } else if (activePlanTool === "alternate") {
+        if (!selectedOwn) {
+          pushLog("בחר כוח, ואז לחץ על המפה במקום העמדה החלופית", "info", onlyFor(side));
+          return;
+        }
+        game.prepareAlternatePosition(selectedOwn.id, { x, y });
+        pushLog(`${selectedOwn.name}: הוכנה עמדה חלופית (${Math.round(x)}, ${Math.round(y)})`, "info", onlyFor(side));
+      } else {
+        return;
+      }
+      setPlanned(true);
+    } catch (err) {
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(side));
+    }
+    force();
+  }
+
+  function handleObservationPost() {
+    if (!selectedOwn) return;
+    try {
+      game.designateObservationPost(selectedOwn.id);
+      setPlanned(true);
+      pushLog(`${selectedOwn.name} הוצב כתצפית`, "info", onlyFor(viewingSide));
+    } catch (err) {
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
+    }
+    force();
+  }
+
+  /** This side has planned: hand over to the next, or begin the first turn. */
+  function handleEndPlanning() {
+    setLeaveArmed(false);
+    setSelectedId(null);
+    const next = planningIndex + 1;
+    if (next < SIDES.length) {
+      setPlanningIndex(next);
+      // The tool is the side's own choice, not a setting left on the table.
+      setPlanTool("target");
+      setTube("mortar");
+      setHandoffTo(SIDES[next]!);
+      force();
+      return;
+    }
+    const { initiativeOrder } = game.beginTurn();
+    setActivations(buildActivations(initiativeOrder));
+    setActIndex(0);
+    setHandoffTo(null);
+    setStage("initiative");
+    pushLog(`תור ${game.turn} — יוזמה: ${initiativeOrder.join(" → ")}`, "info", TABLE);
+    force();
+  }
+
 
   /**
    * Report what a side's forces in position have just picked up — first sight
@@ -998,6 +1144,10 @@ export function App({ scenario, onLeave }: AppProps) {
     // the next side's forces under it.
     setOrderTask("advance");
     setOrderTargetId(null);
+    // How the last side fuzed its rounds is its own choice, not the next's.
+    setFuze("impact");
+    setMethod("adjust");
+    setTube("mortar");
     // …and a sector half-laid belongs to the force that was selected, not to
     // whoever the next side clicks on first.
     setAimingSector(false);
@@ -1039,7 +1189,7 @@ export function App({ scenario, onLeave }: AppProps) {
 
   // ---- render ----
 
-  const showHandoff = stage === "activation" && handoffTo != null;
+  const showHandoff = (stage === "activation" || stage === "planning") && handoffTo != null;
 
   if (debrief) return <Debrief recording={debrief} onClose={() => setDebrief(null)} />;
 
@@ -1048,15 +1198,23 @@ export function App({ scenario, onLeave }: AppProps) {
       <header className="topbar">
         <h1>{scn.title}</h1>
         <div className="turn-info">
-          <span>תור {game.turn}</span>
-          <span className="sep">·</span>
-          <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>
+          {stage === "planning" ? (
+            <span>תכנון משימה</span>
+          ) : (
+            <>
+              <span>תור {game.turn}</span>
+              <span className="sep">·</span>
+              <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>
+            </>
+          )}
         </div>
         <button
           className={leaveArmed ? "btn-ghost btn-armed" : "btn-ghost"}
           onClick={() => {
-            // Nothing is lost until the first turn has been started.
-            if (leaveArmed || (game.turn === 1 && stage === "initiative")) onLeave();
+            // Nothing is lost until something has been planned or the first
+            // turn has been started.
+            const untouched = !planned && (stage === "planning" || (game.turn === 1 && stage === "initiative"));
+            if (leaveArmed || untouched) onLeave();
             else setLeaveArmed(true);
           }}
           onBlur={() => setLeaveArmed(false)}
@@ -1088,10 +1246,20 @@ export function App({ scenario, onLeave }: AppProps) {
           <div className="attribution">
             © OpenStreetMap contributors (ODbL) · Terrain Tiles courtesy of Mapzen · SRTM (NASA)
           </div>
-          {showHandoff ? (
+          {stage === "initiative" ? (
+            // Nobody's screen: the device is still in the hands of whoever
+            // acted last, and the side to move first is not theirs to see —
+            // least of all its plan (rules decisions 17 and 38).
+            <div className="handoff">
+              <div className="handoff-card">
+                <h2>שלב יוזמה — תור {game.turn}</h2>
+                <p>סדר פעולה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</p>
+              </div>
+            </div>
+          ) : showHandoff ? (
             <Handoff
               side={handoffTo!}
-              phaseLabel={phaseLabelHe[currentActivation!.phase]}
+              phaseLabel={stage === "planning" ? "תכנון משימה" : phaseLabelHe[currentActivation!.phase]}
               onReady={() => setHandoffTo(null)}
             />
           ) : (
@@ -1102,7 +1270,7 @@ export function App({ scenario, onLeave }: AppProps) {
               units={visibleUnits}
               viewingSide={viewingSide}
               selectedId={selectedId}
-              phase={enginePhase}
+              phase={stage === "planning" ? "planning" : enginePhase}
               moveCap={moveCap}
               staleContactIds={staleIds}
               awaitingOrderIds={awaitingOrders}
@@ -1115,6 +1283,8 @@ export function App({ scenario, onLeave }: AppProps) {
               pendingFire={game.pendingFire.filter((m) => m.side === viewingSide)}
               pendingSmoke={smokeInFlight}
               mines={knownMines}
+              registeredTargets={game.registeredTargets.filter((t) => t.side === viewingSide)}
+              alternatePositions={game.preparedPositions.filter((p) => p.side === viewingSide)}
               standingOrders={game.units
                 .filter((u) => u.side === viewingSide)
                 .flatMap((u) => orderOverlay(game.standingOrderFor(u.id), u, visibleUnits))}
@@ -1127,6 +1297,88 @@ export function App({ scenario, onLeave }: AppProps) {
         </div>
 
         <aside className="sidebar">
+          {stage === "planning" && !showHandoff && planningSide && (
+            <div className="panel">
+              <h3>
+                <span className={`chip chip-${planningSide.toLowerCase()}`}>{planningSide}</span> תכנון משימה
+              </h3>
+              <p className="hint">
+                לפני הקרב: מטרות רשומות, תצפיות ועמדות חלופיות. האויב אינו רואה דבר מזה.
+              </p>
+              <div className="controls">
+                <label>כלי:</label>
+                <div className="seg">
+                  {tubes.length > 0 && (
+                    <button className={activePlanTool === "target" ? "on" : ""} onClick={() => setPlanTool("target")}>
+                      מטרה רשומה
+                    </button>
+                  )}
+                  <button className={activePlanTool === "post" ? "on" : ""} onClick={() => setPlanTool("post")}>
+                    תצפית
+                  </button>
+                  <button className={activePlanTool === "alternate" ? "on" : ""} onClick={() => setPlanTool("alternate")}>
+                    עמדה חלופית
+                  </button>
+                </div>
+
+                {activePlanTool === "target" && (
+                  <>
+                    <label>אמצעי:</label>
+                    <div className="seg">
+                      {tubes.map((t) => (
+                        <button key={t} className={activeTube === t ? "on" : ""} onClick={() => setTube(t)}>
+                          {tubeHe[t]}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="hint">
+                      לחץ על המפה במקום שבו אתה מצפה לאויב. על מטרה רשומה האש יורדת לאפקט מייד, בדיוק המרבי
+                      של האמצעי, בטווח {ADJUSTMENT_RADIUS_M} מ' ממנה. נותרו{" "}
+                      {MAX_REGISTERED_TARGETS_PER_WEAPON -
+                        game.registeredTargets.filter((t) => t.side === planningSide && t.weapon === activeTube).length}{" "}
+                      מתוך {MAX_REGISTERED_TARGETS_PER_WEAPON}.
+                    </p>
+                  </>
+                )}
+                {tubes.length === 0 && (
+                  <p className="hint">{`אין סיוע אש ל${echelonHe[game.commandEchelonOf(planningSide)]}: אין מטרות לרשום.`}</p>
+                )}
+                {activePlanTool === "post" && (
+                  <>
+                    <p className="hint">
+                      בחר כוח והצב אותו כתצפית: כל עוד אינו זז ואינו יורה, הוא מגלה כוח בתנועה עד{" "}
+                      {OBSERVATION_POST_RANGE_M} מ' (במקום 300).
+                    </p>
+                    <button
+                      className="btn-primary"
+                      disabled={!selectedOwn || selectedOwn.kind === "vehicle" || !!selectedOwn.observationPost}
+                      onClick={handleObservationPost}
+                    >
+                      {selectedOwn?.observationPost ? `${selectedOwn.name} — תצפית` : "הצב כתצפית"}
+                    </button>
+                  </>
+                )}
+                {activePlanTool === "alternate" && (
+                  <p className="hint">
+                    בחר כוח ולחץ על המפה במקום עמדתו החלופית: עמדה אחת לכוח, מוכנה כעמדתו הראשונה. כוח שלך שמגיע
+                    אליה מקבל את מחסהּ.
+                  </p>
+                )}
+              </div>
+              <button className="btn-primary" onClick={handleEndPlanning}>
+                סיים תכנון ({planningSide})
+              </button>
+
+              <Roster
+                game={game}
+                units={game.units.filter((u) => u.side === planningSide)}
+                selectedId={selectedId}
+                awaitingOrders={new Set()}
+                onSelect={handleSelect}
+              />
+            </div>
+          )}
+
           {stage === "initiative" && (
             <div className="panel">
               <h3>שלב יוזמה — תור {game.turn}</h3>
@@ -1146,13 +1398,20 @@ export function App({ scenario, onLeave }: AppProps) {
 
               {currentActivation.phase === "targeting" && (
                 <div className="controls">
+                  {tubes.length === 0 && (
+                    <p className="hint">
+                      {`אין סיוע אש ל${echelonHe[game.commandEchelonOf(viewingSide)]}: מרגמות מדרג פלוגה, ארטילריה מדרג גדוד.`}
+                    </p>
+                  )}
                   <label>משימה:</label>
                   <div className="seg">
-                    <button className={mission === "he" ? "on" : ""} onClick={() => setMission("he")}>
-                      פגז
-                    </button>
+                    {tubes.length > 0 && (
+                      <button className={activeMission === "he" ? "on" : ""} onClick={() => setMission("he")}>
+                        פגז
+                      </button>
+                    )}
                     <button
-                      className={mission === "smoke" ? "on" : ""}
+                      className={activeMission === "smoke" ? "on" : ""}
                       onClick={() => setMission("smoke")}
                     >
                       עשן
@@ -1160,27 +1419,40 @@ export function App({ scenario, onLeave }: AppProps) {
                   </div>
 
                   <label>אמצעי:</label>
-                  {mission === "he" ? (
-                    <div className="seg">
-                      <button
-                        className={tube === "mortar" ? "on" : ""}
-                        onClick={() => setTube("mortar")}
-                      >
-                        מרגמה
-                      </button>
-                      <button
-                        className={tube === "artillery" ? "on" : ""}
-                        onClick={() => setTube("artillery")}
-                      >
-                        ארטילריה
-                      </button>
-                    </div>
+                  {activeMission === "he" ? (
+                    <>
+                      <div className="seg">
+                        {tubes.map((t) => (
+                          <button key={t} className={activeTube === t ? "on" : ""} onClick={() => setTube(t)}>
+                            {tubeHe[t]}
+                          </button>
+                        ))}
+                      </div>
+                      <label>שיטה:</label>
+                      <div className="seg">
+                        <button className={method === "adjust" ? "on" : ""} onClick={() => setMethod("adjust")}>
+                          תיקון
+                        </button>
+                        <button className={method === "effect" ? "on" : ""} onClick={() => setMethod("effect")}>
+                          אש לאפקט מייד
+                        </button>
+                      </div>
+                      <label>מרעום:</label>
+                      <div className="seg">
+                        <button className={fuze === "impact" ? "on" : ""} onClick={() => setFuze("impact")}>
+                          הקשה
+                        </button>
+                        <button className={fuze === "airburst" ? "on" : ""} onClick={() => setFuze("airburst")}>
+                          התפוצצות באוויר
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <div className="seg">
-                      {(["grenade", "mortar", "artillery"] as SmokeSource[]).map((s) => (
+                      {smokes.map((s) => (
                         <button
                           key={s}
-                          className={smokeSource === s ? "on" : ""}
+                          className={activeSmoke === s ? "on" : ""}
                           onClick={() => setSmokeSource(s)}
                         >
                           {smokeSourceHe[s]}
@@ -1190,29 +1462,45 @@ export function App({ scenario, onLeave }: AppProps) {
                   )}
 
                   <p className="hint">
-                    {mission === "he" ? (
+                    {activeMission === "he" ? (
                       <>
-                        לחץ על המפה כדי לסמן מטרה. הפגז נוחת כעבור{" "}
-                        {tube === "mortar" ? "תור" : "שני תורות"} ומפוזר לפי טבלת הפגיעה.
+                        לחץ על המפה כדי לבקש אש.{" "}
+                        {method === "adjust"
+                          ? "בתיקון, המשימה יורה פגז אחר פגז עד שכוח שלך רואה אחד נוחת על המטרה, ואז את פגזי האפקט בבת אחת — מדויק, אבל איטי מול מטרה בתנועה."
+                          : "אש לאפקט מייד: כל הפגזים בבת אחת, בדיוק שיש לתותחים שם — מהיר, אבל בלי תיקון הפיזור רחב."}{" "}
+                        על מטרה רשומה — אש לאפקט מייד בכל מקרה. פגז נוחת כעבור{" "}
+                        {activeTube === "mortar" ? "תור" : "שני תורות"}.
                       </>
                     ) : (
                       <>
-                        עשן חוסם ירי לתוכו ודרכו. {smokeSourceHe[smokeSource]}: רדיוס{" "}
-                        {SMOKE_RADIUS_M[smokeSource]}מ',{" "}
-                        {SMOKE_DURATION_TURNS[smokeSource]} תורות,{" "}
-                        {smokeSource === "grenade"
+                        עשן חוסם ירי לתוכו ודרכו. {smokeSourceHe[activeSmoke]}: רדיוס{" "}
+                        {SMOKE_RADIUS_M[activeSmoke]}מ',{" "}
+                        {SMOKE_DURATION_TURNS[activeSmoke]} תורות,{" "}
+                        {activeSmoke === "grenade"
                           ? "יורד מייד"
-                          : smokeSource === "mortar"
+                          : activeSmoke === "mortar"
                             ? "יורד כעבור תור"
                             : "יורד כעבור שני תורות"}
                         .
                       </>
                     )}
                   </p>
+                  {(tubes.some((t) => missionInHand(t)) || game.pendingFire.some((f) => f.side === viewingSide)) && (
+                    <button className="btn-ghost" onClick={handleCheckFire}>
+                      חדל אש
+                    </button>
+                  )}
                   <div className="unit-card">
-                    <div className={missionSpent(viewingSide, "he") ? "warn" : "ok"}>
-                      משימת אש: {missionSpent(viewingSide, "he") ? "נוצלה בתור זה" : "זמינה"}
-                    </div>
+                    {tubes.map((t) => {
+                      const left = game.fireMissionsLeft(viewingSide, t);
+                      const inHand = missionInHand(t);
+                      return (
+                        <div key={t} className={inHand || left === 0 ? "warn" : "ok"}>
+                          משימות {tubeHe[t]}: {left === undefined ? "ללא הגבלה" : `נותרו ${left}`}
+                          {inHand ? ` · משימה בביצוע (${inHand.adjustingRounds} פגזי תיקון)` : ""}
+                        </div>
+                      );
+                    })}
                     <div className={missionSpent(viewingSide, "smoke") ? "warn" : "ok"}>
                       מסך עשן: {missionSpent(viewingSide, "smoke") ? "נוצל בתור זה" : "זמין"}
                     </div>
@@ -1590,7 +1878,7 @@ export function App({ scenario, onLeave }: AppProps) {
           */}
           <LogPanel
             log={log}
-            reader={stage === "activation" && !showHandoff ? viewingSide : null}
+            reader={(stage === "activation" || stage === "planning") && !showHandoff ? viewingSide : null}
           />
         </aside>
       </div>
@@ -1786,6 +2074,8 @@ function Roster({
             {u.name} —{" "}
             {u.kind === "vehicle" ? "טנק" : `${fitSoldiers(u)}/${fullStrength(u)}`}
             {u.firedThisTurn && " · ירה"}
+            {watchingAsPost(u) && " · תצפית"}
+            {game.alternatePositionFor(u.id) && " · עמדה חלופית"}
             {(() => {
               // Only what needs the commander's eye: a force that is steady says nothing.
               const morale = game.forceMorale(u.id);

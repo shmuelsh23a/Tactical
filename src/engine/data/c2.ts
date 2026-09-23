@@ -45,3 +45,6 @@ export function orderInterval(force: Echelon, distance: number): number | null {
   if (!profile) return null;
   return lookupBand(profile.bands, distance)?.value ?? null;
 }
+
+/** Echelons in order of command, squad lowest. */
+export const ECHELON_RANK: Readonly<Record<Echelon, number>> = { squad: 0, platoon: 1, company: 2, battalion: 3, brigade: 4 };

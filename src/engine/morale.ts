@@ -1,4 +1,5 @@
 import { Rng } from "./rng.js";
+import { ECHELON_RANK } from "./data/c2.js";
 import { angleBetween, bearingDegrees, distance, type Point } from "./geometry.js";
 import type { Echelon, MoraleState, Side, Soldier, SoldierMorale, Traits, Unit } from "./types.js";
 import {
@@ -65,7 +66,7 @@ import {
 // Traits and the starting pool
 // ---------------------------------------------------------------------------
 
-const RANK: Record<Echelon, number> = { squad: 0, platoon: 1, company: 2, battalion: 3, brigade: 4 };
+const RANK = ECHELON_RANK;
 
 /**
  * The seed a force's men are drawn from: the game's seed and the force's id.
