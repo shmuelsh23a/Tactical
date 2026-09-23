@@ -207,9 +207,10 @@ export type Fuze = "impact" | "airburst";
  * - `down`: in the open, once his force has been shelled and has not moved
  *   since (rules decision 30). The first volley is the one that kills.
  * - `partial`: behind a wall or a fold; the lower of this and his posture.
- * - `openHole`: full cover with nothing overhead — a dug or prepared
- *   position.
- * - `roof`: full cover under a roof — a building.
+ * - `openHole`: full cover with nothing overhead — a hole dug during the
+ *   battle.
+ * - `roof`: full cover under a roof — a building, or a position prepared
+ *   before the battle (author, 2026-09-23).
  *
  * Sources (docs/balance.md, *What the sources say*): lethal areas of a 155 mm
  * round, impact fuze, standing 971 m², prone 346 m², foxhole 130 m²; air

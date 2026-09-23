@@ -10,7 +10,7 @@
  *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
  *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
  *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,fuze=airburst   # missions x rounds
- *   npm run balance -- --cep artillery:15:15,mortar:100:25   # on trial: accuracy by CEP, first:cap metres
+ *   npm run balance -- --cep artillery:270:50,mortar:100:25  # on trial: accuracy by CEP, first:cap metres
  *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,adjust=on   # one round until on the mark, then for effect
  *   npm run balance -- --defender-fires mortar=3x3,registered=200/400      # the defender's own section
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
@@ -121,7 +121,7 @@ const defenderFires: DefenderFires | undefined = (() => {
   }
   return d;
 })();
-// --cep artillery:15:15,mortar:100:25 — on trial: accuracy by CEP, first:cap metres
+// --cep artillery:270:50,mortar:100:25 — on trial: accuracy by CEP, first:cap metres
 const cepArg = value("--cep");
 if (cepArg) {
   variants.cepDispersion = {};

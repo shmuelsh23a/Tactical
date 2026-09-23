@@ -123,7 +123,13 @@ interface AdjustmentEntry {
   aim: Point;
   turn: number;
   adjustments: number;
-  onTarget: boolean;
+}
+
+/** A point a side's weapon is on the mark at: a round landed there, or it was registered. */
+interface MarkEntry {
+  side: Side;
+  weapon: string;
+  at: Point;
 }
 
 /** Refusal reason when a force is under orders to hold its fire. */
@@ -360,7 +366,10 @@ export class Game {
       }
     }
     for (const t of this.variants.registeredTargets ?? []) {
-      this.adjusting.push({ side: t.side, weapon: t.weapon, aim: t.at, turn: 0, adjustments: 0, onTarget: true });
+      if (!(t.side === "RED" || t.side === "BLUE") || !EXPLOSIVES[t.weapon] || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
+        throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
+      }
+      this.onTheMark.push({ side: t.side, weapon: t.weapon, at: { x: t.at.x, y: t.at.y } });
     }
   }
 
@@ -631,52 +640,61 @@ export class Game {
    * battle starts on the mark.
    */
   private adjusting: AdjustmentEntry[] = [];
+  /** Where each side's guns are on the mark: a round landed within reach, or registered. */
+  private onTheMark: MarkEntry[] = [];
 
-  /** The nearest earlier fire of this side's weapon within reach of `aim`. */
-  private adjustedFrom(side: Side, weapon: string, aim: Point, beforeTurn: number): AdjustmentEntry | undefined {
+  /**
+   * The earlier fire of this side's weapon to adjust from: the nearest within
+   * reach of `aim`; of equals, the one walked in furthest, then the latest.
+   */
+  private adjustedFrom(side: Side, weapon: string, aim: Point): AdjustmentEntry | undefined {
     let best: AdjustmentEntry | undefined;
+    let bestD = Infinity;
     for (const a of this.adjusting) {
-      if (a.turn >= beforeTurn || a.side !== side || a.weapon !== weapon) continue;
+      if (a.turn >= this.turn || a.side !== side || a.weapon !== weapon) continue;
       const d = distance(a.aim, aim);
       if (d > ADJUSTMENT_RADIUS_M) continue;
-      // The nearest, and of equals the latest: it carries every correction so far.
-      const bestD = best ? distance(best.aim, aim) : Infinity;
-      if (d < bestD || (d === bestD && a.turn >= best!.turn)) best = a;
+      const better =
+        d < bestD ||
+        (d === bestD && (a.adjustments > best!.adjustments || (a.adjustments === best!.adjustments && a.turn > best!.turn)));
+      if (better) {
+        best = a;
+        bestD = d;
+      }
     }
     return best;
   }
 
   /**
-   * Whether `side`'s `weapon` has a round on the mark within reach of `aim`,
-   * so the next mission there fires for effect at the weapon's best accuracy.
-   * What the side itself knows: the fall of its own shot (rules decision 17).
+   * Whether `side`'s `weapon` is on the mark within reach of `aim` — a round
+   * of its own landed on the mark within {@link ADJUSTMENT_RADIUS_M} of it, or
+   * the point was registered — so a mission there fires for effect at the
+   * weapon's best accuracy. What the side itself knows: the fall of its own
+   * shot (rules decision 17). It does not follow the aim: a target that moves
+   * out of reach has to be adjusted onto again.
    */
   isOnTheMark(side: Side, weapon: string, aim: Point): boolean {
-    return this.adjustedFrom(side, weapon, aim, this.turn + 1)?.onTarget ?? false;
+    return this.onTheMark.some(
+      (e) => e.side === side && e.weapon === weapon && distance(e.at, aim) <= ADJUSTMENT_RADIUS_M,
+    );
   }
 
   /**
    * The CEP a mission fires with under the accuracy variant. Each earlier
    * mission of the same side's same weapon within {@link ADJUSTMENT_RADIUS_M}
-   * halves the error, down to the weapon's cap. Once a round has landed within
-   * `onTargetM` of its aim, the guns are on the mark and fire at the cap.
-   * Undefined: the document's table.
+   * halves the error, down to the weapon's cap; on the mark, it fires at the
+   * cap. Undefined: the document's table.
    */
-  private cepFor(m: PendingFireMission): { cepM: number; entry: AdjustmentEntry; onTargetM: number } | undefined {
+  private cepFor(m: PendingFireMission): { cepM: number; onTargetM: number } | undefined {
     const spec = this.variants.cepDispersion?.[m.weapon];
     if (!spec) return undefined;
-    const previous = this.adjustedFrom(m.side, m.weapon, m.target, this.turn);
-    const entry: AdjustmentEntry = {
-      side: m.side,
-      weapon: m.weapon,
-      aim: m.target,
-      turn: this.turn,
-      adjustments: previous ? previous.adjustments + 1 : 0,
-      onTarget: previous?.onTarget ?? false,
-    };
-    this.adjusting.push(entry);
-    const cepM = entry.onTarget ? spec.capM : Math.max(spec.capM, spec.firstM / 2 ** entry.adjustments);
-    return { cepM, entry, onTargetM: spec.onTargetM ?? DEFAULT_ON_TARGET_M };
+    const previous = this.adjustedFrom(m.side, m.weapon, m.target);
+    const adjustments = previous ? previous.adjustments + 1 : 0;
+    this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
+    const cepM = this.isOnTheMark(m.side, m.weapon, m.target)
+      ? spec.capM
+      : Math.max(spec.capM, spec.firstM / 2 ** adjustments);
+    return { cepM, onTargetM: spec.onTargetM ?? DEFAULT_ON_TARGET_M };
   }
 
   /** Resolve indirect-fire missions whose impact-delay elapses this turn: one result a round. */
@@ -703,7 +721,7 @@ export class Game {
       );
       // A round on the mark puts the guns on it for whatever follows.
       if (adjusting && fired.some((f) => f.dispersion.missDistance <= adjusting.onTargetM)) {
-        adjusting.entry.onTarget = true;
+        this.onTheMark.push({ side: m.side, weapon: m.weapon, at: m.target });
       }
       // Everyone the rounds came down on was shelled, caught or not.
       for (const round of fired) {

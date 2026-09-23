@@ -100,8 +100,9 @@ everything in range, so it would change nothing measured here.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). With only the attacker firing it
-measures 62–86%; once the defender has its own section, 97%.
+([balance.md](balance.md), *Fifth round*). With only the attacker firing, it
+measures 62–86% against a dug-in defender and 80–96% against a hasty one.
+Once the defender has its own section, it is 96–99%.
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):

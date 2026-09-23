@@ -240,12 +240,20 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 /** One battle, played to an end or to {@link MAX_TURNS}. */
 export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
   const laid = layout(echelon, kind);
+  // Adjusting and fire for effect mean nothing without accuracy by CEP.
+  const cep = opts.variants?.cepDispersion ?? {};
+  if (opts.fires?.adjust && ((opts.fires.artillery > 0 && !cep.artillery) || (opts.fires.mortar > 0 && !cep.mortar))) {
+    throw new Error("a fire plan that adjusts needs cepDispersion for the weapons it fires");
+  }
+  if (opts.defenderFires && !cep.mortar) throw new Error("the defender's section needs cepDispersion for the mortar");
   // The defender's registered targets: on the line from its position toward
   // where the attacker starts.
   const registered = (() => {
     const d = opts.defenderFires;
     if (!d?.registeredAt?.length || kind === "meeting") return [];
-    const [attackerAt, defenderAt] = opts.swap ? [laid.red, laid.blue] : [laid.blue, laid.red];
+    // Swap relabels the sides, not the ground: the defender stands where
+    // `laid.red` does whichever side it is.
+    const [attackerAt, defenderAt] = [laid.blue, laid.red];
     const y0 = defenderAt.find((f) => f.kind === "infantry")!.at.y;
     const toward = Math.sign(attackerAt.find((f) => f.kind === "infantry")!.at.y - y0);
     const side: Side = opts.swap ? "BLUE" : "RED";

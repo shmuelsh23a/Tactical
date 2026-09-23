@@ -1150,9 +1150,9 @@ so impact and air burst give the same results there, within noise.
 | Attacker's fire | Prepared in | Defender's section | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
 |---|---|---|---|---|---|---|---|
 | none | either | off | 16% | 61% | 24% | 45% | 2/4 |
-| | either | **on** | **0%** | **0%** | 5% | 96% | 1/4 |
+| | either | **on** | **0%** | **0%** | 4% | 96% | 1/4 |
 | 2 × 4 shells for the battle | full | off | 50–51% | 95–96% | 11% | 62% | **4/4** |
-| | full | on | 1–2% | 33% | 14% | 97% | 2/4 |
+| | full | on | 1–2% | 31% | 13% | 97% | 2/4 |
 | | partial | off | 78% (impact), 99% (air) | 100% | 0–1% | 80–94% | 2/4 |
 | | partial | on | 27% (impact), 85% (air) | 89–100% | 0–3% | 97–98% | 2/4 |
 | 3 tubes × 3 bombs a turn | full | off | 45–46% | 100% | 1% | 76% | 3/4 |
@@ -1168,6 +1168,15 @@ so impact and air burst give the same results there, within noise.
 
 Where impact and air burst differ, the row gives both. The 1:1 attack never
 wins more than 10%.
+
+These are the figures after a review of the first cut (2026-09-23). Being on
+the mark used to follow the aim from mission to mission, so the defender
+stayed on the mark all the way in from one registered point. Now it holds
+only within 100 m of where a round landed on the mark, or of a registered
+point. The fix moved no cell by more than 2 points. The registered points at
+200 m and 400 m already cover the ground from 100 m to 500 m, and that is
+where the defender first sees the attacker. **Registration is what makes the
+defender's section decisive.**
 
 ### What it says
 

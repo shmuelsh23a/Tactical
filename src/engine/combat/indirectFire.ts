@@ -36,7 +36,7 @@ export function resolveIndirectFire(
     fixedWingObserved?: boolean;
     turn?: number;
     fuze?: Fuze;
-    /** Whether a force is under a roof (a building). Absent: nobody is. */
+    /** Whether a force is under a roof (a building, or a prepared position). Absent: nobody is. */
     underRoof?: (unit: Unit) => boolean;
     /** On trial: scatter by this CEP instead of the document's table. */
     cepM?: number;

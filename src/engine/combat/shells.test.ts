@@ -195,6 +195,27 @@ describe("a mission in play (decisions 30–31)", () => {
     expect(misses[50]!).toBeLessThan(32);
   });
 
+  it("being on the mark does not follow the aim beyond reach of where a round landed", () => {
+    // No bomb can land on the mark (onTargetM 0): only the registered point counts.
+    const { g } = setUp({
+      cepDispersion: { mortar: { firstM: 100, capM: 25, onTargetM: 0 } },
+      registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }],
+    });
+    // Fire walking away from it, 80 m a turn.
+    for (let turn = 1; turn <= 4; turn++) {
+      g.queueIndirectFire("mortar", "BLUE", { x: 80 * turn, y: 0 });
+      g.advanceToPhase("resolvePriorArty");
+      nextTurn(g);
+    }
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 80, y: 0 })).toBe(true);
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 160, y: 0 })).toBe(false);
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 320, y: 0 })).toBe(false);
+  });
+
+  it("refuses a registered target it cannot read", () => {
+    expect(() => new Game({ seed: 1, variants: { registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] } })).toThrow(/registered/);
+  });
+
   it("a registered target is on the mark from the start", () => {
     const { g } = setUp({
       cepDispersion: { mortar: { firstM: 100, capM: 25 } },
@@ -210,12 +231,12 @@ describe("a mission in play (decisions 30–31)", () => {
     red.baseCover = "full";
     red.cover = "full";
     g.queueIndirectFire("artillery", "BLUE", { x: 0, y: 0 }, { rounds: 20, fuze: "airburst" });
-    for (let i = 0; i < 3; i++) nextTurn(g);
+    // Artillery lands two turns on.
+    for (let i = 0; i < 2; i++) nextTurn(g);
     const { resolved } = g.advanceToPhase("resolvePriorArty");
-    for (const r of resolved!) {
-      const t = r.blast.targets.find((x) => x.unitId === "R");
-      if (t) expect(t.blastChance).toBeLessThanOrEqual(0.7 * SHELL_VS_MEN.airburst.roof + 1e-9);
-    }
+    const onRed = resolved!.flatMap((r) => r.blast.targets.filter((x) => x.unitId === "R"));
+    expect(onRed.length).toBeGreaterThan(0);
+    for (const t of onRed) expect(t.blastChance).toBeLessThanOrEqual(0.7 * SHELL_VS_MEN.airburst.roof + 1e-9);
   });
 
   it("refuses a fuze it does not know, and a mission with no end of rounds", () => {
