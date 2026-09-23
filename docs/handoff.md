@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23, after rules decisions 19–31 and the eighth balance round.** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–31 and the ninth balance round.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -51,35 +51,57 @@ here from AGENTS.md alone.
 
 **Start here: where the 2026-09-23 session stopped.** Shells against men are
 settled as rules, with our numbers from published sources:
-- **29**: cover counts, ×½ partial and **×⅛** full.
+- **29**: cover counts, ×½ partial and ×⅛ full.
 - **30**: the first volley finds men standing, and later ones find them down.
-- **31**: impact or air-burst fuze.
+- **31**: impact or air-burst fuze. A building, or a position prepared before
+  the battle, is a roof.
 
-Accuracy by CEP is **on trial** (`cepDispersion`, `--cep`). Artillery is
-15 m. A mortar starts at 100 m and adjusts to 25 m.
+**On trial: accuracy by CEP and fire missions** (`cepDispersion`,
+`registeredTargets`, `Game.isOnTheMark`):
+- Artillery is 270 m to 50 m; a mortar is 100 m to 25 m.
+- One round a turn until one lands within 50 m, then fire for effect.
+- The harness fires this way (`--fires ...,adjust=on`), and the defender can
+  have its own section with registered targets (`--defender-fires`).
+- The results are on [balance.md](balance.md), *Ninth round*.
 
-The author's allocation, 2 artillery missions of 4 shells and 3 mortars at
-the document's 3 bombs a tube a turn, **decides a 2:1 company attack every
-time**. It is on [balance.md](balance.md), *Eighth round*. The mortar
-section's volume does it. Each part alone lands in the target band against
-a dug-in defender: two missions alone give 29–36% at 2:1.
+In short:
+- Two artillery missions alone meet all four company targets.
+- The defender's own section decides almost everything.
+- With both sides firing, the author's allocation gives a 2:1 attack 40%,
+  but as a fire duel won before contact. The attacker who wins loses
+  nobody, and explosives put out 97% of the men.
 
-What to put to him next:
-1. **The mortar section's rate.** Is it 3 bombs a tube a turn, as the
-   document's rate of fire says, or one mission a turn?
-2. **Does a prepared position have overhead cover?** Air burst beats any
-   position without a roof, and only buildings have one today.
-3. **Should accuracy by CEP become the rule**, in place of the document's
-   dispersion table? And does adjusting fire need an observer?
-4. **Fire support for the defender.** Its own section, counter-battery fire,
-   moving off a shelled position.
-5. Not built for the player yet: choosing rounds per mission and the fuze
-   in the live UI. The engine and harness have both.
+**What we suggested on the accuracy trial** (his question 3, 2026-09-23), for
+him to rule on:
+1. **Make CEP with adjustment the rule**, in place of the document's
+   dispersion table. The table gives every weapon the same scatter at every
+   range and cannot adjust.
+2. **Adjusting needs an observer.** Only a round that a friendly force or UAV
+   can see counts toward adjustment. Unobserved fire stays at first-round
+   accuracy, unless it is on a registered target.
+3. **Registered targets are planned before the battle**, a defender's on its
+   approaches.
+The observer part is not built: on the harness's flat ground everyone sees
+everything in range, so it would change nothing measured here.
+
+**Still to put to him:**
+1. **Counter-battery fire.** The guns are off the map (decision 8, and *Do
+   not re-propose* below), so there is nothing to shoot back at. What does it
+   look like? For example, a chance each turn that a side's firing weapon is
+   located and silenced for some turns.
+2. **Moving off a shelled position.** A drill choice, ours to build, but
+   today the attacker's fire plan aims at a fixed objective, so a defender
+   that moved would escape it entirely. It needs the plan to aim at what the
+   attacker has seen.
+3. **Ammunition** (backlog 12). Nothing limits a section to fewer than 9
+   bombs a turn, all battle. This is what would turn the duel into a fight.
+4. Not built for the player: rounds per mission, fuze, adjustment in the
+   live UI.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). With either part of the
-allocation alone against a dug-in company, it measures 60–68%.
+([balance.md](balance.md), *Fifth round*). With only the attacker firing it
+measures 62–86%; once the defender has its own section, 97%.
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):
@@ -105,7 +127,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **The mortar section's rate, overhead cover, and accuracy by CEP** (above).
+- **Counter-battery, displacement, ammunition, and whether CEP becomes the rule** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
@@ -245,7 +267,7 @@ Measurements that cost real time and are already recorded:
 the fourth does not.**
 
 0. **The fire-support questions** the 2026-09-23 session ended on (see
-   *Start here*). Put them to him with the eighth round's tables.
+   *Start here*). Put them to him with the ninth round's tables.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"

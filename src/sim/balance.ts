@@ -140,6 +140,8 @@ export interface BattleOptions {
    * company's one mortar mission a turn on what it has seen goes on as before.
    */
   fires?: FirePlan;
+  /** The defender's own mortar section, in an attack. */
+  defenderFires?: DefenderFires;
 }
 
 export interface FirePlan {
@@ -160,6 +162,25 @@ export interface FirePlan {
   liftAt: number;
   /** How the rounds are fuzed (rules decision 31). Default impact. */
   fuze?: Fuze;
+  /**
+   * Adjust before firing for effect: one round a turn on the objective's
+   * centre until one lands on the mark (`Game.isOnTheMark`), then the full
+   * missions, 80 m apart. Needs the accuracy variant (`cepDispersion`) to mean
+   * anything; the battle's artillery budget counts only fire for effect.
+   */
+  adjust?: boolean;
+}
+
+/**
+ * The defender's own mortar section: `tubes` missions of `bombsPerTube` a turn
+ * on the nearest attacker it has seen, adjusting with one bomb until on the
+ * mark, as a {@link FirePlan} does. `registeredAt`: points on the approach,
+ * so many metres in front of its line, registered before the battle.
+ */
+export interface DefenderFires {
+  tubes: number;
+  bombsPerTube?: number;
+  registeredAt?: number[];
 }
 
 /**
@@ -218,15 +239,29 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
 export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
+  const laid = layout(echelon, kind);
+  // The defender's registered targets: on the line from its position toward
+  // where the attacker starts.
+  const registered = (() => {
+    const d = opts.defenderFires;
+    if (!d?.registeredAt?.length || kind === "meeting") return [];
+    const [attackerAt, defenderAt] = opts.swap ? [laid.red, laid.blue] : [laid.blue, laid.red];
+    const y0 = defenderAt.find((f) => f.kind === "infantry")!.at.y;
+    const toward = Math.sign(attackerAt.find((f) => f.kind === "infantry")!.at.y - y0);
+    const side: Side = opts.swap ? "BLUE" : "RED";
+    return d.registeredAt.map((m) => ({ side, weapon: "mortar", at: { x: X, y: y0 + toward * m } }));
+  })();
+  const variants: RuleVariants | undefined = registered.length
+    ? { ...opts.variants, registeredTargets: [...(opts.variants?.registeredTargets ?? []), ...registered] }
+    : opts.variants;
   const gameOptions: GameOptions = {
     seed,
     morale: opts.morale,
     trackIntel: true,
     enforceC2: true,
-    ...(opts.variants ? { variants: opts.variants } : {}),
+    ...(variants ? { variants } : {}),
   };
   const g = new Game(gameOptions);
-  const laid = layout(echelon, kind);
   const relabel = (fs: ForceSpec[], to: "B" | "R") => fs.map((f) => ({ ...f, id: to + f.id.slice(1) }));
   const { blue, red } = opts.swap ? { blue: relabel(laid.red, "B"), red: relabel(laid.blue, "R") } : laid;
   for (const f of [...blue, ...red]) {
@@ -309,15 +344,54 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
             });
           }
         };
-        const artillery =
-          plan.artilleryFor === "battle" ? Math.max(0, Math.min(1, plan.artillery - artilleryFired)) : plan.artillery;
-        // A battle's missions take their places along the frontage in turn.
-        fire("artillery", artillery, plan.shellsPerMission ?? 1, plan.artilleryFor === "battle" ? artilleryFired : 0);
-        artilleryFired += artillery;
-        // Per turn, the mortar takes the places after the artillery's, as the
-        // earlier rounds on balance.md were run; for a battle's budget it keeps
-        // its own, so its tubes can walk onto the same points turn after turn.
-        fire("mortar", plan.mortar, plan.bombsPerTube ?? 1, plan.artilleryFor === "battle" ? 0 : artillery);
+        if (plan.adjust) {
+          // One round a turn on the centre until on the mark, then for effect.
+          const centre = { x: goal.x, y: goal.y };
+          const adjustOr = (weapon: string, forEffect: () => void) => {
+            if (g.isOnTheMark(side, weapon, centre)) forEffect();
+            else g.queueIndirectFire(weapon, side, centre, { firingFrom: from, ...(plan.fuze ? { fuze: plan.fuze } : {}) });
+          };
+          if (plan.artillery > 0 && (plan.artilleryFor !== "battle" || artilleryFired < plan.artillery)) {
+            adjustOr("artillery", () => {
+              const n = plan.artilleryFor === "battle" ? Math.min(1, plan.artillery - artilleryFired) : plan.artillery;
+              fire("artillery", n, plan.shellsPerMission ?? 1, plan.artilleryFor === "battle" ? artilleryFired : 0);
+              artilleryFired += n;
+            });
+          }
+          if (plan.mortar > 0) adjustOr("mortar", () => fire("mortar", plan.mortar, plan.bombsPerTube ?? 1));
+        } else {
+          const artillery =
+            plan.artilleryFor === "battle" ? Math.max(0, Math.min(1, plan.artillery - artilleryFired)) : plan.artillery;
+          // A battle's missions take their places along the frontage in turn.
+          fire("artillery", artillery, plan.shellsPerMission ?? 1, plan.artilleryFor === "battle" ? artilleryFired : 0);
+          artilleryFired += artillery;
+          // Per turn, the mortar takes the places after the artillery's, as the
+          // earlier rounds on balance.md were run; for a battle's budget it keeps
+          // its own, so its tubes can walk onto the same points turn after turn.
+          fire("mortar", plan.mortar, plan.bombsPerTube ?? 1, plan.artilleryFor === "battle" ? 0 : artillery);
+        }
+      }
+    }
+    // The defender's section, on the nearest attacker it has seen.
+    if (opts.defenderFires && kind !== "meeting") {
+      const d = opts.defenderFires;
+      const side = other(attackers[0]!);
+      const hq = g.units.find((u) => u.side === side && u.kind === "command" && !u.neutralized);
+      const target = hq && nearestKnown(g, hq);
+      if (hq && target) {
+        const aim = g.contactFor(side, target)!.lastKnownPosition;
+        const from = { x: hq.position.x, y: hq.position.y + (hq.position.y > aim.y ? 500 : -500) };
+        if (g.isOnTheMark(side, "mortar", aim)) {
+          for (let i = 0; i < d.tubes; i++) {
+            const across = ((i % 3) - 1) * 80;
+            g.queueIndirectFire("mortar", side, { x: aim.x + across, y: aim.y }, {
+              firingFrom: from,
+              ...((d.bombsPerTube ?? 1) > 1 ? { rounds: d.bombsPerTube } : {}),
+            });
+          }
+        } else {
+          g.queueIndirectFire("mortar", side, aim, { firingFrom: from });
+        }
       }
     }
     if (echelon === "company") {
@@ -511,10 +585,12 @@ export function judge(
   preparedCover: "partial" | "full" = "partial",
   drill?: SquadDrill,
   fires?: FirePlan,
+  defenderFires?: DefenderFires,
 ): Verdict {
   const cell = (kind: BattleKind) =>
     runCell(echelon, kind, {
       morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
+      ...(defenderFires ? { defenderFires } : {}),
     });
   const a1 = cell("attack1");
   const a2 = cell("attack2");

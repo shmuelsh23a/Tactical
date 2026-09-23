@@ -1358,7 +1358,10 @@ on the stated reasoning, still awaiting the author's word.
     - A wall or a fold gives nothing against it.
     - It finds an open hole, full cover with no roof: ×⅝ against impact's ×⅛.
       A dug or prepared position is an open hole.
-    - A building is a roof, and stays ×⅛ (`underRoof` in `terrain.ts`).
+    - A building is a roof, and stays ×⅛ (`underRoof` in `terrain.ts`). So
+      is a position prepared before the battle in full cover (author,
+      2026-09-23: prepared positions have overhead cover). A hole dug during
+      the battle is open.
     - It does nothing to a vehicle's tracks.
     - ⚠️ Every factor is ours. They come from the lethal areas of a 155 mm
       round (standing 971 → 1,240 m², prone 346 → 939 m²) and from FM 7-90:

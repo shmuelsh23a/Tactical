@@ -120,7 +120,7 @@ describe("a mission in play (decisions 30–31)", () => {
   });
 
   it("under the accuracy variant, fire walked onto the same point tightens to the cap", () => {
-    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25 } } });
+    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25, onTargetM: 0 } } });
     // A mission queued each turn lands the next: turns 2, 3, 4, 5.
     const misses: number[][] = [];
     for (let turn = 0; turn < 5; turn++) {
@@ -154,7 +154,7 @@ describe("a mission in play (decisions 30–31)", () => {
   });
 
   it("tubes aimed side by side each adjust onto their own point", () => {
-    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25 } } });
+    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25, onTargetM: 0 } } });
     const misses: number[][] = [];
     for (let turn = 0; turn < 3; turn++) {
       for (const x of [-80, 0, 80]) g.queueIndirectFire("mortar", "BLUE", { x, y: 0 }, { rounds: 100 });
@@ -169,6 +169,52 @@ describe("a mission in play (decisions 30–31)", () => {
     for (let tube = 0; tube < 3; tube++) {
       const second = misses[1]!.slice(tube * 100, tube * 100 + 100);
       expect(median(second)).toBeLessThan(65);
+    }
+  });
+
+  it("adjusts with one bomb a turn until one lands on the mark, then fires for effect at the cap", () => {
+    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25 } } });
+    let turns = 0;
+    while (!g.isOnTheMark("BLUE", "mortar", { x: 0, y: 0 }) && turns < 20) {
+      g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 });
+      g.advanceToPhase("resolvePriorArty");
+      nextTurn(g);
+      turns++;
+    }
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 0, y: 0 })).toBe(true);
+    // The sheaf 80 m either side is on the mark too; 200 m away is not.
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 80, y: 0 })).toBe(true);
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 200, y: 0 })).toBe(false);
+    expect(g.isOnTheMark("RED", "mortar", { x: 0, y: 0 })).toBe(false);
+    g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 100 });
+    g.advanceToPhase("resolvePriorArty");
+    nextTurn(g);
+    // The bombs land the turn after: the last hundred resolved.
+    const { resolved } = g.advanceToPhase("resolvePriorArty");
+    const misses = resolved!.slice(-100).map((r) => r.dispersion.missDistance).sort((a, b) => a - b);
+    expect(misses[50]!).toBeLessThan(32);
+  });
+
+  it("a registered target is on the mark from the start", () => {
+    const { g } = setUp({
+      cepDispersion: { mortar: { firstM: 100, capM: 25 } },
+      registeredTargets: [{ side: "RED", weapon: "mortar", at: { x: 0, y: 1500 } }],
+    });
+    expect(g.isOnTheMark("RED", "mortar", { x: 50, y: 1500 })).toBe(true);
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 0, y: 1500 })).toBe(false);
+  });
+
+  it("a position prepared in full cover has a roof against an air burst", () => {
+    const { g } = setUp();
+    const red = g.getUnit("R");
+    red.baseCover = "full";
+    red.cover = "full";
+    g.queueIndirectFire("artillery", "BLUE", { x: 0, y: 0 }, { rounds: 20, fuze: "airburst" });
+    for (let i = 0; i < 3; i++) nextTurn(g);
+    const { resolved } = g.advanceToPhase("resolvePriorArty");
+    for (const r of resolved!) {
+      const t = r.blast.targets.find((x) => x.unitId === "R");
+      if (t) expect(t.blastChance).toBeLessThanOrEqual(0.7 * SHELL_VS_MEN.airburst.roof + 1e-9);
     }
   });
 

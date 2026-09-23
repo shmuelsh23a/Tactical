@@ -33,6 +33,14 @@ export const ARTILLERY_DISPERSION = {
  */
 export const ADJUSTMENT_RADIUS_M = 100;
 
+
+/**
+ * How near its aim a round must land for the observer to call the guns on
+ * the mark and fire for effect (the accuracy variant on trial). Ours: the
+ * doctrinal "within 50 m of the adjusting point".
+ */
+export const DEFAULT_ON_TARGET_M = 50;
+
 /** The most rounds one mission may fire — a guard, not a rule: a battery's volley is a handful. */
 export const MAX_ROUNDS_PER_MISSION = 100;
 

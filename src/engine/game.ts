@@ -21,7 +21,7 @@ import type {
 import type { MovementMode } from "./types.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
-import { ADJUSTMENT_RADIUS_M, MAX_ROUNDS_PER_MISSION } from "./data/artillery.js";
+import { ADJUSTMENT_RADIUS_M, DEFAULT_ON_TARGET_M, MAX_ROUNDS_PER_MISSION } from "./data/artillery.js";
 import {
   SMOKE_BLOCKS_FIRE,
   SMOKE_DURATION_TURNS,
@@ -115,6 +115,16 @@ export const PHASES = [
 export type Phase = (typeof PHASES)[number];
 
 export class PhaseError extends Error {}
+
+/** One side's fire on a point, for adjusting onto it (the accuracy variant on trial). */
+interface AdjustmentEntry {
+  side: Side;
+  weapon: string;
+  aim: Point;
+  turn: number;
+  adjustments: number;
+  onTarget: boolean;
+}
 
 /** Refusal reason when a force is under orders to hold its fire. */
 export const HOLDING_FIRE = "holding fire";
@@ -348,6 +358,9 @@ export class Game {
       if (!(c.capM > 0) || !(c.firstM >= c.capM)) {
         throw new Error(`cepDispersion.${weapon}: needs 0 < capM <= firstM, not ${c.capM} and ${c.firstM}`);
       }
+    }
+    for (const t of this.variants.registeredTargets ?? []) {
+      this.adjusting.push({ side: t.side, weapon: t.weapon, aim: t.at, turn: 0, adjustments: 0, onTarget: true });
     }
   }
 
@@ -612,32 +625,58 @@ export class Game {
   }
 
   /**
-   * Where each side's guns last fired and how many times running they have
-   * adjusted onto it — only while the accuracy-by-CEP variant is on trial.
+   * Where each side's guns have fired, how many rounds they have walked onto
+   * the point, and whether one has landed on the mark — only while the
+   * accuracy-by-CEP variant is on trial. A target registered before the
+   * battle starts on the mark.
    */
-  private adjusting: { side: Side; weapon: string; aim: Point; turn: number; adjustments: number }[] = [];
+  private adjusting: AdjustmentEntry[] = [];
+
+  /** The nearest earlier fire of this side's weapon within reach of `aim`. */
+  private adjustedFrom(side: Side, weapon: string, aim: Point, beforeTurn: number): AdjustmentEntry | undefined {
+    let best: AdjustmentEntry | undefined;
+    for (const a of this.adjusting) {
+      if (a.turn >= beforeTurn || a.side !== side || a.weapon !== weapon) continue;
+      const d = distance(a.aim, aim);
+      if (d > ADJUSTMENT_RADIUS_M) continue;
+      // The nearest, and of equals the latest: it carries every correction so far.
+      const bestD = best ? distance(best.aim, aim) : Infinity;
+      if (d < bestD || (d === bestD && a.turn >= best!.turn)) best = a;
+    }
+    return best;
+  }
 
   /**
-   * The CEP a mission fires with under the accuracy variant, and the
-   * observer's bracket behind it: the same side's same weapon firing again,
-   * the next turn, within {@link ADJUSTMENT_RADIUS_M} of its last aim halves
-   * the error, down to the weapon's cap. Undefined: the document's table.
+   * Whether `side`'s `weapon` has a round on the mark within reach of `aim`,
+   * so the next mission there fires for effect at the weapon's best accuracy.
+   * What the side itself knows: the fall of its own shot (rules decision 17).
    */
-  private cepFor(m: PendingFireMission): number | undefined {
+  isOnTheMark(side: Side, weapon: string, aim: Point): boolean {
+    return this.adjustedFrom(side, weapon, aim, this.turn + 1)?.onTarget ?? false;
+  }
+
+  /**
+   * The CEP a mission fires with under the accuracy variant. Each earlier
+   * mission of the same side's same weapon within {@link ADJUSTMENT_RADIUS_M}
+   * halves the error, down to the weapon's cap. Once a round has landed within
+   * `onTargetM` of its aim, the guns are on the mark and fire at the cap.
+   * Undefined: the document's table.
+   */
+  private cepFor(m: PendingFireMission): { cepM: number; entry: AdjustmentEntry; onTargetM: number } | undefined {
     const spec = this.variants.cepDispersion?.[m.weapon];
     if (!spec) return undefined;
-    // Only last turn's fire can be adjusted from. Each mission keeps its own
-    // entry, so tubes aimed side by side each walk onto their own point.
-    this.adjusting = this.adjusting.filter((a) => a.turn >= this.turn - 1);
-    let previous: (typeof this.adjusting)[number] | undefined;
-    for (const a of this.adjusting) {
-      if (a.turn !== this.turn - 1 || a.side !== m.side || a.weapon !== m.weapon) continue;
-      const d = distance(a.aim, m.target);
-      if (d <= ADJUSTMENT_RADIUS_M && (!previous || d < distance(previous.aim, m.target))) previous = a;
-    }
-    const adjustments = previous ? previous.adjustments + 1 : 0;
-    this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
-    return Math.max(spec.capM, spec.firstM / 2 ** adjustments);
+    const previous = this.adjustedFrom(m.side, m.weapon, m.target, this.turn);
+    const entry: AdjustmentEntry = {
+      side: m.side,
+      weapon: m.weapon,
+      aim: m.target,
+      turn: this.turn,
+      adjustments: previous ? previous.adjustments + 1 : 0,
+      onTarget: previous?.onTarget ?? false,
+    };
+    this.adjusting.push(entry);
+    const cepM = entry.onTarget ? spec.capM : Math.max(spec.capM, spec.firstM / 2 ** entry.adjustments);
+    return { cepM, entry, onTargetM: spec.onTargetM ?? DEFAULT_ON_TARGET_M };
   }
 
   /** Resolve indirect-fire missions whose impact-delay elapses this turn: one result a round. */
@@ -648,17 +687,24 @@ export class Game {
     // all of it, and go to ground after it (rules decision 30).
     const shelled = new Set<Unit>();
     const results = due.flatMap((m) => {
-      const cepM = this.cepFor(m);
+      const adjusting = this.cepFor(m);
+      const cepM = adjusting?.cepM;
       const fired = Array.from({ length: m.rounds ?? 1 }, () =>
         resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
           firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
           fixedWingObserved: m.observedByUav,
           turn: this.turn,
           ...(m.fuze ? { fuze: m.fuze } : {}),
-          underRoof: (u) => underRoof(this.terrain, u.position),
+          // A building, or a position prepared before the battle (author,
+          // 2026-09-23: a prepared position has overhead cover).
+          underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           ...(cepM !== undefined ? { cepM } : {}),
         }),
       );
+      // A round on the mark puts the guns on it for whatever follows.
+      if (adjusting && fired.some((f) => f.dispersion.missDistance <= adjusting.onTargetM)) {
+        adjusting.entry.onTarget = true;
+      }
       // Everyone the rounds came down on was shelled, caught or not.
       for (const round of fired) {
         for (const hit of round.blast.targets) {

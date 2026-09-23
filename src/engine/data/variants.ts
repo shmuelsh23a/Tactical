@@ -1,3 +1,6 @@
+import type { Side } from "../types.js";
+import type { Point } from "../geometry.js";
+
 /**
  * Rule variants on trial — **not rules yet**.
  *
@@ -28,13 +31,19 @@ export interface RuleVariants {
   preparedLossFactor?: number;
   /**
    * Accuracy by CEP, in place of the document's dispersion table (author,
-   * 2026-09-23: "15 m CEP for artillery", a mortar's from the sources, and
-   * "adjustable — increasing accuracy up to a cap"). By weapon key. A
+   * 2026-09-23). By weapon key; a weapon left out keeps the table. A
    * mission's rounds scatter as a circular normal with CEP
-   * `max(capM, firstM ÷ 2^adjustments)`: each turn the same side's same
-   * weapon fires again within `ADJUSTMENT_RADIUS_M` of its last aim, the
-   * error halves — the observer's bracket. A weapon left out keeps the table.
+   * `max(capM, firstM ÷ 2^adjustments)`. Each earlier mission of the same
+   * side's same weapon within `ADJUSTMENT_RADIUS_M` of the aim is an
+   * adjustment: the observer's bracket halves the error. Once a round lands
+   * within `onTargetM` (default 50 m) the guns are on the mark and fire at the
+   * cap: "one bomb until it hits close to the mark, then fire for effect".
    */
-  cepDispersion?: Record<string, { firstM: number; capM: number }>;
+  cepDispersion?: Record<string, { firstM: number; capM: number; onTargetM?: number }>;
+  /**
+   * Targets a side registered before the battle — its guns already on the
+   * mark there (the accuracy variant on trial). A defender's planned fires.
+   */
+  registeredTargets?: { side: Side; weapon: string; at: Point }[];
 }
 

@@ -11,6 +11,8 @@
  *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
  *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,fuze=airburst   # missions x rounds
  *   npm run balance -- --cep artillery:15:15,mortar:100:25   # on trial: accuracy by CEP, first:cap metres
+ *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,adjust=on   # one round until on the mark, then for effect
+ *   npm run balance -- --defender-fires mortar=3x3,registered=200/400      # the defender's own section
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
  *   npm run balance -- --morale on                   # only with morale (or: off)
@@ -25,6 +27,7 @@ import {
   ECHELONS,
   FIRE_PLAN,
   type FirePlan,
+  type DefenderFires,
   MARKDOWN_HEADER,
   TARGETS,
   judge,
@@ -95,11 +98,29 @@ const parseFires = (arg: string): FirePlan => {
       plan.bombsPerTube = Number(m[2] ?? 1);
     } else if (key === "lift" && m && !m[2] && !m[3]) plan.liftAt = Number(m[1]);
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
+    else if (key === "adjust" && (v === "on" || v === "off")) plan.adjust = v === "on";
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;
 };
 const fires = firesArg ? parseFires(firesArg) : undefined;
+// --defender-fires mortar=3x3,registered=200/400 — the defender's own section,
+// and points on the approach (metres in front of its line) registered in advance
+const defenderArg = value("--defender-fires");
+const defenderFires: DefenderFires | undefined = (() => {
+  if (!defenderArg) return undefined;
+  const d: DefenderFires = { tubes: 0 };
+  for (const part of defenderArg.split(",")) {
+    const [key, v = ""] = part.split("=");
+    const m = /^(\d+)(?:x(\d+))?$/.exec(v);
+    if (key === "mortar" && m) {
+      d.tubes = Number(m[1]);
+      d.bombsPerTube = Number(m[2] ?? 1);
+    } else if (key === "registered" && /^\d+(\/\d+)*$/.test(v)) d.registeredAt = v.split("/").map(Number);
+    else throw new Error(`--defender-fires: cannot read "${part}"`);
+  }
+  return d;
+})();
 // --cep artillery:15:15,mortar:100:25 — on trial: accuracy by CEP, first:cap metres
 const cepArg = value("--cep");
 if (cepArg) {
@@ -122,7 +143,7 @@ if (args.includes("--sweep")) {
   for (const c of configurations) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires);
+      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${r(v.explosivePct)} | ${v.met}/4 |`);
@@ -136,7 +157,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}) })));
       }
     }
   }
