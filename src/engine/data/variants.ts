@@ -8,7 +8,7 @@
  * becomes the rule and its switch is deleted — scaffolding for a decision, not
  * a place for options to live. Rulings 2 and 3 went through here and are rules
  * now (decisions 22 and 23), and so did the wound-severity roll (decision 26) and one wound rule for
- * bullets and explosives (decision 27).
+ * bullets and explosives (decision 27), cover against a shell (decision 29), and accuracy by CEP (decision 32).
  */
 export interface RuleVariants {
   /**

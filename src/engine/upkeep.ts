@@ -94,6 +94,9 @@ export function endTurnUnitUpkeep(
       digInCover(u.stationaryTurns),
     );
 
+    // Men who got up and moved are on their feet for the next shell (rules
+    // decision 30); men who stayed down are still down.
+    if (u.movedThisTurn > 0 && u.downUnderShelling) delete u.downUnderShelling;
     u.movedThisTurn = 0;
     u.ranThisTurn = false;
     u.firedThisTurn = false;

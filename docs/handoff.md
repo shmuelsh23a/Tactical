@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of the balance session, 2026-09-23 (rules decisions 19–27).** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–35 and the tenth balance round. The next session starts with the author's agenda, below.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -47,24 +47,111 @@ call the project's npm scripts and a reviewer that reads
 [review-checklist.md](review-checklist.md). Any assistant should be able to work
 here from AGENTS.md alone.
 
+## Next session: the agenda the author set (2026-09-23)
+
+Take these in order. The author said: "document this in a handoff document
+and start with them next session."
+
+**1. Close the artillery balance.** The five questions from the tenth round,
+with its tables on [balance.md](balance.md) (details under *Start here*
+below):
+1. **Rounds for effect per weapon.** Our suggestion: 6 for artillery (a
+   battery's volley) and 9–12 for mortars. With planned targets, that gives a
+   2:1 company attack 35–49%, meeting 3 of 4 targets. Today one default,
+   `DEFAULT_ROUNDS_FOR_EFFECT = 6`, serves both.
+2. **Planned targets for the attacker.** Registering the guns on the
+   objective before the battle is what makes the attack's fire work. Is it a
+   mission parameter?
+3. **Detection at range.** Nobody sees anybody before about 300 m, so fire
+   decides everything before contact (decision 12's ground).
+4. **Alternate positions**, so moving off a shelled position is worth
+   something.
+5. **The live UI's call for fire**, with the side's missions left. Today it
+   still queues single rounds, unrationed.
+
+**2. A minimum echelon for fire support** (author, 2026-09-23: "I'm thinking
+mortars for company and above, artillery for battalion and above, but we
+should test it"). This is **who may call** each weapon at all. It is a
+different question from decision 35, which is when the guns are on the map.
+To test it:
+- Run the harness at platoon and squad with and without mortar and
+  artillery missions (`--echelons platoon,squad --fires ...`). See whether
+  small fights stay balanced without them and are swamped with them.
+- Company with mortars only, against mortars and artillery.
+- Battalion is not in the harness yet. It arrives with echelon scaling
+  (backlog 3), so the artillery half can only be tested down to company
+  for now.
+- Then put the result to him. If he confirms it, it is a check in
+  `callForFire` and `GameOptions.fireSupport` against the echelon of the
+  force calling, and a rules decision.
+
+**3. The game's business plan.** Once the artillery balance is done, the
+author wants to talk about it. This is a conversation, not code. Come with
+what the repo already says about the product direction: the roadmap's Stage 4
+(mobile and desktop app on the same engine) and backlog 16–19 (campaigns,
+mission builder over real ground, mission and victory conditions, weather).
+
+**4. Direct-fire HE: tanks, RPGs, rifle grenades, ATGMs.** After the
+business plan, review it the way indirect fire was reviewed this session:
+- What the document's tables give: `resolveDirectExplosive` and the
+  `EXPLOSIVES` entries with `delivery: "directFire"`.
+- What decisions 29–31 already changed: they apply to indirect fire only, so
+  a tank round or an RPG still ignores cover, posture and roofs.
+- What the sources say.
+- The harness has no vehicles yet; that is the first thing to add.
+
 ## Waiting on the author
 
-**Start here: where the 2026-09-23 session stopped.** The last thing he
-decided was **decision 27**: one wound rule (a d10 severity) for every hit,
-bullet or fragment. The **next question for him is the blast table**. Under
-any wound rule, one artillery shell a turn decides a 2:1 attack, because:
-- the document's blast catches 70% of the men within 50 m of a single
-  round;
-- **cover does nothing against blast** (a quick trial of ½ in partial cover
-  and ¼ in full barely moved it);
-- nothing says whether a "round" is one shell or a battery's volley.
+**Start here: where the 2026-09-23 session stopped.** Indirect fire is
+rebuilt as rules, decisions 29–35:
+- Shells against men by posture, cover and fuze (29–31).
+- **Accuracy is a CEP walked onto the mark** (32): artillery 270 m to 50 m,
+  a mortar 100 m to 25 m. Registered targets start on the mark.
+- **Only observed rounds adjust** (33).
+- **At company and below, fire is assigned missions** (34), each adjusting
+  and then firing 6 rounds for effect by default (`Game.callForFire`,
+  `GameOptions.fireSupport`).
+- **Counter-battery fire only for guns on the map** (35): mortars at company
+  and up, artillery at battalion and up, arriving with echelon scaling.
+
+The tenth round on [balance.md](balance.md) measured 6:
+- **Adjusting is slow.** A mission waits to see each adjusting round land, so
+  a mortar adjusts every second turn and artillery every third. Unplanned,
+  the attacker's artillery never fires for effect before its fires lift.
+- **Planned targets** (the attacker's guns registered on the positions it
+  attacks, `--fires ...,registered=on`) are what make fire support work.
+- **With planned targets, 6 suits artillery; mortars want 9–12.** Two
+  artillery missions of 6 and two mortar missions of 9–12 give a 2:1 attack
+  35–49%, meeting 3 of 4 company targets.
+- **The defender's own mortars on registered targets hold the line.**
+  Without them, even a 1:1 attack takes a prepared position 74–91% of the
+  time.
+- **Moving off a shelled position, as built, hurts the defender.** It is the
+  drill option `displace`, off by default.
+- **An attacker who wins with planned fire barely bleeds (0–4%)**, because
+  nobody detects anybody before about 300 m (decision 12's detection).
+
+What to put to him next:
+1. **The default rounds for effect per weapon.** 6 for artillery, a battery
+   volley, and 9–12 for mortars, which balance and doctrine both point to?
+2. **Planned targets for the attacker.** Registering on the objective before
+   the battle is what makes the attack's fire work. Is it a mission
+   parameter?
+3. **Detection at range.** A company crossing 700 m of open ground unseen
+   until 300 m is why fire decides everything before contact. Observation
+   posts, binoculars, or a longer range for a force that is only watching?
+   It is decision 12's ground, and his.
+4. **Alternate positions.** For displacement to be worth anything, a
+   defender needs somewhere prepared to go. Today a force has one prepared
+   position.
+5. **The live UI** still queues single rounds, unrationed. It needs a
+   call-for-fire control with the side's missions left.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). The harness measures it now: each
-man put out records what did it (`Soldier.outBy`), and `--fires` gives an
-attacker a fire plan on the objective. Put the blast question to him with
-those numbers. Do not tune it yourself.
+([balance.md](balance.md), *Fifth round*). With fire missions on both sides
+it measures 82–99%, because the fight is decided before small arms get a
+say (see *Start here*).
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):
@@ -82,26 +169,15 @@ balance.md):
     has been the trade for making explosives count; with a fire plan it
     recovers to 50%.
 
-**A bug to chase first (ours, not his).** Since decision 27, the company
-mirror leans BLUE:
-
-| Run | BLUE / RED / draw |
-|---|---|
-| `--kinds meeting --drill western --morale on --n 200 --echelons company` | 52 / 39 / 10 |
-| the same, `--swap` | 50 / 37 / 13 |
-| before decision 27 | 47 / 45 |
-
-The lean survives the swap, so it follows the **side label, not the
-position**. Explosives now matter, so look at what treats the sides
-differently in the explosive path:
-- the order the fire missions resolve in;
-- the order of units in `game.units` (BLUE is added first);
-- the harness's `rear` for the mortar's firing point.
-
-Squad and platoon mirrors have no explosives and were not rerun.
+**The company mirror's BLUE lean was not a bug** (closed 2026-09-23, the
+session after decision 27). It was the seed window. Over 7,400 battles on
+disjoint seeds the mirror is 3386 BLUE to 3370 RED, and the lean flips sign
+between windows. See balance.md, just above *How the engine scales*.
+`npm run balance` takes `--seed <first>` now; rerun a lean on a fresh window
+before chasing it.
 
 **Still open, and his:**
-- **The blast table** (above).
+- **Rounds for effect per weapon, planned targets, detection at range, alternate positions** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
@@ -176,7 +252,10 @@ Closed deliberately, with reasons that are not obvious from the code:
 - **An artillery battery as a standalone unit.** Indirect fire is off-map
   *because* the playable slice is the platoon-leader view — a platoon commander
   calls for fire rather than owning guns. The battery arrives with **echelon
-  scaling** (backlog 3) and not before (decision 8).
+  scaling** (backlog 3) and not before (decision 8). The author set where
+  (decision 35): mortars on the map at company and above, artillery at
+  battalion and above. Counter-battery fire comes with them, and there is
+  none for off-map guns.
 - **Reading the cover modifier as percentage points.** Settled on the document's
   own grammar, not on the arithmetic (decision 7).
 - **A flat bonus for a sector of observation.** It made the width control a trap
@@ -238,11 +317,11 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 **Ordered. The first three want a word from him before anything is built;
-the fourth does not.**
+the fourth does not.** The author's own agenda for the next session comes
+first: see *Next session* at the top.
 
-0. **The blast table** — the question the 2026-09-23 session ended on (see
-   *Start here*). Ask him first. Measure his answer with `npm run balance --
-   --sweep --drill western` and `--fires`, and record it on balance.md.
+0. **The author's agenda** (*Next session*): the artillery balance, the
+   minimum echelon for fire support, the business plan, then direct-fire HE.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"
@@ -305,6 +384,10 @@ the code currently stands:
   which way the fire came from for flanking — is only known where the engine
   calls `noteFire`. A new way to fire at a force must call it, or it will kill
   without frightening anyone.
+- **`--swap` is not a second sample.** It replays the same seeds with the
+  sides' places exchanged, so a fluke of the seed window survives it and
+  looks like a bias that "follows the side". It put a bug that was not there
+  at the top of the 2026-09-23 handoff. Check a lean on a disjoint window with `--seed`.
 - **Tests that end a turn need two steps.** `advanceToPhase("initiative")`
   straight after `beginTurn()` does nothing — the game is already there. Go to
   `summary` first; `morale.test.ts` has an `endTurn` helper.

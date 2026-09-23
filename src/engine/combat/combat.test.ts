@@ -5,8 +5,10 @@ import { resolveDirectFire } from "./directFire.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { resolveDispersion } from "./artillery.js";
 import { resolveBlast, resolveDirectExplosive } from "./explosives.js";
-import { resolveIndirectFire } from "./indirectFire.js";
+import { resolveIndirectFire, shellFactor } from "./indirectFire.js";
 import { resolveAssault } from "./assault.js";
+import { EXPLOSIVES } from "../data/explosives.js";
+import { lookupBand } from "../geometry.js";
 import {
   camouflageBonus,
   detectByMovement,
@@ -190,6 +192,30 @@ describe("blast", () => {
     const res = resolveBlast(rng, "artillery", { x: 0, y: 0 }, [squad]);
     expect(res.targets[0]!.caught).toBe(true);
     expect(res.targets[0]!.damage).toBeGreaterThan(0);
+  });
+
+  it("cover scales a shell's blast chance, and no other blast's (decisions 29–31)", () => {
+    for (const cover of ["none", "partial", "full"] as const) {
+      const squad = makeInfantry("S", "RED", "squad", { x: 0, y: 0 }, 8);
+      squad.cover = cover;
+      // Aimed at the squad; wherever the shell falls, its band is scaled by cover.
+      const shell = resolveIndirectFire(new Rng(3), "artillery", { x: 0, y: 0 }, [squad], { firingFrom: { x: 0, y: -3000 } });
+      const t = shell.blast.targets[0]!;
+      const band = lookupBand(EXPLOSIVES.artillery!.blastBands, shell.dispersion.missDistance)!;
+      expect(t.blastChance).toBeCloseTo(band.value * shellFactor(squad, "impact", false));
+    }
+    // A rifle grenade on a force in full cover: the document's blast, untouched.
+    let checked = false;
+    for (let seed = 1; seed < 50 && !checked; seed++) {
+      const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+      const b = makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 8);
+      b.cover = "full";
+      const r = resolveDirectExplosive(new Rng(seed), "rifleGrenade", a, b);
+      if (!r.blast) continue;
+      expect(r.blast.targets[0]!.blastChance).toBe(0.4);
+      checked = true;
+    }
+    expect(checked).toBe(true);
   });
 
   it("an anti-tank weapon resolves through the armour table on a vehicle", () => {

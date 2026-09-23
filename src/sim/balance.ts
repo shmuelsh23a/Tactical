@@ -5,6 +5,8 @@ import {
   distance,
   makeCommandGroup,
   makeInfantry,
+  type FireAllotment,
+  type Fuze,
   type GameOptions,
   type MoraleReport,
   type Point,
@@ -139,23 +141,43 @@ export interface BattleOptions {
    * company's one mortar mission a turn on what it has seen goes on as before.
    */
   fires?: FirePlan;
-}
-
-export interface FirePlan {
-  artillery: number;
-  mortar: number;
-  liftAt: number;
+  /** The defender's own mortar section, in an attack. */
+  defenderFires?: DefenderFires;
 }
 
 /**
- * One mortar bomb a turn on the objective, lifting at 400 m (⚠️ ours): the
- * plan docs/balance.md's fifth round measured with. Anything heavier decides
- * the attack by itself — a single shell a turn takes a 2:1 attack from 20–60%
- * to over 90%, whatever the wound rule — because the document's blast neither
- * spares a man in cover nor thins with the number of rounds (the open question
- * there).
+ * The attacker's fire support (rules decision 34): the fire missions its
+ * company is assigned, called one at a time a weapon — a section or a battery
+ * fires one mission at a time — on what it has seen of the defender, or until
+ * then on the positions it is attacking, one after another, until it is within
+ * `liftAt` metres of the objective. Then the fires lift: a check fire.
  */
-export const FIRE_PLAN: FirePlan = { artillery: 0, mortar: 1, liftAt: 400 };
+export interface FirePlan {
+  missions: FireAllotment[];
+  liftAt: number;
+  /**
+   * The objective is a planned target: the attacker's guns are registered on
+   * it before the battle (rules decision 32), at the centre of each position
+   * it attacks — the points its missions aim at until it sees something.
+   */
+  registered?: boolean;
+  /** How the rounds are fuzed (rules decision 31). Default impact. */
+  fuze?: Fuze;
+}
+
+/**
+ * The defender's fire support: its assigned missions, called one at a time a
+ * weapon on the nearest attacker it has seen. `registeredAt`: points on the
+ * approach, so many metres in front of its line, registered before the
+ * battle (rules decision 32), for its mortars.
+ */
+export interface DefenderFires {
+  missions: FireAllotment[];
+  registeredAt?: number[];
+}
+
+/** Four mortar missions of the default rounds for effect, lifting at 400 m (⚠️ ours). */
+export const FIRE_PLAN: FirePlan = { missions: [{ weapon: "mortar", missions: 4 }], liftAt: 400 };
 
 /**
  * How a battle ended, by the game's own rule (`sideDefeated`). `broke`: the
@@ -203,15 +225,53 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
 export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
+  const laid = layout(echelon, kind);
+  // The defender's registered targets: on the line from its position toward
+  // where the attacker starts. Swap relabels the sides, not the ground: the
+  // defender stands where `laid.red` does whichever side it is.
+  const defenderSide: Side = opts.swap ? "BLUE" : "RED";
+  // The attacker's planned targets: the centre of each position it is
+  // attacking, as its intelligence has them — one a defending platoon.
+  const plannedTargets: Point[] = (() => {
+    const byPosition = new Map<string, Point[]>();
+    for (const f of laid.red.filter((f) => f.kind === "infantry")) {
+      const key = f.id.split("-")[0]!;
+      byPosition.set(key, [...(byPosition.get(key) ?? []), f.at]);
+    }
+    return [...byPosition.values()].map((ps) => ({
+      x: ps.reduce((t, p) => t + p.x, 0) / ps.length,
+      y: ps.reduce((t, p) => t + p.y, 0) / ps.length,
+    }));
+  })();
+  const attackerSide = other(defenderSide);
+  const registeredTargets = (() => {
+    if (kind === "meeting") return [];
+    const y0 = laid.red.find((f) => f.kind === "infantry")!.at.y;
+    const toward = Math.sign(laid.blue.find((f) => f.kind === "infantry")!.at.y - y0);
+    const defender = (opts.defenderFires?.registeredAt ?? []).map((m) => ({
+      side: defenderSide,
+      weapon: "mortar",
+      at: { x: X, y: y0 + toward * m },
+    }));
+    const attacker = !opts.fires?.registered
+      ? []
+      : opts.fires.missions.flatMap((a) => plannedTargets.map((at) => ({ side: attackerSide, weapon: a.weapon, at })));
+    return [...defender, ...attacker];
+  })();
+  // A side with fire missions assigned fires only those (rules decision 34).
+  const fireSupport: Partial<Record<Side, FireAllotment[]>> = {};
+  if (opts.fires && kind !== "meeting") fireSupport[attackerSide] = opts.fires.missions;
+  if (opts.defenderFires && kind !== "meeting") fireSupport[defenderSide] = opts.defenderFires.missions;
   const gameOptions: GameOptions = {
     seed,
     morale: opts.morale,
     trackIntel: true,
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
+    ...(registeredTargets.length ? { registeredTargets } : {}),
+    ...(Object.keys(fireSupport).length ? { fireSupport } : {}),
   };
   const g = new Game(gameOptions);
-  const laid = layout(echelon, kind);
   const relabel = (fs: ForceSpec[], to: "B" | "R") => fs.map((f) => ({ ...f, id: to + f.id.slice(1) }));
   const { blue, red } = opts.swap ? { blue: relabel(laid.red, "B"), red: relabel(laid.blue, "R") } : laid;
   for (const f of [...blue, ...red]) {
@@ -266,33 +326,67 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     RED: { side: "RED", attacking: attackers.includes("RED"), objective: objective.RED },
   };
   g.beginTurn();
+  let liftedFires = false;
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
     r.turns = turn;
     const order = g.initiativeOrder;
     if (order[0] === "RED") r.redFirst++;
 
-    // Targeting: a company calls one mortar mission a turn on the nearest enemy it knows of.
+    // Targeting. The engine has already carried on the missions in hand.
     g.advanceToPhase("targeting");
-    if (opts.fires && kind !== "meeting") {
-      const side = attackers[0]!;
-      const goal = objective[side];
-      const close = g.units
-        .filter((u) => u.side === side && u.kind !== "command" && !u.neutralized)
-        .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
-      if (!close) {
-        const from = { x: X, y: goal.y + (side === "BLUE" ? -3000 : 3000) };
-        const rounds = [
-          ...Array<string>(opts.fires.artillery).fill("artillery"),
-          ...Array<string>(opts.fires.mortar).fill("mortar"),
-        ];
-        rounds.forEach((w, i) => {
-          const across = ((i % 3) - 1) * 80;
-          g.queueIndirectFire(w, side, { x: goal.x + across, y: goal.y }, { firingFrom: from });
+    // A side with missions assigned calls the next when its weapon is free.
+    const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze) => {
+      for (const a of fireSupport[side] ?? []) {
+        if ((g.fireMissionsLeft(side, a.weapon) ?? 0) <= 0) continue;
+        if (g.fireMissions.some((m) => m.side === side && m.weapon === a.weapon && m.status === "adjusting")) continue;
+        const aim = aimAt();
+        if (!aim) continue;
+        // The guns stand 3 km behind the side's own forces.
+        const own = g.units.filter((u) => u.side === side);
+        const ownY = own.reduce((t, u) => t + u.position.y, 0) / Math.max(1, own.length);
+        const back = ownY < aim.y ? -3000 : 3000;
+        g.callForFire(side, a.weapon, aim, {
+          firingFrom: { x: aim.x, y: ownY + back },
+          ...(fuze ? { fuze } : {}),
         });
       }
+    };
+    if (opts.fires && kind !== "meeting") {
+      const goal = objective[attackerSide];
+      const lifted = g.units
+        .filter((u) => u.side === attackerSide && u.kind !== "command" && !u.neutralized)
+        .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
+      if (lifted && !liftedFires) {
+        // The fires lift: whatever is still to come is checked.
+        g.checkFire(attackerSide);
+        liftedFires = true;
+      }
+      if (!lifted && !liftedFires) {
+        // What it has seen of the defender, nearest the objective; until then
+        // the objective itself, a point along its frontage for each mission.
+        callMissions(attackerSide, () => {
+          const seen = g
+            .contactsFor(attackerSide)
+            .filter((c) => !c.lastKnownNeutralized)
+            .sort((p, q) => distance(p.lastKnownPosition, goal) - distance(q.lastKnownPosition, goal))[0];
+          if (seen) return seen.lastKnownPosition;
+          const called = g.fireMissions.filter((m) => m.side === attackerSide).length;
+          return plannedTargets[called % plannedTargets.length]!;
+        }, opts.fires.fuze);
+      }
     }
+    if (opts.defenderFires && kind !== "meeting") {
+      callMissions(defenderSide, () => {
+        const hq = g.units.find((u) => u.side === defenderSide && u.kind === "command" && !u.neutralized);
+        const target = hq && nearestKnown(g, hq);
+        return target ? g.contactFor(defenderSide, target)!.lastKnownPosition : undefined;
+      });
+    }
+    // A company without missions assigned calls one mortar bomb a turn on the
+    // nearest enemy it knows of, as the harness always has.
     if (echelon === "company") {
       for (const side of order) {
+        if (fireSupport[side]) continue;
         const hq = g.units.find((u) => u.side === side && u.kind === "command" && !u.neutralized);
         const target = hq && nearestKnown(g, hq);
         if (!hq || !target) continue;
@@ -482,10 +576,12 @@ export function judge(
   preparedCover: "partial" | "full" = "partial",
   drill?: SquadDrill,
   fires?: FirePlan,
+  defenderFires?: DefenderFires,
 ): Verdict {
   const cell = (kind: BattleKind) =>
     runCell(echelon, kind, {
       morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
+      ...(defenderFires ? { defenderFires } : {}),
     });
   const a1 = cell("attack1");
   const a2 = cell("attack2");

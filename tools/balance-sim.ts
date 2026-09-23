@@ -4,10 +4,12 @@
  *   npm run balance                                  # every kind and echelon, 100 battles each, morale on and off
  *   npm run balance -- --n 300 --kinds meeting       # one kind, more battles
  *   npm run balance -- --echelons company --swap     # RED starts where BLUE would
+ *   npm run balance -- --seed 20000                  # a fresh seed window (default 1000) — see balance.md on the lean
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
- *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
- *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
+ *   npm run balance -- --fires artillery=2x6,mortar=4x6,fuze=airburst   # the attacker's fire missions: missions x rounds for effect
+ *   npm run balance -- --defender-fires mortar=4x6,registered=200/400    # the defender's, and targets it registered
+ *   npm run balance -- --displace 100                # a defender moves off a shelled position
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
  *   npm run balance -- --morale on                   # only with morale (or: off)
@@ -21,6 +23,8 @@ import {
   CONFIGURATIONS,
   ECHELONS,
   FIRE_PLAN,
+  type FirePlan,
+  type DefenderFires,
   MARKDOWN_HEADER,
   TARGETS,
   judge,
@@ -29,8 +33,8 @@ import {
   type BattleKind,
   type Echelon,
 } from "../src/sim/balance.js";
-import type { RuleVariants } from "../src/engine/index.js";
-import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
+import type { FireAllotment, RuleVariants } from "../src/engine/index.js";
+import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -48,6 +52,7 @@ const list = <T extends string>(flag: string, all: readonly T[]): T[] => {
 };
 
 const battles = Number(value("--n") ?? 100);
+const firstSeed = Number(value("--seed") ?? 1000);
 const kinds = list<BattleKind>("--kinds", BATTLE_KINDS);
 const echelons = list<Echelon>("--echelons", ECHELONS);
 const moraleArg = value("--morale");
@@ -56,7 +61,7 @@ const swap = args.includes("--swap");
 const preparedCover = value("--prepared-cover") === "full" ? "full" : "partial";
 const drills = { plain: PLAIN_SCRIPT, western: WESTERN_DRILL } as const;
 const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
-const drill = drills[drillName];
+const drill: SquadDrill | undefined = drills[drillName] && { ...drills[drillName] };
 if (!drill) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
 
 const variants: RuleVariants = {};
@@ -66,15 +71,45 @@ const steadyBonus = value("--steady-bonus");
 if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
 const steadyLoss = value("--steady-loss");
 if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
+// --fires plan | artillery=2x6,mortar=4x6,lift=400,fuze=airburst — the
+// attacker's fire missions (rules decision 34): missions x rounds for effect
+const allotment = (key: string, v: string): FireAllotment => {
+  const m = /^(\d+)(?:x(\d+))?$/.exec(v);
+  if (!m) throw new Error(`cannot read ${key}=${v}`);
+  return { weapon: key, missions: Number(m[1]), ...(m[2] ? { roundsForEffect: Number(m[2]) } : {}) };
+};
 const firesArg = value("--fires");
-const fires = !firesArg
-  ? undefined
-  : firesArg === "plan"
-    ? FIRE_PLAN
-    : (([artillery, mortar, liftAt]) => ({ artillery: artillery!, mortar: mortar!, liftAt: liftAt ?? FIRE_PLAN.liftAt }))(
-        firesArg.split(",").map(Number),
-      );
-
+const fires: FirePlan | undefined = (() => {
+  if (!firesArg) return undefined;
+  if (firesArg === "plan") return FIRE_PLAN;
+  const plan: FirePlan = { missions: [], liftAt: FIRE_PLAN.liftAt };
+  for (const part of firesArg.split(",")) {
+    const [key = "", v = ""] = part.split("=");
+    if (key === "artillery" || key === "mortar") plan.missions.push(allotment(key, v));
+    else if (key === "lift" && /^\d+$/.test(v)) plan.liftAt = Number(v);
+    else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
+    else if (key === "registered" && (v === "on" || v === "off")) plan.registered = v === "on";
+    else throw new Error(`--fires: cannot read "${part}"`);
+  }
+  return plan;
+})();
+// --defender-fires mortar=4x6,registered=200/400 — the defender's missions, and
+// points on the approach (metres in front of its line) registered in advance
+const defenderArg = value("--defender-fires");
+const defenderFires: DefenderFires | undefined = (() => {
+  if (!defenderArg) return undefined;
+  const d: DefenderFires = { missions: [] };
+  for (const part of defenderArg.split(",")) {
+    const [key = "", v = ""] = part.split("=");
+    if (key === "artillery" || key === "mortar") d.missions.push(allotment(key, v));
+    else if (key === "registered" && /^\d+(\/\d+)*$/.test(v)) d.registeredAt = v.split("/").map(Number);
+    else throw new Error(`--defender-fires: cannot read "${part}"`);
+  }
+  return d;
+})();
+// --displace 100 — a defender moves off a shelled position, this far (drill.ts)
+const displaceArg = value("--displace");
+if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
 if (args.includes("--sweep")) {
   const configurations = CONFIGURATIONS;
@@ -86,7 +121,7 @@ if (args.includes("--sweep")) {
   for (const c of configurations) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires);
+      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${r(v.explosivePct)} | ${v.met}/4 |`);
@@ -95,12 +130,12 @@ if (args.includes("--sweep")) {
   }
 } else {
   const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
-  console.log(`${battles} battles a cell, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${trial}\n`);
+  console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${trial}\n`);
   console.log(MARKDOWN_HEADER);
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, preparedCover, drill, ...(fires ? { fires } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}) })));
       }
     }
   }

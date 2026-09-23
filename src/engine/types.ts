@@ -1,3 +1,4 @@
+import type { Fuze } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type { SmokeSource } from "./data/smoke.js";
 import type { CoverState } from "./data/directFire.js";
@@ -151,6 +152,11 @@ export interface Unit {
   movementBlocked: boolean;
   /** True while the unit is under enemy fire (moves at half pace). */
   underFire: boolean;
+  /**
+   * Its men have gone to ground under shellfire and not moved since (rules
+   * decision 30): the next rounds find them lying down.
+   */
+  downUnderShelling?: boolean;
 
   // --- posture: how well protected, and how hard to find (decision 12) ---
   /**
@@ -306,4 +312,8 @@ export interface PendingFireMission {
   resolvesOnTurn: number;
   /** Whether a UAV footprint covers the target (improves accuracy). */
   observedByUav: boolean;
+  /** Rounds fired together, landing at once. Absent: one. */
+  rounds?: number;
+  /** How the rounds are fuzed (rules decision 31). Absent: impact. */
+  fuze?: Fuze;
 }

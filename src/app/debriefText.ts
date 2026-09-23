@@ -467,6 +467,10 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `סריקת כטב"מ (${action.viewer}) ${at(action.footprintCenter)}`;
     case "queueIndirectFire":
       return `${action.side}: משימת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)}`;
+    case "checkFire":
+      return `${action.side}: חדל אש`;
+    case "callForFire":
+      return `${action.side}: בקשת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)} — תיקון ואש לאפקט`;
     case "moveUnit":
       return `${who(action.unitId)} נע ${action.mode === "run" ? "בריצה" : "רגיל"} אל ${at(action.to)}`;
     case "fire":
@@ -624,6 +628,14 @@ export function describeOutcome(
 
     case "queueIndirectFire":
       return `פגיעה צפויה בתור ${outcome.mission.resolvesOnTurn}`;
+
+    case "checkFire":
+      return "המשימות נעצרו";
+
+    case "callForFire":
+      return outcome.mission.status === "done"
+        ? `אש לאפקט: ${outcome.mission.roundsForEffect} פגזים`
+        : "פגז תיקון נשלח";
 
     case "moveUnit": {
       const bits: string[] = [];
@@ -803,6 +815,7 @@ export function recordingExtent(recording: GameRecording): { width: number; heig
         if (action.order.destination) see(action.order.destination);
         break;
       case "queueIndirectFire":
+      case "callForFire":
         see(action.target);
         break;
       case "deploySmoke":

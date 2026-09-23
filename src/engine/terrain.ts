@@ -188,6 +188,17 @@ export function coverFromObjects(terrain: Terrain, p: Point): CoverState {
 }
 
 /**
+ * Whether a force at `p` has a roof over it: it is in or against a building,
+ * the object whose full cover is a roof rather than a hole (rules decision
+ * 31). The same reach as the cover it takes from the building.
+ */
+export function underRoof(terrain: Terrain, p: Point): boolean {
+  return terrain.objects.some(
+    (o) => o.kind === "building" && distanceToFootprint(o.footprint, p) <= OBJECT_COVER_REACH_M,
+  );
+}
+
+/**
  * Metres climbed along the straight line `from`→`to`: the sum of every rise
  * between one ground sample and the next, descents ignored. Zero on flat
  * ground.

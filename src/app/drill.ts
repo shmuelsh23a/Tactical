@@ -62,6 +62,14 @@ export interface SquadDrill {
   breakContact: { readyShareBelow: number; fallBack: number } | null;
   /** Command groups follow this far behind the centre of their forces. */
   commandGroupBehind: number;
+  /**
+   * Move off a shelled position (author, 2026-09-23): a defending force whose
+   * men have gone to ground under shellfire, with no enemy it knows of within
+   * `contactWithin` metres, runs `metres` to the rear — once. It leaves its
+   * prepared position, roof and all, for ground the enemy's guns have not
+   * registered. Absent: it stays in its hole.
+   */
+  displace?: { metres: number; contactWithin: number };
 }
 
 /**
@@ -125,6 +133,7 @@ export interface DrillTask {
 export class DrillState {
   private readonly strength = new Map<string, number>();
   readonly fellBack = new Set<string>();
+  readonly displaced = new Set<string>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -206,12 +215,31 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       if (game.setStandingOrder(u.id, { gait: "run", destination: away, withdraw: true })) state.fellBack.add(u.id);
       return;
     }
+    if (
+      !task.attacking &&
+      drill.displace &&
+      u.downUnderShelling &&
+      !state.displaced.has(u.id) &&
+      !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin)
+    ) {
+      // A withdrawal, so a pinned force may still go; its fire discipline
+      // goes with it.
+      const rear = awayFrom(u.position, task.objective, drill.displace.metres);
+      const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: drill.openFireRange };
+      if (game.setStandingOrder(u.id, order)) state.displaced.add(u.id);
+      return;
+    }
+    if (!task.attacking && state.displaced.has(u.id)) {
+      // Still on its way to the new position: let it get there.
+      const going = game.standingOrderFor(u.id);
+      if (going?.withdraw && going.destination && distance(u.position, going.destination) > 1) return;
+    }
     if (!task.attacking) {
       // Fire discipline as an order, so covering fire keeps it too: the engine
       // holds a force's fire — covering or not — until the enemy is inside
       // the line (rules decision 6's hold-fire order).
       const held = game.standingOrderFor(u.id);
-      if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange) {
+      if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange || held.withdraw) {
         game.setStandingOrder(u.id, { gait: "normal", holdFire: true, engagementRange: drill.openFireRange });
       }
       return;

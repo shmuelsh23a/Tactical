@@ -57,6 +57,9 @@ export function stateDigest(game: Game): string {
       smoke: game.smoke,
       pendingFire: game.pendingFire,
       pendingSmoke: game.pendingSmoke,
+      // Only when there are any, so a game without them digests as it did.
+      ...(game.fireMissions.length ? { fireMissions: game.fireMissions } : {}),
+      ...(game.marksHeld.length ? { onTheMark: game.marksHeld } : {}),
       rng: game.rng.getState(),
     }),
   );

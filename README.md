@@ -1321,6 +1321,119 @@ on the stated reasoning, still awaiting the author's word.
     - It changes the outcome of any battle with explosives, so a sealed
       recording of one made before it fails `verifyRecording`.
 
+28. ✅ **One round is one shell** (author, 2026-09-23). An entry in the
+    indirect-fire and blast tables is a single shell or bomb, not a
+    battery's volley. A battery's mission is several rounds, each scattered
+    and each with its own blast. This is how the engine already read it, so
+    nothing changed.
+29. ✅ **Cover counts against a shell** (author, 2026-09-23 — option a, after
+    the harness's sixth round, docs/balance.md). A man's chance of being
+    caught by a shell or mortar bomb is ×½ if his force is in partial cover
+    and **×⅛** in full. The document's blast table ignores cover. The full-cover
+    factor was ×¼ until the author moved it to ×⅛ the same day, to match the
+    published lethal areas: a foxhole is ×0.10–0.13 against standing men.
+    **The factors are ours**, from those sources, and so is the scope:
+    indirect fire only. Grenades, rifle grenades, RPGs, tank rounds and mines
+    are unchanged. The figures are `SHELL_VS_MEN` in `data/explosives.ts`.
+    - **Rejected:** option b, where only full cover counts.
+30. ✅ **The first volley catches men on their feet** (author, 2026-09-23).
+    A shell's blast chance is the document's against men standing. Once a
+    force has been shelled, its men are down for the next rounds, ×0.36, until
+    it moves (`Unit.downUnderShelling`). Everything that lands in the same
+    turn, whatever mission or side fired it, lands together and finds the
+    men as they were. That is why massing fire into one turn is worth more
+    than the same rounds spread over several.
+    - Partial cover takes the lower of its own ×½ and the men's posture:
+      ×½ on their feet, ×0.36 once down. Under an air burst it counts for
+      nothing (decision 31).
+    - A mission can fire several rounds (`queueIndirectFire`'s `rounds`),
+      each scattered on its own. The live UI still fires one.
+    - ⚠️ ×0.36 is ours: prone ÷ standing lethal area for a 105 or 155 mm round.
+    - Source: the US Army's posture test of the 1970s. 58% of the men were
+      standing at the first impact, 29% two seconds later, none after eight.
+31. ✅ **Shells can be fuzed to burst in the air** (author, 2026-09-23). A
+    mission is fuzed for impact, as the document has it, or for air burst.
+    - An air burst is ×1.28 against standing men and ×0.97 against men down,
+      because going to ground barely helps.
+    - A wall or a fold gives nothing against it.
+    - It finds an open hole, full cover with no roof: ×⅝ against impact's ×⅛.
+      A dug or prepared position is an open hole.
+    - A building is a roof, and stays ×⅛ (`underRoof` in `terrain.ts`). So
+      is a position prepared before the battle in full cover (author,
+      2026-09-23: prepared positions have overhead cover). A hole dug during
+      the battle is open.
+    - It does nothing to a vehicle's tracks.
+    - ⚠️ Every factor is ours. They come from the lethal areas of a 155 mm
+      round (standing 971 → 1,240 m², prone 346 → 939 m²) and from FM 7-90:
+      a proximity fuze is five times as effective against open positions.
+      The two sources disagree on open holes. We followed FM 7-90, which is
+      what the author agreed to.
+    - The engine and the harness take a fuze (`queueIndirectFire`'s `fuze`).
+      The live UI does not offer one yet.
+
+    Decisions 29–31 change the outcome of any battle in which a shell lands on
+    men, so a sealed recording of one made before them fails
+    `verifyRecording`.
+
+32. ✅ **Accuracy is a CEP, walked onto the mark by adjusting fire** (author,
+    2026-09-23; after the harness's ninth and tenth rounds, docs/balance.md).
+    This is **in place of the document's dispersion table**, which stays
+    transcribed in `data/artillery.ts` but is no longer rolled.
+    - A round scatters as a circular normal. The CEP is the weapon's
+      first-round figure, halved by each earlier *observed* round of the same
+      side's same weapon within 100 m of the aim, down to the weapon's best
+      (`INDIRECT_ACCURACY`, `cepAfter`).
+    - Artillery is **270 m to 50 m** (the author's 50–270 m, from the sources
+      for unguided 155 mm at range). A mortar is **100 m to 25 m** (a 120 mm
+      bomb is 76–136 m unadjusted; the 25 m is ours).
+    - Once a round is seen to land within **50 m** of its aim, the side is
+      **on the mark** there (`Game.isOnTheMark`): anything it fires within
+      100 m of that point fires at the weapon's best. It does not follow a
+      moving aim beyond that.
+    - **Registered targets** (`GameOptions.registeredTargets`, recorded) are
+      points a side planned before the battle. Its guns start on the mark
+      there: a defender's fires on its approaches.
+    - ⚠️ The 50 m and the 100 m are ours, from the doctrinal "fire for effect
+      within 50 m of the adjusting point".
+33. ✅ **Adjusting needs an observer** (author, 2026-09-23). A round teaches
+    the guns only if its side sees it land: one of its forces in the fight
+    within 2,000 m with a clear sight line to the burst, smoke included, or a
+    UAV over the target (`observes` in `game.ts`). A force that is out,
+    routing or surrendered watches nothing for its side. Fire nobody sees stays at first-round
+    accuracy. Killing or blinding the observer is how to stop it walking in.
+    ⚠️ The 2,000 m and the 3 m burst height are ours.
+34. ✅ **At company and below, fire support is assigned missions** (author,
+    2026-09-23). A side is given so many fire missions of each weapon
+    (`GameOptions.fireSupport`), each firing a set number of rounds for
+    effect, **6 by default** (`DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
+    (`Game.callForFire`) runs itself:
+    - one round to adjust, waiting to see where it lands before the next, until
+      one is seen on the mark (decisions 32–33) — a mortar adjusts every
+      second turn, artillery every third;
+    - then its rounds for effect, all landing together; then it is spent.
+    - It goes straight to effect on a registered target, when nobody of the
+      side can see the target, or after 4 adjusting rounds (ours).
+    - **Check fire** (`Game.checkFire`) stops a side's missions and its rounds
+      not yet landed: an attacker lifting its fires. A mission stopped is
+      spent.
+    - A side on missions cannot fire outside them (`queueIndirectFire`
+      refuses it). A side left out of `fireSupport` is not rationed.
+    - **Ammunition** is the battalion's and above, set by the mission's
+      parameters (backlog 12). It is not built.
+    - The debrief narrates a call for fire. **The live UI does not call
+      missions yet**: it still queues single rounds, one a turn (decision 8's
+      UI limit), unrationed.
+    - Why 6: a 6-gun battery's single volley, or a 3-tube section's two bombs
+      a tube. Doctrine often fires more: "seldom less than five rounds for each
+      mortar" (FM 7-90). In balance, 6 suits artillery and mortars want 9–12
+      (balance.md, *Tenth round*). One default for both is on the table for the
+      author.
+35. ✅ **Counter-battery fire exists only for guns on the map** (author,
+    2026-09-23). Mortars are on the map at **company and above**, artillery at
+    **battalion and above**. On the map they are units, and can be found and
+    fired on; that arrives with echelon scaling (backlog 3). Off the map there
+    is no counter-battery fire. Today every game is off-map for both, so
+    there is none.
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1423,7 +1536,8 @@ Each is intended to be an independent, toggleable module:
    with it**: indirect fire is an off-map asset only because a platoon commander
    calls for fire rather than owning it. At battalion and above the battery is a
    unit on the map, with the rates of fire the data already holds and a position
-   that can be counter-batteried (rules decision 8).
+   that can be counter-batteried (rules decision 8). **Mortars come on the map
+   one echelon lower, at company and above** (decision 35).
 
    **It also carries the simulated subordinates** (backlog 15). Above company
    the levels below the player's pieces stop being a strength number and start
@@ -1493,7 +1607,9 @@ Each is intended to be an independent, toggleable module:
 9. **Leagues.**
 10. **Air support** — fixed/rotary CAS missions.
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
-12. **Logistics** — ammunition, fuel, resupply, sustainment.
+12. **Logistics** — ammunition, fuel, resupply, sustainment. For indirect fire,
+    ammunition is the battalion's and above, set by the mission's parameters;
+    below that, fire is assigned as missions (decision 34).
 13. **OPORD mode — write the order, watch it executed.** A game mode where the
     player does not manoeuvre pieces at all: they write a **פקודת מבצע** and/or
     draw a plan on the map (axes, objectives, control measures, fire plan), and

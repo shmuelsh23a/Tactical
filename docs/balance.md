@@ -778,13 +778,564 @@ at every echelon, even at 1:1.
    exactly as the A0 rows above. Rerun: company, no fire plan, 0% / 20% /
    81% / 24%, with 55% out by HE.
 2. Then rule on the blast: what cover does against it, and what one round
-   is. **Still open. It is the first thing for the next session.**
+   is. **One round is one shell (decision 28), and cover counts against it,
+   option a (decision 29). See the sixth round.**
 
-**A side bias surfaced once A0 was the rule.** The company mirror (200
-battles, Western drill) gives BLUE / RED / draw 52 / 39 / 10, and 50 / 37 /
-13 with `--swap`. It was 47 / 45 before. The lean follows the side, not the
-position, so something in the explosive path treats the sides differently.
-Not yet found; see the handoff.
+**A side bias seemed to surface once A0 was the rule, and it was the seeds.**
+The company mirror (200 battles, Western drill) gave BLUE / RED / draw
+52 / 39 / 10, and 50 / 37 / 13 with `--swap`, and it was 47 / 45 before. It
+looked like something in the explosive path favouring BLUE. It is not
+(2026-09-23, company meeting, Western drill, morale on):
+
+| Seeds | BLUE | RED | draw |
+|---|---|---|---|
+| 1–400 | 186 | 186 | 28 |
+| 1000–2999 | 969 | 855 | 176 |
+| 5000–5999 | 458 | 449 | 93 |
+| 10000–13999 | 1773 | 1880 | 347 |
+| **all 7,400** | **3386** | **3370** | 644 |
+| 10000–13999, RED's units added first | 1817 | 1816 | 367 |
+| 20000–20199 (`--seed 20000`) | 44% | 49% | 8% |
+
+- Pooled, the mirror is level: 3386 to 3370.
+- The lean moves with the **seed window**: BLUE ahead on 1000–2999, RED
+  ahead on 10000–13999.
+- Adding RED's units to the game first, the prime suspect, changes nothing.
+- `--swap` could not tell the two apart. It replays the **same seeds**, so
+  its noise is correlated with the unswapped run. It separates side from
+  position; it does not give you a second sample.
+
+Every run on this page before this one used seeds 1000 onwards, because the
+CLI had no way to choose. It has one now: `--seed <first>`. **Before
+calling a lean real, rerun it on a disjoint window.** At 200 battles a
+share's standard error is about 3.5 points, and the gap between two shares
+about 5.
+
+## Sixth round: cover against a shell, 2026-09-23
+
+The author's answers to the blast question:
+- **One round is one shell** (rules decision 28). A battery's mission is
+  several rounds, each with its own scatter and blast.
+- **Cover against blast: "test a and b".** He chose **a** after this round
+  (rules decision 29; `BLAST_COVER_FACTOR` in `data/explosives.ts`; the
+  trial switch and the `--blast-cover` flag are gone). Both were on trial as
+  `blastCoverFactor` in `data/variants.ts`, harness flag `--blast-cover
+  partial,full`. Both apply to indirect fire only, and multiply each man's
+  blast chance by the cover his force is in:
+  - **a** — partial ×½, full ×¼ (`--blast-cover 0.5,0.25`);
+  - **b** — full cover only, ×¼ (`--blast-cover 1,0.25`). The factor is ours;
+    it is a's, so the two differ only on partial cover.
+
+Western drill, 100 battles a cell, seeds from 1000, the same targets as
+before. A prepared position starts in partial cover unless the row says
+full. Company only: a company is what calls fire.
+
+| Fire | Prepared in | Cover vs blast | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|---|
+| none (a mortar bomb a turn on the nearest enemy seen) | either | none | 0% | 20% | 81% | 24% | 55% | 3/4 |
+| | either | a or b | 0% | 15% | 62% | 25% | 50% | 2/4 |
+| a bomb a turn on the objective (`--fires plan`) | partial | none | 1% | 50% | 99% | 4% | 76% | 3/4 |
+| | partial | a | 0% | 21% | 95% | 12% | 67% | 3/4 |
+| | partial | b | 0% | 31% | 97% | 4% | 75% | 3/4 |
+| | full | none | 1% | 50% | 99% | 4% | 76% | 3/4 |
+| | full | a or b | 0% | 16% | 88% | 19% | 60% | 3/4 |
+| one shell a turn (`--fires 1,0`) | partial | none | 5% | 99% | 100% | 0% | 91% | 2/4 |
+| | partial | a | 1% | 78% | 100% | 1% | 83% | 2/4 |
+| | partial | b | 2% | 95% | 100% | 0% | 90% | 2/4 |
+| | full | a or b | 0% | 51% | 99% | 5% | 74% | 3/4 |
+| a battery and a mortar section: 4 shells, 6 bombs a turn (`--fires 4,6`) | partial | none | 20% | 100% | 100% | 0% | 99% | 2/4 |
+| | partial | a | 2% | 100% | 100% | 0% | 98% | 2/4 |
+| | partial | b | 16% | 100% | 100% | 0% | 99% | 2/4 |
+| | full | a or b | 1% | 100% | 100% | 0% | 97% | 2/4 |
+
+Squad and platoon rows do not change without a fire plan. They have no
+explosives but the assault's grenades, and those are not indirect fire.
+
+### What it says
+
+- **Cover is only half the answer.** It takes one shell a turn from
+  deciding a 2:1 attack (99%) to an even one (51%), but only against a
+  defender in **full** cover, and there a and b are the same thing. Against
+  a battery's whole mission, 4 shells and 6 bombs a turn, the 2:1 attack
+  still wins 100% under either. Cover then only stops that fire from winning
+  a 1:1 attack (20% down to 1–2%).
+- **a and b differ only where the defender is in partial cover**, that is
+  a hasty position or men against a wall. Under a it is worth something
+  (one shell a turn: 99% down to 78%); under b nothing.
+- **Both cost the attack without a fire plan.** The defender digs in to full
+  cover while the attacker walks up in the open, so the company's own mortar
+  bomb does less to it: the 3–4:1 attack falls from 81% to 62% and misses
+  its target. The fire plan is what brings it back (88–97%).
+- **The 75% principle holds under either** with a fire plan on a dug-in
+  defender: 60–75% out by HE, against 76% without cover.
+- **What would decide it is how much fire a company gets**, not what cover
+  does to it. How many shells one company can call in a turn is the
+  question after this one. It is decision 8's one mission per side per turn,
+  now that a mission is one shell, and later the ammunition item
+  (backlog 12).
+
+## Seventh round: how accurate the guns are, 2026-09-23
+
+The author asked what changing artillery accuracy would do. First, what it is
+today. This is the document's dispersion table, `data/artillery.ts`:
+- Each axis is rolled on its own. There is a **70% chance** of landing on
+  target on each axis, so **49%** of rounds land exactly on the aim point.
+- A miss in range (short or long) is **50–200 m**, rolled as 1d4 × 50. A miss
+  in line (left or right) is **25–100 m**, rolled as 1d4 × 25.
+- That puts **65%** of rounds within 50 m of the aim, **82%** within 100 m
+  and **98%** within 200 m. The mean miss is 52 m.
+- The blast is as wide as the miss. For a man standing at the aim point, an
+  artillery round catches him **58%** of the time, against 70% on a direct
+  hit. A mortar bomb catches him **37%** of the time, against 50%. So a miss
+  costs a shell only about a sixth of its effect.
+
+Then a probe, a **temporary edit, not committed**: the table's miss distance
+and its on-target chance were changed together, under decision 29, with the
+company only. "Off" is the percentile that deviates on each side, so 15 is
+today's 70% on target and 25 is 50%.
+
+| Accuracy | Fire | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| today (miss ×1, off 15) | none | 0% | 15% | 62% | 25% | 50% | 2/4 |
+| | a bomb a turn on the objective | 0% | 21% | 95% | 12% | 67% | 3/4 |
+| | one shell a turn | 1% | 78% | 100% | 1% | 83% | 2/4 |
+| | 4 shells + 6 bombs a turn | 2% | 100% | 100% | 0% | 98% | 2/4 |
+| 50% on target (miss ×1, off 25) | none | 0% | 19% | 67% | 24% | 46% | 2/4 |
+| | a bomb a turn | 0% | 37% | 93% | 15% | 58% | **4/4** |
+| | one shell a turn | 4% | 86% | 100% | 2% | 78% | 2/4 |
+| | 4 + 6 | 8% | 100% | 100% | 0% | 98% | 2/4 |
+| misses twice as far (miss ×2, off 15) | none | 0% | 22% | 66% | 24% | 47% | 2/4 |
+| | a bomb a turn | 2% | 30% | 95% | 15% | 62% | **4/4** |
+| | one shell a turn | 8% | 67% | 96% | 6% | 80% | 3/4 |
+| | 4 + 6 | 44% | 100% | 100% | 0% | 100% | 1/4 |
+| both (miss ×2, off 25) | none | 0% | 27% | 74% | 22% | 40% | 3/4 |
+| | a bomb a turn | 6% | 40% | 90% | 15% | 51% | **4/4** |
+| | one shell a turn | 9% | 56% | 93% | 10% | 70% | **4/4** |
+| | 4 + 6 | 64% | 100% | 100% | 1% | 100% | 1/4 |
+| miss ×4, off 25 | none | 4% | 50% | 92% | 17% | 29% | **4/4** |
+| | a bomb a turn | 5% | 70% | 92% | 14% | 40% | **4/4** |
+| | one shell a turn | 12% | 62% | 92% | 14% | 57% | **4/4** |
+| | 4 + 6 | 94% | 98% | 99% | 9% | 100% | 1/4 |
+
+### What it says
+
+- **Less accuracy helps a single round's balance.** With miss ×2 and 50% on
+  target, one shell a turn stops deciding a 2:1 attack (56%) and meets all
+  four company targets. So does a bomb a turn.
+- **Against a battery's whole mission it does the opposite.** With 4 shells
+  and 6 bombs a turn, a 1:1 attack wins 2% today, 44–64% at miss ×2, and 94%
+  at miss ×4. The defending company is spread over some 400 m, and the blast
+  is wide. A concentrated mission hits the same men twice. A scattered one
+  covers the whole company. Inaccuracy turns a mission into area fire, and
+  area fire suits a dispersed target.
+- **Without a fire plan, less accuracy helps the attacker too.** The
+  defender's own mortar bomb, aimed at the advancing attacker, misses more.
+  At miss ×4 the 3–4:1 attack is back to 92%, and explosives put out only
+  29% of the men, far off the 75% principle.
+- **So accuracy is not the lever for massed fire.** How much fire a company
+  may call is. Accuracy is a fair lever for how decisive **one** round is.
+
+## What the sources say cover does against a shell, 2026-09-23
+
+The author asked what is published on this. Every figure below is
+secondhand. The primary tables, the JMEM and FM 6-141-2, are classified.
+The pages were read through search results, because the sandbox could not
+open them.
+
+**Lethal areas by posture**, as quoted from open compilations:
+
+| Round | Standing | Prone | Foxhole | Prone ÷ standing | Foxhole ÷ standing |
+|---|---|---|---|---|---|
+| 105 mm M1, impact, 60° | 390 m² | 140 m² | — | 0.36 | — |
+| 155 mm M107, impact, 60° | 971 m² | 346 m² | 130 m² | 0.36 | 0.13 |
+| 155 mm, air burst, 60° | 1,240 m² | 939 m² | 130 m² | 0.76 | 0.10 |
+
+- **FM 7-90** (mortars, Appendix B): fire at standing men is almost twice as
+  effective as at prone men. A proximity fuze is about 40% more effective
+  than a surface burst against prone men. Against men in open fighting
+  positions without overhead cover, it is about five times as effective as
+  an impact fuze.
+- **FM 21-75** and its successors: a foxhole protects against every shell
+  except a direct hit. Overhead cover is what protects against an air burst.
+- **Troop Reaction and Posture Sequencing** (US Army, 1970s): at the first
+  impact, 58% of men in a hasty defence were standing. Two seconds later 29%
+  were, and after eight seconds none were. Going to ground cuts casualties
+  by as much as two thirds. That is why time-on-target fire, every round
+  landing at once, is the deadliest.
+
+**How that compares with decision 29.** If "none" is a man on his feet:
+- Partial cover, ×½, sits between prone (×0.36) and FM 7-90's "twice".
+  That is fair.
+- Full cover, ×¼, is **about twice as generous to the shell** as the
+  sources. A foxhole is ×0.10–0.13 against standing men.
+
+A probe of full cover at ×⅛ and ×1/10 (temporary edit, not committed;
+company, prepared positions in full cover):
+
+| Full cover | Fire | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|
+| ×¼ (the rule) | none | 15% | 62% | 25% | 50% | 2/4 |
+| | a bomb a turn | 16% | 88% | 19% | 60% | 3/4 |
+| | one shell a turn | 51% | 99% | 5% | 74% | 3/4 |
+| | 4 shells + 6 bombs | 100% | 100% | 0% | 97% | 2/4 |
+| ×⅛ | none | 13% | 51% | 26% | 50% | 2/4 |
+| | a bomb a turn | 18% | 68% | 24% | 56% | 2/4 |
+| | one shell a turn | 24% | 96% | 12% | 66% | 3/4 |
+| | 4 + 6 | 100% | 100% | 0% | 96% | 2/4 |
+| ×1/10 | none | 13% | 49% | 26% | 50% | 2/4 |
+| | a bomb a turn | 15% | 68% | 25% | 56% | 2/4 |
+| | one shell a turn | 22% | 92% | 16% | 63% | 3/4 |
+| | 4 + 6 | 100% | 100% | 0% | 96% | 2/4 |
+
+At the sources' figure, a dug-in company can take a shell a turn: a 2:1
+attack wins about a quarter of the time. A battery's whole mission still
+decides the fight. Two things the sources raise that the game does not
+model:
+- **The first rounds catch men on their feet.** Our cover is a state of the
+  force, and a force in the open that has just been shelled is as exposed
+  on the next turn. The sources say it would be lying down.
+- **The fuze.** An air burst largely defeats going prone and open holes,
+  but not overhead cover. The document has one kind of shell.
+
+## Eighth round: a company's fire support, and accuracy by CEP, 2026-09-23
+
+The author's next steps after the sources:
+- Full cover against a shell goes to ×⅛ (decision 29).
+- The first volley (decision 30) and air-burst fuzes (decision 31) are rules.
+- Test a company with **2 artillery missions of 4 shells and 3 mortars**,
+  with artillery at **15 m CEP** and a mortar's accuracy from the sources.
+  "Usually it's adjustable — with increasing accuracy up to a cap."
+
+### Accuracy, on trial
+
+This is `cepDispersion` in `data/variants.ts`, harness flag `--cep
+weapon:first:cap`. Each round scatters as a circular normal with CEP
+`max(cap, first ÷ 2^adjustments)`. An adjustment is the same side's same
+weapon firing again the next turn within 100 m of its last aim; the
+observer's bracket halves the error each time.
+
+| Weapon | First round | Cap | Source |
+|---|---|---|---|
+| Artillery | 15 m | 15 m | The author. For scale: an unguided 155 mm round is 50–267 m CEP at long range (M777 spec 50–200 m at 25 km; M549A1 267 m at maximum range). A PGK fuze is ≤30 m, Excalibur about 4 m. So 15 m is precision-fuze accuracy. |
+| Mortar | 100 m | 25 m | An unadjusted 120 mm bomb is 136 m CEP at maximum range, 76 m with modern fire control. Doctrine fires for effect once the bracket is within 50 m. 25 m, the tube's own spread at working ranges, is ours. |
+
+Things this leaves out:
+- An observer. Adjustment only needs the same aim point on consecutive turns.
+- A battery's shared error. Every round scatters on its own.
+
+### The allocation
+
+Read as follows:
+- **2 × 4 shells for the battle**, fired on the first two turns as
+  preparation. They land on turns 3 and 4, 80 m apart on the objective.
+- **3 tubes at the document's 3 bombs a tube a turn**: three missions of 3
+  bombs a turn, 80 m apart, until the attacker is within 400 m.
+- For comparison: 3 tubes at 1 bomb each, and the missions a turn rather
+  than a battle.
+- The defender keeps only its company's one bomb a turn on the nearest enemy
+  it has seen.
+
+Company, Western drill, 100 battles a cell, seeds from 1000. "Table" is the
+document's dispersion; "CEP" is the trial above. The defender's prepared
+position is in partial cover (a hasty position) or full (dug in, no roof).
+
+**Each part alone** (impact fuze). Rerun after the review fixes: everything
+landing in one turn now finds the men as they were, and each tube adjusts
+onto its own point.
+
+| Fire | Accuracy | Prepared in | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| none (the company's one bomb a turn) | table | either | 16% | 62% | 25% | 45% | 2/4 |
+| | CEP | either | 14% | 58% | 24% | 45% | 2/4 |
+| 2 × 4 shells for the battle | table | partial | 81% | 100% | 0% | 81% | 2/4 |
+| | table | full | **29%** | 93% | 16% | 59% | 3/4 |
+| | CEP | partial | 95% | 100% | 0% | 82% | 2/4 |
+| | CEP | full | **36%** | 93% | 13% | 60% | **4/4** |
+| 3 tubes × 1 bomb a turn | table | partial | 73% | 100% | 0% | 85% | 2/4 |
+| | table | full | **27%** | 99% | 6% | 67% | 2/4 |
+| | CEP | partial | 90% | 100% | 0% | 85% | 2/4 |
+| | CEP | full | **36%** | 99% | 3% | 70% | 3/4 |
+| 3 tubes × 3 bombs a turn | table | partial / full | 100% / 91% | 100% | 0% | 88–95% | 2/4 |
+| | CEP | partial / full | 100% / 99% | 100% | 0% | 90–95% | 2/4 |
+
+**Together** (the 1:1 attack never wins more than 11%, except as noted):
+
+| Fire | Accuracy | Fuze | Prepared in | ~2:1 win | Out by HE |
+|---|---|---|---|---|---|
+| 2 × 4 shells a battle + 3 × 3 bombs a turn | any | any | any | 100% | 93–97% |
+| 2 × 4 shells a battle + 3 × 1 bomb a turn | table | impact | full | **61%** | 82% |
+| | CEP | impact | full | 80% | 84% |
+| | any | impact | partial | 100% | 94% |
+| | any | air burst | any | 100% | 95–96% |
+| 2 × 4 shells **a turn** + 3 × 3 bombs a turn | any | any | any | 100% (1:1: 21–40% with air burst on the table's accuracy) | 96–99% |
+
+### What it says
+
+- **The allocation as given decides the 2:1 attack every time**, under
+  every accuracy, fuze and position. Most of that is the mortar section. At
+  the document's rate, 3 tubes fire 9 bombs a turn, about 36 over the
+  approach. Alone, that wins a 2:1 attack 90–100% of the time.
+- **The two artillery missions are about right on their own.** Against a
+  dug-in company they give 29–36% at 2:1 and 93% at 3–4:1. At 15 m CEP that
+  meets all four company targets. Explosives put out 60% of the men.
+- **So does a section at 1 bomb a tube a turn.** Both together give 61% at
+  2:1 on the table's accuracy and 80% at 15 m CEP, against a dug-in defender.
+- **Digging in is what the numbers turn on.** Against a hasty position,
+  every allocation above wins a 2:1 attack 73–100% of the time.
+- **An air burst wins against any defender without a roof.** It finds open
+  holes at ×⅝, so every air-burst row is 100%. That is decision 31 working
+  as the sources say. It also means the question is whether a prepared
+  position has overhead cover. Today only a building does.
+- **What accuracy is worth depends on how much fire there is.** Against a
+  dug-in company, the trial's accuracy adds 7–9 points to a 2:1 attack
+  with each part alone. With both parts together it adds 19 points (61% to
+  80%). Against the full allocation it makes no difference, because the
+  attack already wins.
+- **Without a fire plan, decisions 29–31 barely move the attack.** With
+  the table's accuracy, the 3–4:1 attack still wins 62% and misses its
+  target, as it did before them. With the trial's it wins 58%. A company is
+  expected to attack with fire support; these rows are its absence.
+- **The fire is one-sided.** The defender has no section of its own, no
+  counter-battery fire and no way to move off a shelled position.
+
+## Ninth round: fire missions, and the defender's own mortars, 2026-09-23
+
+The author's answers to the eighth round:
+1. **Mortars fire as missions.** One bomb a turn until one lands close to
+   the mark, then fire for effect.
+2. **A prepared position has overhead cover**: a roof against an air burst
+   (decision 31).
+3. He asked what we suggest on the accuracy trial. See the handoff.
+4. **Yes to fire support for the defender.**
+5. **Artillery accuracy of 50–270 m CEP**, improving with each round.
+
+### What was built
+
+**Adjustment** (the accuracy trial, `cepDispersion`):
+- Each earlier round from the same side's same weapon within 100 m of the
+  aim halves the CEP, down to the cap.
+- Once a round lands within 50 m of its aim, the guns are **on the mark**
+  (`Game.isOnTheMark`) and fire at the cap. Missions within 100 m of that
+  point are on the mark too, so a section's sheaf is.
+- Artillery is **270 m to 50 m**; a mortar is **100 m to 25 m**. The 50 m
+  for "on the mark" is ours, from the doctrinal "within 50 m of the
+  adjusting point".
+- **Registered targets** (`registeredTargets`): a side's guns are already on
+  the mark at points it planned before the battle.
+
+**The fire plan** (`--fires ...,adjust=on`):
+- One round a turn on the centre of the objective until it is on the mark,
+  then the full missions, 80 m apart, until the attacker is within 400 m.
+- Artillery's 2 × 4 shells count fire for effect only.
+
+**The defender's section** (`--defender-fires mortar=3x3,registered=200/400`):
+- 3 tubes on the nearest attacker it has seen, adjusting the same way.
+- Targets registered 200 m and 400 m in front of its line.
+- The company's one bomb a turn goes on as before, for both sides.
+
+**Two things the traces showed first:**
+- **Nobody sees anybody until about 250–300 m.** Across 700 m of open ground
+  the Western drill advances about 50 m a turn. No side detects the other
+  before turn 10.
+- **With the eighth round's fire, the defender broke on turn 7** without
+  having seen the attacker, 400 m away. It never fired a shot, so the attack
+  cost nothing. That is where the 100% came from.
+
+### Results
+
+Company, Western drill, 100 battles a cell, seeds from 1000, the accuracy
+trial on throughout. A prepared position in **full** cover now has a roof,
+so impact and air burst give the same results there, within noise.
+
+| Attacker's fire | Prepared in | Defender's section | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| none | either | off | 16% | 61% | 24% | 45% | 2/4 |
+| | either | **on** | **0%** | **0%** | 4% | 96% | 1/4 |
+| 2 × 4 shells for the battle | full | off | 50–51% | 95–96% | 11% | 62% | **4/4** |
+| | full | on | 1–2% | 31% | 13% | 97% | 2/4 |
+| | partial | off | 78% (impact), 99% (air) | 100% | 0–1% | 80–94% | 2/4 |
+| | partial | on | 27% (impact), 85% (air) | 89–100% | 0–3% | 97–98% | 2/4 |
+| 3 tubes × 3 bombs a turn | full | off | 45–46% | 100% | 1% | 76% | 3/4 |
+| | full | on | 2% | 91% | 2% | 97% | 2/4 |
+| | partial | off | 92% (impact), 100% (air) | 100% | 0% | 87–93% | 2/4 |
+| | partial | on | 43% (impact), 95% (air) | 100% | 0% | 97–98% | 3/4 (impact) |
+| 2 × 4 shells + 3 × 1 bomb | full | off | 77–78% | 100% | 1% | 79% | 2/4 |
+| | full | on | 17–18% | 92–93% | 2% | 97% | 2/4 |
+| 2 × 4 shells + 3 × 3 bombs (the author's) | full | off | 89% | 100% | 0% | 86% | 2/4 |
+| | full | on | **39–40%** | **100%** | 0% | 97% | **3/4** |
+| | partial | off | 100% | 100% | 0% | 95–96% | 2/4 |
+| | partial | on | 96% (impact), 100% (air) | 100% | 0% | 98–99% | 2/4 |
+
+Where impact and air burst differ, the row gives both. The 1:1 attack never
+wins more than 10%.
+
+These are the figures after a review of the first cut (2026-09-23). Being on
+the mark used to follow the aim from mission to mission, so the defender
+stayed on the mark all the way in from one registered point. Now it holds
+only within 100 m of where a round landed on the mark, or of a registered
+point. The fix moved no cell by more than 2 points. The registered points at
+200 m and 400 m already cover the ground from 100 m to 500 m, and that is
+where the defender first sees the attacker. **Registration is what makes the
+defender's section decisive.**
+
+### What it says
+
+- **Fire missions make artillery about right on its own.** Adjusting from
+  270 m takes several turns: the first shell lands within 50 m only 2% of
+  the time, the fourth half the time. So two missions of four shells, fired
+  for effect once on the mark, give a 2:1 attack on a dug-in company 50%, and
+  a 3–4:1 attack 96%. That meets all four company targets.
+- **The defender's own section decides almost everything.** With targets
+  registered on the approach, it fires for effect at 25 m CEP the turn it
+  sees the attacker. Without fire support of its own, a company never takes
+  a prepared position, even at 3–4:1.
+- **With both sides firing, the author's allocation lands in the band.** A
+  2:1 attack wins 39–40% and a 3–4:1 attack 100% against a dug-in, roofed
+  defender.
+- **But it is a fire duel, and it is won before contact.** Under the
+  author's allocation, the attacker who wins at 3–4:1 loses nobody (0%,
+  against a target of 10–30%): the defender broke under fire before it saw
+  him. The attacker who loses is broken by
+  registered fire as he comes into view. Explosives put out 96–99% of the
+  men. That is well past the author's 75%, because small arms rarely get
+  the chance.
+- **The fire never runs out.** Nine bombs a turn for as long as there is a
+  target is the document's rate of fire with no ammunition behind it
+  (backlog 12). How much a section can fire in a battle is the lever that
+  would turn this duel into a fight.
+- **An air burst still matters against a hasty position**, which has no
+  roof. Against partial cover, the defender's section on, it takes a 2:1
+  attack from 27–43% to 85–95%.
+
+## Tenth round: fire missions with a set number of rounds, 2026-09-23
+
+The author's rulings after the ninth round:
+- Accuracy by CEP, adjusting, observers and registered targets are rules
+  (decisions 32–33).
+- Counter-battery fire only for guns on the map (decision 35), so none today.
+- **Moving off a shelled position**: yes. It is a drill option,
+  `SquadDrill.displace`, harness flag `--displace`.
+- **At company and below, fire support is assigned missions**, each with a
+  set number of rounds for effect. "I think the default should be 6 but
+  let's check it out both doctrinally and balance-wise" (decision 34).
+
+### What doctrine says about 6
+
+The open sources are thin; the planning tables (FM 6-20-30 Appendix B, the
+JMEM) are not published. What they give:
+- **A mortar section's fire for effect "should seldom consist of any less
+  than five rounds for each mortar"** (FM 7-90, the 60 mm section). For a
+  3-tube section, that is 15 or more.
+- **An artillery battalion's example fire for effect is four rounds per
+  tube** (a Marine Corps call-for-fire handout).
+- A battery of 6 guns firing one round each is 6. A battery's fire for
+  effect is usually one to three rounds a gun, so 6–18.
+- The defence has a **final protective fire** with its own ammunition set
+  aside, one per battery and one per mortar platoon.
+
+So **6 is a battery's single volley, or a mortar section's two bombs a
+tube**. That is the low end for artillery and under what doctrine asks of
+mortars.
+
+### How the harness fights with it
+
+- A side with missions assigned calls them **one at a time per weapon**: a
+  section or battery fires one mission at a time.
+- The attacker calls on what it has seen of the defender nearest the
+  objective. Until then it calls on its **planned targets**: the centre of
+  each defending platoon, one after another. When it comes within 400 m the
+  fires lift: a check fire (`Game.checkFire`) stops whatever is still to come.
+- **Planned** (`--fires ...,registered=on`) means the attacker's guns are
+  registered on those points before the battle (decision 32). They fire for
+  effect at once, at the weapon's best accuracy.
+- The defender calls on the nearest attacker it has seen, with mortar
+  targets registered 200 m and 400 m in front of its line.
+- A side with missions assigned gets nothing else. The free bomb a turn
+  from the company is only for a side without an allotment.
+- Every row: company, Western drill, 100 battles a cell, seeds from 1000.
+  The defender is prepared in full cover, which has a roof. The defender has
+  4 mortar missions of the same size as the attacker's, unless a row says
+  otherwise.
+
+**A review of the first cut changed these figures** (2026-09-23). Two
+defects had inflated the attacker's fire:
+- A mission sent its next adjusting round before seeing where the last one
+  landed.
+- A mission called before the lift still landed its rounds after it.
+The rows also aimed at the objective's centre, which in the 2:1 layout lies
+between the two defending platoons. The figures below are the rerun with all
+three fixed.
+
+**Adjusting is slow.** A mission sees its adjusting round only once it
+lands: a turn after it is sent for a mortar, two for artillery. So a mortar
+adjusts once every 2 turns and artillery once every 3. Artillery from 270 m
+needs three or four observed rounds, about 10 turns, and the attacker
+reaches the lift in about 7. **Unplanned, the artillery never fires for
+effect.**
+
+| Attacker's missions | Planned? | Rounds for effect | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| none (defender: none either; the free bomb for both) | — | — | 16% | 61% | 24% | 45% | 2/4 |
+| 2 artillery | no | 6 | 0% | 0% | 10% | 90% | 1/4 |
+| 2 artillery + 2 mortar | no | 3 / 6 / 9 / 12 | 1% / 0% / 0% / 0% | 9% / 10% / 29% / 43% | 25% / 24% / 20% / 15% | 82–95% | 2/4 |
+| 2 artillery + 4 mortar | no | 6 | 0% | 28% | 20% | 91% | 2/4 |
+| 2 artillery | **yes** | 6 | 0% | 55% | 18% | 94% | 2/4 |
+| 4 mortar | yes | 6 | 1% | 95% | 2% | 94% | 2/4 |
+| 1 artillery + 2 mortar | yes | 3 / 6 / 9 / 12 | 0% / 0% / 0% / 9% | 23% / 67% / 93% / 99% | 28% / 17% / 4% / 0% | 84–98% | 2/4 |
+| 2 artillery + 2 mortar | yes | 3 | 1% | 72% | 18% | 85% | 3/4 |
+| | yes | 6 | 20% | 97% | 2% | 95% | 2/4 |
+| | yes | **9** | **65%** | 100% | 0% | 98% | **3/4** |
+| | yes | 12 | 93% | 100% | 0% | 99% | 2/4 |
+| 2 artillery + 4 mortar | yes | **6** | **64%** | 100% | 0% | 97% | **3/4** |
+| 2 artillery × 6 + 2 mortar × **9** | yes | 6 / 9 | **35–36%** | 98–100% | 1% | 96–97% | **3/4** |
+| 2 artillery × 6 + 2 mortar × **12** | yes | 6 / 9 | **48–49%** | 98–99% | 1% | 97% | **3/4** |
+| 2 artillery × 6 + 4 mortar × 9 | yes | 6 / 9 | 88% (1:1: 11–16%) | 100% | 0% | 98% | 2/4 |
+
+In the last three rows the defender's missions fire 6 or 9 rounds; the two
+give the same result within noise.
+
+**Without the defender's missions** (1 artillery + 2 mortar, 6 rounds; the
+defender has none and no free bomb): a 1:1 attack wins 74% unplanned and 91%
+planned. The defending company's indirect fire, even the one free bomb a
+turn, is what holds a prepared position against an equal attacker.
+
+**Moving off a shelled position** (1 artillery + 2 mortar, 6 rounds; the
+defender's squads run 100 m to the rear once, when shelled with no enemy
+within 300 m):
+
+| Planned? | 3–4:1 win, staying | 3–4:1 win, moving off |
+|---|---|---|
+| no | 10% | 40% |
+| yes | 67% | 100% |
+
+### What it says
+
+- **6 rounds for effect is doctrine's floor for artillery and right for it
+  in balance.** A 6-gun battery's single volley, on a planned target.
+- **For mortars, 9–12 is what balances.** With two artillery missions of 6
+  and two mortar missions, all planned:
+  - mortars at 9 give a 2:1 attack 35–36%;
+  - mortars at 12 give it 48–49%;
+  - both meet 3 of 4 company targets.
+  Doctrine asks 15 or more of a 3-tube section. Mortars at 6 give 20%.
+- **Planned targets are what make fire support work in the attack.** Without
+  them the adjustment is too slow: the artillery never fires for effect
+  before the lift, and no allotment gives a 2:1 attack more than 1%.
+- **The defender's own mortars, on registered targets, hold the line.**
+  Without its missions, even a 1:1 attack takes a prepared position 74–91%
+  of the time.
+- **Moving off a shelled position, as built, still hurts the defender.** A
+  3–4:1 attack wins 40% against 10% unplanned, and 100% against 67% planned.
+  It leaves a roofed position for open ground inside the fire. In doctrine,
+  displacement goes to *prepared* alternate positions, out of the registered
+  area. The engine gives a force one prepared position, so it cannot be done
+  well yet. The option stays off by default.
+- **The attacker who wins still barely bleeds when its fire is planned**:
+  0–4% at 3–4:1, against a target of 10–30%. Unplanned, it loses 10–25%,
+  but rarely wins. The fight is decided by fire, because nobody detects
+  anybody before about 300 m (decision 12's detection). The defender's
+  missions start only once the attacker is inside that, and the attacker's
+  planned fire lands before.
 
 ## How the engine scales, 2026-09-23
 
