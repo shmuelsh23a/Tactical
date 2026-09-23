@@ -67,34 +67,28 @@ describe("direct fire", () => {
     }
   });
 
-  it("adds the movement modifier, then scales by cover — the two are not alike", () => {
-    // This pins rules decision 7, confirmed by the author 2026-08-16. The
-    // document phrases the two modifiers differently and means it: cover is
-    // "-50% מסיכויי הפגיעה" (partitive מ־, "of the hit chance" → proportional),
-    // the movement table is a bare "+30% סיכויי פגיעה" (→ additive). Applying
-    // both the same way is the mistake this test exists to catch.
+  it("scales by the target's movement, then by cover — both proportional (decisions 7 and 22)", () => {
+    // Decision 7 made cover proportional on the document's own grammar; the
+    // author ruled the movement table's +30% / -20% proportional too on
+    // 2026-09-23 (decision 22), because added, a runner beyond 100 m could not
+    // be hit at all (20% - 20%). So both are factors on the band.
     const rng = new Rng(5);
     const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
     const b = makeInfantry("B", "RED", "squad", { x: 0, y: 250 }, 8);
-    const r = resolveDirectFire(rng, a, b, {
-      weapon: "smallArms",
-      cover: "partial",
-      targetMovementModifier: +0.3,
-    });
-    expect(r.hitChance).toBeCloseTo(0.45, 5); // (0.2 + 0.3) * (1 - 0.1)
-    // Both additive would be 0.4; both proportional would be 0.234.
-    expect(r.hitChance).not.toBeCloseTo(0.4, 5);
-    expect(r.hitChance).not.toBeCloseTo(0.234, 5);
+    const r = resolveDirectFire(rng, a, b, { weapon: "smallArms", cover: "partial", targetMovementFactor: 1.3 });
+    expect(r.hitChance).toBeCloseTo(0.234, 5); // 0.2 × 1.3 × 0.9
+    // The additive reading would have been 0.45.
+    expect(r.hitChance).not.toBeCloseTo(0.45, 5);
   });
 
-  it("running target lowers hit chance, normal-moving raises it", () => {
+  it("running target lowers hit chance, normal-moving raises it — and a runner is never unhittable", () => {
     const rng = new Rng(5);
     const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
-    const b = makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 8);
-    const run = resolveDirectFire(rng, a, b, { weapon: "smallArms", targetMovementModifier: -0.2 });
-    expect(run.hitChance).toBeCloseTo(0.1, 5);
-    const walk = resolveDirectFire(rng, a, b, { weapon: "smallArms", targetMovementModifier: +0.3 });
-    expect(walk.hitChance).toBeCloseTo(0.6, 5);
+    const near = makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 8);
+    expect(resolveDirectFire(rng, a, near, { weapon: "smallArms", targetMovementFactor: 0.8 }).hitChance).toBeCloseTo(0.24, 5);
+    expect(resolveDirectFire(rng, a, near, { weapon: "smallArms", targetMovementFactor: 1.3 }).hitChance).toBeCloseTo(0.39, 5);
+    const far = makeInfantry("C", "RED", "squad", { x: 0, y: 200 }, 8);
+    expect(resolveDirectFire(rng, a, far, { weapon: "smallArms", targetMovementFactor: 0.8 }).hitChance).toBeCloseTo(0.16, 5);
   });
 
   it("small arms cannot harm a vehicle", () => {

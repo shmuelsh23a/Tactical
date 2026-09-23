@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 488 tests, 27 files
+npm run check       lint + typecheck clean, 508 tests, 28 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -56,6 +56,17 @@ others do to shooting, movement, detection and the rest is the next ruling;
 build nothing on them before it. Also his, and not built: **campaigns carry
 the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
+
+**Second round, 2026-09-23.** Rulings 2c and 3b are made (decisions 22 and
+23), and so is a steadier prepared defender (24). Ruling 1 — the defender
+returns fire in an assault — is ruled in principle, with the rate on trial.
+Swept: the rate makes no difference, because the defender breaks before any
+assault. The harness has now shown that the attack balance is a **square-law**
+effect. A prepared defender needs roughly 4–9 times an attacker's per-man
+effectiveness to meet the planning figures, and has about 1.5–2 times. Put to
+him: the casualty model (a hit-severity roll), and what **ירי מקביל** means —
+the engine reads it as a sustained machine gun, and the harness has never fired
+a gun on that table. Both are on balance.md, *Second round*.
 
 **Rulings 4 and 5 are made** (decisions 20 and 21, 2026-09-23). **Rulings
 1–3 were put on trial** as switches in `engine/data/variants.ts` and swept

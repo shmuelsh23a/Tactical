@@ -235,7 +235,10 @@ describe("covering fire", () => {
   });
 
   it("is consumed by firing: it answers once and must be declared again", () => {
-    const { g, red, blue } = covered(1, { x: 0, y: 0 }, { x: 0, y: 200 });
+    // Seed 2 because the half-pace step below needs the volley to *land* (a
+    // miss leaves the bound at full pace); seed 1 stopped landing when the
+    // walking modifier became ×1.3 rather than +30% (decision 22).
+    const { g, red, blue } = covered(2, { x: 0, y: 0 }, { x: 0, y: 200 });
     g.setCovering(red.id, true);
     toNextMovement(g);
     // A short first bound: being shot at halves what is left of the move

@@ -45,3 +45,12 @@ export const COVER_MODIFIERS = {
 } as const;
 
 export type CoverState = keyof typeof COVER_MODIFIERS;
+
+/**
+ * What full cover is still worth to a force that fired from it this turn —
+ * **not the document's figure**. The document drops it to partial (−10%); the
+ * author set −30% instead on 2026-09-23 (rules decision 23), so that a
+ * defender who shoots back is not left all but unprotected. Genuine partial
+ * cover — a wall, a tree, a prepared position — stays at the table's −10%.
+ */
+export const FIRING_FROM_COVER_MODIFIER = -0.3;

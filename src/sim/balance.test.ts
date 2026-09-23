@@ -35,10 +35,10 @@ describe("the balance harness", () => {
   });
 });
 
-describe("the sweep over rulings 1–3", () => {
-  it("covers today's rules and all eight combinations, each distinct", () => {
-    expect(CONFIGURATIONS).toHaveLength(9);
-    expect(new Set(CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(9);
+describe("the sweep over what is still open", () => {
+  it("covers every reply rate against every steadiness, each distinct", () => {
+    expect(CONFIGURATIONS).toHaveLength(12);
+    expect(new Set(CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(12);
   });
 
   it("judges a configuration on the four targets", () => {

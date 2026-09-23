@@ -4,8 +4,9 @@
  *   npm run balance                                  # every kind and echelon, 100 battles each, morale on and off
  *   npm run balance -- --n 300 --kinds meeting       # one kind, more battles
  *   npm run balance -- --echelons company --swap     # RED starts where BLUE would
- *   npm run balance -- --assault 1a --movement 2b --cover 3a   # rule variants on trial (engine data/variants.ts)
- *   npm run balance -- --sweep                       # every configuration of rulings 1-3, judged against TARGETS
+ *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
+ *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
+ *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -47,18 +48,15 @@ const echelons = list<Echelon>("--echelons", ECHELONS);
 const moraleArg = value("--morale");
 const morales = moraleArg === "on" ? [true] : moraleArg === "off" ? [false] : [true, false];
 const swap = args.includes("--swap");
+const preparedCover = value("--prepared-cover") === "full" ? "full" : "partial";
 
 const variants: RuleVariants = {};
-const assault = value("--assault");
-if (assault) variants.assaultReply = assault === "1a" ? "simultaneous" : assault === "1b" ? "closeFire" : fail("--assault", assault);
-const movement = value("--movement");
-if (movement) variants.movementModifier = movement === "2b" ? "additiveFloor" : movement === "2c" ? "proportional" : fail("--movement", movement);
-const cover = value("--cover");
-if (cover) variants.firingFromCover = cover === "3b" ? "worthMore" : cover === "3a" ? "previousTurn" : fail("--cover", cover);
-
-function fail(flag: string, v: string): never {
-  throw new Error(`${flag}: "${v}" is not one of the options`);
-}
+const reply = value("--reply");
+if (reply) variants.assaultReplyChance = Number(reply);
+const steadyBonus = value("--steady-bonus");
+if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
+const steadyLoss = value("--steady-loss");
+if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
 
 if (args.includes("--sweep")) {
   console.log(`Sweep: ${battles} battles a cell, morale on. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +
@@ -69,7 +67,7 @@ if (args.includes("--sweep")) {
   for (const c of CONFIGURATIONS) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, c.variants, battles);
+      const v = judge(echelon, c.variants, battles, preparedCover);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${v.met}/4 |`);
@@ -83,7 +81,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, preparedCover })));
       }
     }
   }

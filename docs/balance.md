@@ -430,6 +430,105 @@ the attacker at 0–10% (**6–8 of 12**). It was measured and reverted, not kep
 - **What the ground adds.** All of this is flat and open. Dead ground, and
   buildings that give full cover, are what the real maps have.
 
+## Second round: the defender's reply, and steadiness, 2026-09-23
+
+The author ruled 2c (the movement modifier as a factor, decision 22) and 3b
+(firing from full cover keeps −30%, decision 23). He also ruled that a
+prepared defender is steadier (decision 24) and that a defender facing an
+assault returns fire (ruling 1), with the rate to be measured. This sweep plays
+the new rules with every reply rate (none, 30%, 50%, 70%) against three sizes
+of steadiness:
+- off;
+- the default, +15 to tests and ×0.75 on losses;
+- strong, +25 and ×0.5.
+
+It uses the same targets as before.
+
+| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| reply none · steady off | squad | 15% | 83% | 94% | 4% | 2/4 |
+| reply none · steady off | platoon | 4% | 100% | 100% | 0% | 2/4 |
+| reply none · steady off | company | 0% | 17% | 99% | 8% | 2/4 |
+| **reply none · steady off** | **all** | | | | | **6/12** |
+| reply none · steady +15 ×0.75 | squad | 8% | 84% | 95% | 5% | 2/4 |
+| reply none · steady +15 ×0.75 | platoon | 5% | 100% | 100% | 0% | 2/4 |
+| reply none · steady +15 ×0.75 | company | 0% | 5% | 100% | 11% | 3/4 |
+| **reply none · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply none · steady +25 ×0.5 | squad | 2% | 80% | 93% | 5% | 2/4 |
+| reply none · steady +25 ×0.5 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply none · steady +25 ×0.5 | company | 0% | 4% | 96% | 12% | 3/4 |
+| **reply none · steady +25 ×0.5** | **all** | | | | | **7/12** |
+| reply 30% · steady off | squad | 15% | 85% | 94% | 4% | 2/4 |
+| reply 30% · steady off | platoon | 2% | 100% | 100% | 0% | 2/4 |
+| reply 30% · steady off | company | 0% | 18% | 99% | 8% | 2/4 |
+| **reply 30% · steady off** | **all** | | | | | **6/12** |
+| reply 30% · steady +15 ×0.75 | squad | 6% | 86% | 95% | 5% | 2/4 |
+| reply 30% · steady +15 ×0.75 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 30% · steady +15 ×0.75 | company | 0% | 5% | 100% | 10% | 3/4 |
+| **reply 30% · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply 30% · steady +25 ×0.5 | squad | 3% | 83% | 93% | 5% | 2/4 |
+| reply 30% · steady +25 ×0.5 | platoon | 1% | 100% | 100% | 1% | 2/4 |
+| reply 30% · steady +25 ×0.5 | company | 0% | 4% | 95% | 12% | 3/4 |
+| **reply 30% · steady +25 ×0.5** | **all** | | | | | **7/12** |
+| reply 50% · steady off | squad | 14% | 84% | 94% | 4% | 2/4 |
+| reply 50% · steady off | platoon | 6% | 100% | 100% | 0% | 2/4 |
+| reply 50% · steady off | company | 0% | 17% | 99% | 8% | 2/4 |
+| **reply 50% · steady off** | **all** | | | | | **6/12** |
+| reply 50% · steady +15 ×0.75 | squad | 6% | 86% | 95% | 5% | 2/4 |
+| reply 50% · steady +15 ×0.75 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 50% · steady +15 ×0.75 | company | 0% | 5% | 100% | 10% | 3/4 |
+| **reply 50% · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply 50% · steady +25 ×0.5 | squad | 2% | 85% | 94% | 5% | 2/4 |
+| reply 50% · steady +25 ×0.5 | platoon | 1% | 100% | 100% | 1% | 2/4 |
+| reply 50% · steady +25 ×0.5 | company | 0% | 4% | 95% | 12% | 3/4 |
+| **reply 50% · steady +25 ×0.5** | **all** | | | | | **7/12** |
+| reply 70% · steady off | squad | 15% | 85% | 94% | 4% | 2/4 |
+| reply 70% · steady off | platoon | 3% | 100% | 100% | 0% | 2/4 |
+| reply 70% · steady off | company | 0% | 17% | 99% | 8% | 2/4 |
+| **reply 70% · steady off** | **all** | | | | | **6/12** |
+| reply 70% · steady +15 ×0.75 | squad | 6% | 86% | 96% | 5% | 2/4 |
+| reply 70% · steady +15 ×0.75 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 70% · steady +15 ×0.75 | company | 0% | 5% | 100% | 10% | 3/4 |
+| **reply 70% · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply 70% · steady +25 ×0.5 | squad | 2% | 85% | 94% | 5% | 2/4 |
+| reply 70% · steady +25 ×0.5 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 70% · steady +25 ×0.5 | company | 0% | 4% | 95% | 12% | 3/4 |
+| **reply 70% · steady +25 ×0.5** | **all** | | | | | **7/12** |
+
+**What it says.**
+- **The reply rate makes no difference at all.** The assault still almost
+  never happens: the defender breaks first. The rate stays on trial, off by
+  default, until something changes that.
+- **Steadiness helps a little.** It moves the company fights to 3 of 4
+  targets: a winning attacker at 3:1 loses 10–12%. It does not move the squad
+  and platoon fights.
+- **A prepared position starting in full cover changes nothing**
+  (`--prepared-cover full`). The results are identical to the digit, because
+  the defenders dig in to full cover by turn 7, before the attack arrives. The
+  prepared defender already fights from the best cover the rules have.
+
+**Why: the square law.** When every man can fire at every enemy, a force's
+fighting power goes as the **square** of its numbers, so 2:1 in men is 4:1 in
+power and 3–4:1 is 9–16:1. For a 2:1 attack to be a real fight and a 3:1 attack
+to succeed — the planning figures — a prepared defender has to be roughly
+**4–9 times as effective per man** as an attacker in the open. Under these
+rules he is about 1.5–2 times: cover halves the chance of hitting him, less
+when he shoots. That is why the outcome flips between 1:1 and 2:1, and why no
+modifier of a few tens of percent moves it.
+
+**The casualty model, measured** (the rules as they stand after decisions
+22–24, 100 battles a cell, the threshold changed temporarily and reverted):
+
+| A man is out of the fight at | Targets met | Squad: attacker down at 3:1 | Mirror, loser / winner down |
+|---|---|---|---|
+| 8 points (the document) | 7/12 | 5% | 32–39% / 15–24% |
+| 5 points (the document's serious wound) | 7/12 | 7% | 36–50% / 13–26% |
+| 4 points (one heavy hit) | 8/12 | 11% | 39–53% / 16–26% |
+
+A deadlier hit makes the small force's fire count for more, but on its own it
+does not close a factor of 2–4. See the handoff note for the options put to
+the author.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

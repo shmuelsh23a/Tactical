@@ -19,7 +19,7 @@ import {
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
-import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, RALLY, SUPPRESSION } from "./data/morale.js";
+import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, PREPARED, RALLY, SUPPRESSION } from "./data/morale.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
@@ -601,5 +601,56 @@ describe("review fixes: halves of one rule agree", () => {
     expect(() => g.moveUnit(hq.id, { x: 0, y: 10 })).toThrow("pinned");
     g.moveUnit(hq.id, { x: 0, y: -20 });
     expect(hq.position.y).toBe(-20);
+  });
+});
+
+describe("a prepared defender is steadier (author, 2026-09-23)", () => {
+  /** A squad under fire, in position (in cover, has not moved) or not. */
+  function underFire(inCover: boolean) {
+    const u = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 2), 45);
+    u.soldiers![0]!.leader = false;
+    for (const s of u.soldiers!) s.traits!.charisma = 1;
+    if (inCover) u.cover = "full";
+    return u;
+  }
+
+  it("feels less of every loss", () => {
+    const open = underFire(false);
+    const dug = underFire(true);
+    for (const u of [open, dug]) {
+      const ctx = context([u], new ScriptedRng(Array(10).fill(1)));
+      ctx.stress.firedOn(u, { kind: "indirect" }); // 1 + 5 = 6
+      resolveMorale(ctx);
+    }
+    expect(open.soldiers![1]!.morale!.will).toBe(45 - 6);
+    expect(dug.soldiers![1]!.morale!.will).toBe(45 - Math.round(6 * PREPARED.lossFactor));
+  });
+
+  it("passes a test it would have failed in the open", () => {
+    // Wavering at 45 and due a test: the target is 45 + 30 + 10 = 85, and
+    // +15 in position. A roll of 90 fails in the open and passes dug in.
+    const open = underFire(false);
+    const dug = underFire(true);
+    resolveMorale(context([open], new ScriptedRng([90, 100, 90, 100])));
+    resolveMorale(context([dug], new ScriptedRng([90, 90])));
+    expect(open.soldiers!.every((s) => s.morale!.state === "broken")).toBe(true);
+    expect(dug.soldiers!.every((s) => s.morale!.state !== "broken")).toBe(true);
+  });
+
+  it("is not in position once it moves", () => {
+    const u = underFire(true);
+    u.movedThisTurn = 30;
+    const ctx = context([u], new ScriptedRng(Array(10).fill(1)));
+    ctx.stress.firedOn(u, { kind: "indirect" });
+    resolveMorale(ctx);
+    expect(u.soldiers![1]!.morale!.will).toBe(45 - 6);
+  });
+
+  it("takes its size from the game when it is being measured", () => {
+    const u = underFire(true);
+    const ctx = context([u], new ScriptedRng(Array(10).fill(1)), { prepared: { testBonus: 0, lossFactor: 0.5 } });
+    ctx.stress.firedOn(u, { kind: "indirect" });
+    resolveMorale(ctx);
+    expect(u.soldiers![1]!.morale!.will).toBe(45 - 3);
   });
 });

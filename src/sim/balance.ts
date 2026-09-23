@@ -121,8 +121,13 @@ export interface BattleOptions {
   morale: boolean;
   /** Put RED where BLUE would start and the reverse — separates side from position. */
   swap?: boolean;
-  /** Candidate answers to rulings 1–3 (engine data/variants.ts). */
+  /** What is on trial in the engine (data/variants.ts). */
   variants?: RuleVariants;
+  /**
+   * What a position prepared before the battle starts with. `partial` is the
+   * scenarios' convention today; `full` is the open question (docs/balance.md).
+   */
+  preparedCover?: "partial" | "full";
 }
 
 /**
@@ -194,7 +199,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
       f.kind === "command"
         ? makeCommandGroup(f.id, side, f.echelon, f.at, f.men)
         : makeInfantry(f.id, side, f.echelon, f.at, f.men);
-    if (f.prepared) u.baseCover = "partial";
+    if (f.prepared) u.baseCover = opts.preparedCover ?? "partial";
     g.addUnit(u);
   }
 
@@ -426,26 +431,36 @@ export const MARKDOWN_HEADER =
   "| Kind | Echelon | Morale | Men (B v R) | BLUE / RED / draw | Endings | Turns, median (p10–p90) | Loser down | Winner down | Routs | Surrenders | Heroes | Rallied | Pinned share |\n" +
   "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
 
-/** The configurations of rulings 1–3 the author asked to compare (2026-09-23). */
+/**
+ * What the sweep compares (2026-09-23, second round). Rulings 2 and 3 are
+ * rules now; what is still open is the rate at which a defender returns fire
+ * in an assault (ruling 1), and how much steadier a prepared defender is.
+ */
 export interface Configuration {
   name: string;
   variants: RuleVariants;
 }
 
-export const CONFIGURATIONS: readonly Configuration[] = [
-  { name: "as it stands", variants: {} },
-  ...(["simultaneous", "closeFire"] as const).flatMap((assaultReply) =>
-    (["additiveFloor", "proportional"] as const).flatMap((movementModifier) =>
-      (["worthMore", "previousTurn"] as const).map((firingFromCover) => ({
-        name: `1${assaultReply === "simultaneous" ? "a" : "b"} 2${movementModifier === "additiveFloor" ? "b" : "c"} 3${firingFromCover === "worthMore" ? "b" : "a"}`,
-        variants: { assaultReply, movementModifier, firingFromCover },
-      })),
-    ),
-  ),
-];
+const REPLY_RATES = [undefined, 0.3, 0.5, 0.7] as const;
+const STEADINESS = [
+  { name: "steady off", testBonus: 0, lossFactor: 1 },
+  { name: "steady +15 ×0.75", testBonus: undefined, lossFactor: undefined },
+  { name: "steady +25 ×0.5", testBonus: 25, lossFactor: 0.5 },
+] as const;
+
+export const CONFIGURATIONS: readonly Configuration[] = REPLY_RATES.flatMap((reply) =>
+  STEADINESS.map((steady) => ({
+    name: `reply ${reply == null ? "none" : `${Math.round(reply * 100)}%`} · ${steady.name}`,
+    variants: {
+      ...(reply == null ? {} : { assaultReplyChance: reply }),
+      ...(steady.testBonus == null ? {} : { preparedTestBonus: steady.testBonus }),
+      ...(steady.lossFactor == null ? {} : { preparedLossFactor: steady.lossFactor }),
+    },
+  })),
+);
 
 /**
- * What the sweep is judged against — written down **before** the runs, so
+ * What the sweep is judged against — written down **before** the first runs, so
  * the answer cannot be chosen to fit them (all ⚠️ ours, for the author to
  * accept or replace). They are the textbook planning figures for an attack on
  * a prepared position:
@@ -476,8 +491,13 @@ export interface Verdict {
 }
 
 /** Judge one configuration at one echelon against {@link TARGETS}. Morale on, as the game is played. */
-export function judge(echelon: Echelon, variants: RuleVariants, battles: number): Verdict {
-  const cell = (kind: BattleKind) => runCell(echelon, kind, { morale: true, variants, battles });
+export function judge(
+  echelon: Echelon,
+  variants: RuleVariants,
+  battles: number,
+  preparedCover: "partial" | "full" = "partial",
+): Verdict {
+  const cell = (kind: BattleKind) => runCell(echelon, kind, { morale: true, variants, battles, preparedCover });
   const a1 = cell("attack1");
   const a2 = cell("attack2");
   const a3 = cell("attack3");

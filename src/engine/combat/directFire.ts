@@ -19,11 +19,11 @@ export interface DirectFireOptions {
   /** Cover state of the target; scales the hit chance (full cover halves it). */
   cover?: CoverState;
   /**
-   * Additive hit modifier from the target's movement this turn:
-   * +0.30 if it moved at normal pace, -0.20 if it ran, 0 if static.
-   * (Comes from the movement profile of the *target*.)
+   * The target's movement this turn, as a **factor** on the band: ×1.3 if it
+   * walked, ×0.8 if it ran — the movement table's +30% / −20%, applied
+   * proportionally (author, 2026-09-23; rules decision 22). Absent: it stood.
    */
-  targetMovementModifier?: number;
+  targetMovementFactor?: number;
   /** Set false to forbid the shot (no line of sight, or smoke in the way). */
   hasLineOfSight?: boolean;
   /** Limit the number of shooters (to model splitting fire); default = all fit. */
@@ -36,15 +36,9 @@ export interface DirectFireOptions {
   /** Current turn index, for casualty bookkeeping. */
   turn?: number;
   /**
-   * Rule variant 2c (data/variants.ts): the target's movement as a factor on
-   * the band rather than an addition. Absent: no factor.
-   */
-  targetMovementFactor?: number;
-  /** Rule variant 2b: the least the chance may fall to before cover. Absent: no floor. */
-  hitFloor?: number;
-  /**
-   * Rule variant 3b: the cover modifier to use instead of the table's figure
-   * for `cover` — what full cover is still worth to a force that fired from it.
+   * The cover modifier to use instead of the table's figure for `cover`: what
+   * full cover is still worth to a force that fired from it this turn
+   * ({@link FIRING_FROM_COVER_MODIFIER}, rules decision 23).
    */
   coverModifier?: number;
 }
@@ -98,9 +92,9 @@ export function resolveDirectFire(
   const cover = opts.cover ?? "none";
   // Cover cuts the chance proportionally ("-50% מסיכויי הפגיעה"), so it scales
   // the situational chance rather than being subtracted from it.
-  const moving = band.value * (opts.targetMovementFactor ?? 1) + (opts.targetMovementModifier ?? 0);
-  const floored = opts.hitFloor == null ? moving : Math.max(opts.hitFloor, moving);
-  const hitChance = clamp01(floored * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])));
+  const hitChance = clamp01(
+    band.value * (opts.targetMovementFactor ?? 1) * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])),
+  );
 
   // The men who will still fight — a broken man keeps his head down — each
   // shooting as well as his force's suppression and his own nerve let him

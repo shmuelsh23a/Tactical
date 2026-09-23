@@ -1232,6 +1232,35 @@ on the stated reasoning, still awaiting the author's word.
     break already made. A side fielding nothing but command groups is judged
     on those.
 
+22. ✅ **The movement table's modifier applies to every direct shot, and
+    proportionally** (author, 2026-09-23 — option c). The table gives
+    "סיכויי פגיעה לאש אויב" +30% against a force that walked, −20% against one
+    that ran. Until now only covering fire read it (decision 18), and read it
+    as an addition. Now every direct shot at a force that moved this turn reads
+    it, as **×1.3 and ×0.8** on the band — the document's own figures, only
+    their application ruled, as decision 7 did for cover. This **overrides
+    decision 7's rider** that the movement modifiers stay additive. Added, a
+    runner beyond 100 m could not be hit at all (20% − 20%).
+23. ✅ **Firing from full cover keeps −30%** (author, 2026-09-23 — option b).
+    The document drops a force that fires from full cover to partial (−10%)
+    for that turn. That left a defender who shoots back barely protected, so
+    it now keeps −30% (`FIRING_FROM_COVER_MODIFIER`). Genuine partial cover — a
+    wall, a tree, a position prepared before the battle — stays at the
+    table's −10%.
+24. ✅ **A prepared defender is steadier** (author, 2026-09-23; ⚠️ the size is
+    ours). A force **in position** — it did not move this turn and is behind
+    something: the ground, a building, a hole it dug or a position it prepared
+    — adds **+15** to every morale test and feels **×0.75** of every loss
+    (`PREPARED` in data/morale.ts). A force that gets up to attack leaves it
+    behind.
+
+    **Ruling 1 is still on trial.** The author ruled that a defender facing an
+    assault returns fire (2026-09-23), with the rate to be settled by
+    measurement. It is a switch, `assaultReplyChance` in
+    [`data/variants.ts`](src/engine/data/variants.ts), off by default —
+    because the rate made no measurable difference (docs/balance.md, *Second
+    round*).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
