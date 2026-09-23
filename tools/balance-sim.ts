@@ -4,7 +4,8 @@
  *   npm run balance                                  # every kind and echelon, 100 battles each, morale on and off
  *   npm run balance -- --n 300 --kinds meeting       # one kind, more battles
  *   npm run balance -- --echelons company --swap     # RED starts where BLUE would
- *   npm run balance -- --fair-ties                   # reroll initiative ties (an experiment, not a rule)
+ *   npm run balance -- --assault 1a --movement 2b --cover 3a   # rule variants on trial (engine data/variants.ts)
+ *   npm run balance -- --sweep                       # every configuration of rulings 1-3, judged against TARGETS
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -13,13 +14,17 @@
  */
 import {
   BATTLE_KINDS,
+  CONFIGURATIONS,
   ECHELONS,
   MARKDOWN_HEADER,
+  TARGETS,
+  judge,
   markdownRow,
   runCell,
   type BattleKind,
   type Echelon,
 } from "../src/sim/balance.js";
+import type { RuleVariants } from "../src/engine/index.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -42,14 +47,44 @@ const echelons = list<Echelon>("--echelons", ECHELONS);
 const moraleArg = value("--morale");
 const morales = moraleArg === "on" ? [true] : moraleArg === "off" ? [false] : [true, false];
 const swap = args.includes("--swap");
-const fairTies = args.includes("--fair-ties");
 
-console.log(`${battles} battles a cell${swap ? ", sides swapped" : ""}${fairTies ? ", initiative ties rerolled" : ""}\n`);
-console.log(MARKDOWN_HEADER);
-for (const kind of kinds) {
-  for (const echelon of echelons) {
-    for (const morale of morales) {
-      console.log(markdownRow(runCell(echelon, kind, { morale, swap, fairTies, battles })));
+const variants: RuleVariants = {};
+const assault = value("--assault");
+if (assault) variants.assaultReply = assault === "1a" ? "simultaneous" : assault === "1b" ? "closeFire" : fail("--assault", assault);
+const movement = value("--movement");
+if (movement) variants.movementModifier = movement === "2b" ? "additiveFloor" : movement === "2c" ? "proportional" : fail("--movement", movement);
+const cover = value("--cover");
+if (cover) variants.firingFromCover = cover === "3b" ? "worthMore" : cover === "3a" ? "previousTurn" : fail("--cover", cover);
+
+function fail(flag: string, v: string): never {
+  throw new Error(`${flag}: "${v}" is not one of the options`);
+}
+
+if (args.includes("--sweep")) {
+  console.log(`Sweep: ${battles} battles a cell, morale on. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +
+    `at ~2:1 wins ${TARGETS.attack2Win.join("-")}%, at 3-4:1 wins >= ${TARGETS.attack3MinWin}% ` +
+    `losing ${TARGETS.attack3AttackerDown.join("-")}% of his men.\n`);
+  console.log("| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |");
+  console.log("|---|---|---|---|---|---|---|");
+  for (const c of CONFIGURATIONS) {
+    let total = 0;
+    for (const echelon of echelons) {
+      const v = judge(echelon, c.variants, battles);
+      total += v.met;
+      const r = (n: number) => `${Math.round(n)}%`;
+      console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${v.met}/4 |`);
+    }
+    console.log(`| **${c.name}** | **all** | | | | | **${total}/${4 * echelons.length}** |`);
+  }
+} else {
+  const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
+  console.log(`${battles} battles a cell${swap ? ", sides swapped" : ""}${trial}\n`);
+  console.log(MARKDOWN_HEADER);
+  for (const kind of kinds) {
+    for (const echelon of echelons) {
+      for (const morale of morales) {
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles })));
+      }
     }
   }
 }

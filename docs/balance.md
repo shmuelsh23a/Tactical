@@ -329,6 +329,107 @@ Each cell is 100 battles, seeds 1000–1099.
    - Rallies: 0.1–3.8 men per battle, and mostly at company scale, where a
      command group is near enough to get to them.
 
+## Rulings 1–3 on trial: the sweep, 2026-09-23
+
+The author asked for three of the harness's questions to be settled by
+measurement. Each candidate answer is a switch in
+[`engine/data/variants.ts`](../src/engine/data/variants.ts), off by default:
+
+- **Ruling 1, the assault.** Does the defender fire back?
+  - 1a: yes, at the assault's 70%.
+  - 1b: yes, at its ordinary 30% inside 100 m.
+  - Both are simultaneous: the defender replies with the men it had before the
+    assault landed.
+- **Ruling 2, the movement table's +30% / −20% in ordinary fire.**
+  - 2b: added, with a 5% floor so a runner cannot become unhittable.
+  - 2c: multiplied instead, ×1.3 walking and ×0.8 running.
+- **Ruling 3, firing from full cover.**
+  - 3b: it keeps −30% instead of dropping to −10%.
+  - 3a: the document's "previous turn", read literally.
+
+`npm run balance -- --sweep` plays every combination against the rules as they
+stand. It uses morale on, the three attack sizes, 100 battles a cell, and the
+ruling-4 tie rerolls. The **targets were written down before the run** (`TARGETS`
+in [`sim/balance.ts`](../src/sim/balance.ts), ⚠️ ours, standard planning
+figures):
+- at 1:1 the attacker wins **≤ 30%**;
+- at ~2:1, **30–70%**;
+- at 3–4:1, **≥ 70%**, losing **10–30%** of his men.
+
+| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| as it stands | squad | 11% | 89% | 96% | 3% | 2/4 |
+| as it stands | platoon | 1% | 100% | 100% | 0% | 2/4 |
+| as it stands | company | 0% | 21% | 100% | 8% | 2/4 |
+| **as it stands** | **all** | | | | | **6/12** |
+| 1a 2b 3b | squad | 4% | 78% | 98% | 4% | 2/4 |
+| 1a 2b 3b | platoon | 16% | 100% | 100% | 1% | 2/4 |
+| 1a 2b 3b | company | 1% | 4% | 100% | 10% | 2/4 |
+| **1a 2b 3b** | **all** | | | | | **6/12** |
+| 1a 2b 3a | squad | 17% | 91% | 98% | 3% | 2/4 |
+| 1a 2b 3a | platoon | 52% | 100% | 100% | 0% | 1/4 |
+| 1a 2b 3a | company | 0% | 12% | 100% | 9% | 2/4 |
+| **1a 2b 3a** | **all** | | | | | **5/12** |
+| 1a 2c 3b | squad | 15% | 85% | 94% | 4% | 2/4 |
+| 1a 2c 3b | platoon | 3% | 100% | 100% | 0% | 2/4 |
+| 1a 2c 3b | company | 0% | 17% | 99% | 8% | 2/4 |
+| **1a 2c 3b** | **all** | | | | | **6/12** |
+| 1a 2c 3a | squad | 28% | 90% | 98% | 2% | 2/4 |
+| 1a 2c 3a | platoon | 22% | 100% | 100% | 0% | 2/4 |
+| 1a 2c 3a | company | 0% | 30% | 100% | 7% | 3/4 |
+| **1a 2c 3a** | **all** | | | | | **7/12** |
+| 1b 2b 3b | squad | 4% | 79% | 98% | 4% | 2/4 |
+| 1b 2b 3b | platoon | 27% | 100% | 100% | 1% | 2/4 |
+| 1b 2b 3b | company | 0% | 5% | 100% | 10% | 2/4 |
+| **1b 2b 3b** | **all** | | | | | **6/12** |
+| 1b 2b 3a | squad | 18% | 91% | 98% | 2% | 2/4 |
+| 1b 2b 3a | platoon | 48% | 100% | 100% | 0% | 1/4 |
+| 1b 2b 3a | company | 0% | 11% | 100% | 9% | 2/4 |
+| **1b 2b 3a** | **all** | | | | | **5/12** |
+| 1b 2c 3b | squad | 15% | 85% | 94% | 4% | 2/4 |
+| 1b 2c 3b | platoon | 2% | 100% | 100% | 0% | 2/4 |
+| 1b 2c 3b | company | 0% | 18% | 99% | 8% | 2/4 |
+| **1b 2c 3b** | **all** | | | | | **6/12** |
+| 1b 2c 3a | squad | 27% | 90% | 98% | 2% | 2/4 |
+| 1b 2c 3a | platoon | 17% | 100% | 100% | 0% | 2/4 |
+| 1b 2c 3a | company | 0% | 30% | 100% | 7% | 3/4 |
+| **1b 2c 3a** | **all** | | | | | **7/12** |
+
+**None of them works.** Every configuration scores 5–7 of 12 against 6 for the
+rules as they stand, and in every one a winning attacker at 3–4:1 still loses
+0–10%. Instrumenting the platoon attack (36 v 9, per battle) shows why the three
+rulings barely touch the problem:
+
+- **The assault almost never happens: 0.2–0.3 per battle.** The defender breaks
+  before the attacker is within 25 m, so ruling 1 has almost nothing to act on.
+- **The defender fires at a running target 70–79% of the time.** The doctrine
+  rushes in contact, so ruling 2 — which punishes walking and rewards running —
+  makes the defender's fire *worse*.
+- **56–59% of the defender's shots are fired pinned**, at half accuracy: four
+  times the shooters pile four times the suppression on it.
+- **Damage spreads thin over the bigger force.** The attacker lands 18.5 hits on
+  9 men and puts 3.2 of them down. The defender lands 4.8 hits across 36 men,
+  and at 1d4 a hit against the 8 points a man takes to go down, that is 0.1–0.2
+  men. This is the document's own casualty model working as written: it rewards
+  concentration, like Lanchester's square law.
+
+A lever of ours was tried the same way and did not fix it either. Making
+dug-in troops harder to suppress (×½ in full cover, ×¾ in partial) still left
+the attacker at 0–10% (**6–8 of 12**). It was measured and reverted, not kept.
+
+**What is left is the author's.**
+- **The casualty model (1d4 a hit, 8 points to go down)** is transcribed, not
+  chosen.
+- **What `ירי מקביל` is.** The engine reads it as a sustained machine gun (the
+  70 / 50 / 20% table) and the hotseat offers it as "מקלע". The harness fires
+  every weapon on the small-arms table, so a Western defence's machine guns
+  have not been measured at all. If a defender's gun teams fire on that table,
+  the picture may change entirely.
+- **Whether a prepared defender should be steadier under morale**, which is
+  ours to propose.
+- **What the ground adds.** All of this is flat and open. Dead ground, and
+  buildings that give full cover, are what the real maps have.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

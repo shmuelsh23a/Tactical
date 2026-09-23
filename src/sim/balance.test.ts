@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BATTLE_KINDS, ECHELONS, MARKDOWN_HEADER, markdownRow, runBattle, runCell } from "./balance.js";
+import { BATTLE_KINDS, CONFIGURATIONS, ECHELONS, MARKDOWN_HEADER, judge, markdownRow, runBattle, runCell } from "./balance.js";
 
 /**
  * The balance harness is a tool, but a tool the suite keeps honest: a few
@@ -32,5 +32,18 @@ describe("the balance harness", () => {
     const a = runBattle(77, "squad", "meeting", { morale: true });
     const b = runBattle(77, "squad", "meeting", { morale: true, swap: true });
     expect(b.turns).toBe(a.turns);
+  });
+});
+
+describe("the sweep over rulings 1–3", () => {
+  it("covers today's rules and all eight combinations, each distinct", () => {
+    expect(CONFIGURATIONS).toHaveLength(9);
+    expect(new Set(CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(9);
+  });
+
+  it("judges a configuration on the four targets", () => {
+    const v = judge("squad", CONFIGURATIONS[1]!.variants, 2);
+    expect(v.met).toBeGreaterThanOrEqual(0);
+    expect(v.met).toBeLessThanOrEqual(4);
   });
 });

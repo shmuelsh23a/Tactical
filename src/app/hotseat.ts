@@ -222,11 +222,15 @@ export function isGone(u: Unit): boolean {
 }
 
 /**
- * True when `side` has no units left able to fight — or, played with morale,
- * when it has broken (rules decision 19): two thirds of its fighting strength
- * down, broken, routed or surrendered.
+ * True when `side` has no **fighting** forces left — a command group with
+ * nobody to command does not keep a battle going (author, 2026-09-23; before
+ * that a hidden HQ could hold a battle open for ever, docs/balance.md) — or,
+ * played with morale, when it has broken (rules decision 19). A side fielding
+ * nothing but command groups is judged on those.
  */
 export function sideDefeated(game: Game, side: Side): boolean {
   const units = game.units.filter((u) => u.side === side);
-  return units.length > 0 && (units.every((u) => u.neutralized || isGone(u)) || game.sideBroken(side));
+  const fighting = units.filter((u) => u.kind !== "command");
+  const judged = fighting.length > 0 ? fighting : units;
+  return units.length > 0 && (judged.every((u) => u.neutralized || isGone(u)) || game.sideBroken(side));
 }

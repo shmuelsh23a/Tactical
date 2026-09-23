@@ -27,6 +27,11 @@ export interface AssaultResult {
   selfCasualties: number;
   defenderCasualties: number;
   defenderNeutralized: boolean;
+  /**
+   * The defender's fire back, under rule variant 1 (data/variants.ts). Absent
+   * when the game plays the document's one-sided assault.
+   */
+  reply?: { chance: number; shooters: number; hits: number; damage: number; casualties: number };
 }
 
 /**
@@ -41,7 +46,16 @@ export function resolveAssault(
   rng: Rng,
   attacker: Unit,
   defender: Unit,
-  opts: { grenades?: number; turn?: number } = {},
+  opts: {
+    grenades?: number;
+    turn?: number;
+    /**
+     * Rule variant 1: the defender fires back at this chance per man. The
+     * reply is simultaneous — it is fired by the men the defender had before
+     * the assault landed.
+     */
+    replyChance?: number;
+  } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
   const range = distance(attacker.position, defender.position);
@@ -63,6 +77,8 @@ export function resolveAssault(
   if (defender.kind === "vehicle") return { ...result, reason: "cannot assault armour" };
   if (readySoldiers(attacker).length === 0) return { ...result, reason: "no fit shooters" };
   result.fired = true;
+  // Taken before the assault lands: the reply is fired by the men who were there.
+  const replyAccuracy = opts.replyChance == null ? null : shooterAccuracy(defender);
 
   // Assault fire.
   // Only the men still willing go in, each as steady as he is (rules decision 19).
@@ -91,6 +107,23 @@ export function resolveAssault(
       const friendly = selectHitSoldier(attacker, rng);
       if (friendly && damageSoldier(friendly, dmg, turn)) result.selfCasualties++;
     }
+  }
+
+  if (replyAccuracy && opts.replyChance != null) {
+    const reply = { chance: opts.replyChance, shooters: replyAccuracy.length, hits: 0, damage: 0, casualties: 0 };
+    for (const accuracy of replyAccuracy) {
+      if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
+      reply.hits++;
+      const dmg = roll(rng, ASSAULT.fireDamageDice);
+      reply.damage += dmg;
+      const victim = selectHitSoldier(attacker, rng);
+      if (victim && damageSoldier(victim, dmg, turn)) reply.casualties++;
+    }
+    if (reply.hits > 0) {
+      attacker.hitThisTurn = true;
+      attacker.underFire = true;
+    }
+    result.reply = reply;
   }
 
   defender.hitThisTurn = true;

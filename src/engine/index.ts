@@ -78,6 +78,7 @@ export { C2_TABLE, orderInterval } from "./data/c2.js";
 export { CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
 export * as MORALE_RULES from "./data/morale.js";
+export { VARIANT_FIGURES, type RuleVariants } from "./data/variants.js";
 
 // Combat resolvers
 export {

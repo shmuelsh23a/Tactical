@@ -1215,6 +1215,23 @@ on the stated reasoning, still awaiting the author's word.
     battles and **only rest refills it** — how, is the campaign discussion
     (backlog 16).
 
+20. ✅ **Initiative ties are rolled again** (author, 2026-09-23). The document
+    gives initiative as "1ק10 לכל שחקן, תורות בסדר יורד" and says nothing about
+    a tie. The engine used to give it to the side listed first, which put RED
+    first on 55% of turns (docs/balance.md, *The balance harness*). A tie is
+    now rolled again until the sides differ. This changes the number of dice a
+    turn draws when a tie comes up, so **a sealed recording made before this
+    that crossed a tie fails `verifyRecording`** — the tool doing its job.
+21. ✅ **A side with no fighting forces left has lost** (author, 2026-09-23 —
+    "a now, we will get back to it later", i.e. until backlog 18 settles
+    victory conditions properly). `sideDefeated` used to want *every* unit
+    out, command groups included, and a command group with nobody to command
+    sits still, is therefore hidden (decision 12), and can be found only
+    inside 20 m — so a battle without morale could go silent for ever. It now
+    judges the fighting forces, the same exclusion the morale rule's side
+    break already made. A side fielding nothing but command groups is judged
+    on those.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

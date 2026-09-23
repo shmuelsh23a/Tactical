@@ -94,6 +94,8 @@ import {
   type SoldierSnapshot,
 } from "./morale.js";
 import { SUPPRESSION } from "./data/morale.js";
+import { VARIANT_FIGURES, type RuleVariants } from "./data/variants.js";
+import { ASSAULT } from "./data/casualties.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -235,6 +237,12 @@ export interface GameOptions {
    * draws, no slower forces, no worse aim.
    */
   morale?: boolean;
+  /**
+   * Candidate answers to rulings 1–3, on trial (see data/variants.ts). Absent,
+   * the game plays the rules as they stand. Scaffolding for a decision: it
+   * goes when the author picks.
+   */
+  variants?: RuleVariants;
 }
 
 /**
@@ -249,6 +257,7 @@ export class Game {
   readonly trackIntel: boolean;
   readonly terrain: Terrain;
   readonly morale: boolean;
+  readonly variants: RuleVariants;
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -271,6 +280,14 @@ export class Game {
   private readonly stress = new StressLedger();
   /** Every soldier as he stood when the turn began, for the morale step. */
   private turnSnapshot: SoldierSnapshot = new Map();
+
+  /**
+   * Forces that fired last turn — read only under rule variant 3a, where full
+   * cover needs a force that did not fire in the *previous* turn. Held here
+   * rather than on the unit so a game without the variant keeps exactly the
+   * state (and the digests) it always had.
+   */
+  private firedLastTurn = new Set<string>();
 
   /**
    * Set while the engine is carrying out a standing order. Execution bypasses
@@ -327,6 +344,7 @@ export class Game {
     this.trackIntel = opts.trackIntel ?? false;
     this.terrain = opts.terrain ?? FLAT_GROUND;
     this.morale = opts.morale ?? false;
+    this.variants = opts.variants ?? {};
   }
 
   /**
@@ -341,6 +359,7 @@ export class Game {
       enforceC2: this.enforceC2,
       trackIntel: this.trackIntel,
       ...(this.morale ? { morale: true } : {}),
+      ...(Object.keys(this.variants).length ? { variants: cloneForRecord(this.variants) } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -427,11 +446,19 @@ export class Game {
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
   }
 
-  /** Roll 1d10 per side and order sides by descending initiative. */
+  /**
+   * Roll 1d10 per side and order sides by descending initiative. A tie is
+   * rolled again (author, 2026-09-23): the document says nothing about ties,
+   * and giving them to the side listed first handed RED the first move on 55%
+   * of turns (docs/balance.md).
+   */
   rollInitiative(): Side[] {
-    const rolls = this.sides.map((side) => ({ side, roll: roll(this.rng, "1d10") }));
-    rolls.sort((a, b) => b.roll - a.roll || this.sides.indexOf(a.side) - this.sides.indexOf(b.side));
-    return rolls.map((r) => r.side);
+    for (;;) {
+      const rolls = this.sides.map((side) => ({ side, roll: roll(this.rng, "1d10") }));
+      if (new Set(rolls.map((r) => r.roll)).size < rolls.length) continue;
+      rolls.sort((a, b) => b.roll - a.roll);
+      return rolls.map((r) => r.side);
+    }
   }
 
   /**
@@ -975,9 +1002,7 @@ export class Game {
           // A force caught on the move is the case the movement table is
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
-          targetMovementModifier: from
-            ? MOVEMENT_PROFILES[actor.ranThisTurn ? "run" : "normal"].enemyHitModifier
-            : 0,
+          ...(from ? this.movementTerms(actor, true) : {}),
           hasLineOfSight: true,
         });
         actor.cover = wasCover;
@@ -1079,7 +1104,50 @@ export class Game {
    * partial-cover figure is for ("-10% when firing while in cover").
    */
   coverAgainst(target: Unit): CoverState {
+    // Rule variant 3a: full cover needs a force that did not fire *last* turn,
+    // whatever it does this one.
+    if (this.variants.firingFromCover === "previousTurn" && target.cover === "full") {
+      return this.firedLastTurn.has(target.id) ? "partial" : "full";
+    }
     return effectiveCover(target);
+  }
+
+  /**
+   * Rule variant 3b: a force that fired from full cover this turn keeps more
+   * than partial cover's −10%. Nothing otherwise — the table's figure stands.
+   */
+  private coverModifierFor(target: Unit): { coverModifier?: number } {
+    if (this.variants.firingFromCover === "worthMore" && target.cover === "full" && target.firedThisTurn) {
+      return { coverModifier: VARIANT_FIGURES.firingFromCoverModifier };
+    }
+    return {};
+  }
+
+  /**
+   * The movement table's "סיכויי פגיעה לאש אויב" for a target that moved: +30%
+   * walking, −20% running. Covering fire has always read it (rules decision
+   * 18); ordinary fire reads it only under rule variant 2, which also decides
+   * how it is applied. With no variant it is the plain addition.
+   */
+  private movementTerms(
+    target: Unit,
+    moved: boolean,
+  ): { targetMovementModifier?: number; targetMovementFactor?: number; hitFloor?: number } {
+    if (!moved) return {};
+    const gait = target.ranThisTurn ? "run" : "normal";
+    switch (this.variants.movementModifier) {
+      case "proportional":
+        return {
+          targetMovementFactor: gait === "run" ? VARIANT_FIGURES.runFactor : VARIANT_FIGURES.walkFactor,
+        };
+      case "additiveFloor":
+        return {
+          targetMovementModifier: MOVEMENT_PROFILES[gait].enemyHitModifier,
+          hitFloor: VARIANT_FIGURES.movementFloor,
+        };
+      default:
+        return { targetMovementModifier: MOVEMENT_PROFILES[gait].enemyHitModifier };
+    }
   }
 
   /** Everything `side` has picked up of the enemy, with where it last saw it. */
@@ -1178,6 +1246,9 @@ export class Game {
     const targetWasNeutralized = target.neutralized;
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
+      // Rule variants 2 and 3, when a game is played with them.
+      ...(this.variants.movementModifier ? this.movementTerms(target, target.movedThisTurn > 0) : {}),
+      ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
@@ -1283,13 +1354,25 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const defender = this.getUnit(defenderId);
     const defenderWasNeutralized = defender.neutralized;
+    const reply = this.variants.assaultReply;
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
       turn: this.turn,
+      // Rule variant 1: the defender fires back, at the assault's 70% or at
+      // its ordinary chance for the range.
+      ...(reply === "simultaneous"
+        ? { replyChance: ASSAULT.fireHitChance }
+        : reply === "closeFire"
+          ? { replyChance: lookupBand(SMALL_ARMS_BANDS, distance(attacker.position, defender.position))?.value ?? 0 }
+          : {}),
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
       this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position);
+      if (result.reply) {
+        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position);
+        this.stress.credit(defender, result.reply.casualties, attacker.neutralized);
+      }
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
     }
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
@@ -1643,6 +1726,10 @@ export class Game {
     // After the bleeding, so a man who bled out this turn is counted as lost;
     // before the flags clear, for the same reason as the charge work.
     const morale = this.morale ? this.resolveTurnMorale() : [];
+    // Rule variant 3a reads who fired in the turn just ending.
+    if (this.variants.firingFromCover === "previousTurn") {
+      this.firedLastTurn = new Set(this.units.filter((u) => u.firedThisTurn).map((u) => u.id));
+    }
     endTurnUnitUpkeep(this.units, (at) => coverFromObjects(this.terrain, at));
     return { chargeWork, morale };
   }

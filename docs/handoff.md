@@ -57,7 +57,15 @@ build nothing on them before it. Also his, and not built: **campaigns carry
 the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
 
-**Five rules questions from the balance harness** (2026-09-22,
+**Rulings 4 and 5 are made** (decisions 20 and 21, 2026-09-23). **Rulings
+1–3 were put on trial** as switches in `engine/data/variants.ts` and swept
+(`npm run balance -- --sweep`). **None of the eight combinations fixes the
+attack** (balance.md, *Rulings 1–3 on trial*), because the problem is elsewhere:
+the defender breaks before any assault, and the document's 1d4-of-8 casualty
+model spreads a small force's hits too thin to matter. He picks 1–3 on meaning;
+the variants file goes once he has.
+
+**The five questions as first raised** (2026-09-22,
 [balance.md](balance.md), *The balance harness*). 2,400 headless battles between
 NATO-organised forces show an attack is close to a switch — a dug-in defender
 holds at 1:1, falls at 2:1 — and a winning attacker at 3–4:1 loses 0–8% of his

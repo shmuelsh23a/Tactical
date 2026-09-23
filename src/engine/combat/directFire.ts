@@ -35,6 +35,18 @@ export interface DirectFireOptions {
   targetSoldierId?: string;
   /** Current turn index, for casualty bookkeeping. */
   turn?: number;
+  /**
+   * Rule variant 2c (data/variants.ts): the target's movement as a factor on
+   * the band rather than an addition. Absent: no factor.
+   */
+  targetMovementFactor?: number;
+  /** Rule variant 2b: the least the chance may fall to before cover. Absent: no floor. */
+  hitFloor?: number;
+  /**
+   * Rule variant 3b: the cover modifier to use instead of the table's figure
+   * for `cover` — what full cover is still worth to a force that fired from it.
+   */
+  coverModifier?: number;
 }
 
 export interface DirectFireResult {
@@ -86,9 +98,9 @@ export function resolveDirectFire(
   const cover = opts.cover ?? "none";
   // Cover cuts the chance proportionally ("-50% מסיכויי הפגיעה"), so it scales
   // the situational chance rather than being subtracted from it.
-  const hitChance = clamp01(
-    (band.value + (opts.targetMovementModifier ?? 0)) * (1 + COVER_MODIFIERS[cover]),
-  );
+  const moving = band.value * (opts.targetMovementFactor ?? 1) + (opts.targetMovementModifier ?? 0);
+  const floored = opts.hitFloor == null ? moving : Math.max(opts.hitFloor, moving);
+  const hitChance = clamp01(floored * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])));
 
   // The men who will still fight — a broken man keeps his head down — each
   // shooting as well as his force's suppression and his own nerve let him

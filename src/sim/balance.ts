@@ -1,3 +1,4 @@
+import { sideDefeated } from "../app/hotseat.js";
 import {
   Game,
   distance,
@@ -6,6 +7,7 @@ import {
   type GameOptions,
   type MoraleReport,
   type Point,
+  type RuleVariants,
   type Side,
   type Unit,
 } from "../engine/index.js";
@@ -115,38 +117,20 @@ function layout(echelon: Echelon, kind: BattleKind): { blue: ForceSpec[]; red: F
   return { blue: attacker, red: defender };
 }
 
-/**
- * A game whose initiative ties are rerolled rather than given to the side
- * listed first — an experiment for measuring what the tie-break is worth, not
- * a rule. It draws a different number of dice, so it is never mixed with the
- * ordinary game in one comparison.
- */
-class FairTiesGame extends Game {
-  override rollInitiative(): Side[] {
-    for (;;) {
-      const a = this.rng.die(10);
-      const b = this.rng.die(10);
-      if (a !== b) return a > b ? ["RED", "BLUE"] : ["BLUE", "RED"];
-    }
-  }
-}
-
 export interface BattleOptions {
   morale: boolean;
   /** Put RED where BLUE would start and the reverse — separates side from position. */
   swap?: boolean;
-  /** Reroll initiative ties (see {@link FairTiesGame}). */
-  fairTies?: boolean;
+  /** Candidate answers to rulings 1–3 (engine data/variants.ts). */
+  variants?: RuleVariants;
 }
 
 /**
- * How a battle ended. `broke`: the loser's side broke (morale). `wiped`: every
- * one of its units is out, which is the game's own rule. `fightersGone`: every
- * *fighting* force is out while a command group survives — the game itself
- * would play on (`sideDefeated` counts command groups; see docs/balance.md), so
- * the harness scores it and says so. `both`: both sides went in the same step.
+ * How a battle ended, by the game's own rule (`sideDefeated`). `broke`: the
+ * loser's side broke (morale). `wiped`: every one of its fighting forces is
+ * out. `both`: both sides went in the same step — a draw.
  */
-export type Ending = "broke" | "wiped" | "fightersGone" | "both" | "timeout";
+export type Ending = "broke" | "wiped" | "both" | "timeout";
 
 export interface BattleResult {
   winner: Side | "draw";
@@ -174,13 +158,7 @@ function fighting(g: Game, side: Side): Unit[] {
   return g.units.filter((u) => u.side === side && u.kind !== "command");
 }
 
-function outByRule(g: Game, side: Side): boolean {
-  return g.units.filter((u) => u.side === side).every((u) => u.neutralized) || g.sideBroken(side);
-}
-
-function out(g: Game, side: Side): boolean {
-  return outByRule(g, side) || fighting(g, side).every((u) => u.neutralized || u.surrendered);
-}
+const out = (g: Game, side: Side): boolean => sideDefeated(g, side);
 
 function toward(from: Point, to: Point, d: number): Point {
   const r = distance(from, to);
@@ -199,8 +177,14 @@ function nearestKnown(g: Game, u: Unit): Unit | undefined {
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
 export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
-  const gameOptions: GameOptions = { seed, morale: opts.morale, trackIntel: true, enforceC2: true };
-  const g = opts.fairTies ? new FairTiesGame(gameOptions) : new Game(gameOptions);
+  const gameOptions: GameOptions = {
+    seed,
+    morale: opts.morale,
+    trackIntel: true,
+    enforceC2: true,
+    ...(opts.variants ? { variants: opts.variants } : {}),
+  };
+  const g = new Game(gameOptions);
   const laid = layout(echelon, kind);
   const relabel = (fs: ForceSpec[], to: "B" | "R") => fs.map((f) => ({ ...f, id: to + f.id.slice(1) }));
   const { blue, red } = opts.swap ? { blue: relabel(laid.red, "B"), red: relabel(laid.blue, "R") } : laid;
@@ -244,7 +228,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     }
     const loser: Side = blueOut ? "BLUE" : "RED";
     r.winner = other(loser);
-    r.ending = g.sideBroken(loser) ? "broke" : outByRule(g, loser) ? "wiped" : "fightersGone";
+    r.ending = g.sideBroken(loser) ? "broke" : "wiped";
     return true;
   };
 
@@ -441,3 +425,69 @@ export function markdownRow(c: CellSummary): string {
 export const MARKDOWN_HEADER =
   "| Kind | Echelon | Morale | Men (B v R) | BLUE / RED / draw | Endings | Turns, median (p10–p90) | Loser down | Winner down | Routs | Surrenders | Heroes | Rallied | Pinned share |\n" +
   "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
+
+/** The configurations of rulings 1–3 the author asked to compare (2026-09-23). */
+export interface Configuration {
+  name: string;
+  variants: RuleVariants;
+}
+
+export const CONFIGURATIONS: readonly Configuration[] = [
+  { name: "as it stands", variants: {} },
+  ...(["simultaneous", "closeFire"] as const).flatMap((assaultReply) =>
+    (["additiveFloor", "proportional"] as const).flatMap((movementModifier) =>
+      (["worthMore", "previousTurn"] as const).map((firingFromCover) => ({
+        name: `1${assaultReply === "simultaneous" ? "a" : "b"} 2${movementModifier === "additiveFloor" ? "b" : "c"} 3${firingFromCover === "worthMore" ? "b" : "a"}`,
+        variants: { assaultReply, movementModifier, firingFromCover },
+      })),
+    ),
+  ),
+];
+
+/**
+ * What the sweep is judged against — written down **before** the runs, so
+ * the answer cannot be chosen to fit them (all ⚠️ ours, for the author to
+ * accept or replace). They are the textbook planning figures for an attack on
+ * a prepared position:
+ *
+ * - at 1:1 the defender should hold: the attacker wins **at most 30%**;
+ * - at about 2:1 it should be a real fight: the attacker wins **30–70%**;
+ * - at 3–4:1 the attack should succeed: the attacker wins **at least 70%**;
+ * - and a winning attacker at 3–4:1 should pay for it: **10–30%** of his men
+ *   down, where "as it stands" pays 0–8%.
+ *
+ * Each echelon is judged on its own; a configuration's score is how many of
+ * the twelve targets (four at each of three echelons) it meets.
+ */
+export const TARGETS = {
+  attack1MaxWin: 30,
+  attack2Win: [30, 70] as const,
+  attack3MinWin: 70,
+  attack3AttackerDown: [10, 30] as const,
+} as const;
+
+export interface Verdict {
+  echelon: Echelon;
+  attack1Win: number;
+  attack2Win: number;
+  attack3Win: number;
+  attack3AttackerDown: number;
+  met: number;
+}
+
+/** Judge one configuration at one echelon against {@link TARGETS}. Morale on, as the game is played. */
+export function judge(echelon: Echelon, variants: RuleVariants, battles: number): Verdict {
+  const cell = (kind: BattleKind) => runCell(echelon, kind, { morale: true, variants, battles });
+  const a1 = cell("attack1");
+  const a2 = cell("attack2");
+  const a3 = cell("attack3");
+  const win = (c: CellSummary) => (100 * c.wins.BLUE) / c.battles;
+  const attack3AttackerDown = a3.winnerDownPct;
+  const v = { echelon, attack1Win: win(a1), attack2Win: win(a2), attack3Win: win(a3), attack3AttackerDown };
+  const met =
+    Number(v.attack1Win <= TARGETS.attack1MaxWin) +
+    Number(v.attack2Win >= TARGETS.attack2Win[0] && v.attack2Win <= TARGETS.attack2Win[1]) +
+    Number(v.attack3Win >= TARGETS.attack3MinWin) +
+    Number(attack3AttackerDown >= TARGETS.attack3AttackerDown[0] && attack3AttackerDown <= TARGETS.attack3AttackerDown[1]);
+  return { ...v, met };
+}
