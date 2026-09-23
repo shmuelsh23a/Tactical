@@ -12,7 +12,7 @@ import type {
   Terrain,
   Unit,
 } from "../../engine/index.js";
-import { ADJUSTMENT_RADIUS_M, MOVEMENT_PROFILES, reachFan } from "../../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 import { Relief, Roads, TerrainObjects } from "./Relief.js";
@@ -285,7 +285,7 @@ export function MapView(props: MapViewProps) {
         );
       })}
       {units
-        .filter((u) => u.side === viewingSide && u.observationPost && !u.neutralized)
+        .filter((u) => u.side === viewingSide && watchingAsPost(u) && !u.neutralized)
         .map((u) => (
           <g key={`op-${u.id}`} className="observation-post">
             <circle cx={u.position.x} cy={u.position.y} r={34} />

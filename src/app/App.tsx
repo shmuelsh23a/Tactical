@@ -2,6 +2,7 @@ import { useReducer, useRef, useState } from "react";
 import {
   ADJUSTMENT_RADIUS_M,
   ASSAULT_RANGE_M,
+  watchingAsPost,
   MAX_REGISTERED_TARGETS_PER_WEAPON,
   OBSERVATION_POST_RANGE_M,
   CAMOUFLAGE,
@@ -42,6 +43,7 @@ import {
   casualtyReport,
   chargeHe,
   chargeWorkHe,
+  planningRefusalHe,
   coveringFireHe,
   describeExecution,
   describeSector,
@@ -109,19 +111,6 @@ const phaseLabelHe: Record<ActivationPhase, string> = {
 const tubeHe: Record<Tube, string> = { mortar: "מרגמה", artillery: "ארטילריה" };
 /** The echelon a side's player commands, as the fire-support note names it (rules decision 37). */
 const echelonHe: Record<Echelon, string> = { squad: "כיתה", platoon: "מחלקה", company: "פלוגה", battalion: "גדוד", brigade: "חטיבה" };
-
-/**
- * A planning action the engine refused, in the player's language. The engine
- * words its refusals for whoever calls it; the ones a planning player can run
- * into are said here again (rules decision 38).
- */
-function planRefusalHe(message: string): string {
-  if (/the most it may/.test(message)) return `נרשם המספר המרבי של מטרות (${MAX_REGISTERED_TARGETS_PER_WEAPON}) לאמצעי זה`;
-  if (/already has its alternate/.test(message)) return "לכוח כבר הוכנה עמדה חלופית";
-  if (/is a vehicle/.test(message)) return "רכב אינו מוצב כתצפית ואינו מכין עמדה";
-  if (/and above/.test(message)) return "האמצעי אינו בסמכות הדרג";
-  return message;
-}
 
 /** Smoke by delivery means, in the document's own words (the עשן table). */
 const smokeSourceHe: Record<SmokeSource, string> = {
@@ -402,8 +391,10 @@ export function App({ scenario, onLeave }: AppProps) {
     if (enginePhase !== "targeting") return;
     const mission = activeMission;
     const smokeSource = activeSmoke;
-    if (mission === "smoke" && missionSpent(viewingSide, "smoke")) {
-      pushLog("כבר הונח מסך עשן בתור זה", "info", onlyFor(viewingSide));
+    // One fire mission and one smoke screen a side a turn (rules decision 8's
+    // UI limit), on top of one mission in hand a weapon.
+    if (missionSpent(viewingSide, mission)) {
+      pushLog(mission === "smoke" ? "כבר הונח מסך עשן בתור זה" : "כבר נקראה משימת אש בתור זה", "info", onlyFor(viewingSide));
       return;
     }
     try {
@@ -426,6 +417,10 @@ export function App({ scenario, onLeave }: AppProps) {
           pushLog(`משימת ${tubeHe[tube]} עדיין בביצוע — חדל אש כדי לפנות אותה`, "info", onlyFor(viewingSide));
           return;
         }
+        if (game.fireMissionsLeft(viewingSide, tube) === 0) {
+          pushLog(`לא נותרו משימות ${tubeHe[tube]}`, "info", onlyFor(viewingSide));
+          return;
+        }
         // Asked before the call: once it lands, the guns are on the mark anyway.
         const onMark = game.isOnTheMark(viewingSide, tube, { x, y });
         const m = game.callForFire(viewingSide, tube, { x, y }, fuze === "impact" ? {} : { fuze });
@@ -439,9 +434,10 @@ export function App({ scenario, onLeave }: AppProps) {
           "fire",
           onlyFor(viewingSide),
         );
+        missionsUsed.current[`${viewingSide}-he`] = game.turn;
       }
     } catch (err) {
-      pushLog((err as Error).message, "info", onlyFor(viewingSide));
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
     }
     force();
   }
@@ -476,7 +472,7 @@ export function App({ scenario, onLeave }: AppProps) {
       }
       setPlanned(true);
     } catch (err) {
-      pushLog(planRefusalHe((err as Error).message), "info", onlyFor(side));
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(side));
     }
     force();
   }
@@ -488,7 +484,7 @@ export function App({ scenario, onLeave }: AppProps) {
       setPlanned(true);
       pushLog(`${selectedOwn.name} הוצב כתצפית`, "info", onlyFor(viewingSide));
     } catch (err) {
-      pushLog(planRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
     }
     force();
   }
@@ -502,6 +498,7 @@ export function App({ scenario, onLeave }: AppProps) {
       setPlanningIndex(next);
       // The tool is the side's own choice, not a setting left on the table.
       setPlanTool("target");
+      setTube("mortar");
       setHandoffTo(SIDES[next]!);
       force();
       return;
@@ -1139,6 +1136,9 @@ export function App({ scenario, onLeave }: AppProps) {
     // the next side's forces under it.
     setOrderTask("advance");
     setOrderTargetId(null);
+    // How the last side fuzed its rounds is its own choice, not the next's.
+    setFuze("impact");
+    setTube("mortar");
     // …and a sector half-laid belongs to the force that was selected, not to
     // whoever the next side clicks on first.
     setAimingSector(false);
@@ -1237,7 +1237,17 @@ export function App({ scenario, onLeave }: AppProps) {
           <div className="attribution">
             © OpenStreetMap contributors (ODbL) · Terrain Tiles courtesy of Mapzen · SRTM (NASA)
           </div>
-          {showHandoff ? (
+          {stage === "initiative" ? (
+            // Nobody's screen: the device is still in the hands of whoever
+            // acted last, and the side to move first is not theirs to see —
+            // least of all its plan (rules decisions 17 and 38).
+            <div className="handoff">
+              <div className="handoff-card">
+                <h2>שלב יוזמה — תור {game.turn}</h2>
+                <p>סדר פעולה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</p>
+              </div>
+            </div>
+          ) : showHandoff ? (
             <Handoff
               side={handoffTo!}
               phaseLabel={stage === "planning" ? "תכנון משימה" : phaseLabelHe[currentActivation!.phase]}
@@ -2043,7 +2053,7 @@ function Roster({
             {u.name} —{" "}
             {u.kind === "vehicle" ? "טנק" : `${fitSoldiers(u)}/${fullStrength(u)}`}
             {u.firedThisTurn && " · ירה"}
-            {u.observationPost && " · תצפית"}
+            {watchingAsPost(u) && " · תצפית"}
             {game.alternatePositionFor(u.id) && " · עמדה חלופית"}
             {(() => {
               // Only what needs the commander's eye: a force that is steady says nothing.

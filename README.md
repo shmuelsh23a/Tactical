@@ -64,10 +64,10 @@ hostile/red, regardless of whose turn it is), **mission planning** before the
 first turn — each side in turn, behind the handoff screen, registers targets,
 puts out observation posts and prepares alternate positions, all drawn on its
 own map only (rules decision 38) — and a **targeting phase**: a side whose
-echelon may call mortars or artillery (decision 37) **calls for fire**, one
-mission in hand per weapon, with its missions left, a fuze (impact or air
-burst) and a **check fire** (decisions 31 and 34); and one smoke screen per
-turn (decision 8). The engine adjusts a mission onto the mark and fires it for
+echelon may call mortars or artillery (decision 37) **calls for fire** — one
+call and one smoke screen a side a turn (decision 8), and one mission in hand
+a weapon — with its missions left, a fuze (impact or air burst) and a
+**check fire** (decisions 31 and 34). The engine adjusts a mission onto the mark and fires it for
 effect; a marked aim point is drawn only on its owner's map, with the turn it
 will land, and the combat log reports the miss distance and every casualty. Smoke comes from any of
 the document's three sources — a thrown רימון is in place at once, a פצמ"ר or
@@ -1426,9 +1426,9 @@ on the stated reasoning, still awaiting the author's word.
       refuses it). A side left out of `fireSupport` is not rationed.
     - **Ammunition** is the battalion's and above, set by the mission's
       parameters (backlog 12). It is not built.
-    - The debrief narrates a call for fire, and the live UI calls one: a
-      weapon with a mission in hand takes no other call until it is done or
-      checked (a section or a battery fires one mission at a time — the UI's
+    - The debrief narrates a call for fire, and the live UI calls one: one
+      call a side a turn (decision 8's UI limit), and a weapon with a mission
+      in hand takes no other call until it is done or checked (a section or a battery fires one mission at a time — the UI's
       rule and the harness's, not the engine's).
     - Why 6 was the first default: a 6-gun battery's single volley.
       Decision 36 split it by weapon.
@@ -1494,14 +1494,17 @@ on the stated reasoning, still awaiting the author's word.
       an OP that stays put sees a force *on the move* out to ⚠️ **1,000 m**
       (`OBSERVATION_POST_RANGE_M`, ours), against the document's 300 m. A
       hidden force it looks for like anybody else, in the 20 m band. Moving
-      or firing ends it. It is a force, not men detached from one. Not a
+      or firing ends it at once (`watchingAsPost`). It is a force, not men detached from one. Not a
       vehicle. The squad drill leaves a command group that is an OP where it
       stands.
     - **Alternate positions** (`Game.prepareAlternatePosition`). ⚠️ One per
       force (ours), prepared as its first position was (partial if it had
-      none). Any force of the side within ⚠️ 25 m of it holds that cover, the
-      turn it arrives. The enemy gets nothing from it. The drill's
-      displacement goes there when there is one.
+      none), and ⚠️ more than 25 m from where the force stands — a position
+      prepared underfoot would be cover for nothing. Any force of the side
+      within 25 m of it holds that cover, the turn it arrives; not a vehicle,
+      and not the enemy. The drill's displacement goes there when there is
+      one. **There is no upper bound yet**: an attacker may prepare one on the
+      objective. A question for the author.
     - **Binoculars and UAVs** are for a later stage (backlog 4).
     - **The live UI** has a planning stage before the first turn (see the
       Stage 2 section above). The company battle on Tel Azeka

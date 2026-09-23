@@ -114,6 +114,7 @@ export {
   canObserve,
   observeFromPosition,
   sectorFocus,
+  watchingAsPost,
   type DetectionResult,
   type Observation,
 } from "./combat/detection.js";

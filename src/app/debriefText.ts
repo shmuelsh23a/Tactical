@@ -1,4 +1,11 @@
-import { ASSAULT_RANGE_M, CHARGE_LAYING, OBSERVATION_SECTOR, sectorBonus } from "../engine/index.js";
+import {
+  ASSAULT_RANGE_M,
+  CHARGE_LAYING,
+  MAX_REGISTERED_TARGETS_PER_WEAPON,
+  OBSERVATION_SECTOR,
+  PREPARED_POSITION_REACH_M,
+  sectorBonus,
+} from "../engine/index.js";
 import type {
   ActionOutcome,
   ChargeWorkReport,
@@ -49,6 +56,22 @@ const term = (dict: Record<string, string>, key: string) => dict[key] ?? key;
  * and the debrief so a refusal reads the same in both — the engine's reasons
  * are English identifiers and are never shown raw.
  */
+/**
+ * An engine refusal a player can meet while planning or calling fire (rules
+ * decisions 37 and 38), in the player's language. The engine words its
+ * refusals for whoever calls it; these are said here once, like `reasonHe`.
+ */
+export function planningRefusalHe(message: string): string {
+  if (/the most it may/.test(message)) return `נרשם המספר המרבי של מטרות (${MAX_REGISTERED_TARGETS_PER_WEAPON}) לאמצעי זה`;
+  if (/already has its alternate/.test(message)) return "לכוח כבר הוכנה עמדה חלופית";
+  if (/must be more than/.test(message)) return `עמדה חלופית חייבת להיות במרחק של יותר מ-${PREPARED_POSITION_REACH_M} מ' מהכוח`;
+  if (/is a vehicle/.test(message)) return "רכב אינו מוצב כתצפית ואינו מכין עמדה";
+  if (/and above/.test(message)) return "האמצעי אינו בסמכות הדרג";
+  if (/fire missions left/.test(message)) return "לא נותרו משימות אש לאמצעי זה";
+  if (/mission planning/.test(message)) return "זה נקבע בתכנון המשימה, לפני התור הראשון";
+  return message;
+}
+
 export function reasonHe(reason?: string): string {
   switch (reason) {
     // …a shot that could not be taken

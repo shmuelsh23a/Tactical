@@ -117,6 +117,10 @@ What to put to him next, all from decision 38 and the twelfth round:
    missions. He has not seen it.
 6. **One mission in hand per weapon** is the UI's rule and the harness's,
    not the engine's. Should it be a rule?
+7. **An alternate position has no upper bound on distance.** An attacker may
+   prepare one on the defender's objective in planning and take its cover on
+   arrival. It must be more than 25 m from the force (ours). How far may it
+   be — or must it be behind the force's own line?
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war

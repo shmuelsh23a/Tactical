@@ -47,6 +47,15 @@ export function sectorFocus(observer: Unit, target: Point): number {
     : -OBSERVATION_SECTOR.outsidePenalty;
 }
 
+/**
+ * Whether `unit` is watching as an observation post right now (rules decision
+ * 38): put out in planning, and not yet moved or fired — which ends it at
+ * once, though the flag is only cleared at upkeep.
+ */
+export function watchingAsPost(unit: Unit): boolean {
+  return !!unit.observationPost && unit.movedThisTurn === 0 && !unit.firedThisTurn;
+}
+
 /** The chance and the range at which `observer` may pick `target` up this turn. */
 export function detectionChance(
   observer: Unit,
@@ -71,7 +80,7 @@ export function detectionChance(
   const range = hidden
     ? profile.hiddenDetectRange
     : // …and stops being one the moment it moves or fires, not at the turn's end.
-      observer.observationPost && !observerGait && observer.movedThisTurn === 0 && !observer.firedThisTurn
+      watchingAsPost(observer) && !observerGait
       ? Math.max(profile.visibleDetectRange, OBSERVATION_POST_RANGE_M)
       : profile.visibleDetectRange;
 

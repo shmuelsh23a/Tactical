@@ -407,6 +407,15 @@ describe("who may call fire (decisions 36–37)", () => {
     for (const a of mid.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
     expect(replayGame(mid).fireMissions[0]!.roundsForEffect).toBe(12);
 
+    // Before decision 36 an allotment could name its own number: kept, while
+    // the other side's unrationed call still replays at the old 6.
+    const named = setUp({ fireSupportByEchelon: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1, roundsForEffect: 9 }] } }, "platoon");
+    named.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    named.callForFire("RED", "mortar", { x: 0, y: 1500 });
+    const namedOld = named.toRecording();
+    for (const a of namedOld.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
+    expect(replayGame(namedOld).fireMissions.map((m) => m.roundsForEffect)).toEqual([9, 6]);
+
     const rationed = setUp({ fireSupportByEchelon: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }] } }, "platoon");
     rationed.callForFire("BLUE", "mortar", { x: 0, y: 0 });
     const old = rationed.toRecording();

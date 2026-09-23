@@ -141,18 +141,16 @@ export class RecordingError extends Error {
 const LEGACY_ROUNDS_FOR_EFFECT = 6;
 
 /**
- * Whether a recording was made before rules decision 36. Such a recording has
- * neither mark a later one carries: the decision 37 flag, which a game writes
- * whenever the rule is on (it is by default), and rounds for effect written
- * into its allotments. The one it cannot tell apart is a later game with the
- * rule switched off and no allotment, which only the harness plays and none
- * is saved from.
+ * Whether a recording was made before rules decision 36: it lacks the
+ * decision 37 flag, which every later game writes while the rule is on, and
+ * it is on by default. An allotment's own number says nothing either way —
+ * one could be set before the decision too — and `withLegacyRounds` fills in
+ * only the ones that are missing. What it misreads is a later game played
+ * with the rule switched off, which only the harness plays and none is saved
+ * from.
  */
 function madeBeforeDecision36(recording: GameRecording): boolean {
-  if (recording.fireSupportByEchelon !== undefined) return false;
-  return !Object.values(recording.fireSupport ?? {}).some(
-    (list) => Array.isArray(list) && list.some((a) => a?.roundsForEffect !== undefined),
-  );
+  return recording.fireSupportByEchelon === undefined;
 }
 
 /** Allotments from a recording, with the number a pre-decision-36 one was played with. */
