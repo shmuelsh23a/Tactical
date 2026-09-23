@@ -7,6 +7,8 @@ import { resolveCepDispersion } from "./artillery.js";
 import { resolveBlast } from "./explosives.js";
 import { shellFactor } from "./indirectFire.js";
 import { SHELL_VS_MEN } from "../data/explosives.js";
+import { DEFAULT_ROUNDS_FOR_EFFECT, INDIRECT_ACCURACY, MAX_ADJUSTING_ROUNDS, cepAfter } from "../data/artillery.js";
+import type { GameOptions } from "../game.js";
 import { replayGame, sealRecording, verifyRecording } from "../recording.js";
 
 // Rules decisions 29–31: what a shell does to men, by posture, cover and fuze.
@@ -52,7 +54,7 @@ describe("a shell against men (decisions 29–31)", () => {
   });
 });
 
-describe("accuracy by CEP, on trial", () => {
+describe("accuracy by CEP (decision 32)", () => {
   it("puts half the rounds within the CEP", () => {
     const rng = new Rng(11);
     const n = 20000;
@@ -62,16 +64,26 @@ describe("accuracy by CEP, on trial", () => {
     }
     expect(inside / n).toBeCloseTo(0.5, 1);
   });
+
+  it("halves with each observed adjustment down to the weapon's best, and is the best on the mark", () => {
+    const mortar = INDIRECT_ACCURACY.mortar!;
+    expect([0, 1, 2, 3].map((n) => cepAfter(mortar, n, false))).toEqual([100, 50, 25, 25]);
+    expect(cepAfter(mortar, 0, true)).toBe(25);
+    const artillery = INDIRECT_ACCURACY.artillery!;
+    expect([0, 1, 2, 3].map((n) => cepAfter(artillery, n, false))).toEqual([270, 135, 67.5, 50]);
+  });
 });
 
-describe("a mission in play (decisions 30–31)", () => {
-  /** A game standing at the targeting phase, a RED squad at the origin. */
-  function setUp(variants = {}) {
-    const g = new Game({ seed: 4, enforceC2: false, variants });
-    const red = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8);
-    const blue = makeInfantry("B", "BLUE", "squad", { x: 0, y: 2000 }, 8);
-    g.addUnit(red);
-    g.addUnit(blue);
+describe("a mission in play (decisions 30–34)", () => {
+  /**
+   * A game standing at the targeting phase: a RED squad at the origin, a BLUE
+   * squad `blueAt` metres north of it — near enough to watch the fall of shot
+   * unless it is put beyond the observing range.
+   */
+  function setUp(opts: Partial<GameOptions> = {}, blueAt = 1500) {
+    const g = new Game({ seed: 4, enforceC2: false, ...opts });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
     g.beginTurn();
     g.advanceToPhase("targeting");
     return { g, red: g.getUnit("R") };
@@ -81,6 +93,7 @@ describe("a mission in play (decisions 30–31)", () => {
     g.advanceToPhase("initiative");
     g.advanceToPhase("targeting");
   };
+  const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[xs.length >> 1]!;
 
   it("lands every round of a mission, and the men go to ground after it", () => {
     const { g, red } = setUp();
@@ -89,7 +102,6 @@ describe("a mission in play (decisions 30–31)", () => {
     expect(red.downUnderShelling).toBeUndefined();
     const { resolved } = g.advanceToPhase("resolvePriorArty");
     expect(resolved).toHaveLength(3);
-    // All three were resolved against men on their feet.
     for (const r of resolved!) {
       const t = r.blast.targets.find((x) => x.unitId === "R");
       if (t) expect(t.blastChance).toBeGreaterThanOrEqual(0.25);
@@ -119,61 +131,34 @@ describe("a mission in play (decisions 30–31)", () => {
     expect(full.fuze).toBe("airburst");
   });
 
-  it("under the accuracy variant, fire walked onto the same point tightens to the cap", () => {
-    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25, onTargetM: 0 } } });
-    // A mission queued each turn lands the next: turns 2, 3, 4, 5.
-    const misses: number[][] = [];
-    for (let turn = 0; turn < 5; turn++) {
-      g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 100 });
-      const { resolved } = g.advanceToPhase("resolvePriorArty");
-      if (turn > 0) misses.push(resolved!.map((r) => distance(r.dispersion.impact, { x: 0, y: 0 })));
-      nextTurn(g);
-    }
-    const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[xs.length >> 1]!;
-    // CEP 100, 50, 25, then held at the cap.
-    expect(median(misses[0]!)).toBeGreaterThan(80);
-    expect(median(misses[1]!)).toBeGreaterThan(38);
-    expect(median(misses[1]!)).toBeLessThan(62);
-    expect(median(misses[2]!)).toBeLessThan(32);
-    expect(median(misses[3]!)).toBeLessThan(32);
-  });
-
   it("everything landing in one turn finds the men as they were, whatever the order", () => {
     const { g, red } = setUp();
-    // Three tubes, three missions, the same turn.
     for (const x of [-20, 0, 20]) g.queueIndirectFire("mortar", "BLUE", { x, y: 0 }, { rounds: 3 });
     nextTurn(g);
     const { resolved } = g.advanceToPhase("resolvePriorArty");
     expect(resolved).toHaveLength(9);
     for (const r of resolved!) {
       const t = r.blast.targets.find((x) => x.unitId === "R");
-      // On their feet for every bomb: the band's own chance, never × down.
       if (t) expect([0.5, 0.25]).toContain(t.blastChance);
     }
     expect(red.downUnderShelling).toBe(true);
   });
 
-  it("tubes aimed side by side each adjust onto their own point", () => {
-    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25, onTargetM: 0 } } });
-    const misses: number[][] = [];
-    for (let turn = 0; turn < 3; turn++) {
-      for (const x of [-80, 0, 80]) g.queueIndirectFire("mortar", "BLUE", { x, y: 0 }, { rounds: 100 });
+  it("fire nobody sees teaches nothing: it stays at first-round accuracy (decision 33)", () => {
+    const { g } = setUp({}, 5000);
+    const misses: number[] = [];
+    for (let turn = 0; turn < 5; turn++) {
+      g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 100 });
       const { resolved } = g.advanceToPhase("resolvePriorArty");
-      if (turn > 0) {
-        misses.push(resolved!.map((r, i) => distance(r.dispersion.impact, { x: [-80, 0, 80][Math.floor(i / 100)]!, y: 0 })));
-      }
+      if (turn > 1) misses.push(...resolved!.map((r) => r.dispersion.missDistance));
       nextTurn(g);
     }
-    // The second volley: every tube at CEP 50, the -80 tube included.
-    const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[xs.length >> 1]!;
-    for (let tube = 0; tube < 3; tube++) {
-      const second = misses[1]!.slice(tube * 100, tube * 100 + 100);
-      expect(median(second)).toBeLessThan(65);
-    }
+    expect(median(misses)).toBeGreaterThan(80);
+    expect(g.isOnTheMark("BLUE", "mortar", { x: 0, y: 0 })).toBe(false);
   });
 
-  it("adjusts with one bomb a turn until one lands on the mark, then fires for effect at the cap", () => {
-    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25 } } });
+  it("seen fire walks onto the mark, and then fires at the weapon's best", () => {
+    const { g } = setUp();
     let turns = 0;
     while (!g.isOnTheMark("BLUE", "mortar", { x: 0, y: 0 }) && turns < 20) {
       g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 });
@@ -182,26 +167,19 @@ describe("a mission in play (decisions 30–31)", () => {
       turns++;
     }
     expect(g.isOnTheMark("BLUE", "mortar", { x: 0, y: 0 })).toBe(true);
-    // The sheaf 80 m either side is on the mark too; 200 m away is not.
     expect(g.isOnTheMark("BLUE", "mortar", { x: 80, y: 0 })).toBe(true);
     expect(g.isOnTheMark("BLUE", "mortar", { x: 200, y: 0 })).toBe(false);
     expect(g.isOnTheMark("RED", "mortar", { x: 0, y: 0 })).toBe(false);
     g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 100 });
     g.advanceToPhase("resolvePriorArty");
     nextTurn(g);
-    // The bombs land the turn after: the last hundred resolved.
     const { resolved } = g.advanceToPhase("resolvePriorArty");
-    const misses = resolved!.slice(-100).map((r) => r.dispersion.missDistance).sort((a, b) => a - b);
-    expect(misses[50]!).toBeLessThan(32);
+    expect(median(resolved!.slice(-100).map((r) => r.dispersion.missDistance))).toBeLessThan(32);
   });
 
-  it("being on the mark does not follow the aim beyond reach of where a round landed", () => {
-    // No bomb can land on the mark (onTargetM 0): only the registered point counts.
-    const { g } = setUp({
-      cepDispersion: { mortar: { firstM: 100, capM: 25, onTargetM: 0 } },
-      registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }],
-    });
-    // Fire walking away from it, 80 m a turn.
+  it("being on the mark does not follow the aim beyond reach of a registered point", () => {
+    // Nobody sees the fall of shot, so no mark is earned: only the registration counts.
+    const { g } = setUp({ registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }] }, 5000);
     for (let turn = 1; turn <= 4; turn++) {
       g.queueIndirectFire("mortar", "BLUE", { x: 80 * turn, y: 0 });
       g.advanceToPhase("resolvePriorArty");
@@ -212,17 +190,12 @@ describe("a mission in play (decisions 30–31)", () => {
     expect(g.isOnTheMark("BLUE", "mortar", { x: 320, y: 0 })).toBe(false);
   });
 
-  it("refuses a registered target it cannot read", () => {
-    expect(() => new Game({ seed: 1, variants: { registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] } })).toThrow(/registered/);
-  });
-
-  it("a registered target is on the mark from the start", () => {
-    const { g } = setUp({
-      cepDispersion: { mortar: { firstM: 100, capM: 25 } },
-      registeredTargets: [{ side: "RED", weapon: "mortar", at: { x: 0, y: 1500 } }],
-    });
-    expect(g.isOnTheMark("RED", "mortar", { x: 50, y: 1500 })).toBe(true);
-    expect(g.isOnTheMark("BLUE", "mortar", { x: 0, y: 1500 })).toBe(false);
+  it("refuses what it cannot read", () => {
+    const { g } = setUp();
+    expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { fuze: "proximity" as never })).toThrow(/fuze/);
+    expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 1e9 })).toThrow(/rounds/);
+    expect(() => new Game({ seed: 1, registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] })).toThrow(/registered/);
+    expect(() => new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 0 }] } })).toThrow(/fireSupport/);
   });
 
   it("a position prepared in full cover has a roof against an air burst", () => {
@@ -231,30 +204,86 @@ describe("a mission in play (decisions 30–31)", () => {
     red.baseCover = "full";
     red.cover = "full";
     g.queueIndirectFire("artillery", "BLUE", { x: 0, y: 0 }, { rounds: 20, fuze: "airburst" });
-    // Artillery lands two turns on.
     for (let i = 0; i < 2; i++) nextTurn(g);
     const { resolved } = g.advanceToPhase("resolvePriorArty");
     const onRed = resolved!.flatMap((r) => r.blast.targets.filter((x) => x.unitId === "R"));
     expect(onRed.length).toBeGreaterThan(0);
     for (const t of onRed) expect(t.blastChance).toBeLessThanOrEqual(0.7 * SHELL_VS_MEN.airburst.roof + 1e-9);
   });
+});
 
-  it("refuses a fuze it does not know, and a mission with no end of rounds", () => {
-    const { g } = setUp();
-    expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { fuze: "proximity" as never })).toThrow(/fuze/);
-    expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 1e9 })).toThrow(/rounds/);
-    expect(() => new Game({ seed: 1, variants: { cepDispersion: { mortar: { firstM: 10, capM: 25 } } } })).toThrow(/capM/);
+describe("fire missions (decision 34)", () => {
+  function setUp(opts: Partial<GameOptions> = {}, blueAt = 1500) {
+    const g = new Game({ seed: 7, enforceC2: false, ...opts });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    return g;
+  }
+  /** Play `turns` turns, collecting every round that lands. */
+  function play(g: Game, turns: number) {
+    const landed: { turn: number; rounds: number }[] = [];
+    for (let t = 0; t < turns; t++) {
+      const { resolved } = g.advanceToPhase("resolvePriorArty");
+      if (resolved!.length) landed.push({ turn: g.turn, rounds: resolved!.length });
+      g.advanceToPhase("summary");
+      g.advanceToPhase("initiative");
+      g.advanceToPhase("targeting");
+    }
+    return landed;
+  }
+
+  it("adjusts with one round a turn, then fires its rounds for effect once, and is done", () => {
+    const g = setUp();
+    const m = g.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    expect(m.roundsForEffect).toBe(DEFAULT_ROUNDS_FOR_EFFECT);
+    const landed = play(g, 10);
+    expect(m.status).toBe("done");
+    expect(m.adjustingRounds).toBeGreaterThan(0);
+    expect(m.adjustingRounds).toBeLessThanOrEqual(MAX_ADJUSTING_ROUNDS);
+    // Single rounds, then one volley of six, then nothing.
+    const sizes = landed.map((l) => l.rounds);
+    expect(sizes.filter((n) => n === 1).length).toBe(m.adjustingRounds);
+    expect(sizes.filter((n) => n === 6).length).toBe(1);
+    expect(sizes.at(-1)).toBe(6);
   });
 
-  it("replays bit for bit: missions of several rounds, air burst, accuracy by CEP", () => {
-    const { g } = setUp({ cepDispersion: { mortar: { firstM: 100, capM: 25 }, artillery: { firstM: 15, capM: 15 } } });
-    for (let turn = 0; turn < 4; turn++) {
-      g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 3, fuze: turn % 2 ? "airburst" : "impact" });
-      g.queueIndirectFire("artillery", "BLUE", { x: 40, y: 0 }, { rounds: 4 });
-      nextTurn(g);
-    }
+  it("goes straight to effect on a registered target, or when nobody can see it", () => {
+    const registered = setUp({ registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }] });
+    expect(registered.callForFire("BLUE", "mortar", { x: 0, y: 0 }).status).toBe("done");
+    const blind = setUp({}, 5000);
+    expect(blind.callForFire("BLUE", "mortar", { x: 0, y: 0 }).status).toBe("done");
+  });
+
+  it("keeps to the missions a side was assigned, and their rounds for effect", () => {
+    const g = setUp({ fireSupport: { BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 9 }] } });
+    expect(g.fireMissionsLeft("BLUE", "mortar")).toBe(2);
+    expect(g.fireMissionsLeft("RED", "mortar")).toBeUndefined();
+    expect(g.callForFire("BLUE", "mortar", { x: 0, y: 0 }).roundsForEffect).toBe(9);
+    g.callForFire("BLUE", "mortar", { x: 300, y: 0 });
+    expect(g.fireMissionsLeft("BLUE", "mortar")).toBe(0);
+    expect(() => g.callForFire("BLUE", "mortar", { x: 0, y: 0 })).toThrow(/no mortar fire missions left/);
+    expect(() => g.callForFire("BLUE", "artillery", { x: 0, y: 0 })).toThrow(/no artillery/);
+    // The side left out is not rationed.
+    g.callForFire("RED", "mortar", { x: 0, y: 1500 });
+  });
+
+  it("replays bit for bit: missions, registration, allotments, air burst", () => {
+    const g = setUp({
+      registeredTargets: [{ side: "RED", weapon: "mortar", at: { x: 0, y: 1400 } }],
+      fireSupport: { BLUE: [{ weapon: "mortar", missions: 3 }, { weapon: "artillery", missions: 1, roundsForEffect: 4 }] },
+    });
+    g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { fuze: "airburst" });
+    g.callForFire("BLUE", "artillery", { x: 40, y: 0 });
+    g.callForFire("RED", "mortar", { x: 0, y: 1450 });
+    play(g, 3);
+    g.callForFire("BLUE", "mortar", { x: 0, y: 30 });
+    play(g, 4);
     const recording = sealRecording(g.toRecording());
     expect(verifyRecording(recording)).toMatchObject({ checked: true, ok: true });
-    expect(replayGame(recording).getUnit("R")).toEqual(g.getUnit("R"));
+    const again = replayGame(recording);
+    expect(again.getUnit("R")).toEqual(g.getUnit("R"));
+    expect(again.fireMissions).toEqual(g.fireMissions);
   });
 });

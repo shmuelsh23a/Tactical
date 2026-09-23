@@ -21,7 +21,17 @@ import type {
 import type { MovementMode } from "./types.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
-import { ADJUSTMENT_RADIUS_M, DEFAULT_ON_TARGET_M, MAX_ROUNDS_PER_MISSION } from "./data/artillery.js";
+import {
+  ADJUSTMENT_RADIUS_M,
+  BURST_HEIGHT_M,
+  DEFAULT_ROUNDS_FOR_EFFECT,
+  MAX_ADJUSTING_ROUNDS,
+  INDIRECT_ACCURACY,
+  MAX_ROUNDS_PER_MISSION,
+  OBSERVE_RANGE_M,
+  ON_TARGET_M,
+  cepAfter,
+} from "./data/artillery.js";
 import {
   SMOKE_BLOCKS_FIRE,
   SMOKE_DURATION_TURNS,
@@ -116,7 +126,7 @@ export type Phase = (typeof PHASES)[number];
 
 export class PhaseError extends Error {}
 
-/** One side's fire on a point, for adjusting onto it (the accuracy variant on trial). */
+/** One side's observed fire on a point, for adjusting onto it (rules decisions 32–33). */
 interface AdjustmentEntry {
   side: Side;
   weapon: string;
@@ -125,11 +135,45 @@ interface AdjustmentEntry {
   adjustments: number;
 }
 
-/** A point a side's weapon is on the mark at: a round landed there, or it was registered. */
-interface MarkEntry {
+/**
+ * A point a side's weapon is on the mark at: a round was seen to land there,
+ * or it was registered before the battle — a planned target (rules decision 32).
+ */
+export interface RegisteredTarget {
   side: Side;
   weapon: string;
   at: Point;
+}
+type MarkEntry = RegisteredTarget;
+
+/**
+ * Fire missions a side is assigned at company level and below (rules decision
+ * 34): `missions` of the weapon for the battle, each firing `roundsForEffect`
+ * once the guns are on the mark. Above company it is ammunition, set by the
+ * mission's parameters, and not built yet.
+ */
+export interface FireAllotment {
+  weapon: string;
+  missions: number;
+  roundsForEffect?: number;
+}
+
+/** A fire mission called in (rules decision 34): adjusting, then fired for effect. */
+export interface FireMission {
+  id: string;
+  side: Side;
+  weapon: string;
+  target: Point;
+  roundsForEffect: number;
+  firingFrom?: Point;
+  fuze?: Fuze;
+  observedByUav?: boolean;
+  /** Adjusting rounds fired so far. */
+  adjustingRounds: number;
+  /** `adjusting` until the rounds for effect are sent; then `done`. */
+  status: "adjusting" | "done";
+  /** The turn the rounds for effect were sent, once they are. */
+  forEffectOnTurn?: number;
 }
 
 /** Refusal reason when a force is under orders to hold its fire. */
@@ -264,6 +308,17 @@ export interface GameOptions {
    * goes when the author picks.
    */
   variants?: RuleVariants;
+  /**
+   * Targets each side registered before the battle: its guns start on the
+   * mark there (rules decision 32). A defender's planned fires.
+   */
+  registeredTargets?: RegisteredTarget[];
+  /**
+   * The fire missions each side is assigned (rules decision 34). A side left
+   * out may call as many as it likes, each firing
+   * {@link DEFAULT_ROUNDS_FOR_EFFECT} for effect.
+   */
+  fireSupport?: Partial<Record<Side, FireAllotment[]>>;
 }
 
 /**
@@ -279,6 +334,12 @@ export class Game {
   readonly terrain: Terrain;
   readonly morale: boolean;
   readonly variants: RuleVariants;
+  /** Targets registered before the battle (rules decision 32). */
+  readonly registeredTargets: RegisteredTarget[] = [];
+  /** The fire missions each side was assigned (rules decision 34). */
+  readonly fireSupport: Partial<Record<Side, FireAllotment[]>>;
+  /** Every fire mission called, in the order called. */
+  readonly fireMissions: FireMission[] = [];
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -360,16 +421,21 @@ export class Game {
     this.terrain = opts.terrain ?? FLAT_GROUND;
     this.morale = opts.morale ?? false;
     this.variants = opts.variants ?? {};
-    for (const [weapon, c] of Object.entries(this.variants.cepDispersion ?? {})) {
-      if (!(c.capM > 0) || !(c.firstM >= c.capM)) {
-        throw new Error(`cepDispersion.${weapon}: needs 0 < capM <= firstM, not ${c.capM} and ${c.firstM}`);
-      }
-    }
-    for (const t of this.variants.registeredTargets ?? []) {
-      if (!(t.side === "RED" || t.side === "BLUE") || !EXPLOSIVES[t.weapon] || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
+    for (const t of opts.registeredTargets ?? []) {
+      if (!this.sides.includes(t.side) || !INDIRECT_ACCURACY[t.weapon] || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
       }
-      this.onTheMark.push({ side: t.side, weapon: t.weapon, at: { x: t.at.x, y: t.at.y } });
+      this.registeredTargets.push({ side: t.side, weapon: t.weapon, at: { x: t.at.x, y: t.at.y } });
+    }
+    this.onTheMark.push(...this.registeredTargets);
+    this.fireSupport = cloneForRecord(opts.fireSupport ?? {});
+    for (const [side, list] of Object.entries(this.fireSupport)) {
+      for (const a of list ?? []) {
+        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT;
+        if (!INDIRECT_ACCURACY[a.weapon] || !Number.isInteger(a.missions) || a.missions < 0 || !Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
+          throw new Error(`fireSupport.${side}: cannot read ${JSON.stringify(a)}`);
+        }
+      }
     }
   }
 
@@ -386,6 +452,8 @@ export class Game {
       trackIntel: this.trackIntel,
       ...(this.morale ? { morale: true } : {}),
       ...(Object.keys(this.variants).length ? { variants: cloneForRecord(this.variants) } : {}),
+      ...(this.registeredTargets.length ? { registeredTargets: cloneForRecord(this.registeredTargets) } : {}),
+      ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.fireSupport) } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -510,6 +578,11 @@ export class Game {
       }
       const idx = PHASES.indexOf(this.phase);
       this.phase = PHASES[idx + 1]!;
+      if (this.phase === "targeting") {
+        // Missions in hand carry on by themselves: the next adjusting round,
+        // or the rounds for effect (rules decision 34).
+        for (const m of this.fireMissions) if (m.status === "adjusting") this.stepFireMission(m);
+      }
       if (this.phase === "resolvePriorArty") {
         // Screens go down before the rounds land, so a smoke mission fired on
         // the same turn as an HE mission cannot be walked through by its own
@@ -585,6 +658,77 @@ export class Game {
 
   // ---- targeting phase ----
 
+  /** How many fire missions of `weapon` `side` has left; undefined when it is not rationed. */
+  fireMissionsLeft(side: Side, weapon: string): number | undefined {
+    const list = this.fireSupport[side];
+    if (!list) return undefined;
+    const allotted = list.filter((a) => a.weapon === weapon).reduce((n, a) => n + a.missions, 0);
+    const called = this.fireMissions.filter((m) => m.side === side && m.weapon === weapon).length;
+    return allotted - called;
+  }
+
+  /**
+   * Call for fire (rules decision 34): one of the side's assigned missions of
+   * `weapon` on `target`. The engine carries it through: one round a turn to
+   * adjust until the side sees one land on the mark (decision 32), then the
+   * mission's rounds for effect, all landing together. It goes straight to
+   * effect when the guns are already on the mark there, when nobody of the
+   * side can see the target to adjust (decision 33), or after
+   * {@link MAX_ADJUSTING_ROUNDS}.
+   */
+  callForFire(
+    side: Side,
+    weaponKey: string,
+    target: Point,
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean } = {},
+  ): FireMission {
+    this.requirePhase("targeting");
+    if (!INDIRECT_ACCURACY[weaponKey]) throw new Error(`${weaponKey} is not an indirect-fire weapon`);
+    const left = this.fireMissionsLeft(side, weaponKey);
+    if (left !== undefined && left <= 0) throw new Error(`${side} has no ${weaponKey} fire missions left`);
+    if (opts.fuze !== undefined && !(opts.fuze in SHELL_VS_MEN)) throw new Error(`no such fuze: ${String(opts.fuze)}`);
+    const allotment = this.fireSupport[side]?.find((a) => a.weapon === weaponKey);
+    const mission: FireMission = {
+      id: this.nextId("mission"),
+      side,
+      weapon: weaponKey,
+      target: { x: target.x, y: target.y },
+      roundsForEffect: allotment?.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT,
+      ...(opts.firingFrom ? { firingFrom: { ...opts.firingFrom } } : {}),
+      ...(opts.fuze && opts.fuze !== "impact" ? { fuze: opts.fuze } : {}),
+      ...(opts.observedByUav ? { observedByUav: true } : {}),
+      adjustingRounds: 0,
+      status: "adjusting",
+    };
+    this.fireMissions.push(mission);
+    this.journal({ kind: "callForFire", weaponKey, side, target, opts });
+    this.stepFireMission(mission);
+    return mission;
+  }
+
+  /** One turn of a fire mission: an adjusting round, or the rounds for effect. */
+  private stepFireMission(m: FireMission): void {
+    const forEffect =
+      this.isOnTheMark(m.side, m.weapon, m.target) ||
+      !this.observes(m.side, m.target, m.observedByUav ?? false) ||
+      m.adjustingRounds >= MAX_ADJUSTING_ROUNDS;
+    const rounds = forEffect ? m.roundsForEffect : 1;
+    this.internally(() =>
+      this.queueIndirectFire(m.weapon, m.side, m.target, {
+        ...(m.firingFrom ? { firingFrom: m.firingFrom } : {}),
+        ...(m.fuze ? { fuze: m.fuze } : {}),
+        ...(m.observedByUav ? { observedByUav: true } : {}),
+        ...(rounds > 1 ? { rounds } : {}),
+      }),
+    );
+    if (forEffect) {
+      m.status = "done";
+      m.forEffectOnTurn = this.turn;
+    } else {
+      m.adjustingRounds++;
+    }
+  }
+
   /**
    * Queue an indirect-fire mission; it resolves after the weapon's delay. Its
    * `rounds` land together, each scattered on its own (rules decision 30: the
@@ -634,10 +778,9 @@ export class Game {
   }
 
   /**
-   * Where each side's guns have fired, how many rounds they have walked onto
-   * the point, and whether one has landed on the mark — only while the
-   * accuracy-by-CEP variant is on trial. A target registered before the
-   * battle starts on the mark.
+   * Where each side's guns have fired **and seen the fall of shot**, and how
+   * many rounds they have walked onto the point (rules decision 32). Unseen
+   * rounds teach nothing (decision 33).
    */
   private adjusting: AdjustmentEntry[] = [];
   /** Where each side's guns are on the mark: a round landed within reach, or registered. */
@@ -680,21 +823,34 @@ export class Game {
   }
 
   /**
-   * The CEP a mission fires with under the accuracy variant. Each earlier
-   * mission of the same side's same weapon within {@link ADJUSTMENT_RADIUS_M}
-   * halves the error, down to the weapon's cap; on the mark, it fires at the
-   * cap. Undefined: the document's table.
+   * The CEP a mission fires with (rules decision 32): on the mark, the
+   * weapon's best; otherwise its first-round CEP halved by each earlier
+   * observed round of the same side's same weapon within
+   * {@link ADJUSTMENT_RADIUS_M}, down to that best.
    */
-  private cepFor(m: PendingFireMission): { cepM: number; onTargetM: number } | undefined {
-    const spec = this.variants.cepDispersion?.[m.weapon];
-    if (!spec) return undefined;
+  private cepFor(m: PendingFireMission): { cepM: number; adjustments: number } {
+    const spec = INDIRECT_ACCURACY[m.weapon];
+    if (!spec) throw new Error(`no accuracy for ${m.weapon}`);
     const previous = this.adjustedFrom(m.side, m.weapon, m.target);
     const adjustments = previous ? previous.adjustments + 1 : 0;
-    this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
-    const cepM = this.isOnTheMark(m.side, m.weapon, m.target)
-      ? spec.capM
-      : Math.max(spec.capM, spec.firstM / 2 ** adjustments);
-    return { cepM, onTargetM: spec.onTargetM ?? DEFAULT_ON_TARGET_M };
+    const onMark = this.isOnTheMark(m.side, m.weapon, m.target);
+    return { cepM: cepAfter(spec, adjustments, onMark), adjustments };
+  }
+
+  /**
+   * Whether `side` sees the fall of a round at `impact` (rules decision 33): a
+   * force of its own in the fight within {@link OBSERVE_RANGE_M} with a clear
+   * line to it, or a UAV over the target.
+   */
+  private observes(side: Side, impact: Point, uav: boolean): boolean {
+    if (uav) return true;
+    return this.units.some(
+      (u) =>
+        u.side === side &&
+        !u.neutralized &&
+        distance(u.position, impact) <= OBSERVE_RANGE_M &&
+        !terrainBlocksSight(this.terrain, u.position, eyeHeight(u), impact, BURST_HEIGHT_M),
+    );
   }
 
   /** Resolve indirect-fire missions whose impact-delay elapses this turn: one result a round. */
@@ -705,8 +861,7 @@ export class Game {
     // all of it, and go to ground after it (rules decision 30).
     const shelled = new Set<Unit>();
     const results = due.flatMap((m) => {
-      const adjusting = this.cepFor(m);
-      const cepM = adjusting?.cepM;
+      const { cepM, adjustments } = this.cepFor(m);
       const fired = Array.from({ length: m.rounds ?? 1 }, () =>
         resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
           firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
@@ -716,12 +871,17 @@ export class Game {
           // A building, or a position prepared before the battle (author,
           // 2026-09-23: a prepared position has overhead cover).
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
-          ...(cepM !== undefined ? { cepM } : {}),
+          cepM,
         }),
       );
-      // A round on the mark puts the guns on it for whatever follows.
-      if (adjusting && fired.some((f) => f.dispersion.missDistance <= adjusting.onTargetM)) {
-        this.onTheMark.push({ side: m.side, weapon: m.weapon, at: m.target });
+      // What the side saw of it teaches the next round; a round seen on the
+      // mark puts the guns on it for whatever follows (decisions 32–33).
+      const seen = fired.filter((f) => this.observes(m.side, f.dispersion.impact, m.observedByUav));
+      if (seen.length) {
+        this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
+        if (seen.some((f) => f.dispersion.missDistance <= ON_TARGET_M)) {
+          this.onTheMark.push({ side: m.side, weapon: m.weapon, at: m.target });
+        }
       }
       // Everyone the rounds came down on was shelled, caught or not.
       for (const round of fired) {

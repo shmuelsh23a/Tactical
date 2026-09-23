@@ -1375,6 +1375,56 @@ on the stated reasoning, still awaiting the author's word.
     men, so a sealed recording of one made before them fails
     `verifyRecording`.
 
+32. ✅ **Accuracy is a CEP, walked onto the mark by adjusting fire** (author,
+    2026-09-23; after the harness's ninth and tenth rounds, docs/balance.md).
+    This is **in place of the document's dispersion table**, which stays
+    transcribed in `data/artillery.ts` but is no longer rolled.
+    - A round scatters as a circular normal. The CEP is the weapon's
+      first-round figure, halved by each earlier *observed* round of the same
+      side's same weapon within 100 m of the aim, down to the weapon's best
+      (`INDIRECT_ACCURACY`, `cepAfter`).
+    - Artillery is **270 m to 50 m** (the author's 50–270 m, from the sources
+      for unguided 155 mm at range). A mortar is **100 m to 25 m** (a 120 mm
+      bomb is 76–136 m unadjusted; the 25 m is ours).
+    - Once a round is seen to land within **50 m** of its aim, the side is
+      **on the mark** there (`Game.isOnTheMark`): anything it fires within
+      100 m of that point fires at the weapon's best. It does not follow a
+      moving aim beyond that.
+    - **Registered targets** (`GameOptions.registeredTargets`, recorded) are
+      points a side planned before the battle. Its guns start on the mark
+      there: a defender's fires on its approaches.
+    - ⚠️ The 50 m and the 100 m are ours, from the doctrinal "fire for effect
+      within 50 m of the adjusting point".
+33. ✅ **Adjusting needs an observer** (author, 2026-09-23). A round teaches
+    the guns only if its side sees it land: one of its forces in the fight
+    within 2,000 m with a clear sight line to the burst, or a UAV over the
+    target (`observes` in `game.ts`). Fire nobody sees stays at first-round
+    accuracy. Killing or blinding the observer is how to stop it walking in.
+    ⚠️ The 2,000 m and the 3 m burst height are ours.
+34. ✅ **At company and below, fire support is assigned missions** (author,
+    2026-09-23). A side is given so many fire missions of each weapon
+    (`GameOptions.fireSupport`), each firing a set number of rounds for
+    effect, **6 by default** (`DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
+    (`Game.callForFire`) runs itself:
+    - one round a turn to adjust, until one is seen on the mark (decisions
+      32–33);
+    - then its rounds for effect, all landing together; then it is spent.
+    - It goes straight to effect on a registered target, when nobody of the
+      side can see the target, or after 4 adjusting rounds (ours).
+    - **Ammunition** is the battalion's and above, set by the mission's
+      parameters (backlog 12). It is not built.
+    - The debrief narrates a call for fire. **The live UI does not call
+      missions yet**: it still queues single rounds, one a turn (decision 8's
+      UI limit), unrationed.
+    - Why 6: a 6-gun battery's single volley, or a 3-tube section's two bombs
+      a tube. Doctrine often fires more: "seldom less than five rounds for each
+      mortar" (FM 7-90). The balance is on balance.md, *Tenth round*.
+35. ✅ **Counter-battery fire exists only for guns on the map** (author,
+    2026-09-23). Mortars are on the map at **company and above**, artillery at
+    **battalion and above**. On the map they are units, and can be found and
+    fired on; that arrives with echelon scaling (backlog 3). Off the map there
+    is no counter-battery fire. Today every game is off-map for both, so
+    there is none.
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1477,7 +1527,8 @@ Each is intended to be an independent, toggleable module:
    with it**: indirect fire is an off-map asset only because a platoon commander
    calls for fire rather than owning it. At battalion and above the battery is a
    unit on the map, with the rates of fire the data already holds and a position
-   that can be counter-batteried (rules decision 8).
+   that can be counter-batteried (rules decision 8). **Mortars come on the map
+   one echelon lower, at company and above** (decision 35).
 
    **It also carries the simulated subordinates** (backlog 15). Above company
    the levels below the player's pieces stop being a strength number and start
@@ -1547,7 +1598,9 @@ Each is intended to be an independent, toggleable module:
 9. **Leagues.**
 10. **Air support** — fixed/rotary CAS missions.
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
-12. **Logistics** — ammunition, fuel, resupply, sustainment.
+12. **Logistics** — ammunition, fuel, resupply, sustainment. For indirect fire,
+    ammunition is the battalion's and above, set by the mission's parameters;
+    below that, fire is assigned as missions (decision 34).
 13. **OPORD mode — write the order, watch it executed.** A game mode where the
     player does not manoeuvre pieces at all: they write a **פקודת מבצע** and/or
     draw a plan on the map (axes, objectives, control measures, fire plan), and

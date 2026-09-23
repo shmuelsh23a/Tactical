@@ -7,12 +7,9 @@
  *   npm run balance -- --seed 20000                  # a fresh seed window (default 1000) — see balance.md on the lean
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
- *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
- *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
- *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,fuze=airburst   # missions x rounds
- *   npm run balance -- --cep artillery:270:50,mortar:100:25  # on trial: accuracy by CEP, first:cap metres
- *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,adjust=on   # one round until on the mark, then for effect
- *   npm run balance -- --defender-fires mortar=3x3,registered=200/400      # the defender's own section
+ *   npm run balance -- --fires artillery=2x6,mortar=4x6,fuze=airburst   # the attacker's fire missions: missions x rounds for effect
+ *   npm run balance -- --defender-fires mortar=4x6,registered=200/400    # the defender's, and targets it registered
+ *   npm run balance -- --displace 100                # a defender moves off a shelled position
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
  *   npm run balance -- --morale on                   # only with morale (or: off)
@@ -36,8 +33,8 @@ import {
   type BattleKind,
   type Echelon,
 } from "../src/sim/balance.js";
-import type { RuleVariants } from "../src/engine/index.js";
-import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
+import type { FireAllotment, RuleVariants } from "../src/engine/index.js";
+import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -64,7 +61,7 @@ const swap = args.includes("--swap");
 const preparedCover = value("--prepared-cover") === "full" ? "full" : "partial";
 const drills = { plain: PLAIN_SCRIPT, western: WESTERN_DRILL } as const;
 const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
-const drill = drills[drillName];
+const drill: SquadDrill | undefined = drills[drillName] && { ...drills[drillName] };
 if (!drill) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
 
 const variants: RuleVariants = {};
@@ -74,64 +71,44 @@ const steadyBonus = value("--steady-bonus");
 if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
 const steadyLoss = value("--steady-loss");
 if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
+// --fires plan | artillery=2x6,mortar=4x6,lift=400,fuze=airburst — the
+// attacker's fire missions (rules decision 34): missions x rounds for effect
+const allotment = (key: string, v: string): FireAllotment => {
+  const m = /^(\d+)(?:x(\d+))?$/.exec(v);
+  if (!m) throw new Error(`cannot read ${key}=${v}`);
+  return { weapon: key, missions: Number(m[1]), ...(m[2] ? { roundsForEffect: Number(m[2]) } : {}) };
+};
 const firesArg = value("--fires");
-// --fires plan | a,m[,lift] (shells and bombs a turn) | key=value,... :
-//   artillery=2x4/battle  missions x shells each, per turn (default) or for the battle
-//   mortar=3x3            tubes x bombs each, a turn
-//   lift=400  fuze=airburst
-const parseFires = (arg: string): FirePlan => {
-  if (arg === "plan") return FIRE_PLAN;
-  if (!arg.includes("=")) {
-    const [artillery, mortar, liftAt] = arg.split(",").map(Number);
-    return { artillery: artillery!, mortar: mortar!, liftAt: liftAt ?? FIRE_PLAN.liftAt };
-  }
-  const plan: FirePlan = { artillery: 0, mortar: 0, liftAt: FIRE_PLAN.liftAt };
-  for (const part of arg.split(",")) {
-    const [key, v = ""] = part.split("=");
-    const m = /^(\d+)(?:x(\d+))?(?:\/(turn|battle))?$/.exec(v);
-    if (key === "artillery" && m) {
-      plan.artillery = Number(m[1]);
-      plan.shellsPerMission = Number(m[2] ?? 1);
-      plan.artilleryFor = (m[3] as "turn" | "battle" | undefined) ?? "turn";
-    } else if (key === "mortar" && m && !m[3]) {
-      plan.mortar = Number(m[1]);
-      plan.bombsPerTube = Number(m[2] ?? 1);
-    } else if (key === "lift" && m && !m[2] && !m[3]) plan.liftAt = Number(m[1]);
+const fires: FirePlan | undefined = (() => {
+  if (!firesArg) return undefined;
+  if (firesArg === "plan") return FIRE_PLAN;
+  const plan: FirePlan = { missions: [], liftAt: FIRE_PLAN.liftAt };
+  for (const part of firesArg.split(",")) {
+    const [key = "", v = ""] = part.split("=");
+    if (key === "artillery" || key === "mortar") plan.missions.push(allotment(key, v));
+    else if (key === "lift" && /^\d+$/.test(v)) plan.liftAt = Number(v);
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
-    else if (key === "adjust" && (v === "on" || v === "off")) plan.adjust = v === "on";
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;
-};
-const fires = firesArg ? parseFires(firesArg) : undefined;
-// --defender-fires mortar=3x3,registered=200/400 — the defender's own section,
-// and points on the approach (metres in front of its line) registered in advance
+})();
+// --defender-fires mortar=4x6,registered=200/400 — the defender's missions, and
+// points on the approach (metres in front of its line) registered in advance
 const defenderArg = value("--defender-fires");
 const defenderFires: DefenderFires | undefined = (() => {
   if (!defenderArg) return undefined;
-  const d: DefenderFires = { tubes: 0 };
+  const d: DefenderFires = { missions: [] };
   for (const part of defenderArg.split(",")) {
-    const [key, v = ""] = part.split("=");
-    const m = /^(\d+)(?:x(\d+))?$/.exec(v);
-    if (key === "mortar" && m) {
-      d.tubes = Number(m[1]);
-      d.bombsPerTube = Number(m[2] ?? 1);
-    } else if (key === "registered" && /^\d+(\/\d+)*$/.test(v)) d.registeredAt = v.split("/").map(Number);
+    const [key = "", v = ""] = part.split("=");
+    if (key === "artillery" || key === "mortar") d.missions.push(allotment(key, v));
+    else if (key === "registered" && /^\d+(\/\d+)*$/.test(v)) d.registeredAt = v.split("/").map(Number);
     else throw new Error(`--defender-fires: cannot read "${part}"`);
   }
   return d;
 })();
-// --cep artillery:270:50,mortar:100:25 — on trial: accuracy by CEP, first:cap metres
-const cepArg = value("--cep");
-if (cepArg) {
-  variants.cepDispersion = {};
-  for (const part of cepArg.split(",")) {
-    const [weapon, first, cap] = part.split(":");
-    const [firstM, capM] = [Number(first), Number(cap ?? first)];
-    if (!weapon || !(firstM > 0) || !(capM > 0) || capM > firstM) throw new Error(`--cep: cannot read "${part}"`);
-    variants.cepDispersion[weapon] = { firstM, capM };
-  }
-}
+// --displace 100 — a defender moves off a shelled position, this far (drill.ts)
+const displaceArg = value("--displace");
+if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
 if (args.includes("--sweep")) {
   const configurations = CONFIGURATIONS;

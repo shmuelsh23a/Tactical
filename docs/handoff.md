@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23, after rules decisions 19–31 and the ninth balance round.** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–35 and the tenth balance round.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -49,60 +49,46 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Start here: where the 2026-09-23 session stopped.** Shells against men are
-settled as rules, with our numbers from published sources:
-- **29**: cover counts, ×½ partial and ×⅛ full.
-- **30**: the first volley finds men standing, and later ones find them down.
-- **31**: impact or air-burst fuze. A building, or a position prepared before
-  the battle, is a roof.
+**Start here: where the 2026-09-23 session stopped.** Indirect fire is
+rebuilt as rules, decisions 29–35:
+- Shells against men by posture, cover and fuze (29–31).
+- **Accuracy is a CEP walked onto the mark** (32): artillery 270 m to 50 m,
+  a mortar 100 m to 25 m. Registered targets start on the mark.
+- **Only observed rounds adjust** (33).
+- **At company and below, fire is assigned missions** (34), each adjusting
+  and then firing 6 rounds for effect by default (`Game.callForFire`,
+  `GameOptions.fireSupport`).
+- **Counter-battery fire only for guns on the map** (35): mortars at company
+  and up, artillery at battalion and up, arriving with echelon scaling.
 
-**On trial: accuracy by CEP and fire missions** (`cepDispersion`,
-`registeredTargets`, `Game.isOnTheMark`):
-- Artillery is 270 m to 50 m; a mortar is 100 m to 25 m.
-- One round a turn until one lands within 50 m, then fire for effect.
-- The harness fires this way (`--fires ...,adjust=on`), and the defender can
-  have its own section with registered targets (`--defender-fires`).
-- The results are on [balance.md](balance.md), *Ninth round*.
+The tenth round on [balance.md](balance.md) measured 6:
+- **With two artillery missions it is in the band**: a 2:1 attack wins
+  37–60%.
+- **Mortar missions of 6 do almost nothing** against a dug-in, roofed
+  defender. Doctrine asks 15 of a mortar section.
+- **Moving off a shelled position, as built, hurts the defender.** It is a
+  drill option, `displace`, off by default.
+- **The fight is still decided before contact, because nobody detects
+  anybody before about 300 m** (decision 12's detection).
 
-In short:
-- Two artillery missions alone meet all four company targets.
-- The defender's own section decides almost everything.
-- With both sides firing, the author's allocation gives a 2:1 attack 40%,
-  but as a fire duel won before contact. The attacker who wins loses
-  nobody, and explosives put out 97% of the men.
-
-**What we suggested on the accuracy trial** (his question 3, 2026-09-23), for
-him to rule on:
-1. **Make CEP with adjustment the rule**, in place of the document's
-   dispersion table. The table gives every weapon the same scatter at every
-   range and cannot adjust.
-2. **Adjusting needs an observer.** Only a round that a friendly force or UAV
-   can see counts toward adjustment. Unobserved fire stays at first-round
-   accuracy, unless it is on a registered target.
-3. **Registered targets are planned before the battle**, a defender's on its
-   approaches.
-The observer part is not built: on the harness's flat ground everyone sees
-everything in range, so it would change nothing measured here.
-
-**Still to put to him:**
-1. **Counter-battery fire.** The guns are off the map (decision 8, and *Do
-   not re-propose* below), so there is nothing to shoot back at. What does it
-   look like? For example, a chance each turn that a side's firing weapon is
-   located and silenced for some turns.
-2. **Moving off a shelled position.** A drill choice, ours to build, but
-   today the attacker's fire plan aims at a fixed objective, so a defender
-   that moved would escape it entirely. It needs the plan to aim at what the
-   attacker has seen.
-3. **Ammunition** (backlog 12). Nothing limits a section to fewer than 9
-   bombs a turn, all battle. This is what would turn the duel into a fight.
-4. Not built for the player: rounds per mission, fuze, adjustment in the
-   live UI.
+What to put to him next:
+1. **A default per weapon?** 6 for artillery (a battery volley) and 12–15
+   for mortars (doctrine's floor for a section). Not measured yet.
+2. **Detection at range.** A company crossing 700 m of open ground unseen
+   until 300 m is what makes this a one-sided duel. Observation posts,
+   binoculars, or a longer range for a force that is only watching? It is
+   decision 12's ground, and his.
+3. **Alternate positions.** For displacement to be worth anything, a
+   defender needs somewhere prepared to go. Today a force has one prepared
+   position.
+4. **The live UI** still queues single rounds, unrationed. It needs a
+   call-for-fire control with the side's missions left.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). With only the attacker firing, it
-measures 62–86% against a dug-in defender and 80–96% against a hasty one.
-Once the defender has its own section, it is 96–99%.
+([balance.md](balance.md), *Fifth round*). With fire missions on both sides
+it measures 89–98%, because the fight is decided before small arms get a
+say (see *Start here*).
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):
@@ -128,7 +114,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **Counter-battery, displacement, ammunition, and whether CEP becomes the rule** (above).
+- **Rounds for effect per weapon, detection at range, alternate positions** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
@@ -203,7 +189,10 @@ Closed deliberately, with reasons that are not obvious from the code:
 - **An artillery battery as a standalone unit.** Indirect fire is off-map
   *because* the playable slice is the platoon-leader view — a platoon commander
   calls for fire rather than owning guns. The battery arrives with **echelon
-  scaling** (backlog 3) and not before (decision 8).
+  scaling** (backlog 3) and not before (decision 8). The author set where
+  (decision 35): mortars on the map at company and above, artillery at
+  battalion and above. Counter-battery fire comes with them, and there is
+  none for off-map guns.
 - **Reading the cover modifier as percentage points.** Settled on the document's
   own grammar, not on the arithmetic (decision 7).
 - **A flat bonus for a sector of observation.** It made the width control a trap
@@ -268,7 +257,7 @@ Measurements that cost real time and are already recorded:
 the fourth does not.**
 
 0. **The fire-support questions** the 2026-09-23 session ended on (see
-   *Start here*). Put them to him with the ninth round's tables.
+   *Start here*). Put them to him with the tenth round's tables.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"

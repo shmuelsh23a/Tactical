@@ -59,6 +59,29 @@ describe("the squad drill", () => {
     expect(g.standingOrderFor(red.id)).toMatchObject({ holdFire: true, engagementRange: WESTERN_DRILL.openFireRange });
   });
 
+  it("moves a shelled defender off its position once, to the rear, when no enemy is close", () => {
+    const g = new Game({ seed: 3, enforceC2: false });
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));
+    red.downUnderShelling = true;
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    const drill = { ...WESTERN_DRILL, displace: { metres: 100, contactWithin: 300 } };
+    const defend = { side: "RED" as const, attacking: false, objective: { x: 0, y: -600 } };
+    const state = new DrillState();
+    drillMovement(g, defend, drill, state);
+    // Away from where the attacker comes from, and only once.
+    expect(red.position.y).toBeGreaterThan(0);
+    expect(state.displaced.has(red.id)).toBe(true);
+    // Without the option it stays in its hole.
+    const h = new Game({ seed: 3, enforceC2: false });
+    const stays = h.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));
+    stays.downUnderShelling = true;
+    h.beginTurn();
+    h.advanceToPhase("movement");
+    drillMovement(h, defend, WESTERN_DRILL, new DrillState());
+    expect(stays.position).toEqual({ x: 0, y: 0 });
+  });
+
   it("breaks contact once at half strength, and then holds where it fell back to", () => {
     const { g, blue } = field(false);
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 200 }, 9));

@@ -24,6 +24,9 @@ import {
   type ChargeWorkReport,
   type MoveResult,
   type Phase,
+  type RegisteredTarget,
+  type FireAllotment,
+  type FireMission,
   type SmokeOrder,
   type WithCoveringFire,
 } from "./game.js";
@@ -59,6 +62,13 @@ export type RecordedAction =
       side: Side;
       target: Point;
       opts: { firingFrom?: Point; observedByUav?: boolean; rounds?: number; fuze?: Fuze };
+    }
+  | {
+      kind: "callForFire";
+      weaponKey: string;
+      side: Side;
+      target: Point;
+      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean };
     }
   | { kind: "moveUnit"; unitId: string; to: Point; mode: MovementMode }
   | { kind: "fire"; attackerId: string; targetId: string; opts: DirectFireOptions }
@@ -134,6 +144,10 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (typeof r.enforceC2 !== "boolean") throw malformed("enforceC2");
   if (r.trackIntel !== undefined && typeof r.trackIntel !== "boolean") throw malformed("trackIntel");
   if (r.morale !== undefined && typeof r.morale !== "boolean") throw malformed("morale");
+  if (r.registeredTargets !== undefined && !Array.isArray(r.registeredTargets)) throw malformed("registeredTargets");
+  if (r.fireSupport !== undefined && (typeof r.fireSupport !== "object" || r.fireSupport === null || Array.isArray(r.fireSupport))) {
+    throw malformed("fireSupport");
+  }
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -237,6 +251,13 @@ export interface GameRecording {
    */
   variants?: RuleVariants;
   /**
+   * Targets registered before the battle (rules decision 32). Optional, and
+   * read as **none** when absent.
+   */
+  registeredTargets?: RegisteredTarget[];
+  /** The fire missions each side was assigned (rules decision 34). Absent: none rationed. */
+  fireSupport?: Partial<Record<Side, FireAllotment[]>>;
+  /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
    * had ground was played with every sight line clear.
@@ -285,6 +306,7 @@ export type ActionOutcome =
     }
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
+  | { kind: "callForFire"; mission: FireMission }
   | { kind: "moveUnit"; move: MoveResult }
   | { kind: "fire"; result: WithCoveringFire<DirectFireResult> }
   | { kind: "fireExplosive"; result: WithCoveringFire<DirectExplosiveResult> }
@@ -381,6 +403,8 @@ export function replayWithOutcomes(
     trackIntel: recording.trackIntel ?? false,
     morale: recording.morale ?? false,
     ...(recording.variants ? { variants: cloneForRecord(recording.variants) } : {}),
+    ...(recording.registeredTargets ? { registeredTargets: cloneForRecord(recording.registeredTargets) } : {}),
+    ...(recording.fireSupport ? { fireSupport: cloneForRecord(recording.fireSupport) } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 
@@ -448,6 +472,13 @@ export function replayWithOutcomes(
             action.target,
             action.opts,
           ),
+        };
+        break;
+      case "callForFire":
+        outcome = {
+          kind: "callForFire",
+          // As it stood when called: the live mission goes on changing.
+          mission: cloneForRecord(game.callForFire(action.side, action.weaponKey, action.target, action.opts)),
         };
         break;
       case "moveUnit":

@@ -1207,6 +1207,115 @@ defender's section decisive.**
   roof. Against partial cover, the defender's section on, it takes a 2:1
   attack from 27–43% to 85–95%.
 
+## Tenth round: fire missions with a set number of rounds, 2026-09-23
+
+The author's rulings after the ninth round:
+- Accuracy by CEP, adjusting, observers and registered targets are rules
+  (decisions 32–33).
+- Counter-battery fire only for guns on the map (decision 35), so none today.
+- **Moving off a shelled position**: yes. It is a drill option,
+  `SquadDrill.displace`, harness flag `--displace`.
+- **At company and below, fire support is assigned missions**, each with a
+  set number of rounds for effect. "I think the default should be 6 but
+  let's check it out both doctrinally and balance-wise" (decision 34).
+
+### What doctrine says about 6
+
+The open sources are thin; the planning tables (FM 6-20-30 Appendix B, the
+JMEM) are not published. What they give:
+- **A mortar section's fire for effect "should seldom consist of any less
+  than five rounds for each mortar"** (FM 7-90, the 60 mm section). For a
+  3-tube section, that is 15 or more.
+- **An artillery battalion's example fire for effect is four rounds per
+  tube** (a Marine Corps call-for-fire handout).
+- A battery of 6 guns firing one round each is 6. A battery's fire for
+  effect is usually one to three rounds a gun, so 6–18.
+- The defence has a **final protective fire** with its own ammunition set
+  aside, one per battery and one per mortar platoon.
+
+So **6 is a battery's single volley, or a mortar section's two bombs a
+tube**. That is the low end for artillery and under what doctrine asks of
+mortars.
+
+### How the harness fights with it
+
+- A side with missions assigned calls them **one at a time per weapon**: a
+  section or battery fires one mission at a time.
+- The attacker calls on what it has seen of the defender nearest the
+  objective. Until it has seen anything, it calls on the objective, a point
+  80 m along the frontage for each mission. The fire lifts at 400 m.
+- The defender calls on the nearest attacker it has seen, with mortar
+  targets registered 200 m and 400 m in front of its line.
+- A side with missions assigned gets nothing else. The free bomb a turn
+  from the company is only for a side without an allotment.
+- Every row: company, Western drill, 100 battles a cell, seeds from 1000.
+  The defender is prepared in full cover, which now has a roof. The
+  defender has 4 mortar missions of the same size.
+
+**Rounds for effect, by the size of the attacker's allotment**:
+
+| Attacker's missions | Rounds for effect | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|
+| none (defender: none either) | — | 16% | 61% | 24% | 45% | 2/4 |
+| none (defender: 4 × 6) | — | 0% | 0% | 6% | 91% | 1/4 |
+| 1 artillery + 2 mortar | 3 | 1% | 89% | 6% | 89% | 2/4 |
+| | 6 | 7% | 98% | 1% | 95% | 2/4 |
+| | 9 | 27% | 100% | 0% | 97% | 2/4 |
+| | 12 | **35%** | 100% | 0% | 97% | 3/4 |
+| 2 artillery + 4 mortar | 3 | **59%** | 100% | 1% | 94% | 3/4 |
+| | 6 | 74% | 100% | 1% | 98% | 2/4 |
+| | 9 | 87% | 100% | 0% | 98% | 2/4 |
+| | 12 | 88% | 100% | 0% | 98% | 2/4 |
+
+**At 6 rounds, by the mix**:
+
+| Attacker's missions | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|
+| 4 mortar | 0% | 79% | 8% | 95% | 2/4 |
+| 1 artillery + 3 mortar | 13% | 100% | 0% | 96% | 2/4 |
+| 1 artillery + 4 mortar | 18% | 100% | 0% | 95% | 2/4 |
+| 2 artillery | **37%** | 94% | 6% | 96% | 3/4 |
+| 2 artillery + 2 mortar | **60%** | 100% | 1% | 97% | 3/4 |
+
+**Moving off a shelled position** (the defender's squads run 100 m to the
+rear once, when shelled with no enemy within 300 m):
+
+| Attacker's missions | Rounds for effect | ~2:1 win, staying | ~2:1 win, moving off |
+|---|---|---|---|
+| 1 artillery + 2 mortar | 3 / 6 / 9 / 12 | 1% / 7% / 27% / 35% | 63% / 81% / 86% / 97% |
+| 2 artillery + 4 mortar | 3 / 6 / 9 / 12 | 59% / 74% / 87% / 88% | 96% / 100% / 100% / 100% |
+
+### What it says
+
+- **6 rounds for effect is right with about two artillery missions.** Two
+  artillery missions of 6, with or without two mortar missions, give a 2:1
+  attack 37–60% and a 3–4:1 attack 94–100%. That meets 3 of 4 company
+  targets.
+- **The artillery does the work, not the mortars.** Four mortar missions of
+  6 give a 2:1 attack nothing against a dug-in, roofed defender. A bomb
+  catches a man in a roofed position at ×⅛ of the half-chance within 50 m.
+  Mortars would need doctrine's 15 a mission to count.
+- **So the default depends on the weapon.** 6 is doctrine's floor for a
+  battery and under it for a mortar section. Two defaults, 6 for artillery
+  and 12–15 for mortars, would follow doctrine. We have not measured that
+  split yet.
+- **Moving off a shelled position, as built, is a mistake.** It leaves a
+  roofed position for open ground 100 m back, still inside the fire. The
+  squads displace once and are then caught on their feet, in the open. In
+  doctrine, displacement goes to *prepared* alternate positions, out of the
+  registered area. The engine has one prepared position a force, so it
+  cannot be done well yet. The option stays off by default.
+- **The duel is still decided before contact.** The attacker who wins at
+  3–4:1 loses 0–8% (target 10–30%), and explosives put out 89–98% of the
+  men. The reason is detection, not fire:
+  - Across open ground neither side detects the other before about 300 m,
+    under the document's detection rules (decision 12).
+  - The attacker's observers see the fall of their own shot on the objective
+    (decision 33). The defender, having seen nobody, has nothing to call
+    fire on.
+  - So its missions and registered targets start only once the attacker is
+    inside 300 m, by which time the defender has usually broken.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

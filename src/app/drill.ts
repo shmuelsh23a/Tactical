@@ -62,6 +62,14 @@ export interface SquadDrill {
   breakContact: { readyShareBelow: number; fallBack: number } | null;
   /** Command groups follow this far behind the centre of their forces. */
   commandGroupBehind: number;
+  /**
+   * Move off a shelled position (author, 2026-09-23): a defending force whose
+   * men have gone to ground under shellfire, with no enemy it knows of within
+   * `contactWithin` metres, runs `metres` to the rear — once. It leaves its
+   * prepared position, roof and all, for ground the enemy's guns have not
+   * registered. Absent: it stays in its hole.
+   */
+  displace?: { metres: number; contactWithin: number };
 }
 
 /**
@@ -125,6 +133,7 @@ export interface DrillTask {
 export class DrillState {
   private readonly strength = new Map<string, number>();
   readonly fellBack = new Set<string>();
+  readonly displaced = new Set<string>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -204,6 +213,17 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     if (drill.breakContact && nearest && readyShare(u, state) < drill.breakContact.readyShareBelow) {
       const away = awayFrom(u.position, nearest.position, drill.breakContact.fallBack);
       if (game.setStandingOrder(u.id, { gait: "run", destination: away, withdraw: true })) state.fellBack.add(u.id);
+      return;
+    }
+    if (
+      !task.attacking &&
+      drill.displace &&
+      u.downUnderShelling &&
+      !state.displaced.has(u.id) &&
+      !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin)
+    ) {
+      const rear = awayFrom(u.position, task.objective, drill.displace.metres);
+      if (game.setStandingOrder(u.id, { gait: "run", destination: rear })) state.displaced.add(u.id);
       return;
     }
     if (!task.attacking) {
