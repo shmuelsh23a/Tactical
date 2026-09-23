@@ -10,7 +10,6 @@ import {
   fitSoldiers,
   woundHit,
 } from "../units.js";
-import type { WoundModel } from "../data/variants.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { suppressionAccuracy } from "../morale.js";
 
@@ -45,7 +44,6 @@ export function resolveBlast(
   impact: Point,
   candidates: Unit[],
   turn = 0,
-  wounds?: WoundModel,
 ): BlastResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -73,9 +71,9 @@ export function resolveBlast(
       for (let i = 0; i < fit; i++) {
         if (!rng.chance(blastChance)) continue;
         res.caught = true;
-        const die = weapon.damageDiceVsInfantry ?? weapon.damageDice;
-        // Area effect on a force → random casualty among the fit soldiers.
-        const hit = woundHit(rng, unit, turn, die, wounds);
+        // Area effect on a force → random casualty among the fit soldiers;
+        // how bad, the same roll as a bullet's (rules decision 27).
+        const hit = woundHit(rng, unit, turn, "explosive");
         res.damage += hit.damage;
         if (hit.casualty) res.newCasualties++;
       }
@@ -139,7 +137,7 @@ export function resolveDirectExplosive(
   weaponKey: string,
   attacker: Unit,
   target: Unit,
-  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number; wounds?: WoundModel } = {},
+  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number } = {},
 ): DirectExplosiveResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -166,6 +164,6 @@ export function resolveDirectExplosive(
   result.hit = true;
 
   const candidates = [target, ...(opts.collateral ?? [])];
-  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, opts.wounds);
+  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0);
   return result;
 }

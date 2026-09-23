@@ -592,7 +592,6 @@ export class Game {
         firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
         fixedWingObserved: m.observedByUav,
         turn: this.turn,
-        wounds: this.variants.woundModel,
       });
       // Everyone the rounds came down on was shelled, caught or not.
       for (const hit of fired.blast.targets) {
@@ -716,7 +715,6 @@ export class Game {
       this.mines,
       this.units,
       this.turn,
-      this.variants.woundModel,
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
     for (const d of detonations) {
@@ -1000,7 +998,6 @@ export class Game {
         const result = resolveDirectFire(this.rng, coverer, actor, {
           weapon: posture.weapon,
           turn: this.turn,
-          wounds: this.variants.woundModel,
           cover: actor.cover,
           // A force caught on the move is the case the movement table is
           // written for: +30% against a walker, -20% against a runner. Without
@@ -1242,7 +1239,6 @@ export class Game {
       // The caller may assert line of sight itself; otherwise the engine works
       // it out from the smoke on the map.
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
-      wounds: this.variants.woundModel,
     });
     if (fireResult.fired) {
       this.exchangeContact(attacker, target);
@@ -1280,7 +1276,6 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
       turn: this.turn,
-      wounds: this.variants.woundModel,
     });
     if (result.fired) {
       this.exchangeContact(attacker, target);
@@ -1347,7 +1342,6 @@ export class Game {
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
       turn: this.turn,
-      wounds: this.variants.woundModel,
       // Ruling 1, on trial: the defender fires back, at a rate being measured.
       ...(reply ? { replyChance: reply } : {}),
     });

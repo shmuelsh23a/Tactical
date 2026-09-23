@@ -11,6 +11,71 @@ and why" — is what belongs below.
 
 ---
 
+## 2026-09-22/23 — morale, the balance harness, and five rounds of rulings
+
+Morale was built (decision 19, merged as PR #2). Then the author asked for
+the rules to be measured: 100 battles each at squad, platoon and company.
+Each round ruled on what the last one found. The figures are on
+[balance.md](balance.md). What the live note said at each step:
+
+**Fourth round, 2026-09-23: the squad drill.** The harness's squads now fight
+by a `SquadDrill` ([`app/drill.ts`](../src/app/drill.ts)) — data, carried out
+by one executor that sees only its side's view. That is the future default
+for simulated subordinates (backlog 15), and the thing the TTP editor
+(backlog 20, added by the author today) will edit. The Western drill meets
+**11 of 12** balance targets, against the plain script's 9; the platoon gap
+is closed. Open: the drill's numbers (all ours), the one remaining miss (a
+winning platoon attacker loses 8%), and the assault reply's rate, which
+measures as irrelevant under every drill.
+
+**Third round, 2026-09-23.** ירי מקביל is the **coaxial gun** (decision 25):
+infantry no longer fire that table, and vehicles now can. The **wound-severity
+roll** is on trial (`woundSeverity`), and at a 4/4/2 split it is the first
+change that moves the balance — 9 of 12 targets, squad fights all four. It
+leaves the platoon fights lopsided. **Both since adopted**: 4/4/2 is decision 26, and the coaxial gun's one roll a
+turn is confirmed in decision 25. Still open: what closes the platoon gap. He
+asked whether to simulate every echelon above the squad as its soldiers
+fighting; the scaling measurements are on balance.md, *How the engine scales*.
+
+**Second round, 2026-09-23.** Rulings 2c and 3b are made (decisions 22 and
+23), and so is a steadier prepared defender (24). Ruling 1 — the defender
+returns fire in an assault — is ruled in principle, with the rate on trial.
+Swept: the rate makes no difference, because the defender breaks before any
+assault. The harness has now shown that the attack balance is a **square-law**
+effect. A prepared defender needs roughly 4–9 times an attacker's per-man
+effectiveness to meet the planning figures, and has about 1.5–2 times. Put to
+him: the casualty model (a hit-severity roll), and what **ירי מקביל** means —
+the engine reads it as a sustained machine gun, and the harness has never fired
+a gun on that table. Both are on balance.md, *Second round*.
+
+**Rulings 4 and 5 are made** (decisions 20 and 21, 2026-09-23). **Rulings
+1–3 were put on trial** as switches in `engine/data/variants.ts` and swept
+(`npm run balance -- --sweep`). **None of the eight combinations fixes the
+attack** (balance.md, *Rulings 1–3 on trial*), because the problem is elsewhere:
+the defender breaks before any assault, and the document's 1d4-of-8 casualty
+model spreads a small force's hits too thin to matter. He picks 1–3 on meaning;
+the variants file goes once he has.
+
+**The five questions as first raised** (2026-09-22,
+[balance.md](balance.md), *The balance harness*). 2,400 headless battles between
+NATO-organised forces show an attack is close to a switch — a dug-in defender
+holds at 1:1, falls at 2:1 — and a winning attacker at 3–4:1 loses 0–8% of his
+men. Three rules do it, and all three are his to rule on, not ours to tune:
+**an assault is one-sided** (the defender never fires back), **ordinary fire
+ignores the document's movement modifier** (+30% walker / −20% runner — only
+covering fire applies it), and **a defender loses full cover the moment it
+fires**. Two more: the **initiative tie-break** always favours RED (55% of
+turns first; worth under 5 points of win rate, but a bias with no reason), and
+**`sideDefeated` counts command groups**, so without morale a battle whose
+fighting forces are all gone never ends. Rerun `npm run balance` after any
+answer changes a rule.
+
+**Fifth round, 2026-09-23.** One wound rule for bullets and explosives: A
+(a severity shift by die size), A0 (a flat d10) and B (the document's dice,
+out at 5) were put on trial. A0 was adopted as decision 27.
+
+---
+
 ## 2026-09-21 — the second battle becomes reachable, and the roadmap grows a product
 
 Ended at `5bef6a8`. 428 tests in 22 files, lint and typecheck clean (404 at the

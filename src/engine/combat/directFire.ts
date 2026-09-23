@@ -8,7 +8,6 @@ import {
   type CoverState,
 } from "../data/directFire.js";
 import { refreshUnitStatus, woundHit } from "../units.js";
-import type { WoundModel } from "../data/variants.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -52,8 +51,6 @@ export interface DirectFireOptions {
   targetSoldierId?: string;
   /** Current turn index, for casualty bookkeeping. */
   turn?: number;
-  /** The wound model on trial (data/variants.ts); absent, the rules. */
-  wounds?: WoundModel;
   /**
    * The cover modifier to use instead of the table's figure for `cover`: what
    * full cover is still worth to a force that fired from it this turn
@@ -134,7 +131,7 @@ export function resolveDirectFire(
   for (let i = 0; i < shooters; i++) {
     if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
     hits++;
-    const hit = woundHit(rng, target, turn, null, opts.wounds, opts.targetSoldierId);
+    const hit = woundHit(rng, target, turn, "smallArms", opts.targetSoldierId);
     totalDamage += hit.damage;
     if (hit.casualty) newCasualties++;
   }

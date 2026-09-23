@@ -701,8 +701,8 @@ because they hit many men from far away, not because each hit is worse.
 
 ### The models on trial
 
-All four are in [`data/variants.ts`](../src/engine/data/variants.ts) as
-`woundModel` and can be swept with `npm run balance -- --sweep wounds`.
+All four were put on trial as `woundModel` in `data/variants.ts`. That switch
+was deleted once A0 became the rule (decision 27).
 - **As it stands**: the severity roll for a bullet, the document's die
   against 8 for a fragment.
 - **A (`severity`)**: every hit rolls the d10 severity. An explosive adds a
@@ -771,11 +771,20 @@ at every echelon, even at 1:1.
 
   That is the next ruling, not a harness setting.
 
-**Recommendation (ours, for the author):**
+**Recommendation (ours), and what the author decided:**
 1. Adopt A0: one d10 severity for every hit, bullet or fragment. Explosives
-   dominate by how many men they hit, as they do in the data.
+   dominate by how many men they hit, as they do in the data. **Adopted
+   2026-09-23 as rules decision 27.** The switch is gone. The rules now play
+   exactly as the A0 rows above. Rerun: company, no fire plan, 0% / 20% /
+   81% / 24%, with 55% out by HE.
 2. Then rule on the blast: what cover does against it, and what one round
-   is.
+   is. **Still open. It is the first thing for the next session.**
+
+**A side bias surfaced once A0 was the rule.** The company mirror (200
+battles, Western drill) gives BLUE / RED / draw 52 / 39 / 10, and 50 / 37 /
+13 with `--swap`. It was 47 / 45 before. The lean follows the side, not the
+position, so something in the explosive path treats the sides differently.
+Not yet found; see the handoff.
 
 ## How the engine scales, 2026-09-23
 

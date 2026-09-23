@@ -79,7 +79,7 @@ export { C2_TABLE, orderInterval } from "./data/c2.js";
 export { CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
 export * as MORALE_RULES from "./data/morale.js";
-export { type RuleVariants, type WoundModel, HE_SEVERITY_SHIFT } from "./data/variants.js";
+export { type RuleVariants } from "./data/variants.js";
 
 // Combat resolvers
 export {

@@ -6,8 +6,6 @@
  *   npm run balance -- --echelons company --swap     # RED starts where BLUE would
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
- *   npm run balance -- --sweep wounds                # the wound models on trial instead of the reply rates
- *   npm run balance -- --wounds severity             # one wound model: severity, flat or dice (data/variants.ts)
  *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
  *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
@@ -23,7 +21,6 @@ import {
   CONFIGURATIONS,
   ECHELONS,
   FIRE_PLAN,
-  WOUND_CONFIGURATIONS,
   MARKDOWN_HEADER,
   TARGETS,
   judge,
@@ -32,7 +29,7 @@ import {
   type BattleKind,
   type Echelon,
 } from "../src/sim/balance.js";
-import type { RuleVariants, WoundModel } from "../src/engine/index.js";
+import type { RuleVariants } from "../src/engine/index.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
 
 const args = process.argv.slice(2);
@@ -69,11 +66,6 @@ const steadyBonus = value("--steady-bonus");
 if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
 const steadyLoss = value("--steady-loss");
 if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
-const wounds = value("--wounds");
-if (wounds) {
-  if (!["severity", "flat", "dice"].includes(wounds)) throw new Error(`--wounds: "${wounds}" is not one of severity, flat, dice`);
-  variants.woundModel = wounds as WoundModel;
-}
 const firesArg = value("--fires");
 const fires = !firesArg
   ? undefined
@@ -85,7 +77,7 @@ const fires = !firesArg
 
 
 if (args.includes("--sweep")) {
-  const configurations = value("--sweep") === "wounds" ? WOUND_CONFIGURATIONS : CONFIGURATIONS;
+  const configurations = CONFIGURATIONS;
   console.log(`Sweep: ${battles} battles a cell, morale on, ${drill.name}${fires ? ", fire plan" : ""}. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +
     `at ~2:1 wins ${TARGETS.attack2Win.join("-")}%, at 3-4:1 wins >= ${TARGETS.attack3MinWin}% ` +
     `losing ${TARGETS.attack3AttackerDown.join("-")}% of his men.\n`);

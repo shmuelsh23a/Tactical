@@ -3,7 +3,6 @@ import { distance } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
 import { refreshUnitStatus, woundHit } from "../units.js";
-import type { WoundModel } from "../data/variants.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -55,8 +54,6 @@ export function resolveAssault(
      * the assault landed.
      */
     replyChance?: number;
-    /** The wound model on trial (data/variants.ts); absent, the rules. */
-    wounds?: WoundModel;
   } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
@@ -88,7 +85,7 @@ export function resolveAssault(
   for (let i = 0; i < accuracy.length; i++) {
     if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
     result.fireHits++;
-    const hit = woundHit(rng, defender, turn, null, opts.wounds);
+    const hit = woundHit(rng, defender, turn, "smallArms");
     result.fireDamage += hit.damage;
     if (hit.casualty) result.defenderCasualties++;
   }
@@ -98,12 +95,12 @@ export function resolveAssault(
   for (let i = 0; i < grenades; i++) {
     if (rng.chance(ASSAULT.grenadeHitChance)) {
       result.grenadeHits++;
-      const hit = woundHit(rng, defender, turn, ASSAULT.grenadeDamageDice, opts.wounds);
+      const hit = woundHit(rng, defender, turn, "explosive");
       result.grenadeDamage += hit.damage;
       if (hit.casualty) result.defenderCasualties++;
     }
     if (rng.chance(ASSAULT.grenadeSelfHitChance)) {
-      if (woundHit(rng, attacker, turn, ASSAULT.grenadeDamageDice, opts.wounds).casualty) result.selfCasualties++;
+      if (woundHit(rng, attacker, turn, "explosive").casualty) result.selfCasualties++;
     }
   }
 
@@ -112,7 +109,7 @@ export function resolveAssault(
     for (const accuracy of replyAccuracy) {
       if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
       reply.hits++;
-      const hit = woundHit(rng, attacker, turn, null, opts.wounds);
+      const hit = woundHit(rng, attacker, turn, "smallArms");
       reply.damage += hit.damage;
       if (hit.casualty) reply.casualties++;
     }

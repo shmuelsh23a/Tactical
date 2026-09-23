@@ -5,7 +5,6 @@ import {
   ECHELONS,
   FIRE_PLAN,
   MARKDOWN_HEADER,
-  WOUND_CONFIGURATIONS,
   judge,
   markdownRow,
   runBattle,
@@ -66,9 +65,5 @@ describe("the fire plan, and what put the men out", () => {
     const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN }));
     expect(shelled.some((r) => r.outBy.explosive > 0)).toBe(true);
     for (const r of shelled) expect(r.outBy.explosive + r.outBy.smallArms).toBeLessThanOrEqual(r.down.RED + r.down.BLUE);
-  });
-
-  it("sweeps each wound model on trial, each distinct", () => {
-    expect(new Set(WOUND_CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(WOUND_CONFIGURATIONS.length);
   });
 });

@@ -442,18 +442,6 @@ export const CONFIGURATIONS: readonly Configuration[] = ([undefined, 0.3, 0.5, 0
 }));
 
 /**
- * The wound models on trial (author, 2026-09-23: one rule for bullets and
- * explosives), swept with `--sweep wounds`: the rules as they stand, then A,
- * A without the shift, and B (data/variants.ts).
- */
-export const WOUND_CONFIGURATIONS: readonly Configuration[] = [
-  { name: "as it stands", variants: {} },
-  { name: "A: severity + shift", variants: { woundModel: "severity" } },
-  { name: "A0: flat severity", variants: { woundModel: "flat" } },
-  { name: "B: document dice, out at 5", variants: { woundModel: "dice" } },
-];
-
-/**
  * What the sweep is judged against — written down **before** the first runs, so
  * the answer cannot be chosen to fit them (all ⚠️ ours, for the author to
  * accept or replace). They are the textbook planning figures for an attack on

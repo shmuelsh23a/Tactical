@@ -1290,13 +1290,36 @@ on the stated reasoning, still awaiting the author's word.
 
     It is one die either way, so the rng is asked as often as before. The
     document's 8-point threshold and its bleeding rule stand under it.
-    Explosives keep the document's own dice. **Why:** a 1d4 hit against an
+    Explosives kept the document's own dice until decision 27. **Why:** a 1d4 hit against an
     8-point threshold never takes a man out alone, and it scatters a small
     force's fire across a large one to no effect. Each hit is now worth the
     same on 36 men as on 9. At this split the squad fights met every balance
     target (`WOUND_SEVERITY` in data/casualties.ts). This changes every
     battle's outcome, so **any sealed recording made before it fails
     `verifyRecording`**.
+27. ✅ **One wound rule for bullets and explosives** (author, 2026-09-23 —
+    option A0, adopted after the harness's fifth round, docs/balance.md).
+    Every hit that lands on a man rolls decision 26's d10 severity, whatever
+    hit him. That covers small arms, the coaxial gun, an assault's fire, a
+    grenade, a rifle grenade, a mortar bomb, a shell, a tank round, an RPG and
+    a mine. The document's damage dice are no longer rolled against
+    infantry. They stay in `data/explosives.ts`, and the vehicle rules still
+    use them.
+    - **Explosives still hit more men.** Their weight is in the blast table:
+      how many men a round catches, and from how far.
+    - **Why:** the author's principle is that explosives cause most of the
+      casualties in modern war. The sources give 65–78% of wounds since WWII.
+      They also show a fragment wound is *less* likely to kill than a bullet
+      wound (about 10–20% against 33%). So explosives dominate by how many
+      they hit, not by how bad each hit is.
+    - **The numbers:** 10 of 12 balance targets. With one mortar bomb a turn
+      on the objective, explosives put out 76% of the men in a company
+      attack.
+    - **Rejected:** a severity shift by die size (option A), and the
+      document's dice with a man out at 5 (option B).
+    - Every man put out records what did it (`Soldier.outBy`).
+    - It changes the outcome of any battle with explosives, so a sealed
+      recording of one made before it fails `verifyRecording`.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
