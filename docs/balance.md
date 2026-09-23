@@ -935,6 +935,68 @@ today's 70% on target and 25 is 50%.
 - **So accuracy is not the lever for massed fire.** How much fire a company
   may call is. Accuracy is a fair lever for how decisive **one** round is.
 
+## What the sources say cover does against a shell, 2026-09-23
+
+The author asked what is published on this. Every figure below is
+secondhand. The primary tables, the JMEM and FM 6-141-2, are classified.
+The pages were read through search results, because the sandbox could not
+open them.
+
+**Lethal areas by posture**, as quoted from open compilations:
+
+| Round | Standing | Prone | Foxhole | Prone ÷ standing | Foxhole ÷ standing |
+|---|---|---|---|---|---|
+| 105 mm M1, impact, 60° | 390 m² | 140 m² | — | 0.36 | — |
+| 155 mm M107, impact, 60° | 971 m² | 346 m² | 130 m² | 0.36 | 0.13 |
+| 155 mm, air burst, 60° | 1,240 m² | 939 m² | 130 m² | 0.76 | 0.10 |
+
+- **FM 7-90** (mortars, Appendix B): fire at standing men is almost twice as
+  effective as at prone men. A proximity fuze is about 40% more effective
+  than a surface burst against prone men. Against men in open fighting
+  positions without overhead cover, it is about five times as effective as
+  an impact fuze.
+- **FM 21-75** and its successors: a foxhole protects against every shell
+  except a direct hit. Overhead cover is what protects against an air burst.
+- **Troop Reaction and Posture Sequencing** (US Army, 1970s): at the first
+  impact, 58% of men in a hasty defence were standing. Two seconds later 29%
+  were, and after eight seconds none were. Going to ground cuts casualties
+  by as much as two thirds. That is why time-on-target fire, every round
+  landing at once, is the deadliest.
+
+**How that compares with decision 29.** If "none" is a man on his feet:
+- Partial cover, ×½, sits between prone (×0.36) and FM 7-90's "twice".
+  That is fair.
+- Full cover, ×¼, is **about twice as generous to the shell** as the
+  sources. A foxhole is ×0.10–0.13 against standing men.
+
+A probe of full cover at ×⅛ and ×1/10 (temporary edit, not committed;
+company, prepared positions in full cover):
+
+| Full cover | Fire | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|
+| ×¼ (the rule) | none | 15% | 62% | 25% | 50% | 2/4 |
+| | a bomb a turn | 16% | 88% | 19% | 60% | 3/4 |
+| | one shell a turn | 51% | 99% | 5% | 74% | 3/4 |
+| | 4 shells + 6 bombs | 100% | 100% | 0% | 97% | 2/4 |
+| ×⅛ | none | 13% | 51% | 26% | 50% | 2/4 |
+| | a bomb a turn | 18% | 68% | 24% | 56% | 2/4 |
+| | one shell a turn | 24% | 96% | 12% | 66% | 3/4 |
+| | 4 + 6 | 100% | 100% | 0% | 96% | 2/4 |
+| ×1/10 | none | 13% | 49% | 26% | 50% | 2/4 |
+| | a bomb a turn | 15% | 68% | 25% | 56% | 2/4 |
+| | one shell a turn | 22% | 92% | 16% | 63% | 3/4 |
+| | 4 + 6 | 100% | 100% | 0% | 96% | 2/4 |
+
+At the sources' figure, a dug-in company can take a shell a turn: a 2:1
+attack wins about a quarter of the time. A battery's whole mission still
+decides the fight. Two things the sources raise that the game does not
+model:
+- **The first rounds catch men on their feet.** Our cover is a state of the
+  force, and a force in the open that has just been shelled is as exposed
+  on the next turn. The sources say it would be lying down.
+- **The fuze.** An air burst largely defeats going prone and open holes,
+  but not overhead cover. The document has one kind of shell.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
