@@ -222,16 +222,24 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       !state.displaced.has(u.id) &&
       !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin)
     ) {
+      // A withdrawal, so a pinned force may still go; its fire discipline
+      // goes with it.
       const rear = awayFrom(u.position, task.objective, drill.displace.metres);
-      if (game.setStandingOrder(u.id, { gait: "run", destination: rear })) state.displaced.add(u.id);
+      const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: drill.openFireRange };
+      if (game.setStandingOrder(u.id, order)) state.displaced.add(u.id);
       return;
+    }
+    if (!task.attacking && state.displaced.has(u.id)) {
+      // Still on its way to the new position: let it get there.
+      const going = game.standingOrderFor(u.id);
+      if (going?.withdraw && going.destination && distance(u.position, going.destination) > 1) return;
     }
     if (!task.attacking) {
       // Fire discipline as an order, so covering fire keeps it too: the engine
       // holds a force's fire — covering or not — until the enemy is inside
       // the line (rules decision 6's hold-fire order).
       const held = game.standingOrderFor(u.id);
-      if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange) {
+      if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange || held.withdraw) {
         game.setStandingOrder(u.id, { gait: "normal", holdFire: true, engagementRange: drill.openFireRange });
       }
       return;

@@ -88,6 +88,7 @@ const fires: FirePlan | undefined = (() => {
     if (key === "artillery" || key === "mortar") plan.missions.push(allotment(key, v));
     else if (key === "lift" && /^\d+$/.test(v)) plan.liftAt = Number(v);
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
+    else if (key === "registered" && (v === "on" || v === "off")) plan.registered = v === "on";
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;

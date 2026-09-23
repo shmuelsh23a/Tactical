@@ -70,6 +70,7 @@ export type RecordedAction =
       target: Point;
       opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean };
     }
+  | { kind: "checkFire"; side: Side }
   | { kind: "moveUnit"; unitId: string; to: Point; mode: MovementMode }
   | { kind: "fire"; attackerId: string; targetId: string; opts: DirectFireOptions }
   | {
@@ -307,6 +308,7 @@ export type ActionOutcome =
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
   | { kind: "callForFire"; mission: FireMission }
+  | { kind: "checkFire" }
   | { kind: "moveUnit"; move: MoveResult }
   | { kind: "fire"; result: WithCoveringFire<DirectFireResult> }
   | { kind: "fireExplosive"; result: WithCoveringFire<DirectExplosiveResult> }
@@ -480,6 +482,10 @@ export function replayWithOutcomes(
           // As it stood when called: the live mission goes on changing.
           mission: cloneForRecord(game.callForFire(action.side, action.weaponKey, action.target, action.opts)),
         };
+        break;
+      case "checkFire":
+        game.checkFire(action.side);
+        outcome = { kind: "checkFire" };
         break;
       case "moveUnit":
         outcome = {

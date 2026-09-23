@@ -1242,79 +1242,100 @@ mortars.
 - A side with missions assigned calls them **one at a time per weapon**: a
   section or battery fires one mission at a time.
 - The attacker calls on what it has seen of the defender nearest the
-  objective. Until it has seen anything, it calls on the objective, a point
-  80 m along the frontage for each mission. The fire lifts at 400 m.
+  objective. Until then it calls on its **planned targets**: the centre of
+  each defending platoon, one after another. When it comes within 400 m the
+  fires lift: a check fire (`Game.checkFire`) stops whatever is still to come.
+- **Planned** (`--fires ...,registered=on`) means the attacker's guns are
+  registered on those points before the battle (decision 32). They fire for
+  effect at once, at the weapon's best accuracy.
 - The defender calls on the nearest attacker it has seen, with mortar
   targets registered 200 m and 400 m in front of its line.
 - A side with missions assigned gets nothing else. The free bomb a turn
   from the company is only for a side without an allotment.
 - Every row: company, Western drill, 100 battles a cell, seeds from 1000.
-  The defender is prepared in full cover, which now has a roof. The
-  defender has 4 mortar missions of the same size.
+  The defender is prepared in full cover, which has a roof. The defender has
+  4 mortar missions of the same size as the attacker's, unless a row says
+  otherwise.
 
-**Rounds for effect, by the size of the attacker's allotment**:
+**A review of the first cut changed these figures** (2026-09-23). Two
+defects had inflated the attacker's fire:
+- A mission sent its next adjusting round before seeing where the last one
+  landed.
+- A mission called before the lift still landed its rounds after it.
+The rows also aimed at the objective's centre, which in the 2:1 layout lies
+between the two defending platoons. The figures below are the rerun with all
+three fixed.
 
-| Attacker's missions | Rounds for effect | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
-|---|---|---|---|---|---|---|
-| none (defender: none either) | — | 16% | 61% | 24% | 45% | 2/4 |
-| none (defender: 4 × 6) | — | 0% | 0% | 6% | 91% | 1/4 |
-| 1 artillery + 2 mortar | 3 | 1% | 89% | 6% | 89% | 2/4 |
-| | 6 | 7% | 98% | 1% | 95% | 2/4 |
-| | 9 | 27% | 100% | 0% | 97% | 2/4 |
-| | 12 | **35%** | 100% | 0% | 97% | 3/4 |
-| 2 artillery + 4 mortar | 3 | **59%** | 100% | 1% | 94% | 3/4 |
-| | 6 | 74% | 100% | 1% | 98% | 2/4 |
-| | 9 | 87% | 100% | 0% | 98% | 2/4 |
-| | 12 | 88% | 100% | 0% | 98% | 2/4 |
+**Adjusting is slow.** A mission sees its adjusting round only once it
+lands: a turn after it is sent for a mortar, two for artillery. So a mortar
+adjusts once every 2 turns and artillery once every 3. Artillery from 270 m
+needs three or four observed rounds, about 10 turns, and the attacker
+reaches the lift in about 7. **Unplanned, the artillery never fires for
+effect.**
 
-**At 6 rounds, by the mix**:
+| Attacker's missions | Planned? | Rounds for effect | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| none (defender: none either; the free bomb for both) | — | — | 16% | 61% | 24% | 45% | 2/4 |
+| 2 artillery | no | 6 | 0% | 0% | 10% | 90% | 1/4 |
+| 2 artillery + 2 mortar | no | 3 / 6 / 9 / 12 | 1% / 0% / 0% / 0% | 9% / 10% / 29% / 43% | 25% / 24% / 20% / 15% | 82–95% | 2/4 |
+| 2 artillery + 4 mortar | no | 6 | 0% | 28% | 20% | 91% | 2/4 |
+| 2 artillery | **yes** | 6 | 0% | 55% | 18% | 94% | 2/4 |
+| 4 mortar | yes | 6 | 1% | 95% | 2% | 94% | 2/4 |
+| 1 artillery + 2 mortar | yes | 3 / 6 / 9 / 12 | 0% / 0% / 0% / 9% | 23% / 67% / 93% / 99% | 28% / 17% / 4% / 0% | 84–98% | 2/4 |
+| 2 artillery + 2 mortar | yes | 3 | 1% | 72% | 18% | 85% | 3/4 |
+| | yes | 6 | 20% | 97% | 2% | 95% | 2/4 |
+| | yes | **9** | **65%** | 100% | 0% | 98% | **3/4** |
+| | yes | 12 | 93% | 100% | 0% | 99% | 2/4 |
+| 2 artillery + 4 mortar | yes | **6** | **64%** | 100% | 0% | 97% | **3/4** |
+| 2 artillery × 6 + 2 mortar × **9** | yes | 6 / 9 | **35–36%** | 98–100% | 1% | 96–97% | **3/4** |
+| 2 artillery × 6 + 2 mortar × **12** | yes | 6 / 9 | **48–49%** | 98–99% | 1% | 97% | **3/4** |
+| 2 artillery × 6 + 4 mortar × 9 | yes | 6 / 9 | 88% (1:1: 11–16%) | 100% | 0% | 98% | 2/4 |
 
-| Attacker's missions | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
-|---|---|---|---|---|---|
-| 4 mortar | 0% | 79% | 8% | 95% | 2/4 |
-| 1 artillery + 3 mortar | 13% | 100% | 0% | 96% | 2/4 |
-| 1 artillery + 4 mortar | 18% | 100% | 0% | 95% | 2/4 |
-| 2 artillery | **37%** | 94% | 6% | 96% | 3/4 |
-| 2 artillery + 2 mortar | **60%** | 100% | 1% | 97% | 3/4 |
+In the last three rows the defender's missions fire 6 or 9 rounds; the two
+give the same result within noise.
 
-**Moving off a shelled position** (the defender's squads run 100 m to the
-rear once, when shelled with no enemy within 300 m):
+**Without the defender's missions** (1 artillery + 2 mortar, 6 rounds; the
+defender has none and no free bomb): a 1:1 attack wins 74% unplanned and 91%
+planned. The defending company's indirect fire, even the one free bomb a
+turn, is what holds a prepared position against an equal attacker.
 
-| Attacker's missions | Rounds for effect | ~2:1 win, staying | ~2:1 win, moving off |
-|---|---|---|---|
-| 1 artillery + 2 mortar | 3 / 6 / 9 / 12 | 1% / 7% / 27% / 35% | 63% / 81% / 86% / 97% |
-| 2 artillery + 4 mortar | 3 / 6 / 9 / 12 | 59% / 74% / 87% / 88% | 96% / 100% / 100% / 100% |
+**Moving off a shelled position** (1 artillery + 2 mortar, 6 rounds; the
+defender's squads run 100 m to the rear once, when shelled with no enemy
+within 300 m):
+
+| Planned? | 3–4:1 win, staying | 3–4:1 win, moving off |
+|---|---|---|
+| no | 10% | 40% |
+| yes | 67% | 100% |
 
 ### What it says
 
-- **6 rounds for effect is right with about two artillery missions.** Two
-  artillery missions of 6, with or without two mortar missions, give a 2:1
-  attack 37–60% and a 3–4:1 attack 94–100%. That meets 3 of 4 company
-  targets.
-- **The artillery does the work, not the mortars.** Four mortar missions of
-  6 give a 2:1 attack nothing against a dug-in, roofed defender. A bomb
-  catches a man in a roofed position at ×⅛ of the half-chance within 50 m.
-  Mortars would need doctrine's 15 a mission to count.
-- **So the default depends on the weapon.** 6 is doctrine's floor for a
-  battery and under it for a mortar section. Two defaults, 6 for artillery
-  and 12–15 for mortars, would follow doctrine. We have not measured that
-  split yet.
-- **Moving off a shelled position, as built, is a mistake.** It leaves a
-  roofed position for open ground 100 m back, still inside the fire. The
-  squads displace once and are then caught on their feet, in the open. In
-  doctrine, displacement goes to *prepared* alternate positions, out of the
-  registered area. The engine has one prepared position a force, so it
-  cannot be done well yet. The option stays off by default.
-- **The duel is still decided before contact.** The attacker who wins at
-  3–4:1 loses 0–8% (target 10–30%), and explosives put out 89–98% of the
-  men. The reason is detection, not fire:
-  - Across open ground neither side detects the other before about 300 m,
-    under the document's detection rules (decision 12).
-  - The attacker's observers see the fall of their own shot on the objective
-    (decision 33). The defender, having seen nobody, has nothing to call
-    fire on.
-  - So its missions and registered targets start only once the attacker is
-    inside 300 m, by which time the defender has usually broken.
+- **6 rounds for effect is doctrine's floor for artillery and right for it
+  in balance.** A 6-gun battery's single volley, on a planned target.
+- **For mortars, 9–12 is what balances.** With two artillery missions of 6
+  and two mortar missions, all planned:
+  - mortars at 9 give a 2:1 attack 35–36%;
+  - mortars at 12 give it 48–49%;
+  - both meet 3 of 4 company targets.
+  Doctrine asks 15 or more of a 3-tube section. Mortars at 6 give 20%.
+- **Planned targets are what make fire support work in the attack.** Without
+  them the adjustment is too slow: the artillery never fires for effect
+  before the lift, and no allotment gives a 2:1 attack more than 1%.
+- **The defender's own mortars, on registered targets, hold the line.**
+  Without its missions, even a 1:1 attack takes a prepared position 74–91%
+  of the time.
+- **Moving off a shelled position, as built, still hurts the defender.** A
+  3–4:1 attack wins 40% against 10% unplanned, and 100% against 67% planned.
+  It leaves a roofed position for open ground inside the fire. In doctrine,
+  displacement goes to *prepared* alternate positions, out of the registered
+  area. The engine gives a force one prepared position, so it cannot be done
+  well yet. The option stays off by default.
+- **The attacker who wins still barely bleeds when its fire is planned**:
+  0–4% at 3–4:1, against a target of 10–30%. Unplanned, it loses 10–25%,
+  but rarely wins. The fight is decided by fire, because nobody detects
+  anybody before about 300 m (decision 12's detection). The defender's
+  missions start only once the attacker is inside that, and the attacker's
+  planned fire lands before.
 
 ## How the engine scales, 2026-09-23
 

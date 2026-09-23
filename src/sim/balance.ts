@@ -148,13 +148,19 @@ export interface BattleOptions {
 /**
  * The attacker's fire support (rules decision 34): the fire missions its
  * company is assigned, called one at a time a weapon — a section or a battery
- * fires one mission at a time — on what it has seen of the defender, or on the
- * objective until it has seen anything, until it is within `liftAt` metres of
- * the objective (the fires lift).
+ * fires one mission at a time — on what it has seen of the defender, or until
+ * then on the positions it is attacking, one after another, until it is within
+ * `liftAt` metres of the objective. Then the fires lift: a check fire.
  */
 export interface FirePlan {
   missions: FireAllotment[];
   liftAt: number;
+  /**
+   * The objective is a planned target: the attacker's guns are registered on
+   * it before the battle (rules decision 32), at the centre of each position
+   * it attacks — the points its missions aim at until it sees something.
+   */
+  registered?: boolean;
   /** How the rounds are fuzed (rules decision 31). Default impact. */
   fuze?: Fuze;
 }
@@ -224,13 +230,33 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
   // where the attacker starts. Swap relabels the sides, not the ground: the
   // defender stands where `laid.red` does whichever side it is.
   const defenderSide: Side = opts.swap ? "BLUE" : "RED";
+  // The attacker's planned targets: the centre of each position it is
+  // attacking, as its intelligence has them — one a defending platoon.
+  const plannedTargets: Point[] = (() => {
+    const byPosition = new Map<string, Point[]>();
+    for (const f of laid.red.filter((f) => f.kind === "infantry")) {
+      const key = f.id.split("-")[0]!;
+      byPosition.set(key, [...(byPosition.get(key) ?? []), f.at]);
+    }
+    return [...byPosition.values()].map((ps) => ({
+      x: ps.reduce((t, p) => t + p.x, 0) / ps.length,
+      y: ps.reduce((t, p) => t + p.y, 0) / ps.length,
+    }));
+  })();
   const attackerSide = other(defenderSide);
   const registeredTargets = (() => {
-    const d = opts.defenderFires;
-    if (!d?.registeredAt?.length || kind === "meeting") return [];
+    if (kind === "meeting") return [];
     const y0 = laid.red.find((f) => f.kind === "infantry")!.at.y;
     const toward = Math.sign(laid.blue.find((f) => f.kind === "infantry")!.at.y - y0);
-    return d.registeredAt.map((m) => ({ side: defenderSide, weapon: "mortar", at: { x: X, y: y0 + toward * m } }));
+    const defender = (opts.defenderFires?.registeredAt ?? []).map((m) => ({
+      side: defenderSide,
+      weapon: "mortar",
+      at: { x: X, y: y0 + toward * m },
+    }));
+    const attacker = !opts.fires?.registered
+      ? []
+      : opts.fires.missions.flatMap((a) => plannedTargets.map((at) => ({ side: attackerSide, weapon: a.weapon, at })));
+    return [...defender, ...attacker];
   })();
   // A side with fire missions assigned fires only those (rules decision 34).
   const fireSupport: Partial<Record<Side, FireAllotment[]>> = {};
@@ -300,6 +326,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     RED: { side: "RED", attacking: attackers.includes("RED"), objective: objective.RED },
   };
   g.beginTurn();
+  let liftedFires = false;
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
     r.turns = turn;
     const order = g.initiativeOrder;
@@ -314,10 +341,12 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         if (g.fireMissions.some((m) => m.side === side && m.weapon === a.weapon && m.status === "adjusting")) continue;
         const aim = aimAt();
         if (!aim) continue;
-        const hq = g.units.find((u) => u.side === side && u.kind === "command");
-        const back = (hq?.position.y ?? aim.y) < aim.y ? -3000 : 3000;
+        // The guns stand 3 km behind the side's own forces.
+        const own = g.units.filter((u) => u.side === side);
+        const ownY = own.reduce((t, u) => t + u.position.y, 0) / Math.max(1, own.length);
+        const back = ownY < aim.y ? -3000 : 3000;
         g.callForFire(side, a.weapon, aim, {
-          firingFrom: { x: aim.x, y: (hq?.position.y ?? aim.y) + back },
+          firingFrom: { x: aim.x, y: ownY + back },
           ...(fuze ? { fuze } : {}),
         });
       }
@@ -327,7 +356,12 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
       const lifted = g.units
         .filter((u) => u.side === attackerSide && u.kind !== "command" && !u.neutralized)
         .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
-      if (!lifted) {
+      if (lifted && !liftedFires) {
+        // The fires lift: whatever is still to come is checked.
+        g.checkFire(attackerSide);
+        liftedFires = true;
+      }
+      if (!lifted && !liftedFires) {
         // What it has seen of the defender, nearest the objective; until then
         // the objective itself, a point along its frontage for each mission.
         callMissions(attackerSide, () => {
@@ -336,8 +370,8 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
             .filter((c) => !c.lastKnownNeutralized)
             .sort((p, q) => distance(p.lastKnownPosition, goal) - distance(q.lastKnownPosition, goal))[0];
           if (seen) return seen.lastKnownPosition;
-          const across = ((g.fireMissions.filter((m) => m.side === attackerSide).length % 3) - 1) * 80;
-          return { x: goal.x + across, y: goal.y };
+          const called = g.fireMissions.filter((m) => m.side === attackerSide).length;
+          return plannedTargets[called % plannedTargets.length]!;
         }, opts.fires.fuze);
       }
     }

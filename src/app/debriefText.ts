@@ -467,6 +467,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `סריקת כטב"מ (${action.viewer}) ${at(action.footprintCenter)}`;
     case "queueIndirectFire":
       return `${action.side}: משימת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)}`;
+    case "checkFire":
+      return `${action.side}: חדל אש`;
     case "callForFire":
       return `${action.side}: בקשת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)} — תיקון ואש לאפקט`;
     case "moveUnit":
@@ -626,6 +628,9 @@ export function describeOutcome(
 
     case "queueIndirectFire":
       return `פגיעה צפויה בתור ${outcome.mission.resolvesOnTurn}`;
+
+    case "checkFire":
+      return "המשימות נעצרו";
 
     case "callForFire":
       return outcome.mission.status === "done"

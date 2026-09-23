@@ -236,9 +236,9 @@ describe("fire missions (decision 34)", () => {
 
   it("adjusts with one round a turn, then fires its rounds for effect once, and is done", () => {
     const g = setUp();
-    const m = g.callForFire("BLUE", "mortar", { x: 0, y: 0 });
-    expect(m.roundsForEffect).toBe(DEFAULT_ROUNDS_FOR_EFFECT);
-    const landed = play(g, 10);
+    expect(g.callForFire("BLUE", "mortar", { x: 0, y: 0 }).roundsForEffect).toBe(DEFAULT_ROUNDS_FOR_EFFECT);
+    const landed = play(g, 12);
+    const m = g.fireMissions[0]!;
     expect(m.status).toBe("done");
     expect(m.adjustingRounds).toBeGreaterThan(0);
     expect(m.adjustingRounds).toBeLessThanOrEqual(MAX_ADJUSTING_ROUNDS);
@@ -247,6 +247,39 @@ describe("fire missions (decision 34)", () => {
     expect(sizes.filter((n) => n === 1).length).toBe(m.adjustingRounds);
     expect(sizes.filter((n) => n === 6).length).toBe(1);
     expect(sizes.at(-1)).toBe(6);
+    // It waits to see each adjusting round land before firing the next: a
+    // mortar's lands the turn after, so they are two turns apart.
+    const singles = landed.filter((l) => l.rounds === 1).map((l) => l.turn);
+    for (let i = 1; i < singles.length; i++) expect(singles[i]! - singles[i - 1]!).toBe(2);
+  });
+
+  it("stops at a check fire: nothing more is fired, and what was in the air does not land", () => {
+    const g = setUp({ fireSupport: { BLUE: [{ weapon: "artillery", missions: 2 }] } });
+    g.callForFire("BLUE", "artillery", { x: 0, y: 0 });
+    g.checkFire("BLUE");
+    expect(g.fireMissions[0]!.status).toBe("checked");
+    expect(g.pendingFire.filter((f) => f.side === "BLUE")).toHaveLength(0);
+    expect(play(g, 6)).toHaveLength(0);
+    // Spent all the same.
+    expect(g.fireMissionsLeft("BLUE", "artillery")).toBe(1);
+  });
+
+  it("a side on missions cannot fire outside them, and gets one allotment a weapon", () => {
+    const g = setUp({ fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }] } });
+    expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 })).toThrow(/call for fire/);
+    g.queueIndirectFire("mortar", "RED", { x: 0, y: 1500 });
+    expect(
+      () => new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }, { weapon: "mortar", missions: 2 }] } }),
+    ).toThrow(/one entry a weapon/);
+    expect(() => new Game({ seed: 1, fireSupport: { Blue: [] } as never })).toThrow(/fireSupport/);
+  });
+
+  it("a force that has surrendered or is routing watches nothing for its side", () => {
+    const g = setUp();
+    const blue = g.getUnit("B");
+    blue.surrendered = true;
+    // Nobody else of BLUE's: it goes straight to effect, unobserved.
+    expect(g.callForFire("BLUE", "mortar", { x: 0, y: 0 }).status).toBe("done");
   });
 
   it("goes straight to effect on a registered target, or when nobody can see it", () => {

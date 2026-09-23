@@ -138,6 +138,7 @@ export function outcomeVisibleTo(
       return action.viewer === side;
     case "queueIndirectFire":
     case "callForFire":
+    case "checkFire":
     case "deploySmoke":
       return action.side === side;
     // Shooting at a mark is not the same as watching it fall. A side always
@@ -205,6 +206,7 @@ export function actionVisibleTo(
       return action.viewer === side;
     case "queueIndirectFire":
     case "callForFire":
+    case "checkFire":
     case "deploySmoke":
       return action.side === side;
     case "issueOrders":

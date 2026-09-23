@@ -1397,8 +1397,9 @@ on the stated reasoning, still awaiting the author's word.
       within 50 m of the adjusting point".
 33. ✅ **Adjusting needs an observer** (author, 2026-09-23). A round teaches
     the guns only if its side sees it land: one of its forces in the fight
-    within 2,000 m with a clear sight line to the burst, or a UAV over the
-    target (`observes` in `game.ts`). Fire nobody sees stays at first-round
+    within 2,000 m with a clear sight line to the burst, smoke included, or a
+    UAV over the target (`observes` in `game.ts`). A force that is out,
+    routing or surrendered watches nothing for its side. Fire nobody sees stays at first-round
     accuracy. Killing or blinding the observer is how to stop it walking in.
     ⚠️ The 2,000 m and the 3 m burst height are ours.
 34. ✅ **At company and below, fire support is assigned missions** (author,
@@ -1406,11 +1407,17 @@ on the stated reasoning, still awaiting the author's word.
     (`GameOptions.fireSupport`), each firing a set number of rounds for
     effect, **6 by default** (`DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
     (`Game.callForFire`) runs itself:
-    - one round a turn to adjust, until one is seen on the mark (decisions
-      32–33);
+    - one round to adjust, waiting to see where it lands before the next, until
+      one is seen on the mark (decisions 32–33) — a mortar adjusts every
+      second turn, artillery every third;
     - then its rounds for effect, all landing together; then it is spent.
     - It goes straight to effect on a registered target, when nobody of the
       side can see the target, or after 4 adjusting rounds (ours).
+    - **Check fire** (`Game.checkFire`) stops a side's missions and its rounds
+      not yet landed: an attacker lifting its fires. A mission stopped is
+      spent.
+    - A side on missions cannot fire outside them (`queueIndirectFire`
+      refuses it). A side left out of `fireSupport` is not rationed.
     - **Ammunition** is the battalion's and above, set by the mission's
       parameters (backlog 12). It is not built.
     - The debrief narrates a call for fire. **The live UI does not call
@@ -1418,7 +1425,9 @@ on the stated reasoning, still awaiting the author's word.
       UI limit), unrationed.
     - Why 6: a 6-gun battery's single volley, or a 3-tube section's two bombs
       a tube. Doctrine often fires more: "seldom less than five rounds for each
-      mortar" (FM 7-90). The balance is on balance.md, *Tenth round*.
+      mortar" (FM 7-90). In balance, 6 suits artillery and mortars want 9–12
+      (balance.md, *Tenth round*). One default for both is on the table for the
+      author.
 35. ✅ **Counter-battery fire exists only for guns on the map** (author,
     2026-09-23). Mortars are on the map at **company and above**, artillery at
     **battalion and above**. On the map they are units, and can be found and

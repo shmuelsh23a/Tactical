@@ -41,6 +41,7 @@ import {
 import { orderInterval } from "./data/c2.js";
 import { CHARGE_LAYING } from "./data/engineering.js";
 import {
+  canObserve,
   detectByMovement,
   detectByUav,
   observeFromPosition,
@@ -170,8 +171,13 @@ export interface FireMission {
   observedByUav?: boolean;
   /** Adjusting rounds fired so far. */
   adjustingRounds: number;
-  /** `adjusting` until the rounds for effect are sent; then `done`. */
-  status: "adjusting" | "done";
+  /** The adjusting round in flight: the mission waits to see where it lands. */
+  inFlight?: string;
+  /**
+   * `adjusting` until the rounds for effect are sent; then `done`. `checked`:
+   * stopped by a check fire before it fired for effect.
+   */
+  status: "adjusting" | "done" | "checked";
   /** The turn the rounds for effect were sent, once they are. */
   forEffectOnTurn?: number;
 }
@@ -339,7 +345,11 @@ export class Game {
   /** The fire missions each side was assigned (rules decision 34). */
   readonly fireSupport: Partial<Record<Side, FireAllotment[]>>;
   /** Every fire mission called, in the order called. */
-  readonly fireMissions: FireMission[] = [];
+  private readonly missions: FireMission[] = [];
+  /** Every fire mission called, in the order called — copies: change them and nothing happens. */
+  get fireMissions(): FireMission[] {
+    return cloneForRecord(this.missions);
+  }
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -430,11 +440,24 @@ export class Game {
     this.onTheMark.push(...this.registeredTargets);
     this.fireSupport = cloneForRecord(opts.fireSupport ?? {});
     for (const [side, list] of Object.entries(this.fireSupport)) {
-      for (const a of list ?? []) {
+      if (!this.sides.includes(side as Side) || !Array.isArray(list)) {
+        throw new Error(`fireSupport: cannot read ${side}: ${JSON.stringify(list)}`);
+      }
+      const weapons = new Set<string>();
+      for (const a of list) {
         const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT;
-        if (!INDIRECT_ACCURACY[a.weapon] || !Number.isInteger(a.missions) || a.missions < 0 || !Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
-          throw new Error(`fireSupport.${side}: cannot read ${JSON.stringify(a)}`);
+        if (
+          !INDIRECT_ACCURACY[a.weapon] ||
+          weapons.has(a.weapon) ||
+          !Number.isInteger(a.missions) ||
+          a.missions < 0 ||
+          !Number.isInteger(rounds) ||
+          rounds < 1 ||
+          rounds > MAX_ROUNDS_PER_MISSION
+        ) {
+          throw new Error(`fireSupport.${side}: cannot read ${JSON.stringify(a)} (one entry a weapon)`);
         }
+        weapons.add(a.weapon);
       }
     }
   }
@@ -581,7 +604,7 @@ export class Game {
       if (this.phase === "targeting") {
         // Missions in hand carry on by themselves: the next adjusting round,
         // or the rounds for effect (rules decision 34).
-        for (const m of this.fireMissions) if (m.status === "adjusting") this.stepFireMission(m);
+        for (const m of this.missions) if (m.status === "adjusting") this.stepFireMission(m);
       }
       if (this.phase === "resolvePriorArty") {
         // Screens go down before the rounds land, so a smoke mission fired on
@@ -663,7 +686,7 @@ export class Game {
     const list = this.fireSupport[side];
     if (!list) return undefined;
     const allotted = list.filter((a) => a.weapon === weapon).reduce((n, a) => n + a.missions, 0);
-    const called = this.fireMissions.filter((m) => m.side === side && m.weapon === weapon).length;
+    const called = this.missions.filter((m) => m.side === side && m.weapon === weapon).length;
     return allotted - called;
   }
 
@@ -700,20 +723,50 @@ export class Game {
       adjustingRounds: 0,
       status: "adjusting",
     };
-    this.fireMissions.push(mission);
-    this.journal({ kind: "callForFire", weaponKey, side, target, opts });
+    this.missions.push(mission);
+    // As adopted: the defaults are left out, as they are on the mission.
+    this.journal({
+      kind: "callForFire",
+      weaponKey,
+      side,
+      target: { ...mission.target },
+      opts: {
+        ...(mission.firingFrom ? { firingFrom: { ...mission.firingFrom } } : {}),
+        ...(mission.fuze ? { fuze: mission.fuze } : {}),
+        ...(mission.observedByUav ? { observedByUav: true } : {}),
+      },
+    });
     this.stepFireMission(mission);
-    return mission;
+    return cloneForRecord(mission);
   }
 
-  /** One turn of a fire mission: an adjusting round, or the rounds for effect. */
+  /**
+   * Check fire (rules decision 34): `side`'s missions in hand stop, and its
+   * rounds not yet landed are not fired — an attacker lifting its fires as it
+   * closes. A mission stopped before its rounds for effect is spent all the
+   * same.
+   */
+  checkFire(side: Side): void {
+    this.requirePhase("targeting");
+    for (const m of this.missions) if (m.side === side && m.status === "adjusting") m.status = "checked";
+    this.pendingFire = this.pendingFire.filter((f) => f.side !== side);
+    this.journal({ kind: "checkFire", side });
+  }
+
+  /**
+   * One turn of a fire mission: an adjusting round, or the rounds for effect.
+   * While its last adjusting round is still in the air, it waits to see where
+   * it lands.
+   */
   private stepFireMission(m: FireMission): void {
+    if (m.inFlight && this.pendingFire.some((f) => f.id === m.inFlight)) return;
+    delete m.inFlight;
     const forEffect =
       this.isOnTheMark(m.side, m.weapon, m.target) ||
       !this.observes(m.side, m.target, m.observedByUav ?? false) ||
       m.adjustingRounds >= MAX_ADJUSTING_ROUNDS;
     const rounds = forEffect ? m.roundsForEffect : 1;
-    this.internally(() =>
+    const queued = this.internally(() =>
       this.queueIndirectFire(m.weapon, m.side, m.target, {
         ...(m.firingFrom ? { firingFrom: m.firingFrom } : {}),
         ...(m.fuze ? { fuze: m.fuze } : {}),
@@ -726,6 +779,7 @@ export class Game {
       m.forEffectOnTurn = this.turn;
     } else {
       m.adjustingRounds++;
+      m.inFlight = queued.id;
     }
   }
 
@@ -742,8 +796,13 @@ export class Game {
   ): PendingFireMission {
     this.requirePhase("targeting");
     const weapon = EXPLOSIVES[weaponKey];
-    if (!weapon || weapon.delivery !== "indirectFire") {
+    if (!weapon || weapon.delivery !== "indirectFire" || !INDIRECT_ACCURACY[weaponKey]) {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
+    }
+    // A side with its fire assigned as missions fires only those (rules
+    // decision 34): the missions queue their own rounds, internally.
+    if (this.journalDepth === 0 && this.fireSupport[side]) {
+      throw new Error(`${side}'s fire is assigned as missions: call for fire`);
     }
     const rounds = opts.rounds ?? 1;
     if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
@@ -816,6 +875,11 @@ export class Game {
    * shot (rules decision 17). It does not follow the aim: a target that moves
    * out of reach has to be adjusted onto again.
    */
+  /** Every point a side is on the mark at, registered or earned — copies. */
+  get marksHeld(): RegisteredTarget[] {
+    return cloneForRecord(this.onTheMark);
+  }
+
   isOnTheMark(side: Side, weapon: string, aim: Point): boolean {
     return this.onTheMark.some(
       (e) => e.side === side && e.weapon === weapon && distance(e.at, aim) <= ADJUSTMENT_RADIUS_M,
@@ -839,16 +903,20 @@ export class Game {
 
   /**
    * Whether `side` sees the fall of a round at `impact` (rules decision 33): a
-   * force of its own in the fight within {@link OBSERVE_RANGE_M} with a clear
-   * line to it, or a UAV over the target.
+   * force of its own in the fight — not out, routing or surrendered — within
+   * {@link OBSERVE_RANGE_M} with a clear line to it, smoke included, or a UAV
+   * over the target.
    */
   private observes(side: Side, impact: Point, uav: boolean): boolean {
     if (uav) return true;
     return this.units.some(
       (u) =>
         u.side === side &&
-        !u.neutralized &&
+        canObserve(u) &&
+        !u.surrendered &&
+        !u.routing &&
         distance(u.position, impact) <= OBSERVE_RANGE_M &&
+        !(SMOKE_BLOCKS_FIRE && this.smoke.some((sm) => segmentIntersectsCircle(u.position, impact, sm.center, sm.radius))) &&
         !terrainBlocksSight(this.terrain, u.position, eyeHeight(u), impact, BURST_HEIGHT_M),
     );
   }

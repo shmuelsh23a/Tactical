@@ -62,32 +62,42 @@ rebuilt as rules, decisions 29–35:
   and up, artillery at battalion and up, arriving with echelon scaling.
 
 The tenth round on [balance.md](balance.md) measured 6:
-- **With two artillery missions it is in the band**: a 2:1 attack wins
-  37–60%.
-- **Mortar missions of 6 do almost nothing** against a dug-in, roofed
-  defender. Doctrine asks 15 of a mortar section.
-- **Moving off a shelled position, as built, hurts the defender.** It is a
-  drill option, `displace`, off by default.
-- **The fight is still decided before contact, because nobody detects
-  anybody before about 300 m** (decision 12's detection).
+- **Adjusting is slow.** A mission waits to see each adjusting round land, so
+  a mortar adjusts every second turn and artillery every third. Unplanned,
+  the attacker's artillery never fires for effect before its fires lift.
+- **Planned targets** (the attacker's guns registered on the positions it
+  attacks, `--fires ...,registered=on`) are what make fire support work.
+- **With planned targets, 6 suits artillery; mortars want 9–12.** Two
+  artillery missions of 6 and two mortar missions of 9–12 give a 2:1 attack
+  35–49%, meeting 3 of 4 company targets.
+- **The defender's own mortars on registered targets hold the line.**
+  Without them, even a 1:1 attack takes a prepared position 74–91% of the
+  time.
+- **Moving off a shelled position, as built, hurts the defender.** It is the
+  drill option `displace`, off by default.
+- **An attacker who wins with planned fire barely bleeds (0–4%)**, because
+  nobody detects anybody before about 300 m (decision 12's detection).
 
 What to put to him next:
-1. **A default per weapon?** 6 for artillery (a battery volley) and 12–15
-   for mortars (doctrine's floor for a section). Not measured yet.
-2. **Detection at range.** A company crossing 700 m of open ground unseen
-   until 300 m is what makes this a one-sided duel. Observation posts,
-   binoculars, or a longer range for a force that is only watching? It is
-   decision 12's ground, and his.
-3. **Alternate positions.** For displacement to be worth anything, a
+1. **The default rounds for effect per weapon.** 6 for artillery, a battery
+   volley, and 9–12 for mortars, which balance and doctrine both point to?
+2. **Planned targets for the attacker.** Registering on the objective before
+   the battle is what makes the attack's fire work. Is it a mission
+   parameter?
+3. **Detection at range.** A company crossing 700 m of open ground unseen
+   until 300 m is why fire decides everything before contact. Observation
+   posts, binoculars, or a longer range for a force that is only watching?
+   It is decision 12's ground, and his.
+4. **Alternate positions.** For displacement to be worth anything, a
    defender needs somewhere prepared to go. Today a force has one prepared
    position.
-4. **The live UI** still queues single rounds, unrationed. It needs a
+5. **The live UI** still queues single rounds, unrationed. It needs a
    call-for-fire control with the side's missions left.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
 ([balance.md](balance.md), *Fifth round*). With fire missions on both sides
-it measures 89–98%, because the fight is decided before small arms get a
+it measures 82–99%, because the fight is decided before small arms get a
 say (see *Start here*).
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
@@ -114,7 +124,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **Rounds for effect per weapon, detection at range, alternate positions** (above).
+- **Rounds for effect per weapon, planned targets, detection at range, alternate positions** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
