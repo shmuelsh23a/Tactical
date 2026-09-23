@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23 (second session), after rules decisions 36–38 and the eleventh and twelfth balance rounds. The next session starts with what is left of the author's agenda, below: the business plan.** This is the working note for whoever
+**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The next session starts with what is left of the author's agenda, below: the business plan.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 582 tests, 31 files
+npm run check       lint + typecheck clean, 585 tests, 31 files
 npm run balance     the balance harness; see balance.md for every run recorded
 ```
 
@@ -83,13 +83,15 @@ were done in the second session of 2026-09-23:
 ## Waiting on the author
 
 **Start here: where the second 2026-09-23 session stopped.** Decisions
-36–38 are ✅ and built (README):
+36–39 are ✅ and built (README):
 - **36:** rounds for effect by weapon, 6 artillery / 12 mortar. A call for
   fire journals its number; a recording from before replays at what it
   fired (`madeBeforeDecision36` in `recording.ts` tells the eras apart).
 - **37:** who may call — mortars company+, artillery battalion+
   (`Game.mayCall`, `GameOptions.commandEchelon`, `FIRE_SUPPORT_MIN_ECHELON`).
   Both platoon demos lost their indirect fire.
+- **39:** the caller chooses adjust fire or fire for effect
+  (`callForFire`'s `method`; `שיטה` in the UI; Jev for simulated echelons).
 - **38:** mission planning on turn 0 — `registerTarget`,
   `designateObservationPost`, `prepareAlternatePosition` — in the engine,
   the harness (`--defender-ops`, `--alternate`) and the live UI.
@@ -99,24 +101,18 @@ What to put to him next, all from decision 38 and the twelfth round:
    weapon, an OP sees a moving force to 1,000 m, one alternate position a
    force, 25 m to be "in" a prepared position, and an alternate is partial
    cover for a force that had no prepared position.
-2. **OPs help the attacker at company because seeing the target makes a
-   mission slower** (balance.md, *Twelfth round*). A mission its side sees
-   adjusts, a round every second turn, before firing for effect; one nobody
-   sees fires for effect at once (decisions 33–34). With OPs the defender's
-   missions are observed, adjust onto a moving attacker and are spent before
-   the assault (company 2:1: 46% → 83%). With the fire counted as unobserved
-   the same OPs help the defender (29 → 23 wins of 60). **Ask him:** should
-   the caller choose adjust fire or fire for effect, as the observer does in
-   doctrine? (Half of the original puzzle was a drill bug — command groups
-   without hold-fire — and is fixed.)
+2. ✅ **Ruled: the caller chooses adjust fire or fire for effect** (decision
+   39; Jev will choose for simulated lower echelons). Why OPs had helped the
+   attacker at company: an observed mission adjusted onto a moving attacker
+   and was spent before the assault. With the choice, OPs and fire for
+   effect meet **all four company targets**, and the winning attacker loses
+   25% at 3–4:1 (balance.md, *Thirteenth round*). Worth showing him.
 3. **Displacing still hurts the defender, even to a prepared alternate**
    (company 2:1: 47% → 100%). It runs through the fire to get there and is
    seen moving. Doctrine displaces *between* volleys or at night; the drill
    has no notion of either.
-4. **The winning attacker still barely bleeds** (0–3% at 3–4:1). Seeing
-   further has not fixed it, because the defender's fire does not use what
-   the OPs see until the attacker is close. Is the defender's fire plan
-   (on-call targets triggered by an OP) something he wants modelled?
+4. ✅ **The winning attacker bleeds now** (25% at 3–4:1) once the defender
+   has OPs and fires for effect. Nothing to ask; show him the table.
 5. **The company battle's layout is ours** (`telAzekaCompany`): two RED
    platoons and three BLUE, both commanded at company with 3 and 4 mortar
    missions. He has not seen it.

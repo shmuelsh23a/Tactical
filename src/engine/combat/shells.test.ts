@@ -326,6 +326,40 @@ describe("fire missions (decision 34)", () => {
   });
 });
 
+describe("the caller chooses the method (decision 39)", () => {
+  function setUp() {
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 7, enforceC2: false });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    // Close enough to watch the fall of shot, so adjusting is possible.
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 1500 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    return g;
+  }
+
+  it("fires for effect at once on a target its side can see, where adjusting would walk in first", () => {
+    const adjusted = setUp().callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    expect(adjusted.status).toBe("adjusting");
+    const g = setUp();
+    const effect = g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "effect" });
+    expect(effect.status).toBe("done");
+    expect(effect.method).toBe("effect");
+    expect(g.pendingFire[0]!.rounds).toBe(12);
+    expect(() => g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "guess" as never })).toThrow(/method/);
+  });
+
+  it("journals the method only when it is not the default, and replays it", () => {
+    const g = setUp();
+    g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "effect" });
+    g.callForFire("BLUE", "artillery", { x: 0, y: 0 });
+    const calls = g.toRecording().actions.filter((a) => a.kind === "callForFire");
+    expect(calls.map((a) => a.kind === "callForFire" && a.opts.method)).toEqual(["effect", undefined]);
+    const again = replayGame(g.toRecording());
+    expect(again.fireMissions).toEqual(g.fireMissions);
+    expect(again.pendingFire).toEqual(g.pendingFire);
+  });
+});
+
 describe("who may call fire (decisions 36–37)", () => {
   /** A side commanding whatever its forces on the map say, unless `opts` declares otherwise. */
   function setUp(opts: Partial<GameOptions> = {}, blueCommand?: "platoon" | "company" | "battalion") {

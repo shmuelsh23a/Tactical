@@ -499,7 +499,9 @@ export function describeAction(action: RecordedAction, names: Map<string, string
     case "prepareAlternatePosition":
       return `${who(action.unitId)}: הוכנה עמדה חלופית ${at(action.at)}`;
     case "callForFire":
-      return `${action.side}: בקשת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)} — תיקון ואש לאפקט`;
+      return `${action.side}: בקשת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)} — ${
+        action.opts.method === "effect" ? "אש לאפקט מייד" : "תיקון ואש לאפקט"
+      }`;
     case "moveUnit":
       return `${who(action.unitId)} נע ${action.mode === "run" ? "בריצה" : "רגיל"} אל ${at(action.to)}`;
     case "fire":

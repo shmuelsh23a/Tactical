@@ -1512,6 +1512,27 @@ on the stated reasoning, still awaiting the author's word.
     - An OP needs the knowledge model (`trackIntel`): without it a side sees
       by a flat radius and the OP changes nothing. Every battle in the app
       plays with it.
+39. ✅ **The caller chooses: adjust fire, or fire for effect at once**
+    (author, 2026-09-23, after the twelfth round). `callForFire`'s `method`:
+    - `adjust` (the default, and what decision 34 did alone): single rounds
+      walked onto the mark while the side can see them land, then the rounds
+      for effect;
+    - `effect`: every round for effect at once, at whatever accuracy the guns
+      have there — their best on a registered target or a mark earned,
+      first-round otherwise.
+    - A registered target goes straight to effect either way, and so does a
+      call nobody of the side can see, as before.
+    - **Why:** decision 34 let the engine choose, and it adjusted exactly when
+      the side could see — against a moving attacker, the slower method. With
+      observation posts the defender's missions were observed, adjusted, and
+      were spent before the assault (company 2:1 attack 46% → 83%). With the
+      choice, OPs and fire for effect meet all four company targets
+      (balance.md, *Thirteenth round*).
+    - The player chooses in the live UI (`שיטה`). For a simulated lower
+      echelon, Jev will (backlog 15).
+    - Journalled only when `effect`, so a call from before reads as the
+      adjusting it was.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1888,6 +1909,10 @@ Each is intended to be an independent, toggleable module:
     rather than every turn. At brigade size that is about 74 calls a turn
     against about 216 if every squad reasoned (docs/balance.md, *How the
     engine scales*).
+
+    **A simulated echelon's calls for fire are Jev's to decide** (author,
+    2026-09-23): whether to adjust or fire for effect at once (decision 39),
+    and so the rest of a call. The player decides for their own echelon.
 
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next

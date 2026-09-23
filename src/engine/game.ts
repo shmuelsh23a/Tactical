@@ -183,6 +183,14 @@ export interface FireAllotment {
 }
 
 /** A fire mission called in (rules decision 34): adjusting, then fired for effect. */
+/**
+ * How a call for fire asks for its rounds (rules decision 39): `adjust` walks
+ * single rounds onto the mark before firing for effect, `effect` fires for
+ * effect at once, at whatever accuracy the guns have there. The caller's
+ * choice, as the observer's is in doctrine.
+ */
+export type FireMethod = "adjust" | "effect";
+
 export interface FireMission {
   id: string;
   side: Side;
@@ -192,6 +200,8 @@ export interface FireMission {
   firingFrom?: Point;
   fuze?: Fuze;
   observedByUav?: boolean;
+  /** Fire for effect at once (rules decision 39). Absent: adjust. */
+  method?: "effect";
   /** Adjusting rounds fired so far. */
   adjustingRounds: number;
   /** The adjusting round in flight: the mission waits to see where it lands. */
@@ -922,6 +932,8 @@ export class Game {
       firingFrom?: Point;
       fuze?: Fuze;
       observedByUav?: boolean;
+      /** Adjust fire (the default) or fire for effect at once (rules decision 39). */
+      method?: FireMethod;
     } = {},
   ): FireMission {
     return this.callForFireWith(side, weaponKey, target, opts, undefined);
@@ -938,7 +950,7 @@ export class Game {
     side: Side,
     weaponKey: string,
     target: Point,
-    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean },
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; method?: FireMethod },
     roundsForEffect: number,
   ): FireMission {
     return this.callForFireWith(side, weaponKey, target, opts, roundsForEffect);
@@ -948,7 +960,7 @@ export class Game {
     side: Side,
     weaponKey: string,
     target: Point,
-    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean },
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; method?: FireMethod },
     recordedRounds: number | undefined,
   ): FireMission {
     this.requirePhase("targeting");
@@ -957,6 +969,9 @@ export class Game {
     const left = this.fireMissionsLeft(side, weaponKey);
     if (left !== undefined && left <= 0) throw new Error(`${side} has no ${weaponKey} fire missions left`);
     if (opts.fuze !== undefined && !(opts.fuze in SHELL_VS_MEN)) throw new Error(`no such fuze: ${String(opts.fuze)}`);
+    if (opts.method !== undefined && opts.method !== "adjust" && opts.method !== "effect") {
+      throw new Error(`no such method of fire: ${String(opts.method)}`);
+    }
     const allotment = this.fireSupport[side]?.find((a) => a.weapon === weaponKey);
     const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey);
     if (!Number.isInteger(roundsForEffect) || roundsForEffect < 1 || roundsForEffect > MAX_ROUNDS_PER_MISSION) {
@@ -971,6 +986,7 @@ export class Game {
       ...(opts.firingFrom ? { firingFrom: { ...opts.firingFrom } } : {}),
       ...(opts.fuze && opts.fuze !== "impact" ? { fuze: opts.fuze } : {}),
       ...(opts.observedByUav ? { observedByUav: true } : {}),
+      ...(opts.method === "effect" ? { method: "effect" as const } : {}),
       adjustingRounds: 0,
       status: "adjusting",
     };
@@ -985,6 +1001,9 @@ export class Game {
         ...(mission.firingFrom ? { firingFrom: { ...mission.firingFrom } } : {}),
         ...(mission.fuze ? { fuze: mission.fuze } : {}),
         ...(mission.observedByUav ? { observedByUav: true } : {}),
+        // Only when not the default, so a call from before decision 39 reads
+        // as the adjusting it was.
+        ...(mission.method ? { method: mission.method } : {}),
         // Always, unlike the defaults above: the default itself has changed
         // once (decision 36), and a replay must fire what was fired.
         roundsForEffect,
@@ -1016,6 +1035,7 @@ export class Game {
     if (m.inFlight && this.pendingFire.some((f) => f.id === m.inFlight)) return;
     delete m.inFlight;
     const forEffect =
+      m.method === "effect" ||
       this.isOnTheMark(m.side, m.weapon, m.target) ||
       !this.observes(m.side, m.target, m.observedByUav ?? false) ||
       m.adjustingRounds >= MAX_ADJUSTING_ROUNDS;

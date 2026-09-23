@@ -27,6 +27,7 @@ import {
   type Phase,
   type RegisteredTarget,
   type FireAllotment,
+  type FireMethod,
   type FireMission,
   type SmokeOrder,
   type WithCoveringFire,
@@ -70,7 +71,7 @@ export type RecordedAction =
       side: Side;
       target: Point;
       /** `roundsForEffect` is absent only from a recording made before decision 36. */
-      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; roundsForEffect?: number };
+      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; method?: FireMethod; roundsForEffect?: number };
     }
   | { kind: "checkFire"; side: Side }
   // Mission planning, before the first turn (rules decision 38).

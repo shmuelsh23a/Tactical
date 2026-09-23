@@ -31,6 +31,7 @@ import {
   type Side,
   type SmokeScreen,
   type Echelon,
+  type FireMethod,
   type Fuze,
   type SmokeSource,
   type StandingOrder,
@@ -162,6 +163,8 @@ export function App({ scenario, onLeave }: AppProps) {
   const [planned, setPlanned] = useState(false);
   /** How mortar and artillery rounds are fuzed (rules decision 31). */
   const [fuze, setFuze] = useState<Fuze>("impact");
+  /** Adjust fire, or fire for effect at once (rules decision 39). */
+  const [method, setMethod] = useState<FireMethod>("adjust");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gait, setGait] = useState<Gait>("normal");
   const [weapon, setWeapon] = useState<SmallArm>("smallArms");
@@ -423,11 +426,16 @@ export function App({ scenario, onLeave }: AppProps) {
         }
         // Asked before the call: once it lands, the guns are on the mark anyway.
         const onMark = game.isOnTheMark(viewingSide, tube, { x, y });
-        const m = game.callForFire(viewingSide, tube, { x, y }, fuze === "impact" ? {} : { fuze });
+        const m = game.callForFire(viewingSide, tube, { x, y }, {
+          ...(fuze === "impact" ? {} : { fuze }),
+          ...(method === "effect" ? { method } : {}),
+        });
         pushLog(
           m.status !== "done"
             ? `בקשת אש — ${tubeHe[tube]}: פגז תיקון, ואחריו ${m.roundsForEffect} פגזים לאפקט`
-            : onMark
+            : method === "effect" && !onMark
+              ? `בקשת אש — ${tubeHe[tube]}: אש לאפקט מייד (${m.roundsForEffect} פגזים)`
+              : onMark
               ? `בקשת אש — ${tubeHe[tube]}: על מטרה רשומה, אש לאפקט (${m.roundsForEffect} פגזים)`
               : // Nobody of the side can see the aim point to adjust (decision 33).
                 `בקשת אש — ${tubeHe[tube]}: אין תצפית על המטרה, אש לאפקט ללא תיקון (${m.roundsForEffect} פגזים)`,
@@ -1138,6 +1146,7 @@ export function App({ scenario, onLeave }: AppProps) {
     setOrderTargetId(null);
     // How the last side fuzed its rounds is its own choice, not the next's.
     setFuze("impact");
+    setMethod("adjust");
     setTube("mortar");
     // …and a sector half-laid belongs to the force that was selected, not to
     // whoever the next side clicks on first.
@@ -1419,6 +1428,15 @@ export function App({ scenario, onLeave }: AppProps) {
                           </button>
                         ))}
                       </div>
+                      <label>שיטה:</label>
+                      <div className="seg">
+                        <button className={method === "adjust" ? "on" : ""} onClick={() => setMethod("adjust")}>
+                          תיקון
+                        </button>
+                        <button className={method === "effect" ? "on" : ""} onClick={() => setMethod("effect")}>
+                          אש לאפקט מייד
+                        </button>
+                      </div>
                       <label>מרעום:</label>
                       <div className="seg">
                         <button className={fuze === "impact" ? "on" : ""} onClick={() => setFuze("impact")}>
@@ -1446,8 +1464,11 @@ export function App({ scenario, onLeave }: AppProps) {
                   <p className="hint">
                     {activeMission === "he" ? (
                       <>
-                        לחץ על המפה כדי לבקש אש. המשימה מתקנת פגז אחר פגז עד שכוח שלך רואה אחד נוחת על
-                        המטרה, ואז יורה את פגזי האפקט בבת אחת; על מטרה רשומה — אש לאפקט מייד. פגז נוחת כעבור{" "}
+                        לחץ על המפה כדי לבקש אש.{" "}
+                        {method === "adjust"
+                          ? "בתיקון, המשימה יורה פגז אחר פגז עד שכוח שלך רואה אחד נוחת על המטרה, ואז את פגזי האפקט בבת אחת — מדויק, אבל איטי מול מטרה בתנועה."
+                          : "אש לאפקט מייד: כל הפגזים בבת אחת, בדיוק שיש לתותחים שם — מהיר, אבל בלי תיקון הפיזור רחב."}{" "}
+                        על מטרה רשומה — אש לאפקט מייד בכל מקרה. פגז נוחת כעבור{" "}
                         {activeTube === "mortar" ? "תור" : "שני תורות"}.
                       </>
                     ) : (

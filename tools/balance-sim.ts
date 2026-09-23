@@ -9,6 +9,7 @@
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
  *   npm run balance -- --fires artillery=2x6,mortar=4x6,fuze=airburst   # the attacker's fire missions: missions x rounds for effect
  *   npm run balance -- --defender-fires mortar=4x6,registered=200/400    # the defender's, and targets it registered
+ *   npm run balance -- --fires mortar=4,method=effect --defender-fires mortar=4,method=effect   # fire for effect at once (decision 39)
  *   npm run balance -- --displace 100                # a defender moves off a shelled position
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
@@ -92,6 +93,7 @@ const fires: FirePlan | undefined = (() => {
     else if (key === "lift" && /^\d+$/.test(v)) plan.liftAt = Number(v);
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
     else if (key === "registered" && (v === "on" || v === "off")) plan.registered = v === "on";
+    else if (key === "method" && (v === "adjust" || v === "effect")) plan.method = v;
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;
@@ -106,6 +108,7 @@ const defenderFires: DefenderFires | undefined = (() => {
     const [key = "", v = ""] = part.split("=");
     if (key === "artillery" || key === "mortar") d.missions.push(allotment(key, v));
     else if (key === "registered" && /^\d+(\/\d+)*$/.test(v)) d.registeredAt = v.split("/").map(Number);
+    else if (key === "method" && (v === "adjust" || v === "effect")) d.method = v;
     else throw new Error(`--defender-fires: cannot read "${part}"`);
   }
   return d;

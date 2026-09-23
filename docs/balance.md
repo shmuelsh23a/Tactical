@@ -1536,6 +1536,42 @@ counted as they are called:
 - The eleventh round's figures barely move with the fix (company 2:1 47% →
   46%).
 
+## Thirteenth round: the caller chooses the method, 2026-09-23
+
+The author's ruling on the twelfth round: **the caller chooses adjust fire or
+fire for effect at once** (decision 39); for a simulated lower echelon, Jev
+will. The harness takes `method=effect` in `--fires` and `--defender-fires`.
+
+Company, Western drill, full cover, 200 battles a cell, decision 37 on, the
+new defaults. Attacker 4 mortar missions, planned unless the row says so.
+Defender 4 mortar missions registered 200 m and 400 m out.
+
+| Defender | Attacker | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| adjusts, no OPs | planned | 1% | 46% | 100% | 0% | 99% | 3/4 |
+| fire for effect, no OPs | planned | 1% | 46% | 100% | 0% | 99% | 3/4 |
+| adjusts, OPs | planned | 10% | 83% | 100% | 3% | 94% | 2/4 |
+| **fire for effect, OPs** | planned | **2%** | **49%** | **99%** | **25%** | 98% | **4/4** |
+| fire for effect, OPs | unplanned, adjusts | 0% | 4% | 33% | 22% | 96% | 2/4 |
+| fire for effect, OPs | unplanned, fire for effect | 1% | 21% | 96% | 29% | 97% | 3/4 |
+
+- **Without OPs the method changes nothing**: the defender sees the
+  attacker only when its calls cannot be observed anyway, and those went
+  straight to effect already.
+- **With OPs and fire for effect the company meets all four targets** — the
+  first configuration in any round to do so. And the winning attacker
+  **bleeds**: 25% of its men at 3–4:1, inside the 10–30% target, where every
+  earlier row with fire support gave 0–4%. The defender seeing the attack
+  coming, and bringing its fire down at once, is what the tenth round was
+  missing.
+- An attacker without planned targets does better firing for effect too
+  (3–4:1: 33% → 96%). Adjusting onto a hidden defender that nobody of its
+  side can see was never possible; what it lost was the time.
+- So **the harness's best company configuration** is now: attacker 4 mortar
+  missions planned; defender 4 mortar missions registered, observation posts,
+  fire for effect. The harness's own default stays `adjust`, so every earlier
+  row reproduces.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

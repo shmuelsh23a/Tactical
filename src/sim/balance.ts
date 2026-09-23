@@ -9,6 +9,7 @@ import {
   makeInfantry,
   type Echelon as EngineEchelon,
   type FireAllotment,
+  type FireMethod,
   type Fuze,
   type GameOptions,
   type MoraleReport,
@@ -191,6 +192,8 @@ export interface FirePlan {
   registered?: boolean;
   /** How the rounds are fuzed (rules decision 31). Default impact. */
   fuze?: Fuze;
+  /** Adjust fire (default) or fire for effect at once (rules decision 39). */
+  method?: FireMethod;
 }
 
 /**
@@ -202,6 +205,8 @@ export interface FirePlan {
 export interface DefenderFires {
   missions: FireAllotment[];
   registeredAt?: number[];
+  /** Adjust fire (default) or fire for effect at once (rules decision 39). */
+  method?: FireMethod;
 }
 
 /** Four mortar missions of the default rounds for effect, lifting at 400 m (⚠️ ours). */
@@ -388,7 +393,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // Targeting. The engine has already carried on the missions in hand.
     g.advanceToPhase("targeting");
     // A side with missions assigned calls the next when its weapon is free.
-    const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze) => {
+    const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze, method?: FireMethod) => {
       for (const a of fireSupport[side] ?? []) {
         if ((g.fireMissionsLeft(side, a.weapon) ?? 0) <= 0) continue;
         if (g.fireMissions.some((m) => m.side === side && m.weapon === a.weapon && m.status === "adjusting")) continue;
@@ -401,6 +406,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         g.callForFire(side, a.weapon, aim, {
           firingFrom: { x: aim.x, y: ownY + back },
           ...(fuze ? { fuze } : {}),
+          ...(method ? { method } : {}),
         });
       }
     };
@@ -425,7 +431,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
           if (seen) return seen.lastKnownPosition;
           const called = g.fireMissions.filter((m) => m.side === attackerSide).length;
           return plannedTargets[called % plannedTargets.length]!;
-        }, opts.fires.fuze);
+        }, opts.fires.fuze, opts.fires.method);
       }
     }
     if (opts.defenderFires && kind !== "meeting") {
@@ -433,7 +439,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         const hq = g.units.find((u) => u.side === defenderSide && u.kind === "command" && !u.neutralized);
         const target = hq && nearestKnown(g, hq);
         return target ? g.contactFor(defenderSide, target)!.lastKnownPosition : undefined;
-      });
+      }, undefined, opts.defenderFires.method);
     }
     // A company without missions assigned calls one mortar bomb a turn on the
     // nearest enemy it knows of, as the harness always has.

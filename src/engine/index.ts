@@ -238,6 +238,7 @@ export {
   type Phase,
   type GameOptions,
   type FireAllotment,
+  type FireMethod,
   type FireMission,
   type RegisteredTarget,
   type PreparedPosition,
