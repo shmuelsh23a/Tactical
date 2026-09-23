@@ -4,12 +4,10 @@ import type { Unit } from "../types.js";
 import {
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
-  DIRECT_FIRE_DAMAGE_DICE,
   COVER_MODIFIERS,
   type CoverState,
 } from "../data/directFire.js";
 import { landHit, refreshUnitStatus } from "../units.js";
-import type { WoundSeverity } from "../data/variants.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -24,8 +22,7 @@ export const NOT_A_COAXIAL_WEAPON = "not a coaxial weapon";
 
 /**
  * Who fires a vehicle's coaxial gun: the gunner, one gun, while he is fit and
- * the vehicle is not destroyed. ⚠️ One roll a turn is ours — the document's
- * "ק% × מספר חיילים כשירים" counts soldiers, and a vehicle's are its crew.
+ * the vehicle is not destroyed — one roll a turn (author, 2026-09-23).
  */
 function coaxialGunners(vehicle: Unit): number[] {
   const v = vehicle.vehicle;
@@ -60,8 +57,6 @@ export interface DirectFireOptions {
    * ({@link FIRING_FROM_COVER_MODIFIER}, rules decision 23).
    */
   coverModifier?: number;
-  /** The wound-severity roll on trial (data/variants.ts); absent, the document's 1d4. */
-  severity?: WoundSeverity;
 }
 
 export interface DirectFireResult {
@@ -136,7 +131,7 @@ export function resolveDirectFire(
   for (let i = 0; i < shooters; i++) {
     if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
     hits++;
-    const hit = landHit(rng, target, DIRECT_FIRE_DAMAGE_DICE, turn, opts.severity, opts.targetSoldierId);
+    const hit = landHit(rng, target, turn, opts.targetSoldierId);
     totalDamage += hit.damage;
     if (hit.casualty) newCasualties++;
   }

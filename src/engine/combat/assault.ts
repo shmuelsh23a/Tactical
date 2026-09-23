@@ -4,7 +4,6 @@ import { distance } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
 import { damageSoldier, landHit, refreshUnitStatus, selectHitSoldier } from "../units.js";
-import type { WoundSeverity } from "../data/variants.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -56,8 +55,6 @@ export function resolveAssault(
      * the assault landed.
      */
     replyChance?: number;
-    /** The wound-severity roll on trial, for the assault fire and the reply. */
-    severity?: WoundSeverity;
   } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
@@ -89,7 +86,7 @@ export function resolveAssault(
   for (let i = 0; i < accuracy.length; i++) {
     if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
     result.fireHits++;
-    const hit = landHit(rng, defender, ASSAULT.fireDamageDice, turn, opts.severity);
+    const hit = landHit(rng, defender, turn);
     result.fireDamage += hit.damage;
     if (hit.casualty) result.defenderCasualties++;
   }
@@ -116,7 +113,7 @@ export function resolveAssault(
     for (const accuracy of replyAccuracy) {
       if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
       reply.hits++;
-      const hit = landHit(rng, attacker, ASSAULT.fireDamageDice, turn, opts.severity);
+      const hit = landHit(rng, attacker, turn);
       reply.damage += hit.damage;
       if (hit.casualty) reply.casualties++;
     }

@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 518 tests, 28 files
+npm run check       lint + typecheck clean, 517 tests, 28 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -61,8 +61,10 @@ objective** as a morale gain, which needs backlog 18 first.
 infantry no longer fire that table, and vehicles now can. The **wound-severity
 roll** is on trial (`woundSeverity`), and at a 4/4/2 split it is the first
 change that moves the balance — 9 of 12 targets, squad fights all four. It
-leaves the platoon fights lopsided. Open for him: adopt 4/4/2 as the rule; the
-coax's one-roll-per-gunner reading (⚠️); and what closes the platoon gap.
+leaves the platoon fights lopsided. **Both since adopted**: 4/4/2 is decision 26, and the coaxial gun's one roll a
+turn is confirmed in decision 25. Still open: what closes the platoon gap. He
+asked whether to simulate every echelon above the squad as its soldiers
+fighting; the scaling measurements are on balance.md, *How the engine scales*.
 
 **Second round, 2026-09-23.** Rulings 2c and 3b are made (decisions 22 and
 23), and so is a steadier prepared defender (24). Ruling 1 — the defender

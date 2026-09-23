@@ -608,6 +608,33 @@ reply in the assault, against the same targets.
 - **A losing squad goes further before it breaks: 58%.** Casualties come
   faster than the morale step, which judges once a turn.
 
+**Adopted 2026-09-23:** 4/4/2 is the rule (decision 26), and the coaxial gun's
+one roll a turn is confirmed (decision 25). The sweep now covers only the
+assault reply rate, which is all that is left on trial.
+
+## How the engine scales, 2026-09-23
+
+The same scripted mirror as the harness, grown by the company, timed per turn
+over 18 turns — through the approach and into the fight — in the dev
+container.
+
+| Forces | Units | Men | Flat, ms/turn | Tel Azeka, ms/turn | Where it goes |
+|---|---|---|---|---|---|
+| 1 company a side | 34 | 238 | 6 | 4 | morale step 3–5 |
+| 3 companies a side | 98 | 690 | 14 | 14 | morale step 12 |
+| 9 companies a side | 290 | 2046 | 81 | 102 | morale step 69–85 |
+| 1 company, **a token a man** | 208 | 238 | — | 26 | morale 15, move 8 |
+| 3 companies, **a token a man** | 620 | 690 | — | 206 | morale 120, move 56 |
+
+- **Squads as tokens, with every man inside rolled on his own** — which is
+  what the engine already does — **stays under a tenth of a second a turn at
+  2,000 men**.
+- **A token per man costs about 15 times as much for the same men, and grows
+  with the square of the tokens.** Tripling the men multiplied the time by 8.
+- **The morale step is most of every row.** `leaderBonus` walks every unit
+  for every man, several times a step. Indexing the leaders by side once per
+  step would take most of it away. Not done, since nothing is slow yet.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

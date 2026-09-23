@@ -78,8 +78,8 @@ export interface Soldier {
   /** His pool of will; present only when the game is played with morale. */
   morale?: SoldierMorale;
   /**
-   * How badly he was last hit, under the wound-severity roll on trial
-   * (data/variants.ts). Absent in a game without it.
+   * How badly he was last hit by small arms (rules decision 26). Absent until
+   * he is; explosives' damage points do not set it.
    */
   wound?: "light" | "serious" | "killed";
 }

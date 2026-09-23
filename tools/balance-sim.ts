@@ -5,7 +5,6 @@
  *   npm run balance -- --n 300 --kinds meeting       # one kind, more battles
  *   npm run balance -- --echelons company --swap     # RED starts where BLUE would
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
- *   npm run balance -- --severity 4/4                # wound-severity roll on trial: d10 1-4 light, 5-8 serious, 9-10 killed
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --morale on                   # only with morale (or: off)
@@ -58,11 +57,7 @@ const steadyBonus = value("--steady-bonus");
 if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
 const steadyLoss = value("--steady-loss");
 if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
-const severity = value("--severity");
-if (severity) {
-  const [light, serious] = severity.split("/").map(Number);
-  variants.woundSeverity = { light: light!, serious: serious! };
-}
+
 
 if (args.includes("--sweep")) {
   console.log(`Sweep: ${battles} battles a cell, morale on. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +

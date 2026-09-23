@@ -432,33 +432,19 @@ export const MARKDOWN_HEADER =
   "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
 
 /**
- * What the sweep compares (2026-09-23, third round): the wound-severity roll
- * the author put on trial, at three splits of the d10, against the document's
- * 1d4 — each with and without the defender's reply in an assault, since
- * deadlier hits may finally let an assault happen.
+ * What the sweep compares. After the third round (2026-09-23) the only thing
+ * still on trial is the rate at which a defender returns fire in an assault
+ * (ruling 1); the wound-severity roll is a rule now (decision 26).
  */
 export interface Configuration {
   name: string;
   variants: RuleVariants;
 }
 
-const SEVERITIES = [
-  { name: "1d4 (document)", severity: undefined },
-  { name: "severity 4/4/2", severity: { light: 4, serious: 4 } },
-  { name: "severity 5/4/1", severity: { light: 5, serious: 4 } },
-  { name: "severity 3/5/2", severity: { light: 3, serious: 5 } },
-] as const;
-const REPLIES = [undefined, 0.5] as const;
-
-export const CONFIGURATIONS: readonly Configuration[] = SEVERITIES.flatMap((sev) =>
-  REPLIES.map((reply) => ({
-    name: `${sev.name} · reply ${reply == null ? "none" : `${Math.round(reply * 100)}%`}`,
-    variants: {
-      ...(sev.severity ? { woundSeverity: { ...sev.severity } } : {}),
-      ...(reply == null ? {} : { assaultReplyChance: reply }),
-    },
-  })),
-);
+export const CONFIGURATIONS: readonly Configuration[] = ([undefined, 0.3, 0.5, 0.7] as const).map((reply) => ({
+  name: `reply ${reply == null ? "none" : `${Math.round(reply * 100)}%`}`,
+  variants: reply == null ? {} : { assaultReplyChance: reply },
+}));
 
 /**
  * What the sweep is judged against — written down **before** the first runs, so

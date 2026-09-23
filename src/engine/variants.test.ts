@@ -162,15 +162,15 @@ describe("decision 25: ירי מקביל is a vehicle's coaxial gun", () => {
   });
 });
 
-describe("the wound-severity roll, on trial", () => {
+describe("decision 26: a small-arms hit rolls how bad it is", () => {
   /** One hit on a squad of one, with the d10 scripted. */
   function hitWith(d10: number, damageBefore = 0) {
-    const g = new Game({ seed: 1, enforceC2: false, variants: { woundSeverity: { light: 4, serious: 4 } } });
+    const g = new Game({ seed: 1, enforceC2: false });
     const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 1));
     target.soldiers![0]!.damagePoints = damageBefore;
     const script = [d10, 0]; // the severity die, then the choice of victim (index 0)
     g.rng.int = () => script.shift()!;
-    const hit = landHit(g.rng, target, "1d4", 1, g.variants.woundSeverity);
+    const hit = landHit(g.rng, target, 1);
     return { hit, man: target.soldiers![0]!, script };
   }
 
@@ -197,17 +197,7 @@ describe("the wound-severity roll, on trial", () => {
     expect(man).toMatchObject({ neutralized: true, damagePoints: 8, wound: "killed" });
   });
 
-  it("asks the rng as many times as the document's 1d4 does", () => {
+  it("asks the rng as many times as the document's 1d4 did", () => {
     expect(hitWith(3).script).toHaveLength(0);
-  });
-
-  it("is off unless the game plays it: the document's 1d4, no wound recorded", () => {
-    const g = new Game({ seed: 4, enforceC2: false });
-    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 9));
-    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 50 }, 9));
-    g.beginTurn();
-    g.advanceToPhase("combat");
-    g.fire("B", "R", { weapon: "smallArms" });
-    expect(red.soldiers!.every((s) => s.wound == null)).toBe(true);
   });
 });

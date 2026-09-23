@@ -1,9 +1,8 @@
 import type { CrewMember, Soldier, TankPart, Unit, VehicleState } from "./types.js";
-import { CASUALTY_RULES } from "./data/casualties.js";
+import { CASUALTY_RULES, WOUND_SEVERITY } from "./data/casualties.js";
 import { MOBILITY_THRESHOLDS } from "./data/armor.js";
 import { Rng } from "./rng.js";
-import { roll } from "./dice.js";
-import { LIGHT_WOUND_POINTS, type WoundSeverity } from "./data/variants.js";
+
 
 /** Number of soldiers in an infantry unit that are still in the fight. */
 export function fitSoldiers(unit: Unit): number {
@@ -35,35 +34,26 @@ export function damageSoldier(soldier: Soldier, damage: number, currentTurn: num
 }
 
 /**
- * One small-arms hit landing on `target`: how bad it is, and on whom.
- *
- * Without a severity roll, the document's rule: `dice` of damage points (1d4)
- * on a random fit man, out at 8. With one (on trial, data/variants.ts), a d10
- * decides a light wound, a serious one or a death instead — one die either
- * way, so the rng is asked the same number of times. The damage die comes
- * before the choice of victim in both, as it always has.
+ * One small-arms hit landing on `target`: how bad it is, and on whom (rules
+ * decision 26). A d10 decides a light wound, a serious one or a death, in
+ * place of the document's 1d4 of damage — one die either way. The severity is
+ * rolled before the victim is chosen, as the damage die always was.
  */
 export function landHit(
   rng: Rng,
   target: Unit,
-  dice: string,
   turn: number,
-  severity?: WoundSeverity,
   preferredId?: string,
 ): { damage: number; casualty: boolean } {
-  if (!severity) {
-    const damage = roll(rng, dice);
-    const victim = selectHitSoldier(target, rng, preferredId);
-    return { damage, casualty: !!victim && damageSoldier(victim, damage, turn) };
-  }
+  const severity = WOUND_SEVERITY;
   const d10 = rng.die(10);
   const kind = d10 <= severity.light ? "light" : d10 <= severity.light + severity.serious ? "serious" : "killed";
   const victim = selectHitSoldier(target, rng, preferredId);
   if (!victim) return { damage: 0, casualty: false };
   if (kind === "light") {
-    const out = damageSoldier(victim, LIGHT_WOUND_POINTS, turn);
+    const out = damageSoldier(victim, severity.lightWoundPoints, turn);
     victim.wound = out ? "serious" : "light";
-    return { damage: LIGHT_WOUND_POINTS, casualty: out };
+    return { damage: severity.lightWoundPoints, casualty: out };
   }
   const floor = kind === "killed" ? CASUALTY_RULES.neutralizeThreshold : CASUALTY_RULES.bleedingThreshold;
   const damage = Math.max(0, floor - victim.damagePoints);

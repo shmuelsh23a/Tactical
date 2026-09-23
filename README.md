@@ -1273,11 +1273,30 @@ on the stated reasoning, still awaiting the author's word.
     - a vehicle may fire its coaxial gun (a shot, an order, or covering fire),
       or its main gun as before.
 
-    ⚠️ **One roll a turn, by the gunner while he is fit**, is ours. The document
-    counts "ק% × מספר חיילים כשירים", and a vehicle's soldiers are its crew.
+    ✅ **One roll a turn, by the gunner while he is fit** (proposed as ours,
+    confirmed by the author 2026-09-23): one gun, one man firing it.
     The key stays `sustainedMg`, so recordings still load — but **a recording
     in which a squad fired the MG table now replays that shot as refused, and
     fails `verifyRecording`**.
+
+26. ✅ **A small-arms hit rolls how bad it is** (author, 2026-09-23 — adopted
+    after the harness's third round, docs/balance.md). Each hit by small arms,
+    the coaxial gun or an assault's fire rolls a **d10 instead of the
+    document's 1d4 of damage**:
+    - **1–4, a light wound**: the man fights on, 2 points towards the
+      document's 8;
+    - **5–8, a serious wound**: out of the fight, and bleeding;
+    - **9–10, killed**.
+
+    It is one die either way, so the rng is asked as often as before. The
+    document's 8-point threshold and its bleeding rule stand under it.
+    Explosives keep the document's own dice. **Why:** a 1d4 hit against an
+    8-point threshold never takes a man out alone, and it scatters a small
+    force's fire across a large one to no effect. Each hit is now worth the
+    same on 36 men as on 9. At this split the squad fights met every balance
+    target (`WOUND_SEVERITY` in data/casualties.ts). This changes every
+    battle's outcome, so **any sealed recording made before it fails
+    `verifyRecording`**.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

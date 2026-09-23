@@ -13,6 +13,19 @@ export const CASUALTY_RULES = {
   forceAttritionNeutralizeFraction: 0.5,
 } as const;
 
+/**
+ * How bad a small-arms hit is — **the author's ruling, not the document's**
+ * (2026-09-23, rules decision 26). Each hit by small arms, the coaxial gun or
+ * the assault's fire rolls a d10 in place of the document's 1d4 of damage:
+ * 1–`light` a light wound (the man fights on, `lightWoundPoints` towards the
+ * 8 that put a man out), up to `light + serious` a serious one (out of the
+ * fight, and bleeding), and above that he is killed — 4 / 4 / 2. Measured
+ * against 1d4 and two other splits in docs/balance.md: it is what makes a
+ * small force's fire count, since a hit is worth as much on 36 men as on 9.
+ * Explosives keep the document's dice.
+ */
+export const WOUND_SEVERITY = { light: 4, serious: 4, lightWoundPoints: 2 } as const;
+
 /** Assault (הסתערות) resolution. */
 export const ASSAULT = {
   fireHitChance: 0.7,

@@ -1003,8 +1003,7 @@ export class Game {
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
           ...(from ? this.movementTerms(actor, true) : {}),
-          ...(this.variants.woundSeverity ? { severity: this.variants.woundSeverity } : {}),
-          hasLineOfSight: true,
+              hasLineOfSight: true,
         });
         actor.cover = wasCover;
         actor.position = destination;
@@ -1233,7 +1232,6 @@ export class Game {
       // A target that moved is easier or harder to hit (decision 22), and one
       // that fired from full cover keeps −30% (decision 23).
       ...this.movementTerms(target, target.movedThisTurn > 0),
-      ...(this.variants.woundSeverity ? { severity: this.variants.woundSeverity } : {}),
       ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
       // The engine knows what the target is behind; a caller may still say.
@@ -1346,7 +1344,6 @@ export class Game {
       turn: this.turn,
       // Ruling 1, on trial: the defender fires back, at a rate being measured.
       ...(reply ? { replyChance: reply } : {}),
-      ...(this.variants.woundSeverity ? { severity: this.variants.woundSeverity } : {}),
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
