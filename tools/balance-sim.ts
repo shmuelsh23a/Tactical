@@ -7,6 +7,7 @@
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
+ *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -26,6 +27,7 @@ import {
   type Echelon,
 } from "../src/sim/balance.js";
 import type { RuleVariants } from "../src/engine/index.js";
+import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -49,6 +51,10 @@ const moraleArg = value("--morale");
 const morales = moraleArg === "on" ? [true] : moraleArg === "off" ? [false] : [true, false];
 const swap = args.includes("--swap");
 const preparedCover = value("--prepared-cover") === "full" ? "full" : "partial";
+const drills = { plain: PLAIN_SCRIPT, western: WESTERN_DRILL } as const;
+const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
+const drill = drills[drillName];
+if (!drill) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
 
 const variants: RuleVariants = {};
 const reply = value("--reply");
@@ -60,7 +66,7 @@ if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
 
 
 if (args.includes("--sweep")) {
-  console.log(`Sweep: ${battles} battles a cell, morale on. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +
+  console.log(`Sweep: ${battles} battles a cell, morale on, ${drill.name}. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +
     `at ~2:1 wins ${TARGETS.attack2Win.join("-")}%, at 3-4:1 wins >= ${TARGETS.attack3MinWin}% ` +
     `losing ${TARGETS.attack3AttackerDown.join("-")}% of his men.\n`);
   console.log("| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |");
@@ -68,7 +74,7 @@ if (args.includes("--sweep")) {
   for (const c of CONFIGURATIONS) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, c.variants, battles, preparedCover);
+      const v = judge(echelon, c.variants, battles, preparedCover, drill);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${v.met}/4 |`);
@@ -77,12 +83,12 @@ if (args.includes("--sweep")) {
   }
 } else {
   const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
-  console.log(`${battles} battles a cell${swap ? ", sides swapped" : ""}${trial}\n`);
+  console.log(`${battles} battles a cell, ${drill.name}${swap ? ", sides swapped" : ""}${trial}\n`);
   console.log(MARKDOWN_HEADER);
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, preparedCover })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, preparedCover, drill })));
       }
     }
   }

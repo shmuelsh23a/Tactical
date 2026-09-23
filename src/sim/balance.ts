@@ -1,4 +1,5 @@
 import { sideDefeated } from "../app/hotseat.js";
+import { DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import {
   Game,
   distance,
@@ -123,6 +124,8 @@ export interface BattleOptions {
   swap?: boolean;
   /** What is on trial in the engine (data/variants.ts). */
   variants?: RuleVariants;
+  /** How both sides' squads fight (src/app/drill.ts). The plain script unless given. */
+  drill?: SquadDrill;
   /**
    * What a position prepared before the battle starts with. `partial` is the
    * scenarios' convention today; `full` is the open question (docs/balance.md).
@@ -159,25 +162,17 @@ export interface BattleResult {
 
 const other = (s: Side): Side => (s === "RED" ? "BLUE" : "RED");
 
-function fighting(g: Game, side: Side): Unit[] {
-  return g.units.filter((u) => u.side === side && u.kind !== "command");
-}
-
 const out = (g: Game, side: Side): boolean => sideDefeated(g, side);
 
-function toward(from: Point, to: Point, d: number): Point {
-  const r = distance(from, to);
-  if (r <= d) return { ...to };
-  return { x: from.x + ((to.x - from.x) / r) * d, y: from.y + ((to.y - from.y) / r) * d };
-}
-
-function nearestKnown(g: Game, u: Unit): Unit | undefined {
-  let best: Unit | undefined;
-  for (const e of g.units) {
-    if (e.side === u.side || e.neutralized || e.surrendered || !g.knows(u.side, e.id)) continue;
-    if (!best || distance(u.position, e.position) < distance(u.position, best.position)) best = e;
+/** The enemy `u`'s side last saw nearest to it — by where it was seen, not where it is. */
+function nearestKnown(g: Game, u: Unit): string | undefined {
+  let best: { id: string; d: number } | undefined;
+  for (const c of g.contactsFor(u.side)) {
+    if (c.lastKnownNeutralized) continue;
+    const d = distance(u.position, c.lastKnownPosition);
+    if (!best || d < best.d) best = { id: c.unitId, d };
   }
-  return best;
+  return best?.id;
 }
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
@@ -237,7 +232,12 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     return true;
   };
 
-  const contact = { RED: false, BLUE: false };
+  const drill = opts.drill ?? PLAIN_SCRIPT;
+  const drillState = new DrillState();
+  const tasks: Record<Side, DrillTask> = {
+    BLUE: { side: "BLUE", attacking: attackers.includes("BLUE"), objective: objective.BLUE },
+    RED: { side: "RED", attacking: attackers.includes("RED"), objective: objective.RED },
+  };
   g.beginTurn();
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
     r.turns = turn;
@@ -252,77 +252,19 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         const target = hq && nearestKnown(g, hq);
         if (!hq || !target) continue;
         const rear = side === (opts.swap ? "RED" : "BLUE") ? -500 : 500;
-        g.queueIndirectFire("mortar", side, g.contactFor(side, target.id)!.lastKnownPosition, {
+        g.queueIndirectFire("mortar", side, g.contactFor(side, target)!.lastKnownPosition, {
           firingFrom: { x: hq.position.x, y: hq.position.y + rear },
         });
       }
     }
 
-    // Movement: fire and movement. Out of contact everyone advances; in contact
-    // the two halves alternate, one bounding while the other is the base of fire.
+    // Movement and fire are the squad drill's (src/app/drill.ts): the same
+    // executor, working from the same fog-bound view, that will carry out a
+    // simulated subordinate's orders.
     note(g.advanceToPhase("movement").morale);
-    for (const side of order) {
-      const forces = fighting(g, side);
-      contact[side] ||= g.contactsFor(side).length > 0;
-      if (attackers.includes(side)) {
-        forces.forEach((u, i) => {
-          if (u.neutralized || u.routing || u.surrendered) return;
-          const target = nearestKnown(g, u);
-          if (target && distance(u.position, target.position) <= 30) {
-            g.setStandingOrder(u.id, { gait: "normal" });
-            return;
-          }
-          const bounding = !contact[side] || (i + turn) % 2 === 0;
-          const aim = target ? target.position : objective[side];
-          g.setStandingOrder(
-            u.id,
-            bounding ? { gait: contact[side] ? "run" : "normal", destination: toward(u.position, aim, 100) } : { gait: "normal" },
-          );
-        });
-      }
-      g.executeStandingOrders(side);
-      // Command groups follow 80 m behind the centre of their fighting forces.
-      const live = forces.filter((u) => !u.neutralized && !u.routing);
-      for (const hq of g.units.filter((u) => u.side === side && u.kind === "command" && !u.neutralized && !u.routing)) {
-        if (live.length === 0) break;
-        const cx = live.reduce((s, u) => s + u.position.x, 0) / live.length;
-        const cy = live.reduce((s, u) => s + u.position.y, 0) / live.length;
-        const north = objective[side].y > cy;
-        const want = { x: cx, y: cy + (north ? -80 : 80) };
-        if (distance(hq.position, want) < 5) continue;
-        try {
-          g.moveUnit(hq.id, toward(hq.position, want, 25));
-        } catch {
-          // Pinned, blocked, out of budget: it stays where it is.
-        }
-      }
-    }
-
-    // Combat: fire at the nearest enemy known and in reach; assault inside 25 m.
-    // A defender with nothing to shoot at covers its front (חיפוי).
+    for (const side of order) drillMovement(g, tasks[side], drill, drillState);
     g.advanceToPhase("combat");
-    for (const side of order) {
-      const defending = !attackers.includes(side);
-      for (const u of g.units.filter((x) => x.side === side)) {
-        if (u.neutralized || u.routing || u.surrendered) continue;
-        const target = nearestKnown(g, u);
-        const inReach = !!target && distance(u.position, target.position) <= 400 && g.hasLineOfSight(u, target);
-        if (defending && !inReach) {
-          if (!u.covering && !u.firedThisTurn) {
-            try {
-              g.setCovering(u.id, true);
-            } catch {
-              // Nobody fit to cover with.
-            }
-          }
-          continue;
-        }
-        if (defending && u.covering) g.setCovering(u.id, false);
-        if (!target || !inReach) continue;
-        if (distance(u.position, target.position) <= 25 && u.kind !== "command") g.assault(u.id, target.id, 2);
-        else g.fire(u.id, target.id, { weapon: "smallArms" });
-      }
-    }
+    for (const side of order) drillCombat(g, tasks[side], drill);
     for (const u of g.units) {
       if (u.kind === "command") continue;
       const s = u.suppression ?? 0;
@@ -483,8 +425,10 @@ export function judge(
   variants: RuleVariants,
   battles: number,
   preparedCover: "partial" | "full" = "partial",
+  drill?: SquadDrill,
 ): Verdict {
-  const cell = (kind: BattleKind) => runCell(echelon, kind, { morale: true, variants, battles, preparedCover });
+  const cell = (kind: BattleKind) =>
+    runCell(echelon, kind, { morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}) });
   const a1 = cell("attack1");
   const a2 = cell("attack2");
   const a3 = cell("attack3");

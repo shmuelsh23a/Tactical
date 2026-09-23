@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 517 tests, 28 files
+npm run check       lint + typecheck clean, 521 tests, 29 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -56,6 +56,16 @@ others do to shooting, movement, detection and the rest is the next ruling;
 build nothing on them before it. Also his, and not built: **campaigns carry
 the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
+
+**Fourth round, 2026-09-23: the squad drill.** The harness's squads now fight
+by a `SquadDrill` ([`app/drill.ts`](../src/app/drill.ts)) — data, carried out
+by one executor that sees only its side's view. That is the future default
+for simulated subordinates (backlog 15), and the thing the TTP editor
+(backlog 20, added by the author today) will edit. The Western drill meets
+**11 of 12** balance targets, against the plain script's 9; the platoon gap
+is closed. Open: the drill's numbers (all ours), the one remaining miss (a
+winning platoon attacker loses 8%), and the assault reply's rate, which
+measures as irrelevant under every drill.
 
 **Third round, 2026-09-23.** ירי מקביל is the **coaxial gun** (decision 25):
 infantry no longer fire that table, and vehicles now can. The **wound-severity

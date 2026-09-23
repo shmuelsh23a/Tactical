@@ -1655,6 +1655,18 @@ Each is intended to be an independent, toggleable module:
     the demo scenario's scripted RED, which is the comparison that says whether
     any of this is worth keeping.
 
+    **What carries an order out is built** (2026-09-23): the **squad drill**
+    ([`app/drill.ts`](src/app/drill.ts)). A subordinate's order from the model
+    — or from a player — is executed by a `SquadDrill`, data read by one small
+    executor that sees only its side's view. The balance harness plays it, and
+    the Western drill meets 11 of the 12 balance targets (docs/balance.md).
+    The measured scaling that settles where the model sits: **Jev decides for
+    commanders, platoon and up; squads execute the drill; a squad leader asks
+    the model only at a moment of decision** — spring the ambush, fall back —
+    rather than every turn. At brigade size that is about 74 calls a turn
+    against about 216 if every squad reasoned (docs/balance.md, *How the
+    engine scales*).
+
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next
     piece of ground, and what happened to it carries over.
@@ -1748,3 +1760,33 @@ Each is intended to be an independent, toggleable module:
     300 m visible band and the 20 m hidden one, the eye heights of rules
     decision 15, camouflage and cover, and smoke's own duration, which wind
     would presumably move.
+
+20. **A TTP editor — squad tactics a player or instructor can rewrite.**
+    (Author, 2026-09-23.) The simulated subordinates of backlog 15 carry out
+    their orders with a **squad drill**: how far a bound goes and at what
+    gait, whether squads bound in overwatch pairs, which sector each squad
+    shoots into, when to open fire, when to assault, when to break contact.
+    That drill is tactics, techniques and procedures (TTP), and **it is
+    doctrine, not rules**: two armies, or two instructors, run a platoon
+    attack differently, and the game should be able to show both. The editor
+    lets a player or an instructor adapt the squad-level tactics to actual
+    doctrine and save them as a named drill, to be played or measured.
+
+    **What makes it cheap later is how the drill is built now.** It is **data**
+    (a `SquadDrill`, [`src/app/drill.ts`](src/app/drill.ts)) interpreted by one
+    small executor, not logic spread through the code. The editor is therefore
+    a form over that data, not a programming tool. Three rules keep it that way:
+    - **A drill decides; the engine resolves.** Drills emit the same actions a
+      player clicks — standing orders, fire, assaults, postures — so no drill,
+      however written, can change a rule or an outcome's odds.
+    - **A drill sees what its side sees.** It reads the side's contact ledger,
+      never the umpire's map (backlog 15's trap).
+    - **A drill is measurable.** The balance harness plays any drill (backlog
+      item on balance, docs/balance.md), so "does our doctrine work under these
+      rules?" is a question with a number for an answer. That is the
+      instructor's use as much as the player's.
+
+    Open (⚠️): which parameters are exposed (the first drill's are the
+    obvious start); whether a drill can branch on events ("if pinned, call
+    smoke") or only set numbers; where drills are stored and shared; and
+    whether a scenario can require a drill, as an exercise would.

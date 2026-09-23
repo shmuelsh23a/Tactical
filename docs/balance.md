@@ -612,6 +612,57 @@ reply in the assault, against the same targets.
 one roll a turn is confirmed (decision 25). The sweep now covers only the
 assault reply rate, which is all that is left on trial.
 
+## Fourth round: the squad drill, 2026-09-23
+
+The rules were not the whole problem; **the decisions were**. The harness's
+squads used to fight by a plain script. Every force shot at the nearest enemy
+it knew of — and, it turned out, at where that enemy truly was rather than
+where it was last seen. Half bounded while half fired, and nobody broke
+contact.
+
+Squads now fight by a **drill** ([`app/drill.ts`](../src/app/drill.ts)): a
+`SquadDrill` of named numbers, carried out by one small executor that reads
+only its side's view. That executor is also the one the simulated
+subordinates will use (backlog 15), and its data is what the TTP editor will
+edit (backlog 20). Two drills are defined:
+- **The plain script**: the old doctrine, kept as the baseline.
+- **The Western drill** (⚠️ ours, a first draft):
+  - sectors of fire, 60° on each force's axis;
+  - bounding overwatch with 50 m rushes;
+  - the attacker opens fire at 300 m;
+  - the defender holds its fire to 200 m, as a hold-fire order, so its
+    covering fire keeps the discipline too;
+  - a force breaks contact once, at half strength, falling back 150 m.
+
+The same targets, the rules as they now stand (decisions 22–26), 100 battles a
+cell, no reply in the assault:
+
+| Drill | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| plain script | squad | 6% | 67% | 94% | 17% | 4/4 |
+| plain script | platoon | 2% | 87% | 100% | 5% | 2/4 |
+| plain script | company | 0% | 10% | 99% | 10% | 3/4 |
+| **plain script** | **all** | | | | | **9/12** |
+| western drill | squad | 4% | 48% | 76% | 16% | 4/4 |
+| western drill | platoon | 0% | 63% | 100% | 8% | 3/4 |
+| western drill | company | 0% | 31% | 92% | 16% | 4/4 |
+| **western drill** | **all** | | | | | **11/12** |
+
+**The Western drill meets 11 of 12**, against the plain script's 9.
+- **The platoon fight is fixed**: a 2:1 attack now wins 63%, where it was 87%.
+- **The one miss**: a winning platoon attacker at 3–4:1 loses 8%, against a
+  target of 10–30%. That is 36 men against 9, where the square law still has
+  the most to say.
+- **The reply rate in the assault still changes nothing** under either drill.
+
+The mirror stays even (`--kinds meeting --drill western`, 200 battles a cell):
+
+| | BLUE / RED / draw | turns | loser / winner down |
+|---|---|---|---|
+| squad | 46 / 53 / 1 | 7 | 53% / 18% |
+| platoon | 46 / 51 / 4 | 9 | 41% / 21% |
+| company | 47 / 45 / 9 | 9 | 37% / 24% |
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
