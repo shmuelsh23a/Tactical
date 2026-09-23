@@ -1039,32 +1039,35 @@ Company, Western drill, 100 battles a cell, seeds from 1000. "Table" is the
 document's dispersion; "CEP" is the trial above. The defender's prepared
 position is in partial cover (a hasty position) or full (dug in, no roof).
 
-**Each part alone** (impact fuze):
+**Each part alone** (impact fuze). Rerun after the review fixes: everything
+landing in one turn now finds the men as they were, and each tube adjusts
+onto its own point.
 
 | Fire | Accuracy | Prepared in | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
 |---|---|---|---|---|---|---|---|
-| none (the company's one bomb a turn) | either | either | 14–16% | 58–59% | 24–25% | 45% | 2/4 |
+| none (the company's one bomb a turn) | table | either | 16% | 62% | 25% | 45% | 2/4 |
+| | CEP | either | 14% | 58% | 24% | 45% | 2/4 |
 | 2 × 4 shells for the battle | table | partial | 81% | 100% | 0% | 81% | 2/4 |
-| | table | full | **28%** | 93% | 16% | 59% | 3/4 |
+| | table | full | **29%** | 93% | 16% | 59% | 3/4 |
 | | CEP | partial | 95% | 100% | 0% | 82% | 2/4 |
 | | CEP | full | **36%** | 93% | 13% | 60% | **4/4** |
-| 3 tubes × 1 bomb a turn | table | partial | 69% | 100% | 0% | 84% | 3/4 |
-| | table | full | **26%** | 99% | 6% | 67% | 2/4 |
-| | CEP | partial | 91% | 100% | 0% | 85% | 2/4 |
-| | CEP | full | **36%** | 99% | 4% | 68% | 3/4 |
-| 3 tubes × 3 bombs a turn | table | partial / full | 100% / 90% | 100% | 0% | 88–95% | 2/4 |
-| | CEP | partial / full | 100% / 97% | 100% | 0% | 89–95% | 2/4 |
+| 3 tubes × 1 bomb a turn | table | partial | 73% | 100% | 0% | 85% | 2/4 |
+| | table | full | **27%** | 99% | 6% | 67% | 2/4 |
+| | CEP | partial | 90% | 100% | 0% | 85% | 2/4 |
+| | CEP | full | **36%** | 99% | 3% | 70% | 3/4 |
+| 3 tubes × 3 bombs a turn | table | partial / full | 100% / 91% | 100% | 0% | 88–95% | 2/4 |
+| | CEP | partial / full | 100% / 99% | 100% | 0% | 90–95% | 2/4 |
 
-**Together** (the 1:1 attack never wins more than 7%, except as noted):
+**Together** (the 1:1 attack never wins more than 11%, except as noted):
 
 | Fire | Accuracy | Fuze | Prepared in | ~2:1 win | Out by HE |
 |---|---|---|---|---|---|
 | 2 × 4 shells a battle + 3 × 3 bombs a turn | any | any | any | 100% | 93–97% |
-| 2 × 4 shells a battle + 3 × 1 bomb a turn | table | impact | full | **60%** | 82% |
-| | CEP | impact | full | 86% | 84% |
-| | any | impact | partial | 100% | 93–94% |
+| 2 × 4 shells a battle + 3 × 1 bomb a turn | table | impact | full | **61%** | 82% |
+| | CEP | impact | full | 80% | 84% |
+| | any | impact | partial | 100% | 94% |
 | | any | air burst | any | 100% | 95–96% |
-| 2 × 4 shells **a turn** + 3 × 3 bombs a turn | any | any | any | 100% (1:1: up to 50% with air burst) | 97–99% |
+| 2 × 4 shells **a turn** + 3 × 3 bombs a turn | any | any | any | 100% (1:1: 21–40% with air burst on the table's accuracy) | 96–99% |
 
 ### What it says
 
@@ -1073,25 +1076,25 @@ position is in partial cover (a hasty position) or full (dug in, no roof).
   the document's rate, 3 tubes fire 9 bombs a turn, about 36 over the
   approach. Alone, that wins a 2:1 attack 90–100% of the time.
 - **The two artillery missions are about right on their own.** Against a
-  dug-in company they give 28–36% at 2:1 and 93% at 3–4:1. At 15 m CEP that
+  dug-in company they give 29–36% at 2:1 and 93% at 3–4:1. At 15 m CEP that
   meets all four company targets. Explosives put out 60% of the men.
-- **So does a section at 1 bomb a tube a turn.** Both together give 60% at
-  2:1 on the table's accuracy and 86% at 15 m CEP, against a dug-in defender.
+- **So does a section at 1 bomb a tube a turn.** Both together give 61% at
+  2:1 on the table's accuracy and 80% at 15 m CEP, against a dug-in defender.
 - **Digging in is what the numbers turn on.** Against a hasty position,
-  every allocation above wins a 2:1 attack 69–100% of the time.
+  every allocation above wins a 2:1 attack 73–100% of the time.
 - **An air burst wins against any defender without a roof.** It finds open
   holes at ×⅝, so every air-burst row is 100%. That is decision 31 working
   as the sources say. It also means the question is whether a prepared
   position has overhead cover. Today only a building does.
 - **What accuracy is worth depends on how much fire there is.** Against a
-  dug-in company, the trial's accuracy adds 8–10 points to a 2:1 attack
-  with each part alone. With both parts together it adds 26 points (60% to
-  86%). Against the full allocation it makes no difference, because the
+  dug-in company, the trial's accuracy adds 7–9 points to a 2:1 attack
+  with each part alone. With both parts together it adds 19 points (61% to
+  80%). Against the full allocation it makes no difference, because the
   attack already wins.
-- **Without a fire plan the attack is harder than before.** The 3–4:1
-  attack wins 58–59%, down from 62%, because full cover is now ×⅛ and later
-  volleys find men down. A company is expected to attack with fire support.
-  These rows are its absence.
+- **Without a fire plan, decisions 29–31 barely move the attack.** With
+  the table's accuracy, the 3–4:1 attack still wins 62% and misses its
+  target, as it did before them. With the trial's it wins 58%. A company is
+  expected to attack with fire support; these rows are its absence.
 - **The fire is one-sided.** The defender has no section of its own, no
   counter-battery fire and no way to move off a shelled position.
 

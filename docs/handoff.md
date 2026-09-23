@@ -62,7 +62,7 @@ The author's allocation, 2 artillery missions of 4 shells and 3 mortars at
 the document's 3 bombs a tube a turn, **decides a 2:1 company attack every
 time**. It is on [balance.md](balance.md), *Eighth round*. The mortar
 section's volume does it. Each part alone lands in the target band against
-a dug-in defender: two missions alone give 28–36% at 2:1.
+a dug-in defender: two missions alone give 29–36% at 2:1.
 
 What to put to him next:
 1. **The mortar section's rate.** Is it 3 bombs a tube a turn, as the

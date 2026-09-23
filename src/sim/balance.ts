@@ -314,7 +314,10 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         // A battle's missions take their places along the frontage in turn.
         fire("artillery", artillery, plan.shellsPerMission ?? 1, plan.artilleryFor === "battle" ? artilleryFired : 0);
         artilleryFired += artillery;
-        fire("mortar", plan.mortar, plan.bombsPerTube ?? 1);
+        // Per turn, the mortar takes the places after the artillery's, as the
+        // earlier rounds on balance.md were run; for a battle's budget it keeps
+        // its own, so its tubes can walk onto the same points turn after turn.
+        fire("mortar", plan.mortar, plan.bombsPerTube ?? 1, plan.artilleryFor === "battle" ? 0 : artillery);
       }
     }
     if (echelon === "company") {

@@ -33,5 +33,8 @@ export const ARTILLERY_DISPERSION = {
  */
 export const ADJUSTMENT_RADIUS_M = 100;
 
+/** The most rounds one mission may fire — a guard, not a rule: a battery's volley is a handful. */
+export const MAX_ROUNDS_PER_MISSION = 100;
+
 export type RangeDeviation = "short" | "long" | "onTarget";
 export type LineDeviation = "right" | "left" | "onTarget";

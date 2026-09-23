@@ -20,8 +20,8 @@ import type {
 } from "./types.js";
 import type { MovementMode } from "./types.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES, type Fuze } from "./data/explosives.js";
-import { ADJUSTMENT_RADIUS_M } from "./data/artillery.js";
+import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
+import { ADJUSTMENT_RADIUS_M, MAX_ROUNDS_PER_MISSION } from "./data/artillery.js";
 import {
   SMOKE_BLOCKS_FIRE,
   SMOKE_DURATION_TURNS,
@@ -344,6 +344,11 @@ export class Game {
     this.terrain = opts.terrain ?? FLAT_GROUND;
     this.morale = opts.morale ?? false;
     this.variants = opts.variants ?? {};
+    for (const [weapon, c] of Object.entries(this.variants.cepDispersion ?? {})) {
+      if (!(c.capM > 0) || !(c.firstM >= c.capM)) {
+        throw new Error(`cepDispersion.${weapon}: needs 0 < capM <= firstM, not ${c.capM} and ${c.firstM}`);
+      }
+    }
   }
 
   /**
@@ -575,7 +580,11 @@ export class Game {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     }
     const rounds = opts.rounds ?? 1;
-    if (!Number.isInteger(rounds) || rounds < 1) throw new Error(`a mission fires a whole number of rounds, not ${rounds}`);
+    if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
+      throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds, not ${rounds}`);
+    }
+    const fuze = opts.fuze ?? "impact";
+    if (!(fuze in SHELL_VS_MEN)) throw new Error(`no such fuze: ${String(fuze)}`);
     const mission: PendingFireMission = {
       id: this.nextId("fire"),
       weapon: weaponKey,
@@ -585,12 +594,20 @@ export class Game {
       observedByUav: opts.observedByUav ?? false,
       // Only when not the default, so a digest of an older game is unchanged.
       ...(rounds > 1 ? { rounds } : {}),
-      ...(opts.fuze && opts.fuze !== "impact" ? { fuze: opts.fuze } : {}),
+      ...(fuze !== "impact" ? { fuze } : {}),
     };
     // Stash firing origin on the mission for dispersion orientation.
     (mission as PendingFireMission & { firingFrom?: Point }).firingFrom = opts.firingFrom;
     this.pendingFire.push(mission);
-    this.journal({ kind: "queueIndirectFire", weaponKey, side, target, opts });
+    // As adopted: the defaults are left out, as they are on the mission.
+    const { rounds: _r, fuze: _f, ...rest } = opts;
+    this.journal({
+      kind: "queueIndirectFire",
+      weaponKey,
+      side,
+      target,
+      opts: { ...rest, ...(rounds > 1 ? { rounds } : {}), ...(fuze !== "impact" ? { fuze } : {}) },
+    });
     return mission;
   }
 
@@ -609,13 +626,17 @@ export class Game {
   private cepFor(m: PendingFireMission): number | undefined {
     const spec = this.variants.cepDispersion?.[m.weapon];
     if (!spec) return undefined;
+    // Only last turn's fire can be adjusted from. Each mission keeps its own
+    // entry, so tubes aimed side by side each walk onto their own point.
     this.adjusting = this.adjusting.filter((a) => a.turn >= this.turn - 1);
-    const previous = this.adjusting.find(
-      (a) => a.side === m.side && a.weapon === m.weapon && distance(a.aim, m.target) <= ADJUSTMENT_RADIUS_M,
-    );
-    const adjustments = !previous ? 0 : previous.turn < this.turn ? previous.adjustments + 1 : previous.adjustments;
-    if (previous) Object.assign(previous, { aim: m.target, turn: this.turn, adjustments });
-    else this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
+    let previous: (typeof this.adjusting)[number] | undefined;
+    for (const a of this.adjusting) {
+      if (a.turn !== this.turn - 1 || a.side !== m.side || a.weapon !== m.weapon) continue;
+      const d = distance(a.aim, m.target);
+      if (d <= ADJUSTMENT_RADIUS_M && (!previous || d < distance(previous.aim, m.target))) previous = a;
+    }
+    const adjustments = previous ? previous.adjustments + 1 : 0;
+    this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
     return Math.max(spec.capM, spec.firstM / 2 ** adjustments);
   }
 
@@ -623,7 +644,10 @@ export class Game {
   private resolveDueFireMissions(): IndirectFireResult[] {
     const due = this.pendingFire.filter((m) => m.resolvesOnTurn <= this.turn);
     this.pendingFire = this.pendingFire.filter((m) => m.resolvesOnTurn > this.turn);
-    return due.flatMap((m) => {
+    // Everything due this turn lands together: the men are as they were for
+    // all of it, and go to ground after it (rules decision 30).
+    const shelled = new Set<Unit>();
+    const results = due.flatMap((m) => {
       const cepM = this.cepFor(m);
       const fired = Array.from({ length: m.rounds ?? 1 }, () =>
         resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
@@ -635,13 +659,12 @@ export class Game {
           ...(cepM !== undefined ? { cepM } : {}),
         }),
       );
-      // Everyone the rounds came down on was shelled, caught or not — and has
-      // gone to ground for whatever comes next (rules decision 30).
+      // Everyone the rounds came down on was shelled, caught or not.
       for (const round of fired) {
         for (const hit of round.blast.targets) {
           const unit = this.getUnit(hit.unitId);
           this.noteFire(unit, "indirect", SUPPRESSION.indirect);
-          if (unit.kind === "infantry") unit.downUnderShelling = true;
+          if (unit.kind === "infantry") shelled.add(unit);
         }
       }
       // Who called it, so a report can say how far it fell from the aim point
@@ -649,6 +672,8 @@ export class Game {
       // spread, so the mission stays the authority if the resolver ever sets it.
       return fired.map((f) => ({ ...f, side: m.side }));
     });
+    for (const unit of shelled) unit.downUnderShelling = true;
+    return results;
   }
 
   // ---- movement phase ----

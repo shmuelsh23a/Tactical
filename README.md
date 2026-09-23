@@ -1339,9 +1339,13 @@ on the stated reasoning, still awaiting the author's word.
 30. ✅ **The first volley catches men on their feet** (author, 2026-09-23).
     A shell's blast chance is the document's against men standing. Once a
     force has been shelled, its men are down for the next rounds, ×0.36, until
-    it moves (`Unit.downUnderShelling`). All the rounds of one mission land
-    together and find the men as they were. That is why a mission of several
-    rounds is worth more than the same rounds one at a time.
+    it moves (`Unit.downUnderShelling`). Everything that lands in the same
+    turn, whatever mission or side fired it, lands together and finds the
+    men as they were. That is why massing fire into one turn is worth more
+    than the same rounds spread over several.
+    - Partial cover takes the lower of its own ×½ and the men's posture:
+      ×½ on their feet, ×0.36 once down. Under an air burst it counts for
+      nothing (decision 31).
     - A mission can fire several rounds (`queueIndirectFire`'s `rounds`),
       each scattered on its own. The live UI still fires one.
     - ⚠️ ×0.36 is ours: prone ÷ standing lethal area for a 105 or 155 mm round.
