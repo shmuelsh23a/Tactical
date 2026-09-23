@@ -1500,13 +1500,39 @@ the squads' fire discipline.
 - **At platoon the puzzle is gone**: OPs now help the defender a little (2:1
   67% → 59%), as they should.
 - **At company OPs still help the attacker, more than before** (2:1 46% →
-  83%, and unplanned 3–4:1 41% → 64%). A platoon battle has no fire support,
-  so the second mechanism is almost certainly in the fire: the defender's
-  missions called on what its OPs see. **Not found yet.** The next step is the
-  same count as above for the defender's missions — when they are called, at
-  what range, and whether they land on anything.
+  83%, and unplanned 3–4:1 41% → 64%). The cause is found, below: it is a
+  rule, not the harness.
 - With only the free bomb, OPs still win the defence outright (3–4:1: 42% →
   0%).
+
+**Why OPs help the attacker at company: seeing the target makes a mission
+slower.** Company 2:1, 60 battles a row, the defender's 4 mortar missions
+counted as they are called:
+
+| Defender | Attacker wins | Defender's calls | Median turn | Median gap to the attacker | Straight to effect |
+|---|---|---|---|---|---|
+| no missions, OPs or not | 60/60 | 0 | — | — | — |
+| missions, no OPs | 29/60 | 65 | 11 | 209 m | 65 of 65 |
+| missions, OPs | 49/60 | 142 | 6 | 452 m | 41 of 142 |
+| missions, OPs, but its fire counted as unobserved | **23/60** | 238 | 3 | 601 m | 238 of 238 |
+| missions held until the attacker is inside 300 m of the command group, no OPs / OPs | 53 / 56 of 60 | 36 / 25 | 11 | 209 m | all |
+
+- Decisions 33–34: a mission its side **sees** adjusts, one round at a time
+  (a mortar every second turn, up to 4), before its 12 rounds for effect. A
+  mission **nobody sees** fires for effect at once, at first-round accuracy.
+- Without OPs the defender sees the attacker only at about 200 m, where its
+  calls cannot be observed from the line, so every one goes straight to
+  effect. With OPs it sees the attacker at 450 m, its calls are observed, and
+  they adjust onto a force that keeps walking out from under them. The
+  missions are spent before the assault.
+- The same OPs with the fire counted as unobserved **help the defender**
+  (29 → 23 of 60). Holding the calls until the attacker is close makes it
+  worse, so the timing is not the lever; the method is.
+- **This is a rules question for the author.** In doctrine the observer
+  chooses the method in the call itself: *adjust fire*, or *fire for effect*
+  straight away when the target's location is good enough or surprise
+  matters. Today the engine chooses, and against a moving target it chooses
+  the slower one exactly when the side can see.
 - The eleventh round's figures barely move with the fix (company 2:1 47% →
   46%).
 

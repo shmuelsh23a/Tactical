@@ -99,14 +99,16 @@ What to put to him next, all from decision 38 and the twelfth round:
    weapon, an OP sees a moving force to 1,000 m, one alternate position a
    force, 25 m to be "in" a prepared position, and an alternate is partial
    cover for a force that had no prepared position.
-2. **OPs help the attacker at company in the harness, and we do not yet know
-   why.** Half of it was the drill (defending command groups had no hold-fire
-   order, so an attacker seen sooner drew their covering fire at 300–400 m);
-   fixed, and at platoon OPs now help the defender a little. At company they
-   still help the attacker, more than before (2:1 46% → 83%). The second cause
-   is almost certainly in the defender's fire missions. **Find it before
-   showing him numbers about OPs** — balance.md, *Twelfth round*, says what to
-   count next.
+2. **OPs help the attacker at company because seeing the target makes a
+   mission slower** (balance.md, *Twelfth round*). A mission its side sees
+   adjusts, a round every second turn, before firing for effect; one nobody
+   sees fires for effect at once (decisions 33–34). With OPs the defender's
+   missions are observed, adjust onto a moving attacker and are spent before
+   the assault (company 2:1: 46% → 83%). With the fire counted as unobserved
+   the same OPs help the defender (29 → 23 wins of 60). **Ask him:** should
+   the caller choose adjust fire or fire for effect, as the observer does in
+   doctrine? (Half of the original puzzle was a drill bug — command groups
+   without hold-fire — and is fixed.)
 3. **Displacing still hurts the defender, even to a prepared alternate**
    (company 2:1: 47% → 100%). It runs through the fire to get there and is
    seen moving. Doctrine displaces *between* volleys or at night; the drill
