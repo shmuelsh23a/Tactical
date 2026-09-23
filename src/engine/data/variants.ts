@@ -26,5 +26,15 @@ export interface RuleVariants {
    */
   preparedTestBonus?: number;
   preparedLossFactor?: number;
+  /**
+   * Accuracy by CEP, in place of the document's dispersion table (author,
+   * 2026-09-23: "15 m CEP for artillery", a mortar's from the sources, and
+   * "adjustable — increasing accuracy up to a cap"). By weapon key. A
+   * mission's rounds scatter as a circular normal with CEP
+   * `max(capM, firstM ÷ 2^adjustments)`: each turn the same side's same
+   * weapon fires again within `ADJUSTMENT_RADIUS_M` of its last aim, the
+   * error halves — the observer's bracket. A weapon left out keeps the table.
+   */
+  cepDispersion?: Record<string, { firstM: number; capM: number }>;
 }
 

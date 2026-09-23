@@ -20,7 +20,8 @@ import type {
 } from "./types.js";
 import type { MovementMode } from "./types.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES } from "./data/explosives.js";
+import { EXPLOSIVES, type Fuze } from "./data/explosives.js";
+import { ADJUSTMENT_RADIUS_M } from "./data/artillery.js";
 import {
   SMOKE_BLOCKS_FIRE,
   SMOKE_DURATION_TURNS,
@@ -70,6 +71,7 @@ import {
   boundCost,
   climbAlong,
   coverFromObjects,
+  underRoof,
   effectiveCover,
   eyeHeight,
   reachAlong,
@@ -556,18 +558,24 @@ export class Game {
 
   // ---- targeting phase ----
 
-  /** Queue an indirect-fire mission; it resolves after the weapon's delay. */
+  /**
+   * Queue an indirect-fire mission; it resolves after the weapon's delay. Its
+   * `rounds` land together, each scattered on its own (rules decision 30: the
+   * men they fall on are still on their feet for all of them).
+   */
   queueIndirectFire(
     weaponKey: string,
     side: Side,
     target: Point,
-    opts: { firingFrom?: Point; observedByUav?: boolean } = {},
+    opts: { firingFrom?: Point; observedByUav?: boolean; rounds?: number; fuze?: Fuze } = {},
   ): PendingFireMission {
     this.requirePhase("targeting");
     const weapon = EXPLOSIVES[weaponKey];
     if (!weapon || weapon.delivery !== "indirectFire") {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     }
+    const rounds = opts.rounds ?? 1;
+    if (!Number.isInteger(rounds) || rounds < 1) throw new Error(`a mission fires a whole number of rounds, not ${rounds}`);
     const mission: PendingFireMission = {
       id: this.nextId("fire"),
       weapon: weaponKey,
@@ -575,6 +583,9 @@ export class Game {
       target,
       resolvesOnTurn: this.turn + (weapon.impactDelayTurns ?? 1),
       observedByUav: opts.observedByUav ?? false,
+      // Only when not the default, so a digest of an older game is unchanged.
+      ...(rounds > 1 ? { rounds } : {}),
+      ...(opts.fuze && opts.fuze !== "impact" ? { fuze: opts.fuze } : {}),
     };
     // Stash firing origin on the mission for dispersion orientation.
     (mission as PendingFireMission & { firingFrom?: Point }).firingFrom = opts.firingFrom;
@@ -583,27 +594,60 @@ export class Game {
     return mission;
   }
 
-  /** Resolve indirect-fire missions whose impact-delay elapses this turn. */
+  /**
+   * Where each side's guns last fired and how many times running they have
+   * adjusted onto it — only while the accuracy-by-CEP variant is on trial.
+   */
+  private adjusting: { side: Side; weapon: string; aim: Point; turn: number; adjustments: number }[] = [];
+
+  /**
+   * The CEP a mission fires with under the accuracy variant, and the
+   * observer's bracket behind it: the same side's same weapon firing again,
+   * the next turn, within {@link ADJUSTMENT_RADIUS_M} of its last aim halves
+   * the error, down to the weapon's cap. Undefined: the document's table.
+   */
+  private cepFor(m: PendingFireMission): number | undefined {
+    const spec = this.variants.cepDispersion?.[m.weapon];
+    if (!spec) return undefined;
+    this.adjusting = this.adjusting.filter((a) => a.turn >= this.turn - 1);
+    const previous = this.adjusting.find(
+      (a) => a.side === m.side && a.weapon === m.weapon && distance(a.aim, m.target) <= ADJUSTMENT_RADIUS_M,
+    );
+    const adjustments = !previous ? 0 : previous.turn < this.turn ? previous.adjustments + 1 : previous.adjustments;
+    if (previous) Object.assign(previous, { aim: m.target, turn: this.turn, adjustments });
+    else this.adjusting.push({ side: m.side, weapon: m.weapon, aim: m.target, turn: this.turn, adjustments });
+    return Math.max(spec.capM, spec.firstM / 2 ** adjustments);
+  }
+
+  /** Resolve indirect-fire missions whose impact-delay elapses this turn: one result a round. */
   private resolveDueFireMissions(): IndirectFireResult[] {
     const due = this.pendingFire.filter((m) => m.resolvesOnTurn <= this.turn);
     this.pendingFire = this.pendingFire.filter((m) => m.resolvesOnTurn > this.turn);
-    return due.map((m) => {
-      const fired = resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
-        firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
-        fixedWingObserved: m.observedByUav,
-        turn: this.turn,
-      });
-      // Everyone the rounds came down on was shelled, caught or not.
-      for (const hit of fired.blast.targets) {
-        this.noteFire(this.getUnit(hit.unitId), "indirect", SUPPRESSION.indirect);
+    return due.flatMap((m) => {
+      const cepM = this.cepFor(m);
+      const fired = Array.from({ length: m.rounds ?? 1 }, () =>
+        resolveIndirectFire(this.rng, m.weapon, m.target, this.units, {
+          firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
+          fixedWingObserved: m.observedByUav,
+          turn: this.turn,
+          ...(m.fuze ? { fuze: m.fuze } : {}),
+          underRoof: (u) => underRoof(this.terrain, u.position),
+          ...(cepM !== undefined ? { cepM } : {}),
+        }),
+      );
+      // Everyone the rounds came down on was shelled, caught or not — and has
+      // gone to ground for whatever comes next (rules decision 30).
+      for (const round of fired) {
+        for (const hit of round.blast.targets) {
+          const unit = this.getUnit(hit.unitId);
+          this.noteFire(unit, "indirect", SUPPRESSION.indirect);
+          if (unit.kind === "infantry") unit.downUnderShelling = true;
+        }
       }
-      return {
-        ...fired,
-        // Who called it, so a report can say how far it fell from the aim point
-        // to the side that aimed it and no further (rules decision 17). After the
-        // spread, so the mission stays the authority if the resolver ever sets it.
-        side: m.side,
-      };
+      // Who called it, so a report can say how far it fell from the aim point
+      // to the side that aimed it and no further (rules decision 17). After the
+      // spread, so the mission stays the authority if the resolver ever sets it.
+      return fired.map((f) => ({ ...f, side: m.side }));
     });
   }
 

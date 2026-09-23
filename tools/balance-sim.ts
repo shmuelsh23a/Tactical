@@ -9,6 +9,8 @@
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
  *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
  *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
+ *   npm run balance -- --fires artillery=2x4/battle,mortar=3x3,fuze=airburst   # missions x rounds
+ *   npm run balance -- --cep artillery:15:15,mortar:100:25   # on trial: accuracy by CEP, first:cap metres
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
  *   npm run balance -- --morale on                   # only with morale (or: off)
@@ -22,6 +24,7 @@ import {
   CONFIGURATIONS,
   ECHELONS,
   FIRE_PLAN,
+  type FirePlan,
   MARKDOWN_HEADER,
   TARGETS,
   judge,
@@ -69,14 +72,45 @@ if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
 const steadyLoss = value("--steady-loss");
 if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
 const firesArg = value("--fires");
-const fires = !firesArg
-  ? undefined
-  : firesArg === "plan"
-    ? FIRE_PLAN
-    : (([artillery, mortar, liftAt]) => ({ artillery: artillery!, mortar: mortar!, liftAt: liftAt ?? FIRE_PLAN.liftAt }))(
-        firesArg.split(",").map(Number),
-      );
-
+// --fires plan | a,m[,lift] (shells and bombs a turn) | key=value,... :
+//   artillery=2x4/battle  missions x shells each, per turn (default) or for the battle
+//   mortar=3x3            tubes x bombs each, a turn
+//   lift=400  fuze=airburst
+const parseFires = (arg: string): FirePlan => {
+  if (arg === "plan") return FIRE_PLAN;
+  if (!arg.includes("=")) {
+    const [artillery, mortar, liftAt] = arg.split(",").map(Number);
+    return { artillery: artillery!, mortar: mortar!, liftAt: liftAt ?? FIRE_PLAN.liftAt };
+  }
+  const plan: FirePlan = { artillery: 0, mortar: 0, liftAt: FIRE_PLAN.liftAt };
+  for (const part of arg.split(",")) {
+    const [key, v = ""] = part.split("=");
+    const m = /^(\d+)(?:x(\d+))?(?:\/(turn|battle))?$/.exec(v);
+    if (key === "artillery" && m) {
+      plan.artillery = Number(m[1]);
+      plan.shellsPerMission = Number(m[2] ?? 1);
+      plan.artilleryFor = (m[3] as "turn" | "battle" | undefined) ?? "turn";
+    } else if (key === "mortar" && m && !m[3]) {
+      plan.mortar = Number(m[1]);
+      plan.bombsPerTube = Number(m[2] ?? 1);
+    } else if (key === "lift" && m && !m[2] && !m[3]) plan.liftAt = Number(m[1]);
+    else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
+    else throw new Error(`--fires: cannot read "${part}"`);
+  }
+  return plan;
+};
+const fires = firesArg ? parseFires(firesArg) : undefined;
+// --cep artillery:15:15,mortar:100:25 — on trial: accuracy by CEP, first:cap metres
+const cepArg = value("--cep");
+if (cepArg) {
+  variants.cepDispersion = {};
+  for (const part of cepArg.split(",")) {
+    const [weapon, first, cap] = part.split(":");
+    const [firstM, capM] = [Number(first), Number(cap ?? first)];
+    if (!weapon || !(firstM > 0) || !(capM > 0) || capM > firstM) throw new Error(`--cep: cannot read "${part}"`);
+    variants.cepDispersion[weapon] = { firstM, capM };
+  }
+}
 
 if (args.includes("--sweep")) {
   const configurations = CONFIGURATIONS;

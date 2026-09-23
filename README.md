@@ -1327,16 +1327,46 @@ on the stated reasoning, still awaiting the author's word.
     and each with its own blast. This is how the engine already read it, so
     nothing changed.
 29. ✅ **Cover counts against a shell** (author, 2026-09-23 — option a, after
-    the harness's sixth round, docs/balance.md). Each man's chance of being
+    the harness's sixth round, docs/balance.md). A man's chance of being
     caught by a shell or mortar bomb is ×½ if his force is in partial cover
-    and ×¼ in full (`BLAST_COVER_FACTOR` in `data/explosives.ts`). The
-    document's blast table ignores cover. **The factors are ours**, and so
-    is the scope: indirect fire only. Grenades, rifle grenades, RPGs, tank
-    rounds and mines are unchanged.
+    and **×⅛** in full. The document's blast table ignores cover. The full-cover
+    factor was ×¼ until the author moved it to ×⅛ the same day, to match the
+    published lethal areas: a foxhole is ×0.10–0.13 against standing men.
+    **The factors are ours**, from those sources, and so is the scope:
+    indirect fire only. Grenades, rifle grenades, RPGs, tank rounds and mines
+    are unchanged. The figures are `SHELL_VS_MEN` in `data/explosives.ts`.
     - **Rejected:** option b, where only full cover counts.
-    - It changes the outcome of any battle in which a shell lands on a force
-      in cover, so a sealed recording of one made before it fails
-      `verifyRecording`.
+30. ✅ **The first volley catches men on their feet** (author, 2026-09-23).
+    A shell's blast chance is the document's against men standing. Once a
+    force has been shelled, its men are down for the next rounds, ×0.36, until
+    it moves (`Unit.downUnderShelling`). All the rounds of one mission land
+    together and find the men as they were. That is why a mission of several
+    rounds is worth more than the same rounds one at a time.
+    - A mission can fire several rounds (`queueIndirectFire`'s `rounds`),
+      each scattered on its own. The live UI still fires one.
+    - ⚠️ ×0.36 is ours: prone ÷ standing lethal area for a 105 or 155 mm round.
+    - Source: the US Army's posture test of the 1970s. 58% of the men were
+      standing at the first impact, 29% two seconds later, none after eight.
+31. ✅ **Shells can be fuzed to burst in the air** (author, 2026-09-23). A
+    mission is fuzed for impact, as the document has it, or for air burst.
+    - An air burst is ×1.28 against standing men and ×0.97 against men down,
+      because going to ground barely helps.
+    - A wall or a fold gives nothing against it.
+    - It finds an open hole, full cover with no roof: ×⅝ against impact's ×⅛.
+      A dug or prepared position is an open hole.
+    - A building is a roof, and stays ×⅛ (`underRoof` in `terrain.ts`).
+    - It does nothing to a vehicle's tracks.
+    - ⚠️ Every factor is ours. They come from the lethal areas of a 155 mm
+      round (standing 971 → 1,240 m², prone 346 → 939 m²) and from FM 7-90:
+      a proximity fuze is five times as effective against open positions.
+      The two sources disagree on open holes. We followed FM 7-90, which is
+      what the author agreed to.
+    - The engine and the harness take a fuze (`queueIndirectFire`'s `fuze`).
+      The live UI does not offer one yet.
+
+    Decisions 29–31 change the outcome of any battle in which a shell lands on
+    men, so a sealed recording of one made before them fails
+    `verifyRecording`.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23, after rules decisions 19–29 and the seventh balance round.** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–31 and the eighth balance round.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -49,36 +49,37 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Start here: where the 2026-09-23 session stopped.** The blast question is
-settled. **One round is one shell** (decision 28), and **cover counts against
-a shell**, option a (decision 29): ×½ in partial cover, ×¼ in full, for
-indirect fire only.
+**Start here: where the 2026-09-23 session stopped.** Shells against men are
+settled as rules, with our numbers from published sources:
+- **29**: cover counts, ×½ partial and **×⅛** full.
+- **30**: the first volley finds men standing, and later ones find them down.
+- **31**: impact or air-burst fuze.
 
-He then asked what changing artillery **accuracy** would do. It was probed
-with a temporary edit, not committed, and the result is on
-[balance.md](balance.md), *Seventh round*. In short:
-- The table lands 49% of rounds on the aim point and 82% within 100 m, and
-  the blast is as wide as the miss. A miss costs a shell only about a sixth
-  of its effect.
-- Making the guns less accurate makes a single round less decisive. At
-  miss ×2 and 50% on target, all four company targets are met with one shell
-  a turn.
-- Against a battery's whole mission it does the reverse. Scattered rounds
-  cover a dispersed company, and a 1:1 attack goes from 2% to 44–94%.
+Accuracy by CEP is **on trial** (`cepDispersion`, `--cep`). Artillery is
+15 m. A mortar starts at 100 m and adjusts to 25 m.
+
+The author's allocation, 2 artillery missions of 4 shells and 3 mortars at
+the document's 3 bombs a tube a turn, **decides a 2:1 company attack every
+time**. It is on [balance.md](balance.md), *Eighth round*. The mortar
+section's volume does it. Each part alone lands in the target band against
+a dug-in defender: two missions alone give 28–36% at 2:1.
 
 What to put to him next:
-1. **How many shells a company may call in a turn.** This decides the
-   battle more than cover or accuracy does. Today that is decision 8's one
-   mission per side per turn, which now means one shell. It touches
-   ammunition (backlog 12).
-2. **Whether to change accuracy at all.** The table is the document's.
-   Changing it is his call, and it only helps if fire stays at a round or
-   two a turn.
+1. **The mortar section's rate.** Is it 3 bombs a tube a turn, as the
+   document's rate of fire says, or one mission a turn?
+2. **Does a prepared position have overhead cover?** Air burst beats any
+   position without a roof, and only buildings have one today.
+3. **Should accuracy by CEP become the rule**, in place of the document's
+   dispersion table? And does adjusting fire need an observer?
+4. **Fire support for the defender.** Its own section, counter-battery fire,
+   moving off a shelled position.
+5. Not built for the player yet: choosing rounds per mission and the fuze
+   in the live UI. The engine and harness have both.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). Under decision 29, with a bomb a
-turn on the objective, it measures 67%.
+([balance.md](balance.md), *Fifth round*). With either part of the
+allocation alone against a dug-in company, it measures 60–68%.
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):
@@ -104,7 +105,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **How many shells a company may call, and whether to touch accuracy** (above).
+- **The mortar section's rate, overhead cover, and accuracy by CEP** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
@@ -243,9 +244,8 @@ Measurements that cost real time and are already recorded:
 **Ordered. The first three want a word from him before anything is built;
 the fourth does not.**
 
-0. **Fire per company, and accuracy** — the questions the 2026-09-23
-   session ended on (see *Start here*). Put both to him with the seventh
-   round's table.
+0. **The fire-support questions** the 2026-09-23 session ended on (see
+   *Start here*). Put them to him with the eighth round's tables.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"

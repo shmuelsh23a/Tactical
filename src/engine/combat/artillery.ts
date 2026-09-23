@@ -109,3 +109,40 @@ export function resolveDispersion(
 
   return { impact, rangeDeviation, lineDeviation, missDistance };
 }
+
+/** CEP ÷ σ for a circular normal: half of all rounds fall within 1.1774 σ. */
+const CEP_PER_SIGMA = Math.sqrt(2 * Math.LN2);
+
+/**
+ * On trial (data/variants.ts): scatter a round around its aim point as a
+ * circular normal with the given CEP — the radius half of all rounds fall
+ * within — in place of the document's table. The deviation labels say which
+ * side of the aim point it fell, as seen from the guns.
+ */
+export function resolveCepDispersion(rng: Rng, aim: Point, cepM: number, opts: DispersionOptions = {}): DispersionResult {
+  const sigma = (cepM * (opts.fixedWingObserved ? 1 - FIXED_WING_MISS_REDUCTION : 1)) / CEP_PER_SIGMA;
+  // Box–Muller, from two of the game's draws.
+  const r = sigma * Math.sqrt(-2 * Math.log(1 - rng.next()));
+  const theta = 2 * Math.PI * rng.next();
+  const rangeOffset = r * Math.cos(theta);
+  const lineOffset = r * Math.sin(theta);
+  let ux = 0;
+  let uy = 1;
+  if (opts.firingFrom) {
+    const dx = aim.x - opts.firingFrom.x;
+    const dy = aim.y - opts.firingFrom.y;
+    const len = Math.hypot(dx, dy) || 1;
+    ux = dx / len;
+    uy = dy / len;
+  }
+  const impact: Point = {
+    x: aim.x + ux * rangeOffset + uy * lineOffset,
+    y: aim.y + uy * rangeOffset - ux * lineOffset,
+  };
+  return {
+    impact,
+    rangeDeviation: rangeOffset < 0 ? "short" : "long",
+    lineDeviation: lineOffset > 0 ? "right" : "left",
+    missDistance: r,
+  };
+}

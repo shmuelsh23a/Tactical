@@ -5,9 +5,9 @@ import { resolveDirectFire } from "./directFire.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { resolveDispersion } from "./artillery.js";
 import { resolveBlast, resolveDirectExplosive } from "./explosives.js";
-import { resolveIndirectFire } from "./indirectFire.js";
+import { resolveIndirectFire, shellFactor } from "./indirectFire.js";
 import { resolveAssault } from "./assault.js";
-import { BLAST_COVER_FACTOR, EXPLOSIVES } from "../data/explosives.js";
+import { EXPLOSIVES } from "../data/explosives.js";
 import { lookupBand } from "../geometry.js";
 import {
   camouflageBonus,
@@ -194,7 +194,7 @@ describe("blast", () => {
     expect(res.targets[0]!.damage).toBeGreaterThan(0);
   });
 
-  it("cover scales a shell's blast chance, and no other blast's (decision 29)", () => {
+  it("cover scales a shell's blast chance, and no other blast's (decisions 29–31)", () => {
     for (const cover of ["none", "partial", "full"] as const) {
       const squad = makeInfantry("S", "RED", "squad", { x: 0, y: 0 }, 8);
       squad.cover = cover;
@@ -202,7 +202,7 @@ describe("blast", () => {
       const shell = resolveIndirectFire(new Rng(3), "artillery", { x: 0, y: 0 }, [squad], { firingFrom: { x: 0, y: -3000 } });
       const t = shell.blast.targets[0]!;
       const band = lookupBand(EXPLOSIVES.artillery!.blastBands, shell.dispersion.missDistance)!;
-      expect(t.blastChance).toBeCloseTo(band.value * BLAST_COVER_FACTOR[cover]);
+      expect(t.blastChance).toBeCloseTo(band.value * shellFactor(squad, "impact", false));
     }
     // A rifle grenade on a force in full cover: the document's blast, untouched.
     let checked = false;

@@ -194,15 +194,34 @@ export const EXPLOSIVES: Record<string, ExplosiveWeapon> = {
   },
 };
 
+/** How a shell or a mortar bomb is fuzed (rules decision 31). The document has one kind: impact. */
+export type Fuze = "impact" | "airburst";
+
 /**
- * What cover does against a shell or a mortar bomb — **not the document's**;
- * its blast table ignores cover. The author chose option a on 2026-09-23
- * (rules decision 29): the factor on each man's blast chance, by the cover
- * his force is in. Indirect fire only. The factors are ours and are on
- * docs/balance.md, sixth round.
+ * What a shell or a mortar bomb does to men, by posture and cover — **not the
+ * document's**; its blast table knows none of this. Each figure is a factor
+ * on the table's blast chance, which is read as the chance against a man on
+ * his feet, caught by an impact-fuzed round in the open.
+ *
+ * - `standing`: in the open, the first rounds that fall on him.
+ * - `down`: in the open, once his force has been shelled and has not moved
+ *   since (rules decision 30). The first volley is the one that kills.
+ * - `partial`: behind a wall or a fold; the lower of this and his posture.
+ * - `openHole`: full cover with nothing overhead — a dug or prepared
+ *   position.
+ * - `roof`: full cover under a roof — a building.
+ *
+ * Sources (docs/balance.md, *What the sources say*): lethal areas of a 155 mm
+ * round, impact fuze, standing 971 m², prone 346 m², foxhole 130 m²; air
+ * burst, standing 1,240 m², prone 939 m². FM 7-90: a proximity fuze is about
+ * five times as effective as an impact fuze against men in open holes.
+ * Partial cover under an air burst is taken as no cover: a wall does not
+ * cover from above. Rules decisions 29–31; the numbers are ours, from those
+ * sources.
  */
-export const BLAST_COVER_FACTOR: Readonly<Record<"none" | "partial" | "full", number>> = {
-  none: 1,
-  partial: 0.5,
-  full: 0.25,
+export const SHELL_VS_MEN: Readonly<
+  Record<Fuze, { standing: number; down: number; partial: number; openHole: number; roof: number }>
+> = {
+  impact: { standing: 1, down: 0.36, partial: 0.5, openHole: 0.125, roof: 0.125 },
+  airburst: { standing: 1.28, down: 0.97, partial: 1.28, openHole: 0.625, roof: 0.125 },
 };

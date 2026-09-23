@@ -5,6 +5,7 @@ import {
   distance,
   makeCommandGroup,
   makeInfantry,
+  type Fuze,
   type GameOptions,
   type MoraleReport,
   type Point,
@@ -142,9 +143,23 @@ export interface BattleOptions {
 }
 
 export interface FirePlan {
+  /** Artillery missions on the objective, a turn's worth or the battle's (`artilleryFor`). */
   artillery: number;
+  /** Shells in each artillery mission, landing together. Default 1. */
+  shellsPerMission?: number;
+  /**
+   * `turn` (default): the missions are fired every turn until the fire lifts.
+   * `battle`: that many for the whole battle, fired on the first turns as
+   * preparation.
+   */
+  artilleryFor?: "turn" | "battle";
+  /** Mortar tubes firing on the objective, one mission each a turn. */
   mortar: number;
+  /** Bombs each tube's mission fires, landing together. Default 1. */
+  bombsPerTube?: number;
   liftAt: number;
+  /** How the rounds are fuzed (rules decision 31). Default impact. */
+  fuze?: Fuze;
 }
 
 /**
@@ -266,6 +281,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     RED: { side: "RED", attacking: attackers.includes("RED"), objective: objective.RED },
   };
   g.beginTurn();
+  let artilleryFired = 0;
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
     r.turns = turn;
     const order = g.initiativeOrder;
@@ -274,21 +290,31 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // Targeting: a company calls one mortar mission a turn on the nearest enemy it knows of.
     g.advanceToPhase("targeting");
     if (opts.fires && kind !== "meeting") {
+      const plan = opts.fires;
       const side = attackers[0]!;
       const goal = objective[side];
       const close = g.units
         .filter((u) => u.side === side && u.kind !== "command" && !u.neutralized)
-        .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
+        .some((u) => distance(u.position, goal) <= plan.liftAt);
       if (!close) {
         const from = { x: X, y: goal.y + (side === "BLUE" ? -3000 : 3000) };
-        const rounds = [
-          ...Array<string>(opts.fires.artillery).fill("artillery"),
-          ...Array<string>(opts.fires.mortar).fill("mortar"),
-        ];
-        rounds.forEach((w, i) => {
-          const across = ((i % 3) - 1) * 80;
-          g.queueIndirectFire(w, side, { x: goal.x + across, y: goal.y }, { firingFrom: from });
-        });
+        // Missions spread across the defender's frontage, 80 m apart.
+        const fire = (weapon: string, missions: number, rounds: number, first = 0) => {
+          for (let i = first; i < first + missions; i++) {
+            const across = ((i % 3) - 1) * 80;
+            g.queueIndirectFire(weapon, side, { x: goal.x + across, y: goal.y }, {
+              firingFrom: from,
+              ...(rounds > 1 ? { rounds } : {}),
+              ...(plan.fuze ? { fuze: plan.fuze } : {}),
+            });
+          }
+        };
+        const artillery =
+          plan.artilleryFor === "battle" ? Math.max(0, Math.min(1, plan.artillery - artilleryFired)) : plan.artillery;
+        // A battle's missions take their places along the frontage in turn.
+        fire("artillery", artillery, plan.shellsPerMission ?? 1, plan.artilleryFor === "battle" ? artilleryFired : 0);
+        artilleryFired += artillery;
+        fire("mortar", plan.mortar, plan.bombsPerTube ?? 1);
       }
     }
     if (echelon === "company") {

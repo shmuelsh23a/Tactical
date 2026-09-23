@@ -997,6 +997,104 @@ model:
 - **The fuze.** An air burst largely defeats going prone and open holes,
   but not overhead cover. The document has one kind of shell.
 
+## Eighth round: a company's fire support, and accuracy by CEP, 2026-09-23
+
+The author's next steps after the sources:
+- Full cover against a shell goes to ×⅛ (decision 29).
+- The first volley (decision 30) and air-burst fuzes (decision 31) are rules.
+- Test a company with **2 artillery missions of 4 shells and 3 mortars**,
+  with artillery at **15 m CEP** and a mortar's accuracy from the sources.
+  "Usually it's adjustable — with increasing accuracy up to a cap."
+
+### Accuracy, on trial
+
+This is `cepDispersion` in `data/variants.ts`, harness flag `--cep
+weapon:first:cap`. Each round scatters as a circular normal with CEP
+`max(cap, first ÷ 2^adjustments)`. An adjustment is the same side's same
+weapon firing again the next turn within 100 m of its last aim; the
+observer's bracket halves the error each time.
+
+| Weapon | First round | Cap | Source |
+|---|---|---|---|
+| Artillery | 15 m | 15 m | The author. For scale: an unguided 155 mm round is 50–267 m CEP at long range (M777 spec 50–200 m at 25 km; M549A1 267 m at maximum range). A PGK fuze is ≤30 m, Excalibur about 4 m. So 15 m is precision-fuze accuracy. |
+| Mortar | 100 m | 25 m | An unadjusted 120 mm bomb is 136 m CEP at maximum range, 76 m with modern fire control. Doctrine fires for effect once the bracket is within 50 m. 25 m, the tube's own spread at working ranges, is ours. |
+
+Things this leaves out:
+- An observer. Adjustment only needs the same aim point on consecutive turns.
+- A battery's shared error. Every round scatters on its own.
+
+### The allocation
+
+Read as follows:
+- **2 × 4 shells for the battle**, fired on the first two turns as
+  preparation. They land on turns 3 and 4, 80 m apart on the objective.
+- **3 tubes at the document's 3 bombs a tube a turn**: three missions of 3
+  bombs a turn, 80 m apart, until the attacker is within 400 m.
+- For comparison: 3 tubes at 1 bomb each, and the missions a turn rather
+  than a battle.
+- The defender keeps only its company's one bomb a turn on the nearest enemy
+  it has seen.
+
+Company, Western drill, 100 battles a cell, seeds from 1000. "Table" is the
+document's dispersion; "CEP" is the trial above. The defender's prepared
+position is in partial cover (a hasty position) or full (dug in, no roof).
+
+**Each part alone** (impact fuze):
+
+| Fire | Accuracy | Prepared in | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| none (the company's one bomb a turn) | either | either | 14–16% | 58–59% | 24–25% | 45% | 2/4 |
+| 2 × 4 shells for the battle | table | partial | 81% | 100% | 0% | 81% | 2/4 |
+| | table | full | **28%** | 93% | 16% | 59% | 3/4 |
+| | CEP | partial | 95% | 100% | 0% | 82% | 2/4 |
+| | CEP | full | **36%** | 93% | 13% | 60% | **4/4** |
+| 3 tubes × 1 bomb a turn | table | partial | 69% | 100% | 0% | 84% | 3/4 |
+| | table | full | **26%** | 99% | 6% | 67% | 2/4 |
+| | CEP | partial | 91% | 100% | 0% | 85% | 2/4 |
+| | CEP | full | **36%** | 99% | 4% | 68% | 3/4 |
+| 3 tubes × 3 bombs a turn | table | partial / full | 100% / 90% | 100% | 0% | 88–95% | 2/4 |
+| | CEP | partial / full | 100% / 97% | 100% | 0% | 89–95% | 2/4 |
+
+**Together** (the 1:1 attack never wins more than 7%, except as noted):
+
+| Fire | Accuracy | Fuze | Prepared in | ~2:1 win | Out by HE |
+|---|---|---|---|---|---|
+| 2 × 4 shells a battle + 3 × 3 bombs a turn | any | any | any | 100% | 93–97% |
+| 2 × 4 shells a battle + 3 × 1 bomb a turn | table | impact | full | **60%** | 82% |
+| | CEP | impact | full | 86% | 84% |
+| | any | impact | partial | 100% | 93–94% |
+| | any | air burst | any | 100% | 95–96% |
+| 2 × 4 shells **a turn** + 3 × 3 bombs a turn | any | any | any | 100% (1:1: up to 50% with air burst) | 97–99% |
+
+### What it says
+
+- **The allocation as given decides the 2:1 attack every time**, under
+  every accuracy, fuze and position. Most of that is the mortar section. At
+  the document's rate, 3 tubes fire 9 bombs a turn, about 36 over the
+  approach. Alone, that wins a 2:1 attack 90–100% of the time.
+- **The two artillery missions are about right on their own.** Against a
+  dug-in company they give 28–36% at 2:1 and 93% at 3–4:1. At 15 m CEP that
+  meets all four company targets. Explosives put out 60% of the men.
+- **So does a section at 1 bomb a tube a turn.** Both together give 60% at
+  2:1 on the table's accuracy and 86% at 15 m CEP, against a dug-in defender.
+- **Digging in is what the numbers turn on.** Against a hasty position,
+  every allocation above wins a 2:1 attack 69–100% of the time.
+- **An air burst wins against any defender without a roof.** It finds open
+  holes at ×⅝, so every air-burst row is 100%. That is decision 31 working
+  as the sources say. It also means the question is whether a prepared
+  position has overhead cover. Today only a building does.
+- **What accuracy is worth depends on how much fire there is.** Against a
+  dug-in company, the trial's accuracy adds 8–10 points to a 2:1 attack
+  with each part alone. With both parts together it adds 26 points (60% to
+  86%). Against the full allocation it makes no difference, because the
+  attack already wins.
+- **Without a fire plan the attack is harder than before.** The 3–4:1
+  attack wins 58–59%, down from 62%, because full cover is now ×⅛ and later
+  volleys find men down. A company is expected to attack with fire support.
+  These rows are its absence.
+- **The fire is one-sided.** The defender has no section of its own, no
+  counter-battery fire and no way to move off a shelled position.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

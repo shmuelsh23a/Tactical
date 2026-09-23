@@ -1,3 +1,4 @@
+import type { Fuze } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type {
   Mine,
@@ -57,7 +58,7 @@ export type RecordedAction =
       weaponKey: string;
       side: Side;
       target: Point;
-      opts: { firingFrom?: Point; observedByUav?: boolean };
+      opts: { firingFrom?: Point; observedByUav?: boolean; rounds?: number; fuze?: Fuze };
     }
   | { kind: "moveUnit"; unitId: string; to: Point; mode: MovementMode }
   | { kind: "fire"; attackerId: string; targetId: string; opts: DirectFireOptions }

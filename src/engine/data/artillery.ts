@@ -26,5 +26,12 @@ export const ARTILLERY_DISPERSION = {
   launcherMissMultiplier: 0.1,
 } as const;
 
+/**
+ * How near its last aim point a side's next mission with the same weapon must
+ * be aimed to count as adjusting onto it (the accuracy variant on trial,
+ * data/variants.ts). Ours: the doctrinal bracket closes in 100 m steps.
+ */
+export const ADJUSTMENT_RADIUS_M = 100;
+
 export type RangeDeviation = "short" | "long" | "onTarget";
 export type LineDeviation = "right" | "left" | "onTarget";

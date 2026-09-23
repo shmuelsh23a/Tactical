@@ -2,7 +2,6 @@ import { Rng } from "../rng.js";
 import { roll } from "../dice.js";
 import { distance, lookupBand, type Point } from "../geometry.js";
 import type { Unit } from "../types.js";
-import type { CoverState } from "../data/directFire.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
@@ -13,7 +12,6 @@ import {
 } from "../units.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { suppressionAccuracy } from "../morale.js";
-import { effectiveCover } from "../terrain.js";
 
 export interface BlastTargetResult {
   unitId: string;
@@ -23,6 +21,14 @@ export interface BlastTargetResult {
   newCasualties: number;
   armorEffect?: ReturnType<typeof resolveArmorHit>;
   neutralized: boolean;
+}
+
+/** What a shell brings to its blast that other explosives do not (rules decisions 29–31). */
+export interface ShellEffect {
+  /** The factor on a man's blast chance, by his force's posture and cover. */
+  factorFor: (unit: Unit) => number;
+  /** Burst in the air: no effect on a vehicle's tracks. */
+  airburst: boolean;
 }
 
 export interface BlastResult {
@@ -46,7 +52,7 @@ export function resolveBlast(
   impact: Point,
   candidates: Unit[],
   turn = 0,
-  coverFactor?: Partial<Record<CoverState, number>>,
+  shell?: ShellEffect,
 ): BlastResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -58,8 +64,8 @@ export function resolveBlast(
     const dist = distance(impact, unit.position);
     const band = lookupBand(weapon.blastBands, dist);
     if (!band) continue; // outside the lethal radius
-    // Cover against a shell (rules decision 29): the caller passes the factor.
-    const blastChance = band.value * (unit.kind === "infantry" ? (coverFactor?.[effectiveCover(unit)] ?? 1) : 1);
+    // A shell against men: posture, cover and fuze (rules decisions 29–31).
+    const blastChance = unit.kind === "infantry" && shell ? Math.min(1, band.value * shell.factorFor(unit)) : band.value;
 
     const res: BlastTargetResult = {
       unitId: unit.id,
@@ -102,9 +108,10 @@ export function resolveBlast(
           applyComponentDamage(unit.vehicle, "track", dmg);
           unit.hitThisTurn = true;
         }
-      } else {
+      } else if (!shell?.airburst) {
         // Plain HE (artillery/mortar/rifle grenade): 20% chance of 2 nq"p to
-        // the tracks; two such hits immobilise the vehicle.
+        // the tracks; two such hits immobilise the vehicle. A round that bursts
+        // in the air does not reach them (rules decision 31).
         if (rng.chance(HE_VS_ARMOR.trackHitChance)) {
           res.caught = true;
           res.damage = HE_VS_ARMOR.trackDamage;

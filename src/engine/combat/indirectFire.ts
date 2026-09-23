@@ -1,8 +1,9 @@
 import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
-import { BLAST_COVER_FACTOR, EXPLOSIVES } from "../data/explosives.js";
-import { resolveDispersion, type DispersionResult } from "./artillery.js";
+import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "../data/explosives.js";
+import { effectiveCover } from "../terrain.js";
+import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
 
 export interface IndirectFireResult {
@@ -30,7 +31,16 @@ export function resolveIndirectFire(
   weaponKey: string,
   aim: Point,
   allUnits: Unit[],
-  opts: { firingFrom?: Point; fixedWingObserved?: boolean; turn?: number } = {},
+  opts: {
+    firingFrom?: Point;
+    fixedWingObserved?: boolean;
+    turn?: number;
+    fuze?: Fuze;
+    /** Whether a force is under a roof (a building). Absent: nobody is. */
+    underRoof?: (unit: Unit) => boolean;
+    /** On trial: scatter by this CEP instead of the document's table. */
+    cepM?: number;
+  } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -38,11 +48,30 @@ export function resolveIndirectFire(
     throw new Error(`${weaponKey} is not an indirect-fire weapon`);
   }
 
-  const dispersion = resolveDispersion(rng, aim, {
-    firingFrom: opts.firingFrom,
-    fixedWingObserved: opts.fixedWingObserved,
+  const scatter = { firingFrom: opts.firingFrom, fixedWingObserved: opts.fixedWingObserved };
+  const dispersion =
+    opts.cepM !== undefined ? resolveCepDispersion(rng, aim, opts.cepM, scatter) : resolveDispersion(rng, aim, scatter);
+  // Posture, cover and fuze count against a shell (rules decisions 29–31), and
+  // against no other blast.
+  const fuze = opts.fuze ?? "impact";
+  const underRoof = opts.underRoof ?? (() => false);
+  const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
+    factorFor: (u) => shellFactor(u, fuze, underRoof(u)),
+    airburst: fuze === "airburst",
   });
-  // Cover counts against a shell (rules decision 29), and against no other blast.
-  const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, BLAST_COVER_FACTOR);
   return { weapon: weaponKey, aim, dispersion, blast };
+}
+
+/**
+ * The factor on a man's chance of being caught by a shell (rules decisions
+ * 29–31): full cover by whether it has a roof, anything less by the lower of
+ * its own worth and the men's posture — on their feet for the first rounds,
+ * down once shelled.
+ */
+export function shellFactor(unit: Unit, fuze: Fuze, underRoof: boolean): number {
+  const f = SHELL_VS_MEN[fuze];
+  const cover = effectiveCover(unit);
+  if (cover === "full") return underRoof ? f.roof : f.openHole;
+  const posture = unit.downUnderShelling ? f.down : f.standing;
+  return cover === "partial" ? Math.min(f.partial, posture) : posture;
 }
