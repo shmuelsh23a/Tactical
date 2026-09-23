@@ -12,13 +12,17 @@ import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
 import { CASUALTY_RULES } from "./data/casualties.js";
 import { MOVEMENT_PROFILES } from "./data/movement.js";
 
+// A battalion commander on both sides, so the mortar and artillery these tests
+// fire are theirs to call (rules decision 37).
+const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
+
 /**
  * Play a game that exercises every recorded action: setup, the turn loop,
  * movement into a minefield, direct fire, an assault, indirect fire and both
  * kinds of smoke. Returns the played game.
  */
 function playDemo(seed = 2026): Game {
-  const g = new Game({ seed });
+  const g = new Game({ commandEchelon: BATTALIONS, seed });
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 300 }, 8));
   // A second squad already in contact, so the assault does not depend on
   // whether the first one survives the approach intact.
@@ -139,7 +143,7 @@ describe("battle recording", () => {
   });
 
   it("records the outermost action only, not the phases it drove", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     g.beginTurn();
     g.advanceToPhase("combat");
     const kinds = g.toRecording().actions.map((a) => a.kind);
@@ -147,7 +151,7 @@ describe("battle recording", () => {
   });
 
   it("does not record an action that was refused", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const u = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.beginTurn();
     g.advanceToPhase("movement");
@@ -157,7 +161,7 @@ describe("battle recording", () => {
   });
 
   it("does not alias live state — playing on cannot rewrite history", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const u = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const before = g.toRecording();
     g.beginTurn();
@@ -335,7 +339,7 @@ describe("battle recording", () => {
   it("reports an action a rules change has made illegal", () => {
     // Drift can stop a replay outright rather than merely change it: seal a
     // move that was legal, then shorten the gait it was made at.
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const u = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.beginTurn();
     g.advanceToPhase("movement");
@@ -439,7 +443,7 @@ describe("battle recording", () => {
  */
 describe("a battle fought under orders", () => {
   function playOrdered(seed = 11): Game {
-    const g = new Game({ seed });
+    const g = new Game({ commandEchelon: BATTALIONS, seed });
     const squad = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 300 }, 8));
     g.addUnit(makeCommandGroup("BLUE-HQ", "BLUE", "platoon", { x: 0, y: 320 }, 3));
     const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 60 }, 6));
@@ -526,7 +530,7 @@ describe("re-fighting the same decisions", () => {
   it("stops on a decision it cannot carry out, unless told to skip", () => {
     // A bound that no longer fits the budget is exactly what an alternate
     // history produces: a force slowed by fire cannot make the move it made.
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const unit = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.beginTurn();
     g.advanceToPhase("movement");

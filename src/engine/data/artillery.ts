@@ -1,3 +1,5 @@
+import type { Echelon } from "../types.js";
+
 /**
  * Artillery dispersion table (טבלת פגיעה ארטילריה).
  *
@@ -69,13 +71,32 @@ export const OBSERVE_RANGE_M = 2000;
 export const BURST_HEIGHT_M = 3;
 
 /**
- * Rounds fired for effect by a company's fire mission unless its allotment
- * says otherwise (rules decision 34). The author's default, 2026-09-23: a
- * 6-gun battery's one round, or a 3-tube section's two. Doctrine often fires
- * more — "seldom less than five rounds for each mortar" (FM 7-90) — and the
- * figure is on balance.md, tenth round.
+ * Rounds fired for effect by a fire mission unless its allotment says
+ * otherwise, by weapon (rules decisions 34 and 36). The author's, 2026-09-24,
+ * after the tenth round: **6 for artillery**, a 6-gun battery's single volley,
+ * and **12 for a mortar**, four bombs a tube from a 3-tube section. Doctrine
+ * asks more of mortars — "seldom less than five rounds for each mortar" (FM
+ * 7-90) — and in balance 6 left a company's 2:1 attack at 20%, where 12 gives
+ * it 48–56% (balance.md, tenth and eleventh rounds).
  */
-export const DEFAULT_ROUNDS_FOR_EFFECT = 6;
+export const DEFAULT_ROUNDS_FOR_EFFECT: Readonly<Record<string, number>> = { artillery: 6, mortar: 12 };
+
+/** The rounds for effect a mission of `weapon` fires when nobody set them. */
+export function defaultRoundsForEffect(weapon: string): number {
+  const rounds = DEFAULT_ROUNDS_FOR_EFFECT[weapon];
+  if (rounds === undefined) throw new Error(`no default rounds for effect for ${weapon}`);
+  return rounds;
+}
+
+/**
+ * The lowest echelon whose commander may call each weapon at all (rules
+ * decision 37; the author, 2026-09-24, after the eleventh round): **mortars
+ * at company and above, artillery at battalion and above**. Below that a
+ * fight has no indirect fire: in the harness any at all swamps a squad or a
+ * platoon battle. Who may *call* a weapon, not whether its guns are on the map
+ * — that is decision 35.
+ */
+export const FIRE_SUPPORT_MIN_ECHELON: Readonly<Record<string, Echelon>> = { mortar: "company", artillery: "battalion" };
 
 /**
  * Adjusting rounds before a mission fires for effect whatever the fall of

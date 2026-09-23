@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BATTLE_KINDS,
   CONFIGURATIONS,
+  callableAt,
   ECHELONS,
   FIRE_PLAN,
   MARKDOWN_HEADER,
@@ -62,8 +63,19 @@ describe("the fire plan, and what put the men out", () => {
   it("brings the attacker's shells down on the objective, and counts who they put out", () => {
     const quiet = runBattle(1000, "platoon", "attack3", { morale: true });
     expect(quiet.outBy.explosive).toBe(0);
-    const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN }));
+    const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "company", "attack3", { morale: true, fires: FIRE_PLAN }));
     expect(shelled.some((r) => r.outBy.explosive > 0)).toBe(true);
     for (const r of shelled) expect(r.outBy.explosive + r.outBy.smallArms).toBeLessThanOrEqual(r.down.RED + r.down.BLUE);
+  });
+
+  it("strikes a mortar plan from a platoon's battle, unless rules decision 37 is off", () => {
+    const planned = (anyEchelon: boolean) =>
+      [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN, anyEchelon }));
+    expect(planned(false).every((r) => r.outBy.explosive === 0)).toBe(true);
+    expect(planned(true).some((r) => r.outBy.explosive > 0)).toBe(true);
+    expect(callableAt("platoon", "mortar")).toBe(false);
+    expect(callableAt("company", "mortar")).toBe(true);
+    expect(callableAt("company", "artillery")).toBe(false);
+    expect(callableAt("battalion", "artillery")).toBe(true);
   });
 });

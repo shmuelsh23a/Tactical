@@ -18,13 +18,16 @@ import type {
   Side,
   Unit,
 } from "./types.js";
-import type { MovementMode } from "./types.js";
+import type { Echelon, MovementMode } from "./types.js";
+import { ECHELON_RANK } from "./data/c2.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
   DEFAULT_ROUNDS_FOR_EFFECT,
+  FIRE_SUPPORT_MIN_ECHELON,
+  defaultRoundsForEffect,
   MAX_ADJUSTING_ROUNDS,
   INDIRECT_ACCURACY,
   MAX_ROUNDS_PER_MISSION,
@@ -321,10 +324,23 @@ export interface GameOptions {
   registeredTargets?: RegisteredTarget[];
   /**
    * The fire missions each side is assigned (rules decision 34). A side left
-   * out may call as many as it likes, each firing
-   * {@link DEFAULT_ROUNDS_FOR_EFFECT} for effect.
+   * out may call as many as it likes, each firing its weapon's
+   * {@link defaultRoundsForEffect} for effect (decision 36).
    */
   fireSupport?: Partial<Record<Side, FireAllotment[]>>;
+  /**
+   * The echelon each side's player commands (rules decision 37): what fire
+   * support it may call. A side left out commands the highest echelon of its
+   * forces on the map — which a harness battle, where a company's defending
+   * platoon is the only one on the map, has to say otherwise.
+   */
+  commandEchelon?: Partial<Record<Side, Echelon>>;
+  /**
+   * Whether who may call a weapon depends on the echelon commanding (rules
+   * decision 37). On by default; a recording made before the rule reads it as
+   * off, so the fire it called still replays.
+   */
+  fireSupportByEchelon?: boolean;
 }
 
 /**
@@ -344,6 +360,10 @@ export class Game {
   readonly registeredTargets: RegisteredTarget[] = [];
   /** The fire missions each side was assigned (rules decision 34). */
   readonly fireSupport: Partial<Record<Side, FireAllotment[]>>;
+  /** The echelon each side was declared to command (rules decision 37). */
+  readonly commandEchelons: Partial<Record<Side, Echelon>>;
+  /** Whether rules decision 37 is in force: who may call a weapon depends on the echelon. */
+  readonly fireSupportByEchelon: boolean;
   /** Every fire mission called, in the order called. */
   private readonly missions: FireMission[] = [];
   /** Every fire mission called, in the order called — copies: change them and nothing happens. */
@@ -431,10 +451,20 @@ export class Game {
     this.terrain = opts.terrain ?? FLAT_GROUND;
     this.morale = opts.morale ?? false;
     this.variants = opts.variants ?? {};
+    this.commandEchelons = { ...(opts.commandEchelon ?? {}) };
+    for (const [side, e] of Object.entries(this.commandEchelons)) {
+      if (!this.sides.includes(side as Side) || !(e in ECHELON_RANK)) {
+        throw new Error(`commandEchelon: cannot read ${side}: ${JSON.stringify(e)}`);
+      }
+    }
+    this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     for (const t of opts.registeredTargets ?? []) {
       if (!this.sides.includes(t.side) || !INDIRECT_ACCURACY[t.weapon] || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
       }
+      // Before any force is on the map only a declared echelon can be checked;
+      // an undeclared one is checked when the side calls on the target.
+      if (this.commandEchelons[t.side]) this.requireMayCall(t.side, t.weapon);
       this.registeredTargets.push({ side: t.side, weapon: t.weapon, at: { x: t.at.x, y: t.at.y } });
     }
     this.onTheMark.push(...this.registeredTargets);
@@ -445,7 +475,7 @@ export class Game {
       }
       const weapons = new Set<string>();
       for (const a of list) {
-        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT;
+        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT[a.weapon] ?? NaN;
         if (
           !INDIRECT_ACCURACY[a.weapon] ||
           weapons.has(a.weapon) ||
@@ -458,7 +488,42 @@ export class Game {
           throw new Error(`fireSupport.${side}: cannot read ${JSON.stringify(a)} (one entry a weapon)`);
         }
         weapons.add(a.weapon);
+        // Written in, so the recording carries the number it was played with
+        // rather than whatever the default is when it is replayed.
+        a.roundsForEffect = rounds;
+        if (this.commandEchelons[side as Side]) this.requireMayCall(side as Side, a.weapon);
       }
+    }
+  }
+
+  /**
+   * The echelon `side`'s player commands (rules decision 37): as declared, or
+   * else the highest of its forces on the map, and a squad's when it has none.
+   */
+  commandEchelonOf(side: Side): Echelon {
+    const declared = this.commandEchelons[side];
+    if (declared) return declared;
+    let top: Echelon = "squad";
+    for (const u of this.units) if (u.side === side && ECHELON_RANK[u.echelon] > ECHELON_RANK[top]) top = u.echelon;
+    return top;
+  }
+
+  /**
+   * Whether `side` may call `weapon` at all (rules decision 37): mortars at
+   * company and above, artillery at battalion and above. A weapon with no
+   * floor — a grenade's smoke — anybody may use.
+   */
+  mayCall(side: Side, weapon: string): boolean {
+    if (!this.fireSupportByEchelon) return true;
+    const floor = FIRE_SUPPORT_MIN_ECHELON[weapon];
+    return !floor || ECHELON_RANK[this.commandEchelonOf(side)] >= ECHELON_RANK[floor];
+  }
+
+  private requireMayCall(side: Side, weapon: string): void {
+    if (!this.mayCall(side, weapon)) {
+      throw new Error(
+        `${side} commands a ${this.commandEchelonOf(side)}: ${weapon} is called from ${FIRE_SUPPORT_MIN_ECHELON[weapon]} and above`,
+      );
     }
   }
 
@@ -477,6 +542,8 @@ export class Game {
       ...(Object.keys(this.variants).length ? { variants: cloneForRecord(this.variants) } : {}),
       ...(this.registeredTargets.length ? { registeredTargets: cloneForRecord(this.registeredTargets) } : {}),
       ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.fireSupport) } : {}),
+      ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
+      ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -707,6 +774,7 @@ export class Game {
   ): FireMission {
     this.requirePhase("targeting");
     if (!INDIRECT_ACCURACY[weaponKey]) throw new Error(`${weaponKey} is not an indirect-fire weapon`);
+    this.requireMayCall(side, weaponKey);
     const left = this.fireMissionsLeft(side, weaponKey);
     if (left !== undefined && left <= 0) throw new Error(`${side} has no ${weaponKey} fire missions left`);
     if (opts.fuze !== undefined && !(opts.fuze in SHELL_VS_MEN)) throw new Error(`no such fuze: ${String(opts.fuze)}`);
@@ -716,7 +784,7 @@ export class Game {
       side,
       weapon: weaponKey,
       target: { x: target.x, y: target.y },
-      roundsForEffect: allotment?.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT,
+      roundsForEffect: allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey),
       ...(opts.firingFrom ? { firingFrom: { ...opts.firingFrom } } : {}),
       ...(opts.fuze && opts.fuze !== "impact" ? { fuze: opts.fuze } : {}),
       ...(opts.observedByUav ? { observedByUav: true } : {}),
@@ -804,6 +872,7 @@ export class Game {
     if (this.journalDepth === 0 && this.fireSupport[side]) {
       throw new Error(`${side}'s fire is assigned as missions: call for fire`);
     }
+    if (this.journalDepth === 0) this.requireMayCall(side, weaponKey);
     const rounds = opts.rounds ?? 1;
     if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds, not ${rounds}`);
@@ -1737,6 +1806,7 @@ export class Game {
     if (this.phase !== "targeting" && this.phase !== "combat") {
       throw new PhaseError(`Smoke can only be deployed in targeting or combat phases`);
     }
+    this.requireMayCall(side, source);
     const delay = EXPLOSIVES[source]?.impactDelayTurns ?? 0;
     const durationTurns = SMOKE_DURATION_TURNS[source];
     const common = { source, radius, durationTurns, arrivesOnTurn: this.turn + delay };

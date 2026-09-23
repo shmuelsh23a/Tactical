@@ -2,9 +2,13 @@ import { describe, it, expect } from "vitest";
 import { Game, PHASES } from "./game.js";
 import { makeCommandGroup, makeInfantry, makeVehicle, fitSoldiers } from "./units.js";
 
+// A battalion commander on both sides, so the mortar and artillery these tests
+// fire are theirs to call (rules decision 37).
+const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
+
 describe("Game turn/phase loop", () => {
   it("walks through all seven phases in order", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     g.beginTurn();
     expect(g.turn).toBe(1);
     expect(g.phase).toBe("initiative");
@@ -17,13 +21,13 @@ describe("Game turn/phase loop", () => {
   });
 
   it("rolls initiative for both sides", () => {
-    const g = new Game({ seed: 42 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 42 });
     const { initiativeOrder } = g.beginTurn();
     expect(initiativeOrder.sort()).toEqual(["BLUE", "RED"]);
   });
 
   it("advancing past summary begins the next turn", () => {
-    const g = new Game({ seed: 7 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 7 });
     g.beginTurn(); // turn 1
     while (g.phase !== "summary") g.advancePhase();
     g.advancePhase(); // past summary
@@ -34,7 +38,7 @@ describe("Game turn/phase loop", () => {
 
 describe("phase enforcement", () => {
   it("forbids firing outside the combat phase", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const b = g.addUnit(makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 8));
     g.beginTurn(); // initiative phase
@@ -42,7 +46,7 @@ describe("phase enforcement", () => {
   });
 
   it("enforces movement distance caps", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.beginTurn();
     g.advanceToPhase("movement");
@@ -53,7 +57,7 @@ describe("phase enforcement", () => {
 
 describe("indirect fire delay queue", () => {
   it("an artillery mission resolves two turns later", () => {
-    const g = new Game({ seed: 3 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 3 });
     const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 300, y: 300 }, 8));
 
     // Turn 1: queue the mission in the targeting phase.
@@ -90,7 +94,7 @@ describe("indirect fire delay queue", () => {
 
 describe("command & control gating", () => {
   it("a distant squad cannot be re-ordered every turn", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     // Squad 400 m from its platoon commander → order interval = 2 turns.
     const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
     const cmdPos = { x: 0, y: 0 };
@@ -114,7 +118,7 @@ describe("command & control gating", () => {
   });
 
   it("measures the interval from the side's own command group when none is given", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
     g.addUnit(makeCommandGroup("HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
     g.beginTurn();
@@ -125,7 +129,7 @@ describe("command & control gating", () => {
   });
 
   it("a side with no command group is unconstrained", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 900 }, 8));
     g.beginTurn();
     expect(g.issueOrders(sq.id)).toBe(true);
@@ -137,7 +141,7 @@ describe("command & control gating", () => {
 describe("C2 gating of manoeuvre", () => {
   /** BLUE squad 400 m from its חפ"ק → orders every 2 turns. */
   function setup(opts: { enforceC2?: boolean } = {}) {
-    const g = new Game({ seed: 1, ...opts });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1, ...opts });
     const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 400 }, 8));
     const hq = g.addUnit(makeCommandGroup("HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
     g.beginTurn();
@@ -217,7 +221,7 @@ describe("C2 gating of manoeuvre", () => {
 
 describe("smoke blocks fire", () => {
   function contact() {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const b = g.addUnit(makeInfantry("B", "RED", "squad", { x: 0, y: 200 }, 8));
     g.beginTurn();
@@ -243,7 +247,7 @@ describe("smoke blocks fire", () => {
   });
 
   it("blocks a tank round through smoke too", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 0 }));
     const inf = g.addUnit(makeInfantry("I", "BLUE", "squad", { x: 0, y: 200 }, 8));
     g.beginTurn();
@@ -281,7 +285,7 @@ describe("smoke blocks fire", () => {
 describe("emplaced charges", () => {
   /** A BLUE squad about to walk a lane RED has mined. */
   function minedLane(seed: number, type: "antiPersonnel" | "antiTank" = "antiPersonnel") {
-    const g = new Game({ seed });
+    const g = new Game({ commandEchelon: BATTALIONS, seed });
     const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const mine = g.addMine({
       side: "RED",
@@ -341,7 +345,7 @@ describe("emplaced charges", () => {
   });
 
   it("never catches the side that laid it", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const sq = g.addUnit(makeInfantry("S", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addMine({ side: "RED", type: "antiPersonnel", position: { x: 0, y: 25 }, armed: true, detected: false });
     g.beginTurn();
@@ -350,7 +354,7 @@ describe("emplaced charges", () => {
   });
 
   it("leaves a charge well off the path alone", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
     const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.addMine({ side: "RED", type: "antiPersonnel", position: { x: 40, y: 25 }, armed: true, detected: false });
     g.beginTurn();
@@ -382,7 +386,7 @@ describe("emplaced charges", () => {
   describe("searching the ground crossed", () => {
     /** A charge `offset` m to the side, halfway along a 50 m bound. */
     function lane(seed: number, offset: number) {
-      const g = new Game({ seed });
+      const g = new Game({ commandEchelon: BATTALIONS, seed });
       const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
       g.addMine({
         side: "RED",
@@ -425,7 +429,7 @@ describe("emplaced charges", () => {
       let found = 0;
       const n = 400;
       for (let s = 0; s < n; s++) {
-        const g = new Game({ seed: s });
+        const g = new Game({ commandEchelon: BATTALIONS, seed: s });
         const sq = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 0 }, 8));
         g.addMine({
           side: "RED",
@@ -451,7 +455,7 @@ describe("emplaced charges", () => {
 
 describe("smoke delivery", () => {
   function ready(seed = 1) {
-    const g = new Game({ seed });
+    const g = new Game({ commandEchelon: BATTALIONS, seed });
     g.beginTurn();
     g.advanceToPhase("targeting");
     return g;
@@ -517,7 +521,7 @@ describe("smoke delivery", () => {
 
 describe("advanceToPhase", () => {
   it("hands back indirect fire that landed while stepping through phases", () => {
-    const g = new Game({ seed: 3 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 3 });
     g.addUnit(makeInfantry("T", "RED", "squad", { x: 300, y: 300 }, 8));
     g.beginTurn();
     g.advanceToPhase("targeting");
@@ -539,7 +543,7 @@ describe("advanceToPhase", () => {
 
 describe("end-to-end skirmish", () => {
   it("plays a few turns deterministically and resolves combat", () => {
-    const g = new Game({ seed: 2024 });
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 2024 });
     const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 80 }, 6));
     g.addUnit(makeVehicle("RED-TANK", "RED", { x: 0, y: 250 }));

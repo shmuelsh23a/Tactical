@@ -26,6 +26,7 @@ import {
   type Observation,
   type Side,
   type SmokeScreen,
+  type Echelon,
   type SmokeSource,
   type StandingOrder,
   type Unit,
@@ -96,6 +97,8 @@ const phaseLabelHe: Record<ActivationPhase, string> = {
 };
 
 const tubeHe: Record<Tube, string> = { mortar: "מרגמה", artillery: "ארטילריה" };
+/** The echelon a side's player commands, as the fire-support note names it (rules decision 37). */
+const echelonHe: Record<Echelon, string> = { squad: "כיתה", platoon: "מחלקה", company: "פלוגה", battalion: "גדוד", brigade: "חטיבה" };
 
 /** Smoke by delivery means, in the document's own words (the עשן table). */
 const smokeSourceHe: Record<SmokeSource, string> = {
@@ -242,9 +245,21 @@ export function App({ scenario, onLeave }: AppProps) {
     return contact != null && contact.lastSeenTurn >= game.turn;
   };
 
+  // What the side's commander may call at all (rules decision 37): a platoon
+  // has no mortars or artillery, and only a grenade's smoke.
+  const callableTubes = (side: Side) => (["mortar", "artillery"] as Tube[]).filter((t) => game.mayCall(side, t));
+  const callableSmoke = (side: Side) =>
+    (["grenade", "mortar", "artillery"] as SmokeSource[]).filter((s) => game.mayCall(side, s));
+
   const currentActivation =
     stage === "activation" && actIndex < activations.length ? activations[actIndex] : null;
   const viewingSide: Side = currentActivation?.side ?? activations[0]?.side ?? "BLUE";
+  const tubes = callableTubes(viewingSide);
+  const smokes = callableSmoke(viewingSide);
+  // The choice held over from the other side's screen, or the first it may call.
+  const activeTube: Tube | undefined = tubes.includes(tube) ? tube : tubes[0];
+  const activeSmoke: SmokeSource = smokes.includes(smokeSource) ? smokeSource : smokes[0]!;
+  const activeMission: Mission = activeTube ? mission : "smoke";
   const enginePhase: ActivationPhase | "other" = currentActivation?.phase ?? "other";
 
   // Everything the player sees comes from here: their own forces, plus the
@@ -337,6 +352,8 @@ export function App({ scenario, onLeave }: AppProps) {
   /** Mark an aim point: a fire mission that lands later, or a smoke screen. */
   function handleTargetAt(x: number, y: number) {
     if (enginePhase !== "targeting") return;
+    const mission = activeMission;
+    const smokeSource = activeSmoke;
     if (missionSpent(viewingSide, mission)) {
       pushLog(
         mission === "smoke"
@@ -361,6 +378,7 @@ export function App({ scenario, onLeave }: AppProps) {
           onlyFor(viewingSide),
         );
       } else {
+        const tube = activeTube!;
         const m = game.queueIndirectFire(tube, viewingSide, { x, y });
         pushLog(
           `משימת אש — ${tubeHe[tube]}, פגיעה צפויה בתור ${m.resolvesOnTurn}`,
@@ -1146,13 +1164,20 @@ export function App({ scenario, onLeave }: AppProps) {
 
               {currentActivation.phase === "targeting" && (
                 <div className="controls">
+                  {tubes.length === 0 && (
+                    <p className="hint">
+                      {`אין סיוע אש ל${echelonHe[game.commandEchelonOf(viewingSide)]}: מרגמות מדרג פלוגה, ארטילריה מדרג גדוד.`}
+                    </p>
+                  )}
                   <label>משימה:</label>
                   <div className="seg">
-                    <button className={mission === "he" ? "on" : ""} onClick={() => setMission("he")}>
-                      פגז
-                    </button>
+                    {tubes.length > 0 && (
+                      <button className={activeMission === "he" ? "on" : ""} onClick={() => setMission("he")}>
+                        פגז
+                      </button>
+                    )}
                     <button
-                      className={mission === "smoke" ? "on" : ""}
+                      className={activeMission === "smoke" ? "on" : ""}
                       onClick={() => setMission("smoke")}
                     >
                       עשן
@@ -1160,27 +1185,20 @@ export function App({ scenario, onLeave }: AppProps) {
                   </div>
 
                   <label>אמצעי:</label>
-                  {mission === "he" ? (
+                  {activeMission === "he" ? (
                     <div className="seg">
-                      <button
-                        className={tube === "mortar" ? "on" : ""}
-                        onClick={() => setTube("mortar")}
-                      >
-                        מרגמה
-                      </button>
-                      <button
-                        className={tube === "artillery" ? "on" : ""}
-                        onClick={() => setTube("artillery")}
-                      >
-                        ארטילריה
-                      </button>
+                      {tubes.map((t) => (
+                        <button key={t} className={activeTube === t ? "on" : ""} onClick={() => setTube(t)}>
+                          {tubeHe[t]}
+                        </button>
+                      ))}
                     </div>
                   ) : (
                     <div className="seg">
-                      {(["grenade", "mortar", "artillery"] as SmokeSource[]).map((s) => (
+                      {smokes.map((s) => (
                         <button
                           key={s}
-                          className={smokeSource === s ? "on" : ""}
+                          className={activeSmoke === s ? "on" : ""}
                           onClick={() => setSmokeSource(s)}
                         >
                           {smokeSourceHe[s]}
@@ -1190,19 +1208,19 @@ export function App({ scenario, onLeave }: AppProps) {
                   )}
 
                   <p className="hint">
-                    {mission === "he" ? (
+                    {activeMission === "he" ? (
                       <>
                         לחץ על המפה כדי לסמן מטרה. הפגז נוחת כעבור{" "}
-                        {tube === "mortar" ? "תור" : "שני תורות"} ומפוזר לפי טבלת הפגיעה.
+                        {activeTube === "mortar" ? "תור" : "שני תורות"} ומפוזר לפי טבלת הפגיעה.
                       </>
                     ) : (
                       <>
-                        עשן חוסם ירי לתוכו ודרכו. {smokeSourceHe[smokeSource]}: רדיוס{" "}
-                        {SMOKE_RADIUS_M[smokeSource]}מ',{" "}
-                        {SMOKE_DURATION_TURNS[smokeSource]} תורות,{" "}
-                        {smokeSource === "grenade"
+                        עשן חוסם ירי לתוכו ודרכו. {smokeSourceHe[activeSmoke]}: רדיוס{" "}
+                        {SMOKE_RADIUS_M[activeSmoke]}מ',{" "}
+                        {SMOKE_DURATION_TURNS[activeSmoke]} תורות,{" "}
+                        {activeSmoke === "grenade"
                           ? "יורד מייד"
-                          : smokeSource === "mortar"
+                          : activeSmoke === "mortar"
                             ? "יורד כעבור תור"
                             : "יורד כעבור שני תורות"}
                         .
@@ -1210,9 +1228,11 @@ export function App({ scenario, onLeave }: AppProps) {
                     )}
                   </p>
                   <div className="unit-card">
-                    <div className={missionSpent(viewingSide, "he") ? "warn" : "ok"}>
-                      משימת אש: {missionSpent(viewingSide, "he") ? "נוצלה בתור זה" : "זמינה"}
-                    </div>
+                    {tubes.length > 0 && (
+                      <div className={missionSpent(viewingSide, "he") ? "warn" : "ok"}>
+                        משימת אש: {missionSpent(viewingSide, "he") ? "נוצלה בתור זה" : "זמינה"}
+                      </div>
+                    )}
                     <div className={missionSpent(viewingSide, "smoke") ? "warn" : "ok"}>
                       מסך עשן: {missionSpent(viewingSide, "smoke") ? "נוצל בתור זה" : "זמין"}
                     </div>

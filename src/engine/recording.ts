@@ -1,6 +1,7 @@
 import type { Fuze } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type {
+  Echelon,
   Mine,
   MovementMode,
   ObservationSector,
@@ -149,6 +150,10 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.fireSupport !== undefined && (typeof r.fireSupport !== "object" || r.fireSupport === null || Array.isArray(r.fireSupport))) {
     throw malformed("fireSupport");
   }
+  if (r.commandEchelon !== undefined && (typeof r.commandEchelon !== "object" || r.commandEchelon === null || Array.isArray(r.commandEchelon))) {
+    throw malformed("commandEchelon");
+  }
+  if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -258,6 +263,14 @@ export interface GameRecording {
   registeredTargets?: RegisteredTarget[];
   /** The fire missions each side was assigned (rules decision 34). Absent: none rationed. */
   fireSupport?: Partial<Record<Side, FireAllotment[]>>;
+  /** The echelon each side was declared to command (rules decision 37). Absent: read off its forces. */
+  commandEchelon?: Partial<Record<Side, Echelon>>;
+  /**
+   * Whether who may call a weapon depended on the echelon (rules decision 37).
+   * Read as **off** when absent: a battle recorded before the rule called
+   * whatever it liked, and still replays.
+   */
+  fireSupportByEchelon?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -407,6 +420,8 @@ export function replayWithOutcomes(
     ...(recording.variants ? { variants: cloneForRecord(recording.variants) } : {}),
     ...(recording.registeredTargets ? { registeredTargets: cloneForRecord(recording.registeredTargets) } : {}),
     ...(recording.fireSupport ? { fireSupport: cloneForRecord(recording.fireSupport) } : {}),
+    ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
+    fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

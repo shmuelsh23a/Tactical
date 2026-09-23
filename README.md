@@ -1405,7 +1405,8 @@ on the stated reasoning, still awaiting the author's word.
 34. ✅ **At company and below, fire support is assigned missions** (author,
     2026-09-23). A side is given so many fire missions of each weapon
     (`GameOptions.fireSupport`), each firing a set number of rounds for
-    effect, **6 by default** (`DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
+    effect, by default **6 for artillery and 12 for a mortar** (decision 36,
+    `DEFAULT_ROUNDS_FOR_EFFECT`). A mission called
     (`Game.callForFire`) runs itself:
     - one round to adjust, waiting to see where it lands before the next, until
       one is seen on the mark (decisions 32–33) — a mortar adjusts every
@@ -1423,17 +1424,46 @@ on the stated reasoning, still awaiting the author's word.
     - The debrief narrates a call for fire. **The live UI does not call
       missions yet**: it still queues single rounds, one a turn (decision 8's
       UI limit), unrationed.
-    - Why 6: a 6-gun battery's single volley, or a 3-tube section's two bombs
-      a tube. Doctrine often fires more: "seldom less than five rounds for each
-      mortar" (FM 7-90). In balance, 6 suits artillery and mortars want 9–12
-      (balance.md, *Tenth round*). One default for both is on the table for the
-      author.
+    - Why 6 was the first default: a 6-gun battery's single volley.
+      Decision 36 split it by weapon.
 35. ✅ **Counter-battery fire exists only for guns on the map** (author,
     2026-09-23). Mortars are on the map at **company and above**, artillery at
     **battalion and above**. On the map they are units, and can be found and
     fired on; that arrives with echelon scaling (backlog 3). Off the map there
     is no counter-battery fire. Today every game is off-map for both, so
     there is none.
+36. ✅ **Rounds for effect by weapon: 6 for artillery, 12 for a mortar**
+    (author, 2026-09-24, after the tenth round). Artillery's 6 is a 6-gun
+    battery's single volley. A mortar's 12 is four bombs a tube from a 3-tube
+    section, nearer doctrine's "seldom less than five rounds for each mortar"
+    (FM 7-90). In balance, a company's 2:1 attack with mortars at 6 won 20%;
+    at 12 it wins 47–56%, in the 30–70% target band (balance.md, *Tenth* and
+    *Eleventh round*).
+    - An allotment may still set its own (`FireAllotment.roundsForEffect`).
+      The game writes the number into each allotment, so a recording carries
+      what it was played with.
+    - It changes the outcome of any mortar mission, so a sealed recording of
+      one made before it fails `verifyRecording`.
+37. ✅ **Who may call fire: mortars at company and above, artillery at
+    battalion and above** (author, 2026-09-24, after the eleventh round).
+    Below that a fight has no indirect fire, and no smoke from the tubes: a
+    grenade's smoke is the squad's own. It is who may *call* a weapon, not
+    whether its guns are on the map (decision 35).
+    - The echelon is the one the side's player commands
+      (`GameOptions.commandEchelon`). Undeclared, it is the highest echelon
+      of the side's forces on the map (`Game.commandEchelonOf`). A harness
+      battle declares it, since a company's defending platoon may be the only
+      one of its company on the map.
+    - `callForFire`, `queueIndirectFire` and `deploySmoke` refuse a weapon
+      the side may not call (`Game.mayCall`, `FIRE_SUPPORT_MIN_ECHELON`), and
+      so does an allotment or a registered target made for it.
+    - **Why:** in the harness, any indirect fire swamps a squad or a platoon
+      fight (two mortar missions take a prepared position at 1:1 82% of the
+      time), and mortars alone balance a company attack.
+    - **Both demo battles are platoon fights, so neither side has indirect
+      fire there any more.** The live UI offers only what a side may call.
+    - Recorded (`fireSupportByEchelon`). A recording made before the rule
+      reads it as off, so the fire it called still replays.
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1545,8 +1575,13 @@ Each is intended to be an independent, toggleable module:
    decisions and the engine resolves them, on both sides, including under the
    human. There is nothing to simulate until this item exists, and this item is
    not finished without it.
-4. **UAVs & quadcopters** — expand the current fixed-wing/drone assets into a
-   fuller aerial-asset system.
+4. **UAVs, quadcopters and binoculars: seeing further** — expand the current
+   fixed-wing/drone assets into a fuller aerial-asset system, and give an
+   observer optics. The author, 2026-09-24: observation posts come first, set
+   in mission planning; **binoculars and UAVs at a later stage**. Both answer
+   the same gap: nobody sees anybody before about 300 m (decision 12's
+   detection), so fire decides a battle before small arms get a say
+   (balance.md, *Tenth* and *Eleventh round*).
 5. **Underground infrastructure** — tunnels, bunkers, subterranean movement & detection.
 6. ✅ **Map generation** — *real ground*: elevation from a public DTM and
    object footprints from OpenStreetMap, with line of sight and cover derived

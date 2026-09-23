@@ -1337,6 +1337,81 @@ within 300 m):
   missions start only once the attacker is inside that, and the attacker's
   planned fire lands before.
 
+## Eleventh round: who may call fire, 2026-09-24
+
+The author's agenda for this session, item 2: "I'm thinking mortars for
+company and above, artillery for battalion and above, but we should test it."
+This is **who may call** a weapon at all, not when its guns are on the map
+(decision 35). Battalion is not in the harness yet (echelon scaling, backlog
+3), so the artillery half is tested only down to company.
+
+Every row: Western drill, a defender prepared in full cover (with a roof),
+200 battles a cell, seeds from 1000, `--sweep`'s "reply none" row. The
+attacker's targets are planned (`registered=on`). "+ def" means the defender
+has 4 mortar missions of 6 on targets registered 200 m and 400 m out. These
+were run **before the rule existed**, so any echelon could call anything:
+
+| Attacker's fires | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| none | squad | 4% | 49% | 77% | 17% | 0% | **4/4** |
+| defender's mortars only | squad | 4% | 49% | 77% | 17% | 0% | 4/4 |
+| 2 mortar × 9 + def | squad | 82% | 93% | 97% | 5% | 63% | 1/4 |
+| 4 mortar × 9 + def | squad | 100% | 99% | 99% | 1% | 95% | 1/4 |
+| 2 artillery × 6 + 2 mortar × 9 + def | squad | 100% | 99% | 99% | 1% | 93% | 1/4 |
+| none | platoon | 2% | 67% | 100% | 8% | 0% | **3/4** |
+| defender's mortars only | platoon | 0% | 67% | 100% | 8% | 32% | 3/4 |
+| 2 mortar × 9 + def | platoon | 27% | 100% | 100% | 2% | 79% | 2/4 |
+| 4 mortar × 9 + def | platoon | 99% | 100% | 100% | 0% | 100% | 1/4 |
+| 2 artillery × 6 + 2 mortar × 9 + def | platoon | 98% | 100% | 100% | 0% | 99% | 1/4 |
+| none (the free bomb for both) | company | 0% | 15% | 55% | 24% | 46% | 2/4 |
+| defender's mortars only | company | 0% | 0% | 0% | 7% | 91% | 1/4 |
+| 2 mortar × 9 + def | company | 0% | 0% | 43% | 25% | 92% | 2/4 |
+| 4 mortar × 9 + def | company | 0% | 14% | 99% | 1% | 96% | 2/4 |
+| 2 artillery × 6 + 2 mortar × 9 + def | company | 0% | 35% | 100% | 1% | 96% | **3/4** |
+| 4 mortar × 12 + def | company | 2% | 56% | 100% | 0% | 97% | **3/4** |
+| 6 mortar × 9 + def | company | 1% | 46% | 100% | 0% | 96% | **3/4** |
+| 6 mortar × 12 + def | company | 11% | 83% | 100% | 0% | 97% | 2/4 |
+| 8 mortar × 9 + def | company | 1% | 46% | 100% | 0% | 96% | **3/4** |
+
+The company row with artillery reproduces the tenth round's 35%, so the two
+rounds measure the same thing.
+
+- **Any indirect fire swamps a squad or a platoon fight.** Two mortar
+  missions let a squad take a prepared position at 1:1 82% of the time.
+  Without fire, small fights meet their targets: 4 of 4 at squad and 3 of 4
+  at platoon.
+- **Mortars alone balance a company attack.** Four missions of 12, or six of
+  9, meet 3 of 4 company targets. The company doesn't need artillery, which
+  supports "artillery for battalion and above".
+- At squad the defender's registered mortars never fire (0% by HE): the
+  points 200 m and 400 m out lie outside where a squad fight happens.
+
+**The author's rulings** (2026-09-24): mortars at company and above,
+artillery at battalion and above (decision 37). Rounds for effect default to
+6 for artillery and 12 for mortars (decision 36).
+
+**The same under the rule as built**, where both sides command the battle's
+echelon and the harness strikes what they may not call
+(`npm run balance -- --sweep --n 200 --drill western --prepared-cover full
+--fires artillery=2,mortar=4,registered=on --defender-fires
+mortar=4,registered=200/400`; `--any-echelon` switches the rule off). The
+missions fire the new defaults, 12 for a mortar, on both sides:
+
+| Fires | Echelon | Struck | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|---|
+| attacker 2 artillery + 4 mortar planned, defender 4 mortar | squad | all | 4% | 49% | 77% | 17% | 0% | 4/4 |
+| the same | platoon | all | 2% | 67% | 100% | 8% | 0% | 3/4 |
+| the same | company | artillery | 1% | 47% | 100% | 0% | 98% | **3/4** |
+| attacker 2 mortar planned, defender 4 mortar | company | — | 0% | 0% | 55% | 18% | 96% | 2/4 |
+| attacker 4 mortar unplanned, defender 4 mortar | company | — | 0% | 0% | 41% | 12% | 96% | 2/4 |
+| none either side (the free bomb) | company | — | 0% | 15% | 55% | 24% | 46% | 2/4 |
+
+What is still missing is the tenth round's last finding: **a winning
+attacker barely bleeds** (0% at 3–4:1 with planned fire, against a target of
+10–30%), because nobody sees anybody before about 300 m. The author's answer
+is observation posts, set in mission planning (decision 38), and binoculars
+and UAVs later.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
