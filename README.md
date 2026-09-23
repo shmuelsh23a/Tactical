@@ -1488,23 +1488,29 @@ on the stated reasoning, still awaiting the author's word.
       player registers for two echelons below, on the enemy's estimated
       positions, still without revealing the fog of war (not built: there is
       no brigade yet). The side's guns start on the mark there (decision 32).
-      ⚠️ At most **6 a weapon** (`MAX_REGISTERED_TARGETS_PER_WEAPON`) is
+      At most **6 a weapon** (`MAX_REGISTERED_TARGETS_PER_WEAPON`) is
       ours.
     - **Observation posts** (`Game.designateObservationPost`). A force set as
-      an OP that stays put sees a force *on the move* out to ⚠️ **1,000 m**
+      an OP that stays put sees a force *on the move* out to **1,000 m**
       (`OBSERVATION_POST_RANGE_M`, ours), against the document's 300 m. A
       hidden force it looks for like anybody else, in the 20 m band. Moving
       or firing ends it at once (`watchingAsPost`). It is a force, not men detached from one. Not a
       vehicle. The squad drill leaves a command group that is an OP where it
       stands.
-    - **Alternate positions** (`Game.prepareAlternatePosition`). ⚠️ One per
-      force (ours), prepared as its first position was (partial if it had
-      none), and ⚠️ more than 25 m from where the force stands — a position
+    - **Alternate positions** (`Game.prepareAlternatePosition`). One per
+      force, prepared as its first position was (partial if it had
+      none), and more than 25 m from where the force stands — a position
       prepared underfoot would be cover for nothing. Any force of the side
       within 25 m of it holds that cover, the turn it arrives; not a vehicle,
       and not the enemy. The drill's displacement goes there when there is
       one. **There is no upper bound yet**: an attacker may prepare one on the
       objective. A question for the author.
+    - **The numbers** — 6 targets a weapon, 1,000 m, one alternate a force,
+      25 m, partial for a force with none — were ours; **the author accepted
+      them on 2026-09-23, to be tested when the artillery is balanced** at
+      battalion (backlog 3), with the open questions: how far an alternate
+      position may be, whether one mission in hand a weapon is a rule, and
+      why displacing still hurts the defender.
     - **Binoculars and UAVs** are for a later stage (backlog 4).
     - **The live UI** has a planning stage before the first turn (see the
       Stage 2 section above). The company battle on Tel Azeka
@@ -1644,6 +1650,15 @@ Each is intended to be an independent, toggleable module:
    decisions and the engine resolves them, on both sides, including under the
    human. There is nothing to simulate until this item exists, and this item is
    not finished without it.
+
+   **The artillery is balanced here** (author, 2026-09-23). Artillery is
+   battalion's (decision 37), and the harness stops at company, so its
+   numbers — 6 rounds for effect, 270 m to 50 m, the missions — have never
+   been measured. When battalion arrives: balance the artillery, test the
+   mission-planning numbers the author accepted (decision 38), and settle
+   the open questions — how far an alternate position may be, whether one
+   mission in hand a weapon is a rule, and why displacing to an alternate
+   still hurts the defender (balance.md, *Twelfth round*).
 4. **UAVs, quadcopters and binoculars: seeing further** — expand the current
    fixed-wing/drone assets into a fuller aerial-asset system, and give an
    observer optics. The author, 2026-09-23: observation posts come first, set

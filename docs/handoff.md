@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The next session starts with what is left of the author's agenda, below: the business plan.** This is the working note for whoever
+**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The artillery stage is closed. The next session starts with the business plan, first thing (the author, 2026-09-23).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -64,7 +64,8 @@ were done in the second session of 2026-09-23:
    round*) and ruled: **mortars at company and above, artillery at
    battalion and above** (decision 37).
 
-**Start with item 3.**
+**Start with item 3, first thing** (the author's words at the end of the
+session).
 
 3. **The game's business plan.** A conversation, not code. Come with what
    the repo already says about the product direction: the roadmap's Stage 4
@@ -96,32 +97,22 @@ were done in the second session of 2026-09-23:
   `designateObservationPost`, `prepareAlternatePosition` — in the engine,
   the harness (`--defender-ops`, `--alternate`) and the live UI.
 
-What to put to him next, all from decision 38 and the twelfth round:
-1. **The planning numbers are ours** (⚠️): at most 6 registered targets a
-   weapon, an OP sees a moving force to 1,000 m, one alternate position a
-   force, 25 m to be "in" a prepared position, and an alternate is partial
-   cover for a force that had no prepared position.
-2. ✅ **Ruled: the caller chooses adjust fire or fire for effect** (decision
-   39; Jev will choose for simulated lower echelons). Why OPs had helped the
-   attacker at company: an observed mission adjusted onto a moving attacker
-   and was spent before the assault. With the choice, OPs and fire for
-   effect meet **all four company targets**, and the winning attacker loses
-   25% at 3–4:1 (balance.md, *Thirteenth round*). Worth showing him.
-3. **Displacing still hurts the defender, even to a prepared alternate**
-   (company 2:1: 47% → 100%). It runs through the fire to get there and is
-   seen moving. Doctrine displaces *between* volleys or at night; the drill
-   has no notion of either.
-4. ✅ **The winning attacker bleeds now** (25% at 3–4:1) once the defender
-   has OPs and fires for effect. Nothing to ask; show him the table.
-5. **The company battle's layout is ours** (`telAzekaCompany`): two RED
-   platoons and three BLUE, both commanded at company with 3 and 4 mortar
-   missions. He has not seen it.
-6. **One mission in hand per weapon** is the UI's rule and the harness's,
-   not the engine's. Should it be a rule?
-7. **An alternate position has no upper bound on distance.** An attacker may
-   prepare one on the defender's objective in planning and take its cover on
-   arrival. It must be more than 25 m from the force (ours). How far may it
-   be — or must it be behind the force's own line?
+**The artillery stage is closed** (author, 2026-09-23). He accepted the
+mission-planning numbers (6 targets a weapon, OPs to 1,000 m, one alternate
+a force, 25 m, partial for a force with none). They, and the open questions
+below, are to be **tested and balanced when the artillery is**, at
+battalion, with echelon scaling (backlog 3, where the README says so):
+- how far an alternate position may be (an attacker may prepare one on the
+  objective today);
+- whether one mission in hand a weapon is a rule (today the UI's and the
+  harness's);
+- why displacing to an alternate still hurts the defender (the drill moves
+  in the open under fire);
+- the artillery itself: 6 rounds for effect, 270 m to 50 m, never measured.
+
+Not yet shown to him: the company battle on Tel Azeka (`telAzekaCompany`),
+whose layout is ours. He has not played the planning stage or the call for
+fire either; nothing about this session has been played by a person yet.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
@@ -153,7 +144,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **The planning numbers, the OP puzzle, displacement, the defender's fire plan, the company layout** (above).
+- **The company battle's layout** (above). The rest of the artillery waits for battalion.
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
