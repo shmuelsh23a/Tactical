@@ -31,7 +31,7 @@ const phaseHe: Record<string, string> = {
 
 const weaponHe: Record<string, string> = {
   smallArms: 'נק"ל',
-  sustainedMg: "מקלע",
+  sustainedMg: "מקלע מקביל",
   mortar: "מרגמה",
   artillery: "ארטילריה",
   tankRound: "פגז טנק",
@@ -98,6 +98,8 @@ export function reasonHe(reason?: string): string {
       return "נפגע בתור זה — לא ניתן להתחיל עבודה";
     case "out of the order cycle":
       return "מחוץ למחזור הפקודות";
+    case "not a coaxial weapon":
+      return "ירי מקביל — למקלע המקביל של רכב משוריין בלבד";
     // …morale (rules decision 19)
     case "routing":
       return "הכוח נשבר ונסוג בבהלה — אינו מקבל פקודות";

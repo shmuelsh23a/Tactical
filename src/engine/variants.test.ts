@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Game, type GameOptions } from "./game.js";
-import { makeInfantry } from "./units.js";
+import { landHit, makeInfantry, makeVehicle } from "./units.js";
+import { NOT_A_COAXIAL_WEAPON } from "./combat/directFire.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
 import { FIRING_FROM_COVER_MODIFIER } from "./data/directFire.js";
 
@@ -120,5 +121,93 @@ describe("decision 20: initiative ties are rolled again", () => {
     for (let seed = 1; seed <= 2000; seed++) if (new Game({ seed }).rollInitiative()[0] === "RED") redFirst++;
     // Fair: 1000 ± a few standard deviations (sd ≈ 22). The old tie-break gave ~1100.
     expect(Math.abs(redFirst - 1000)).toBeLessThan(80);
+  });
+});
+
+describe("decision 25: ירי מקביל is a vehicle's coaxial gun", () => {
+  function field() {
+    const g = new Game({ seed: 2, enforceC2: false });
+    const squad = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    const tank = g.addUnit(makeVehicle("T", "BLUE", { x: 20, y: 0 }));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 250 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    return { g, squad, tank };
+  }
+
+  it("infantry cannot fire it — their table is נק\"ל\\מקלעים", () => {
+    const { g, squad } = field();
+    expect(g.fire(squad.id, "R", { weapon: "sustainedMg" })).toMatchObject({ fired: false, reason: NOT_A_COAXIAL_WEAPON });
+    expect(() => g.setCovering(squad.id, true, "sustainedMg")).toThrow(NOT_A_COAXIAL_WEAPON);
+  });
+
+  it("a vehicle fires it: one gun, its gunner, at the 70 / 50 / 20 table", () => {
+    const { g, tank } = field();
+    const burst = g.fire(tank.id, "R", { weapon: "sustainedMg" });
+    expect(burst).toMatchObject({ fired: true, shooters: 1 });
+    expect(burst.hitChance).toBeCloseTo(0.7, 10);
+  });
+
+  it("falls silent when the gunner is down", () => {
+    const { g, tank } = field();
+    tank.vehicle!.crew.find((c) => c.role === "gunner")!.neutralized = true;
+    expect(g.fire(tank.id, "R", { weapon: "sustainedMg" })).toMatchObject({ fired: false, reason: "no fit shooters" });
+  });
+
+  it("is what a vehicle covers with", () => {
+    const { g, tank } = field();
+    expect(() => g.setCovering(tank.id, true, "smallArms")).toThrow(NOT_A_COAXIAL_WEAPON);
+    g.setCovering(tank.id, true, "sustainedMg");
+    expect(tank.covering?.weapon).toBe("sustainedMg");
+  });
+});
+
+describe("the wound-severity roll, on trial", () => {
+  /** One hit on a squad of one, with the d10 scripted. */
+  function hitWith(d10: number, damageBefore = 0) {
+    const g = new Game({ seed: 1, enforceC2: false, variants: { woundSeverity: { light: 4, serious: 4 } } });
+    const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 1));
+    target.soldiers![0]!.damagePoints = damageBefore;
+    const script = [d10, 0]; // the severity die, then the choice of victim (index 0)
+    g.rng.int = () => script.shift()!;
+    const hit = landHit(g.rng, target, "1d4", 1, g.variants.woundSeverity);
+    return { hit, man: target.soldiers![0]!, script };
+  }
+
+  it("1–4: a light wound — he fights on, two points towards the document's eight", () => {
+    const { hit, man } = hitWith(4);
+    expect(hit).toEqual({ damage: 2, casualty: false });
+    expect(man).toMatchObject({ neutralized: false, damagePoints: 2, wound: "light" });
+  });
+
+  it("…and a light wound on a man already at 6 is the one that puts him out", () => {
+    const { hit, man } = hitWith(1, 6);
+    expect(hit.casualty).toBe(true);
+    expect(man.wound).toBe("serious");
+  });
+
+  it("5–8: a serious wound — out of the fight, and bleeding", () => {
+    const { hit, man } = hitWith(8);
+    expect(hit.casualty).toBe(true);
+    expect(man).toMatchObject({ neutralized: true, damagePoints: 5, wound: "serious", bleedingSinceTurn: 1 });
+  });
+
+  it("9–10: killed", () => {
+    const { man } = hitWith(9);
+    expect(man).toMatchObject({ neutralized: true, damagePoints: 8, wound: "killed" });
+  });
+
+  it("asks the rng as many times as the document's 1d4 does", () => {
+    expect(hitWith(3).script).toHaveLength(0);
+  });
+
+  it("is off unless the game plays it: the document's 1d4, no wound recorded", () => {
+    const g = new Game({ seed: 4, enforceC2: false });
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 9));
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 50 }, 9));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire("B", "R", { weapon: "smallArms" });
+    expect(red.soldiers!.every((s) => s.wound == null)).toBe(true);
   });
 });

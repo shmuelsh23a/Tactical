@@ -84,6 +84,7 @@ export { type RuleVariants } from "./data/variants.js";
 // Combat resolvers
 export {
   resolveDirectFire,
+  NOT_A_COAXIAL_WEAPON,
   type DirectFireResult,
   type DirectFireOptions,
   type WeaponClass,

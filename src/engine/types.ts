@@ -77,6 +77,11 @@ export interface Soldier {
   leader?: boolean;
   /** His pool of will; present only when the game is played with morale. */
   morale?: SoldierMorale;
+  /**
+   * How badly he was last hit, under the wound-severity roll on trial
+   * (data/variants.ts). Absent in a game without it.
+   */
+  wound?: "light" | "serious" | "killed";
 }
 
 /** Parts of an armoured vehicle, per the armour-damage table (טבלת נזק שריון). */

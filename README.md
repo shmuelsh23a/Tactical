@@ -1261,6 +1261,24 @@ on the stated reasoning, still awaiting the author's word.
     because the rate made no measurable difference (docs/balance.md, *Second
     round*).
 
+25. ✅ **ירי מקביל is the coaxial machine gun — a vehicle's weapon** (author,
+    2026-09-23). The document's second direct-fire table (70 / 50 / 20% out to
+    700 m) is the gun mounted beside an armoured vehicle's main armament
+    (מקלע מקביל). The engine had read it as an infantry "sustained MG" since
+    the first commit, and the hotseat offered it to every squad as "מקלע" — so
+    a squad could fire at more than twice the rifle table's chance, and a tank
+    could not fire its coax at all. Now:
+    - infantry fire the נק"ל\מקלעים table only — its own heading already
+      includes machine guns — and are refused the other (`NOT_A_COAXIAL_WEAPON`);
+    - a vehicle may fire its coaxial gun (a shot, an order, or covering fire),
+      or its main gun as before.
+
+    ⚠️ **One roll a turn, by the gunner while he is fit**, is ours. The document
+    counts "ק% × מספר חיילים כשירים", and a vehicle's soldiers are its crew.
+    The key stays `sustainedMg`, so recordings still load — but **a recording
+    in which a squad fired the MG table now replays that shot as refused, and
+    fails `verifyRecording`**.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

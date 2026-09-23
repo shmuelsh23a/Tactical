@@ -25,4 +25,23 @@ export interface RuleVariants {
    */
   preparedTestBonus?: number;
   preparedLossFactor?: number;
+  /**
+   * The wound-severity roll (author, 2026-09-23: on trial). Each small-arms hit
+   * — direct fire, covering fire, the assault and the reply to it — rolls a
+   * d10 **instead of** the document's 1d4 of damage: up to `light` is a light
+   * wound (the man fights on, {@link LIGHT_WOUND_POINTS} points towards the
+   * document's 8), up to `light + serious` a serious one (out of the fight,
+   * bleeding), and above that he is killed. Explosives keep the document's
+   * dice. Absent: the document's model.
+   */
+  woundSeverity?: WoundSeverity;
 }
+
+/** The d10 bands of the wound-severity roll: 1..light, then serious, then killed. */
+export interface WoundSeverity {
+  light: number;
+  serious: number;
+}
+
+/** What a light wound costs a man who fights on, in the document's damage points. */
+export const LIGHT_WOUND_POINTS = 2;

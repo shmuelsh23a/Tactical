@@ -69,7 +69,7 @@ function playDemo(seed = 2026): Game {
     g.moveUnit(blue.id, { x: 0, y: 160 }, "run");
   }
   g.advanceToPhase("combat");
-  g.fire(closer.id, red.id, { weapon: "sustainedMg" });
+  g.fire(closer.id, red.id, { weapon: "smallArms" });
   g.advanceToPhase("summary");
   return g;
 }

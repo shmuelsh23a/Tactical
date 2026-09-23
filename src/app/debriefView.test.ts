@@ -37,7 +37,7 @@ function battle(): GameRecording {
   g.executeStandingOrders("BLUE");
   g.layCharge(red.id, "antiPersonnel");
   g.advanceToPhase("combat");
-  g.fire(red.id, blue.id, { weapon: "sustainedMg" });
+  g.fire(red.id, blue.id, { weapon: "smallArms" });
   g.advanceToPhase("summary");
   return g.toRecording();
 }
@@ -405,11 +405,12 @@ describe("what a side's own fire is allowed to teach it", () => {
  * read out to the side underneath it.
  */
 function orderedBattle(): GameRecording {
-  // **Seed 9 because the burst draws blood.** Most seeds here hit and kill
+  // **Seed 546 because the burst draws blood.** Most seeds here hit and kill
   // nobody, and a 0-casualty engagement cannot show the difference between a
-  // count and a report — which is the whole point of the test below. 9, 18, 30
-  // and 52 are the seeds in the first sixty that produce casualties.
-  const g = new Game({ seed: 9, enforceC2: false, trackIntel: true });
+  // count and a report — which is the whole point of the test below. With
+  // small arms (a squad cannot fire ירי מקביל, decision 25) only 546, 550, 656
+  // and 1055 of the first 1055 seeds produce a casualty at 120 m.
+  const g = new Game({ seed: 546, enforceC2: false, trackIntel: true });
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 120 }, 8));
   const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
 
@@ -421,7 +422,7 @@ function orderedBattle(): GameRecording {
   g.advanceToPhase("movement");
   g.setStandingOrder(red.id, {
     gait: "normal",
-    engage: { targetId: blue.id, weapon: "sustainedMg" },
+    engage: { targetId: blue.id, weapon: "smallArms" },
   });
   g.advanceToPhase("combat");
   g.executeStandingOrders("RED");

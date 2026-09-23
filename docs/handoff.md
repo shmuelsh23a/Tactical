@@ -21,7 +21,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 508 tests, 28 files
+npm run check       lint + typecheck clean, 518 tests, 28 files
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -56,6 +56,13 @@ others do to shooting, movement, detection and the rest is the next ruling;
 build nothing on them before it. Also his, and not built: **campaigns carry
 the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
+
+**Third round, 2026-09-23.** ירי מקביל is the **coaxial gun** (decision 25):
+infantry no longer fire that table, and vehicles now can. The **wound-severity
+roll** is on trial (`woundSeverity`), and at a 4/4/2 split it is the first
+change that moves the balance — 9 of 12 targets, squad fights all four. It
+leaves the platoon fights lopsided. Open for him: adopt 4/4/2 as the rule; the
+coax's one-roll-per-gunner reading (⚠️); and what closes the platoon gap.
 
 **Second round, 2026-09-23.** Rulings 2c and 3b are made (decisions 22 and
 23), and so is a steadier prepared defender (24). Ruling 1 — the defender

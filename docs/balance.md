@@ -529,6 +529,85 @@ A deadlier hit makes the small force's fire count for more, but on its own it
 does not close a factor of 2–4. See the handoff note for the options put to
 the author.
 
+## Third round: the wound-severity roll, 2026-09-23
+
+**ירי מקביל is the coaxial gun** (decision 25), so a prepared infantry
+defender's missing edge was never going to come from that table. The author put
+the **wound-severity roll** on trial (`woundSeverity` in
+[`data/variants.ts`](../src/engine/data/variants.ts)). Each small-arms hit rolls
+a d10 instead of the document's 1d4 of damage:
+- **light**: fights on, 2 points towards the document's 8;
+- **serious**: out of the fight, bleeding;
+- **killed**.
+
+It is one die either way. The sweep tries three splits of the d10 — light /
+serious / killed as 4/4/2, 5/4/1 and 3/5/2 — each with and without a 50%
+reply in the assault, against the same targets.
+
+| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| 1d4 (document) · reply none | squad | 8% | 84% | 95% | 5% | 2/4 |
+| 1d4 (document) · reply none | platoon | 5% | 100% | 100% | 0% | 2/4 |
+| 1d4 (document) · reply none | company | 0% | 5% | 100% | 11% | 3/4 |
+| **1d4 (document) · reply none** | **all** | | | | | **7/12** |
+| 1d4 (document) · reply 50% | squad | 6% | 86% | 95% | 5% | 2/4 |
+| 1d4 (document) · reply 50% | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| 1d4 (document) · reply 50% | company | 0% | 5% | 100% | 10% | 3/4 |
+| **1d4 (document) · reply 50%** | **all** | | | | | **7/12** |
+| severity 4/4/2 · reply none | squad | 6% | 65% | 94% | 17% | 4/4 |
+| severity 4/4/2 · reply none | platoon | 2% | 88% | 100% | 5% | 2/4 |
+| severity 4/4/2 · reply none | company | 0% | 10% | 99% | 10% | 3/4 |
+| **severity 4/4/2 · reply none** | **all** | | | | | **9/12** |
+| severity 4/4/2 · reply 50% | squad | 6% | 65% | 95% | 17% | 4/4 |
+| severity 4/4/2 · reply 50% | platoon | 2% | 87% | 100% | 5% | 2/4 |
+| severity 4/4/2 · reply 50% | company | 0% | 10% | 99% | 10% | 3/4 |
+| **severity 4/4/2 · reply 50%** | **all** | | | | | **9/12** |
+| severity 5/4/1 · reply none | squad | 9% | 71% | 92% | 17% | 3/4 |
+| severity 5/4/1 · reply none | platoon | 1% | 87% | 100% | 5% | 2/4 |
+| severity 5/4/1 · reply none | company | 0% | 10% | 96% | 10% | 2/4 |
+| **severity 5/4/1 · reply none** | **all** | | | | | **7/12** |
+| severity 5/4/1 · reply 50% | squad | 9% | 70% | 92% | 17% | 4/4 |
+| severity 5/4/1 · reply 50% | platoon | 2% | 84% | 100% | 5% | 2/4 |
+| severity 5/4/1 · reply 50% | company | 0% | 10% | 96% | 10% | 2/4 |
+| **severity 5/4/1 · reply 50%** | **all** | | | | | **8/12** |
+| severity 3/5/2 · reply none | squad | 6% | 69% | 90% | 15% | 4/4 |
+| severity 3/5/2 · reply none | platoon | 2% | 79% | 100% | 6% | 2/4 |
+| severity 3/5/2 · reply none | company | 0% | 14% | 99% | 10% | 2/4 |
+| **severity 3/5/2 · reply none** | **all** | | | | | **8/12** |
+| severity 3/5/2 · reply 50% | squad | 6% | 68% | 90% | 15% | 4/4 |
+| severity 3/5/2 · reply 50% | platoon | 2% | 79% | 100% | 6% | 2/4 |
+| severity 3/5/2 · reply 50% | company | 0% | 14% | 99% | 10% | 2/4 |
+| **severity 3/5/2 · reply 50%** | **all** | | | | | **8/12** |
+
+**What it says.**
+- **4/4/2 is the first change that moves the balance: 9 of 12**, the best of
+  any configuration so far.
+  - The squad fights meet all four targets. A 2:1 attack wins 65%, a real
+    fight, and a winning attacker at 3:1 loses **17%**, where the 1d4 cost him
+    5%.
+  - Each hit is now worth about the same whether it lands on 9 men or on 36,
+    so a small force's fire stops being wasted.
+- **The other splits do a little less**: 7–8 of 12.
+- **The reply rate still makes no difference.**
+- **What it still does not fix is the platoon fight.** A 2:1 attack wins 87%,
+  and a winning platoon attacker loses about 5%. The square law is still two
+  thirds of the problem there: four rifle squads' fire on one or two.
+
+**What it does to an even fight** (the mirror, 100 battles a cell,
+`--kinds meeting --morale on`):
+
+| | 1d4: BLUE / RED / draw | turns | loser / winner down | 4/4/2: BLUE / RED / draw | turns | loser / winner down |
+|---|---|---|---|---|---|---|
+| squad | 43 / 49 / 8 | 12 | 39% / 15% | 47 / 53 / 0 | 6 | 58% / 18% |
+| platoon | 39 / 53 / 8 | 10 | 35% / 19% | 47 / 49 / 4 | 8 | 44% / 22% |
+| company | 41 / 47 / 12 | 10 | 32% / 24% | 40 / 50 / 10 | 9 | 37% / 24% |
+
+- **Battles are shorter and splits no less even.**
+- **Surrenders almost vanish** — 0.2 a platoon battle against 1.5 — because men
+  now go down before the forces close to 50 m.
+- **A losing squad goes further before it breaks: 58%.** Casualties come
+  faster than the morale step, which judges once a turn.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

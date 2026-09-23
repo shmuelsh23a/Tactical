@@ -52,7 +52,10 @@ describe("direct fire", () => {
   it("leaves every band of the direct-fire table live against a covered target", () => {
     // The cover cut is proportional, so a force in cover is harder to hit but
     // never immune — an additive -50 points would zero the whole table.
-    const a = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    // Small arms from a squad; ירי מקביל from a vehicle's coaxial gun, the
+    // only thing that fires it (rules decision 25).
+    const squad = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    const tank = makeVehicle("T", "BLUE", { x: 0, y: 0 });
     for (const [range, weapon] of [
       [50, "smallArms"],
       [250, "smallArms"],
@@ -62,6 +65,7 @@ describe("direct fire", () => {
       [650, "sustainedMg"],
     ] as const) {
       const b = makeInfantry("B", "RED", "squad", { x: 0, y: range }, 8);
+      const a = weapon === "sustainedMg" ? tank : squad;
       const r = resolveDirectFire(new Rng(5), a, b, { weapon, cover: "full" });
       expect(r.hitChance).toBeGreaterThan(0);
     }

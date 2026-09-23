@@ -113,7 +113,7 @@ describe("the debrief tells each side what it may know of morale", () => {
       g.beginTurn();
       for (let turn = 0; turn < 8 && !blue.routing && !blue.neutralized; turn++) {
         g.advanceToPhase("combat");
-        g.fire("R", "B", { weapon: "sustainedMg" });
+        g.fire("R", "B", { weapon: "smallArms" });
         g.advanceToPhase("initiative");
       }
       if (blue.routing) return g.toRecording();

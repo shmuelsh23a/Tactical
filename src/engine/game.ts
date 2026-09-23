@@ -52,6 +52,7 @@ import {
 import {
   resolveDirectFire,
   type DirectFireOptions,
+  NOT_A_COAXIAL_WEAPON,
   type DirectFireResult,
   type WeaponClass,
 } from "./combat/directFire.js";
@@ -906,7 +907,10 @@ export class Game {
     const moraleRefusal = this.moraleRefusal(unit);
     if (moraleRefusal) throw new Error(moraleRefusal);
     if (unit.firedThisTurn) throw new Error("already acted");
-    if (fitSoldiers(unit) === 0) throw new Error("no fit shooters");
+    // ירי מקביל is a vehicle's coaxial gun, and it is the only weapon a vehicle
+    // can hold a posture with (rules decision 25).
+    if ((weapon === "sustainedMg") !== (unit.kind === "vehicle")) throw new Error(NOT_A_COAXIAL_WEAPON);
+    if (unit.kind !== "vehicle" && fitSoldiers(unit) === 0) throw new Error("no fit shooters");
 
     const posture: CoveringPosture = { weapon, declaredTurn: this.turn };
     unit.covering = posture;
@@ -999,6 +1003,7 @@ export class Game {
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
           ...(from ? this.movementTerms(actor, true) : {}),
+          ...(this.variants.woundSeverity ? { severity: this.variants.woundSeverity } : {}),
           hasLineOfSight: true,
         });
         actor.cover = wasCover;
@@ -1228,6 +1233,7 @@ export class Game {
       // A target that moved is easier or harder to hit (decision 22), and one
       // that fired from full cover keeps −30% (decision 23).
       ...this.movementTerms(target, target.movedThisTurn > 0),
+      ...(this.variants.woundSeverity ? { severity: this.variants.woundSeverity } : {}),
       ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
       // The engine knows what the target is behind; a caller may still say.
@@ -1340,6 +1346,7 @@ export class Game {
       turn: this.turn,
       // Ruling 1, on trial: the defender fires back, at a rate being measured.
       ...(reply ? { replyChance: reply } : {}),
+      ...(this.variants.woundSeverity ? { severity: this.variants.woundSeverity } : {}),
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
@@ -1592,7 +1599,9 @@ export class Game {
     target: Unit,
     weapon?: WeaponClass,
   ): StandingOrderExecution["engaged"] | { reason: string } | null {
-    if (unit.kind === "vehicle") {
+    // A vehicle ordered to engage with its coaxial gun fires that (decision
+    // 25); otherwise its main armament.
+    if (unit.kind === "vehicle" && weapon !== "sustainedMg") {
       const result = this.fireExplosive("tankRound", unit.id, target.id);
       if (!result.fired) return { reason: result.reason ?? "could not fire" };
       const caught = (result.blast?.targets ?? []).filter((t) => t.caught);

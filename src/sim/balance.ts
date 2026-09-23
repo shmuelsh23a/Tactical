@@ -432,29 +432,30 @@ export const MARKDOWN_HEADER =
   "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|";
 
 /**
- * What the sweep compares (2026-09-23, second round). Rulings 2 and 3 are
- * rules now; what is still open is the rate at which a defender returns fire
- * in an assault (ruling 1), and how much steadier a prepared defender is.
+ * What the sweep compares (2026-09-23, third round): the wound-severity roll
+ * the author put on trial, at three splits of the d10, against the document's
+ * 1d4 — each with and without the defender's reply in an assault, since
+ * deadlier hits may finally let an assault happen.
  */
 export interface Configuration {
   name: string;
   variants: RuleVariants;
 }
 
-const REPLY_RATES = [undefined, 0.3, 0.5, 0.7] as const;
-const STEADINESS = [
-  { name: "steady off", testBonus: 0, lossFactor: 1 },
-  { name: "steady +15 ×0.75", testBonus: undefined, lossFactor: undefined },
-  { name: "steady +25 ×0.5", testBonus: 25, lossFactor: 0.5 },
+const SEVERITIES = [
+  { name: "1d4 (document)", severity: undefined },
+  { name: "severity 4/4/2", severity: { light: 4, serious: 4 } },
+  { name: "severity 5/4/1", severity: { light: 5, serious: 4 } },
+  { name: "severity 3/5/2", severity: { light: 3, serious: 5 } },
 ] as const;
+const REPLIES = [undefined, 0.5] as const;
 
-export const CONFIGURATIONS: readonly Configuration[] = REPLY_RATES.flatMap((reply) =>
-  STEADINESS.map((steady) => ({
-    name: `reply ${reply == null ? "none" : `${Math.round(reply * 100)}%`} · ${steady.name}`,
+export const CONFIGURATIONS: readonly Configuration[] = SEVERITIES.flatMap((sev) =>
+  REPLIES.map((reply) => ({
+    name: `${sev.name} · reply ${reply == null ? "none" : `${Math.round(reply * 100)}%`}`,
     variants: {
+      ...(sev.severity ? { woundSeverity: { ...sev.severity } } : {}),
       ...(reply == null ? {} : { assaultReplyChance: reply }),
-      ...(steady.testBonus == null ? {} : { preparedTestBonus: steady.testBonus }),
-      ...(steady.lossFactor == null ? {} : { preparedLossFactor: steady.lossFactor }),
     },
   })),
 );

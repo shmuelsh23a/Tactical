@@ -1,5 +1,4 @@
 import { Rng } from "../rng.js";
-import { roll } from "../dice.js";
 import { distance, lookupBand } from "../geometry.js";
 import type { Unit } from "../types.js";
 import {
@@ -9,10 +8,30 @@ import {
   COVER_MODIFIERS,
   type CoverState,
 } from "../data/directFire.js";
-import { selectHitSoldier, damageSoldier, refreshUnitStatus } from "../units.js";
+import { landHit, refreshUnitStatus } from "../units.js";
+import type { WoundSeverity } from "../data/variants.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
+/**
+ * `smallArms`: the נק"ל\מקלעים table, fired by every fit man of a force.
+ * `sustainedMg`: ירי מקביל, the coaxial machine gun — a vehicle's only
+ * (rules decision 25); the key keeps the name it was first read under.
+ */
 export type WeaponClass = "smallArms" | "sustainedMg";
+
+/** Refusal: ירי מקביל is the coaxial gun of an armoured vehicle (decision 25). */
+export const NOT_A_COAXIAL_WEAPON = "not a coaxial weapon";
+
+/**
+ * Who fires a vehicle's coaxial gun: the gunner, one gun, while he is fit and
+ * the vehicle is not destroyed. ⚠️ One roll a turn is ours — the document's
+ * "ק% × מספר חיילים כשירים" counts soldiers, and a vehicle's are its crew.
+ */
+function coaxialGunners(vehicle: Unit): number[] {
+  const v = vehicle.vehicle;
+  if (!v || v.destroyed) return [];
+  return v.crew.some((c) => c.role === "gunner" && !c.neutralized) ? [1] : [];
+}
 
 export interface DirectFireOptions {
   weapon: WeaponClass;
@@ -41,6 +60,8 @@ export interface DirectFireOptions {
    * ({@link FIRING_FROM_COVER_MODIFIER}, rules decision 23).
    */
   coverModifier?: number;
+  /** The wound-severity roll on trial (data/variants.ts); absent, the document's 1d4. */
+  severity?: WoundSeverity;
 }
 
 export interface DirectFireResult {
@@ -83,6 +104,9 @@ export function resolveDirectFire(
     targetNeutralized: target.neutralized,
   };
 
+  if (opts.weapon === "sustainedMg" && attacker.kind !== "vehicle") {
+    return { ...base, reason: NOT_A_COAXIAL_WEAPON };
+  }
   if (opts.hasLineOfSight === false) return { ...base, reason: "no line of sight" };
   if (!band) return { ...base, reason: "out of range" };
   if (target.kind === "vehicle") {
@@ -99,8 +123,9 @@ export function resolveDirectFire(
   // The men who will still fight — a broken man keeps his head down — each
   // shooting as well as his force's suppression and his own nerve let him
   // (rules decision 19). Without morale: every fit man, at the table's chance.
-  const available = readySoldiers(attacker).length;
-  const accuracy = shooterAccuracy(attacker);
+  const coaxial = opts.weapon === "sustainedMg";
+  const accuracy = coaxial ? coaxialGunners(attacker) : shooterAccuracy(attacker);
+  const available = coaxial ? accuracy.length : readySoldiers(attacker).length;
   const shooters = Math.max(0, Math.min(opts.shooters ?? available, available));
   if (shooters === 0) return { ...base, reason: "no fit shooters", hitChance };
 
@@ -111,10 +136,9 @@ export function resolveDirectFire(
   for (let i = 0; i < shooters; i++) {
     if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
     hits++;
-    const dmg = roll(rng, DIRECT_FIRE_DAMAGE_DICE);
-    totalDamage += dmg;
-    const victim = selectHitSoldier(target, rng, opts.targetSoldierId);
-    if (victim && damageSoldier(victim, dmg, turn)) newCasualties++;
+    const hit = landHit(rng, target, DIRECT_FIRE_DAMAGE_DICE, turn, opts.severity, opts.targetSoldierId);
+    totalDamage += hit.damage;
+    if (hit.casualty) newCasualties++;
   }
 
   if (hits > 0) {

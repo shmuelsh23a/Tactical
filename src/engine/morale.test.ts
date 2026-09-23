@@ -188,7 +188,10 @@ describe("suppression", () => {
     const shot = g.fire(red.id, blue.id, { weapon: "smallArms" });
     expect(blue.suppression).toBe(SUPPRESSION.directFire + SUPPRESSION.perHit * shot.hits);
     const before = blue.suppression!;
-    const burst = g.fire(red.id, blue.id, { weapon: "sustainedMg" });
+    // ירי מקביל is a vehicle's coaxial gun (decision 25).
+    const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 150 }));
+    const burst = g.fire(tank.id, blue.id, { weapon: "sustainedMg" });
+    expect(burst.fired).toBe(true);
     // (The second burst is refused as already acted only in the UI; the engine resolves it.)
     expect(blue.suppression! - before).toBe(
       Math.round((SUPPRESSION.directFire + SUPPRESSION.perHit * burst.hits) * SUPPRESSION.sustainedMgFactor),
@@ -461,7 +464,7 @@ describe("the game plays it", () => {
     g.beginTurn();
     for (let turn = 0; turn < 6; turn++) {
       g.advanceToPhase("combat");
-      g.fire(red.id, blue.id, { weapon: "sustainedMg" });
+      g.fire(red.id, blue.id, { weapon: "smallArms" });
       g.fire(blue.id, red.id, { weapon: "smallArms" });
       g.advanceToPhase("initiative");
     }

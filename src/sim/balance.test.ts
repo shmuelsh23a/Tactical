@@ -36,13 +36,13 @@ describe("the balance harness", () => {
 });
 
 describe("the sweep over what is still open", () => {
-  it("covers every reply rate against every steadiness, each distinct", () => {
-    expect(CONFIGURATIONS).toHaveLength(12);
-    expect(new Set(CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(12);
+  it("covers every severity split with and without the reply, each distinct", () => {
+    expect(CONFIGURATIONS).toHaveLength(8);
+    expect(new Set(CONFIGURATIONS.map((c) => JSON.stringify(c.variants))).size).toBe(8);
   });
 
   it("judges a configuration on the four targets", () => {
-    const v = judge("squad", CONFIGURATIONS[1]!.variants, 2);
+    const v = judge("squad", CONFIGURATIONS[3]!.variants, 2);
     expect(v.met).toBeGreaterThanOrEqual(0);
     expect(v.met).toBeLessThanOrEqual(4);
   });

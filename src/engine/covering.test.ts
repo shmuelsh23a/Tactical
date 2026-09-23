@@ -325,7 +325,7 @@ describe("covering fire", () => {
 
   it("replays exactly, shots and all", () => {
     const { g, red, blue } = covered(3, { x: 0, y: 0 }, { x: 0, y: 200 });
-    g.setCovering(red.id, true, "sustainedMg");
+    g.setCovering(red.id, true, "smallArms");
     toNextMovement(g);
     g.moveUnit(blue.id, { x: 0, y: 150 }, "run");
     g.advanceToPhase("summary");
