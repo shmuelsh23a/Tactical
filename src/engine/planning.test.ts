@@ -94,6 +94,30 @@ describe("mission planning (decision 38)", () => {
       expect(seen(true)).toBe(true);
     });
 
+    it("stops seeing as one the moment it fires or moves, before the turn is out", () => {
+      const g = setUp();
+      g.designateObservationPost("R-1");
+      const op = g.getUnit("R-1");
+      const enemy = g.getUnit("B-1");
+      enemy.movedThisTurn = 40;
+      expect(detectionChance(op, enemy).range).toBe(OBSERVATION_POST_RANGE_M);
+      toMovement(g);
+      g.advanceToPhase("combat");
+      // A real shot, not a flag set by hand.
+      g.addUnit(makeInfantry("B-2", "BLUE", "squad", { x: 0, y: 150 }, 8));
+      g.fire("R-1", "B-2", { weapon: "smallArms" });
+      expect(op.firedThisTurn).toBe(true);
+      expect(detectionChance(op, enemy).range).toBe(300);
+    });
+
+    it("is put out in planning, not brought along by a force added with the flag set", () => {
+      const g = setUp();
+      const walkIn = makeInfantry("R-3", "RED", "squad", { x: 0, y: 50 }, 8);
+      walkIn.observationPost = true;
+      g.addUnit(walkIn);
+      expect(g.getUnit("R-3").observationPost).toBeUndefined();
+    });
+
     it("stops being one when it moves or fires, and is not a vehicle", () => {
       const g = setUp();
       g.designateObservationPost("R-1");
@@ -142,6 +166,16 @@ describe("mission planning (decision 38)", () => {
       expect(h.getUnit("R-2").baseCover).toBe("partial");
     });
 
+    it("is elsewhere: not where the force already stands, and not cover for a vehicle", () => {
+      const g = setUp();
+      expect(() => g.prepareAlternatePosition("R-1", { x: 0, y: -PREPARED_POSITION_REACH_M })).toThrow(/more than/);
+      g.prepareAlternatePosition("R-1", { x: 0, y: -60 });
+      g.addUnit(makeVehicle("R-TANK", "RED", { x: 0, y: -60 }));
+      toMovement(g);
+      endTurn(g);
+      expect(g.getUnit("R-TANK").baseCover).toBe("none");
+    });
+
     it("one a force, and none for a vehicle", () => {
       const g = setUp();
       g.prepareAlternatePosition("R-1", { x: 0, y: -40 });
@@ -151,6 +185,17 @@ describe("mission planning (decision 38)", () => {
       expect(g.alternatePositionFor("R-1")?.at).toEqual({ x: 0, y: -40 });
       expect(g.alternatePositionFor("R-2")).toBeUndefined();
     });
+  });
+
+  it("replays targets from the options and from planning alike, and re-records the same", () => {
+    const g = setUp({ registeredTargets: [{ side: "RED", weapon: "mortar", at: { x: 500, y: 500 } }] });
+    g.registerTarget("RED", "mortar", { x: 0, y: 400 });
+    const recording = g.toRecording();
+    expect(recording.registeredTargets).toHaveLength(1);
+    const again = replayGame(recording);
+    expect(again.registeredTargets).toEqual(g.registeredTargets);
+    expect(again.marksHeld).toEqual(g.marksHeld);
+    expect(again.toRecording()).toEqual(recording);
   });
 
   it("replays bit for bit, and a plan changes the fingerprint", () => {

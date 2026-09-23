@@ -60,11 +60,16 @@ there: advance, advance and engage a named force, hold where you are and engage,
 or **hold fire** — enforced against the player's own click, and with an optional
 range at which the force springs the ambush by itself; the order the selected force is working to is written out on its card,
 and its objective and its target are both drawn on the map, **fixed faction colours** (BLUE always friendly/blue, RED always
-hostile/red, regardless of whose turn it is), and a **targeting phase**: each
-side marks one indirect-fire mission and one smoke screen per turn (see rules
-decision 8). A marked aim point is drawn only on its owner's map, with the turn
-it will land; the round scatters through the dispersion table on arrival and the
-combat log reports the miss distance and every casualty. Smoke comes from any of
+hostile/red, regardless of whose turn it is), **mission planning** before the
+first turn — each side in turn, behind the handoff screen, registers targets,
+puts out observation posts and prepares alternate positions, all drawn on its
+own map only (rules decision 38) — and a **targeting phase**: a side whose
+echelon may call mortars or artillery (decision 37) **calls for fire**, one
+mission in hand per weapon, with its missions left, a fuze (impact or air
+burst) and a **check fire** (decisions 31 and 34); and one smoke screen per
+turn (decision 8). The engine adjusts a mission onto the mark and fires it for
+effect; a marked aim point is drawn only on its owner's map, with the turn it
+will land, and the combat log reports the miss distance and every casualty. Smoke comes from any of
 the document's three sources — a thrown רימון is in place at once, a פצמ"ר or
 פגז ארטילריה has to be fired and arrives with its weapon's שיהוי, each with its
 own screen size (rules decision 9); a screen in flight shows its future
@@ -1347,7 +1352,7 @@ on the stated reasoning, still awaiting the author's word.
       ×½ on their feet, ×0.36 once down. Under an air burst it counts for
       nothing (decision 31).
     - A mission can fire several rounds (`queueIndirectFire`'s `rounds`),
-      each scattered on its own. The live UI still fires one.
+      each scattered on its own. The live UI calls missions (decision 34).
     - ⚠️ ×0.36 is ours: prone ÷ standing lethal area for a 105 or 155 mm round.
     - Source: the US Army's posture test of the 1970s. 58% of the men were
       standing at the first impact, 29% two seconds later, none after eight.
@@ -1369,7 +1374,7 @@ on the stated reasoning, still awaiting the author's word.
       The two sources disagree on open holes. We followed FM 7-90, which is
       what the author agreed to.
     - The engine and the harness take a fuze (`queueIndirectFire`'s `fuze`).
-      The live UI does not offer one yet.
+      The live UI offers the choice when a side calls for fire.
 
     Decisions 29–31 change the outcome of any battle in which a shell lands on
     men, so a sealed recording of one made before them fails
@@ -1421,9 +1426,10 @@ on the stated reasoning, still awaiting the author's word.
       refuses it). A side left out of `fireSupport` is not rationed.
     - **Ammunition** is the battalion's and above, set by the mission's
       parameters (backlog 12). It is not built.
-    - The debrief narrates a call for fire. **The live UI does not call
-      missions yet**: it still queues single rounds, one a turn (decision 8's
-      UI limit), unrationed.
+    - The debrief narrates a call for fire, and the live UI calls one: a
+      weapon with a mission in hand takes no other call until it is done or
+      checked (a section or a battery fires one mission at a time — the UI's
+      rule and the harness's, not the engine's).
     - Why 6 was the first default: a 6-gun battery's single volley.
       Decision 36 split it by weapon.
 35. ✅ **Counter-battery fire exists only for guns on the map** (author,
@@ -1498,7 +1504,11 @@ on the stated reasoning, still awaiting the author's word.
       displacement goes there when there is one.
     - **Binoculars and UAVs** are for a later stage (backlog 4).
     - **The live UI** has a planning stage before the first turn (see the
-      Stage 2 section above).
+      Stage 2 section above). The company battle on Tel Azeka
+      (`telAzekaCompany`) is the one where fire can be registered and called.
+    - An OP needs the knowledge model (`trackIntel`): without it a side sees
+      by a flat radius and the OP changes nothing. Every battle in the app
+      plays with it.
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

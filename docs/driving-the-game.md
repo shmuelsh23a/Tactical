@@ -40,6 +40,13 @@ can be built and a function timed in the real browser. Warm the JIT with a few
 hundred calls before timing and take the best of three passes — the first
 measurement of anything here comes out around twice its settled cost.
 
+- **A battle opens on mission planning, not turn 1** (rules decision 38).
+  Each side plans behind the handoff screen: click `RED מוכן — הצג את המפה`,
+  then `סיים תכנון (RED)`, the same for BLUE, and only then `התחל תור`. A
+  driver that looks only for the three turn buttons below stalls here. While
+  planning, a map click registers a target or places the selected force's
+  alternate position, and a force is selected from the sidebar's `הכוחות שלי`
+  list, which is there during planning too.
 - **The app opens on the scenario picker, not the battle.** Load
   `/?scenario=yokneamIllit` (or any spec's `slug`) to skip it; a reload keeps
   the battle but, as always, not the game in progress. `החלף תרחיש` goes back —

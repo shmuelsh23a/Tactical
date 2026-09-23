@@ -155,6 +155,9 @@ export interface RegisteredTarget {
 }
 type MarkEntry = RegisteredTarget;
 
+/** An indirect-fire weapon's key — its own, not one an object inherits ("constructor"). */
+const isIndirect = (weapon: string): boolean => Object.hasOwn(INDIRECT_ACCURACY, weapon);
+
 /**
  * An alternate position a side prepared in mission planning (rules decision
  * 38): ground made ready for `forUnitId` to fall back to. Any force of the
@@ -488,7 +491,7 @@ export class Game {
     }
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     for (const t of opts.registeredTargets ?? []) {
-      if (!this.sides.includes(t.side) || !INDIRECT_ACCURACY[t.weapon] || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
+      if (!this.sides.includes(t.side) || !isIndirect(t.weapon) || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
       }
       // Before any force is on the map only a declared echelon can be checked;
@@ -507,7 +510,7 @@ export class Game {
       for (const a of list) {
         const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT[a.weapon] ?? NaN;
         if (
-          !INDIRECT_ACCURACY[a.weapon] ||
+          !isIndirect(a.weapon) ||
           weapons.has(a.weapon) ||
           !Number.isInteger(a.missions) ||
           a.missions < 0 ||
@@ -612,6 +615,9 @@ export class Game {
     // why not the game's rng. Before the journal entry, like the cover: the
     // recording carries the men as they were drawn, and a replay keeps them.
     if (this.morale) generateMorale(unit, this.seed);
+    // An observation post is put out in planning, not brought along
+    // (rules decision 38).
+    delete unit.observationPost;
     this.units.push(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
@@ -649,14 +655,7 @@ export class Game {
 
   /** Start the next turn: roll initiative and enter the initiative phase. */
   beginTurn(): { turn: number; initiativeOrder: Side[] } {
-    // Planning is over: now the forces are on the map, an undeclared side's
-    // echelon is known, and its fire plan is checked against it (decision 37).
-    if (this.turn === 0) {
-      for (const [side, list] of Object.entries(this.fireSupport)) {
-        for (const a of list ?? []) if (a.missions > 0) this.requireMayCall(side as Side, a.weapon);
-      }
-      for (const t of this.registeredTargets) this.requireMayCall(t.side, t.weapon);
-    }
+    this.checkFirePlans();
     this.turn += 1;
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
@@ -668,6 +667,19 @@ export class Game {
     }
     this.journal({ kind: "beginTurn" });
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
+  }
+
+  /**
+   * As planning ends: now the forces are on the map, an undeclared side's
+   * echelon is known, and its fire plan is checked against it (decision 37).
+   * Before anything else moves, so a refusal leaves the game as it was.
+   */
+  private checkFirePlans(): void {
+    if (this.turn !== 0) return;
+    for (const [side, list] of Object.entries(this.fireSupport)) {
+      for (const a of list ?? []) if (a.missions > 0) this.requireMayCall(side as Side, a.weapon);
+    }
+    for (const t of this.registeredTargets) this.requireMayCall(t.side, t.weapon);
   }
 
   /**
@@ -700,6 +712,7 @@ export class Game {
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
+        this.checkFirePlans();
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
         const { chargeWork, morale } = this.endOfTurnUpkeep();
@@ -807,7 +820,7 @@ export class Game {
   registerTarget(side: Side, weapon: string, at: Point): RegisteredTarget {
     this.requirePlanning("A registered target");
     if (!this.sides.includes(side)) throw new Error(`no such side: ${side}`);
-    if (!INDIRECT_ACCURACY[weapon]) throw new Error(`${weapon} is not an indirect-fire weapon`);
+    if (!isIndirect(weapon)) throw new Error(`${weapon} is not an indirect-fire weapon`);
     if (!Number.isFinite(at?.x) || !Number.isFinite(at?.y)) throw new Error(`cannot register a target at ${JSON.stringify(at)}`);
     this.requireMayCall(side, weapon);
     const held = this.registeredTargets.filter((t) => t.side === side && t.weapon === weapon).length;
@@ -845,6 +858,11 @@ export class Game {
     const unit = this.getUnit(unitId);
     if (unit.kind === "vehicle") throw new Error(`${unitId} is a vehicle: it does not prepare a position`);
     if (!Number.isFinite(at?.x) || !Number.isFinite(at?.y)) throw new Error(`cannot prepare a position at ${JSON.stringify(at)}`);
+    // Elsewhere: a position prepared where the force already stands would be
+    // cover for nothing, which decision 12's digging does not give.
+    if (distance(at, unit.position) <= PREPARED_POSITION_REACH_M) {
+      throw new Error(`${unitId}'s alternate position must be more than ${PREPARED_POSITION_REACH_M} m from where it stands`);
+    }
     if (this.prepared.filter((p) => p.forUnitId === unitId).length >= MAX_ALTERNATE_POSITIONS_PER_FORCE) {
       throw new Error(`${unitId} already has its alternate position`);
     }
@@ -867,6 +885,8 @@ export class Game {
 
   /** The cover of the best position `unit`'s side prepared where it stands. */
   private preparedCoverAt(unit: Unit): CoverState {
+    // Dug for men: a vehicle's cover is not a trench's.
+    if (unit.kind === "vehicle") return "none";
     let best: CoverState = "none";
     for (const p of this.prepared) {
       if (p.side === unit.side && distance(p.at, unit.position) <= PREPARED_POSITION_REACH_M) best = betterCover(best, p.cover);
@@ -902,21 +922,43 @@ export class Game {
       firingFrom?: Point;
       fuze?: Fuze;
       observedByUav?: boolean;
-      /**
-       * Rounds for effect, where they are not the allotment's or the weapon's
-       * default (decision 36). A replay passes what the recording journalled.
-       */
-      roundsForEffect?: number;
     } = {},
   ): FireMission {
+    return this.callForFireWith(side, weaponKey, target, opts, undefined);
+  }
+
+  /**
+   * **Replay only**: a call for fire with the rounds for effect the recording
+   * journalled, whatever the allotment or today's default would give — the
+   * default has changed once (decision 36), and a replay must fire what was
+   * fired. A player's call takes its number from the allotment or the
+   * weapon, never from the caller.
+   */
+  replayCallForFire(
+    side: Side,
+    weaponKey: string,
+    target: Point,
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean },
+    roundsForEffect: number,
+  ): FireMission {
+    return this.callForFireWith(side, weaponKey, target, opts, roundsForEffect);
+  }
+
+  private callForFireWith(
+    side: Side,
+    weaponKey: string,
+    target: Point,
+    opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean },
+    recordedRounds: number | undefined,
+  ): FireMission {
     this.requirePhase("targeting");
-    if (!INDIRECT_ACCURACY[weaponKey]) throw new Error(`${weaponKey} is not an indirect-fire weapon`);
+    if (!isIndirect(weaponKey)) throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     this.requireMayCall(side, weaponKey);
     const left = this.fireMissionsLeft(side, weaponKey);
     if (left !== undefined && left <= 0) throw new Error(`${side} has no ${weaponKey} fire missions left`);
     if (opts.fuze !== undefined && !(opts.fuze in SHELL_VS_MEN)) throw new Error(`no such fuze: ${String(opts.fuze)}`);
     const allotment = this.fireSupport[side]?.find((a) => a.weapon === weaponKey);
-    const roundsForEffect = opts.roundsForEffect ?? allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey);
+    const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey);
     if (!Number.isInteger(roundsForEffect) || roundsForEffect < 1 || roundsForEffect > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds for effect, not ${roundsForEffect}`);
     }
@@ -1008,7 +1050,7 @@ export class Game {
   ): PendingFireMission {
     this.requirePhase("targeting");
     const weapon = EXPLOSIVES[weaponKey];
-    if (!weapon || weapon.delivery !== "indirectFire" || !INDIRECT_ACCURACY[weaponKey]) {
+    if (!weapon || weapon.delivery !== "indirectFire" || !isIndirect(weaponKey)) {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     }
     // A side with its fire assigned as missions fires only those (rules

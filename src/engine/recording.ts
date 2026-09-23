@@ -140,6 +140,21 @@ export class RecordingError extends Error {
  */
 const LEGACY_ROUNDS_FOR_EFFECT = 6;
 
+/**
+ * Whether a recording was made before rules decision 36. Such a recording has
+ * neither mark a later one carries: the decision 37 flag, which a game writes
+ * whenever the rule is on (it is by default), and rounds for effect written
+ * into its allotments. The one it cannot tell apart is a later game with the
+ * rule switched off and no allotment, which only the harness plays and none
+ * is saved from.
+ */
+function madeBeforeDecision36(recording: GameRecording): boolean {
+  if (recording.fireSupportByEchelon !== undefined) return false;
+  return !Object.values(recording.fireSupport ?? {}).some(
+    (list) => Array.isArray(list) && list.some((a) => a?.roundsForEffect !== undefined),
+  );
+}
+
 /** Allotments from a recording, with the number a pre-decision-36 one was played with. */
 function withLegacyRounds(fireSupport: Partial<Record<Side, FireAllotment[]>>): Partial<Record<Side, FireAllotment[]>> {
   for (const list of Object.values(fireSupport)) {
@@ -432,6 +447,7 @@ export function replayWithOutcomes(
   } = {},
 ): { game: Game; steps: ReplayStep[]; skipped: SkippedAction[] } {
   checkRecording(recording);
+  const pre36 = madeBeforeDecision36(recording);
   const game = new Game({
     seed: opts.seed ?? recording.seed,
     sides: recording.sides,
@@ -440,7 +456,9 @@ export function replayWithOutcomes(
     morale: recording.morale ?? false,
     ...(recording.variants ? { variants: cloneForRecord(recording.variants) } : {}),
     ...(recording.registeredTargets ? { registeredTargets: cloneForRecord(recording.registeredTargets) } : {}),
-    ...(recording.fireSupport ? { fireSupport: withLegacyRounds(cloneForRecord(recording.fireSupport)) } : {}),
+    ...(recording.fireSupport
+      ? { fireSupport: pre36 ? withLegacyRounds(cloneForRecord(recording.fireSupport)) : cloneForRecord(recording.fireSupport) }
+      : {}),
     ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
@@ -517,17 +535,22 @@ export function replayWithOutcomes(
           kind: "callForFire",
           // As it stood when called: the live mission goes on changing.
           mission: cloneForRecord(
-            game.callForFire(action.side, action.weaponKey, action.target, {
-              ...action.opts,
-              // Made before decision 36: what its allotment set, or the old default.
-              ...(action.opts.roundsForEffect === undefined
-                ? {
-                    roundsForEffect:
-                      game.fireSupport[action.side]?.find((a) => a.weapon === action.weaponKey)?.roundsForEffect ??
+            (() => {
+              const { roundsForEffect, ...opts } = action.opts;
+              if (roundsForEffect !== undefined) {
+                return game.replayCallForFire(action.side, action.weaponKey, action.target, opts, roundsForEffect);
+              }
+              // No number journalled: made before the call carried one.
+              // Before decision 36 that is the allotment's or 6; between it
+              // and the journalling, the allotment's or the weapon's default.
+              return pre36
+                ? game.replayCallForFire(
+                    action.side, action.weaponKey, action.target, opts,
+                    game.fireSupport[action.side]?.find((a) => a.weapon === action.weaponKey)?.roundsForEffect ??
                       LEGACY_ROUNDS_FOR_EFFECT,
-                  }
-                : {}),
-            }),
+                  )
+                : game.callForFire(action.side, action.weaponKey, action.target, opts);
+            })(),
           ),
         };
         break;

@@ -204,10 +204,17 @@ export function sideView(game: Game, side: Side): SideView {
  * Without morale the force carries none of it, and is returned as it is.
  */
 export function outsideView(unit: Unit, seenNow: boolean): Unit {
-  if (!unit.soldiers?.some((s) => s.morale || s.traits) && unit.suppression == null && !unit.motivation && !unit.experience) {
+  if (
+    !unit.soldiers?.some((s) => s.morale || s.traits) &&
+    unit.suppression == null &&
+    !unit.motivation &&
+    !unit.experience &&
+    !unit.observationPost
+  ) {
     return unit;
   }
-  const { suppression: _s, motivation: _mo, experience: _ex, routing, surrendered, ...rest } = unit;
+  // Nor that it is an observation post: that is its side's plan (decision 38).
+  const { suppression: _s, motivation: _mo, experience: _ex, observationPost: _op, routing, surrendered, ...rest } = unit;
   return {
     ...rest,
     ...(seenNow && routing ? { routing } : {}),

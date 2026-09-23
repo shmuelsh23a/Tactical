@@ -70,7 +70,8 @@ export function detectionChance(
   // (rules decision 38); a hidden one it looks for like anybody else.
   const range = hidden
     ? profile.hiddenDetectRange
-    : observer.observationPost && !observerGait
+    : // …and stops being one the moment it moves or fires, not at the turn's end.
+      observer.observationPost && !observerGait && observer.movedThisTurn === 0 && !observer.firedThisTurn
       ? Math.max(profile.visibleDetectRange, OBSERVATION_POST_RANGE_M)
       : profile.visibleDetectRange;
 

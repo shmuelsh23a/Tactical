@@ -399,12 +399,35 @@ describe("who may call fire (decisions 36–37)", () => {
     if (call?.kind === "callForFire") delete call.opts.roundsForEffect;
     expect(replayGame(recording).fireMissions[0]!.roundsForEffect).toBe(6);
 
+    // Made between decision 36 and the journalling of the number: the rule's
+    // flag is in the header, so it fired the weapon's default, 12.
+    const between = setUp({}, "company");
+    between.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const mid = between.toRecording();
+    for (const a of mid.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
+    expect(replayGame(mid).fireMissions[0]!.roundsForEffect).toBe(12);
+
     const rationed = setUp({ fireSupportByEchelon: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }] } }, "platoon");
     rationed.callForFire("BLUE", "mortar", { x: 0, y: 0 });
     const old = rationed.toRecording();
     delete old.fireSupport!.BLUE![0]!.roundsForEffect;
     for (const a of old.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
     expect(replayGame(old).fireMissions[0]!.roundsForEffect).toBe(6);
+  });
+
+  it("takes a player's rounds for effect from the allotment or the weapon, never from the call", () => {
+    const g = setUp({ commandEchelon: BATTALIONS });
+    const m = g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { roundsForEffect: 100 } as never);
+    expect(m.roundsForEffect).toBe(12);
+    expect(() => g.callForFire("BLUE", "constructor", { x: 0, y: 0 })).toThrow(/indirect-fire/);
+  });
+
+  it("checks the fire plan before the first upkeep, so a refusal leaves the game untouched", () => {
+    const g = new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+    expect(() => g.advancePhase()).toThrow(/company and above/);
+    expect(g.getUnit("B").stationaryTurns).toBe(0);
+    expect(g.turn).toBe(0);
   });
 
   it("refuses an undeclared side's fire plan when the first turn begins, once its forces say what it commands", () => {

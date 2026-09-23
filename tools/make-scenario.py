@@ -26,6 +26,13 @@ The spec, in full — everything not marked optional is required:
       "trackIntel": true,                   optional (default true)
       "enforceC2": true,                    optional (default true)
       "morale": true,                       optional (default false; decision 19)
+      "commandEchelon": {"BLUE": "company"}, optional: what each side's player
+                                            commands (decision 37); undeclared,
+                                            the engine reads it off the forces
+      "fireSupport": {"BLUE": [{"weapon": "mortar", "missions": 4}]},
+                                            optional: each side's fire missions
+                                            (decision 34), with "roundsForEffect"
+                                            if not the weapon's default
       "about": ["prose..."],                optional: the module's doc comment
       "window": {
         "lat": 32.645, "lon": 35.085,       centre of the ground
@@ -134,7 +141,15 @@ FORCE_KEYS = {
 MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
-SPEC_KEYS = {"slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "about", "window", "forces", "charges"}
+SPEC_KEYS = {
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "about", "window", "forces", "charges",
+    "commandEchelon", "fireSupport",
+}
+ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
+# The indirect-fire weapons a side can be allotted. Whether its echelon may
+# call them is a rule (decision 37), and the engine refuses that when the
+# battle is built: `scenarioCatalogue.test.ts` builds every battle.
+FIRE_WEAPONS = {"mortar", "artillery"}
 KINDS = {"infantry", "vehicle", "command"}
 # What each kind may carry beyond the common keys. A key spelt correctly but
 # given to the wrong kind is refused rather than dropped: `soldiers` on a
@@ -228,6 +243,24 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "trackIntel", "spec")
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
+    for key in ("commandEchelon", "fireSupport"):
+        require(isinstance(spec.get(key, {}), dict), f"spec: {key} must be an object keyed by side")
+    for side, echelon in spec.get("commandEchelon", {}).items():
+        require(side in SIDES, f"commandEchelon: {side} is not RED or BLUE")
+        require(echelon in ECHELONS, f"commandEchelon.{side}: unknown echelon {echelon!r}")
+    for side, allotments in spec.get("fireSupport", {}).items():
+        require(side in SIDES, f"fireSupport: {side} is not RED or BLUE")
+        require(isinstance(allotments, list), f"fireSupport.{side}: expected a list of allotments")
+        weapons: set[str] = set()
+        for a in allotments:
+            where = f"fireSupport.{side}"
+            check_keys(where, a, ALLOTMENT_KEYS)
+            require(a.get("weapon") in FIRE_WEAPONS, f"{where}: weapon must be one of {sorted(FIRE_WEAPONS)}")
+            require(a["weapon"] not in weapons, f"{where}: one allotment a weapon")
+            weapons.add(a["weapon"])
+            require("missions" in a, f"{where}: missing missions")
+            require_int(a, "missions", where, 0, 100)
+            require_int(a, "roundsForEffect", where, 1, 100)
     window = spec["window"]
     check_keys("window", window, WINDOW_KEYS)
     for key in ("lat", "lon", "width", "height", "heightfield", "objects", "constant"):
@@ -403,6 +436,19 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     ]
     if spec.get("morale"):
         lines.append("    morale: true,")
+    if spec.get("commandEchelon"):
+        pairs = ", ".join(f'{side}: "{e}"' for side, e in sorted(spec["commandEchelon"].items()))
+        lines.append("    commandEchelon: { " + pairs + " },")
+    if spec.get("fireSupport"):
+        lines.append("    fireSupport: {")
+        for side, allotments in sorted(spec["fireSupport"].items()):
+            items = ", ".join(
+                "{ weapon: \"" + a["weapon"] + "\", missions: " + str(a["missions"])
+                + (", roundsForEffect: " + str(a["roundsForEffect"]) if "roundsForEffect" in a else "") + " }"
+                for a in allotments
+            )
+            lines.append(f"      {side}: [{items}],")
+        lines.append("    },")
     lines += [
         "    terrain: build" + name + "Terrain(),",
         "  });",
