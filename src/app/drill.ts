@@ -270,6 +270,17 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const cy = live.reduce((s, u) => s + u.position.y, 0) / live.length;
   const behind = toward({ x: cx, y: cy }, task.objective, -drill.commandGroupBehind);
   for (const hq of game.units.filter((u) => u.side === side && u.kind === "command" && inPlay(u))) {
+    // A defending command group keeps the squads' fire discipline: without it
+    // its covering fire springs the ambush at the edge of small-arms reach on
+    // anything the side has seen, and gives the position away (balance.md,
+    // twelfth round — found through the observation posts, which make the
+    // side see the attacker sooner).
+    if (!task.attacking) {
+      const held = game.standingOrderFor(hq.id);
+      if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange) {
+        game.setStandingOrder(hq.id, { gait: "normal", holdFire: true, engagementRange: drill.openFireRange });
+      }
+    }
     // An observation post holds its ground: moving would end it (decision 38).
     if (hq.observationPost || distance(hq.position, behind) < 5) continue;
     try {
