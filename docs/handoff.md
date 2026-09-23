@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of the morale session, 2026-09-22 (rules decision 19).** This is the working note for whoever
+**Current as of the balance session, 2026-09-23 (rules decisions 19–27).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -21,7 +21,8 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 485 tests, 26 files
+npm run check       lint + typecheck clean, 526 tests, 29 files
+npm run balance     the balance harness; see balance.md for every run recorded
 ```
 
 The app opens on a **scenario picker** (Yokneam and Tel Azeka, or a saved
@@ -47,6 +48,66 @@ call the project's npm scripts and a reviewer that reads
 here from AGENTS.md alone.
 
 ## Waiting on the author
+
+**Start here: where the 2026-09-23 session stopped.** The last thing he
+decided was **decision 27**: one wound rule (a d10 severity) for every hit,
+bullet or fragment. The **next question for him is the blast table**. Under
+any wound rule, one artillery shell a turn decides a 2:1 attack, because:
+- the document's blast catches 70% of the men within 50 m of a single
+  round;
+- **cover does nothing against blast** (a quick trial of ½ in partial cover
+  and ¼ in full barely moved it);
+- nothing says whether a "round" is one shell or a battery's volley.
+
+His guiding principle, checked against the sources and agreed, is that
+explosives cause **about 75% of casualties** in modern war
+([balance.md](balance.md), *Fifth round*). The harness measures it now: each
+man put out records what did it (`Soldier.outBy`), and `--fires` gives an
+attacker a fire plan on the objective. Put the blast question to him with
+those numbers. Do not tune it yourself.
+
+**What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
+balance.md):
+- A harness of headless NATO-style battles, judged against four planning
+  targets at each of three echelons (`TARGETS` in
+  [`sim/balance.ts`](../src/sim/balance.ts)).
+- A **squad drill** as data ([`app/drill.ts`](../src/app/drill.ts)), which is
+  the executor future simulated subordinates will use (backlog 15) and what
+  the TTP editor will edit (backlog 20).
+- Under the Western drill and today's rules: **10 of 12 targets**. The two
+  misses:
+  - a winning platoon attacker at 3–4:1 loses 8%, where the target is
+    10–30%;
+  - a company attacking at 2:1 wins 20%, where the target is 30–70%. This
+    has been the trade for making explosives count; with a fire plan it
+    recovers to 50%.
+
+**A bug to chase first (ours, not his).** Since decision 27, the company
+mirror leans BLUE:
+
+| Run | BLUE / RED / draw |
+|---|---|
+| `--kinds meeting --drill western --morale on --n 200 --echelons company` | 52 / 39 / 10 |
+| the same, `--swap` | 50 / 37 / 13 |
+| before decision 27 | 47 / 45 |
+
+The lean survives the swap, so it follows the **side label, not the
+position**. Explosives now matter, so look at what treats the sides
+differently in the explosive path:
+- the order the fire missions resolve in;
+- the order of units in `game.units` (BLUE is added first);
+- the harness's `rear` for the mortar's firing point.
+
+Squad and platoon mirrors have no explosives and were not rerun.
+
+**Still open, and his:**
+- **The blast table** (above).
+- **The Western drill's numbers**: all ours.
+- **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
+  It measures as irrelevant, and we suggest 30%.
+- **The size of the prepared-defender bonus** (decision 24, his rule, our
+  numbers).
+- **The traits' other effects**: his next session on morale.
 
 **Morale is built (rules decision 19), and the author's next session is the
 traits.** He said so on 2026-09-22: strength, intelligence, wisdom, agility,
@@ -176,9 +237,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Ordered. The first two want a word from him before anything is built; the
-third does not.**
+**Ordered. The first three want a word from him before anything is built;
+the fourth does not.**
 
+0. **The blast table** — the question the 2026-09-23 session ended on (see
+   *Start here*). Ask him first. Measure his answer with `npm run balance --
+   --sweep --drill western` and `--fires`, and record it on balance.md.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"

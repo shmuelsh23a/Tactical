@@ -38,6 +38,7 @@ import {
 } from "./combat/detection.js";
 import { OBSERVATION, OBSERVATION_SECTOR, SCOUTING } from "./data/concealment.js";
 import {
+  FIRING_FROM_COVER_MODIFIER,
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
   type CoverState,
@@ -51,6 +52,7 @@ import {
 import {
   resolveDirectFire,
   type DirectFireOptions,
+  NOT_A_COAXIAL_WEAPON,
   type DirectFireResult,
   type WeaponClass,
 } from "./combat/directFire.js";
@@ -94,6 +96,9 @@ import {
   type SoldierSnapshot,
 } from "./morale.js";
 import { SUPPRESSION } from "./data/morale.js";
+import { type RuleVariants } from "./data/variants.js";
+import { PREPARED } from "./data/morale.js";
+import { ASSAULT } from "./data/casualties.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -235,6 +240,12 @@ export interface GameOptions {
    * draws, no slower forces, no worse aim.
    */
   morale?: boolean;
+  /**
+   * Candidate answers to rulings 1–3, on trial (see data/variants.ts). Absent,
+   * the game plays the rules as they stand. Scaffolding for a decision: it
+   * goes when the author picks.
+   */
+  variants?: RuleVariants;
 }
 
 /**
@@ -249,6 +260,7 @@ export class Game {
   readonly trackIntel: boolean;
   readonly terrain: Terrain;
   readonly morale: boolean;
+  readonly variants: RuleVariants;
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
   units: Unit[] = [];
@@ -271,6 +283,8 @@ export class Game {
   private readonly stress = new StressLedger();
   /** Every soldier as he stood when the turn began, for the morale step. */
   private turnSnapshot: SoldierSnapshot = new Map();
+
+
 
   /**
    * Set while the engine is carrying out a standing order. Execution bypasses
@@ -327,6 +341,7 @@ export class Game {
     this.trackIntel = opts.trackIntel ?? false;
     this.terrain = opts.terrain ?? FLAT_GROUND;
     this.morale = opts.morale ?? false;
+    this.variants = opts.variants ?? {};
   }
 
   /**
@@ -341,6 +356,7 @@ export class Game {
       enforceC2: this.enforceC2,
       trackIntel: this.trackIntel,
       ...(this.morale ? { morale: true } : {}),
+      ...(Object.keys(this.variants).length ? { variants: cloneForRecord(this.variants) } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -427,11 +443,19 @@ export class Game {
     return { turn: this.turn, initiativeOrder: this.initiativeOrder };
   }
 
-  /** Roll 1d10 per side and order sides by descending initiative. */
+  /**
+   * Roll 1d10 per side and order sides by descending initiative. A tie is
+   * rolled again (author, 2026-09-23): the document says nothing about ties,
+   * and giving them to the side listed first handed RED the first move on 55%
+   * of turns (docs/balance.md).
+   */
   rollInitiative(): Side[] {
-    const rolls = this.sides.map((side) => ({ side, roll: roll(this.rng, "1d10") }));
-    rolls.sort((a, b) => b.roll - a.roll || this.sides.indexOf(a.side) - this.sides.indexOf(b.side));
-    return rolls.map((r) => r.side);
+    for (;;) {
+      const rolls = this.sides.map((side) => ({ side, roll: roll(this.rng, "1d10") }));
+      if (new Set(rolls.map((r) => r.roll)).size < rolls.length) continue;
+      rolls.sort((a, b) => b.roll - a.roll);
+      return rolls.map((r) => r.side);
+    }
   }
 
   /**
@@ -883,7 +907,10 @@ export class Game {
     const moraleRefusal = this.moraleRefusal(unit);
     if (moraleRefusal) throw new Error(moraleRefusal);
     if (unit.firedThisTurn) throw new Error("already acted");
-    if (fitSoldiers(unit) === 0) throw new Error("no fit shooters");
+    // ירי מקביל is a vehicle's coaxial gun, and it is the only weapon a vehicle
+    // can hold a posture with (rules decision 25).
+    if ((weapon === "sustainedMg") !== (unit.kind === "vehicle")) throw new Error(NOT_A_COAXIAL_WEAPON);
+    if (unit.kind !== "vehicle" && fitSoldiers(unit) === 0) throw new Error("no fit shooters");
 
     const posture: CoveringPosture = { weapon, declaredTurn: this.turn };
     unit.covering = posture;
@@ -975,10 +1002,8 @@ export class Game {
           // A force caught on the move is the case the movement table is
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
-          targetMovementModifier: from
-            ? MOVEMENT_PROFILES[actor.ranThisTurn ? "run" : "normal"].enemyHitModifier
-            : 0,
-          hasLineOfSight: true,
+          ...(from ? this.movementTerms(actor, true) : {}),
+              hasLineOfSight: true,
         });
         actor.cover = wasCover;
         actor.position = destination;
@@ -1082,6 +1107,32 @@ export class Game {
     return effectiveCover(target);
   }
 
+  /**
+   * A force that fired from full cover this turn is exposed doing it — but
+   * keeps −30%, not partial cover's −10% (author, 2026-09-23; rules decision
+   * 23). Nothing otherwise: the table's figure stands.
+   */
+  private coverModifierFor(target: Unit): { coverModifier?: number } {
+    if (target.cover === "full" && target.firedThisTurn) {
+      return { coverModifier: FIRING_FROM_COVER_MODIFIER };
+    }
+    return {};
+  }
+
+  /**
+   * The movement table's "סיכויי פגיעה לאש אויב" for a target that moved this
+   * turn — +30% walking, −20% running — read by every direct shot, not only
+   * by covering fire, and applied **proportionally**: ×1.3 and ×0.8 (author,
+   * 2026-09-23; rules decision 22). The document's own figures; only their
+   * application is ruled, as with cover in decision 7. Added, a runner beyond
+   * 100 m could not be hit at all.
+   */
+  private movementTerms(target: Unit, moved: boolean): { targetMovementFactor?: number } {
+    if (!moved) return {};
+    const gait = target.ranThisTurn ? "run" : "normal";
+    return { targetMovementFactor: 1 + MOVEMENT_PROFILES[gait].enemyHitModifier };
+  }
+
   /** Everything `side` has picked up of the enemy, with where it last saw it. */
   contactsFor(side: Side): Contact[] {
     return this.intel.contactsFor(side);
@@ -1178,6 +1229,10 @@ export class Game {
     const targetWasNeutralized = target.neutralized;
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
+      // A target that moved is easier or harder to hit (decision 22), and one
+      // that fired from full cover keeps −30% (decision 23).
+      ...this.movementTerms(target, target.movedThisTurn > 0),
+      ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
@@ -1283,13 +1338,20 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const defender = this.getUnit(defenderId);
     const defenderWasNeutralized = defender.neutralized;
+    const reply = this.variants.assaultReplyChance;
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
       turn: this.turn,
+      // Ruling 1, on trial: the defender fires back, at a rate being measured.
+      ...(reply ? { replyChance: reply } : {}),
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
       this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position);
+      if (result.reply) {
+        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position);
+        this.stress.credit(defender, result.reply.casualties, attacker.neutralized);
+      }
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
     }
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
@@ -1534,7 +1596,9 @@ export class Game {
     target: Unit,
     weapon?: WeaponClass,
   ): StandingOrderExecution["engaged"] | { reason: string } | null {
-    if (unit.kind === "vehicle") {
+    // A vehicle ordered to engage with its coaxial gun fires that (decision
+    // 25); otherwise its main armament.
+    if (unit.kind === "vehicle" && weapon !== "sustainedMg") {
       const result = this.fireExplosive("tankRound", unit.id, target.id);
       if (!result.fired) return { reason: result.reason ?? "could not fire" };
       const caught = (result.blast?.targets ?? []).filter((t) => t.caught);
@@ -1643,6 +1707,7 @@ export class Game {
     // After the bleeding, so a man who bled out this turn is counted as lost;
     // before the flags clear, for the same reason as the charge work.
     const morale = this.morale ? this.resolveTurnMorale() : [];
+
     endTurnUnitUpkeep(this.units, (at) => coverFromObjects(this.terrain, at));
     return { chargeWork, morale };
   }
@@ -1665,6 +1730,10 @@ export class Game {
       perceives: (side, unit) => !this.trackIntel || this.knows(side, unit.id),
       sees: (observer, target) => this.hasLineOfSight(observer, target),
       withdrawing: (unit) => this.standingOrders.get(unit.id)?.withdraw === true,
+      prepared: {
+        testBonus: this.variants.preparedTestBonus ?? PREPARED.testBonus,
+        lossFactor: this.variants.preparedLossFactor ?? PREPARED.lossFactor,
+      },
       // Watching *now*: a contact refreshed this turn. Without the knowledge
       // model there is no fog to respect, and a line of sight from any of its
       // forces is what watching means.

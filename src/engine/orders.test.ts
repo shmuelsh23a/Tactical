@@ -364,7 +364,7 @@ describe("an ambush laid on a range", () => {
 
   it("keeps to the target it was given, and waits for that one", () => {
     const { g, squad, near, far } = ambush({
-      engage: { targetId: "F", weapon: "sustainedMg" },
+      engage: { targetId: "F", weapon: "smallArms" },
     });
     // The nearest enemy crosses the line, but the order names the other one.
     near.position = { x: 0, y: 50 };

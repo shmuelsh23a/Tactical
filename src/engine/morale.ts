@@ -20,6 +20,7 @@ import {
   OUTNUMBERED_M,
   OUTNUMBERED_RATIO,
   PERMANENT_LOSS_SHARE,
+  PREPARED,
   RALLY,
   REST_CLEAR_M,
   ROUT_DISTANCE_M,
@@ -514,6 +515,20 @@ export interface MoraleContext {
    * and the debrief alike (rules decision 19).
    */
   watching: (side: Side, unit: Unit) => boolean;
+  /**
+   * How much steadier a force in position is — {@link PREPARED} unless the
+   * game is measuring another size (data/variants.ts).
+   */
+  prepared?: { testBonus: number; lossFactor: number };
+}
+
+/**
+ * A force in position: it did not move this turn, and it is behind something
+ * — the ground, a building, a hole it dug or a position it prepared. Read at
+ * the morale step, before the turn's flags are cleared.
+ */
+export function inPosition(unit: Unit): boolean {
+  return unit.movedThisTurn === 0 && unit.cover !== "none";
 }
 
 /** Something the morale step did that a player should be told about. */
@@ -600,6 +615,7 @@ function routDestination(units: readonly Unit[], unit: Unit): Point {
 export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
   const { rng, turn, units, stress, snapshot } = ctx;
   const result: MoraleStepResult = { reports: [], routs: [], recovered: [], surrendered: [] };
+  const prepared = ctx.prepared ?? PREPARED;
   const inPlay = units.filter((u) => hasMorale(u) && !u.surrendered);
 
   // --- 1. What happened to each force ---
@@ -680,6 +696,8 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
       if (flanked) loss += LOSS.flanked;
       if (outnumbered) loss += LOSS.outnumbered;
       if (armourFear) loss += LOSS.enemyArmour;
+      // A prepared defender feels less of it (author, 2026-09-23).
+      if (inPosition(u)) loss = Math.round(loss * prepared.lossFactor);
       loss = Math.min(loss, LOSS.capPerTurn);
 
       let gain = 0;
@@ -731,7 +749,8 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
       if (!sharp && !periodic) continue;
       m.lastTestTurn = turn;
       const wisdom = s.traits?.wisdom ?? 5;
-      const target = effective + TEST.base + TEST.perWisdom * wisdom + exp.test;
+      const target =
+        effective + TEST.base + TEST.perWisdom * wisdom + exp.test + (inPosition(u) ? prepared.testBonus : 0);
       if (rng.int(1, 100) <= target) continue;
       const luck = s.traits?.luck ?? 0;
       if (rng.int(1, 100) <= HEROIC.perLuck * luck) {

@@ -16,7 +16,13 @@ export const SMALL_ARMS_BANDS: readonly RangeBand[] = [
   { maxRange: 400, value: 0.1 },
 ];
 
-/** Sustained / parallel machine-gun fire (ירי מקביל). */
+/**
+ * The coaxial machine gun (ירי מקביל — מקלע מקביל, the gun mounted beside an
+ * armoured vehicle's main armament). Author, 2026-09-23 (rules decision 25):
+ * **a vehicle's weapon only**. Infantry fire the table above — its own heading
+ * is נק"ל\מקלעים, machine guns included. The key stays `sustainedMg`, the name
+ * it was first read under, so recordings made since still load.
+ */
 export const SUSTAINED_MG_BANDS: readonly RangeBand[] = [
   { maxRange: 300, value: 0.7 },
   { maxRange: 499, value: 0.5 },
@@ -45,3 +51,12 @@ export const COVER_MODIFIERS = {
 } as const;
 
 export type CoverState = keyof typeof COVER_MODIFIERS;
+
+/**
+ * What full cover is still worth to a force that fired from it this turn —
+ * **not the document's figure**. The document drops it to partial (−10%); the
+ * author set −30% instead on 2026-09-23 (rules decision 23), so that a
+ * defender who shoots back is not left all but unprotected. Genuine partial
+ * cover — a wall, a tree, a prepared position — stays at the table's −10%.
+ */
+export const FIRING_FROM_COVER_MODIFIER = -0.3;

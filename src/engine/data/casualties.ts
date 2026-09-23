@@ -13,11 +13,27 @@ export const CASUALTY_RULES = {
   forceAttritionNeutralizeFraction: 0.5,
 } as const;
 
+/**
+ * How bad a hit is — **the author's ruling, not the document's** (2026-09-23,
+ * rules decisions 26 and 27). Every hit — small arms, the coaxial gun, the
+ * assault's fire, and since decision 27 every explosive's fragment — rolls a
+ * d10 in place of the document's damage die:
+ * 1–`light` a light wound (the man fights on, `lightWoundPoints` towards the
+ * 8 that put a man out), up to `light + serious` a serious one (out of the
+ * fight, and bleeding), and above that he is killed — 4 / 4 / 2. Measured
+ * against 1d4 and two other splits in docs/balance.md: it is what makes a
+ * small force's fire count, since a hit is worth as much on 36 men as on 9.
+ * An explosive's weight is in how many men its blast catches (docs/balance.md,
+ * fifth round); its document die is no longer rolled against infantry.
+ */
+export const WOUND_SEVERITY = { light: 4, serious: 4, lightWoundPoints: 2 } as const;
+
 /** Assault (הסתערות) resolution. */
 export const ASSAULT = {
   fireHitChance: 0.7,
   fireDamageDice: "1d4",
   grenadeHitChance: 0.3,
   grenadeSelfHitChance: 0.05,
+  /** The document's; not rolled since decision 27 — a grenade hit takes the severity roll. */
   grenadeDamageDice: "1d6",
 } as const;

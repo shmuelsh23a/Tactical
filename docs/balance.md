@@ -186,6 +186,629 @@ either way, 124/300 routs. **The first cut priced every 1d4 hit as a serious
 wound and routed squads at turn 7 with 0.9 men down** — morale out-killing the
 dice. That ratio is the thing to re-measure after any change to `LOSS`.
 
+## The balance harness: 2,400 battles, 2026-09-22
+
+`npm run balance` plays headless battles between **Western (NATO-organised)
+forces** and prints the table below. The harness is
+[`src/sim/balance.ts`](../src/sim/balance.ts) (checked by the suite), and the
+runner is [`tools/balance-sim.ts`](../tools/balance-sim.ts). Its options are
+listed at the top of the runner. **Rerun it after any change to a number on this
+page.**
+
+**The forces.**
+- Squad: 9 men.
+- Platoon: 3 squads, a 6-man weapons squad and a 3-man HQ, 36 men.
+- Company: 3 platoons, a 5-man HQ and one 60 mm mortar mission a turn, 113 men.
+
+The weapons squad fires small arms, because the document's table is
+נק"ל\מקלעים.
+
+**The doctrine** is a script, not a player:
+- Out of contact, everyone advances.
+- In contact, half the force bounds while the other half is the base of fire.
+- Every force fires at the nearest enemy its side knows of, and assaults inside
+  25 m.
+- Command groups follow 80 m behind their forces.
+- A defender holds a prepared position (partial cover, digging in from there)
+  and covers its front (חיפוי) when nothing is in reach.
+
+Fog of war and C2 are both on. The ground is **flat and open**, so what is being
+measured is the rules alone, played plainly: no smoke, no flanking, no use of
+ground.
+
+**The fights.**
+- `meeting`: mirror forces advance on each other.
+- `attack3`: about 3–4:1 on a prepared position — a squad on a fire team (9 v 4),
+  a platoon on a squad (36 v 9), a company on a platoon (113 v 36).
+- `attack2`: about 2:1 — 9 v 5, 36 v 18, 113 v 72.
+- `attack1`: 1:1.
+
+Each cell is 100 battles, seeds 1000–1099.
+
+**How a battle ends.**
+- `broke`: the loser's side broke.
+- `wiped`: every one of its units is out, the game's own rule.
+- `fightersGone`: every fighting force is out but a command group lives — see
+  finding 4.
+- `both`: both sides went in the same step, a draw.
+
+| Kind | Echelon | Morale | Men (B v R) | BLUE / RED / draw | Endings | Turns, median (p10–p90) | Loser down | Winner down | Routs | Surrenders | Heroes | Rallied | Pinned share |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| meeting | squad | on | 9 v 9 | 49% / 43% / 8% | broke 92, both 8 | 11 (8–13) | 35% | 11% | 0.51 | 0.44 | 0.64 | 0.21 | 27% |
+| meeting | squad | off | 9 v 9 | 56% / 43% / 1% | wiped 99, both 1 | 12 (9–15) | 61% | 25% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| meeting | platoon | on | 36 v 36 | 30% / 67% / 3% | broke 97, both 3 | 10 (9–11) | 36% | 20% | 0.11 | 1.59 | 1.20 | 0.09 | 62% |
+| meeting | platoon | off | 36 v 36 | 40% / 59% / 1% | fightersGone 98, wiped 1, both 1 | 11 (10–14) | 59% | 35% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| meeting | company | on | 113 v 113 | 53% / 35% / 12% | both 12, broke 88 | 10 (10–11) | 32% | 24% | 4.83 | 2.55 | 3.29 | 1.93 | 71% |
+| meeting | company | off | 113 v 113 | 55% / 42% / 3% | both 3, fightersGone 97 | 17 (15–20) | 73% | 64% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack3 | squad | on | 9 v 4 | 96% / 4% / 0% | broke 100 | 15 (13–18) | 35% | 2% | 0.46 | 0.15 | 0.23 | 0.09 | 5% |
+| attack3 | squad | off | 9 v 4 | 100% / 0% / 0% | wiped 100 | 15 (12–19) | 65% | 4% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack3 | platoon | on | 36 v 9 | 100% / 0% / 0% | broke 100 | 12 (11–13) | 36% | 0% | 0.53 | 0.23 | 0.31 | 0.20 | 55% |
+| attack3 | platoon | off | 36 v 9 | 100% / 0% / 0% | wiped 100 | 13 (12–14) | 65% | 1% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack3 | company | on | 113 v 36 | 100% / 0% / 0% | broke 100 | 11 (11–12) | 34% | 8% | 2.59 | 0.01 | 1.30 | 0.88 | 64% |
+| attack3 | company | off | 113 v 36 | 100% / 0% / 0% | fightersGone 62, wiped 38 | 13 (12–14) | 60% | 13% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack2 | squad | on | 9 v 5 | 86% / 11% / 3% | broke 97, both 3 | 17 (14–21) | 44% | 6% | 0.59 | 0.12 | 0.23 | 0.17 | 6% |
+| attack2 | squad | off | 9 v 5 | 97% / 3% / 0% | wiped 100 | 17 (15–21) | 69% | 10% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack2 | platoon | on | 36 v 18 | 100% / 0% / 0% | broke 100 | 15 (14–16) | 41% | 4% | 0.75 | 0.21 | 0.74 | 0.47 | 37% |
+| attack2 | platoon | off | 36 v 18 | 100% / 0% / 0% | wiped 100 | 16 (15–17) | 66% | 10% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack2 | company | on | 113 v 72 | 21% / 74% / 5% | broke 95, both 5 | 15 (14–16) | 27% | 22% | 8.80 | 0.03 | 3.96 | 3.83 | 55% |
+| attack2 | company | off | 113 v 72 | 53% / 43% / 4% | fightersGone 75, both 4, wiped 21 | 21 (19–23) | 71% | 57% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack1 | squad | on | 9 v 9 | 15% / 81% / 4% | broke 96, both 4 | 18 (15–22) | 27% | 8% | 0.93 | 0.09 | 0.38 | 0.49 | 8% |
+| attack1 | squad | off | 9 v 9 | 19% / 80% / 1% | wiped 99, both 1 | 22 (18–25) | 58% | 21% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack1 | platoon | on | 36 v 36 | 1% / 99% / 0% | broke 100 | 17 (15–18) | 26% | 15% | 1.85 | 1.20 | 1.45 | 1.26 | 60% |
+| attack1 | platoon | off | 36 v 36 | 7% / 93% / 0% | fightersGone 98, wiped 2 | 20 (19–23) | 59% | 29% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+| attack1 | company | on | 113 v 113 | 0% / 99% / 1% | broke 99, both 1 | 14 (13–15) | 26% | 16% | 9.83 | 0.04 | 4.19 | 3.75 | 65% |
+| attack1 | company | off | 113 v 113 | 0% / 100% / 0% | fightersGone 100 | 19 (17–21) | 63% | 34% | 0.00 | 0.00 | 0.00 | 0.00 | 0% |
+
+**What it says.**
+
+1. **Morale does what it was built for.** Without it:
+   - The loser of an even fight is destroyed to 59–73% of his men, and at
+     company scale the winner loses 64% as well, over 17 turns.
+   - With it, the loser breaks at **32–36%** at every echelon. The winner loses
+     11–24%, and battles last about 10 turns.
+
+   Breaking at about a third is the right order of magnitude for real units.
+2. **No side is favoured.** The mirror fights split within chance at 300
+   battles a cell (`--n 300 --kinds meeting --morale on`):
+
+   | | squad | platoon | company |
+   |---|---|---|---|
+   | as played | 43 / 49 / 8 | 41 / 53 / 5 | 46 / 42 / 12 |
+   | `--swap` | 43 / 49 / 8 | 43 / 52 / 5 | 44 / 41 / 15 |
+   | `--fair-ties` | 41 / 53 / 6 | 48 / 47 / 5 | 51 / 41 / 8 |
+   | `--fair-ties --swap` | 41 / 53 / 6 | 47 / 46 / 8 | 50 / 36 / 13 |
+
+   BLUE / RED / draw, in percent. The standard error on a share is about 3
+   points, and no lean survives both the swap and the fair ties. **The
+   initiative tie-break does favour RED**: `rollInitiative` gives a tie to the
+   side listed first, so RED moves and fires first on **55%** of turns. But
+   what that is worth in wins is below what 300 battles can detect (under ~5
+   points). It is still a bias with no reason behind it, and is ⚠️ open: the
+   document says 1d10 a side and nothing about ties.
+3. **An attack is close to a switch, and the attacker who wins barely
+   bleeds.**
+   - A dug-in defender holds 81–99% of the time at 1:1.
+   - At 2:1 the attack succeeds 86–100% at squad and platoon.
+   - At company level, 1.6:1 fails (21%) and 3:1 succeeds (100%). That is the
+     textbook 3:1 rule, but the platoon and squad fights tip at about 2:1.
+   - Worse, a successful attacker at 3–4:1 loses **0–8%** of his men against a
+     defender's 34–36%. Three rules combine to do it:
+     - **An assault is one-sided** (`resolveAssault`): only the attacker fires.
+       The defender does not reply unless it happened to be covering.
+     - **Ordinary fire never applies the document's movement modifier** (+30%
+       against a walker, −20% against a runner). Only covering fire does
+       (rules decision 18), so a bounding attacker is no easier to hit than a
+       stationary one.
+     - **Cover is lost the moment a defender fires**: the document's own rule
+       drops full cover to partial, −10%. A defender that shoots back is barely
+       protected.
+
+   All three are rules questions — ask the author, do not tune around them.
+4. **A battle without morale cannot end while a command group lives.**
+   `sideDefeated` ([`app/hotseat.ts`](../src/app/hotseat.ts)) wants **every**
+   unit neutralised, command groups included, and a hidden HQ with nobody left
+   to command is never found. **62–100%** of the platoon and company battles
+   without morale ended that way (`fightersGone`); the game itself would have
+   played on for ever. With morale on, `sideBroken` leaves command groups out
+   and catches it — and both scenarios play with morale — so this bites only a
+   game built without it. The fix is the same exclusion. ⚠️ Not made: it
+   changes a victory condition, which is backlog 18's and the author's.
+5. **Suppression piles up with numbers.** Every force shoots at the nearest
+   enemy, so several bursts land on the same one. In platoon and company
+   fights **55–71%** of the force-turns spent under suppression were pinned,
+   against 5–27% in squad fights. If that feels wrong in play, the lever is
+   `SUPPRESSION` (a cap per turn, or diminishing returns per extra firer), not
+   the thresholds.
+6. **Surrender is common where forces break at close range**: 1.6 squads in
+   an average platoon meeting engagement, against 0.1 routs, because the
+   bounding closes inside the 50 m `CORNERED_M` before the break comes. In
+   attacks the defender routs instead. Whether that is the feel wanted is the
+   author's call.
+7. **The rare events are rare**, as asked:
+   - Heroes: 0.2–4 per battle, rising with the number of men.
+   - Rallies: 0.1–3.8 men per battle, and mostly at company scale, where a
+     command group is near enough to get to them.
+
+## Rulings 1–3 on trial: the sweep, 2026-09-23
+
+The author asked for three of the harness's questions to be settled by
+measurement. Each candidate answer is a switch in
+[`engine/data/variants.ts`](../src/engine/data/variants.ts), off by default:
+
+- **Ruling 1, the assault.** Does the defender fire back?
+  - 1a: yes, at the assault's 70%.
+  - 1b: yes, at its ordinary 30% inside 100 m.
+  - Both are simultaneous: the defender replies with the men it had before the
+    assault landed.
+- **Ruling 2, the movement table's +30% / −20% in ordinary fire.**
+  - 2b: added, with a 5% floor so a runner cannot become unhittable.
+  - 2c: multiplied instead, ×1.3 walking and ×0.8 running.
+- **Ruling 3, firing from full cover.**
+  - 3b: it keeps −30% instead of dropping to −10%.
+  - 3a: the document's "previous turn", read literally.
+
+`npm run balance -- --sweep` plays every combination against the rules as they
+stand. It uses morale on, the three attack sizes, 100 battles a cell, and the
+ruling-4 tie rerolls. The **targets were written down before the run** (`TARGETS`
+in [`sim/balance.ts`](../src/sim/balance.ts), ⚠️ ours, standard planning
+figures):
+- at 1:1 the attacker wins **≤ 30%**;
+- at ~2:1, **30–70%**;
+- at 3–4:1, **≥ 70%**, losing **10–30%** of his men.
+
+| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| as it stands | squad | 11% | 89% | 96% | 3% | 2/4 |
+| as it stands | platoon | 1% | 100% | 100% | 0% | 2/4 |
+| as it stands | company | 0% | 21% | 100% | 8% | 2/4 |
+| **as it stands** | **all** | | | | | **6/12** |
+| 1a 2b 3b | squad | 4% | 78% | 98% | 4% | 2/4 |
+| 1a 2b 3b | platoon | 16% | 100% | 100% | 1% | 2/4 |
+| 1a 2b 3b | company | 1% | 4% | 100% | 10% | 2/4 |
+| **1a 2b 3b** | **all** | | | | | **6/12** |
+| 1a 2b 3a | squad | 17% | 91% | 98% | 3% | 2/4 |
+| 1a 2b 3a | platoon | 52% | 100% | 100% | 0% | 1/4 |
+| 1a 2b 3a | company | 0% | 12% | 100% | 9% | 2/4 |
+| **1a 2b 3a** | **all** | | | | | **5/12** |
+| 1a 2c 3b | squad | 15% | 85% | 94% | 4% | 2/4 |
+| 1a 2c 3b | platoon | 3% | 100% | 100% | 0% | 2/4 |
+| 1a 2c 3b | company | 0% | 17% | 99% | 8% | 2/4 |
+| **1a 2c 3b** | **all** | | | | | **6/12** |
+| 1a 2c 3a | squad | 28% | 90% | 98% | 2% | 2/4 |
+| 1a 2c 3a | platoon | 22% | 100% | 100% | 0% | 2/4 |
+| 1a 2c 3a | company | 0% | 30% | 100% | 7% | 3/4 |
+| **1a 2c 3a** | **all** | | | | | **7/12** |
+| 1b 2b 3b | squad | 4% | 79% | 98% | 4% | 2/4 |
+| 1b 2b 3b | platoon | 27% | 100% | 100% | 1% | 2/4 |
+| 1b 2b 3b | company | 0% | 5% | 100% | 10% | 2/4 |
+| **1b 2b 3b** | **all** | | | | | **6/12** |
+| 1b 2b 3a | squad | 18% | 91% | 98% | 2% | 2/4 |
+| 1b 2b 3a | platoon | 48% | 100% | 100% | 0% | 1/4 |
+| 1b 2b 3a | company | 0% | 11% | 100% | 9% | 2/4 |
+| **1b 2b 3a** | **all** | | | | | **5/12** |
+| 1b 2c 3b | squad | 15% | 85% | 94% | 4% | 2/4 |
+| 1b 2c 3b | platoon | 2% | 100% | 100% | 0% | 2/4 |
+| 1b 2c 3b | company | 0% | 18% | 99% | 8% | 2/4 |
+| **1b 2c 3b** | **all** | | | | | **6/12** |
+| 1b 2c 3a | squad | 27% | 90% | 98% | 2% | 2/4 |
+| 1b 2c 3a | platoon | 17% | 100% | 100% | 0% | 2/4 |
+| 1b 2c 3a | company | 0% | 30% | 100% | 7% | 3/4 |
+| **1b 2c 3a** | **all** | | | | | **7/12** |
+
+**None of them works.** Every configuration scores 5–7 of 12 against 6 for the
+rules as they stand, and in every one a winning attacker at 3–4:1 still loses
+0–10%. Instrumenting the platoon attack (36 v 9, per battle) shows why the three
+rulings barely touch the problem:
+
+- **The assault almost never happens: 0.2–0.3 per battle.** The defender breaks
+  before the attacker is within 25 m, so ruling 1 has almost nothing to act on.
+- **The defender fires at a running target 70–79% of the time.** The doctrine
+  rushes in contact, so ruling 2 — which punishes walking and rewards running —
+  makes the defender's fire *worse*.
+- **56–59% of the defender's shots are fired pinned**, at half accuracy: four
+  times the shooters pile four times the suppression on it.
+- **Damage spreads thin over the bigger force.** The attacker lands 18.5 hits on
+  9 men and puts 3.2 of them down. The defender lands 4.8 hits across 36 men,
+  and at 1d4 a hit against the 8 points a man takes to go down, that is 0.1–0.2
+  men. This is the document's own casualty model working as written: it rewards
+  concentration, like Lanchester's square law.
+
+A lever of ours was tried the same way and did not fix it either. Making
+dug-in troops harder to suppress (×½ in full cover, ×¾ in partial) still left
+the attacker at 0–10% (**6–8 of 12**). It was measured and reverted, not kept.
+
+**What is left is the author's.**
+- **The casualty model (1d4 a hit, 8 points to go down)** is transcribed, not
+  chosen.
+- **What `ירי מקביל` is.** The engine reads it as a sustained machine gun (the
+  70 / 50 / 20% table) and the hotseat offers it as "מקלע". The harness fires
+  every weapon on the small-arms table, so a Western defence's machine guns
+  have not been measured at all. If a defender's gun teams fire on that table,
+  the picture may change entirely.
+- **Whether a prepared defender should be steadier under morale**, which is
+  ours to propose.
+- **What the ground adds.** All of this is flat and open. Dead ground, and
+  buildings that give full cover, are what the real maps have.
+
+## Second round: the defender's reply, and steadiness, 2026-09-23
+
+The author ruled 2c (the movement modifier as a factor, decision 22) and 3b
+(firing from full cover keeps −30%, decision 23). He also ruled that a
+prepared defender is steadier (decision 24) and that a defender facing an
+assault returns fire (ruling 1), with the rate to be measured. This sweep plays
+the new rules with every reply rate (none, 30%, 50%, 70%) against three sizes
+of steadiness:
+- off;
+- the default, +15 to tests and ×0.75 on losses;
+- strong, +25 and ×0.5.
+
+It uses the same targets as before.
+
+| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| reply none · steady off | squad | 15% | 83% | 94% | 4% | 2/4 |
+| reply none · steady off | platoon | 4% | 100% | 100% | 0% | 2/4 |
+| reply none · steady off | company | 0% | 17% | 99% | 8% | 2/4 |
+| **reply none · steady off** | **all** | | | | | **6/12** |
+| reply none · steady +15 ×0.75 | squad | 8% | 84% | 95% | 5% | 2/4 |
+| reply none · steady +15 ×0.75 | platoon | 5% | 100% | 100% | 0% | 2/4 |
+| reply none · steady +15 ×0.75 | company | 0% | 5% | 100% | 11% | 3/4 |
+| **reply none · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply none · steady +25 ×0.5 | squad | 2% | 80% | 93% | 5% | 2/4 |
+| reply none · steady +25 ×0.5 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply none · steady +25 ×0.5 | company | 0% | 4% | 96% | 12% | 3/4 |
+| **reply none · steady +25 ×0.5** | **all** | | | | | **7/12** |
+| reply 30% · steady off | squad | 15% | 85% | 94% | 4% | 2/4 |
+| reply 30% · steady off | platoon | 2% | 100% | 100% | 0% | 2/4 |
+| reply 30% · steady off | company | 0% | 18% | 99% | 8% | 2/4 |
+| **reply 30% · steady off** | **all** | | | | | **6/12** |
+| reply 30% · steady +15 ×0.75 | squad | 6% | 86% | 95% | 5% | 2/4 |
+| reply 30% · steady +15 ×0.75 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 30% · steady +15 ×0.75 | company | 0% | 5% | 100% | 10% | 3/4 |
+| **reply 30% · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply 30% · steady +25 ×0.5 | squad | 3% | 83% | 93% | 5% | 2/4 |
+| reply 30% · steady +25 ×0.5 | platoon | 1% | 100% | 100% | 1% | 2/4 |
+| reply 30% · steady +25 ×0.5 | company | 0% | 4% | 95% | 12% | 3/4 |
+| **reply 30% · steady +25 ×0.5** | **all** | | | | | **7/12** |
+| reply 50% · steady off | squad | 14% | 84% | 94% | 4% | 2/4 |
+| reply 50% · steady off | platoon | 6% | 100% | 100% | 0% | 2/4 |
+| reply 50% · steady off | company | 0% | 17% | 99% | 8% | 2/4 |
+| **reply 50% · steady off** | **all** | | | | | **6/12** |
+| reply 50% · steady +15 ×0.75 | squad | 6% | 86% | 95% | 5% | 2/4 |
+| reply 50% · steady +15 ×0.75 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 50% · steady +15 ×0.75 | company | 0% | 5% | 100% | 10% | 3/4 |
+| **reply 50% · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply 50% · steady +25 ×0.5 | squad | 2% | 85% | 94% | 5% | 2/4 |
+| reply 50% · steady +25 ×0.5 | platoon | 1% | 100% | 100% | 1% | 2/4 |
+| reply 50% · steady +25 ×0.5 | company | 0% | 4% | 95% | 12% | 3/4 |
+| **reply 50% · steady +25 ×0.5** | **all** | | | | | **7/12** |
+| reply 70% · steady off | squad | 15% | 85% | 94% | 4% | 2/4 |
+| reply 70% · steady off | platoon | 3% | 100% | 100% | 0% | 2/4 |
+| reply 70% · steady off | company | 0% | 17% | 99% | 8% | 2/4 |
+| **reply 70% · steady off** | **all** | | | | | **6/12** |
+| reply 70% · steady +15 ×0.75 | squad | 6% | 86% | 96% | 5% | 2/4 |
+| reply 70% · steady +15 ×0.75 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 70% · steady +15 ×0.75 | company | 0% | 5% | 100% | 10% | 3/4 |
+| **reply 70% · steady +15 ×0.75** | **all** | | | | | **7/12** |
+| reply 70% · steady +25 ×0.5 | squad | 2% | 85% | 94% | 5% | 2/4 |
+| reply 70% · steady +25 ×0.5 | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| reply 70% · steady +25 ×0.5 | company | 0% | 4% | 95% | 12% | 3/4 |
+| **reply 70% · steady +25 ×0.5** | **all** | | | | | **7/12** |
+
+**What it says.**
+- **The reply rate makes no difference at all.** The assault still almost
+  never happens: the defender breaks first. The rate stays on trial, off by
+  default, until something changes that.
+- **Steadiness helps a little.** It moves the company fights to 3 of 4
+  targets: a winning attacker at 3:1 loses 10–12%. It does not move the squad
+  and platoon fights.
+- **A prepared position starting in full cover changes nothing**
+  (`--prepared-cover full`). The results are identical to the digit, because
+  the defenders dig in to full cover by turn 7, before the attack arrives. The
+  prepared defender already fights from the best cover the rules have.
+
+**Why: the square law.** When every man can fire at every enemy, a force's
+fighting power goes as the **square** of its numbers, so 2:1 in men is 4:1 in
+power and 3–4:1 is 9–16:1. For a 2:1 attack to be a real fight and a 3:1 attack
+to succeed — the planning figures — a prepared defender has to be roughly
+**4–9 times as effective per man** as an attacker in the open. Under these
+rules he is about 1.5–2 times: cover halves the chance of hitting him, less
+when he shoots. That is why the outcome flips between 1:1 and 2:1, and why no
+modifier of a few tens of percent moves it.
+
+**The casualty model, measured** (the rules as they stand after decisions
+22–24, 100 battles a cell, the threshold changed temporarily and reverted):
+
+| A man is out of the fight at | Targets met | Squad: attacker down at 3:1 | Mirror, loser / winner down |
+|---|---|---|---|
+| 8 points (the document) | 7/12 | 5% | 32–39% / 15–24% |
+| 5 points (the document's serious wound) | 7/12 | 7% | 36–50% / 13–26% |
+| 4 points (one heavy hit) | 8/12 | 11% | 39–53% / 16–26% |
+
+A deadlier hit makes the small force's fire count for more, but on its own it
+does not close a factor of 2–4. See the handoff note for the options put to
+the author.
+
+## Third round: the wound-severity roll, 2026-09-23
+
+**ירי מקביל is the coaxial gun** (decision 25), so a prepared infantry
+defender's missing edge was never going to come from that table. The author put
+the **wound-severity roll** on trial (`woundSeverity` in
+[`data/variants.ts`](../src/engine/data/variants.ts)). Each small-arms hit rolls
+a d10 instead of the document's 1d4 of damage:
+- **light**: fights on, 2 points towards the document's 8;
+- **serious**: out of the fight, bleeding;
+- **killed**.
+
+It is one die either way. The sweep tries three splits of the d10 — light /
+serious / killed as 4/4/2, 5/4/1 and 3/5/2 — each with and without a 50%
+reply in the assault, against the same targets.
+
+| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| 1d4 (document) · reply none | squad | 8% | 84% | 95% | 5% | 2/4 |
+| 1d4 (document) · reply none | platoon | 5% | 100% | 100% | 0% | 2/4 |
+| 1d4 (document) · reply none | company | 0% | 5% | 100% | 11% | 3/4 |
+| **1d4 (document) · reply none** | **all** | | | | | **7/12** |
+| 1d4 (document) · reply 50% | squad | 6% | 86% | 95% | 5% | 2/4 |
+| 1d4 (document) · reply 50% | platoon | 2% | 100% | 100% | 1% | 2/4 |
+| 1d4 (document) · reply 50% | company | 0% | 5% | 100% | 10% | 3/4 |
+| **1d4 (document) · reply 50%** | **all** | | | | | **7/12** |
+| severity 4/4/2 · reply none | squad | 6% | 65% | 94% | 17% | 4/4 |
+| severity 4/4/2 · reply none | platoon | 2% | 88% | 100% | 5% | 2/4 |
+| severity 4/4/2 · reply none | company | 0% | 10% | 99% | 10% | 3/4 |
+| **severity 4/4/2 · reply none** | **all** | | | | | **9/12** |
+| severity 4/4/2 · reply 50% | squad | 6% | 65% | 95% | 17% | 4/4 |
+| severity 4/4/2 · reply 50% | platoon | 2% | 87% | 100% | 5% | 2/4 |
+| severity 4/4/2 · reply 50% | company | 0% | 10% | 99% | 10% | 3/4 |
+| **severity 4/4/2 · reply 50%** | **all** | | | | | **9/12** |
+| severity 5/4/1 · reply none | squad | 9% | 71% | 92% | 17% | 3/4 |
+| severity 5/4/1 · reply none | platoon | 1% | 87% | 100% | 5% | 2/4 |
+| severity 5/4/1 · reply none | company | 0% | 10% | 96% | 10% | 2/4 |
+| **severity 5/4/1 · reply none** | **all** | | | | | **7/12** |
+| severity 5/4/1 · reply 50% | squad | 9% | 70% | 92% | 17% | 4/4 |
+| severity 5/4/1 · reply 50% | platoon | 2% | 84% | 100% | 5% | 2/4 |
+| severity 5/4/1 · reply 50% | company | 0% | 10% | 96% | 10% | 2/4 |
+| **severity 5/4/1 · reply 50%** | **all** | | | | | **8/12** |
+| severity 3/5/2 · reply none | squad | 6% | 69% | 90% | 15% | 4/4 |
+| severity 3/5/2 · reply none | platoon | 2% | 79% | 100% | 6% | 2/4 |
+| severity 3/5/2 · reply none | company | 0% | 14% | 99% | 10% | 2/4 |
+| **severity 3/5/2 · reply none** | **all** | | | | | **8/12** |
+| severity 3/5/2 · reply 50% | squad | 6% | 68% | 90% | 15% | 4/4 |
+| severity 3/5/2 · reply 50% | platoon | 2% | 79% | 100% | 6% | 2/4 |
+| severity 3/5/2 · reply 50% | company | 0% | 14% | 99% | 10% | 2/4 |
+| **severity 3/5/2 · reply 50%** | **all** | | | | | **8/12** |
+
+**What it says.**
+- **4/4/2 is the first change that moves the balance: 9 of 12**, the best of
+  any configuration so far.
+  - The squad fights meet all four targets. A 2:1 attack wins 65%, a real
+    fight, and a winning attacker at 3:1 loses **17%**, where the 1d4 cost him
+    5%.
+  - Each hit is now worth about the same whether it lands on 9 men or on 36,
+    so a small force's fire stops being wasted.
+- **The other splits do a little less**: 7–8 of 12.
+- **The reply rate still makes no difference.**
+- **What it still does not fix is the platoon fight.** A 2:1 attack wins 87%,
+  and a winning platoon attacker loses about 5%. The square law is still two
+  thirds of the problem there: four rifle squads' fire on one or two.
+
+**What it does to an even fight** (the mirror, 100 battles a cell,
+`--kinds meeting --morale on`):
+
+| | 1d4: BLUE / RED / draw | turns | loser / winner down | 4/4/2: BLUE / RED / draw | turns | loser / winner down |
+|---|---|---|---|---|---|---|
+| squad | 43 / 49 / 8 | 12 | 39% / 15% | 47 / 53 / 0 | 6 | 58% / 18% |
+| platoon | 39 / 53 / 8 | 10 | 35% / 19% | 47 / 49 / 4 | 8 | 44% / 22% |
+| company | 41 / 47 / 12 | 10 | 32% / 24% | 40 / 50 / 10 | 9 | 37% / 24% |
+
+- **Battles are shorter and splits no less even.**
+- **Surrenders almost vanish** — 0.2 a platoon battle against 1.5 — because men
+  now go down before the forces close to 50 m.
+- **A losing squad goes further before it breaks: 58%.** Casualties come
+  faster than the morale step, which judges once a turn.
+
+**Adopted 2026-09-23:** 4/4/2 is the rule (decision 26), and the coaxial gun's
+one roll a turn is confirmed (decision 25). The sweep now covers only the
+assault reply rate, which is all that is left on trial.
+
+## Fourth round: the squad drill, 2026-09-23
+
+The rules were not the whole problem; **the decisions were**. The harness's
+squads used to fight by a plain script. Every force shot at the nearest enemy
+it knew of — and, it turned out, at where that enemy truly was rather than
+where it was last seen. Half bounded while half fired, and nobody broke
+contact.
+
+Squads now fight by a **drill** ([`app/drill.ts`](../src/app/drill.ts)): a
+`SquadDrill` of named numbers, carried out by one small executor that reads
+only its side's view. That executor is also the one the simulated
+subordinates will use (backlog 15), and its data is what the TTP editor will
+edit (backlog 20). Two drills are defined:
+- **The plain script**: the old doctrine, kept as the baseline.
+- **The Western drill** (⚠️ ours, a first draft):
+  - sectors of fire, 60° on each force's axis;
+  - bounding overwatch with 50 m rushes;
+  - the attacker opens fire at 300 m;
+  - the defender holds its fire to 200 m, as a hold-fire order, so its
+    covering fire keeps the discipline too;
+  - a force breaks contact once, at half strength, falling back 150 m.
+
+The same targets, the rules as they now stand (decisions 22–26), 100 battles a
+cell, no reply in the assault:
+
+| Drill | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Targets met |
+|---|---|---|---|---|---|---|
+| plain script | squad | 6% | 67% | 94% | 17% | 4/4 |
+| plain script | platoon | 2% | 87% | 100% | 5% | 2/4 |
+| plain script | company | 0% | 10% | 99% | 10% | 3/4 |
+| **plain script** | **all** | | | | | **9/12** |
+| western drill | squad | 4% | 48% | 76% | 16% | 4/4 |
+| western drill | platoon | 0% | 63% | 100% | 8% | 3/4 |
+| western drill | company | 0% | 31% | 92% | 16% | 4/4 |
+| **western drill** | **all** | | | | | **11/12** |
+
+**The Western drill meets 11 of 12**, against the plain script's 9.
+- **The platoon fight is fixed**: a 2:1 attack now wins 63%, where it was 87%.
+- **The one miss**: a winning platoon attacker at 3–4:1 loses 8%, against a
+  target of 10–30%. That is 36 men against 9, where the square law still has
+  the most to say.
+- **The reply rate in the assault still changes nothing** under either drill.
+
+The mirror stays even (`--kinds meeting --drill western`, 200 battles a cell):
+
+| | BLUE / RED / draw | turns | loser / winner down |
+|---|---|---|---|
+| squad | 46 / 53 / 1 | 7 | 53% / 18% |
+| platoon | 46 / 51 / 4 | 9 | 41% / 21% |
+| company | 47 / 45 / 9 | 9 | 37% / 24% |
+
+## Fifth round: one wound rule for bullets and explosives, 2026-09-23
+
+The author wants **the same wound rule for a bullet and a fragment**. His
+guiding principle: **explosives cause most of the casualties in a modern war,
+about 75%**. Today the two are resolved differently. A bullet rolls the
+severity d10 (decision 26), so 60% of bullet hits put a man out. A fragment
+rolls its document die against 8 points, so a grenade's 1d6 never puts a man
+out in one hit, a mortar's 1d8 does 12.5% of the time, and artillery's 1d10
+30%.
+
+### The principle, checked
+
+He is right. Across the wars with good records, explosives caused about
+two-thirds to three-quarters of the wounds:
+
+| War | Explosive | Bullet | Source |
+|---|---|---|---|
+| WWII (US Army) | 73% | about 20–30% | Owens et al. 2008, citing the historical series; Beebe & DeBakey: shell fragments 53% of the wounded, 62% of those who died of wounds, small arms 32% and 20% |
+| Korea | 69% | about 27% | Owens et al. 2008; Reister |
+| Vietnam | 65% | about 30% | Owens et al. 2008 |
+| Iraq and Afghanistan, 2001–2005 | 78% | 18% | Owens et al. 2008, *J Trauma* 64(2) |
+| Iraq and Afghanistan, 2005–2009 | 74% | 20% | Belmont et al. 2012 |
+| Ukraine, 2022–2025 | 70–80% by artillery, then by drones | small | press and intelligence estimates, not medical series |
+
+Sources:
+- [Owens et al. 2008](https://pubmed.ncbi.nlm.nih.gov/18301189/)
+- [Belmont et al. 2012](https://pmc.ncbi.nlm.nih.gov/articles/PMC3862555/)
+- [the Army Medical Department's WWII and Korea wound-ballistics histories](https://achh.army.mil/history/book-korea-reister-ch3/)
+- [JMVH, *Understanding weapons effects*](https://jmvh.org/article/understanding-weapons-effects-a-fundamental-precept-in-the-professional-preparation-of-military-physicians/)
+- [Army Technology on drones in Ukraine](https://www.army-technology.com/news/drones-now-account-for-80-of-casualties-in-ukraine-russia-war/)
+
+One more finding bears directly on the rule. **A fragment wound is less
+likely to kill than a bullet wound**: about 10–20% against about 33%, from
+the wound-ballistics literature. Explosives cause most of the casualties
+because they hit many men from far away, not because each hit is worse.
+
+### The models on trial
+
+All four were put on trial as `woundModel` in `data/variants.ts`. That switch
+was deleted once A0 became the rule (decision 27).
+- **As it stands**: the severity roll for a bullet, the document's die
+  against 8 for a fragment.
+- **A (`severity`)**: every hit rolls the d10 severity. An explosive adds a
+  shift for the size of its die: 1d6 +1, 1d8 +2, 1d10 +3, 2d10 +5.
+- **A0 (`flat`)**: A without the shift. Every hit, bullet or fragment, rolls
+  the same d10. This follows from the lethality finding above.
+- **B (`dice`)**: every hit rolls its document die, a bullet 1d4, and a man
+  is out at 5 points, where he starts bleeding.
+
+The harness now records **what put each man out** (`Soldier.outBy`). A
+company can also be given a **fire plan** (`--fires shells,bombs,lift`):
+rounds a turn on the objective, spread across the defender's frontage, until
+the attacker comes within the lift distance. Western drill, 100 battles a
+cell, the balance targets as before. *Out by HE* is the share of men put out
+by a hit that explosives put out, over the three attacks.
+
+**No fire plan.** The company still gets its one mortar bomb a turn on the
+nearest enemy it has seen.
+
+| Model | Squad | Platoon | Company: 1:1 / ~2:1 / 3–4:1 win, attacker down | Out by HE, company | Targets met |
+|---|---|---|---|---|---|
+| as it stands | 4/4 | 3/4 | 0% / 31% / 92%, 16% — 4/4 | 36% | **11/12** |
+| A: severity + shift | 4/4 | 3/4 | 0% / 19% / 66%, 28% — 2/4 | 62% | 9/12 |
+| A0: flat severity | 4/4 | 3/4 | 0% / 20% / 81%, 24% — 3/4 | 55% | **10/12** |
+| B: dice, out at 5 | 3/4 | 2/4 | 0% / 3% / 52%, 23% — 2/4 | 78% | 7/12 |
+
+**A fire plan of one mortar bomb a turn** on the objective, lifting at
+400 m (company only):
+
+| Model | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets met |
+|---|---|---|---|---|---|---|
+| as it stands | 1% | 59% | 100% | 3% | 59% | 3/4 |
+| A: severity + shift | 1% | 49% | 100% | 2% | 81% | 3/4 |
+| A0: flat severity | 1% | 50% | 99% | 4% | **76%** | 3/4 |
+| B: dice, out at 5 | 0% | 36% | 98% | 4% | 86% | 3/4 |
+
+**One artillery shell a turn** (`--fires 1,0`): the 2:1 attack wins 93–100%
+under every model, and explosives put out 86–95%. One shell and two bombs
+(`--fires 1,2`): 100%, and 96–98%. The first run, a battery's four shells and
+a mortar section's six bombs a turn, destroyed the defender before contact
+at every echelon, even at 1:1.
+
+### What it says
+
+- **B is out.** A bullet's 1d4 can never put a man out in one hit, so small
+  arms lose their effect and small-unit fights go wrong: platoon 2:1 wins
+  91%. It meets 7 of 12 targets.
+- **A and A0 leave squad and platoon fights unchanged.** Those fights have
+  no explosives except the assault's grenades. The whole difference is at
+  company level, where the mortar is.
+- **A0 is the rule the evidence supports.** It meets 10 of 12 targets
+  without a fire plan, and it is truly uniform: one die for every hit. With
+  one mortar bomb a turn on the objective, **explosives put out 76% of the
+  men**, which matches the author's figure. A's shift makes each fragment
+  deadlier than a bullet, which the wound data contradicts. It also costs
+  balance: 9 of 12, and a 3–4:1 company attack wins only 66%.
+- **How much weight explosives carry is decided by the blast, not the wound
+  rule.** One artillery shell a turn decides a 2:1 attack under every model.
+  The document's blast table catches 70% of the men within 50 m of a single
+  shell, and nothing reduces it:
+  - Cover does not protect against blast. A quick experiment (reverted, not
+    in the engine) cut the blast chance by half in partial cover and by
+    three-quarters in full cover. The 2:1 attack under one shell a turn
+    still won 67–89%.
+  - Nothing says whether a "round" is one shell or a battery's volley.
+
+  That is the next ruling, not a harness setting.
+
+**Recommendation (ours), and what the author decided:**
+1. Adopt A0: one d10 severity for every hit, bullet or fragment. Explosives
+   dominate by how many men they hit, as they do in the data. **Adopted
+   2026-09-23 as rules decision 27.** The switch is gone. The rules now play
+   exactly as the A0 rows above. Rerun: company, no fire plan, 0% / 20% /
+   81% / 24%, with 55% out by HE.
+2. Then rule on the blast: what cover does against it, and what one round
+   is. **Still open. It is the first thing for the next session.**
+
+**A side bias surfaced once A0 was the rule.** The company mirror (200
+battles, Western drill) gives BLUE / RED / draw 52 / 39 / 10, and 50 / 37 /
+13 with `--swap`. It was 47 / 45 before. The lean follows the side, not the
+position, so something in the explosive path treats the sides differently.
+Not yet found; see the handoff.
+
+## How the engine scales, 2026-09-23
+
+The same scripted mirror as the harness, grown by the company, timed per turn
+over 18 turns — through the approach and into the fight — in the dev
+container.
+
+| Forces | Units | Men | Flat, ms/turn | Tel Azeka, ms/turn | Where it goes |
+|---|---|---|---|---|---|
+| 1 company a side | 34 | 238 | 6 | 4 | morale step 3–5 |
+| 3 companies a side | 98 | 690 | 14 | 14 | morale step 12 |
+| 9 companies a side | 290 | 2046 | 81 | 102 | morale step 69–85 |
+| 1 company, **a token a man** | 208 | 238 | — | 26 | morale 15, move 8 |
+| 3 companies, **a token a man** | 620 | 690 | — | 206 | morale 120, move 56 |
+
+- **Squads as tokens, with every man inside rolled on his own** — which is
+  what the engine already does — **stays under a tenth of a second a turn at
+  2,000 men**.
+- **A token per man costs about 15 times as much for the same men, and grows
+  with the square of the tokens.** Tripling the men multiplied the time by 8.
+- **The morale step is most of every row.** `leaderBonus` walks every unit
+  for every man, several times a step. Indexing the leaders by side once per
+  step would take most of it away. Not done, since nothing is slow yet.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

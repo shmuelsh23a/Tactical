@@ -61,6 +61,15 @@ export const WAVERING_TEST_INTERVAL = 3;
  */
 export const TEST = { base: 30, perWisdom: 2 } as const;
 
+/**
+ * A prepared defender is steadier (author, 2026-09-23: the rule is his, the
+ * size ⚠️ ours). A force **in position** — it did not move this turn, and it is
+ * behind something: the ground, a building, a hole it dug or a position it
+ * prepared — adds `testBonus` to every morale test and takes `lossFactor` of
+ * every loss. A force that gets up to attack leaves it behind.
+ */
+export const PREPARED = { testBonus: 15, lossFactor: 0.75 } as const;
+
 /** A turn's loss this large is a sharp event, and is tested there and then. */
 export const EVENT_TEST_LOSS = 12;
 

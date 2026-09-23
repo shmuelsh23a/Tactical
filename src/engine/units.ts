@@ -1,7 +1,8 @@
 import type { CrewMember, Soldier, TankPart, Unit, VehicleState } from "./types.js";
-import { CASUALTY_RULES } from "./data/casualties.js";
+import { CASUALTY_RULES, WOUND_SEVERITY } from "./data/casualties.js";
 import { MOBILITY_THRESHOLDS } from "./data/armor.js";
 import { Rng } from "./rng.js";
+
 
 /** Number of soldiers in an infantry unit that are still in the fight. */
 export function fitSoldiers(unit: Unit): number {
@@ -30,6 +31,66 @@ export function damageSoldier(soldier: Soldier, damage: number, currentTurn: num
     return true;
   }
   return false;
+}
+
+/**
+ * One small-arms hit landing on `target`: how bad it is, and on whom (rules
+ * decision 26). A d10 decides a light wound, a serious one or a death, in
+ * place of the document's 1d4 of damage — one die either way. The severity is
+ * rolled before the victim is chosen, as the damage die always was.
+ */
+export function landHit(
+  rng: Rng,
+  target: Unit,
+  turn: number,
+  preferredId?: string,
+): { damage: number; casualty: boolean } {
+  return woundHit(rng, target, turn, "smallArms", preferredId);
+}
+
+/**
+ * One hit of any kind landing on `target` — a bullet or an explosive's
+ * fragment — and how bad it is (rules decisions 26 and 27): the same d10 for
+ * every hit, a light wound, a serious one or a death. An explosive's weight is
+ * in how many men its blast catches, not in how bad each hit is. Records on a
+ * man it puts out what did it (`outBy`).
+ */
+export function woundHit(
+  rng: Rng,
+  target: Unit,
+  turn: number,
+  cause: "smallArms" | "explosive",
+  preferredId?: string,
+): { damage: number; casualty: boolean } {
+  const hit = severityHit(rng, target, turn, preferredId);
+  if (hit.casualty && hit.victim) hit.victim.outBy = cause;
+  return { damage: hit.damage, casualty: hit.casualty };
+}
+
+/** The severity roll (decision 26). The severity is rolled before the victim is chosen. */
+function severityHit(
+  rng: Rng,
+  target: Unit,
+  turn: number,
+  preferredId?: string,
+): { damage: number; casualty: boolean; victim?: Soldier } {
+  const severity = WOUND_SEVERITY;
+  const d10 = rng.die(10);
+  const kind = d10 <= severity.light ? "light" : d10 <= severity.light + severity.serious ? "serious" : "killed";
+  const victim = selectHitSoldier(target, rng, preferredId);
+  if (!victim) return { damage: 0, casualty: false };
+  if (kind === "light") {
+    const out = damageSoldier(victim, severity.lightWoundPoints, turn);
+    victim.wound = out ? "serious" : "light";
+    return { damage: severity.lightWoundPoints, casualty: out, victim };
+  }
+  const floor = kind === "killed" ? CASUALTY_RULES.neutralizeThreshold : CASUALTY_RULES.bleedingThreshold;
+  const damage = Math.max(0, floor - victim.damagePoints);
+  if (victim.damagePoints < CASUALTY_RULES.bleedingThreshold) victim.bleedingSinceTurn = turn;
+  victim.damagePoints = Math.max(victim.damagePoints, floor);
+  victim.wound = kind;
+  victim.neutralized = true;
+  return { damage, casualty: true, victim };
 }
 
 /**

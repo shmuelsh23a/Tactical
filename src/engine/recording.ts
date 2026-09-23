@@ -28,6 +28,7 @@ import {
 } from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { MoraleReport } from "./morale.js";
+import type { RuleVariants } from "./data/variants.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { MapLineKind, Terrain } from "./terrain.js";
 import { OBJECT_HEIGHT_M } from "./data/terrain.js";
@@ -132,6 +133,9 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (typeof r.enforceC2 !== "boolean") throw malformed("enforceC2");
   if (r.trackIntel !== undefined && typeof r.trackIntel !== "boolean") throw malformed("trackIntel");
   if (r.morale !== undefined && typeof r.morale !== "boolean") throw malformed("morale");
+  if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
+    throw malformed("variants");
+  }
   if (r.terrain !== undefined) {
     const field = terrainFault(r.terrain);
     if (field) throw new RecordingError({ kind: "malformedTerrain", field });
@@ -226,6 +230,11 @@ export interface GameRecording {
    * recorded before morale existed made none of its rolls.
    */
   morale?: boolean;
+  /**
+   * Rule variants on trial (data/variants.ts). Optional, and read as **none**
+   * when absent: the rules as they stood.
+   */
+  variants?: RuleVariants;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -370,6 +379,7 @@ export function replayWithOutcomes(
     enforceC2: recording.enforceC2,
     trackIntel: recording.trackIntel ?? false,
     morale: recording.morale ?? false,
+    ...(recording.variants ? { variants: cloneForRecord(recording.variants) } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

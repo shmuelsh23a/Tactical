@@ -62,6 +62,7 @@ export {
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
   COVER_MODIFIERS,
+  FIRING_FROM_COVER_MODIFIER,
   type CoverState,
 } from "./data/directFire.js";
 export { EXPLOSIVES, type ExplosiveWeapon, type DeliveryMethod } from "./data/explosives.js";
@@ -78,10 +79,12 @@ export { C2_TABLE, orderInterval } from "./data/c2.js";
 export { CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
 export * as MORALE_RULES from "./data/morale.js";
+export { type RuleVariants } from "./data/variants.js";
 
 // Combat resolvers
 export {
   resolveDirectFire,
+  NOT_A_COAXIAL_WEAPON,
   type DirectFireResult,
   type DirectFireOptions,
   type WeaponClass,

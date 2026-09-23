@@ -1,9 +1,8 @@
 import { Rng } from "../rng.js";
-import { roll } from "../dice.js";
 import { distance } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
-import { damageSoldier, refreshUnitStatus, selectHitSoldier } from "../units.js";
+import { refreshUnitStatus, woundHit } from "../units.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -27,6 +26,11 @@ export interface AssaultResult {
   selfCasualties: number;
   defenderCasualties: number;
   defenderNeutralized: boolean;
+  /**
+   * The defender's fire back, under rule variant 1 (data/variants.ts). Absent
+   * when the game plays the document's one-sided assault.
+   */
+  reply?: { chance: number; shooters: number; hits: number; damage: number; casualties: number };
 }
 
 /**
@@ -41,7 +45,16 @@ export function resolveAssault(
   rng: Rng,
   attacker: Unit,
   defender: Unit,
-  opts: { grenades?: number; turn?: number } = {},
+  opts: {
+    grenades?: number;
+    turn?: number;
+    /**
+     * Rule variant 1: the defender fires back at this chance per man. The
+     * reply is simultaneous — it is fired by the men the defender had before
+     * the assault landed.
+     */
+    replyChance?: number;
+  } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
   const range = distance(attacker.position, defender.position);
@@ -63,6 +76,8 @@ export function resolveAssault(
   if (defender.kind === "vehicle") return { ...result, reason: "cannot assault armour" };
   if (readySoldiers(attacker).length === 0) return { ...result, reason: "no fit shooters" };
   result.fired = true;
+  // Taken before the assault lands: the reply is fired by the men who were there.
+  const replyAccuracy = opts.replyChance == null ? null : shooterAccuracy(defender);
 
   // Assault fire.
   // Only the men still willing go in, each as steady as he is (rules decision 19).
@@ -70,10 +85,9 @@ export function resolveAssault(
   for (let i = 0; i < accuracy.length; i++) {
     if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
     result.fireHits++;
-    const dmg = roll(rng, ASSAULT.fireDamageDice);
-    result.fireDamage += dmg;
-    const victim = selectHitSoldier(defender, rng);
-    if (victim && damageSoldier(victim, dmg, turn)) result.defenderCasualties++;
+    const hit = woundHit(rng, defender, turn, "smallArms");
+    result.fireDamage += hit.damage;
+    if (hit.casualty) result.defenderCasualties++;
   }
 
   // Grenades.
@@ -81,16 +95,29 @@ export function resolveAssault(
   for (let i = 0; i < grenades; i++) {
     if (rng.chance(ASSAULT.grenadeHitChance)) {
       result.grenadeHits++;
-      const dmg = roll(rng, ASSAULT.grenadeDamageDice);
-      result.grenadeDamage += dmg;
-      const victim = selectHitSoldier(defender, rng);
-      if (victim && damageSoldier(victim, dmg, turn)) result.defenderCasualties++;
+      const hit = woundHit(rng, defender, turn, "explosive");
+      result.grenadeDamage += hit.damage;
+      if (hit.casualty) result.defenderCasualties++;
     }
     if (rng.chance(ASSAULT.grenadeSelfHitChance)) {
-      const dmg = roll(rng, ASSAULT.grenadeDamageDice);
-      const friendly = selectHitSoldier(attacker, rng);
-      if (friendly && damageSoldier(friendly, dmg, turn)) result.selfCasualties++;
+      if (woundHit(rng, attacker, turn, "explosive").casualty) result.selfCasualties++;
     }
+  }
+
+  if (replyAccuracy && opts.replyChance != null) {
+    const reply = { chance: opts.replyChance, shooters: replyAccuracy.length, hits: 0, damage: 0, casualties: 0 };
+    for (const accuracy of replyAccuracy) {
+      if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
+      reply.hits++;
+      const hit = woundHit(rng, attacker, turn, "smallArms");
+      reply.damage += hit.damage;
+      if (hit.casualty) reply.casualties++;
+    }
+    if (reply.hits > 0) {
+      attacker.hitThisTurn = true;
+      attacker.underFire = true;
+    }
+    result.reply = reply;
   }
 
   defender.hitThisTurn = true;

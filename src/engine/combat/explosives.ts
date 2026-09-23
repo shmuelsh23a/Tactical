@@ -6,10 +6,9 @@ import { EXPLOSIVES } from "../data/explosives.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
   applyComponentDamage,
-  damageSoldier,
   refreshUnitStatus,
-  selectHitSoldier,
   fitSoldiers,
+  woundHit,
 } from "../units.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { suppressionAccuracy } from "../morale.js";
@@ -72,12 +71,11 @@ export function resolveBlast(
       for (let i = 0; i < fit; i++) {
         if (!rng.chance(blastChance)) continue;
         res.caught = true;
-        const die = weapon.damageDiceVsInfantry ?? weapon.damageDice;
-        const dmg = roll(rng, die);
-        res.damage += dmg;
-        // Area effect on a force → random casualty among the fit soldiers.
-        const victim = selectHitSoldier(unit, rng);
-        if (victim && damageSoldier(victim, dmg, turn)) res.newCasualties++;
+        // Area effect on a force → random casualty among the fit soldiers;
+        // how bad, the same roll as a bullet's (rules decision 27).
+        const hit = woundHit(rng, unit, turn, "explosive");
+        res.damage += hit.damage;
+        if (hit.casualty) res.newCasualties++;
       }
       if (res.caught) {
         unit.hitThisTurn = true;

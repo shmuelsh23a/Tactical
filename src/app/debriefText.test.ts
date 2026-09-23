@@ -23,7 +23,7 @@ describe("describeStandingOrder", () => {
       },
       nameOf,
     );
-    expect(text).toBe("התקדם ל(120, 300) בריצה · תקוף את אויב במקלע");
+    expect(text).toBe("התקדם ל(120, 300) בריצה · תקוף את אויב במקלע מקביל");
   });
 
   it("reads an order with no objective as holding", () => {

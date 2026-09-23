@@ -14,7 +14,7 @@ function battle(): GameRecording {
   g.setStandingOrder(blue.id, { gait: "run", destination: { x: 0, y: 60 } });
   g.executeStandingOrders("BLUE");
   g.advanceToPhase("combat");
-  g.fire(red.id, blue.id, { weapon: "sustainedMg" });
+  g.fire(red.id, blue.id, { weapon: "smallArms" });
   g.fire(blue.id, red.id, { weapon: "smallArms" });
 
   for (let turn = 0; turn < 3; turn++) {
@@ -22,7 +22,7 @@ function battle(): GameRecording {
     g.advanceToPhase("movement");
     g.executeStandingOrders("BLUE");
     g.advanceToPhase("combat");
-    g.fire(red.id, blue.id, { weapon: "sustainedMg" });
+    g.fire(red.id, blue.id, { weapon: "smallArms" });
     g.fire(blue.id, red.id, { weapon: "smallArms" });
   }
   g.advanceToPhase("summary");

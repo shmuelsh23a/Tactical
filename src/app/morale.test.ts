@@ -113,7 +113,7 @@ describe("the debrief tells each side what it may know of morale", () => {
       g.beginTurn();
       for (let turn = 0; turn < 8 && !blue.routing && !blue.neutralized; turn++) {
         g.advanceToPhase("combat");
-        g.fire("R", "B", { weapon: "sustainedMg" });
+        g.fire("R", "B", { weapon: "smallArms" });
         g.advanceToPhase("initiative");
       }
       if (blue.routing) return g.toRecording();
@@ -145,5 +145,27 @@ describe("the debrief tells each side what it may know of morale", () => {
     expect(seen).toContain("כיתה נראה נסוג בבהלה");
     // …and never how many of its men broke.
     expect(seen).not.toContain("נשברו");
+  });
+});
+
+describe("ruling 5: a side with no fighting forces left has lost", () => {
+  it("whatever command groups survive, with or without morale", () => {
+    for (const morale of [false, true]) {
+      const g = new Game({ seed: 4, morale });
+      const squad = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
+      g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: -100 }));
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 300 }, 8));
+      expect(sideDefeated(g, "BLUE")).toBe(false);
+      squad.neutralized = true;
+      expect(sideDefeated(g, "BLUE")).toBe(true);
+    }
+  });
+
+  it("a side fielding only a command group is judged on it", () => {
+    const g = new Game({ seed: 4 });
+    const hq = g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: 0 }));
+    expect(sideDefeated(g, "BLUE")).toBe(false);
+    hq.neutralized = true;
+    expect(sideDefeated(g, "BLUE")).toBe(true);
   });
 });

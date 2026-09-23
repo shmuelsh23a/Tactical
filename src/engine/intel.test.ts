@@ -89,7 +89,7 @@ describe("what each side knows", () => {
   it("puts a shot's two forces on each other's map", () => {
     const { g, blue, red } = contact();
     g.advanceToPhase("combat");
-    const result = g.fire(blue.id, red.id, { weapon: "sustainedMg" });
+    const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
     expect(result.fired).toBe(true);
     // The firer plainly sees what it is shooting at; the target learns where
     // the fire is coming from.

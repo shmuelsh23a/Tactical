@@ -277,7 +277,9 @@ export function App({ scenario, onLeave }: AppProps) {
   function orderedEngagement(): StandingOrder["engage"] | undefined {
     if (orderTask === "advance" || orderTask === "withdraw" || !orderTargetId) return undefined;
     const target = visibleEnemies.find((u) => u.id === orderTargetId);
-    return target ? { targetId: target.id, weapon: orderWeapon } : undefined;
+    // Only a vehicle has a choice to make (decision 25).
+    const weapon = selectedOwn?.kind === "vehicle" ? orderWeapon : "smallArms";
+    return target ? { targetId: target.id, weapon } : undefined;
   }
 
   /** The task part of an order, as the panel currently reads. */
@@ -653,7 +655,8 @@ export function App({ scenario, onLeave }: AppProps) {
     if (!selectedOwn || enginePhase !== "combat") return;
     const on = !selectedOwn.covering;
     try {
-      game.setCovering(selectedOwn.id, on, weapon);
+      // A vehicle covers with its coaxial gun, infantry with small arms (decision 25).
+      game.setCovering(selectedOwn.id, on, selectedOwn.kind === "vehicle" ? "sustainedMg" : "smallArms");
     } catch (e) {
       pushLog(`${selectedOwn.name} — ${reasonHe((e as Error).message)}`, "info", onlyFor(viewingSide));
       return;
@@ -833,7 +836,9 @@ export function App({ scenario, onLeave }: AppProps) {
     try {
       // Line of sight is left to the engine, which checks the shot against the
       // smoke on the map.
-      if (selectedOwn.kind === "vehicle") {
+      // A vehicle fires its main gun unless the coaxial one is chosen; infantry
+      // fire small arms, the only table that is theirs (decision 25).
+      if (selectedOwn.kind === "vehicle" && weapon !== "sustainedMg") {
         const r = game.fireExplosive("tankRound", selectedOwn.id, target.id);
         // A shot that was never taken is the firer's own bookkeeping; a round
         // going downrange is an exchange both sides are in (decisions 13, 17).
@@ -848,7 +853,9 @@ export function App({ scenario, onLeave }: AppProps) {
       } else {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.
-        const r = game.fire(selectedOwn.id, target.id, { weapon });
+        const r = game.fire(selectedOwn.id, target.id, {
+          weapon: selectedOwn.kind === "vehicle" ? "sustainedMg" : "smallArms",
+        });
         logCoveringFire(r.coveringFire);
         if (!r.fired) {
           pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
@@ -1334,21 +1341,25 @@ export function App({ scenario, onLeave }: AppProps) {
                             </button>
                           ))}
                         </div>
-                        <label>אמצעי ירי בפקודה:</label>
-                        <div className="seg">
-                          <button
-                            className={orderWeapon === "smallArms" ? "on" : ""}
-                            onClick={() => setOrderWeapon("smallArms")}
-                          >
-                            נק"ל
-                          </button>
-                          <button
-                            className={orderWeapon === "sustainedMg" ? "on" : ""}
-                            onClick={() => setOrderWeapon("sustainedMg")}
-                          >
-                            מקלע
-                          </button>
-                        </div>
+                        {selectedOwn?.kind === "vehicle" && (
+                          <>
+                            <label>אמצעי ירי בפקודה:</label>
+                            <div className="seg">
+                              <button
+                                className={orderWeapon === "smallArms" ? "on" : ""}
+                                onClick={() => setOrderWeapon("smallArms")}
+                              >
+                                תותח
+                              </button>
+                              <button
+                                className={orderWeapon === "sustainedMg" ? "on" : ""}
+                                onClick={() => setOrderWeapon("sustainedMg")}
+                              >
+                                מקלע מקביל
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </>
                     ))}
 
@@ -1493,21 +1504,27 @@ export function App({ scenario, onLeave }: AppProps) {
 
                   {combatAction === "fire" ? (
                     <>
-                      <label>אמצעי ירי:</label>
-                      <div className="seg">
-                        <button
-                          className={weapon === "smallArms" ? "on" : ""}
-                          onClick={() => setWeapon("smallArms")}
-                        >
-                          נק"ל
-                        </button>
-                        <button
-                          className={weapon === "sustainedMg" ? "on" : ""}
-                          onClick={() => setWeapon("sustainedMg")}
-                        >
-                          מקלע
-                        </button>
-                      </div>
+                      {/* Infantry have one table (נק"ל\מקלעים); ירי מקביל is a
+                          vehicle's coaxial gun (decision 25). */}
+                      {selectedOwn?.kind === "vehicle" && (
+                        <>
+                          <label>אמצעי ירי:</label>
+                          <div className="seg">
+                            <button
+                              className={weapon === "smallArms" ? "on" : ""}
+                              onClick={() => setWeapon("smallArms")}
+                            >
+                              תותח
+                            </button>
+                            <button
+                              className={weapon === "sustainedMg" ? "on" : ""}
+                              onClick={() => setWeapon("sustainedMg")}
+                            >
+                              מקלע מקביל
+                            </button>
+                          </div>
+                        </>
+                      )}
                       <p className="hint">
                         בחר כוח, ולחץ על אויב מסומן כדי לירות. מוצגים רק כוחות שזוהו;
                         סימון דהוי הוא דיווח מתור קודם — ייתכן שהכוח כבר אינו שם.

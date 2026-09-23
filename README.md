@@ -1215,6 +1215,112 @@ on the stated reasoning, still awaiting the author's word.
     battles and **only rest refills it** — how, is the campaign discussion
     (backlog 16).
 
+20. ✅ **Initiative ties are rolled again** (author, 2026-09-23). The document
+    gives initiative as "1ק10 לכל שחקן, תורות בסדר יורד" and says nothing about
+    a tie. The engine used to give it to the side listed first, which put RED
+    first on 55% of turns (docs/balance.md, *The balance harness*). A tie is
+    now rolled again until the sides differ. This changes the number of dice a
+    turn draws when a tie comes up, so **a sealed recording made before this
+    that crossed a tie fails `verifyRecording`** — the tool doing its job.
+21. ✅ **A side with no fighting forces left has lost** (author, 2026-09-23 —
+    "a now, we will get back to it later", i.e. until backlog 18 settles
+    victory conditions properly). `sideDefeated` used to want *every* unit
+    out, command groups included, and a command group with nobody to command
+    sits still, is therefore hidden (decision 12), and can be found only
+    inside 20 m — so a battle without morale could go silent for ever. It now
+    judges the fighting forces, the same exclusion the morale rule's side
+    break already made. A side fielding nothing but command groups is judged
+    on those.
+
+22. ✅ **The movement table's modifier applies to every direct shot, and
+    proportionally** (author, 2026-09-23 — option c). The table gives
+    "סיכויי פגיעה לאש אויב" +30% against a force that walked, −20% against one
+    that ran. Until now only covering fire read it (decision 18), and read it
+    as an addition. Now every direct shot at a force that moved this turn reads
+    it, as **×1.3 and ×0.8** on the band — the document's own figures, only
+    their application ruled, as decision 7 did for cover. This **overrides
+    decision 7's rider** that the movement modifiers stay additive. Added, a
+    runner beyond 100 m could not be hit at all (20% − 20%).
+23. ✅ **Firing from full cover keeps −30%** (author, 2026-09-23 — option b).
+    The document drops a force that fires from full cover to partial (−10%)
+    for that turn. That left a defender who shoots back barely protected, so
+    it now keeps −30% (`FIRING_FROM_COVER_MODIFIER`). Genuine partial cover — a
+    wall, a tree, a position prepared before the battle — stays at the
+    table's −10%.
+24. ✅ **A prepared defender is steadier** (author, 2026-09-23; ⚠️ the size is
+    ours). A force **in position** — it did not move this turn and is behind
+    something: the ground, a building, a hole it dug or a position it prepared
+    — adds **+15** to every morale test and feels **×0.75** of every loss
+    (`PREPARED` in data/morale.ts). A force that gets up to attack leaves it
+    behind.
+
+    **Ruling 1 is still on trial.** The author ruled that a defender facing an
+    assault returns fire (2026-09-23), with the rate to be settled by
+    measurement. It is a switch, `assaultReplyChance` in
+    [`data/variants.ts`](src/engine/data/variants.ts), off by default —
+    because the rate made no measurable difference (docs/balance.md, *Second
+    round*).
+
+25. ✅ **ירי מקביל is the coaxial machine gun — a vehicle's weapon** (author,
+    2026-09-23). The document's second direct-fire table (70 / 50 / 20% out to
+    700 m) is the gun mounted beside an armoured vehicle's main armament
+    (מקלע מקביל). The engine had read it as an infantry "sustained MG" since
+    the first commit, and the hotseat offered it to every squad as "מקלע" — so
+    a squad could fire at more than twice the rifle table's chance, and a tank
+    could not fire its coax at all. Now:
+    - infantry fire the נק"ל\מקלעים table only — its own heading already
+      includes machine guns — and are refused the other (`NOT_A_COAXIAL_WEAPON`);
+    - a vehicle may fire its coaxial gun (a shot, an order, or covering fire),
+      or its main gun as before.
+
+    ✅ **One roll a turn, by the gunner while he is fit** (proposed as ours,
+    confirmed by the author 2026-09-23): one gun, one man firing it.
+    The key stays `sustainedMg`, so recordings still load — but **a recording
+    in which a squad fired the MG table now replays that shot as refused, and
+    fails `verifyRecording`**.
+
+26. ✅ **A small-arms hit rolls how bad it is** (author, 2026-09-23 — adopted
+    after the harness's third round, docs/balance.md). Each hit by small arms,
+    the coaxial gun or an assault's fire rolls a **d10 instead of the
+    document's 1d4 of damage**:
+    - **1–4, a light wound**: the man fights on, 2 points towards the
+      document's 8;
+    - **5–8, a serious wound**: out of the fight, and bleeding;
+    - **9–10, killed**.
+
+    It is one die either way, so the rng is asked as often as before. The
+    document's 8-point threshold and its bleeding rule stand under it.
+    Explosives kept the document's own dice until decision 27. **Why:** a 1d4 hit against an
+    8-point threshold never takes a man out alone, and it scatters a small
+    force's fire across a large one to no effect. Each hit is now worth the
+    same on 36 men as on 9. At this split the squad fights met every balance
+    target (`WOUND_SEVERITY` in data/casualties.ts). This changes every
+    battle's outcome, so **any sealed recording made before it fails
+    `verifyRecording`**.
+27. ✅ **One wound rule for bullets and explosives** (author, 2026-09-23 —
+    option A0, adopted after the harness's fifth round, docs/balance.md).
+    Every hit that lands on a man rolls decision 26's d10 severity, whatever
+    hit him. That covers small arms, the coaxial gun, an assault's fire, a
+    grenade, a rifle grenade, a mortar bomb, a shell, a tank round, an RPG and
+    a mine. The document's damage dice are no longer rolled against
+    infantry. They stay in `data/explosives.ts`, and the vehicle rules still
+    use them.
+    - **Explosives still hit more men.** Their weight is in the blast table:
+      how many men a round catches, and from how far.
+    - **Why:** the author's principle is that explosives cause most of the
+      casualties in modern war. The sources give 65–78% of wounds since WWII.
+      They also show a fragment wound is *less* likely to kill than a bullet
+      wound (about 10–20% against 33%). So explosives dominate by how many
+      they hit, not by how bad each hit is.
+    - **The numbers:** 10 of 12 balance targets. With one mortar bomb a turn
+      on the objective, explosives put out 76% of the men in a company
+      attack.
+    - **Rejected:** a severity shift by die size (option A), and the
+      document's dice with a man out at 5 (option B).
+    - Every man put out records what did it (`Soldier.outBy`).
+    - It changes the outcome of any battle with explosives, so a sealed
+      recording of one made before it fails `verifyRecording`.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1572,6 +1678,18 @@ Each is intended to be an independent, toggleable module:
     the demo scenario's scripted RED, which is the comparison that says whether
     any of this is worth keeping.
 
+    **What carries an order out is built** (2026-09-23): the **squad drill**
+    ([`app/drill.ts`](src/app/drill.ts)). A subordinate's order from the model
+    — or from a player — is executed by a `SquadDrill`, data read by one small
+    executor that sees only its side's view. The balance harness plays it, and
+    the Western drill meets 11 of the 12 balance targets (docs/balance.md).
+    The measured scaling that settles where the model sits: **Jev decides for
+    commanders, platoon and up; squads execute the drill; a squad leader asks
+    the model only at a moment of decision** — spring the ambush, fall back —
+    rather than every turn. At brigade size that is about 74 calls a turn
+    against about 216 if every squad reasoned (docs/balance.md, *How the
+    engine scales*).
+
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next
     piece of ground, and what happened to it carries over.
@@ -1665,3 +1783,33 @@ Each is intended to be an independent, toggleable module:
     300 m visible band and the 20 m hidden one, the eye heights of rules
     decision 15, camouflage and cover, and smoke's own duration, which wind
     would presumably move.
+
+20. **A TTP editor — squad tactics a player or instructor can rewrite.**
+    (Author, 2026-09-23.) The simulated subordinates of backlog 15 carry out
+    their orders with a **squad drill**: how far a bound goes and at what
+    gait, whether squads bound in overwatch pairs, which sector each squad
+    shoots into, when to open fire, when to assault, when to break contact.
+    That drill is tactics, techniques and procedures (TTP), and **it is
+    doctrine, not rules**: two armies, or two instructors, run a platoon
+    attack differently, and the game should be able to show both. The editor
+    lets a player or an instructor adapt the squad-level tactics to actual
+    doctrine and save them as a named drill, to be played or measured.
+
+    **What makes it cheap later is how the drill is built now.** It is **data**
+    (a `SquadDrill`, [`src/app/drill.ts`](src/app/drill.ts)) interpreted by one
+    small executor, not logic spread through the code. The editor is therefore
+    a form over that data, not a programming tool. Three rules keep it that way:
+    - **A drill decides; the engine resolves.** Drills emit the same actions a
+      player clicks — standing orders, fire, assaults, postures — so no drill,
+      however written, can change a rule or an outcome's odds.
+    - **A drill sees what its side sees.** It reads the side's contact ledger,
+      never the umpire's map (backlog 15's trap).
+    - **A drill is measurable.** The balance harness plays any drill (backlog
+      item on balance, docs/balance.md), so "does our doctrine work under these
+      rules?" is a question with a number for an answer. That is the
+      instructor's use as much as the player's.
+
+    Open (⚠️): which parameters are exposed (the first drill's are the
+    obvious start); whether a drill can branch on events ("if pinned, call
+    smoke") or only set numbers; where drills are stored and shared; and
+    whether a scenario can require a drill, as an exercise would.

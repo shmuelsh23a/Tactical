@@ -1,29 +1,45 @@
 import { Rng } from "../rng.js";
-import { roll } from "../dice.js";
 import { distance, lookupBand } from "../geometry.js";
 import type { Unit } from "../types.js";
 import {
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
-  DIRECT_FIRE_DAMAGE_DICE,
   COVER_MODIFIERS,
   type CoverState,
 } from "../data/directFire.js";
-import { selectHitSoldier, damageSoldier, refreshUnitStatus } from "../units.js";
+import { refreshUnitStatus, woundHit } from "../units.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
+/**
+ * `smallArms`: the נק"ל\מקלעים table, fired by every fit man of a force.
+ * `sustainedMg`: ירי מקביל, the coaxial machine gun — a vehicle's only
+ * (rules decision 25); the key keeps the name it was first read under.
+ */
 export type WeaponClass = "smallArms" | "sustainedMg";
+
+/** Refusal: ירי מקביל is the coaxial gun of an armoured vehicle (decision 25). */
+export const NOT_A_COAXIAL_WEAPON = "not a coaxial weapon";
+
+/**
+ * Who fires a vehicle's coaxial gun: the gunner, one gun, while he is fit and
+ * the vehicle is not destroyed — one roll a turn (author, 2026-09-23).
+ */
+function coaxialGunners(vehicle: Unit): number[] {
+  const v = vehicle.vehicle;
+  if (!v || v.destroyed) return [];
+  return v.crew.some((c) => c.role === "gunner" && !c.neutralized) ? [1] : [];
+}
 
 export interface DirectFireOptions {
   weapon: WeaponClass;
   /** Cover state of the target; scales the hit chance (full cover halves it). */
   cover?: CoverState;
   /**
-   * Additive hit modifier from the target's movement this turn:
-   * +0.30 if it moved at normal pace, -0.20 if it ran, 0 if static.
-   * (Comes from the movement profile of the *target*.)
+   * The target's movement this turn, as a **factor** on the band: ×1.3 if it
+   * walked, ×0.8 if it ran — the movement table's +30% / −20%, applied
+   * proportionally (author, 2026-09-23; rules decision 22). Absent: it stood.
    */
-  targetMovementModifier?: number;
+  targetMovementFactor?: number;
   /** Set false to forbid the shot (no line of sight, or smoke in the way). */
   hasLineOfSight?: boolean;
   /** Limit the number of shooters (to model splitting fire); default = all fit. */
@@ -35,6 +51,12 @@ export interface DirectFireOptions {
   targetSoldierId?: string;
   /** Current turn index, for casualty bookkeeping. */
   turn?: number;
+  /**
+   * The cover modifier to use instead of the table's figure for `cover`: what
+   * full cover is still worth to a force that fired from it this turn
+   * ({@link FIRING_FROM_COVER_MODIFIER}, rules decision 23).
+   */
+  coverModifier?: number;
 }
 
 export interface DirectFireResult {
@@ -77,6 +99,9 @@ export function resolveDirectFire(
     targetNeutralized: target.neutralized,
   };
 
+  if (opts.weapon === "sustainedMg" && attacker.kind !== "vehicle") {
+    return { ...base, reason: NOT_A_COAXIAL_WEAPON };
+  }
   if (opts.hasLineOfSight === false) return { ...base, reason: "no line of sight" };
   if (!band) return { ...base, reason: "out of range" };
   if (target.kind === "vehicle") {
@@ -87,14 +112,15 @@ export function resolveDirectFire(
   // Cover cuts the chance proportionally ("-50% מסיכויי הפגיעה"), so it scales
   // the situational chance rather than being subtracted from it.
   const hitChance = clamp01(
-    (band.value + (opts.targetMovementModifier ?? 0)) * (1 + COVER_MODIFIERS[cover]),
+    band.value * (opts.targetMovementFactor ?? 1) * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])),
   );
 
   // The men who will still fight — a broken man keeps his head down — each
   // shooting as well as his force's suppression and his own nerve let him
   // (rules decision 19). Without morale: every fit man, at the table's chance.
-  const available = readySoldiers(attacker).length;
-  const accuracy = shooterAccuracy(attacker);
+  const coaxial = opts.weapon === "sustainedMg";
+  const accuracy = coaxial ? coaxialGunners(attacker) : shooterAccuracy(attacker);
+  const available = coaxial ? accuracy.length : readySoldiers(attacker).length;
   const shooters = Math.max(0, Math.min(opts.shooters ?? available, available));
   if (shooters === 0) return { ...base, reason: "no fit shooters", hitChance };
 
@@ -105,10 +131,9 @@ export function resolveDirectFire(
   for (let i = 0; i < shooters; i++) {
     if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
     hits++;
-    const dmg = roll(rng, DIRECT_FIRE_DAMAGE_DICE);
-    totalDamage += dmg;
-    const victim = selectHitSoldier(target, rng, opts.targetSoldierId);
-    if (victim && damageSoldier(victim, dmg, turn)) newCasualties++;
+    const hit = woundHit(rng, target, turn, "smallArms", opts.targetSoldierId);
+    totalDamage += hit.damage;
+    if (hit.casualty) newCasualties++;
   }
 
   if (hits > 0) {
