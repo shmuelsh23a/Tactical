@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of the balance session, 2026-09-23 (rules decisions 19–27).** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–27 and the seed check on the mirror.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -82,23 +82,12 @@ balance.md):
     has been the trade for making explosives count; with a fire plan it
     recovers to 50%.
 
-**A bug to chase first (ours, not his).** Since decision 27, the company
-mirror leans BLUE:
-
-| Run | BLUE / RED / draw |
-|---|---|
-| `--kinds meeting --drill western --morale on --n 200 --echelons company` | 52 / 39 / 10 |
-| the same, `--swap` | 50 / 37 / 13 |
-| before decision 27 | 47 / 45 |
-
-The lean survives the swap, so it follows the **side label, not the
-position**. Explosives now matter, so look at what treats the sides
-differently in the explosive path:
-- the order the fire missions resolve in;
-- the order of units in `game.units` (BLUE is added first);
-- the harness's `rear` for the mortar's firing point.
-
-Squad and platoon mirrors have no explosives and were not rerun.
+**The company mirror's BLUE lean was not a bug** (closed 2026-09-23, the
+session after decision 27). It was the seed window. Over 7,400 battles on
+disjoint seeds the mirror is 3386 BLUE to 3370 RED, and the lean flips sign
+between windows. See balance.md, just above *How the engine scales*.
+`npm run balance` takes `--seed <first>` now; rerun a lean on a fresh window
+before chasing it.
 
 **Still open, and his:**
 - **The blast table** (above).
@@ -305,6 +294,10 @@ the code currently stands:
   which way the fire came from for flanking — is only known where the engine
   calls `noteFire`. A new way to fire at a force must call it, or it will kill
   without frightening anyone.
+- **`--swap` is not a second sample.** It replays the same seeds with the
+  sides' places exchanged, so a fluke of the seed window survives it and
+  looks like a bias that "follows the side". It put a bug that was not there
+  at the top of the 2026-09-23 handoff. Check a lean on a disjoint window with `--seed`.
 - **Tests that end a turn need two steps.** `advanceToPhase("initiative")`
   straight after `beginTurn()` does nothing — the game is already there. Go to
   `summary` first; `morale.test.ts` has an `endTurn` helper.

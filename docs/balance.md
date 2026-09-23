@@ -780,11 +780,35 @@ at every echelon, even at 1:1.
 2. Then rule on the blast: what cover does against it, and what one round
    is. **Still open. It is the first thing for the next session.**
 
-**A side bias surfaced once A0 was the rule.** The company mirror (200
-battles, Western drill) gives BLUE / RED / draw 52 / 39 / 10, and 50 / 37 /
-13 with `--swap`. It was 47 / 45 before. The lean follows the side, not the
-position, so something in the explosive path treats the sides differently.
-Not yet found; see the handoff.
+**A side bias seemed to surface once A0 was the rule, and it was the seeds.**
+The company mirror (200 battles, Western drill) gave BLUE / RED / draw
+52 / 39 / 10, and 50 / 37 / 13 with `--swap`, and it was 47 / 45 before. It
+looked like something in the explosive path favouring BLUE. It is not
+(2026-09-23, company meeting, Western drill, morale on):
+
+| Seeds | BLUE | RED | draw |
+|---|---|---|---|
+| 1–400 | 186 | 186 | 28 |
+| 1000–2999 | 969 | 855 | 176 |
+| 5000–5999 | 458 | 449 | 93 |
+| 10000–13999 | 1773 | 1880 | 347 |
+| **all 7,400** | **3386** | **3370** | 644 |
+| 10000–13999, RED's units added first | 1817 | 1816 | 367 |
+| 20000–20199 (`--seed 20000`) | 44% | 49% | 8% |
+
+- Pooled, the mirror is level: 3386 to 3370.
+- The lean moves with the **seed window**: BLUE ahead on 1000–2999, RED
+  ahead on 10000–13999.
+- Adding RED's units to the game first, the prime suspect, changes nothing.
+- `--swap` could not tell the two apart. It replays the **same seeds**, so
+  its noise is correlated with the unswapped run. It separates side from
+  position; it does not give you a second sample.
+
+Every run on this page before this one used seeds 1000 onwards, because the
+CLI had no way to choose. It has one now: `--seed <first>`. **Before
+calling a lean real, rerun it on a disjoint window.** At 200 battles a
+share's standard error is about 3.5 points, and the gap between two shares
+about 5.
 
 ## How the engine scales, 2026-09-23
 

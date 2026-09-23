@@ -4,6 +4,7 @@
  *   npm run balance                                  # every kind and echelon, 100 battles each, morale on and off
  *   npm run balance -- --n 300 --kinds meeting       # one kind, more battles
  *   npm run balance -- --echelons company --swap     # RED starts where BLUE would
+ *   npm run balance -- --seed 20000                  # a fresh seed window (default 1000) — see balance.md on the lean
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
  *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
@@ -48,6 +49,7 @@ const list = <T extends string>(flag: string, all: readonly T[]): T[] => {
 };
 
 const battles = Number(value("--n") ?? 100);
+const firstSeed = Number(value("--seed") ?? 1000);
 const kinds = list<BattleKind>("--kinds", BATTLE_KINDS);
 const echelons = list<Echelon>("--echelons", ECHELONS);
 const moraleArg = value("--morale");
@@ -95,12 +97,12 @@ if (args.includes("--sweep")) {
   }
 } else {
   const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
-  console.log(`${battles} battles a cell, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${trial}\n`);
+  console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${trial}\n`);
   console.log(MARKDOWN_HEADER);
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, preparedCover, drill, ...(fires ? { fires } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}) })));
       }
     }
   }
