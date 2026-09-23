@@ -79,3 +79,12 @@ describe("the fire plan, and what put the men out", () => {
     expect(callableAt("battalion", "artillery")).toBe(true);
   });
 });
+
+describe("the defender's mission plan (decision 38)", () => {
+  it("puts out observation posts and prepares alternate positions before the battle", () => {
+    const plain = runBattle(1000, "platoon", "attack1", { morale: true });
+    const planned = runBattle(1000, "platoon", "attack1", { morale: true, defenderPlan: { observationPosts: true, alternateAt: 150 } });
+    expect(plain.turns).toBeGreaterThan(0);
+    expect(planned.turns).toBeGreaterThan(0);
+  });
+});

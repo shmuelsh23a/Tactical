@@ -469,6 +469,12 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${action.side}: משימת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)}`;
     case "checkFire":
       return `${action.side}: חדל אש`;
+    case "registerTarget":
+      return `${action.side}: מטרה מתוכננת ל${term(weaponHe, action.weapon)} ${at(action.at)}`;
+    case "designateObservationPost":
+      return `${who(action.unitId)} הוצב כתצפית`;
+    case "prepareAlternatePosition":
+      return `${who(action.unitId)}: הוכנה עמדה חלופית ${at(action.at)}`;
     case "callForFire":
       return `${action.side}: בקשת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)} — תיקון ואש לאפקט`;
     case "moveUnit":

@@ -153,6 +153,14 @@ export interface BattleOptions {
    * plans (see {@link callableAt}).
    */
   anyEchelon?: boolean;
+  /**
+   * Mission planning for the defender (rules decision 38), in an attack.
+   * `observationPosts`: its command groups watch as observation posts — or, at
+   * squad, the squad itself. `alternateAt`: each of its prepared squads has
+   * an alternate position prepared this many metres behind it, which the
+   * drill's displacement goes to.
+   */
+  defenderPlan?: { observationPosts?: boolean; alternateAt?: number };
 }
 
 /**
@@ -281,8 +289,14 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
   })();
   // A side with fire missions assigned fires only those (rules decision 34).
   const fireSupport: Partial<Record<Side, FireAllotment[]>> = {};
-  if (opts.fires && kind !== "meeting") fireSupport[attackerSide] = opts.fires.missions.filter((a) => callable(a.weapon));
-  if (opts.defenderFires && kind !== "meeting") fireSupport[defenderSide] = opts.defenderFires.missions.filter((a) => callable(a.weapon));
+  // A plan struck bare leaves the side as it would be without one, free bomb
+  // and all, so its row compares with the baseline.
+  const allot = (side: Side, list: FireAllotment[] | undefined) => {
+    const kept = (list ?? []).filter((a) => callable(a.weapon));
+    if (kept.length && kind !== "meeting") fireSupport[side] = kept;
+  };
+  allot(attackerSide, opts.fires?.missions);
+  allot(defenderSide, opts.defenderFires?.missions);
   const gameOptions: GameOptions = {
     seed,
     morale: opts.morale,
@@ -307,6 +321,20 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         : makeInfantry(f.id, side, f.echelon, f.at, f.men);
     if (f.prepared) u.baseCover = opts.preparedCover ?? "partial";
     g.addUnit(u);
+  }
+  if (opts.defenderPlan && kind !== "meeting") {
+    const own = g.units.filter((u) => u.side === defenderSide);
+    const posts = own.some((u) => u.kind === "command") ? own.filter((u) => u.kind === "command") : own;
+    if (opts.defenderPlan.observationPosts) for (const u of posts) g.designateObservationPost(u.id);
+    const back = opts.defenderPlan.alternateAt;
+    if (back) {
+      const toward = Math.sign((g.units.find((u) => u.side === attackerSide)?.position.y ?? 0) - own[0]!.position.y);
+      for (const u of own) {
+        if (u.kind === "infantry" && u.baseCover !== "none") {
+          g.prepareAlternatePosition(u.id, { x: u.position.x, y: u.position.y - toward * back });
+        }
+      }
+    }
   }
 
   const men = { RED: 0, BLUE: 0 };
@@ -603,11 +631,13 @@ export function judge(
   fires?: FirePlan,
   defenderFires?: DefenderFires,
   anyEchelon = false,
+  defenderPlan?: BattleOptions["defenderPlan"],
 ): Verdict {
   const cell = (kind: BattleKind) =>
     runCell(echelon, kind, {
       morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
       ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}),
+      ...(defenderPlan ? { defenderPlan } : {}),
     });
   const a1 = cell("attack1");
   const a2 = cell("attack2");

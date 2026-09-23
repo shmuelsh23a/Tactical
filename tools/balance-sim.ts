@@ -12,6 +12,7 @@
  *   npm run balance -- --displace 100                # a defender moves off a shelled position
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
+ *   npm run balance -- --defender-ops --alternate 150 --displace 100   # the defender's mission plan (decision 38)
  *   npm run balance -- --any-echelon               # any side may call any weapon: rules decision 37 off
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *
@@ -118,6 +119,13 @@ if (!anyEchelon) {
     .flatMap((a) => echelons.filter((e) => !callableAt(e, a.weapon)).map((e) => `${a.weapon} at ${e}`));
   if (struck.length) console.log(`Struck by rules decision 37 (--any-echelon to keep them): ${[...new Set(struck)].join(", ")}\n`);
 }
+// --defender-ops, --alternate 150 — the defender's mission plan (rules
+// decision 38): observation posts, and alternate positions this far back.
+const alternateArg = value("--alternate");
+const defenderPlan =
+  args.includes("--defender-ops") || alternateArg
+    ? { observationPosts: args.includes("--defender-ops"), ...(alternateArg ? { alternateAt: Number(alternateArg) } : {}) }
+    : undefined;
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
@@ -131,7 +139,7 @@ if (args.includes("--sweep")) {
   for (const c of configurations) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires, anyEchelon);
+      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires, anyEchelon, defenderPlan);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${r(v.explosivePct)} | ${v.met}/4 |`);
@@ -145,7 +153,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}) })));
       }
     }
   }

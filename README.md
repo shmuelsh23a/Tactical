@@ -1433,7 +1433,7 @@ on the stated reasoning, still awaiting the author's word.
     is no counter-battery fire. Today every game is off-map for both, so
     there is none.
 36. ✅ **Rounds for effect by weapon: 6 for artillery, 12 for a mortar**
-    (author, 2026-09-24, after the tenth round). Artillery's 6 is a 6-gun
+    (author, 2026-09-23, after the tenth round). Artillery's 6 is a 6-gun
     battery's single volley. A mortar's 12 is four bombs a tube from a 3-tube
     section, nearer doctrine's "seldom less than five rounds for each mortar"
     (FM 7-90). In balance, a company's 2:1 attack with mortars at 6 won 20%;
@@ -1442,10 +1442,12 @@ on the stated reasoning, still awaiting the author's word.
     - An allotment may still set its own (`FireAllotment.roundsForEffect`).
       The game writes the number into each allotment, so a recording carries
       what it was played with.
-    - It changes the outcome of any mortar mission, so a sealed recording of
-      one made before it fails `verifyRecording`.
+    - A call for fire journals its rounds for effect, so a replay fires what
+      was fired whatever the default has become. A recording made before
+      this decision carries no number, and replays at the 6 it was played
+      with.
 37. ✅ **Who may call fire: mortars at company and above, artillery at
-    battalion and above** (author, 2026-09-24, after the eleventh round).
+    battalion and above** (author, 2026-09-23, after the eleventh round).
     Below that a fight has no indirect fire, and no smoke from the tubes: a
     grenade's smoke is the squad's own. It is who may *call* a weapon, not
     whether its guns are on the map (decision 35).
@@ -1455,15 +1457,48 @@ on the stated reasoning, still awaiting the author's word.
       battle declares it, since a company's defending platoon may be the only
       one of its company on the map.
     - `callForFire`, `queueIndirectFire` and `deploySmoke` refuse a weapon
-      the side may not call (`Game.mayCall`, `FIRE_SUPPORT_MIN_ECHELON`), and
-      so does an allotment or a registered target made for it.
+      the side may not call (`Game.mayCall`, `FIRE_SUPPORT_MIN_ECHELON`). So
+      does an allotment or a registered target made for it: at once when the
+      echelon is declared, and when the first turn begins when it is read off
+      the forces. A force that is out still counts toward the echelon: losing
+      the company's command group does not make its player a platoon
+      commander.
     - **Why:** in the harness, any indirect fire swamps a squad or a platoon
       fight (two mortar missions take a prepared position at 1:1 82% of the
       time), and mortars alone balance a company attack.
     - **Both demo battles are platoon fights, so neither side has indirect
       fire there any more.** The live UI offers only what a side may call.
     - Recorded (`fireSupportByEchelon`). A recording made before the rule
-      reads it as off, so the fire it called still replays.
+      reads it as off, so the fire it called is still allowed on replay.
+38. ✅ **Mission planning: registered targets, observation posts and
+    alternate positions are the player's to set before the battle** (author,
+    2026-09-23). They are command decisions, taken in mission planning, on
+    turn 0 (`Game.planning`), and journalled like any other action.
+    - **Registered targets** (`Game.registerTarget`). The attacker registers
+      targets as the defender does. A player registers them for their own echelon
+      and the one below. There is no artillery for platoon or squad
+      (decision 37). A target is registered where the player expects the enemy
+      and tells them nothing about whether it is there. At brigade and above a
+      player registers for two echelons below, on the enemy's estimated
+      positions, still without revealing the fog of war (not built: there is
+      no brigade yet). The side's guns start on the mark there (decision 32).
+      ⚠️ At most **6 a weapon** (`MAX_REGISTERED_TARGETS_PER_WEAPON`) is
+      ours.
+    - **Observation posts** (`Game.designateObservationPost`). A force set as
+      an OP that stays put sees a force *on the move* out to ⚠️ **1,000 m**
+      (`OBSERVATION_POST_RANGE_M`, ours), against the document's 300 m. A
+      hidden force it looks for like anybody else, in the 20 m band. Moving
+      or firing ends it. It is a force, not men detached from one. Not a
+      vehicle. The squad drill leaves a command group that is an OP where it
+      stands.
+    - **Alternate positions** (`Game.prepareAlternatePosition`). ⚠️ One per
+      force (ours), prepared as its first position was (partial if it had
+      none). Any force of the side within ⚠️ 25 m of it holds that cover, the
+      turn it arrives. The enemy gets nothing from it. The drill's
+      displacement goes there when there is one.
+    - **Binoculars and UAVs** are for a later stage (backlog 4).
+    - **The live UI** has a planning stage before the first turn (see the
+      Stage 2 section above).
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -1577,7 +1612,7 @@ Each is intended to be an independent, toggleable module:
    not finished without it.
 4. **UAVs, quadcopters and binoculars: seeing further** — expand the current
    fixed-wing/drone assets into a fuller aerial-asset system, and give an
-   observer optics. The author, 2026-09-24: observation posts come first, set
+   observer optics. The author, 2026-09-23: observation posts come first, set
    in mission planning; **binoculars and UAVs at a later stage**. Both answer
    the same gap: nobody sees anybody before about 300 m (decision 12's
    detection), so fire decides a battle before small arms get a say

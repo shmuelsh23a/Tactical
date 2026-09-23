@@ -224,7 +224,9 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     ) {
       // A withdrawal, so a pinned force may still go; its fire discipline
       // goes with it.
-      const rear = awayFrom(u.position, task.objective, drill.displace.metres);
+      // To the alternate position prepared for it, if there is one (rules
+      // decision 38); otherwise straight back, into whatever the ground gives.
+      const rear = game.alternatePositionFor(u.id)?.at ?? awayFrom(u.position, task.objective, drill.displace.metres);
       const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: drill.openFireRange };
       if (game.setStandingOrder(u.id, order)) state.displaced.add(u.id);
       return;
@@ -268,7 +270,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const cy = live.reduce((s, u) => s + u.position.y, 0) / live.length;
   const behind = toward({ x: cx, y: cy }, task.objective, -drill.commandGroupBehind);
   for (const hq of game.units.filter((u) => u.side === side && u.kind === "command" && inPlay(u))) {
-    if (distance(hq.position, behind) < 5) continue;
+    // An observation post holds its ground: moving would end it (decision 38).
+    if (hq.observationPost || distance(hq.position, behind) < 5) continue;
     try {
       game.moveUnit(hq.id, toward(hq.position, behind, 25));
     } catch {

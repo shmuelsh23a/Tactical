@@ -128,6 +128,10 @@ export function outcomeVisibleTo(
     case "layCharge":
     case "setCovering":
     case "setObservationSector":
+    // Mission planning is done behind one's own lines (rules decision 38): an
+    // observation post is found the way any force is, by being looked for.
+    case "designateObservationPost":
+    case "prepareAlternatePosition":
       return own(action.unitId);
     case "executeStandingOrders":
       // Its own step whole; the enemy's only where something inside it reached
@@ -140,6 +144,7 @@ export function outcomeVisibleTo(
     case "callForFire":
     case "checkFire":
     case "deploySmoke":
+    case "registerTarget":
       return action.side === side;
     // Shooting at a mark is not the same as watching it fall. A side always
     // gets a line for its own fire — how many of its men fired and at what
@@ -208,6 +213,7 @@ export function actionVisibleTo(
     case "callForFire":
     case "checkFire":
     case "deploySmoke":
+    case "registerTarget":
       return action.side === side;
     case "issueOrders":
     case "setStandingOrder":
@@ -221,6 +227,10 @@ export function actionVisibleTo(
     // of it the way it learns of any other — by being shot at (decision 18).
     case "setCovering":
     case "setObservationSector":
+    // Mission planning is done behind one's own lines (rules decision 38): an
+    // observation post is found the way any force is, by being looked for.
+    case "designateObservationPost":
+    case "prepareAlternatePosition":
       return own(action.unitId);
     case "executeStandingOrders":
       // The enemy's own step is shown only when something inside it was seen;

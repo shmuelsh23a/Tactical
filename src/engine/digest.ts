@@ -60,6 +60,7 @@ export function stateDigest(game: Game): string {
       // Only when there are any, so a game without them digests as it did.
       ...(game.fireMissions.length ? { fireMissions: game.fireMissions } : {}),
       ...(game.marksHeld.length ? { onTheMark: game.marksHeld } : {}),
+      ...(game.preparedPositions.length ? { preparedPositions: game.preparedPositions } : {}),
       rng: game.rng.getState(),
     }),
   );

@@ -11,6 +11,7 @@ import {
   sectorBonus,
 } from "../data/concealment.js";
 import { UAV_PROFILES } from "../data/uav.js";
+import { OBSERVATION_POST_RANGE_M } from "../data/planning.js";
 import type { MovementMode } from "../types.js";
 
 export interface DetectionResult {
@@ -65,7 +66,13 @@ export function detectionChance(
 
   const hidden = isHidden(target);
   const base = hidden ? profile.hiddenDetectChance : profile.visibleDetectChance;
-  const range = hidden ? profile.hiddenDetectRange : profile.visibleDetectRange;
+  // An observation post in place sees a force on the move much further out
+  // (rules decision 38); a hidden one it looks for like anybody else.
+  const range = hidden
+    ? profile.hiddenDetectRange
+    : observer.observationPost && !observerGait
+      ? Math.max(profile.visibleDetectRange, OBSERVATION_POST_RANGE_M)
+      : profile.visibleDetectRange;
 
   // What the target is doing about being seen. A force at a run is louder and
   // more conspicuous; cover and camouflage work the other way.

@@ -389,6 +389,34 @@ describe("who may call fire (decisions 36–37)", () => {
     expect(() => new Game({ seed: 1, commandEchelon: { BLUE: "general" as never } })).toThrow(/commandEchelon/);
   });
 
+  it("journals the rounds for effect, and replays a recording made before decision 36 at the 6 it fired", () => {
+    const g = setUp({ fireSupportByEchelon: false }, "platoon");
+    g.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const recording = g.toRecording();
+    const call = recording.actions.find((a) => a.kind === "callForFire");
+    expect(call?.kind === "callForFire" && call.opts.roundsForEffect).toBe(12);
+    // As a recording from before the decision has it: no number anywhere.
+    if (call?.kind === "callForFire") delete call.opts.roundsForEffect;
+    expect(replayGame(recording).fireMissions[0]!.roundsForEffect).toBe(6);
+
+    const rationed = setUp({ fireSupportByEchelon: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }] } }, "platoon");
+    rationed.callForFire("BLUE", "mortar", { x: 0, y: 0 });
+    const old = rationed.toRecording();
+    delete old.fireSupport!.BLUE![0]!.roundsForEffect;
+    for (const a of old.actions) if (a.kind === "callForFire") delete a.opts.roundsForEffect;
+    expect(replayGame(old).fireMissions[0]!.roundsForEffect).toBe(6);
+  });
+
+  it("refuses an undeclared side's fire plan when the first turn begins, once its forces say what it commands", () => {
+    const g = new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
+    expect(() => g.beginTurn()).toThrow(/company and above/);
+    const h = new Game({ seed: 1, registeredTargets: [{ side: "BLUE", weapon: "artillery", at: { x: 0, y: 0 } }] });
+    h.addUnit(makeCommandGroup("B-HQ", "BLUE", "company", { x: 0, y: 0 }, 3));
+    expect(() => h.beginTurn()).toThrow(/battalion and above/);
+    expect(() => new Game({ seed: 1, commandEchelon: { BLUE: "toString" as never } })).toThrow(/commandEchelon/);
+  });
+
   it("is recorded, and a recording made before the rule still replays the fire it called", () => {
     const g = setUp({ commandEchelon: { BLUE: "company" } }, "company");
     g.callForFire("BLUE", "mortar", { x: 0, y: 0 });

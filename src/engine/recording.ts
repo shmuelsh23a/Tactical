@@ -69,9 +69,14 @@ export type RecordedAction =
       weaponKey: string;
       side: Side;
       target: Point;
-      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean };
+      /** `roundsForEffect` is absent only from a recording made before decision 36. */
+      opts: { firingFrom?: Point; fuze?: Fuze; observedByUav?: boolean; roundsForEffect?: number };
     }
   | { kind: "checkFire"; side: Side }
+  // Mission planning, before the first turn (rules decision 38).
+  | { kind: "registerTarget"; side: Side; weapon: string; at: Point }
+  | { kind: "designateObservationPost"; unitId: string }
+  | { kind: "prepareAlternatePosition"; unitId: string; at: Point }
   | { kind: "moveUnit"; unitId: string; to: Point; mode: MovementMode }
   | { kind: "fire"; attackerId: string; targetId: string; opts: DirectFireOptions }
   | {
@@ -126,6 +131,22 @@ export class RecordingError extends Error {
           : `The recording's ground is damaged at ${problem.field}`,
     );
   }
+}
+
+/**
+ * What a fire mission fired for effect before rules decision 36 split the
+ * default by weapon. A recording from then carries no number, in its
+ * allotments or its calls for fire, and fired this.
+ */
+const LEGACY_ROUNDS_FOR_EFFECT = 6;
+
+/** Allotments from a recording, with the number a pre-decision-36 one was played with. */
+function withLegacyRounds(fireSupport: Partial<Record<Side, FireAllotment[]>>): Partial<Record<Side, FireAllotment[]>> {
+  for (const list of Object.values(fireSupport)) {
+    if (!Array.isArray(list)) continue;
+    for (const a of list) if (a && a.roundsForEffect === undefined) a.roundsForEffect = LEGACY_ROUNDS_FOR_EFFECT;
+  }
+  return fireSupport;
 }
 
 /**
@@ -419,7 +440,7 @@ export function replayWithOutcomes(
     morale: recording.morale ?? false,
     ...(recording.variants ? { variants: cloneForRecord(recording.variants) } : {}),
     ...(recording.registeredTargets ? { registeredTargets: cloneForRecord(recording.registeredTargets) } : {}),
-    ...(recording.fireSupport ? { fireSupport: cloneForRecord(recording.fireSupport) } : {}),
+    ...(recording.fireSupport ? { fireSupport: withLegacyRounds(cloneForRecord(recording.fireSupport)) } : {}),
     ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
@@ -495,12 +516,36 @@ export function replayWithOutcomes(
         outcome = {
           kind: "callForFire",
           // As it stood when called: the live mission goes on changing.
-          mission: cloneForRecord(game.callForFire(action.side, action.weaponKey, action.target, action.opts)),
+          mission: cloneForRecord(
+            game.callForFire(action.side, action.weaponKey, action.target, {
+              ...action.opts,
+              // Made before decision 36: what its allotment set, or the old default.
+              ...(action.opts.roundsForEffect === undefined
+                ? {
+                    roundsForEffect:
+                      game.fireSupport[action.side]?.find((a) => a.weapon === action.weaponKey)?.roundsForEffect ??
+                      LEGACY_ROUNDS_FOR_EFFECT,
+                  }
+                : {}),
+            }),
+          ),
         };
         break;
       case "checkFire":
         game.checkFire(action.side);
         outcome = { kind: "checkFire" };
+        break;
+      case "registerTarget":
+        game.registerTarget(action.side, action.weapon, action.at);
+        outcome = { kind: "setup" };
+        break;
+      case "designateObservationPost":
+        game.designateObservationPost(action.unitId);
+        outcome = { kind: "setup" };
+        break;
+      case "prepareAlternatePosition":
+        game.prepareAlternatePosition(action.unitId, action.at);
+        outcome = { kind: "setup" };
         break;
       case "moveUnit":
         outcome = {

@@ -1337,7 +1337,7 @@ within 300 m):
   missions start only once the attacker is inside that, and the attacker's
   planned fire lands before.
 
-## Eleventh round: who may call fire, 2026-09-24
+## Eleventh round: who may call fire, 2026-09-23
 
 The author's agenda for this session, item 2: "I'm thinking mortars for
 company and above, artillery for battalion and above, but we should test it."
@@ -1386,7 +1386,7 @@ rounds measure the same thing.
 - At squad the defender's registered mortars never fire (0% by HE): the
   points 200 m and 400 m out lie outside where a squad fight happens.
 
-**The author's rulings** (2026-09-24): mortars at company and above,
+**The author's rulings** (2026-09-23): mortars at company and above,
 artillery at battalion and above (decision 37). Rounds for effect default to
 6 for artillery and 12 for mortars (decision 36).
 
@@ -1411,6 +1411,64 @@ attacker barely bleeds** (0% at 3–4:1 with planned fire, against a target of
 10–30%), because nobody sees anybody before about 300 m. The author's answer
 is observation posts, set in mission planning (decision 38), and binoculars
 and UAVs later.
+
+## Twelfth round: the defender's mission plan, 2026-09-23
+
+Rules decision 38: registered targets, observation posts and alternate
+positions are the player's to set before the battle. The harness gives the
+defender a plan (`--defender-ops`, `--alternate <m>`):
+- its command groups are observation posts (at squad, the squad), and the
+  drill leaves an OP where it stands;
+- each prepared squad has an alternate position so many metres behind it,
+  and the drill's displacement (`--displace`) goes there.
+
+Western drill, full cover, 200 battles a cell, rules decision 37 on, the new
+defaults (12 rounds a mortar mission). Attacker: 4 mortar missions, planned.
+Defender: 4 mortar missions, registered 200 m and 400 m out.
+
+| Defender's plan | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets |
+|---|---|---|---|---|---|---|---|
+| none | company | 1% | 47% | 100% | 0% | 98% | 3/4 |
+| OPs | company | 5% | 75% | 100% | 3% | 96% | 2/4 |
+| displace, no alternate | company | 8% | 100% | 100% | 0% | 99% | 2/4 |
+| displace to an alternate 150 m back | company | 4% | 100% | 100% | 0% | 99% | 2/4 |
+| OPs + displace to an alternate | company | 15% | 100% | 100% | 3% | 98% | 2/4 |
+| none | platoon | 2% | 67% | 100% | 8% | 0% | 3/4 |
+| OPs | platoon | 12% | 69% | 100% | 8% | 0% | 3/4 |
+| displace to an alternate 150 m back | platoon | 2% | 67% | 100% | 8% | 0% | 3/4 |
+| attacker unplanned; defender none | company | 0% | 0% | 41% | 12% | 96% | 2/4 |
+| attacker unplanned; defender OPs | company | 0% | 3% | 58% | 16% | 88% | 2/4 |
+| no missions either side (the free bomb); defender OPs | company | 0% | 0% | 0% | 3% | 95% | 1/4 |
+
+(Row "no missions either side" without OPs: 0% / 15% / 55%, from the
+eleventh round.)
+
+What it says:
+- **The OPs work as a rule.** In a company attack the defender first sees
+  the attacker at about 650 m instead of 300 m, from turn 1.
+- **Where the defender has only the free bomb, OPs win the defence
+  outright.** The attacker's 3–4:1 attack goes from 55% to 0%: a bomb a
+  turn on an attacker seen from 650 m.
+- **Everywhere else OPs *help the attacker*, and we do not yet know why.**
+  At company 2:1 the attacker's win goes from 47% to 75%. At platoon 1:1,
+  with no fire at all, it goes from 2% to 12%, and the attacker also first
+  sees the defender a little further out (300 m against 250 m). Ruled out so
+  far:
+  - the defender spending its missions early (holding them until the
+    attacker is inside 500 m changes nothing: 48% and 72%);
+  - the OP command groups standing inside the attacker's planned targets
+    (weapons squads as OPs give 66% at company, 12% at platoon);
+  - the defending squads firing early (none fire beyond 300 m either way).
+  The defending platoon's command group moves more with OPs (42 moves in 20
+  battles against 29). That is the lead to follow: something in the drill
+  reacts to an early contact.
+- **Displacing, even to a prepared alternate, still hurts the defender**
+  at company (2:1 goes from 47% to 100%). The alternate position gives it
+  cover when it gets there, but it runs through the attacker's fire to reach
+  it, and the attacker, now seeing it move, walks its missions onto it.
+  Displacement stays off by default.
+- None of this touches the attacker who wins without bleeding (0–3% at
+  3–4:1). Seeing further only helps if the defender's fire can use it.
 
 ## How the engine scales, 2026-09-23
 
