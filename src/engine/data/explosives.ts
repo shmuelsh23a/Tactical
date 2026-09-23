@@ -193,3 +193,16 @@ export const EXPLOSIVES: Record<string, ExplosiveWeapon> = {
     notes: "RPG vs armour; direct fire, requires line of sight; usable to 700 m.",
   },
 };
+
+/**
+ * What cover does against a shell or a mortar bomb — **not the document's**;
+ * its blast table ignores cover. The author chose option a on 2026-09-23
+ * (rules decision 29): the factor on each man's blast chance, by the cover
+ * his force is in. Indirect fire only. The factors are ours and are on
+ * docs/balance.md, sixth round.
+ */
+export const BLAST_COVER_FACTOR: Readonly<Record<"none" | "partial" | "full", number>> = {
+  none: 1,
+  partial: 0.5,
+  full: 0.25,
+};

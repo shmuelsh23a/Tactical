@@ -58,7 +58,7 @@ export function resolveBlast(
     const dist = distance(impact, unit.position);
     const band = lookupBand(weapon.blastBands, dist);
     if (!band) continue; // outside the lethal radius
-    // On trial (data/variants.ts): cover against a shell.
+    // Cover against a shell (rules decision 29): the caller passes the factor.
     const blastChance = band.value * (unit.kind === "infantry" ? (coverFactor?.[effectiveCover(unit)] ?? 1) : 1);
 
     const res: BlastTargetResult = {

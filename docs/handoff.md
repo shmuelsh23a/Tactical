@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23, after rules decisions 19–28 and the sixth balance round.** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–29 and the seventh balance round.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -49,33 +49,36 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Start here: where the 2026-09-23 session stopped.** The author answered
-half the blast question and asked for the other half to be measured:
-- **One round is one shell** — rules decision 28. The engine already read it
-  that way.
-- **What cover does against a shell: "test a and b".** Both are on trial as
-  `blastCoverFactor` (`--blast-cover partial,full`). a is ×½ in partial
-  cover and ×¼ in full; b is full cover only, ×¼. The measurements are on
-  [balance.md](balance.md), *Sixth round*.
+**Start here: where the 2026-09-23 session stopped.** The blast question is
+settled. **One round is one shell** (decision 28), and **cover counts against
+a shell**, option a (decision 29): ×½ in partial cover, ×¼ in full, for
+indirect fire only.
 
-What to put to him next, with that table:
-1. **a or b.** They differ only against a defender in partial cover. With
-   one shell a turn, a 2:1 attack wins 78% under a and 95% under b.
-2. **How many shells a company may call in a turn.** This decides the
-   battle more than cover does. Even with cover, a battery's whole mission
-   wins a 2:1 attack 100% of the time. One shell a turn on a defender in
-   full cover makes it an even fight (51%). Today that is decision 8's one
+He then asked what changing artillery **accuracy** would do. It was probed
+with a temporary edit, not committed, and the result is on
+[balance.md](balance.md), *Seventh round*. In short:
+- The table lands 49% of rounds on the aim point and 82% within 100 m, and
+  the blast is as wide as the miss. A miss costs a shell only about a sixth
+  of its effect.
+- Making the guns less accurate makes a single round less decisive. At
+  miss ×2 and 50% on target, all four company targets are met with one shell
+  a turn.
+- Against a battery's whole mission it does the reverse. Scattered rounds
+  cover a dispersed company, and a 1:1 attack goes from 2% to 44–94%.
+
+What to put to him next:
+1. **How many shells a company may call in a turn.** This decides the
+   battle more than cover or accuracy does. Today that is decision 8's one
    mission per side per turn, which now means one shell. It touches
    ammunition (backlog 12).
-3. Both options cost the attack when there is no fire plan: 3–4:1 falls from
-   81% to 62%. The fire plan is the doctrinal answer, and it brings the
-   attack back.
+2. **Whether to change accuracy at all.** The table is the document's.
+   Changing it is his call, and it only helps if fire stays at a round or
+   two a turn.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). With a fire plan on a dug-in
-defender it measures 60–75% under either option. Do not pick between a and
-b yourself.
+([balance.md](balance.md), *Fifth round*). Under decision 29, with a bomb a
+turn on the objective, it measures 67%.
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):
@@ -101,7 +104,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **Cover against a shell (a or b), and how many shells a company may call** (above).
+- **How many shells a company may call, and whether to touch accuracy** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
@@ -240,10 +243,9 @@ Measurements that cost real time and are already recorded:
 **Ordered. The first three want a word from him before anything is built;
 the fourth does not.**
 
-0. **Cover against a shell, and fire per company** — the questions the
-   2026-09-23 session ended on (see *Start here*). Put both to him with the
-   sixth round's table. When he picks, the winner becomes the rule and the
-   `blastCoverFactor` switch is deleted, as with decisions 22–27.
+0. **Fire per company, and accuracy** — the questions the 2026-09-23
+   session ended on (see *Start here*). Put both to him with the seventh
+   round's table.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"

@@ -778,8 +778,8 @@ at every echelon, even at 1:1.
    exactly as the A0 rows above. Rerun: company, no fire plan, 0% / 20% /
    81% / 24%, with 55% out by HE.
 2. Then rule on the blast: what cover does against it, and what one round
-   is. **One round is one shell (decision 28). Cover is on trial: see the
-   sixth round.**
+   is. **One round is one shell (decision 28), and cover counts against it,
+   option a (decision 29). See the sixth round.**
 
 **A side bias seemed to surface once A0 was the rule, and it was the seeds.**
 The company mirror (200 battles, Western drill) gave BLUE / RED / draw
@@ -816,7 +816,9 @@ about 5.
 The author's answers to the blast question:
 - **One round is one shell** (rules decision 28). A battery's mission is
   several rounds, each with its own scatter and blast.
-- **Cover against blast: "test a and b".** Both are on trial as
+- **Cover against blast: "test a and b".** He chose **a** after this round
+  (rules decision 29; `BLAST_COVER_FACTOR` in `data/explosives.ts`; the
+  trial switch and the `--blast-cover` flag are gone). Both were on trial as
   `blastCoverFactor` in `data/variants.ts`, harness flag `--blast-cover
   partial,full`. Both apply to indirect fire only, and multiply each man's
   blast chance by the cover his force is in:
@@ -871,6 +873,67 @@ explosives but the assault's grenades, and those are not indirect fire.
   question after this one. It is decision 8's one mission per side per turn,
   now that a mission is one shell, and later the ammunition item
   (backlog 12).
+
+## Seventh round: how accurate the guns are, 2026-09-23
+
+The author asked what changing artillery accuracy would do. First, what it is
+today. This is the document's dispersion table, `data/artillery.ts`:
+- Each axis is rolled on its own. There is a **70% chance** of landing on
+  target on each axis, so **49%** of rounds land exactly on the aim point.
+- A miss in range (short or long) is **50–200 m**, rolled as 1d4 × 50. A miss
+  in line (left or right) is **25–100 m**, rolled as 1d4 × 25.
+- That puts **65%** of rounds within 50 m of the aim, **82%** within 100 m
+  and **98%** within 200 m. The mean miss is 52 m.
+- The blast is as wide as the miss. For a man standing at the aim point, an
+  artillery round catches him **58%** of the time, against 70% on a direct
+  hit. A mortar bomb catches him **37%** of the time, against 50%. So a miss
+  costs a shell only about a sixth of its effect.
+
+Then a probe, a **temporary edit, not committed**: the table's miss distance
+and its on-target chance were changed together, under decision 29, with the
+company only. "Off" is the percentile that deviates on each side, so 15 is
+today's 70% on target and 25 is 50%.
+
+| Accuracy | Fire | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|
+| today (miss ×1, off 15) | none | 0% | 15% | 62% | 25% | 50% | 2/4 |
+| | a bomb a turn on the objective | 0% | 21% | 95% | 12% | 67% | 3/4 |
+| | one shell a turn | 1% | 78% | 100% | 1% | 83% | 2/4 |
+| | 4 shells + 6 bombs a turn | 2% | 100% | 100% | 0% | 98% | 2/4 |
+| 50% on target (miss ×1, off 25) | none | 0% | 19% | 67% | 24% | 46% | 2/4 |
+| | a bomb a turn | 0% | 37% | 93% | 15% | 58% | **4/4** |
+| | one shell a turn | 4% | 86% | 100% | 2% | 78% | 2/4 |
+| | 4 + 6 | 8% | 100% | 100% | 0% | 98% | 2/4 |
+| misses twice as far (miss ×2, off 15) | none | 0% | 22% | 66% | 24% | 47% | 2/4 |
+| | a bomb a turn | 2% | 30% | 95% | 15% | 62% | **4/4** |
+| | one shell a turn | 8% | 67% | 96% | 6% | 80% | 3/4 |
+| | 4 + 6 | 44% | 100% | 100% | 0% | 100% | 1/4 |
+| both (miss ×2, off 25) | none | 0% | 27% | 74% | 22% | 40% | 3/4 |
+| | a bomb a turn | 6% | 40% | 90% | 15% | 51% | **4/4** |
+| | one shell a turn | 9% | 56% | 93% | 10% | 70% | **4/4** |
+| | 4 + 6 | 64% | 100% | 100% | 1% | 100% | 1/4 |
+| miss ×4, off 25 | none | 4% | 50% | 92% | 17% | 29% | **4/4** |
+| | a bomb a turn | 5% | 70% | 92% | 14% | 40% | **4/4** |
+| | one shell a turn | 12% | 62% | 92% | 14% | 57% | **4/4** |
+| | 4 + 6 | 94% | 98% | 99% | 9% | 100% | 1/4 |
+
+### What it says
+
+- **Less accuracy helps a single round's balance.** With miss ×2 and 50% on
+  target, one shell a turn stops deciding a 2:1 attack (56%) and meets all
+  four company targets. So does a bomb a turn.
+- **Against a battery's whole mission it does the opposite.** With 4 shells
+  and 6 bombs a turn, a 1:1 attack wins 2% today, 44–64% at miss ×2, and 94%
+  at miss ×4. The defending company is spread over some 400 m, and the blast
+  is wide. A concentrated mission hits the same men twice. A scattered one
+  covers the whole company. Inaccuracy turns a mission into area fire, and
+  area fire suits a dispersed target.
+- **Without a fire plan, less accuracy helps the attacker too.** The
+  defender's own mortar bomb, aimed at the advancing attacker, misses more.
+  At miss ×4 the 3–4:1 attack is back to 92%, and explosives put out only
+  29% of the men, far off the 75% principle.
+- **So accuracy is not the lever for massed fire.** How much fire a company
+  may call is. Accuracy is a fair lever for how decisive **one** round is.
 
 ## How the engine scales, 2026-09-23
 

@@ -1325,8 +1325,18 @@ on the stated reasoning, still awaiting the author's word.
     indirect-fire and blast tables is a single shell or bomb, not a
     battery's volley. A battery's mission is several rounds, each scattered
     and each with its own blast. This is how the engine already read it, so
-    nothing changed. What cover does against a shell is still ⚠️ on trial
-    (`blastCoverFactor`, docs/balance.md, *Sixth round*).
+    nothing changed.
+29. ✅ **Cover counts against a shell** (author, 2026-09-23 — option a, after
+    the harness's sixth round, docs/balance.md). Each man's chance of being
+    caught by a shell or mortar bomb is ×½ if his force is in partial cover
+    and ×¼ in full (`BLAST_COVER_FACTOR` in `data/explosives.ts`). The
+    document's blast table ignores cover. **The factors are ours**, and so
+    is the scope: indirect fire only. Grenades, rifle grenades, RPGs, tank
+    rounds and mines are unchanged.
+    - **Rejected:** option b, where only full cover counts.
+    - It changes the outcome of any battle in which a shell lands on a force
+      in cover, so a sealed recording of one made before it fails
+      `verifyRecording`.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
