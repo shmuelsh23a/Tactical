@@ -7,6 +7,7 @@
  *   npm run balance -- --seed 20000                  # a fresh seed window (default 1000) — see balance.md on the lean
  *   npm run balance -- --reply 0.5 --steady-bonus 15 --steady-loss 0.75   # what is on trial (engine data/variants.ts)
  *   npm run balance -- --sweep                       # every configuration on trial, judged against TARGETS
+ *   npm run balance -- --blast-cover 0.5,0.25        # on trial: a shell's blast chance ×0.5 in partial cover, ×0.25 in full
  *   npm run balance -- --fires plan                  # the attacker gets a fire plan on the objective (FIRE_PLAN)
  *   npm run balance -- --fires 1,1,400               # …or shells, bombs a turn and where they lift
  *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
@@ -68,6 +69,15 @@ const steadyBonus = value("--steady-bonus");
 if (steadyBonus) variants.preparedTestBonus = Number(steadyBonus);
 const steadyLoss = value("--steady-loss");
 if (steadyLoss) variants.preparedLossFactor = Number(steadyLoss);
+const blastCover = value("--blast-cover");
+if (blastCover) {
+  const factors = blastCover.split(",").map(Number);
+  const [partial, full] = factors;
+  if (factors.length !== 2 || !factors.every((f) => Number.isFinite(f) && f >= 0 && f <= 1)) {
+    throw new Error(`--blast-cover: "${blastCover}" is not two factors from 0 to 1, partial,full (e.g. 0.5,0.25)`);
+  }
+  variants.blastCoverFactor = { partial: partial!, full: full! };
+}
 const firesArg = value("--fires");
 const fires = !firesArg
   ? undefined

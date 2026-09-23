@@ -592,6 +592,7 @@ export class Game {
         firingFrom: (m as PendingFireMission & { firingFrom?: Point }).firingFrom,
         fixedWingObserved: m.observedByUav,
         turn: this.turn,
+        ...(this.variants.blastCoverFactor ? { blastCoverFactor: this.variants.blastCoverFactor } : {}),
       });
       // Everyone the rounds came down on was shelled, caught or not.
       for (const hit of fired.blast.targets) {

@@ -2,6 +2,7 @@ import { Rng } from "../rng.js";
 import { roll } from "../dice.js";
 import { distance, lookupBand, type Point } from "../geometry.js";
 import type { Unit } from "../types.js";
+import type { CoverState } from "../data/directFire.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
@@ -12,6 +13,7 @@ import {
 } from "../units.js";
 import { resolveArmorHit } from "./armorDamage.js";
 import { suppressionAccuracy } from "../morale.js";
+import { effectiveCover } from "../terrain.js";
 
 export interface BlastTargetResult {
   unitId: string;
@@ -44,6 +46,7 @@ export function resolveBlast(
   impact: Point,
   candidates: Unit[],
   turn = 0,
+  coverFactor?: Partial<Record<CoverState, number>>,
 ): BlastResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -55,7 +58,8 @@ export function resolveBlast(
     const dist = distance(impact, unit.position);
     const band = lookupBand(weapon.blastBands, dist);
     if (!band) continue; // outside the lethal radius
-    const blastChance = band.value;
+    // On trial (data/variants.ts): cover against a shell.
+    const blastChance = band.value * (unit.kind === "infantry" ? (coverFactor?.[effectiveCover(unit)] ?? 1) : 1);
 
     const res: BlastTargetResult = {
       unitId: unit.id,

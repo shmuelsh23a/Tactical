@@ -192,6 +192,19 @@ describe("blast", () => {
     expect(res.targets[0]!.damage).toBeGreaterThan(0);
   });
 
+  it("on trial, cover scales a shell's blast chance", () => {
+    const factor = { partial: 0.5, full: 0.25 };
+    for (const cover of ["none", "partial", "full"] as const) {
+      const squad = makeInfantry("S", "RED", "squad", { x: 0, y: 0 }, 8);
+      squad.cover = cover;
+      const base = resolveBlast(new Rng(3), "artillery", { x: 0, y: 0 }, [squad]).targets[0]!.blastChance;
+      const covered = makeInfantry("S", "RED", "squad", { x: 0, y: 0 }, 8);
+      covered.cover = cover;
+      const t = resolveBlast(new Rng(3), "artillery", { x: 0, y: 0 }, [covered], 0, factor).targets[0]!;
+      expect(t.blastChance).toBeCloseTo(base * (cover === "none" ? 1 : factor[cover]));
+    }
+  });
+
   it("an anti-tank weapon resolves through the armour table on a vehicle", () => {
     let sawArmorEffect = false;
     for (let t = 0; t < 30 && !sawArmorEffect; t++) {

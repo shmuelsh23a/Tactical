@@ -1,6 +1,7 @@
 import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
+import type { CoverState } from "../data/directFire.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveDispersion, type DispersionResult } from "./artillery.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
@@ -30,7 +31,12 @@ export function resolveIndirectFire(
   weaponKey: string,
   aim: Point,
   allUnits: Unit[],
-  opts: { firingFrom?: Point; fixedWingObserved?: boolean; turn?: number } = {},
+  opts: {
+    firingFrom?: Point;
+    fixedWingObserved?: boolean;
+    turn?: number;
+    blastCoverFactor?: Partial<Record<CoverState, number>>;
+  } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -42,6 +48,6 @@ export function resolveIndirectFire(
     firingFrom: opts.firingFrom,
     fixedWingObserved: opts.fixedWingObserved,
   });
-  const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0);
+  const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, opts.blastCoverFactor);
   return { weapon: weaponKey, aim, dispersion, blast };
 }

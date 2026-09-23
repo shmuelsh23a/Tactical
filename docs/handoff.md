@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23, after rules decisions 19–27 and the seed check on the mirror.** This is the working note for whoever
+**Current as of 2026-09-23, after rules decisions 19–28 and the sixth balance round.** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -49,22 +49,33 @@ here from AGENTS.md alone.
 
 ## Waiting on the author
 
-**Start here: where the 2026-09-23 session stopped.** The last thing he
-decided was **decision 27**: one wound rule (a d10 severity) for every hit,
-bullet or fragment. The **next question for him is the blast table**. Under
-any wound rule, one artillery shell a turn decides a 2:1 attack, because:
-- the document's blast catches 70% of the men within 50 m of a single
-  round;
-- **cover does nothing against blast** (a quick trial of ½ in partial cover
-  and ¼ in full barely moved it);
-- nothing says whether a "round" is one shell or a battery's volley.
+**Start here: where the 2026-09-23 session stopped.** The author answered
+half the blast question and asked for the other half to be measured:
+- **One round is one shell** — rules decision 28. The engine already read it
+  that way.
+- **What cover does against a shell: "test a and b".** Both are on trial as
+  `blastCoverFactor` (`--blast-cover partial,full`). a is ×½ in partial
+  cover and ×¼ in full; b is full cover only, ×¼. The measurements are on
+  [balance.md](balance.md), *Sixth round*.
+
+What to put to him next, with that table:
+1. **a or b.** They differ only against a defender in partial cover. With
+   one shell a turn, a 2:1 attack wins 78% under a and 95% under b.
+2. **How many shells a company may call in a turn.** This decides the
+   battle more than cover does. Even with cover, a battery's whole mission
+   wins a 2:1 attack 100% of the time. One shell a turn on a defender in
+   full cover makes it an even fight (51%). Today that is decision 8's one
+   mission per side per turn, which now means one shell. It touches
+   ammunition (backlog 12).
+3. Both options cost the attack when there is no fire plan: 3–4:1 falls from
+   81% to 62%. The fire plan is the doctrinal answer, and it brings the
+   attack back.
 
 His guiding principle, checked against the sources and agreed, is that
 explosives cause **about 75% of casualties** in modern war
-([balance.md](balance.md), *Fifth round*). The harness measures it now: each
-man put out records what did it (`Soldier.outBy`), and `--fires` gives an
-attacker a fire plan on the objective. Put the blast question to him with
-those numbers. Do not tune it yourself.
+([balance.md](balance.md), *Fifth round*). With a fire plan on a dug-in
+defender it measures 60–75% under either option. Do not pick between a and
+b yourself.
 
 **What the balance work has settled** (2026-09-22/23, decisions 20–27, all on
 balance.md):
@@ -90,7 +101,7 @@ between windows. See balance.md, just above *How the engine scales*.
 before chasing it.
 
 **Still open, and his:**
-- **The blast table** (above).
+- **Cover against a shell (a or b), and how many shells a company may call** (above).
 - **The Western drill's numbers**: all ours.
 - **The assault reply rate** (ruling 1, on trial as `assaultReplyChance`).
   It measures as irrelevant, and we suggest 30%.
@@ -229,9 +240,10 @@ Measurements that cost real time and are already recorded:
 **Ordered. The first three want a word from him before anything is built;
 the fourth does not.**
 
-0. **The blast table** — the question the 2026-09-23 session ended on (see
-   *Start here*). Ask him first. Measure his answer with `npm run balance --
-   --sweep --drill western` and `--fires`, and record it on balance.md.
+0. **Cover against a shell, and fire per company** — the questions the
+   2026-09-23 session ended on (see *Start here*). Put both to him with the
+   sixth round's table. When he picks, the winner becomes the rule and the
+   `blastCoverFactor` switch is deleted, as with decisions 22–27.
 1. **Mission and victory conditions** (backlog 18) — **ask first, and ask
    about this one first.** It sits under the whole product direction: a
    campaign needs a result to carry (16), a mission builder needs "objective"

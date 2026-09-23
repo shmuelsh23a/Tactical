@@ -1321,6 +1321,13 @@ on the stated reasoning, still awaiting the author's word.
     - It changes the outcome of any battle with explosives, so a sealed
       recording of one made before it fails `verifyRecording`.
 
+28. ✅ **One round is one shell** (author, 2026-09-23). An entry in the
+    indirect-fire and blast tables is a single shell or bomb, not a
+    battery's volley. A battery's mission is several rounds, each scattered
+    and each with its own blast. This is how the engine already read it, so
+    nothing changed. What cover does against a shell is still ⚠️ on trial
+    (`blastCoverFactor`, docs/balance.md, *Sixth round*).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

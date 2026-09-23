@@ -778,7 +778,8 @@ at every echelon, even at 1:1.
    exactly as the A0 rows above. Rerun: company, no fire plan, 0% / 20% /
    81% / 24%, with 55% out by HE.
 2. Then rule on the blast: what cover does against it, and what one round
-   is. **Still open. It is the first thing for the next session.**
+   is. **One round is one shell (decision 28). Cover is on trial: see the
+   sixth round.**
 
 **A side bias seemed to surface once A0 was the rule, and it was the seeds.**
 The company mirror (200 battles, Western drill) gave BLUE / RED / draw
@@ -809,6 +810,67 @@ CLI had no way to choose. It has one now: `--seed <first>`. **Before
 calling a lean real, rerun it on a disjoint window.** At 200 battles a
 share's standard error is about 3.5 points, and the gap between two shares
 about 5.
+
+## Sixth round: cover against a shell, 2026-09-23
+
+The author's answers to the blast question:
+- **One round is one shell** (rules decision 28). A battery's mission is
+  several rounds, each with its own scatter and blast.
+- **Cover against blast: "test a and b".** Both are on trial as
+  `blastCoverFactor` in `data/variants.ts`, harness flag `--blast-cover
+  partial,full`. Both apply to indirect fire only, and multiply each man's
+  blast chance by the cover his force is in:
+  - **a** — partial ×½, full ×¼ (`--blast-cover 0.5,0.25`);
+  - **b** — full cover only, ×¼ (`--blast-cover 1,0.25`). The factor is ours;
+    it is a's, so the two differ only on partial cover.
+
+Western drill, 100 battles a cell, seeds from 1000, the same targets as
+before. A prepared position starts in partial cover unless the row says
+full. Company only: a company is what calls fire.
+
+| Fire | Prepared in | Cover vs blast | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Company targets |
+|---|---|---|---|---|---|---|---|---|
+| none (a mortar bomb a turn on the nearest enemy seen) | either | none | 0% | 20% | 81% | 24% | 55% | 3/4 |
+| | either | a or b | 0% | 15% | 62% | 25% | 50% | 2/4 |
+| a bomb a turn on the objective (`--fires plan`) | partial | none | 1% | 50% | 99% | 4% | 76% | 3/4 |
+| | partial | a | 0% | 21% | 95% | 12% | 67% | 3/4 |
+| | partial | b | 0% | 31% | 97% | 4% | 75% | 3/4 |
+| | full | none | 1% | 50% | 99% | 4% | 76% | 3/4 |
+| | full | a or b | 0% | 16% | 88% | 19% | 60% | 3/4 |
+| one shell a turn (`--fires 1,0`) | partial | none | 5% | 99% | 100% | 0% | 91% | 2/4 |
+| | partial | a | 1% | 78% | 100% | 1% | 83% | 2/4 |
+| | partial | b | 2% | 95% | 100% | 0% | 90% | 2/4 |
+| | full | a or b | 0% | 51% | 99% | 5% | 74% | 3/4 |
+| a battery and a mortar section: 4 shells, 6 bombs a turn (`--fires 4,6`) | partial | none | 20% | 100% | 100% | 0% | 99% | 2/4 |
+| | partial | a | 2% | 100% | 100% | 0% | 98% | 2/4 |
+| | partial | b | 16% | 100% | 100% | 0% | 99% | 2/4 |
+| | full | a or b | 1% | 100% | 100% | 0% | 97% | 2/4 |
+
+Squad and platoon rows do not change without a fire plan. They have no
+explosives but the assault's grenades, and those are not indirect fire.
+
+### What it says
+
+- **Cover is only half the answer.** It takes one shell a turn from
+  deciding a 2:1 attack (99%) to an even one (51%), but only against a
+  defender in **full** cover, and there a and b are the same thing. Against
+  a battery's whole mission, 4 shells and 6 bombs a turn, the 2:1 attack
+  still wins 100% under either. Cover then only stops that fire from winning
+  a 1:1 attack (20% down to 1–2%).
+- **a and b differ only where the defender is in partial cover**, that is
+  a hasty position or men against a wall. Under a it is worth something
+  (one shell a turn: 99% down to 78%); under b nothing.
+- **Both cost the attack without a fire plan.** The defender digs in to full
+  cover while the attacker walks up in the open, so the company's own mortar
+  bomb does less to it: the 3–4:1 attack falls from 81% to 62% and misses
+  its target. The fire plan is what brings it back (88–97%).
+- **The 75% principle holds under either** with a fire plan on a dug-in
+  defender: 60–75% out by HE, against 76% without cover.
+- **What would decide it is how much fire a company gets**, not what cover
+  does to it. How many shells one company can call in a turn is the
+  question after this one. It is decision 8's one mission per side per turn,
+  now that a mission is one shell, and later the ammunition item
+  (backlog 12).
 
 ## How the engine scales, 2026-09-23
 
