@@ -159,8 +159,10 @@ Acceptable Use Policy, both last updated 2026-09-23):
   activities" (§1.7), designing weapons (§1.11), and anything TypeSafe decides
   on counsel's advice would create liability for it (§1.15). A training
   wargame is not a weapon, but §1.7 and §1.15 are loose enough to suspend us.
-  **Get written confirmation from TypeSafe that a military-training wargame is
-  an acceptable use** before the subscription launches.
+  **A written agreement with TypeSafe comes before any institutional sale**
+  (author, 2026-09-24): it confirms the use, and is where a local-model
+  carve-out would be negotiated. The **civilian subscription may launch
+  before it**, on the standard terms.
 - **Other exposure:** they may change the terms on 60 days' notice (§16.7) and
   change the API in ways that break us (§2.5); their liability is capped at a
   year's fees or $50 (§12.2); disputes go to arbitration in San Francisco
@@ -261,8 +263,8 @@ For now the author and Claude build it. More people join when it scales.
    closely the result matched the intent, speed and quality of FRAGORDs) and
    measure it in the debrief from the start. It is what the institutional sale
    rests on.
-3. **TypeSafe's written confirmation** that a military-training wargame is an
-   acceptable use (see *Jev*).
+3. **The TypeSafe agreement**, before the first institutional sale; the
+   civilian subscription does not wait for it (see *Jev*).
 
 ## When there is a working demo
 
