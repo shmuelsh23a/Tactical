@@ -1621,10 +1621,11 @@ Still modelled by reasonable assumption (flag if you want them changed):
     ground has to fetch, cache and hold tiles at runtime, and decide what
     happens with no signal. See backlog 17.
   - **The data licences travel with it.** The OpenStreetMap and SRTM carve-out
-    in [`LICENSE`](LICENSE) is written per file. Ground fetched at runtime
-    cannot be listed per file, so that clause needs generalising before any
-    such build ships, and the attribution the map already draws has to survive
-    into the native UI.
+    in [`LICENSE`](LICENSE) covers map data by source wherever it is found —
+    the source tree, the runtime cache, and every exported file (generalised
+    2026-09-24; it used to name files). What remains is keeping the promise it
+    makes: the attribution the map already draws has to survive into the
+    native UI, and has to be written into every exported file.
 
 ### Later development iterations (unordered backlog)
 

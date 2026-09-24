@@ -58,10 +58,11 @@ this file:
   about, and no mechanical diff across files that have never been linted.
 - [`src/invariants.test.ts`](src/invariants.test.ts) takes what a selector
   states badly: a relative import missing its `.js`, a structural check that
-  the compiler's own exhaustiveness guards have not been deleted, and that
-  every module under `src/app/maps/` is still named in `LICENSE`'s third-party
-  carve-out — cutting a new window writes two more of them, and the carve-out
-  does not extend itself.
+  the compiler's own exhaustiveness guards have not been deleted, that
+  `LICENSE`'s third-party carve-out still covers map data by source wherever it
+  is found (the whole `src/app/maps/` directory, the runtime cache, exported
+  files), and that every module under `src/app/maps/` states where its data
+  came from.
 - The compiler fails on a log line written without an audience — `pushLog`'s
   third argument — so the live log cannot regain the fog-of-war hole it had
   (rules decision 17), and on a new `RecordedAction` that any of the four

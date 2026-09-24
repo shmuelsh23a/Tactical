@@ -178,9 +178,11 @@ raised and settled the same day (✅ 2026-09-21): it named the two Ramat Menashe
 map modules and not the two Tel Azeka ones, which had shipped on 2026-09-16
 without it. It is grouped by source now, and `src/invariants.test.ts` fails
 when a module under `src/app/maps/` is missing from it, so the next window
-cannot repeat the omission. The clause still works by **naming files**, which
-is exactly what backlog 17 breaks — ground fetched at runtime cannot be named
-in advance.
+cannot repeat the omission. On 2026-09-24 it stopped naming files: it covers
+map data **by source, wherever it is found** — the whole `src/app/maps/`
+directory, the runtime cache and every exported file — so backlog 17 does not
+break it. The test now checks that coverage, and that each map module carries
+its own attribution. **Drafted by us, not reviewed by a lawyer.**
 
 Six rulings closed on 2026-09-16 (decisions 16, 17 and 18, and two riders on
 12), and rules decision 15 on 2026-09-06. The reasoning behind all of them is

@@ -28,7 +28,9 @@ runs the same loop:
 
 ### Product ✅
 
-- **Mobile and PC.** The phone is not a port or a second-class platform: it is
+- **Mobile and PC, Android first.** Development targets **Android**; the game
+  is then ported to **Apple** (iOS) and **PC**. The phone is not a port or a
+  second-class platform: it is
   the device every leader of every rank has on them. **The test is that a game
   can be played on the toilet**, which means:
   - short battles, *and* save and resume at any moment, including mid-turn;
@@ -70,6 +72,8 @@ runs the same loop:
 - **Echelons:** squad up to division, one echelon at a time.
 - **Functions:** combat arms first, then supporting arms, then administration
   and logistics.
+- **Platforms:** Android, then Apple and PC. The engine has no runtime
+  dependencies, so the port is the app layer only.
 - **Revenue does not wait for division.** The subscription can open as soon as
   simulated platoon commanders work, which is at **company**.
 
@@ -120,20 +124,67 @@ Institutional sales come after, on the evidence the civilian edition builds up.
   hardened accounts).
 - **OPSEC is ultimately the user's responsibility**, and the terms of use say
   so.
+- **What is logged:** decisions and a *reference* to the map, never the map
+  itself. A generated map is real ground, and a player may well have built
+  their real sector. Consent is stated in the terms. Israeli privacy law (the
+  Privacy Protection Law, as amended) applies from day one, and the EU's GDPR
+  once there are users there. Jev processes what the game sends it, so the
+  privacy notice names it as a processor (it has a data processing agreement).
 
-### Jev and the air-gapped fork ✅
+### Jev ✅
 
-- **Version one assumes Jev exists** and is reachable.
-- **All civilian games are logged**, securely and anonymously: the question
-  put to the model, the answer, the model id and the question-set version.
-  That is the training set for whatever replaces Jev, and it is also the
-  per-battle cost measurement.
-- **An air-gapped institution brings its own AI**, something that at least runs
-  on a local GPU, and we approximate Jev on it. Either Jev will have an
-  offline version by then, or we train a small model to give good-enough
-  answers. **This is a fork in the roadmap taken when needed, not a mandatory
-  stop.**
-- The scripted drill remains the fallback when there is no model at all.
+**Version one assumes Jev exists** and is reachable. **All civilian games are
+logged**, securely and anonymously: the question put to the model, the answer,
+the model id and the question-set version. That is the per-battle cost
+measurement and the material for quality review.
+
+**Jev's terms, checked 2026-09-24** (TypeSafe's Master Customer Agreement and
+Acceptable Use Policy, both last updated 2026-09-23):
+
+- **No distillation (MCA §2.3(b)).** We may not use the service or its output
+  "to perform model distillation, train a model to imitate the output of the
+  Services, or develop (or to facilitate the development of) a similar or
+  competing product or service." **The logs cannot be the training set for a
+  replacement.** Owning the output (§4.2 assigns it to us) does not lift the
+  restriction.
+- **A signed order overrides the standard terms (§16.14).** A negotiated
+  carve-out, or TypeSafe's own offline version, is the route to keeping
+  Jev-derived behaviour on an air-gapped network.
+- **They do not train on our data without consent (§4.1)**, but they keep
+  derived telemetry (logs, hashes, statistics, classifications) indefinitely,
+  and are not obliged to keep our data at all (§10.3).
+- **No ITAR-controlled information may be sent (§16.12).** That matters for any
+  US institutional edition. Classified material of any country is out anyway.
+- **The AUP does not name military use or wargames.** It forbids "violent
+  activities" (§1.7), designing weapons (§1.11), and anything TypeSafe decides
+  on counsel's advice would create liability for it (§1.15). A training
+  wargame is not a weapon, but §1.7 and §1.15 are loose enough to suspend us.
+  **Get written confirmation from TypeSafe that a military-training wargame is
+  an acceptable use** before the subscription launches.
+- **Other exposure:** they may change the terms on 60 days' notice (§16.7) and
+  change the API in ways that break us (§2.5); their liability is capped at a
+  year's fees or $50 (§12.2); disputes go to arbitration in San Francisco
+  (§15). The AUP also forbids designing for compulsive use by minors (§2.4),
+  which bears on pre-military youth.
+
+### The air-gapped fork ✅
+
+**An air-gapped institution brings its own AI**, at least something that runs
+on a local GPU. **This is a fork in the roadmap taken when needed, not a
+mandatory stop.** Given §2.3(b), the routes are:
+
+1. **TypeSafe's offline version**, if it exists by then, or a negotiated order
+   that permits a local model.
+2. **A small model trained on our own data, with no Jev output in it:**
+   - the decisions **human players** make in the same situations, which is
+     arguably better material for a teaching game than another model's
+     answers;
+   - **self-play in the engine.** The engine is deterministic and fast, so
+     it is its own training environment.
+
+Until a lawyer says otherwise, Jev's answers stay out of that pipeline
+entirely, including as an evaluation set. The scripted drill remains the
+fallback when there is no model at all.
 
 ### Connectivity ✅
 
@@ -141,13 +192,27 @@ In this order:
 
 1. **Direct device-to-device play** between two phones: Bluetooth, or the
    devices' own Wi-Fi (Wi-Fi Direct or a hotspot). This is for places with no
-   cellular connection.
+   cellular connection. On Android first, where Nearby Connections and Wi-Fi
+   Direct cover both. When Apple follows, local Wi-Fi (one phone runs a
+   hotspot, the other joins, they talk over a socket) is the dependable
+   iPhone-to-Android path; the two platforms' Bluetooth frameworks do not
+   talk to each other well.
 2. **Online play through backend servers**, which comes later.
 3. **Asynchronous play** on top of the servers.
 
 The deterministic engine is what makes this cheap: devices exchange
 **decisions, not state**, and each device resolves the same turn with the same
 seed.
+
+- **Hidden information in direct play:** the **host device is the referee**
+  and sends the guest only its side's view. Good enough between friends (the
+  host could in principle cheat). Anything ranked needs the server.
+- **A native shell** (Capacitor, React Native or similar) wraps the engine,
+  because a browser build cannot open Bluetooth or local sockets.
+- **Paid features with no signal:** Jev needs the network, so a game with no
+  connection is a free-tier game. A subscriber offline gets a **grace period**
+  on the licence check, and the **scripted drill stands in for Jev**. A battle
+  never fails halfway through for want of a connection.
 
 ### User-generated content ✅
 
@@ -156,68 +221,61 @@ seed.
   email and so on.
 - **Quality is the users' business, not ours.** No moderation queue. User
   content brings players in.
+- **Exported files are cryptographically signed** by the game. On import the
+  signature is checked, so a file altered after export is detected and
+  refused. What the signature proves: the file is unchanged since the game
+  exported it, under that username. What it cannot prove on its own: a key
+  kept on a phone can be extracted by a determined user. Once the servers
+  exist, they can countersign.
+- **Imported files are untrusted input** all the same: size limits, schema
+  validation, and nothing in a file that runs.
+- Every file carries a **format version**, so an older file still opens after
+  a rules change, and carries its **map-data attribution** (the ODbL requires
+  it).
 
 ### Licensing ✅
 
-- **Generalise the third-party data clause in [LICENSE](../LICENSE).** It lists
-  map files one by one today, and that cannot cover ground fetched at runtime
-  or maps players export. The ODbL (OpenStreetMap) and SRTM terms have to
-  cover any map the game produces, whatever its name.
+The third-party data clause in [LICENSE](../LICENSE) is **generalised**
+(2026-09-24). It covers OpenStreetMap and SRTM data **by source, wherever it
+is found**: the whole `src/app/maps/` directory, data fetched or cached at
+runtime, and the map data inside any exported file. The rest of an exported
+file (scenario, forces, orders) stays under the terms that otherwise apply.
+`src/invariants.test.ts` pins that coverage and checks that each map module
+states its source. **We drafted it; a lawyer has not reviewed it.**
+
+The repository licence is an evaluation licence. The shipped app will also
+need an end-user licence and terms of use, which is where OPSEC
+responsibility, logging consent and ownership of user content are stated.
 
 ### Team ✅
 
 For now the author and Claude build it. More people join when it scales.
 
-## Open items
+## Open during development
 
-Gaps found in the last pass, each small or to be decided when it comes up. None
-of them changes the plan.
-
-1. **Hidden information in direct play.** With no server, whose device holds
-   the true state? If both devices hold everything, a modified client can see
-   through the fog. Options: the host device is the referee and the guest only
-   gets its side's view (simple, the host could cheat); or orders are
-   exchanged as commit-then-reveal. Friends playing each other can live with
-   the first. Anything ranked needs the server.
-2. **Cross-platform direct play.** Apple and Android peer-to-peer frameworks do
-   not talk to each other well over Bluetooth. Local Wi-Fi (one phone runs a
-   hotspot, the other joins, they talk over a socket) is the dependable
-   iPhone-to-Android path. This also means a **native shell** (Capacitor, React
-   Native or similar) around the engine: a browser build cannot open Bluetooth
-   or local sockets on an iPhone.
-3. **Subscription features with no signal.** Jev needs the network, so a game
-   with no connection at all is a free-tier game. Paid features need a stated
-   rule for this case (an offline grace period for the licence check, and the
-   scripted drill standing in for Jev), not a failure halfway through a battle.
-4. **Exported files are untrusted input.** A map or scenario that came over
-   WhatsApp is validated on import like anything else from outside: size
-   limits, schema checks, and nothing in it that runs. Each file carries a
-   **format version** so an older file still opens after a rules change, and
-   carries its map-data attribution with it (ODbL).
-5. **What the logs hold.** Anonymous is not the same as harmless: a generated
-   map is real ground, and a player may well build their real sector. Log the
-   decisions and a reference to the map, not the map itself. State consent in
-   the terms. Israeli privacy law (the Privacy Protection Law, amended) applies
-   from day one, and the EU's GDPR once there are users there.
-6. **Jev's terms of service.** Before counting on the logs as training data,
-   check whether Jev's terms let its answers train another model. Many vendors
-   forbid it. If Jev does, the air-gapped fork needs another route: training on
-   our own labelled games, or buying Jev's offline version.
-7. **Cost per battle, by echelon.** Measure it from the logs before setting a
+1. **Cost per battle, by echelon.** Measure it from the logs before setting a
    price. At about 74 Jev calls a turn for a brigade (docs/balance.md, *How the
    engine scales*), division will be a few hundred, and the price structure
    (flat, per battle, or tiered by echelon) follows from the number.
-8. **Proof that it teaches.** Define what "learned" means (plan quality, how
+2. **Proof that it teaches.** Define what "learned" means (plan quality, how
    closely the result matched the intent, speed and quality of FRAGORDs) and
    measure it in the debrief from the start. It is what the institutional sale
    rests on.
-9. **Export control.** The institutional edition sold abroad will probably need
-   Israeli defence-export approval, and the civilian edition's content decides
-   whether it does too. Ask early; the answer shapes what goes into the civilian
-   edition.
-10. **Name and trademark.** The product needs a name that has been checked
-    before it goes into the stores.
-11. **Age rating and minors.** Pre-military youth are a natural audience, and
-    both the stores' age ratings and privacy rules for minors apply to them.
-12. **When people join:** IP assignment agreements from the first contributor,
-    so the code stays owned the way [LICENSE](../LICENSE) says it is.
+3. **TypeSafe's written confirmation** that a military-training wargame is an
+   acceptable use (see *Jev*).
+
+## When there is a working demo
+
+Deliberately deferred until the game can be shown:
+
+1. **Export control.** The institutional edition sold abroad will probably
+   need Israeli defence-export approval, and the civilian edition's content
+   decides whether it does too.
+2. **Name and trademark.** A product name, checked before it goes into the
+   stores.
+3. **Age rating and minors.** The stores' age ratings, privacy rules for
+   minors, and TypeSafe's AUP §2.4 on compulsive use by minors.
+4. **IP assignment agreements** from the first person who joins, so the code
+   stays owned the way [LICENSE](../LICENSE) says it is.
+5. **A lawyer reviews** the LICENSE clause, the end-user terms and the Jev
+   position together.
