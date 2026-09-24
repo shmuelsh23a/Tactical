@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The artillery stage is closed. The next session starts with the business plan, first thing (the author, 2026-09-23).** This is the working note for whoever
+**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The artillery stage is closed. The business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -17,6 +17,8 @@ out of here on purpose:
   committing, written for any reviewer of any make.
 - [docs/driving-the-game.md](driving-the-game.md) — scripting the browser to
   verify a change for real.
+- [docs/business-plan.md](business-plan.md) — who it is for, editions, free
+  and paid, build order, and the open business items.
 
 ## Green as of this commit
 
