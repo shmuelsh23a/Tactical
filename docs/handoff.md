@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The artillery stage is closed. The next session starts with the business plan, first thing (the author, 2026-09-23).** This is the working note for whoever
+**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The artillery stage is closed. The business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -17,6 +17,8 @@ out of here on purpose:
   committing, written for any reviewer of any make.
 - [docs/driving-the-game.md](driving-the-game.md) — scripting the browser to
   verify a change for real.
+- [docs/business-plan.md](business-plan.md) — who it is for, editions, free
+  and paid, build order, and the open business items.
 
 ## Green as of this commit
 
@@ -176,9 +178,11 @@ raised and settled the same day (✅ 2026-09-21): it named the two Ramat Menashe
 map modules and not the two Tel Azeka ones, which had shipped on 2026-09-16
 without it. It is grouped by source now, and `src/invariants.test.ts` fails
 when a module under `src/app/maps/` is missing from it, so the next window
-cannot repeat the omission. The clause still works by **naming files**, which
-is exactly what backlog 17 breaks — ground fetched at runtime cannot be named
-in advance.
+cannot repeat the omission. On 2026-09-24 it stopped naming files: it covers
+map data **by source, wherever it is found** — the whole `src/app/maps/`
+directory, the runtime cache and every exported file — so backlog 17 does not
+break it. The test now checks that coverage, and that each map module carries
+its own attribution. **Drafted by us, not reviewed by a lawyer.**
 
 Six rulings closed on 2026-09-16 (decisions 16, 17 and 18, and two riders on
 12), and rules decision 15 on 2026-09-06. The reasoning behind all of them is

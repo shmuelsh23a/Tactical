@@ -137,27 +137,45 @@ describe("disclosure: the live log cannot leak what a side never saw", () => {
  * The ground is third-party data, and the licence has to keep saying so.
  *
  * Everything under `src/app/maps/` is fetched from OpenStreetMap (ODbL) or
- * from the AWS Terrain Tiles (SRTM, public domain), and `LICENSE` carves it
- * out of the proprietary terms **by naming each file**. Cutting a new window
- * writes two more modules, and the carve-out does not extend itself: Tel Azeka
- * shipped on 2026-09-16 and was not added to it until five days later, which
- * nothing in the build noticed. This is that nothing.
+ * from the AWS Terrain Tiles (SRTM, public domain). `LICENSE` used to carve it
+ * out **by naming each file**, and the carve-out did not extend itself: Tel
+ * Azeka shipped on 2026-09-16 and was not added to it until five days later.
+ * Ground fetched at runtime and maps players export cannot be named at all, so
+ * since 2026-09-24 the clause covers map data **by source, wherever it is
+ * found**: the whole directory, the runtime cache, and every exported file.
+ * What can still go missing is the attribution on a module itself, so that is
+ * what is checked per file now.
  */
 describe("the third-party data carve-out", () => {
   const licence = readFileSync(fileURLToPath(new URL("../LICENSE", import.meta.url)), "utf8");
-  const maps = readdirSync(join(SRC, "app", "maps")).filter((f) => /\.tsx?$/.test(f));
+  const mapsDir = join(SRC, "app", "maps");
+  const maps = readdirSync(mapsDir).filter((f) => /\.tsx?$/.test(f));
 
   it("has a map to cover in the first place", () => {
     expect(maps.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("names every generated map module", () => {
-    for (const file of maps) expect(licence, file).toContain(`src/app/maps/${file}`);
+  it("covers the whole maps directory, runtime data and exported files", () => {
+    // The three places map data lives. Drop one and data found there is back
+    // under the proprietary terms, which the ODbL does not allow.
+    expect(licence).toContain("every file under src/app/maps/, whatever it is named");
+    expect(licence).toContain("fetches or caches while it runs");
+    expect(licence).toContain("generates or exports");
+  });
+
+  it("has every map module state where its data came from", () => {
+    for (const file of maps) {
+      const text = readFileSync(join(mapsDir, file), "utf8");
+      const attributed =
+        text.includes("OpenStreetMap contributors, ODbL") ||
+        text.includes("Terrain Tiles courtesy of Mapzen");
+      expect(attributed, file).toBe(true);
+    }
   });
 
   it("still states both sets of terms the data came with", () => {
     // Losing either attribution is a licence breach rather than a typo, so the
-    // words are pinned and not just the file names.
+    // words are pinned and not just the sources.
     expect(licence).toContain("OpenStreetMap");
     expect(licence).toContain("ODbL");
     expect(licence).toContain("Terrain Tiles courtesy of Mapzen");
