@@ -1,6 +1,7 @@
 import { buildYokneamIllitScenario, buildYokneamIllitTerrain, yokneamIllitListing } from "./scenarios/yokneamIllit.js";
 import { telAzekaListing } from "./scenarios/telAzeka.js";
 import { telAzekaCompanyListing } from "./scenarios/telAzekaCompany.js";
+import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
 import type { Scenario, ScenarioListing } from "./scenarios/types.js";
 
 export type { Scenario, ScenarioListing };
@@ -16,7 +17,12 @@ export type { Scenario, ScenarioListing };
  * invented. Adding a battle is one line here, and `scenarioCatalogue.test.ts`
  * fails until every spec under `tools/scenarios/` is listed.
  */
-export const SCENARIOS: readonly ScenarioListing[] = [yokneamIllitListing, telAzekaListing, telAzekaCompanyListing];
+export const SCENARIOS: readonly ScenarioListing[] = [
+  yokneamIllitListing,
+  telAzekaListing,
+  telAzekaCompanyListing,
+  telAzekaAssaultListing,
+];
 
 /** The listing a `?scenario=` id names, or undefined for none or an unknown one. */
 export function findScenario(id: string | null | undefined): ScenarioListing | undefined {
