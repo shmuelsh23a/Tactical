@@ -130,7 +130,11 @@ export interface BreakMeasurement {
   broke: number;
   wiped: number;
   /** The loser's losses, as a share of its men, when it broke: median and the 10th–90th percentiles. */
-  lossAtBreak?: { p10: number; median: number; p90: number };
+  lossAtBreak?: Spread;
+  /** The same, for a loser that was attacking (every loser, in a meeting)… */
+  attackerLossAtBreak?: Spread;
+  /** …and for one that was defending. */
+  defenderLossAtBreak?: Spread;
   /** The share of men put out by explosives, both sides together. */
   explosiveShare: number;
   /** Battles fought, in minutes: the median. */
@@ -141,6 +145,17 @@ const quantile = (xs: number[], q: number) => {
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(q * s.length))] ?? 0;
 };
+
+export interface Spread {
+  p10: number;
+  median: number;
+  p90: number;
+  /** How many battles it is taken over. */
+  n: number;
+}
+
+const spread = (xs: number[]): Spread | undefined =>
+  xs.length ? { p10: quantile(xs, 0.1), median: quantile(xs, 0.5), p90: quantile(xs, 0.9), n: xs.length } : undefined;
 
 /** Losses at the point a side gives up, from `battles` harness battles with morale on. */
 export function measureBreaks(
@@ -157,6 +172,8 @@ export function measureBreaks(
     runBattle(firstSeed + i, echelon, kind, { morale: true, lethality, ...fires }),
   );
   const brokeLosses: number[] = [];
+  const attackerLosses: number[] = [];
+  const defenderLosses: number[] = [];
   let broke = 0;
   let wiped = 0;
   let he = 0;
@@ -168,7 +185,10 @@ export function measureBreaks(
     const loser: Side = r.winner === "RED" ? "BLUE" : "RED";
     if (r.ending === "broke") {
       broke++;
-      brokeLosses.push(r.down[loser] / r.men[loser]);
+      const loss = r.down[loser] / r.men[loser];
+      brokeLosses.push(loss);
+      // The harness's attacker is BLUE; in a meeting both attack.
+      (kind === "meeting" || loser === "BLUE" ? attackerLosses : defenderLosses).push(loss);
     } else if (r.ending === "wiped") wiped++;
   }
   return {
@@ -180,9 +200,9 @@ export function measureBreaks(
     battles,
     broke,
     wiped,
-    ...(brokeLosses.length
-      ? { lossAtBreak: { p10: quantile(brokeLosses, 0.1), median: quantile(brokeLosses, 0.5), p90: quantile(brokeLosses, 0.9) } }
-      : {}),
+    ...(brokeLosses.length ? { lossAtBreak: spread(brokeLosses)! } : {}),
+    ...(attackerLosses.length ? { attackerLossAtBreak: spread(attackerLosses)! } : {}),
+    ...(defenderLosses.length ? { defenderLossAtBreak: spread(defenderLosses)! } : {}),
     explosiveShare: all ? he / all : 0,
     medianMinutes: (quantile(results.map((r) => r.turns), 0.5) * TURN_SECONDS) / 60,
   };

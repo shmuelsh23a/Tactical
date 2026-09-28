@@ -1,8 +1,9 @@
 # Validation — the game's numbers against the sources
 
 **First written 2026-09-28**, with rules decisions 40 (a turn is 60 s), 41
-(blast and the tank gun from published data), 42 (rates of fire) and 43
-(calibration to 75% of losses by explosives). This page records what the
+(blast and the tank gun from published data), 42 (rates of fire), 43
+(calibration to 75% of losses by explosives) and 44 (the historical
+breakpoints, and the squads' grenadiers). This page records what the
 research says about the numbers that decide a firefight — hit chances, blast
 and wounds — and what `npm run validate` measures the game doing. Rerun it after
 any change to those numbers and update the tables here.
@@ -298,16 +299,7 @@ stationary:
   A squad in the open at 50 m now loses a man about every two minutes to
   another squad's rifles, where it lost one or two a minute.
 
-## Where a side gives up — not settled
-
-**Measured**: the loser's losses when it broke, morale on, research figures.
-
-| Battle | Median | p10–p90 |
-|---|---|---|
-| Platoon meeting | 50% | 39–64% |
-| Platoon 3:1 attack (defender) | 78% | 44–100% |
-| Company 3:1 attack, calibrated fire | 53% | 44–61% |
-| Company 2:1 attack, calibrated fire | 44% | 29–50% |
+## Where a side gives up — the historical breakpoints (rules decision 44)
 
 - The Dupuy Institute puts the point where a unit stops attacking at about
   20–25% losses, and where it cannot defend at about 40%. US doctrine (ADRP
@@ -318,28 +310,75 @@ stationary:
   and the effect of losses on a unit is "variable and unpredictable"
   ([Wainstein
   1986](https://consensus.app/papers/details/7b0c5485018751218ff31729291623f0/?utm_source=claude_desktop)).
-  So the game is right to break forces through morale and not at a number.
-- **Our forces hold on long**, and longer now that rifles are weaker: a median
-  of 44–78% losses at the break, against 20–40% in the historical rule of
-  thumb. The morale numbers are all ours (decision 19), so this is theirs to
-  tune at the balance pass.
+  So the game still breaks sides through morale, counting broken and fled men
+  with the casualties, and not at a fixed casualty number.
+
+**The ruling.** On the research figures, a side breaks when this share of its
+men are down, broken or in a force that fled: **30% attacking, 60%
+defending**, where decision 19 gave two thirds to both. Who attacks is
+`GameOptions.attackers`, set in each scenario spec.
+
+**The sweep** that chose them (60 battles a cell, morale on, research
+figures). "Att" and "def" are the loser's median casualties at its break:
+
+| Attacking / defending | Platoon meeting, att | Company 2:1, att / def | Calibrated 2:1, att / def | Calibrated 2:1, attacker wins |
+|---|---|---|---|---|
+| 2/3 / 2/3 (decision 19) | 50% | 39% (both) | 44% (both) | 70% |
+| 0.40 / 0.55 | 31% | 20% / 40% | 25% / 40% | 82% |
+| 0.35 / 0.50 | 31% | 19% / 35% | 26% / 38% | 97% |
+| 0.30 / 0.55 | 25% | 18% / 35% | 21% / 40% | 78% |
+| **0.30 / 0.60** | **25%** | **18% / 46%** | **21% / 43%** | **62%** |
+| 0.30 / 0.65 | 25% | 18% / 46% | 20% / 44% | 47% |
+
+**Measured** (`npm run validate`, 100 battles a cell, research figures):
+
+| Battle | Fire | Attacker wins | Attacker lost at its break | Defender lost at its break | Out by explosives |
+|---|---|---|---|---|---|
+| Platoon meeting | — | 36% | 25% (19–36%) | — | 22% |
+| Platoon 3:1 attack | — | 97% | — | 67% (44–100%) | 26% |
+| Platoon 2:1 attack | — | 57% | 19% (14–25%) | 44% (39–72%) | 36% |
+| Company 3:1 attack | a bomb a turn | 94% | — | 42% (31–56%) | 34% |
+| Company 2:1 attack | a bomb a turn | 3% | 18% (14–22%) | — | 29% |
+| Company 3:1 attack | calibrated | 95% | — | 50% (44–56%) | 83% |
+| Company 2:1 attack | calibrated | 61% | 20% (15–26%) | 43% (39–49%) | 78% |
+
+- **Attackers now give up at 16–25%** casualties, the rule of thumb.
+- **Defenders give up at 42–50%**, a little above the rule of thumb's 40%.
+  0.55 came closer to 40%, but the 2:1 attack with fire support then won 78%,
+  outside its 30–70% planning target.
+- **A one-squad defender** (the platoon 3:1 attack) can only lose whole men:
+  6 of 9 is 67%.
+
+## The squad's grenadiers (with decision 44)
+
+The drill now fires a squad's grenadiers alongside its rifles (`grenadiers`
+in [`app/drill.ts`](../src/app/drill.ts), ⚠️ ours):
+
+- One 40 mm launcher for every four men still fighting: two in a nine-man
+  squad, one in a fire team, as a NATO squad carries them.
+- Each fires its drawn rate of rifle grenades at the squad's target, once the
+  target is inside the table's 100 m.
+
+They are a platoon battle's own explosives, **22–36%** of its losses where
+riflemen alone gave 4–10%. Where a company's mortars are on call it is
+**78–83%**. Most explosives come from the higher echelons, as they do in the
+sources' wars.
 
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **Morale's breakpoints**: 44–78% losses at the break against about 20–40%.
-   With rifles at a third, forces hold on even longer.
-2. **The fire a battle is given.** 75% holds with a mortar section on call all
+1. **The fire a battle is given.** 75% holds with a mortar section on call all
    battle. The company scenario's allotment (4 and 3 missions) and the
    harness's default (a bomb a turn) give 19–31%.
-3. **Grenadiers**: a platoon battle's explosives would be its squads' own
-   rifle grenades, which the drill does not fire.
-4. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
-5. **The figures that are ours**: the tail weights and the 10 turns of
+2. **Ammunition** (backlog 12): nothing runs out, whatever the rate — a
+   grenadier fires his rate every turn.
+3. **A defender's breakpoint**: 42–50% casualties against the rule of
+   thumb's 40%, traded for the 2:1 attack's planning target.
+4. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.
-6. **Not researched yet**: the hand grenade (30% a man in an assault;
+5. **Not researched yet**: the hand grenade (30% a man in an assault;
    M67: 5 m killing radius, 15 m casualty radius), the charges (a 100–200 m
    reach at 50% activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review

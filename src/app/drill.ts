@@ -1,4 +1,5 @@
 import {
+  EXPLOSIVES,
   angleBetween,
   bearingDegrees,
   distance,
@@ -55,6 +56,14 @@ export interface SquadDrill {
   /** Assault inside this range, throwing this many grenades. */
   assault: { range: number; grenades: number };
   /**
+   * The squad's grenadiers (author, 2026-09-28): one 40 mm launcher for every
+   * `menPerLauncher` men still fighting — two in a nine-man squad, one in a
+   * fire team, as a NATO squad carries them. Each fires rifle grenades at the
+   * force's target, alongside its rifles, once the target is inside the
+   * weapon's range (the document's 100 m). Null: a squad of riflemen only.
+   */
+  grenadiers: { menPerLauncher: number } | null;
+  /**
    * Break contact: a force whose ready men fall below `readyShareBelow` of its
    * strength withdraws `fallBack` metres away from the enemy — before it
    * breaks, rather than after. Null: it fights until morale decides.
@@ -87,6 +96,7 @@ export const PLAIN_SCRIPT: SquadDrill = {
   openFireRange: 400,
   coverWhenIdle: true,
   assault: { range: 25, grenades: 2 },
+  grenadiers: { menPerLauncher: 4 },
   breakContact: null,
   commandGroupBehind: 80,
 };
@@ -113,6 +123,7 @@ export const WESTERN_DRILL: SquadDrill = {
   openFireRange: 200,
   coverWhenIdle: true,
   assault: { range: 25, grenades: 2 },
+  grenadiers: { menPerLauncher: 4 },
   breakContact: { readyShareBelow: 0.5, fallBack: 150 },
   commandGroupBehind: 80,
 };
@@ -313,6 +324,25 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill): voi
       game.assault(u.id, target.id, drill.assault.grenades);
     } else {
       game.fire(u.id, target.id, { weapon: u.kind === "vehicle" ? "sustainedMg" : "smallArms" });
+      fireGrenadiers(game, u, target, drill);
     }
+  }
+}
+
+/** The furthest a rifle grenade is fired: the table's last band. */
+const RIFLE_GRENADE_RANGE = EXPLOSIVES.rifleGrenade!.toHitBands!.at(-1)!.maxRange;
+
+/**
+ * A squad's grenadiers fire at its target, each his launcher's rate for the
+ * turn — only inside the weapon's reach, so a shot out of range is never
+ * taken (it would still spring the enemy's covering fire).
+ */
+function fireGrenadiers(game: Game, u: Unit, target: Unit, drill: SquadDrill): void {
+  if (!drill.grenadiers || u.kind !== "infantry" || !inPlay(u) || target.neutralized) return;
+  if (distance(u.position, target.position) > RIFLE_GRENADE_RANGE) return;
+  const ready = (u.soldiers ?? []).filter((s) => !s.neutralized && s.morale?.state !== "broken").length;
+  const launchers = Math.floor(ready / drill.grenadiers.menPerLauncher);
+  for (let i = 0; i < launchers && !target.neutralized; i++) {
+    if (!game.fireExplosive("rifleGrenade", u.id, target.id).fired) return;
   }
 }

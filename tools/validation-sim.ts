@@ -16,6 +16,7 @@ import {
   measureBreaks,
   measureRifleFire,
   measureRound,
+  type Spread,
 } from "../src/sim/validation.js";
 import { LETHALITIES } from "../src/engine/index.js";
 import type { BattleKind, Echelon } from "../src/sim/balance.js";
@@ -63,22 +64,24 @@ for (const range of [50, 150, 350]) {
 }
 
 console.log(`\n## Where a side gives up, and what put its men out (morale on, ${battles} battles a cell, seeds from ${firstSeed})\n`);
-console.log("| Battle | Fire | Lethality | Attacker wins | Broke / wiped | Loser's losses when it broke, median (p10–p90) | Out by explosives | Minutes, median |");
+console.log("Losses at the break are casualties as a share of the loser's men: median (p10–p90), and how many battles.\n");
+console.log("| Battle | Fire | Lethality | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives | Minutes, median |");
 console.log("|---|---|---|---|---|---|---|---|");
 const cells: [Echelon, BattleKind, boolean][] = [
   ["platoon", "meeting", false],
   ["platoon", "attack3", false],
+  ["platoon", "attack2", false],
   ["company", "attack3", false],
   ["company", "attack2", false],
   ["company", "attack3", true],
   ["company", "attack2", true],
 ];
+const show = (x?: Spread) => (x ? `${pct(x.median)} (${pct(x.p10)}–${pct(x.p90)}), ${x.n}` : "—");
 for (const [echelon, kind, calibrated] of cells) {
   for (const l of LETHALITIES) {
     const m = measureBreaks(echelon, kind, l, battles, firstSeed, calibrated);
-    const loss = m.lossAtBreak ? `${pct(m.lossAtBreak.median)} (${pct(m.lossAtBreak.p10)}–${pct(m.lossAtBreak.p90)})` : "—";
     console.log(
-      `| ${echelon} ${kind} | ${calibrated ? "calibrated" : "harness default"} | ${l} | ${pct(m.attackerWins / m.battles)} | ${m.broke} / ${m.wiped} | ${loss} | ${pct(m.explosiveShare)} | ${m.medianMinutes} |`,
+      `| ${echelon} ${kind} | ${calibrated ? "calibrated" : "harness default"} | ${l} | ${pct(m.attackerWins / m.battles)} | ${show(m.attackerLossAtBreak)} | ${show(m.defenderLossAtBreak)} | ${pct(m.explosiveShare)} | ${m.medianMinutes} |`,
     );
   }
 }

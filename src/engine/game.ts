@@ -119,7 +119,7 @@ import {
 } from "./morale.js";
 import { SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { PREPARED } from "./data/morale.js";
+import { PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
@@ -381,6 +381,13 @@ export interface GameOptions {
    * `document`, so the battle it holds still replays.
    */
   lethality?: Lethality;
+  /**
+   * The sides attacking (rules decision 44): on the research figures a side
+   * attacking gives up at the historical attacker's breakpoint, one
+   * defending at the defender's. A side not named defends; in a meeting
+   * engagement both attack.
+   */
+  attackers?: Side[];
 }
 
 /**
@@ -406,6 +413,8 @@ export class Game {
   readonly fireSupportByEchelon: boolean;
   /** Whose blast and tank-gun figures this game plays (rules decision 41). */
   readonly lethality: Lethality;
+  /** The sides attacking (rules decision 44). */
+  readonly attackers: Side[];
   /**
    * How many of {@link registeredTargets} came with the options rather than
    * from mission planning — the recording's header carries those, its journal
@@ -515,6 +524,8 @@ export class Game {
     }
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     this.lethality = opts.lethality ?? "research";
+    this.attackers = [...(opts.attackers ?? [])];
+    if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
     if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
     for (const t of opts.registeredTargets ?? []) {
       if (!this.sides.includes(t.side) || !isIndirect(t.weapon) || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
@@ -606,6 +617,7 @@ export class Game {
       ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       lethality: this.lethality,
+      ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -1926,6 +1938,7 @@ export class Game {
     // men has fewer shooters.
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
+    const alreadyFired = attacker.firedThisTurn;
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       lethality: this.lethality,
@@ -1941,7 +1954,7 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) {
-      this.tire(attacker);
+      this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
@@ -1950,9 +1963,13 @@ export class Game {
     return { ...fireResult, coveringFire };
   }
 
-  /** A turn of firing tires a force's crews (rules decision 42) — counted only on the research figures. */
-  private tire(unit: Unit): void {
-    if (this.lethality === "research") unit.turnsFiring = (unit.turnsFiring ?? 0) + 1;
+  /**
+   * A turn of firing tires a force's crews (rules decision 42) — counted only
+   * on the research figures, and once a turn however many of its weapons
+   * fired: `alreadyFired` is whether it had fired this turn before this shot.
+   */
+  private tire(unit: Unit, alreadyFired: boolean): void {
+    if (this.lethality === "research" && !alreadyFired) unit.turnsFiring = (unit.turnsFiring ?? 0) + 1;
   }
 
   fireExplosive(
@@ -1978,6 +1995,7 @@ export class Game {
     }
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
+    const alreadyFired = attacker.firedThisTurn;
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
@@ -1985,7 +2003,7 @@ export class Game {
       lethality: this.lethality,
     });
     if (result.fired) {
-      this.tire(attacker);
+      this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       const caught = result.blast?.targets ?? [];
       const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);
@@ -2558,7 +2576,13 @@ export class Game {
    * though it still has forces on the map. Always false without morale.
    */
   sideBroken(side: Side): boolean {
-    return this.morale && sideBroken(this.units, side);
+    if (!this.morale) return false;
+    // By posture on the research figures (rules decision 44); two thirds on the document's.
+    const share =
+      this.lethality === "research"
+        ? SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"]
+        : undefined;
+    return sideBroken(this.units, side, share);
   }
 
   /**

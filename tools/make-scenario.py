@@ -143,7 +143,7 @@ EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
     "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "about", "window", "forces", "charges",
-    "commandEchelon", "fireSupport",
+    "commandEchelon", "fireSupport", "attackers",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
 # The indirect-fire weapons a side can be allotted. Whether its echelon may
@@ -245,6 +245,11 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "morale", "spec")
     for key in ("commandEchelon", "fireSupport"):
         require(isinstance(spec.get(key, {}), dict), f"spec: {key} must be an object keyed by side")
+    attackers = spec.get("attackers", [])
+    require(isinstance(attackers, list), "spec: attackers must be a list of sides")
+    for side in attackers:
+        require(side in SIDES, f"attackers: {side} is not RED or BLUE")
+    require(len(set(attackers)) == len(attackers), "attackers: a side named twice")
     for side, echelon in spec.get("commandEchelon", {}).items():
         require(side in SIDES, f"commandEchelon: {side} is not RED or BLUE")
         require(echelon in ECHELONS, f"commandEchelon.{side}: unknown echelon {echelon!r}")
@@ -436,6 +441,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     ]
     if spec.get("morale"):
         lines.append("    morale: true,")
+    if spec.get("attackers"):
+        lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")
     if spec.get("commandEchelon"):
         pairs = ", ".join(f'{side}: "{e}"' for side, e in sorted(spec["commandEchelon"].items()))
         lines.append("    commandEchelon: { " + pairs + " },")

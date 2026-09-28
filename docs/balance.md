@@ -13,7 +13,9 @@ figure; "ours" means the code needed one and the README records the reasoning.
 figures**: blast bands from each weapon's published lethal area, the tank gun
 to 2 km, rates of fire drawn each turn, small arms at a third of the table and
 24 bombs for effect from a mortar — calibrated so explosives cause 75% of the
-losses with `--fires calibrated --defender-fires calibrated`. Every round on this page before that date was
+losses with `--fires calibrated --defender-fires calibrated` — and a side
+gives up at 30% (attacking) or 60% (defending) of its men down, broken or
+fled (decision 44). The drills fire their squads' grenadiers. Every round on this page before that date was
 measured on the document's tables. `npm run balance -- --lethality document`
 reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on

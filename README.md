@@ -1632,6 +1632,31 @@ on the stated reasoning, still awaiting the author's word.
       4 and 3 missions — and every platoon battle, which has no indirect fire
       (decision 37) and squads without grenadiers. The share follows the fire
       a battle is given, as it does in the sources.
+44. ✅ **A side gives up at the historical breakpoints** (author,
+    2026-09-28: "adapt the morale to historical rules of thumb"). An attack
+    stops at about 20–25% losses and a defence cannot hold at about 40% (the
+    Dupuy Institute; US doctrine calls a unit destroyed at 30%); ours broke at
+    44–78%. On the research figures a side breaks when this share of its men
+    are down, broken, or in a force that fled (`SIDE_BREAK_BY_POSTURE`):
+    **30% attacking, 60% defending**, where decision 19 gave two thirds to
+    both. The shares sit above the losses they stand for because broken and
+    fled men count too; measured, an attacker gives up at a median **16–25%
+    casualties** and a defender at **42–50%**, and the 2:1 company attack
+    with fire support still wins **61%**. 55% for the defender came closer to
+    40% and let that attack win 78%.
+    - **Who attacks is said, not guessed**: `GameOptions.attackers` (a side
+      not named defends; both, in a meeting engagement), carried by the
+      recording and set in each scenario spec (`"attackers": ["BLUE"]`).
+    - Still morale, not a fixed casualty rule: broken and fled men count, and
+      a force still breaks by its own pool (the peer-reviewed work warns
+      against a fixed breakpoint — Helmbold 1971, Wainstein 1986).
+    - The squad drill's **grenadiers** arrived with it (author, same day): one
+      40 mm launcher for every four men still fighting, firing rifle grenades
+      at the squad's target inside 100 m alongside its rifles
+      ([`app/drill.ts`](src/app/drill.ts), ⚠️ ours). They are a platoon
+      battle's own explosives: 22–36% of its losses, against 75–80% where a
+      company's mortars are on call — most explosives come from higher
+      echelons, as the author expected.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

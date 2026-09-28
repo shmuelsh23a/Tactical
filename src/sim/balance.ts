@@ -328,6 +328,8 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     commandEchelon: { RED: echelon, BLUE: echelon },
     ...(opts.anyEchelon ? { fireSupportByEchelon: false } : {}),
     ...(opts.lethality ? { lethality: opts.lethality } : {}),
+    // Who attacks, for the side's breakpoint (rules decision 44): both, in a meeting.
+    attackers: kind === "meeting" ? ["RED", "BLUE"] : [attackerSide],
   };
   const g = new Game(gameOptions);
   const relabel = (fs: ForceSpec[], to: "B" | "R") => fs.map((f) => ({ ...f, id: to + f.id.slice(1) }));

@@ -19,7 +19,7 @@ import {
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
-import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, PREPARED, RALLY, SUPPRESSION } from "./data/morale.js";
+import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
@@ -655,5 +655,40 @@ describe("a prepared defender is steadier (author, 2026-09-23)", () => {
     ctx.stress.firedOn(u, { kind: "indirect" });
     resolveMorale(ctx);
     expect(u.soldiers![1]!.morale!.will).toBe(45 - 3);
+  });
+});
+
+describe("a side's breakpoint by posture (rules decision 44)", () => {
+  // Ten men a side; `down` of BLUE's and RED's put out of the fight.
+  const battle = (opts: { lethality?: "document" | "research"; attackers?: ("RED" | "BLUE")[] }, down: number) => {
+    const g = new Game({ seed: 1, morale: true, ...opts });
+    g.addUnit(makeInfantry("B", "BLUE", "platoon", { x: 0, y: 0 }, 10));
+    g.addUnit(makeInfantry("R", "RED", "platoon", { x: 0, y: 1000 }, 10));
+    for (const id of ["B", "R"]) g.getUnit(id).soldiers!.slice(0, down).forEach((s) => (s.neutralized = true));
+    return g;
+  };
+
+  it("gives up an attack at 30% and a defence at 60%, on the research figures", () => {
+    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.3, defending: 0.6 });
+    const at3 = battle({ attackers: ["BLUE"] }, 3);
+    expect(at3.sideBroken("BLUE")).toBe(true);
+    expect(at3.sideBroken("RED")).toBe(false);
+    expect(battle({ attackers: ["BLUE"] }, 6).sideBroken("RED")).toBe(true);
+    // In a meeting engagement both attack.
+    expect(battle({ attackers: ["BLUE", "RED"] }, 3).sideBroken("RED")).toBe(true);
+  });
+
+  it("keeps two thirds for both sides on the document's figures", () => {
+    const g = battle({ lethality: "document", attackers: ["BLUE"] }, 6);
+    expect(g.sideBroken("BLUE")).toBe(false);
+    expect(battle({ lethality: "document", attackers: ["BLUE"] }, 7).sideBroken("BLUE")).toBe(true);
+  });
+
+  it("records who attacks, replays it, and refuses a side that is not in the battle", () => {
+    const g = battle({ attackers: ["BLUE"] }, 0);
+    expect(g.toRecording().attackers).toEqual(["BLUE"]);
+    expect(replayGame(g.toRecording()).attackers).toEqual(["BLUE"]);
+    expect(battle({}, 0).toRecording().attackers).toBeUndefined();
+    expect(() => new Game({ seed: 1, attackers: ["GREEN" as never] })).toThrow(/attackers/);
   });
 });

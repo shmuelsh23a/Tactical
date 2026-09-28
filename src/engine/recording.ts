@@ -191,6 +191,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   }
   if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
+  if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -314,6 +315,8 @@ export interface GameRecording {
    * was fought on the document's tables.
    */
   lethality?: Lethality;
+  /** The sides attacking (rules decision 44). Absent: none named. */
+  attackers?: Side[];
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -469,6 +472,7 @@ export function replayWithOutcomes(
     ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     lethality: recording.lethality ?? "document",
+    ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

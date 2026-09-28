@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–43: a turn is 60 s; blast, the tank gun and rates of fire are set from published data; and the whole is calibrated so explosives cause 75% of losses where fire support is used ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-28, after rules decisions 40–44: a turn is 60 s; blast, the tank gun and rates of fire are set from published data; the whole is calibrated so explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints; and squads fire their grenadiers ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 620 tests, 33 files
+npm run check       lint + typecheck clean, 624 tests, 33 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 ```
@@ -74,15 +74,20 @@ mortar mission fires 24 bombs for effect. With a mortar section on call all
 battle (`--fires calibrated --defender-fires calibrated`) the company attacks
 come out at 82% and 77%, and the 2:1 attacker wins 63%.
 
+**Then the breakpoints and grenadiers** (decision 44). On the research
+figures a side gives up at 30% of its men down, broken or fled when
+attacking, 60% when defending (`GameOptions.attackers`, set in every spec):
+attackers now quit at a median 16–25% casualties, defenders at 42–50%, and
+the calibrated 2:1 attack still wins 61%. The drill fires one 40 mm launcher
+per four men inside 100 m; platoon battles are 22–36% explosives, company
+battles with mortars 78–83%.
+
 What it left open, for the author, in order (validation.md, *Open*):
-1. **Morale's breakpoints**: forces break at a median 44–78% losses; the
-   historical rule of thumb is 20–40%, and weaker rifles made it worse.
-2. **The fire a battle is given**: 75% needs a mortar section on call all
-   battle. The company scenario's 4 and 3 missions, and the harness default,
-   give 19–31%.
-3. **Grenadiers**: a platoon battle has no indirect fire, so its explosives
-   would be its squads' rifle grenades, which the drill does not fire.
-4. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
+1. **The fire a battle is given**: 75% needs a mortar section on call all
+   battle. The company scenario's 4 and 3 missions give much less.
+2. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
+3. **A defender's breakpoint** sits at 42–50% against the rule of thumb's
+   40%, traded for the 2:1 attack's planning target.
 
 Not yet played by a person on the new figures; driven in the browser only to
 turn 1 of the company battle.
