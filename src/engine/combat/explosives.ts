@@ -3,7 +3,7 @@ import { roll } from "../dice.js";
 import { distance, lookupBand, type Point } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
-import { explosiveFor, type Lethality } from "../data/lethality.js";
+import { RATE_OF_FIRE, explosiveFor, freshness, rollRate, type Lethality } from "../data/lethality.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
   applyComponentDamage,
@@ -215,9 +215,11 @@ export function resolveDirectExplosive(
   result.hitChance = Math.min(1, band.value * suppressionAccuracy(attacker));
   attacker.firedThisTurn = true;
 
-  // The document fires one round a turn; the research figures, the weapon's
-  // rate of fire (rules decision 42). The crew stops when the target is down.
-  const rate = weapon.roundsPerTurn ?? 1;
+  // The document fires one round a turn. The research figures draw the
+  // crew's rate for the turn, lower as it tires (rules decision 42). The crew
+  // stops when the target is down.
+  const rof = lethality === "research" ? RATE_OF_FIRE[weaponKey] : undefined;
+  const rate = rof ? rollRate(rof, freshness(attacker.turnsFiring ?? 0), rng.next()) : 1;
   const candidates = [target, ...(opts.collateral ?? [])];
   const blasts: BlastResult[] = [];
   let rounds = 0;
@@ -228,7 +230,7 @@ export function resolveDirectExplosive(
   }
   result.hit = blasts.length > 0;
   if (blasts.length) result.blast = blasts.length === 1 ? blasts[0] : mergeBlasts(blasts);
-  if (rate > 1) {
+  if (rof) {
     result.rounds = rounds;
     result.hits = blasts.length;
   }

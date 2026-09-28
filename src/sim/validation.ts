@@ -13,7 +13,7 @@ import {
   type Lethality,
   type Side,
 } from "../engine/index.js";
-import { runBattle, type BattleKind, type Echelon } from "./balance.js";
+import { CALIBRATED_DEFENDER_FIRES, CALIBRATED_FIRE_PLAN, runBattle, type BattleKind, type Echelon } from "./balance.js";
 
 /**
  * The validation harness: the game's numbers measured the way the sources
@@ -83,6 +83,7 @@ export function measureRound(weapon: string, lethality: Lethality, trials = 2000
 
 export interface RifleMeasurement {
   range: number;
+  lethality: Lethality;
   cover: CoverState;
   /** Men put out a minute (one turn) by a squad's fire. */
   casualtiesPerMinute: number;
@@ -91,18 +92,25 @@ export interface RifleMeasurement {
 }
 
 /** One squad firing one turn at another, stationary, at `range`, averaged over `trials`. */
-export function measureRifleFire(range: number, cover: CoverState, trials = 2000, seed = 1): RifleMeasurement {
+export function measureRifleFire(
+  range: number,
+  cover: CoverState,
+  lethality: Lethality = "research",
+  trials = 2000,
+  seed = 1,
+): RifleMeasurement {
   const rng = new Rng(seed);
   let casualties = 0;
   let hits = 0;
   for (let i = 0; i < trials; i++) {
     const firer = makeInfantry("F", "BLUE", "squad", { x: 0, y: range }, SQUAD_MEN);
-    const r = resolveDirectFire(rng, firer, squad("T"), { weapon: "smallArms", cover, turn: 1 });
+    const r = resolveDirectFire(rng, firer, squad("T"), { weapon: "smallArms", cover, turn: 1, lethality });
     casualties += r.newCasualties;
     hits += r.hits;
   }
   return {
     range,
+    lethality,
     cover,
     casualtiesPerMinute: casualties / trials,
     hitsPerFirerMinute: hits / trials / SQUAD_MEN,
@@ -113,6 +121,10 @@ export interface BreakMeasurement {
   echelon: Echelon;
   kind: BattleKind;
   lethality: Lethality;
+  /** Whether both sides had the calibration's fire. */
+  calibratedFires: boolean;
+  /** The attacker's wins, of all battles. */
+  attackerWins: number;
   battles: number;
   /** How the decided battles ended: the loser broke, or was wiped out. */
   broke: number;
@@ -137,8 +149,13 @@ export function measureBreaks(
   lethality: Lethality,
   battles = 100,
   firstSeed = 1000,
+  calibratedFires = false,
 ): BreakMeasurement {
-  const results = Array.from({ length: battles }, (_, i) => runBattle(firstSeed + i, echelon, kind, { morale: true, lethality }));
+  // The fire decision 43 was calibrated on, both sides; a meeting has none.
+  const fires = calibratedFires ? { fires: CALIBRATED_FIRE_PLAN, defenderFires: CALIBRATED_DEFENDER_FIRES } : {};
+  const results = Array.from({ length: battles }, (_, i) =>
+    runBattle(firstSeed + i, echelon, kind, { morale: true, lethality, ...fires }),
+  );
   const brokeLosses: number[] = [];
   let broke = 0;
   let wiped = 0;
@@ -158,6 +175,8 @@ export function measureBreaks(
     echelon,
     kind,
     lethality,
+    calibratedFires,
+    attackerWins: results.filter((r) => r.winner === "BLUE").length,
     battles,
     broke,
     wiped,

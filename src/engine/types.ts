@@ -146,6 +146,11 @@ export interface Unit {
   ranThisTurn: boolean;
   /** True if the unit fired/acted during the current turn. */
   firedThisTurn: boolean;
+  /**
+   * Turns this force has fired, which tire its crews (rules decision 42).
+   * Kept only in a game on the research figures; absent, it is fresh.
+   */
+  turnsFiring?: number;
   /** True if the unit took a hit this turn (blocks movement next turn). */
   hitThisTurn: boolean;
   /** True if the unit was hit last turn (movement currently blocked). */

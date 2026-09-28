@@ -89,7 +89,7 @@ describe("a mission in play (decisions 30–34)", () => {
     // The document's blast bands: these tests measure posture and timing
     // against the table's own figures (rules decision 41 changes the bands,
     // not the posture rules).
-    const g = new Game({ commandEchelon: BATTALIONS, seed: 4, enforceC2: false, lethality: "document", ...opts });
+    const g = new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 4, enforceC2: false, ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
     g.beginTurn();
@@ -202,8 +202,8 @@ describe("a mission in play (decisions 30–34)", () => {
     const { g } = setUp();
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { fuze: "proximity" as never })).toThrow(/fuze/);
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { rounds: 1e9 })).toThrow(/rounds/);
-    expect(() => new Game({ commandEchelon: BATTALIONS, seed: 1, registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] })).toThrow(/registered/);
-    expect(() => new Game({ commandEchelon: BATTALIONS, seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 0 }] } })).toThrow(/fireSupport/);
+    expect(() => new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 1, registeredTargets: [{ side: "BLUE", weapon: "nope", at: { x: 0, y: 0 } }] })).toThrow(/registered/);
+    expect(() => new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2, roundsForEffect: 0 }] } })).toThrow(/fireSupport/);
   });
 
   it("a position prepared in full cover has a roof against an air burst", () => {
@@ -222,7 +222,7 @@ describe("a mission in play (decisions 30–34)", () => {
 
 describe("fire missions (decision 34)", () => {
   function setUp(opts: Partial<GameOptions> = {}, blueAt = 1500) {
-    const g = new Game({ commandEchelon: BATTALIONS, seed: 7, enforceC2: false, ...opts });
+    const g = new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 7, enforceC2: false, ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
     g.beginTurn();
@@ -250,14 +250,16 @@ describe("fire missions (decision 34)", () => {
     expect(m.status).toBe("done");
     expect(m.adjustingRounds).toBeGreaterThan(0);
     expect(m.adjustingRounds).toBeLessThanOrEqual(MAX_ADJUSTING_ROUNDS);
-    // Single rounds, then one volley of six, then nothing.
-    const sizes = landed.map((l) => l.rounds);
-    expect(sizes.filter((n) => n === 1).length).toBe(m.adjustingRounds);
-    expect(sizes.filter((n) => n === DEFAULT_ROUNDS_FOR_EFFECT.mortar).length).toBe(1);
-    expect(sizes.at(-1)).toBe(DEFAULT_ROUNDS_FOR_EFFECT.mortar);
+    // Single rounds, then the rounds for effect: all of them, on consecutive
+    // turns at the section's rate for each turn (rules decision 42), then nothing.
+    const adjusting = landed.slice(0, m.adjustingRounds);
+    const forEffect = landed.slice(m.adjustingRounds);
+    expect(adjusting.every((l) => l.rounds === 1)).toBe(true);
+    expect(forEffect.reduce((n, l) => n + l.rounds, 0)).toBe(DEFAULT_ROUNDS_FOR_EFFECT.mortar);
+    for (let i = 1; i < forEffect.length; i++) expect(forEffect[i]!.turn - forEffect[i - 1]!.turn).toBe(1);
     // It waits to see each adjusting round land before firing the next: a
     // mortar's lands the turn after, so they are two turns apart.
-    const singles = landed.filter((l) => l.rounds === 1).map((l) => l.turn);
+    const singles = adjusting.map((l) => l.turn);
     for (let i = 1; i < singles.length; i++) expect(singles[i]! - singles[i - 1]!).toBe(2);
   });
 
@@ -277,9 +279,9 @@ describe("fire missions (decision 34)", () => {
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 })).toThrow(/call for fire/);
     g.queueIndirectFire("mortar", "RED", { x: 0, y: 1500 });
     expect(
-      () => new Game({ commandEchelon: BATTALIONS, seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }, { weapon: "mortar", missions: 2 }] } }),
+      () => new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }, { weapon: "mortar", missions: 2 }] } }),
     ).toThrow(/one entry a weapon/);
-    expect(() => new Game({ commandEchelon: BATTALIONS, seed: 1, fireSupport: { Blue: [] } as never })).toThrow(/fireSupport/);
+    expect(() => new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 1, fireSupport: { Blue: [] } as never })).toThrow(/fireSupport/);
   });
 
   it("a force that has surrendered or is routing watches nothing for its side", () => {
@@ -331,7 +333,7 @@ describe("fire missions (decision 34)", () => {
 
 describe("the caller chooses the method (decision 39)", () => {
   function setUp() {
-    const g = new Game({ commandEchelon: BATTALIONS, seed: 7, enforceC2: false });
+    const g = new Game({ lethality: "document", commandEchelon: BATTALIONS, seed: 7, enforceC2: false });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     // Close enough to watch the fall of shot, so adjusting is possible.
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 1500 }, 8));
@@ -366,7 +368,7 @@ describe("the caller chooses the method (decision 39)", () => {
 describe("who may call fire (decisions 36–37)", () => {
   /** A side commanding whatever its forces on the map say, unless `opts` declares otherwise. */
   function setUp(opts: Partial<GameOptions> = {}, blueCommand?: "platoon" | "company" | "battalion") {
-    const g = new Game({ seed: 7, enforceC2: false, ...opts });
+    const g = new Game({ lethality: "document", seed: 7, enforceC2: false, ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 1500 }, 8));
     if (blueCommand) g.addUnit(makeCommandGroup("B-HQ", "BLUE", blueCommand, { x: 0, y: 1600 }, 3));
@@ -418,12 +420,12 @@ describe("who may call fire (decisions 36–37)", () => {
 
   it("refuses an allotment or a registered target a declared echelon may not call", () => {
     expect(
-      () => new Game({ seed: 1, commandEchelon: { BLUE: "company" }, fireSupport: { BLUE: [{ weapon: "artillery", missions: 1 }] } }),
+      () => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "company" }, fireSupport: { BLUE: [{ weapon: "artillery", missions: 1 }] } }),
     ).toThrow(/battalion and above/);
     expect(
-      () => new Game({ seed: 1, commandEchelon: { BLUE: "platoon" }, registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }] }),
+      () => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "platoon" }, registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }] }),
     ).toThrow(/company and above/);
-    expect(() => new Game({ seed: 1, commandEchelon: { BLUE: "general" as never } })).toThrow(/commandEchelon/);
+    expect(() => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "general" as never } })).toThrow(/commandEchelon/);
   });
 
   it("journals the rounds for effect, and replays a recording made before decision 36 at the 6 it fired", () => {
@@ -469,7 +471,7 @@ describe("who may call fire (decisions 36–37)", () => {
   });
 
   it("checks the fire plan before the first upkeep, so a refusal leaves the game untouched", () => {
-    const g = new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    const g = new Game({ lethality: "document", seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
     expect(() => g.advancePhase()).toThrow(/company and above/);
     expect(g.getUnit("B").stationaryTurns).toBe(0);
@@ -477,13 +479,13 @@ describe("who may call fire (decisions 36–37)", () => {
   });
 
   it("refuses an undeclared side's fire plan when the first turn begins, once its forces say what it commands", () => {
-    const g = new Game({ seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
+    const g = new Game({ lethality: "document", seed: 1, fireSupport: { BLUE: [{ weapon: "mortar", missions: 2 }] } });
     g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: 0 }, 3));
     expect(() => g.beginTurn()).toThrow(/company and above/);
-    const h = new Game({ seed: 1, registeredTargets: [{ side: "BLUE", weapon: "artillery", at: { x: 0, y: 0 } }] });
+    const h = new Game({ lethality: "document", seed: 1, registeredTargets: [{ side: "BLUE", weapon: "artillery", at: { x: 0, y: 0 } }] });
     h.addUnit(makeCommandGroup("B-HQ", "BLUE", "company", { x: 0, y: 0 }, 3));
     expect(() => h.beginTurn()).toThrow(/battalion and above/);
-    expect(() => new Game({ seed: 1, commandEchelon: { BLUE: "toString" as never } })).toThrow(/commandEchelon/);
+    expect(() => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "toString" as never } })).toThrow(/commandEchelon/);
   });
 
   it("is recorded, and a recording made before the rule still replays the fire it called", () => {

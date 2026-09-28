@@ -13,7 +13,7 @@ import { replayGame, sealRecording, verifyRecording } from "./recording.js";
 
 /** A RED sapper squad on the line BLUE will walk up, with the game in movement. */
 function sapper(seed = 1) {
-  const g = new Game({ seed, enforceC2: false });
+  const g = new Game({ lethality: "document", seed, enforceC2: false });
   const red = makeInfantry("RED-E", "RED", "squad", { x: 0, y: 100 }, 8);
   red.canLayCharges = true;
   g.addUnit(red);
@@ -229,7 +229,7 @@ describe("laying charges during play", () => {
   });
 
   it("keeps emplacement before the battle to the setup phase", () => {
-    const g = new Game({ seed: 1, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false });
     g.addMine({
       side: "RED",
       type: "antiPersonnel",
@@ -250,7 +250,7 @@ describe("laying charges during play", () => {
   });
 
   it("needs orders like any other task, when C2 is enforced", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ lethality: "document", seed: 1 });
     const red = makeInfantry("RED-E", "RED", "squad", { x: 0, y: 900 }, 8);
     red.canLayCharges = true;
     g.addUnit(red);

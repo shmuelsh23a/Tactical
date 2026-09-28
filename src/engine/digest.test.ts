@@ -28,7 +28,7 @@ describe("fnv1a", () => {
 
 describe("stateDigest", () => {
   function game(seed = 1) {
-    const g = new Game({ seed });
+    const g = new Game({ lethality: "document", seed });
     g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "RED", "squad", { x: 0, y: 50 }, 6));
     g.beginTurn();

@@ -51,10 +51,9 @@ export interface ExplosiveWeapon {
   usesArmorTable?: boolean;
 
   /**
-   * Rounds per barrel per turn. The document's (3 bombs, 2 shells) were never
-   * applied by the engine; the research figures' are (rules decision 42): a
-   * direct-fire weapon fires this many in one action, and a fire unit lands
-   * this many a tube a turn (`roundsPerTurnFor` in lethality.ts).
+   * Rounds per barrel per turn, as the document gives them. The engine never
+   * applied them; the research rates, a range drawn each turn, are
+   * `RATE_OF_FIRE` in lethality.ts (rules decision 42).
    */
   roundsPerTurn?: number;
   /** Turns between firing and impact (שיהוי). */

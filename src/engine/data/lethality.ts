@@ -87,53 +87,115 @@ export const RESEARCH_TANK_TO_HIT: readonly RangeBand[] = [
 ];
 
 /**
- * Rounds a weapon fires in a turn — its sustained or practical rate a minute
- * (rules decision 42). Sources in docs/validation.md; all read secondhand.
+ * A weapon's rate of fire a turn, as a range (rules decision 42, revised by
+ * the author the same day: "these are firing range numbers — no tank fires 5
+ * rounds a minute"):
  *
- * - `mortar`: **8** a tube — the low end of the 81 mm M252's sustained 8–16
- *   (20–30 for short periods only). The document's 3 is below every mortar's
- *   sustained rate.
- * - `artillery`: **2** a gun — the 155 mm M777's sustained rate (4 for short
- *   periods). The document's 2 already is.
- * - `tankRound`: **5** — the low end of the 5–7 a crew sustains with a manual
- *   loader; qualification asks a loader for a round in 7 s and a crew for its
- *   second round within 10 s of the first.
- * - `rifleGrenade`: **5** — the low end of the 40 mm M203/M320's 5–7 aimed
- *   rounds a minute.
- * - `rpgVsInfantry`, `rpgVsArmor`: **4** — the low end of a gunner and
- *   assistant's 4–6.
+ * - `low`, the **most likely** rate in a fight: the lowest figure there is —
+ *   the document's where it gave one, the published sustained rate where that
+ *   is lower. A crew in a fight also has to find, lay on and watch its target.
+ * - `high`, the **outlier**: the highest published rate, the range's figure a
+ *   fresh crew can touch for a minute.
  *
- * The low end each time: these are rates on a range, and a crew in a fight
- * also has to find its next target. Nothing counts ammunition yet (backlog
- * 12), so a weapon fires its rate every turn it is told to.
+ * | Weapon | Low | High | Sources (docs/validation.md) |
+ * |---|---|---|---|
+ * | `mortar`, a tube | 3 (document) | 30 (81 mm M252, short periods) | sustained 8–16 |
+ * | `artillery`, a gun | 2 (document; M777 sustained) | 4 (M777 maximum) | |
+ * | `tankRound` | 1 (document) | 7 (manual loader, practical) | |
+ * | `rifleGrenade` | 1 (document) | 7 (40 mm, aimed) | |
+ * | `rpgVsInfantry`, `rpgVsArmor` | 1 (document) | 6 (gunner and assistant) | |
+ *
+ * What a crew fires in a turn is drawn by {@link rollRate}: the low rate most
+ * often, the high one rarely, with more of the upper end while the crew is
+ * fresh and less as it tires. Nothing counts ammunition yet (backlog 12).
  */
-export const RESEARCH_ROUNDS_PER_TURN: Readonly<Record<string, number>> = {
-  mortar: 8,
-  artillery: 2,
-  tankRound: 5,
-  rifleGrenade: 5,
-  rpgVsInfantry: 4,
-  rpgVsArmor: 4,
+export interface RateOfFire {
+  low: number;
+  high: number;
+}
+
+export const RATE_OF_FIRE: Readonly<Record<string, RateOfFire>> = {
+  mortar: { low: 3, high: 30 },
+  artillery: { low: 2, high: 4 },
+  tankRound: { low: 1, high: 7 },
+  rifleGrenade: { low: 1, high: 7 },
+  rpgVsInfantry: { low: 1, high: 6 },
+  rpgVsArmor: { low: 1, high: 6 },
 };
+
+/**
+ * Turns of firing that take a crew from fresh to tired (ours): ten minutes of
+ * sustained fire. A crew that has fired on none is fresh.
+ */
+export const FATIGUE_TURNS = 10;
+
+/**
+ * How heavy the upper tail is (ours): each round above the low rate is this
+ * much less likely than the one below it — **0.6** for a fresh crew, **0.15**
+ * for a tired one, in between on the way. So a fresh tank crew fires 1 round
+ * a turn 41% of the time and 3 or more 34% of the time (averaging 2.3); a
+ * tired one fires 1 round 85% of the time (averaging 1.2).
+ */
+export const TAIL_WEIGHT = { fresh: 0.6, tired: 0.15 } as const;
+
+/** How fresh a crew is, 1 to 0, after `turnsFiring` turns of firing. */
+export function freshness(turnsFiring: number): number {
+  return Math.max(0, 1 - turnsFiring / FATIGUE_TURNS);
+}
+
+/** The share of each rate from `low` to `high` a crew this fresh fires: a geometric tail, cut at `high`. */
+export function rateDistribution(rate: RateOfFire, fresh: number): number[] {
+  const q = TAIL_WEIGHT.tired + (TAIL_WEIGHT.fresh - TAIL_WEIGHT.tired) * Math.min(1, Math.max(0, fresh));
+  const weights = Array.from({ length: rate.high - rate.low + 1 }, (_, k) => q ** k);
+  const total = weights.reduce((a, b) => a + b, 0);
+  return weights.map((w) => w / total);
+}
+
+/** The average rate a crew this fresh fires. */
+export function meanRate(rate: RateOfFire, fresh: number): number {
+  return rateDistribution(rate, fresh).reduce((sum, p, k) => sum + p * (rate.low + k), 0);
+}
+
+/**
+ * The rounds a crew fires this turn, drawn from {@link rateDistribution} with
+ * one number `u` in [0, 1) — one rng draw, whatever the range.
+ */
+export function rollRate(rate: RateOfFire, fresh: number, u: number): number {
+  let acc = 0;
+  const dist = rateDistribution(rate, fresh);
+  for (let k = 0; k < dist.length; k++) {
+    acc += dist[k]!;
+    if (u < acc) return rate.low + k;
+  }
+  return rate.high;
+}
+
+/**
+ * Small arms in a fight hit a third as often as the table (rules decision 43,
+ * the author, 2026-09-28: "I want the numbers to reflect 75% HE casualties").
+ * Men under fire hit 7 to 10 times less than the same men in trials (Rowland
+ * 1987); the table's figures are not trial figures either, so the factor is
+ * the smallest that brings the explosives' share of losses to the sources'
+ * 72–78% in the company battles (docs/validation.md, *Calibration*). A
+ * coaxial gun and the assault keep their tables.
+ */
+export const SMALL_ARMS_COMBAT_FACTOR = 1 / 3;
+
+/**
+ * Rounds a mission fires for effect unless its allotment says otherwise, on
+ * the research figures (rules decision 43): **24 for a mortar**, 8 bombs a
+ * tube from a 3-tube section — doctrine asks "seldom less than five rounds for
+ * each mortar" (FM 7-90) — and **6 for artillery**, as decision 36. The
+ * document's figures (`DEFAULT_ROUNDS_FOR_EFFECT`: 12 and 6) play under
+ * `document`.
+ */
+export const RESEARCH_ROUNDS_FOR_EFFECT: Readonly<Record<string, number>> = { mortar: 24, artillery: 6 };
 
 /**
  * Tubes in the fire unit that answers a mission (rules decision 36's own
  * reading): a **3-tube** mortar section and a **6-gun** battery.
  */
 export const FIRE_UNIT_TUBES: Readonly<Record<string, number>> = { mortar: 3, artillery: 6 };
-
-/**
- * The most rounds a fire unit lands in one turn: its rate times its tubes
- * (rules decision 42) — 24 bombs, 12 shells. A mission's rounds for effect
- * beyond that land on the turns after. The document never applied its own
- * rate, so under it there is no ceiling, as before.
- */
-export function roundsPerTurnFor(weapon: string, lethality: Lethality): number {
-  if (lethality === "document") return Infinity;
-  const rate = RESEARCH_ROUNDS_PER_TURN[weapon];
-  const tubes = FIRE_UNIT_TUBES[weapon];
-  return rate !== undefined && tubes !== undefined ? rate * tubes : Infinity;
-}
 
 /** The width of one derived band. */
 const BAND_STEP_M = 10;
@@ -194,7 +256,6 @@ const RESEARCH_EXPLOSIVES: Readonly<Record<string, ExplosiveWeapon>> = Object.fr
         ...w,
         ...(area !== undefined ? { blastBands: blastBandsFromLethalArea(area) } : {}),
         ...(key === "tankRound" ? { toHitBands: RESEARCH_TANK_TO_HIT } : {}),
-        ...(RESEARCH_ROUNDS_PER_TURN[key] !== undefined ? { roundsPerTurn: RESEARCH_ROUNDS_PER_TURN[key] } : {}),
       },
     ];
   }),

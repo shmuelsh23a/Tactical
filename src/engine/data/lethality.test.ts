@@ -11,13 +11,19 @@ import {
   discOverlap,
   explosiveFor,
   hitChanceAt,
-  RESEARCH_ROUNDS_PER_TURN,
-  roundsPerTurnFor,
+  RATE_OF_FIRE,
+  RESEARCH_ROUNDS_FOR_EFFECT,
+  SMALL_ARMS_COMBAT_FACTOR,
+  freshness,
+  meanRate,
+  rateDistribution,
+  rollRate,
 } from "./lethality.js";
 import { Game } from "../game.js";
 import { replayGame } from "../recording.js";
 import { makeInfantry, makeVehicle } from "../units.js";
 import { resolveBlast, resolveDirectExplosive } from "../combat/explosives.js";
+import { resolveDirectFire } from "../combat/directFire.js";
 import { Rng } from "../rng.js";
 
 describe("the turn and the wound behind the research figures (rules decisions 40–41)", () => {
@@ -86,11 +92,9 @@ describe("blast bands from a lethal area (rules decision 41)", () => {
   });
 
   it("leaves what the sources were not read for as the document has it", () => {
-    for (const key of ["grenade", "apMine", "atMine"]) {
+    for (const key of ["grenade", "apMine", "atMine", "rpgVsArmor"]) {
       expect(explosiveFor(key, "research")).toEqual(EXPLOSIVES[key]);
     }
-    // The RPG against armour: its rate of fire only (rules decision 42).
-    expect(explosiveFor("rpgVsArmor", "research")).toEqual({ ...EXPLOSIVES.rpgVsArmor, roundsPerTurn: 4 });
     for (const key of Object.keys(EXPLOSIVES)) {
       expect(explosiveFor(key, "document")).toBe(EXPLOSIVES[key]);
     }
@@ -146,34 +150,61 @@ describe("a game's lethality (rules decision 41)", () => {
 describe("rates of fire (rules decision 42)", () => {
   const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
 
-  it("fires a launcher's rate in one action, and one round under the document", () => {
-    const shoot = (lethality: "document" | "research") => {
+  it("makes the low rate the likeliest and the high one the rare outlier", () => {
+    for (const rate of Object.values(RATE_OF_FIRE)) {
+      for (const fresh of [1, 0.5, 0]) {
+        const dist = rateDistribution(rate, fresh);
+        expect(dist.reduce((a, b) => a + b, 0)).toBeCloseTo(1);
+        // Falls away from the low rate, every step.
+        for (let k = 1; k < dist.length; k++) expect(dist[k]!).toBeLessThan(dist[k - 1]!);
+        expect(dist.at(-1)!).toBeLessThan(dist[0]! / 2);
+      }
+    }
+  });
+
+  it("gives a fresh crew more of the upper end and a tired one more of the lower", () => {
+    const tank = RATE_OF_FIRE.tankRound!;
+    expect(meanRate(tank, 1)).toBeCloseTo(2.3, 1);
+    expect(meanRate(tank, 0)).toBeCloseTo(1.2, 1);
+    expect(rateDistribution(tank, 0)[0]!).toBeGreaterThan(rateDistribution(tank, 1)[0]!);
+    expect(freshness(0)).toBe(1);
+    expect(freshness(5)).toBe(0.5);
+    expect(freshness(40)).toBe(0);
+    expect(rollRate(tank, 1, 0)).toBe(1);
+    expect(rollRate(tank, 1, 0.999999)).toBe(tank.high);
+  });
+
+  it("draws a launcher's rate for the turn, tiring with the turns it has fired, and fires one round under the document", () => {
+    const volley = (lethality: "document" | "research", turnsFiring: number, seed: number) => {
       const tank = makeVehicle("T", "BLUE", { x: 0, y: 2500 });
-      const target = makeInfantry("R", "RED", "platoon", { x: 0, y: 0 }, 30);
-      return { r: resolveDirectExplosive(new Rng(3), "tankRound", tank, target, { lethality }), target };
+      tank.turnsFiring = turnsFiring;
+      const target = makeInfantry("R", "RED", "platoon", { x: 0, y: 0 }, 300);
+      return resolveDirectExplosive(new Rng(seed), "tankRound", tank, target, { lethality });
     };
-    const { r: research, target } = shoot("research");
-    // Every round of its rate, unless the target went down first.
-    if (!target.neutralized) expect(research.rounds).toBe(RESEARCH_ROUNDS_PER_TURN.tankRound);
-    expect(research.rounds).toBeGreaterThan(1);
-    expect(research.hits).toBeLessThanOrEqual(research.rounds!);
-    const { r: doc } = shoot("document");
+    const mean = (turnsFiring: number) => {
+      let n = 0;
+      for (let seed = 1; seed <= 400; seed++) n += volley("research", turnsFiring, seed).rounds!;
+      return n / 400;
+    };
+    expect(mean(0)).toBeGreaterThan(1.9);
+    expect(mean(20)).toBeLessThan(1.4);
+    const doc = volley("document", 0, 1);
     expect(doc.rounds).toBeUndefined();
-    expect(doc.hits).toBeUndefined();
   });
 
-  it("stops firing at a target that is down", () => {
-    const tank = makeVehicle("T", "BLUE", { x: 0, y: 100 });
-    const target = makeInfantry("R", "RED", "fireTeam" as never, { x: 0, y: 0 }, 1);
-    const r = resolveDirectExplosive(new Rng(1), "tankRound", tank, target, { lethality: "research" });
-    expect(r.hit).toBe(true);
-    if (target.neutralized) expect(r.rounds).toBeLessThan(RESEARCH_ROUNDS_PER_TURN.tankRound!);
+  it("tires a force only in a game on the research figures", () => {
+    for (const lethality of ["document", "research"] as const) {
+      const g = new Game({ seed: 2, enforceC2: false, lethality });
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+      g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 100 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      g.fire("B", "R", { weapon: "smallArms", hasLineOfSight: true });
+      expect(g.getUnit("B").turnsFiring).toBe(lethality === "research" ? 1 : undefined);
+    }
   });
 
-  it("lands a fire unit's rate times its tubes in a turn, and the rest on the turns after", () => {
-    expect(roundsPerTurnFor("mortar", "research")).toBe(24);
-    expect(roundsPerTurnFor("artillery", "research")).toBe(12);
-    expect(roundsPerTurnFor("mortar", "document")).toBe(Infinity);
+  it("lands a mission's rounds for effect a volley a turn, at the fire unit's rate, and all at once under the document", () => {
     const game = (lethality: "document" | "research") => {
       const g = new Game({
         seed: 5,
@@ -187,13 +218,17 @@ describe("rates of fire (rules decision 42)", () => {
       g.beginTurn();
       g.advanceToPhase("targeting");
       g.callForFire("BLUE", "artillery", { x: 0, y: 0 }, { method: "effect" });
-      return g.pendingFire.map((f) => [f.resolvesOnTurn, f.rounds ?? 1]);
+      return g.pendingFire.map((f) => [f.resolvesOnTurn, f.rounds ?? 1] as const);
     };
-    expect(game("research")).toEqual([
-      [3, 12],
-      [4, 12],
-      [5, 6],
-    ]);
+    const research = game("research");
+    expect(research.reduce((n, [, r]) => n + r, 0)).toBe(30);
+    // A 6-gun battery: 12 to 24 shells a turn, until the last volley.
+    for (const [, r] of research.slice(0, -1)) {
+      expect(r % 6).toBe(0);
+      expect(r).toBeGreaterThanOrEqual(12);
+      expect(r).toBeLessThanOrEqual(24);
+    }
+    research.forEach(([turn], i) => expect(turn).toBe(3 + i));
     expect(game("document")).toEqual([[3, 30]]);
   });
 
@@ -203,5 +238,29 @@ describe("rates of fire (rules decision 42)", () => {
     g.beginTurn();
     g.advanceToPhase("targeting");
     expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { laterBy: 1 })).toThrow(/laterBy/);
+  });
+});
+
+describe("the calibration to 75% explosives (rules decision 43)", () => {
+  it("lets small arms hit a third as often on the research figures, and only small arms", () => {
+    const shot = (lethality: "document" | "research", weapon: "smallArms" | "sustainedMg") => {
+      const firer = weapon === "sustainedMg" ? makeVehicle("F", "BLUE", { x: 0, y: 50 }) : makeInfantry("F", "BLUE", "squad", { x: 0, y: 50 }, 9);
+      return resolveDirectFire(new Rng(1), firer, makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 9), { weapon, lethality }).hitChance;
+    };
+    expect(shot("research", "smallArms")).toBeCloseTo(shot("document", "smallArms") * SMALL_ARMS_COMBAT_FACTOR);
+    expect(shot("research", "sustainedMg")).toBe(shot("document", "sustainedMg"));
+  });
+
+  it("fires 24 bombs for effect from a mortar section on the research figures, 12 on the document's", () => {
+    const rounds = (lethality: "document" | "research") => {
+      const g = new Game({ seed: 1, enforceC2: false, lethality, commandEchelon: { RED: "battalion", BLUE: "battalion" } });
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("targeting");
+      return g.callForFire("BLUE", "mortar", { x: 0, y: 0 }, { method: "effect" }).roundsForEffect;
+    };
+    expect(rounds("research")).toBe(RESEARCH_ROUNDS_FOR_EFFECT.mortar);
+    expect(rounds("research")).toBe(24);
+    expect(rounds("document")).toBe(12);
   });
 });

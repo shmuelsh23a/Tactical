@@ -16,6 +16,7 @@
  *   npm run balance -- --defender-ops --alternate 150 --displace 100   # the defender's mission plan (decision 38)
  *   npm run balance -- --any-echelon               # any side may call any weapon: rules decision 37 off
  *   npm run balance -- --morale on                   # only with morale (or: off)
+ *   npm run balance -- --fires calibrated --defender-fires calibrated   # the fire decision 43 was calibrated on
  *   npm run balance -- --lethality document          # the document's blast tables (rules decision 41; default research)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -27,6 +28,8 @@ import {
   CONFIGURATIONS,
   ECHELONS,
   FIRE_PLAN,
+  CALIBRATED_FIRE_PLAN,
+  CALIBRATED_DEFENDER_FIRES,
   type FirePlan,
   type DefenderFires,
   MARKDOWN_HEADER,
@@ -87,6 +90,7 @@ const firesArg = value("--fires");
 const fires: FirePlan | undefined = (() => {
   if (!firesArg) return undefined;
   if (firesArg === "plan") return FIRE_PLAN;
+  if (firesArg === "calibrated") return CALIBRATED_FIRE_PLAN;
   const plan: FirePlan = { missions: [], liftAt: FIRE_PLAN.liftAt };
   for (const part of firesArg.split(",")) {
     const [key = "", v = ""] = part.split("=");
@@ -104,6 +108,7 @@ const fires: FirePlan | undefined = (() => {
 const defenderArg = value("--defender-fires");
 const defenderFires: DefenderFires | undefined = (() => {
   if (!defenderArg) return undefined;
+  if (defenderArg === "calibrated") return CALIBRATED_DEFENDER_FIRES;
   const d: DefenderFires = { missions: [] };
   for (const part of defenderArg.split(",")) {
     const [key = "", v = ""] = part.split("=");

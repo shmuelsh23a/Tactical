@@ -51,28 +51,34 @@ for (const { weapon, range } of LAUNCHERS) {
 }
 
 console.log("\n## A minute of rifle fire: a squad of nine at a squad of nine, both stationary\n");
-console.log("| Range | Target cover | Men put out a minute | Hits a firer a minute |");
-console.log("|---|---|---|---|");
-for (const range of [50, 150, 250, 350]) {
-  for (const cover of ["none", "partial", "full"] as const) {
-    const m = measureRifleFire(range, cover);
-    console.log(`| ${range} m | ${cover} | ${f2(m.casualtiesPerMinute)} | ${f2(m.hitsPerFirerMinute)} |`);
+console.log("| Range | Target cover | Lethality | Men put out a minute | Hits a firer a minute |");
+console.log("|---|---|---|---|---|");
+for (const range of [50, 150, 350]) {
+  for (const cover of ["none", "full"] as const) {
+    for (const l of LETHALITIES) {
+      const m = measureRifleFire(range, cover, l);
+      console.log(`| ${range} m | ${cover} | ${l} | ${f2(m.casualtiesPerMinute)} | ${f2(m.hitsPerFirerMinute)} |`);
+    }
   }
 }
 
 console.log(`\n## Where a side gives up, and what put its men out (morale on, ${battles} battles a cell, seeds from ${firstSeed})\n`);
-console.log("| Battle | Lethality | Broke / wiped | Loser's losses when it broke, median (p10–p90) | Out by explosives | Minutes, median |");
-console.log("|---|---|---|---|---|---|");
-const cells: [Echelon, BattleKind][] = [
-  ["platoon", "meeting"],
-  ["platoon", "attack3"],
-  ["company", "attack3"],
-  ["company", "attack2"],
+console.log("| Battle | Fire | Lethality | Attacker wins | Broke / wiped | Loser's losses when it broke, median (p10–p90) | Out by explosives | Minutes, median |");
+console.log("|---|---|---|---|---|---|---|---|");
+const cells: [Echelon, BattleKind, boolean][] = [
+  ["platoon", "meeting", false],
+  ["platoon", "attack3", false],
+  ["company", "attack3", false],
+  ["company", "attack2", false],
+  ["company", "attack3", true],
+  ["company", "attack2", true],
 ];
-for (const [echelon, kind] of cells) {
+for (const [echelon, kind, calibrated] of cells) {
   for (const l of LETHALITIES) {
-    const m = measureBreaks(echelon, kind, l, battles, firstSeed);
+    const m = measureBreaks(echelon, kind, l, battles, firstSeed, calibrated);
     const loss = m.lossAtBreak ? `${pct(m.lossAtBreak.median)} (${pct(m.lossAtBreak.p10)}–${pct(m.lossAtBreak.p90)})` : "—";
-    console.log(`| ${echelon} ${kind} | ${l} | ${m.broke} / ${m.wiped} | ${loss} | ${pct(m.explosiveShare)} | ${m.medianMinutes} |`);
+    console.log(
+      `| ${echelon} ${kind} | ${calibrated ? "calibrated" : "harness default"} | ${l} | ${pct(m.attackerWins / m.battles)} | ${m.broke} / ${m.wiped} | ${loss} | ${pct(m.explosiveShare)} | ${m.medianMinutes} |`,
+    );
   }
 }

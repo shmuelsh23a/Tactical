@@ -13,7 +13,7 @@ import { FIRING_FROM_COVER_MODIFIER } from "./data/directFire.js";
 
 /** Two squads in the fire phase; BLUE moved this turn (walked 40 m, or ran 80). */
 function contact(ran = false, variants?: GameOptions["variants"]) {
-  const g = new Game({ seed: 3, enforceC2: false, ...(variants ? { variants } : {}) });
+  const g = new Game({ lethality: "document", seed: 3, enforceC2: false, ...(variants ? { variants } : {}) });
   const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
   const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 8));
   g.beginTurn();
@@ -42,7 +42,7 @@ describe("decision 22: every direct shot reads the target's movement, proportion
 
 describe("decision 23: firing from full cover keeps −30%", () => {
   function dugIn(redFiresFirst: boolean) {
-    const g = new Game({ seed: 5, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 5, enforceC2: false });
     const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const red = makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 8);
     red.baseCover = "full";
@@ -62,7 +62,7 @@ describe("decision 23: firing from full cover keeps −30%", () => {
   });
 
   it("genuine partial cover stays at the table's −10%", () => {
-    const g = new Game({ seed: 5, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 5, enforceC2: false });
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const red = makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 8);
     red.baseCover = "partial";
@@ -76,7 +76,7 @@ describe("decision 23: firing from full cover keeps −30%", () => {
 
 describe("ruling 1, on trial: the defender fires back in an assault", () => {
   function assault(variants?: GameOptions["variants"]) {
-    const g = new Game({ seed: 8, enforceC2: false, ...(variants ? { variants } : {}) });
+    const g = new Game({ lethality: "document", seed: 8, enforceC2: false, ...(variants ? { variants } : {}) });
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 9));
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 20 }, 4));
     g.beginTurn();
@@ -104,13 +104,13 @@ describe("variants are recorded", () => {
   });
 
   it("and a game without them records nothing new", () => {
-    expect(new Game({ seed: 1 }).toRecording().variants).toBeUndefined();
+    expect(new Game({ lethality: "document", seed: 1 }).toRecording().variants).toBeUndefined();
   });
 });
 
 describe("decision 20: initiative ties are rolled again", () => {
   it("a 5–5 tie is rerolled, and the reroll decides", () => {
-    const g = new Game({ seed: 1 });
+    const g = new Game({ lethality: "document", seed: 1 });
     const script = [5, 5, 3, 7];
     g.rng.int = () => script.shift()!;
     expect(g.rollInitiative()).toEqual(["BLUE", "RED"]);
@@ -119,7 +119,7 @@ describe("decision 20: initiative ties are rolled again", () => {
 
   it("gives neither side the first move more often than the other", () => {
     let redFirst = 0;
-    for (let seed = 1; seed <= 2000; seed++) if (new Game({ seed }).rollInitiative()[0] === "RED") redFirst++;
+    for (let seed = 1; seed <= 2000; seed++) if (new Game({ lethality: "document", seed }).rollInitiative()[0] === "RED") redFirst++;
     // Fair: 1000 ± a few standard deviations (sd ≈ 22). The old tie-break gave ~1100.
     expect(Math.abs(redFirst - 1000)).toBeLessThan(80);
   });
@@ -127,7 +127,7 @@ describe("decision 20: initiative ties are rolled again", () => {
 
 describe("decision 25: ירי מקביל is a vehicle's coaxial gun", () => {
   function field() {
-    const g = new Game({ seed: 2, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 2, enforceC2: false });
     const squad = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const tank = g.addUnit(makeVehicle("T", "BLUE", { x: 20, y: 0 }));
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 250 }, 8));
@@ -166,7 +166,7 @@ describe("decision 25: ירי מקביל is a vehicle's coaxial gun", () => {
 describe("decision 26: a small-arms hit rolls how bad it is", () => {
   /** One hit on a squad of one, with the d10 scripted. */
   function hitWith(d10: number, damageBefore = 0) {
-    const g = new Game({ seed: 1, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false });
     const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 1));
     target.soldiers![0]!.damagePoints = damageBefore;
     const script = [d10, 0]; // the severity die, then the choice of victim (index 0)
@@ -206,7 +206,7 @@ describe("decision 26: a small-arms hit rolls how bad it is", () => {
 describe("decision 27: one wound rule for bullets and explosives", () => {
   /** One hit on a squad of one, the d10 scripted, then the victim (index 0). */
   function hitWith(d10: number, cause: "smallArms" | "explosive") {
-    const g = new Game({ seed: 1, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false });
     const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 1));
     const script = [d10, 0];
     g.rng.int = () => script.shift()!;
@@ -234,7 +234,7 @@ describe("decision 27: one wound rule for bullets and explosives", () => {
   });
 
   it("is what a blast does to a man it catches — artillery's 1d10 is no longer rolled", () => {
-    const g = new Game({ seed: 1, enforceC2: false });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false });
     const target = g.addUnit(makeInfantry("T", "RED", "squad", { x: 0, y: 0 }, 1));
     // Caught (chance roll), severity 9, victim 0.
     g.rng.chance = () => true;

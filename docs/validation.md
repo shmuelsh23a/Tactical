@@ -1,7 +1,8 @@
 # Validation — the game's numbers against the sources
 
 **First written 2026-09-28**, with rules decisions 40 (a turn is 60 s), 41
-(blast and the tank gun from published data) and 42 (rates of fire). This page records what the
+(blast and the tank gun from published data), 42 (rates of fire) and 43
+(calibration to 75% of losses by explosives). This page records what the
 research says about the numbers that decide a firefight — hit chances, blast
 and wounds — and what `npm run validate` measures the game doing. Rerun it after
 any change to those numbers and update the tables here.
@@ -139,7 +140,7 @@ in three of those put out of the fight**.
   The game rolls one wound table for both (decision 27). Worth a look when
   body armour arrives.
 
-## Explosives' share of casualties — now low, and why
+## Explosives' share of casualties — calibrated to the sources (rules decision 43)
 
 The author's principle is about 75%. The sources agree for Western forces in
 Iraq and Afghanistan:
@@ -154,93 +155,135 @@ Iraq and Afghanistan:
 It is not universal: gunshot wounds were 66% of casualties in Syria's civil war
 ([McIntyre
 2020](https://consensus.app/papers/details/6d6bb3c4b00751b7bea0dc4d031b6494/?utm_source=claude_desktop)).
-Those shares come from the **number of rounds** fired, not from any one round
-reaching far.
+The share follows how much fire a war is fought with.
 
-**Measured** (morale on, 100 battles a cell):
+### Calibration
 
-| Battle | Out by explosives, document | Out by explosives, research |
-|---|---|---|
-| Company 3:1 attack, one mortar bomb a turn | 31% | 4% |
-| Company 2:1 attack, one mortar bomb a turn | 23% | 4% |
-| Company 3:1 attack, mortar fire plan | 76% | 31% |
-| Company 2:1 attack, mortar fire plan | 46% | 13% |
+With the research blast (decision 41) and rates (decision 42), explosives
+put out only 13–31% of the men in the company battles. Probes, 60 battles a
+cell, morale on (temporary edits, not committed):
 
-With the reach corrected, the harness's fire plans are too thin to reach 75%.
-The rate of fire is not what holds them back (next section). The number of
-rounds a mission fires for effect is, and so is the number of missions.
-See *Open*.
+| What changed | 3:1 attack, out by HE | 2:1 attack, out by HE | 2:1 attacker wins |
+|---|---|---|---|
+| Harness fire plan, 4 adjusted missions of 12 | 29% | 11% | 62% |
+| 4 missions of 24, or 8 of 36, adjusted | 30–31% | 13% | 62–65% |
+| Small arms ÷2 to ÷7, same fire | 34–39% | 16–25% | 78–88% |
+| 12 missions of 12, fire for effect at once | 56% | 46% | 77% |
+| 12 missions of 24, fire for effect | 64% | 58% | 93% |
+| 12 × 24 for effect, small arms ÷2 | 75% | 71% | 82% |
+| **12 × 24 for effect, small arms ÷3** | **82%** | **77%** | **63%** |
+
+- **More rounds alone did little**: an adjusted mission takes 4–8 turns, so
+  only about two fit in a battle.
+- **Weaker rifles alone did little**: most small-arms losses come from the
+  assault inside 25 m, which keeps its table.
+- **Fire for effect at once**, with rounds to spend, is what put explosives in
+  charge. Weaker rifles then brought the 2:1 attack back inside its planning
+  target (30–70%).
+
+**The ruling (decision 43)**, on the research figures:
+
+- Small arms hit a third as often (`SMALL_ARMS_COMBAT_FACTOR`). Men under fire
+  hit 7–10 times less than in trials ([Rowland
+  1987](https://consensus.app/papers/details/5fabd2f5d0d45bb58de007b49cad2b81/?utm_source=claude_desktop)).
+  ⅓ is the smallest factor that reaches the target, and the table's figures
+  are not trial figures either.
+- A mortar mission fires 24 bombs for effect: 8 a tube, where FM 7-90 asks
+  "seldom less than five rounds for each mortar".
+- The fire it was calibrated on is `CALIBRATED_FIRE_PLAN`: twelve missions a
+  side, fired for effect at once.
+
+**Measured** (`npm run validate`, 100 battles a cell, morale on):
+
+| Battle | Fire | Document: out by HE | Research: out by HE | Research: attacker wins |
+|---|---|---|---|---|
+| Company 3:1 attack | calibrated | 100% (over in 3 minutes) | **82%** | 98% |
+| Company 2:1 attack | calibrated | 100% (over in 4 minutes) | **77%** | 63% |
+| Company 3:1 attack | harness default, a bomb a turn | 31% | 21% | 100% |
+| Company 2:1 attack | harness default | 23% | 19% | 30% |
+| Platoon 3:1 attack | none (decision 37) | 0% | 5% | 100% |
+| Platoon meeting | none | 3% | 10% | 48% |
+
+**Where it falls short of 75%**, and why that is right:
+
+- A battle given little fire, such as the harness's default of one bomb a turn
+  or the company scenario's 4 and 3 missions, is a battle fought mostly with
+  rifles.
+- A platoon battle has no indirect fire at all (decision 37), and its squads
+  have no grenadiers. They would be the platoon's own explosives.
 
 ## Rates of fire (rules decision 42) — changed
 
-With a 60 s turn, a rate is rounds a turn. The figures below are secondhand,
-from manufacturers' and encyclopaedic specifications read through search
-results. Where a range is published, the game takes its **low end**, because
-those are rates on a range and a crew in a fight also has to find its next
-target.
+With a 60 s turn, a rate is rounds a turn. The published figures are for a
+firing range, secondhand, from manufacturers' and encyclopaedic
+specifications:
 
-| Weapon | Published | Document | Research figure |
-|---|---|---|---|
-| Mortar (81 mm M252) | 8–16 sustained; 20–30 for short periods | 3 a tube (never applied) | **8** a tube; a 3-tube section lands up to 24 a turn |
-| Mortar (60 mm M224) | up to 20 sustained; 30 for short periods | — | (the 81 mm's is used) |
-| Artillery (155 mm M777) | 2 sustained; 4 for short periods | 2 a gun (never applied) | **2** a gun; a 6-gun battery lands up to 12 a turn |
-| Artillery (155 mm M109A6) | up to 4–8 for short periods; far less sustained | — | (the M777's is used) |
-| Tank gun, manual loader | 5–7 sustained; a qualified loader loads any round in 7 s | 1 a turn | **5** |
-| Rifle grenade (40 mm M203/M320) | 5–7 aimed; 15–17 for area suppression | 1 a turn | **5** |
-| RPG-7, gunner and assistant | 4–6 | 1 a turn | **4** |
+| Weapon | Published | Document | Low (likeliest) | High (outlier) |
+|---|---|---|---|---|
+| Mortar, a tube (81 mm M252) | 8–16 sustained; 20–30 for short periods | 3 | **3** | **30** |
+| Artillery, a gun (155 mm M777) | 2 sustained; 4 for short periods | 2 | **2** | **4** |
+| Tank gun, manual loader | 5–7; a qualified loader loads in 7 s | 1 | **1** | **7** |
+| Rifle grenade (40 mm) | 5–7 aimed | 1 | **1** | **7** |
+| RPG-7, gunner and assistant | 4–6 | 1 | **1** | **6** |
 
-The peer-reviewed work supports the upper rates for guns, over the few
+The author's ruling: **"no tank fires 5 rounds a minute."** The lowest figure
+is the likeliest rate in a fight, and the highest is an outlier.
+
+- **The distribution** (ours): a geometric tail above the low rate, cut at the
+  high one. Each round above the low is 0.6 as likely as the one below for a
+  fresh crew, and 0.15 for a tired one.
+- **Fatigue** (ours): a crew goes from fresh to tired over 10 turns of firing.
+- **What that gives:**
+
+| Weapon | Fresh: low / average | Tired: low / average |
+|---|---|---|
+| Tank gun | 1 round 41% of turns / 2.3 | 85% / 1.2 |
+| Mortar, a tube | 3 bombs 40% / 4.5 | 85% / 3.2 |
+| Artillery, a gun | 2 shells 51% / 2.7 | 85% / 2.2 |
+
+The peer-reviewed work shows guns can hold their upper rates, over the few
 minutes a fight here lasts:
 
 - Howitzer crews firing 60-round missions as fast as they could load kept
   their rate through the whole mission ([Paragallo et al.
   1979](https://consensus.app/papers/details/1589e347d79f5e7a8d4302c81cdbaa5a/?utm_source=claude_desktop)).
-- A 155 mm barrel with jacket cooling fires 3 rounds a minute continuously
-  without reaching cook-off ([Dubey et al.
+- A cooled 155 mm barrel fires 3 rounds a minute continuously ([Dubey et al.
   2022](https://consensus.app/papers/details/1bdace81cd9852dc9172eeaf8deeb637/?utm_source=claude_desktop)).
-  2 is well inside that.
-- Tank crews qualify by engaging within 5 s of a target appearing, firing the
-  first round within 5 s and the second within 10 s ([Fingerman
+- Tank crews qualify by firing the first round within 5 s of a target
+  appearing, and the second within 10 s ([Fingerman
   1978](https://consensus.app/papers/details/858b69d4f7a357bd9e9f3b3348f5408c/?utm_source=claude_desktop)).
+- Those are gunnery trials. The ruling takes the low end for a fight, as
+  Rowland does for rifles.
 
 **How the engine applies them.**
 
-- A direct-fire launcher fires its rate in one action, each round rolled to
-  hit. The crew stops when its target is down.
-- A fire unit lands at most its rate × its tubes in a turn. Rounds for effect
-  beyond that land on the turns after. Under `document` there is no ceiling,
-  as before.
+- A direct-fire launcher fires its drawn rate in one action, each round
+  rolled to hit. The crew stops when its target is down.
+- A fire unit (3 tubes, 6 guns) lands tubes × its drawn rate each turn.
+  Rounds for effect beyond that land on the turns after.
+- Under `document`: one round, no ceiling, as before.
 
-**Measured**, one minute at a nine-man squad standing in the open:
+**Measured**, one minute of a fresh crew at a nine-man squad standing in the
+open:
 
 | Weapon | Range | Document: rounds, men out | Research: rounds, men out |
 |---|---|---|---|
-| Tank gun | 500 m | 1.0, 1.96 | 3.8, 4.99 |
-| RPG against men | 150 m | 1.0, 0.86 | 4.0, 0.82 |
-| Rifle grenade | 80 m | 1.0, 2.19 | 5.0, 1.72 |
+| Tank gun | 500 m | 1.0, 1.96 | 2.0, 2.87 |
+| RPG against men | 150 m | 1.0, 0.86 | 2.2, 0.43 |
+| Rifle grenade | 80 m | 1.0, 2.19 | 2.3, 0.82 |
 
-- **The document's single "round" reads as a minute of fire.** With the
-  research blast and the research rate, a rifle grenade and an RPG put out
-  about what the document's one round did.
-- **The tank is the exception**: 2.5 times the document. Its HE round's
-  lethal area is a proxy (above).
-- **Nothing counts ammunition** (backlog 12). A tank fires 5 rounds every turn
-  it is told to, where an M1A2 carries 42.
-- **Indirect fire in the harness is unchanged**: 12 bombs or 6 shells for
-  effect are inside one turn's ceiling of 24 and 12. What would change it is
-  the rounds for effect (decision 36) and how many missions a company is
-  given.
+Nothing counts ammunition yet (backlog 12).
 
-## Small arms — kept, and not settled
+## Small arms — a third of the table (rules decision 43)
 
 **Measured**, one minute of a nine-man squad's fire at a nine-man squad, both
 stationary:
 
-| Range | Target in the open | Target in full cover |
-|---|---|---|
-| 50 m | 1.62 men out (0.30 hits a firer) | 0.82 |
-| 150–250 m | 1.09 (0.20) | 0.55 |
-| 350 m | 0.55 (0.10) | 0.27 |
+| Range | Open, document | Open, research | Full cover, research |
+|---|---|---|---|
+| 50 m | 1.62 men out | 0.55 | 0.27 |
+| 150 m | 1.09 | 0.36 | 0.17 |
+| 350 m | 0.55 | 0.17 | 0.09 |
 
 - Men in real combat hit **7 to 10 times less** than the same men in trials
   under simulated combat. That comes from over 100 small-unit battles, Boer War
@@ -248,22 +291,23 @@ stationary:
   1987](https://consensus.app/papers/details/5fabd2f5d0d45bb58de007b49cad2b81/?utm_source=claude_desktop);
   urban battle: [Rowland
   1991](https://consensus.app/papers/details/9f98a6e6b53e5e14a2827bb896754fea/?utm_source=claude_desktop)).
-- The trial baseline those factors apply to is in DOAC/Dstl reports that are
-  not open, so no per-minute rate could be set from them.
-- The figures above would destroy a squad in the open at 50 m in about five
-  minutes. That reads **fast** against the historical record of long, low-loss
-  firefights. It is left for the author, and for a source with a rate in it.
+- Estimates run to 20,000–50,000 rounds issued for each casualty in modern
+  war; most small-arms fire suppresses rather than kills ([Grau & Smith
+  2002](https://consensus.app/papers/details/50a7cc91d1a4512c87f2c8a7e4f1a393/?utm_source=claude_desktop)).
+- The factor of ⅓ was set by the calibration above, not read from a source.
+  A squad in the open at 50 m now loses a man about every two minutes to
+  another squad's rifles, where it lost one or two a minute.
 
 ## Where a side gives up — not settled
 
-**Measured**: the loser's losses when it broke, morale on, research lethality.
+**Measured**: the loser's losses when it broke, morale on, research figures.
 
 | Battle | Median | p10–p90 |
 |---|---|---|
-| Platoon meeting | 47% | 36–58% |
-| Platoon 3:1 attack (defender) | 67% | 56–89% |
-| Company 3:1 attack | 47% | 39–58% |
-| Company 2:1 attack | 35% | 29–44% |
+| Platoon meeting | 50% | 39–64% |
+| Platoon 3:1 attack (defender) | 78% | 44–100% |
+| Company 3:1 attack, calibrated fire | 53% | 44–61% |
+| Company 2:1 attack, calibrated fire | 44% | 29–50% |
 
 - The Dupuy Institute puts the point where a unit stops attacking at about
   20–25% losses, and where it cannot defend at about 40%. US doctrine (ADRP
@@ -275,25 +319,26 @@ stationary:
   ([Wainstein
   1986](https://consensus.app/papers/details/7b0c5485018751218ff31729291623f0/?utm_source=claude_desktop)).
   So the game is right to break forces through morale and not at a number.
-- **Our forces hold on long**: a median of 35–67% losses at the break,
-  against 20–40% in the historical rule of thumb. The morale numbers are all
-  ours (decision 19), so this is theirs to tune at the balance pass.
+- **Our forces hold on long**, and longer now that rifles are weaker: a median
+  of 44–78% losses at the break, against 20–40% in the historical rule of
+  thumb. The morale numbers are all ours (decision 19), so this is theirs to
+  tune at the balance pass.
 
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **The volume of indirect fire.** The rates are set (decision 42) and do
-   not bind. Rounds for effect (12 bombs, 6 shells, decision 36) and the
-   missions a company is given decide whether explosives reach 75% again.
-   Doctrine asks "seldom less than five rounds for each mortar" (FM 7-90),
-   which would be 15 for a 3-tube section.
-2. **Morale's breakpoints**: 35–67% losses at the break against about 20–40%.
-3. **Small arms per minute**: a source with a combat rate in it, or a ruling.
-4. **Ammunition** (backlog 12): with rates of fire, a tank or a launcher
-   fires its rate every turn. The tank is where this shows first.
-5. **The figures that are ours**: the mortar's and tank HE's lethal areas,
-   the RPG's against men, and the 25 m footprint.
+1. **Morale's breakpoints**: 44–78% losses at the break against about 20–40%.
+   With rifles at a third, forces hold on even longer.
+2. **The fire a battle is given.** 75% holds with a mortar section on call all
+   battle. The company scenario's allotment (4 and 3 missions) and the
+   harness's default (a bomb a turn) give 19–31%.
+3. **Grenadiers**: a platoon battle's explosives would be its squads' own
+   rifle grenades, which the drill does not fire.
+4. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
+5. **The figures that are ours**: the tail weights and the 10 turns of
+   fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
+   RPG's against men, and the 25 m footprint.
 6. **Not researched yet**: the hand grenade (30% a man in an assault;
    M67: 5 m killing radius, 15 m casualty radius), the charges (a 100–200 m
    reach at 50% activation), and the armour damage table (a flat 20%

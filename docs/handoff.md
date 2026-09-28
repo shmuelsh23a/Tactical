@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–42: a turn is 60 s, and blast, the tank gun and rates of fire are set from published data ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-28, after rules decisions 40–43: a turn is 60 s; blast, the tank gun and rates of fire are set from published data; and the whole is calibrated so explosives cause 75% of losses where fire support is used ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 616 tests, 33 files
+npm run check       lint + typecheck clean, 620 tests, 33 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 ```
@@ -65,21 +65,24 @@ document's tables a per-game option (a recording from before replays on them).
 `npm run validate` measures the result. Everything is on
 [validation.md](validation.md), with sources.
 
-**Rates of fire** followed the same day (decision 42): a launcher fires its
-published rate in one action (tank 5, rifle grenade 5, RPG 4), and a fire
-unit lands at most rate × tubes a turn (mortar 8 × 3, artillery 2 × 6).
+**Rates of fire and the 75% calibration** followed the same day (decisions
+42–43). A weapon's rate is a range, drawn each turn: the lowest figure
+(tank 1, mortar 3 a tube) is the likeliest, the highest published one the
+outlier, and a crew tires over 10 turns of firing. To bring explosives to 75%
+of losses, on the research figures small arms hit a third as often and a
+mortar mission fires 24 bombs for effect. With a mortar section on call all
+battle (`--fires calibrated --defender-fires calibrated`) the company attacks
+come out at 82% and 77%, and the 2:1 attacker wins 63%.
 
 What it left open, for the author, in order (validation.md, *Open*):
-1. **The volume of indirect fire.** One round no longer reaches 200 m, so
-   explosives now put out 4–31% of the men in the harness, not the 75% of his
-   principle. The rates do not bind: rounds for effect (decision 36) and the
-   missions a company gets decide it.
-2. **Morale's breakpoints**: forces break at a median 35–67% losses; the
-   historical rule of thumb is 20–40%.
-3. **Small arms a minute**: kept as the document has them; no open source
-   gives a combat rate to set them by.
-4. **Ammunition** (backlog 12): a tank now fires 5 rounds a turn, every
-   turn, with nothing to run out of.
+1. **Morale's breakpoints**: forces break at a median 44–78% losses; the
+   historical rule of thumb is 20–40%, and weaker rifles made it worse.
+2. **The fire a battle is given**: 75% needs a mortar section on call all
+   battle. The company scenario's 4 and 3 missions, and the harness default,
+   give 19–31%.
+3. **Grenadiers**: a platoon battle has no indirect fire, so its explosives
+   would be its squads' rifle grenades, which the drill does not fire.
+4. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
 
 Not yet played by a person on the new figures; driven in the browser only to
 turn 1 of the company battle.

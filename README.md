@@ -320,9 +320,10 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 
 - Covering fire (חיפוי): a force holds its action to answer the first enemy it
   sees move, fire or assault (rules decision 18)
-- Blast, the tank gun and rates of fire from published data (rules decisions
-  41–42), with the document's tables kept as a per-game option; a turn is
-  60 s (decision 40)
+- Blast, the tank gun and rates of fire from published data, calibrated so
+  explosives cause 75% of losses where fire support is used (rules decisions
+  41–43), with the document's tables kept as a per-game option; a turn is 60 s
+  (decision 40)
 - Morale and suppression — **not from the document**, which has none: traits,
   a pool of will, leaders, tests, rallies, routs, surrender and a side that
   breaks (rules decision 19, a module like the others)
@@ -1584,32 +1585,53 @@ on the stated reasoning, still awaiting the author's word.
       (was 46–76%). The principle that explosives cause about 75% of losses
       now has to come from the **volume** of fire, not the reach of one round
       — a question for the balance pass (docs/validation.md, *Open*).
-42. ✅ **Rates of fire from published data** (author, 2026-09-28: "research
-    the rates of fire per minute and adapt them"). With a 60 s turn
-    (decision 40) a rate is rounds a turn. Under `lethality: "research"`
-    (`RESEARCH_ROUNDS_PER_TURN` in [`data/lethality.ts`](src/engine/data/lethality.ts)):
-    - **A direct-fire launcher fires its rate in one action**, each round
-      rolled to hit: tank gun **5** (a crew sustains 5–7 with a manual
-      loader), rifle grenade **5** (40 mm: 5–7 aimed), RPG **4** (4–6 with an
-      assistant). The crew stops when its target is down. The document fired
-      one round a turn.
-    - **A fire unit lands at most its rate times its tubes a turn**: mortar
-      **8** a tube (81 mm sustained 8–16; the document's 3 was below every
-      mortar's) × 3 tubes = 24; artillery **2** a gun (155 mm M777
-      sustained; the same as the document's) × 6 guns = 12. A mission's rounds
-      for effect beyond that land on the turns after. The document's rates
-      were never applied, and under `document` still are not.
-    - The low end of each published range: those are rates on a range, and a
-      crew in a fight also has to find its next target.
-    - **What it moved:** a minute of a rifle grenade or an RPG at a squad in
-      the open puts out about what the document's one round did (1.7 and 0.8
-      men against 2.2 and 0.9) — the document's single "round" reads as a
-      minute of fire. A tank at 500 m puts out **5.0 men a minute against
-      2.0**. Indirect fire is unchanged in the harness: 12 bombs and 6 shells
-      for effect are inside one turn's ceiling. What limits it is decision
-      36's rounds for effect, not the rate (docs/validation.md, *Open*).
-    - **Nothing counts ammunition** (backlog 12): a tank fires 5 rounds every
-      turn it is told to, where a real one carries about 40.
+42. ✅ **Rates of fire: a range, drawn each turn, lower as a crew tires**
+    (author, 2026-09-28). First cut the same day at the published rates, and
+    revised: "these are firing range numbers — no tank fires 5 rounds a
+    minute." Under `lethality: "research"` (`RATE_OF_FIRE` in
+    [`data/lethality.ts`](src/engine/data/lethality.ts)):
+    - **Each weapon has a low rate and a high one.** The low is the lowest
+      figure there is (the document's where it gave one) and is the
+      **likeliest**; the high is the highest published rate, the **outlier**:
+      tank gun 1–7, rifle grenade 1–7, RPG 1–6, mortar 3–30 a tube,
+      artillery 2–4 a gun.
+    - **What a crew fires in a turn is drawn**: a geometric tail above the
+      low rate, each round above it 0.6 as likely as the one below for a fresh
+      crew and 0.15 for a tired one (`TAIL_WEIGHT`, ours). A crew goes from
+      fresh to tired over **10 turns of firing** (`FATIGUE_TURNS`, ours). A
+      fresh tank crew averages 2.3 rounds a minute, a tired one 1.2.
+    - A direct-fire launcher fires its drawn rate in one action, each round
+      rolled to hit, and stops when its target is down. A fire unit (3 tubes,
+      6 guns) lands its tubes × its drawn rate a turn, and a mission's rounds
+      for effect beyond that land on the turns after; the fire unit tires with
+      the turns it has fired.
+    - Under `document` nothing changed: one round, no ceiling, the same rng
+      draws. `turnsFiring` is kept only on the research figures.
+    - Nothing counts ammunition (backlog 12).
+43. ✅ **Calibrated to 75% of losses by explosives** (author, 2026-09-28: "I
+    want the numbers to reflect 75% HE casualties"; the sources give 72–78%,
+    docs/validation.md). Measured, not argued: with the rates of decision 42
+    the share of explosives stayed at 13–31%, and the fire's **volume** and
+    the rifle's **deadliness** were what moved it. Under
+    `lethality: "research"`:
+    - **Small arms hit a third as often** (`SMALL_ARMS_COMBAT_FACTOR`): men
+      under fire hit 7–10 times less than in trials (Rowland 1987); ⅓ is the
+      smallest factor that reaches the target, the table's figures not being
+      trial figures either. The coaxial gun and the assault keep their tables.
+    - **A mortar mission fires 24 bombs for effect** (`RESEARCH_ROUNDS_FOR_EFFECT`),
+      8 a tube from a 3-tube section, where decision 36 gave 12 — doctrine
+      asks "seldom less than five rounds for each mortar". Artillery stays 6.
+    - **The fire it was calibrated on** is a company's mortar section on
+      call all battle: twelve missions a side, fired for effect at once
+      (`CALIBRATED_FIRE_PLAN`, `npm run balance -- --fires calibrated
+      --defender-fires calibrated`). There explosives put out **82%** (3:1
+      attack) and **77%** (2:1) of the men, and the 2:1 attacker wins
+      **63%**, inside its 30–70% planning target.
+    - **Where it does not reach 75%**: a battle with little fire — the
+      harness's default of one bomb a turn (19–21%), the company scenario's
+      4 and 3 missions — and every platoon battle, which has no indirect fire
+      (decision 37) and squads without grenadiers. The share follows the fire
+      a battle is given, as it does in the sources.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

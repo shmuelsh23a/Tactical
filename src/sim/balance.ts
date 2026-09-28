@@ -216,6 +216,16 @@ export interface DefenderFires {
 export const FIRE_PLAN: FirePlan = { missions: [{ weapon: "mortar", missions: 4 }], liftAt: 400 };
 
 /**
+ * The fire both sides of a company battle are given for the calibration of
+ * rules decision 43 (⚠️ ours): the company's mortar section on call all
+ * battle — twelve missions of the default rounds for effect, fired for
+ * effect at once (decision 39). With it, explosives cause 75–80% of the
+ * losses, as the sources say they do (docs/validation.md, *Calibration*).
+ */
+export const CALIBRATED_FIRE_PLAN: FirePlan = { missions: [{ weapon: "mortar", missions: 12 }], liftAt: 400, method: "effect" };
+export const CALIBRATED_DEFENDER_FIRES: DefenderFires = { missions: [{ weapon: "mortar", missions: 12 }], method: "effect" };
+
+/**
  * How a battle ended, by the game's own rule (`sideDefeated`). `broke`: the
  * loser's side broke (morale). `wiped`: every one of its fighting forces is
  * out. `both`: both sides went in the same step — a draw.

@@ -27,7 +27,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
-import { LETHALITIES, roundsPerTurnFor, type Lethality } from "./data/lethality.js";
+import { FIRE_UNIT_TUBES, LETHALITIES, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -420,6 +420,8 @@ export class Game {
   }
   /** Every fire mission called, in the order called. */
   private readonly missions: FireMission[] = [];
+  /** Turns each side's fire units have fired, by `side:weapon` — what tires them (rules decision 42). */
+  private readonly fireUnitTurns = new Map<string, number>();
   /** Every fire mission called, in the order called — copies: change them and nothing happens. */
   get fireMissions(): FireMission[] {
     return cloneForRecord(this.missions);
@@ -532,7 +534,7 @@ export class Game {
       }
       const weapons = new Set<string>();
       for (const a of list) {
-        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT[a.weapon] ?? NaN;
+        const rounds = a.roundsForEffect ?? this.defaultRoundsForEffect(a.weapon) ?? NaN;
         if (
           !isIndirect(a.weapon) ||
           weapons.has(a.weapon) ||
@@ -988,7 +990,7 @@ export class Game {
       throw new Error(`no such method of fire: ${String(opts.method)}`);
     }
     const allotment = this.fireSupport[side]?.find((a) => a.weapon === weaponKey);
-    const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey);
+    const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? this.defaultRoundsForEffect(weaponKey) ?? defaultRoundsForEffect(weaponKey);
     if (!Number.isInteger(roundsForEffect) || roundsForEffect < 1 || roundsForEffect > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds for effect, not ${roundsForEffect}`);
     }
@@ -1041,6 +1043,34 @@ export class Game {
     this.journal({ kind: "checkFire", side });
   }
 
+  /** A mission's rounds for effect when nobody set them: the research figure (rules decision 43) or the document's (decision 36). */
+  private defaultRoundsForEffect(weapon: string): number | undefined {
+    return this.lethality === "research" ? RESEARCH_ROUNDS_FOR_EFFECT[weapon] : DEFAULT_ROUNDS_FOR_EFFECT[weapon];
+  }
+
+  /**
+   * How `rounds` land, turn by turn (rules decision 42). Under the research
+   * figures each turn's volley is the fire unit's tubes times a rate drawn for
+   * that turn, lower as the unit tires from the turns it has already fired;
+   * under the document, all of them at once. Drawn when the mission sends its
+   * rounds, so a recording replays them from its calls.
+   */
+  private volleysFor(side: Side, weapon: string, rounds: number): number[] {
+    const rof = RATE_OF_FIRE[weapon];
+    const tubes = FIRE_UNIT_TUBES[weapon];
+    if (this.lethality !== "research" || !rof || !tubes) return [rounds];
+    const key = `${side}:${weapon}`;
+    const volleys: number[] = [];
+    for (let left = rounds; left > 0; ) {
+      const fired = this.fireUnitTurns.get(key) ?? 0;
+      const n = Math.min(left, tubes * rollRate(rof, freshness(fired), this.rng.next()));
+      this.fireUnitTurns.set(key, fired + 1);
+      volleys.push(n);
+      left -= n;
+    }
+    return volleys;
+  }
+
   /**
    * One turn of a fire mission: an adjusting round, or the rounds for effect.
    * While its last adjusting round is still in the air, it waits to see where
@@ -1057,9 +1087,7 @@ export class Game {
     const rounds = forEffect ? m.roundsForEffect : 1;
     // The fire unit lands at most its rate times its tubes in a turn (rules
     // decision 42); the rest of the rounds for effect land on the turns after.
-    const perTurn = roundsPerTurnFor(m.weapon, this.lethality);
-    const volleys: number[] = [];
-    for (let left = rounds; left > 0; left -= perTurn) volleys.push(Math.min(left, perTurn));
+    const volleys = this.volleysFor(m.side, m.weapon, rounds);
     const queued = this.internally(() => {
       const sent = volleys.map((n, later) =>
         this.queueIndirectFire(m.weapon, m.side, m.target, {
@@ -1667,6 +1695,7 @@ export class Game {
         actor.cover = this.groundCoverAt(at);
         const result = resolveDirectFire(this.rng, coverer, actor, {
           weapon: posture.weapon,
+          lethality: this.lethality,
           turn: this.turn,
           cover: actor.cover,
           // A force caught on the move is the case the movement table is
@@ -1899,6 +1928,7 @@ export class Game {
     const targetWasNeutralized = target.neutralized;
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
+      lethality: this.lethality,
       // A target that moved is easier or harder to hit (decision 22), and one
       // that fired from full cover keeps −30% (decision 23).
       ...this.movementTerms(target, target.movedThisTurn > 0),
@@ -1911,12 +1941,18 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) {
+      this.tire(attacker);
       this.exchangeContact(attacker, target);
       this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fire", attackerId, targetId, opts });
     return { ...fireResult, coveringFire };
+  }
+
+  /** A turn of firing tires a force's crews (rules decision 42) — counted only on the research figures. */
+  private tire(unit: Unit): void {
+    if (this.lethality === "research") unit.turnsFiring = (unit.turnsFiring ?? 0) + 1;
   }
 
   fireExplosive(
@@ -1949,6 +1985,7 @@ export class Game {
       lethality: this.lethality,
     });
     if (result.fired) {
+      this.tire(attacker);
       this.exchangeContact(attacker, target);
       const caught = result.blast?.targets ?? [];
       const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);

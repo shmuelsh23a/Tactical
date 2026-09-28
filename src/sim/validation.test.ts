@@ -19,8 +19,8 @@ describe("the validation harness", () => {
   });
 
   it("measures a minute of rifle fire, and cover cuts it", () => {
-    const open = measureRifleFire(50, "none", 500);
-    const covered = measureRifleFire(50, "full", 500);
+    const open = measureRifleFire(50, "none", "document", 500);
+    const covered = measureRifleFire(50, "full", "document", 500);
     // 30% a man at 50 m, 6 in 10 hits putting a man out: about 1.6 of 9.
     expect(open.hitsPerFirerMinute).toBeCloseTo(0.3, 1);
     expect(covered.casualtiesPerMinute).toBeLessThan(open.casualtiesPerMinute);

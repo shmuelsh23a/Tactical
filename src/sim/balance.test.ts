@@ -70,7 +70,7 @@ describe("the fire plan, and what put the men out", () => {
 
   it("strikes a mortar plan from a platoon's battle, unless rules decision 37 is off", () => {
     const planned = (anyEchelon: boolean) =>
-      [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN, anyEchelon }));
+      [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN, anyEchelon, lethality: "document" }));
     expect(planned(false).every((r) => r.outBy.explosive === 0)).toBe(true);
     expect(planned(true).some((r) => r.outBy.explosive > 0)).toBe(true);
     expect(callableAt("platoon", "mortar")).toBe(false);
