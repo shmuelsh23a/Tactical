@@ -412,18 +412,234 @@ Out by explosives (100 battles a cell): platoon meeting 22% → 31%, platoon
 3:1 attack 26% → 30%, platoon 2:1 attack 37% → 40%; the company battles moved
 by a point, and the calibrated ones not at all (83%, 78%).
 
+## Prepared positions, half-strength squads, and mortar ammunition (rules decision 48)
+
+**Prepared positions start in full cover** — dug in, with overhead cover —
+where they started in partial. It is set in the three Tel Azeka specs
+(`baseCover: "full"`) and is the harness's default (`--prepared-cover
+partial` for the old). Small arms meet the same cover either way: a
+defender that stays put digs itself to full cover by its 7th turn (3 turns
+before the tools come out, 2 a level), before an attacker 700 m off is in
+range, so with no fire plan the battles came out identical, battle for
+battle. What changes is the shelling: a force in full cover is under a
+roof (`underRoof`), and the first turns.
+
+**A squad the attrition rule neutralised counts by its casualties**, on the
+research figures, as a routed one already did (decision 45): a squad down to
+half strength is not a squad lost. A surrendered force still counts whole.
+
+**Measured**, calibrated company battles (12 missions of 24 a side, 100
+battles a cell, research figures), each change on its own:
+
+| Battle | Partial cover, before | Partial + decision 48 | Full cover | Both | Out by explosives, partial → full |
+|---|---|---|---|---|---|
+| Company 3:1 attack, attacker wins | 95% | 95% | 88% | **87%** | 83% → 75% |
+| Company 2:1 attack, attacker wins | 56% | 34% | 7% | **2%** | 78% → 69% |
+
+`npm run validate` now gives (research): 3:1 wins 87%, defender breaks at
+42% (36–50%), 75% by explosives; 2:1 wins 2%, attacker breaks at 22%
+(18–29%), 69% by explosives. **The 2:1 attack on a dug-in company no longer
+wins** — the doctrinal 3:1 does. The 30–70% planning target decision 44
+traded for is lost; see *Open*.
+
+**Mortar ammunition — does it need a limit?** Both sides given the same
+allotment, fire for effect at once, 60 battles a cell, research figures:
+
+| Battle | Cover | Missions × rounds a side | Attacker wins | Out by explosives |
+|---|---|---|---|---|
+| 2:1 | full | none (a bomb a turn) | 3% | — |
+| 2:1 | full | 2 × 24 … 12 × 24 | 0–3% | 56–69% |
+| 2:1 | partial | 2 × 24 … 12 × 24 | 2–35% | 66–78% |
+| 3:1 | full | none (a bomb a turn) | 92% | — |
+| 3:1 | full | 2 × 24 | 48% | 65–75% |
+| 3:1 | full | 4 × 12 | 65% | |
+| 3:1 | full | 4 × 24 | 90% | |
+| 3:1 | full | 8 × 12 | 73% | |
+| 3:1 | full | 8 × 24 | 88% | |
+| 3:1 | full | 12 × 12, 12 × 24 | as 8 × 12, 8 × 24 | |
+| 3:1 | partial | 2 × 24 … 12 × 24 | 85–98% | 73–83% |
+
+- **More than about 8 missions a side is never fired**: 8 and 12 give the
+  same battles. One mission in hand a weapon, the adjustment and the
+  delivery hold a section to about 8 in the battle's 10–15 minutes. The
+  count is already a limit only below that.
+- **Rounds a mission move it more than missions**: 4 × 24 beats 8 × 12.
+- **Starving both sides helps the defender**: at 2 × 24 the 3:1 attack
+  wins 48%, where a bomb a turn gives it 92% — the attacker's fire plan is
+  what gets it across.
+
+The engine does not count bombs (backlog 12), so the missions × rounds
+allotment is the limit. **12 × 24 a side is past what a section fires in a
+company battle; 8 × 24 plays the same.** A per-tube bomb count would matter
+only for longer battles or several battles in a row (a campaign).
+
+## The defender's breakpoint at 50% (rules decision 49)
+
+With prepared positions dug in (decision 48) the calibrated 2:1 company
+attack won 2%, so the defender's breakpoint was swept down from 60% toward
+the rule of thumb's 40% (100 battles a cell, research figures, the
+attacker's held at 30%). "Def lost" is the defender's median casualties at
+its break:
+
+| Defender breaks at | Calibrated 3:1: wins / def lost / explosives | Calibrated 2:1: wins / def lost | 2:1, a bomb a turn: wins / def lost | Platoon 2:1: wins / def lost |
+|---|---|---|---|---|
+| 60% (decision 44) | 87% / 42% / 75% | 2% / 35% | 3% / 54% | 63% / 67% |
+| 55% | 91% / 42% / 74% | 3% / 35% | 5% / 51% | 65% / 61% |
+| **50%** | **95% / 39% / 75%** | **8% / 33%** | **8% / 49%** | **68% / 56%** |
+| 45% | 97% / 31% / 87% | 11% / 32% | 12% / 43% | 68% / 56% |
+| 40% | 99% / 31% / 91% | 22% / 29% | 17% / 36% | 70% / 50% |
+| 35% | 100% / 28% / 95% | 38% / 26% | 27% / 32% | 71% / 44% |
+
+- **No setting meets both targets.** The 2:1 attack gets back into 30–70%
+  only at 35–40%, where defenders quit at 26–29% casualties and the 3:1
+  attack is a walkover at 91–95% explosives.
+- **The author took 50%** (2026-09-28): defenders break at 33–49%
+  casualties, centred on 40%; the calibrated 3:1 attack wins 95% at 75%
+  explosives. A 2:1 attack on a dug-in position fails (8%), as doctrine's
+  demand for 3:1 says it should; the 30–70% target decision 44 kept for it
+  is dropped.
+- Attackers still give up at 19–25%.
+
+## Attacks on a hasty defence (no prepared position)
+
+`--prepared-cover none` (harness option): the defender starts in the open
+and digs in as any force that stays put does. 100 battles a cell, research
+figures, defender breaks at 50% (decision 49):
+
+| Battle | Fire | Defender's position | Attacker wins | Attacker lost at break | Defender lost at break | Out by explosives | Minutes |
+|---|---|---|---|---|---|---|---|
+| Platoon 2:1 | a platoon's own | none / partial / full | 68% (all three) | 25% | 56% | 40% | 14 |
+| Company 2:1 | a bomb a turn | none / partial / full | 8% (all three) | 20% | 49% | 32% | 15 |
+| Company 2:1 | calibrated | **none** | **95%** | 24% | 38% | **92%** | 6 |
+| Company 2:1 | calibrated | partial | 81% | 25% | 40% | 81% | 11 |
+| Company 2:1 | calibrated | full | 8% | 22% | 33% | 69% | 12 |
+| Company 3:1 | a bomb a turn | none / partial / full | 98% (all three) | — | 44% | 36% | 13 |
+| Company 3:1 | calibrated | none | 100% | — | 42% | 96% | 4 |
+| Company 3:1 | calibrated | full | 95% | — | 39% | 75% | 10 |
+
+- **Without a fire plan, preparing makes no difference at all**, battle for
+  battle: a defender in the open digs to full cover by its 7th minute
+  (`DIG_IN`: 3 turns, then 2 a level), before an attacker 700 m off reaches
+  it. Digging was on a pre-decision-40 clock — fixed by decision 50, below.
+- **With a fire plan, a hasty defender is caught in the open.** The 2:1
+  attack wins 95% in 6 minutes, 92% by explosives — past the 75% target,
+  and far above what the planning ratios suggest (about 2.5:1 for a hasty
+  defence, so 2:1 should be a close fight).
+- Dug-in cover (`cover`) never puts a force under a roof against shells;
+  only a prepared `baseCover: "full"` does. So the swing from 95% to 8% is
+  overhead cover plus the first minutes in the open.
+
+## Digging in takes minutes (rules decision 50)
+
+The dig-in clock was the document's — the tools out after 3 turns, a level
+every 2 — set before a turn was 60 s. **On the research figures**:
+
+| Level | After this much work | Source |
+|---|---|---|
+| Partial — a hasty prone shelter, about ½ m deep, spoil thrown up in front | 30 minutes | Depth: FM 21-75 ("about one-half meter"), FM 5-103 ("at least 1½ feet"). Time: **ours**, a third of the foxhole's for about half its earth |
+| Full — an individual foxhole, frontal cover | 90 minutes | US Army, FM 5-15 *Field Fortifications* (1944): "90 minutes for a soldier to excavate and camouflage an individual rifleman's foxhole" ([Pacific War Online Encyclopedia](http://pwencycl.kgbudge.com/F/o/Fortifications.htm)) |
+| Overhead cover | never, in a battle | FM 5-103: "at least ten times more protected from indirect fire" under it; a two-soldier deliberate position is 6–8 hours and overhead cover 2–4 more (secondary; FM 5-103's own time table is an image and could not be read) |
+
+The tools still come out after 3 turns in place (ours). FM 5-103 also
+puts the worth of frontal cover at about half the small-arms casualties,
+which is what full cover's −50% already is.
+
+**Measured** (100 battles a cell, research figures, defender breaks at
+50%). "Hasty" is `--prepared-cover none`; the prepared rows did not move:
+
+| Battle | Fire | Hasty, before → after | Partial, before → after | Prepared (full) |
+|---|---|---|---|---|
+| Platoon 2:1 | platoon's own | 68% → **90%** | 68% → 77% | 68% |
+| Company 2:1 | a bomb a turn | 8% → **59%** | 8% → 27% | 8% |
+| Company 2:1 | calibrated | 95% → **100%** (93% explosives) | 81% → 89% | 8% |
+| Company 3:1 | a bomb a turn | 98% → 100% | 98% → 100% | 98% |
+| Company 3:1 | calibrated | 100% | 100% | 95% |
+
+- **Preparing a position now matters**, with or without a fire plan: a 2:1
+  company attack without mortars wins 59% against a hasty defence and 8%
+  against a prepared one. The planning ratios give about 2.5:1 for a hasty
+  defence and 3:1 for a prepared one, so a 2:1 attack on a hasty defence
+  should be a close fight, and it is.
+- **A hasty defender under a mortar section is lost** (100%, 93% by
+  explosives): it has no cover at all for its first half hour.
+- `npm run validate` did not move: its defenders are prepared.
+- Scenario forces without a prepared position — RED platoon B in the
+  company battle, RED-1 and RED-3 at Tel Azeka, RED at Yokneam — no longer
+  dig in by minute 7; they hold what the ground gives them.
+
+## The design principles, measured
+
+The author's principles (README, *Design principles*, 2026-09-28): a
+prepared position gives the defender its superiority and makes an attack
+need 3:1; in a meeting engagement nobody has a defender's bonus, so numbers
+should win; fortifying during battle belongs to the higher echelons.
+
+**Meeting engagements at odds** (`meetingOdds`, harness, 100 battles a
+cell, research figures, nobody prepared, both sides advancing). Win shares
+are BLUE (the larger) / RED / draw:
+
+| Echelon | Odds | Men | Larger wins | Smaller wins | Draw | Out by explosives |
+|---|---|---|---|---|---|---|
+| Squad | even | 9 v 9 | 50% | 41% | 9% | 53% |
+| Squad | ~2:1 | 9 v 5 | 72% | 28% | 0% | 43% |
+| Squad | ~2.3:1 | 9 v 4 | 80% | 15% | 5% | 37% |
+| Platoon | even | 36 v 36 | 35% | 37% | 28% | 30% |
+| Platoon | 2:1 | 36 v 18 | 88% | 9% | 3% | 36% |
+| Platoon | 4:1 | 36 v 9 | 100% | 0% | 0% | 24% |
+| Company | even | 113 v 113 | 43% | 39% | 18% | 36% |
+| Company | ~1.6:1 | 113 v 72 | 74% | 12% | 14% | 38% |
+| Company | ~3:1 | 113 v 36 | 100% | 0% | 0% | 21% |
+
+With nobody prepared, the larger force wins, and more surely the larger
+the odds — the principle holds. Against a prepared defender the same
+harness gives the 2:1 attack 8% and the 3:1 attack 95%.
+
+**The smart attacker in the browser** (`tools/smart-attacker.mjs`: a scripted player bounding by
+halves, command groups following, a mortar fire plan on the objective area —
+not on where each squad lies — lifted at 150 m, then mortar smoke on the
+objective from 400 m; the defender played by the drill). Seeds 11–18 on
+`?seed=`, 60 s turns, research figures:
+
+| Scenario | Attacker wins | Draws | Defender wins | Over by |
+|---|---|---|---|---|
+| `telAzekaAssault` — a company on a prepared platoon, 86 v 32 | **7** | 1 | 0 | turn 8–10 |
+| `telAzekaAssault2` — two platoons on a prepared platoon, 59 v 32 | **3** | 2 | 3 | turn 8–9 |
+
+- **3:1 wins and 2:1 is a coin toss for a skilled attacker**, where the plain
+  drill wins 95% and 8%. A good plan — smoke, a fire plan, bounding — can
+  sometimes carry an attack below 3:1, which is as it should be; 3:1 is
+  what makes it reliable.
+- **The mortars decide it before the infantry closes.** Infantry walks 50 m
+  a turn, half that under fire, less uphill: 14–25 m a minute up the tel, so
+  the battle is over in 8–10 minutes with the attackers still 150–300 m out.
+  75–100% of the casualties are by explosives.
+- **So the odds act mostly through what a side can lose**, not through its
+  fire: both sides have the same mortar section, and on seeds 11–13 the two
+  scenarios ended with the same casualties on both sides — the third
+  platoon never came into range — but at 86 men BLUE could lose them and
+  still go on. An attacker at 3:1 usually brings more fire support as well;
+  these scenarios give both sides the same.
+- **Earlier browser results were off.** Before 2026-09-28's fix the script
+  read every position 36 m off (the symbol image is not centred on the
+  unit), locked distant squads out of the order cycle, and never laid smoke
+  (a wrong button label): its attack crept forward at 14 m a bound. The
+  earlier "3:1 wins by turn 3–4" and the first run of these seeds (1 of 8,
+  2 of 4) were with that script.
+
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **The fire a battle is given.** 75% holds with a mortar section on call all
-   battle, which the company scenario now has (twelve missions a side). The
-   harness's default (a bomb a turn) gives 19–31%. The company battle has not
-   been played by a person on it yet.
-2. **Ammunition** (backlog 12): nothing runs out, whatever the rate — a
-   grenadier fires his rate every turn.
-3. **A defender's breakpoint**: 42–50% casualties against the rule of
-   thumb's 40%, traded for the 2:1 attack's planning target.
+1. **Which scenario forces should start prepared.** Since decision 50 a
+   force that has not prepared its position stays in the open for 30
+   minutes; RED platoon B (company battle), RED-1 and RED-3 (Tel Azeka) and
+   RED at Yokneam have none.
+2. **The fire a battle is given.** 75% holds with a mortar section on call all
+   battle (69–75% with full cover). Missions past about 8 a side go unfired
+   (decision 48's sweep).
+3. **Ammunition** (backlog 12): nothing runs out by the bomb, whatever the
+   rate — a grenadier fires his rate every turn. The mission allotment is
+   the only limit.
 4. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.

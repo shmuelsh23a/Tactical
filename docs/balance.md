@@ -518,6 +518,10 @@ It uses the same targets as before.
   (`--prepared-cover full`). The results are identical to the digit, because
   the defenders dig in to full cover by turn 7, before the attack arrives. The
   prepared defender already fights from the best cover the rules have.
+  *Later (rules decision 48, 2026-09-28): full is now the default, and with
+  a fire plan it does change things — full cover is under a roof against
+  shells from turn 1. The calibrated 2:1 company attack went from 56% to 7%
+  on it alone; see validation.md.*
 
 **Why: the square law.** When every man can fire at every enemy, a force's
 fighting power goes as the **square** of its numbers, so 2:1 in men is 4:1 in
@@ -1404,7 +1408,7 @@ artillery at battalion and above (decision 37). Rounds for effect default to
 
 **The same under the rule as built**, where both sides command the battle's
 echelon and the harness strikes what they may not call
-(`npm run balance -- --sweep --n 200 --drill western --prepared-cover full
+(`npm run balance -- --sweep --n 200 --drill western
 --fires artillery=2,mortar=4,registered=on --defender-fires
 mortar=4,registered=200/400`; `--any-echelon` switches the rule off). The
 missions fire the new defaults, 12 for a mortar, on both sides:

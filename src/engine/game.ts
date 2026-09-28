@@ -2440,6 +2440,8 @@ export class Game {
       this.units,
       (at) => coverFromObjects(this.terrain, at),
       (u) => this.preparedCoverAt(u),
+      // Digging takes minutes on the research figures (rules decision 50).
+      this.lethality,
     );
     return { chargeWork, morale };
   }
@@ -2579,8 +2581,8 @@ export class Game {
   sideBroken(side: Side): boolean {
     if (!this.morale) return false;
     // By posture on the research figures (rules decision 44), where a routed
-    // force counts only its men down or broken (decision 45); two thirds, and
-    // a rout counted whole, on the document's.
+    // or neutralised force counts only its men down or broken (decisions 45
+    // and 48); two thirds, and such a force counted whole, on the document's.
     if (this.lethality !== "research") return sideBroken(this.units, side);
     const share = SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"];
     return sideBroken(this.units, side, share, false);

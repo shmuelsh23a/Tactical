@@ -669,12 +669,13 @@ describe("a side's breakpoint by posture (rules decision 44)", () => {
     return g;
   };
 
-  it("gives up an attack at 30% and a defence at 60%, on the research figures", () => {
-    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.3, defending: 0.6 });
+  it("gives up an attack at 30% and a defence at 50%, on the research figures (decision 49)", () => {
+    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.3, defending: 0.5 });
     const at3 = battle({ attackers: ["BLUE"] }, 3);
     expect(at3.sideBroken("BLUE")).toBe(true);
     expect(at3.sideBroken("RED")).toBe(false);
-    expect(battle({ attackers: ["BLUE"] }, 6).sideBroken("RED")).toBe(true);
+    expect(battle({ attackers: ["BLUE"] }, 4).sideBroken("RED")).toBe(false);
+    expect(battle({ attackers: ["BLUE"] }, 5).sideBroken("RED")).toBe(true);
     // In a meeting engagement both attack.
     expect(battle({ attackers: ["BLUE", "RED"] }, 3).sideBroken("RED")).toBe(true);
   });
@@ -722,5 +723,34 @@ describe("a rout counts by its casualties on the research figures (rules decisio
     expect(platoon("document").sideBroken("BLUE")).toBe(false); // 8 of 24 is under two thirds
     expect(sideBroken(platoon("document").units, "BLUE", 0.3)).toBe(true);
     expect(sideBroken(platoon("research").units, "BLUE", 0.3, false)).toBe(false);
+  });
+});
+
+describe("a squad left at half strength counts by its casualties on the research figures (rules decision 48)", () => {
+  // A platoon of three squads defending: one is neutralised by the attrition rule, 4 of 8 down.
+  const platoon = (lethality: "document" | "research") => {
+    const g = new Game({ seed: 1, morale: true, lethality, attackers: ["RED"] });
+    for (const i of [1, 2, 3]) g.addUnit(makeInfantry(`B${i}`, "BLUE", "squad", { x: i * 50, y: 0 }, 8));
+    g.addUnit(makeInfantry("R", "RED", "platoon", { x: 0, y: 900 }, 60));
+    const hit = g.getUnit("B1");
+    hit.soldiers!.slice(0, 4).forEach((s) => (s.neutralized = true));
+    hit.neutralized = true;
+    return g;
+  };
+
+  it("counts 4 of its 8, not all 8", () => {
+    // Defending: 50%. Whole, B1 alone would be 8 of 24; with B2 at 7 more down it would pass.
+    const g = platoon("research");
+    g.getUnit("B2").soldiers!.slice(0, 7).forEach((s) => (s.neutralized = true));
+    g.getUnit("B2").neutralized = true;
+    // 4 + 7 = 11 of 24 (46%): short of 50%. Counted whole it would be 16 of 24 (67%).
+    expect(g.sideBroken("BLUE")).toBe(false);
+    expect(sideBroken(g.units, "BLUE", 0.5)).toBe(true);
+  });
+
+  it("still counts a surrendered force whole", () => {
+    const g = platoon("research");
+    for (const id of ["B2", "B3"]) g.getUnit(id).surrendered = true;
+    expect(g.sideBroken("BLUE")).toBe(true);
   });
 });

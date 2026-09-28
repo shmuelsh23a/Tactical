@@ -401,9 +401,11 @@ export function sideBroken(
   side: Side,
   share: number = SIDE_BREAK_SHARE,
   /**
-   * Whether a force that routed counts every man against its side (rules
-   * decision 19) or only those down or broken (decision 45, with the
-   * historical breakpoints: a squad that runs is not a squad lost).
+   * Whether a force that routed, or that the attrition rule neutralised,
+   * counts every man against its side (rules decision 19) or only those down
+   * or broken (decisions 45 and 48, with the historical breakpoints: a squad
+   * that runs, or one left at half strength, is not a squad lost). A force
+   * that surrendered counts whole either way.
    */
   routedCountsWhole = true,
 ): boolean {
@@ -421,7 +423,7 @@ export function sideBroken(
     }
     const soldiers = u.soldiers ?? [];
     total += soldiers.length;
-    if (u.neutralized || u.surrendered || (u.routing && routedCountsWhole)) {
+    if (u.surrendered || ((u.neutralized || u.routing) && routedCountsWhole)) {
       lost += soldiers.length;
       continue;
     }

@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–47: a turn is 60 s; blast, the tank gun and rates of fire are set from published data; the whole is calibrated so explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints; and squads fire their grenadiers ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-28, after rules decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,13 +25,19 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 636 tests, 33 files
+npm run check       lint + typecheck clean, 647 tests, 33 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
+node tools/smart-attacker.mjs [scenario] [turns]
+                    a scripted attacker plays a scenario in the browser
+                    (dev server on :5199 first; SEED=n for other dice)
 ```
 
-The app opens on a **scenario picker** (Yokneam, Tel Azeka, and a company
-battle on Tel Azeka, or a saved battle to review). A battle opens on **mission
+The app opens on a **scenario picker** (Yokneam, Tel Azeka, a company
+battle on Tel Azeka, and a company (3:1) and two platoons (2:1) assaulting a
+prepared platoon there — or a saved battle to review). **The scenarios are
+test beds** (author, 2026-09-28); the real ones come later. `?seed=N` in the
+address plays one on other dice. A battle opens on **mission
 planning** before turn 1, and the demo plays end to end in the browser,
 including the debrief. The two platoon battles have **no indirect fire** any
 more (rules decision 37); the company battle is where fire is planned and
@@ -97,16 +103,58 @@ its own side 1.5% of the time (decision 47), not the document's 5%. Platoon
 battles are now 30–40% explosives; the calibrated company battles did not
 move.
 
-What it left open, for the author, in order (validation.md, *Open*):
-1. **The fire a battle is given**: 75% needs a mortar section on call all
-   battle. The company scenario has it now — twelve missions a side (author,
-   2026-09-28; it had 4 and 3) — but nobody has played it that way yet.
-2. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
-3. **A defender's breakpoint** sits at 42–50% against the rule of thumb's
-   40%, traded for the 2:1 attack's planning target.
+**Then a smarter attacker and a 3:1 scenario** (`telAzekaAssault`: a
+company against a platoon, 12 missions a side; `telAzekaAssault2`, two
+platoons, for 2:1). The scripted player (`tools/smart-attacker.mjs`) bounds
+by halves behind a fire plan and lays smoke; with its position-reading bug
+fixed it wins the 3:1 attack 7 of 8 and the 2:1 attack 3 of 8
+(validation.md, *The design principles, measured*). `?seed=N` plays a
+scenario on other dice.
 
-Not yet played by a person on the new figures; driven in the browser only to
-turn 1 of the company battle.
+**Then decision 48**: prepared positions start in full (overhead) cover,
+and on the research figures a squad the attrition rule neutralised counts
+by its casualties. The calibrated 3:1 attack wins 87%, 75% by explosives;
+the 2:1 wins 2% (was 56%) — mostly the overhead cover. A sweep of mortar
+missions × rounds found that more than about 8 missions a side are never
+fired, and that rounds a mission matter more (validation.md).
+
+**Then decisions 49–50**: a defender gives up at 50%, and on the research
+figures digging takes minutes — partial cover after 30, full after 90 (FM
+5-15, 1944), never overhead cover. A 2:1 company attack without mortars
+wins 59% against a hasty defence and 8% against a prepared one.
+
+**The author's design principles** (README, 2026-09-28), which every
+balance change should be measured against: a prepared position gives the
+defender its superiority and makes an attack need 3:1; a meeting engagement
+has no defender's bonus, so numbers win (measured: 72–88% at ~2:1, 80–100% at
+3:1); fortifying during battle belongs to the higher echelons, whose battles
+last hours; the scenarios are test beds. Measured with the smart attacker:
+3:1 on a prepared platoon wins 7 of 8, 2:1 wins 3 of 8 (2 draws).
+
+**Start the next session here** — open, in rough order:
+1. **Fire support by odds.** Both sides of the test scenarios have the same
+   mortar section, and the mortars decide the battle before the infantry
+   closes (8–10 minutes; infantry advances 14–25 m a minute uphill under
+   fire). So the odds act through what a side can lose, not through its
+   fire. An attacker at 3:1 usually brings more fire than the defender:
+   asked the author whether the real scenarios should; no answer yet.
+2. **Infantry pace under fire.** 50 m a turn walking, halved under fire,
+   less uphill: an attack never closes within the time a company battle
+   lasts. Not yet checked against sources — worth a research pass like the
+   dig-in one before a ruling.
+3. **The plain drill against the smart attacker.** The harness's drill wins
+   the 3:1 attack 95% and the 2:1 8%; the smart attacker 7/8 and 3/8. The
+   drill is what balance numbers are measured with; how far it is from a
+   good player is itself a finding.
+4. **Overhead cover for the higher echelons** (decision 50 leaves it out: it
+   takes hours). When battalion battles come (backlog 3), it needs a step on
+   the digging clock (6–8 h for a two-soldier position, 2–4 more for
+   overhead cover — secondary sources; FM 5-103's table is an image).
+5. **Ammunition** (backlog 12): nothing runs out by the bomb; the mission
+   allotment is the only limit, and past ~8 missions a side they go unfired.
+
+Not yet played by a person on the new figures; the scripted players are the
+only ones who have.
 
 ## Next session: what is left of the author's agenda (2026-09-23)
 
@@ -399,6 +447,24 @@ mission parameters, mission and victory conditions, and weather.
 Browser-driving traps live in [driving-the-game.md](driving-the-game.md) and
 testing ones in [AGENTS.md](../AGENTS.md). These are the ones specific to where
 the code currently stands:
+
+- **A map symbol is not centred on its unit.** APP-6 amplifiers sit above the
+  frame, so an image's centre is ~36 m off the unit's position. Read a
+  selected unit's position from its `circle.selection-ring` (`cx`, `cy`).
+  The smart attacker read image centres for its first runs and crept forward
+  14 m a bound; every result from that version is marked in validation.md.
+- **A squad far from its command group takes orders every other turn**
+  (`g.token-no-orders`). A script that alternates bound/hold by turn parity
+  can lock such a squad on "hold" for the whole battle.
+- **Research-figure rules are gated on `lethality`**, and a recording without
+  the field reads as `"document"`. Decisions 40–50 all follow this: a new
+  research rule goes behind `this.lethality === "research"` so older
+  recordings replay.
+- **The container blocks most military-manual sites** (globalsecurity,
+  infantrydrills, archive.org, DTIC). The Apify connector's `web-fetch` and
+  `rag-web-browser` get through; a large result is saved to a file and can be
+  searched with `jq`. Chromium in the container also phones Google, which
+  the proxy rejects — harmless noise.
 
 - **A battle does not begin when it is built.** The App opens on mission
   planning at turn 0 and calls `beginTurn` only when both sides have planned

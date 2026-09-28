@@ -3,7 +3,8 @@ import { roll } from "./dice.js";
 import type { SmokeScreen, Unit } from "./types.js";
 import type { Point } from "./geometry.js";
 import { CASUALTY_RULES } from "./data/casualties.js";
-import { DIG_IN } from "./data/concealment.js";
+import { DIG_IN, RESEARCH_DIG_IN } from "./data/concealment.js";
+import type { Lethality } from "./data/lethality.js";
 import type { CoverState } from "./data/directFire.js";
 import { refreshUnitStatus } from "./units.js";
 import { betterCover } from "./terrain.js";
@@ -44,9 +45,18 @@ export function decaySmoke(smoke: SmokeScreen[]): SmokeScreen[] {
  * A force that stays put starts work after the third turn and improves a level
  * every two turns, up to the protection of a force that was behind cover to
  * begin with (rules decision 12). Nothing is dug in less time than that, and a
- * force that gets up and moves leaves the hole behind.
+ * force that gets up and moves leaves the hole behind. On the research figures
+ * the work takes minutes — 30 turns to a prone shelter, 90 to a foxhole
+ * (decision 50).
  */
-export function digInCover(stationaryTurns: number): CoverState {
+export function digInCover(stationaryTurns: number, lethality: Lethality = "document"): CoverState {
+  if (lethality === "research") {
+    // Minutes of digging, not turns of it (decision 50): see RESEARCH_DIG_IN.
+    const work = stationaryTurns - RESEARCH_DIG_IN.startsAfterTurns;
+    let reached: CoverState = "none";
+    for (const l of RESEARCH_DIG_IN.levels) if (work >= l.afterWorkTurns) reached = l.cover;
+    return reached;
+  }
   const working = stationaryTurns - DIG_IN.startsAfterTurns;
   if (working < DIG_IN.turnsPerLevel) return "none";
   const level = Math.floor(working / DIG_IN.turnsPerLevel);
@@ -68,6 +78,7 @@ export function endTurnUnitUpkeep(
   units: Unit[],
   groundCover: (at: Point) => CoverState = () => "none",
   preparedCover: (u: Unit) => CoverState = () => "none",
+  lethality: Lethality = "document",
 ): void {
   for (const u of units) {
     u.movementBlocked = u.hitThisTurn;
@@ -97,7 +108,7 @@ export function endTurnUnitUpkeep(
     // object it stands against — or better if it has dug.
     u.cover = betterCover(
       betterCover(u.baseCover, groundCover(u.position)),
-      digInCover(u.stationaryTurns),
+      digInCover(u.stationaryTurns, lethality),
     );
 
     // Men who got up and moved are on their feet for the next shell (rules

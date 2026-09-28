@@ -547,3 +547,27 @@ describe("a sector of observation", () => {
     expect(battle(180)).toBe(false); // watching west — misses it
   });
 });
+
+describe("digging in takes minutes on the research figures (rules decision 50)", () => {
+  it("reaches a prone shelter after 30 turns of work and a foxhole after 90", () => {
+    // The tools come out after 3 turns in place, as on the document's clock.
+    expect(digInCover(7, "research")).toBe("none");
+    expect(digInCover(32, "research")).toBe("none");
+    expect(digInCover(33, "research")).toBe("partial");
+    expect(digInCover(92, "research")).toBe("partial");
+    expect(digInCover(93, "research")).toBe("full");
+    expect(digInCover(500, "research")).toBe("full"); // never overhead cover
+    // The document's clock is unchanged.
+    expect(digInCover(7, "document")).toBe("full");
+  });
+
+  it("keeps a force that has held still for 10 turns in the open, where the document's clock has it dug in", () => {
+    const held = (lethality: "document" | "research") => {
+      const unit = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8);
+      for (let t = 0; t < 10; t++) endTurnUnitUpkeep([unit], undefined, undefined, lethality);
+      return unit.cover;
+    };
+    expect(held("research")).toBe("none");
+    expect(held("document")).toBe("full");
+  });
+});

@@ -1640,7 +1640,7 @@ on the stated reasoning, still awaiting the author's word.
     Dupuy Institute; US doctrine calls a unit destroyed at 30%); ours broke at
     44–78%. On the research figures a side breaks when this share of its men
     are down, broken, or in a force that fled (`SIDE_BREAK_BY_POSTURE`):
-    **30% attacking, 60% defending**, where decision 19 gave two thirds to
+    **30% attacking, 60% defending** (50% since decision 49), where decision 19 gave two thirds to
     both. The shares sit above the losses they stand for because broken and
     fled men count too; measured, an attacker gives up at a median **16–25%
     casualties** and a defender at **42–50%**, and the 2:1 company attack
@@ -1707,6 +1707,49 @@ on the stated reasoning, still awaiting the author's word.
     attack, 8 → 2 in the 2:1, 18 → 4 in the company 2:1 — about what it was
     when a squad threw two. The grenades still catching someone did not
     change (36, 24, 100).
+48. ✅ **A prepared position is dug in with overhead cover, and a squad left
+    at half strength is not a squad lost** (author, 2026-09-28).
+    - **Prepared positions start in full cover**, not partial: the Tel Azeka
+      specs set `baseCover: "full"`, and it is the harness's default
+      (`--prepared-cover partial` for the old). A defender that stays put
+      dug itself to full cover by turn 7 anyway, so small arms met the
+      same cover; the difference was overhead cover against shells, and the
+      first turns — until decision 50 slowed the digging.
+    - **On the research figures, a force the attrition rule neutralised
+      counts only its men down or broken** toward its side's breakpoint, as
+      a routed one does (decision 45). A surrendered force still counts
+      whole; on the document's figures, all three count whole.
+    - **What it moved** (calibrated company battles, 100 a cell): the 3:1
+      attack wins 87% (was 95%), 75% by explosives; the 2:1 attack wins 2%
+      (was 56%), 69% by explosives. Full cover alone takes the 2:1 to 7%.
+      The 2:1 attack's 30–70% target (decision 44) is lost; open for the
+      author.
+    - **Mortar ammunition**: a sweep of missions × rounds (validation.md)
+      found that more than about 8 missions a side are never fired in a
+      company battle, and rounds a mission matter more than missions. No
+      bomb count was added; the mission allotment is the limit.
+49. ✅ **A defender gives up at 50%, not 60%**, on the research figures
+    (author, 2026-09-28; `SIDE_BREAK_BY_POSTURE.defending`). Swept from 60%
+    down to 35% (validation.md): at 50% defenders break at a median 33–49%
+    casualties, centred on the rule of thumb's 40%, and the calibrated 3:1
+    company attack wins 95% at 75% explosives. The 2:1 attack on a dug-in
+    position wins 8%, which is accepted — doctrine asks 3:1 — and decision
+    44's 30–70% target for it is dropped. Lower settings bring the 2:1 back
+    only by making the 3:1 a walkover (91–95% explosives) and defenders
+    quit under 30%.
+50. ✅ **Digging in takes minutes, not turns**, on the research figures
+    (author, 2026-09-28: "research dig-in times and adapt them";
+    `RESEARCH_DIG_IN`). After the 3 turns before the tools come out, a force
+    that stays put reaches **partial cover in 30 minutes** (a hasty prone
+    shelter, about ½ m deep — FM 21-75, FM 5-103; the time ours) and **full
+    cover in 90** (a rifleman's foxhole: the US Army's FM 5-15, 1944). It
+    never digs overhead cover — hours of work (FM 5-103) — which only a
+    position prepared before the battle has (decision 48). The document's
+    clock (full cover in 7 turns) stays for `lethality: "document"`.
+    - **What it moved**: a 2:1 company attack without mortars now wins 59%
+      against a hasty defence and 8% against a prepared one (both were 8%);
+      with a mortar section, a hasty defender is lost (100%). Prepared
+      defences and `npm run validate` did not move (validation.md).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
@@ -1753,6 +1796,23 @@ Still modelled by reasonable assumption (flag if you want them changed):
   so replays, networked play, and recordings stay reproducible. An AI player
   (backlog 15) is not an exception to this: it chooses *decisions*, in the same
   places a human chooses them, and every outcome is still rolled by the engine.
+- **The battle teaches the lessons leaders should learn** (author,
+  2026-09-28). The outcomes a force ratio and a preparation give should come
+  out of the rules the way doctrine and history say, so a player learns them
+  by playing:
+  - **A prepared position is what gives the defender its superiority**, and
+    what makes an attack need **3:1**. Attacked below it, a prepared defender
+    should hold; at 3:1 the attack should succeed.
+  - **In a meeting engagement nobody has prepared anything**, so nobody has a
+    defender's bonus: the larger force should win. What the ground offers —
+    a building, a crest — still favours whoever reaches it first.
+  - **Fortifying during the battle belongs to the higher echelons**, whose
+    battles last hours. A squad-to-company fight is over before anyone digs
+    (rules decision 50: 30 minutes to a prone shelter, 90 to a foxhole).
+  - **The scenarios so far are test beds**, not the battles the game will
+    ship; real ones come later (backlog 17).
+
+  Measured against these in validation.md, *The design principles, measured*.
 
 ## Roadmap
 

@@ -58,6 +58,38 @@ export const DIG_IN = {
   levels: ["partial", "full"] as const satisfies readonly CoverState[],
 } as const;
 
+/**
+ * Digging in on the research figures (rules decision 50, author 2026-09-28:
+ * "research dig-in times and adapt them"). The document's clock above — full
+ * cover four turns after the tools come out — was set before a turn was 60 s
+ * (decision 40), and made a defender that stays put as well dug in after 7
+ * minutes as one that prepared the position.
+ *
+ * - **Full cover — a rifleman's foxhole — after 90 minutes of work**: the US
+ *   Army's own estimate for one soldier to excavate and camouflage an
+ *   individual foxhole (FM 5-15, *Field Fortifications*, 1944, via the
+ *   Pacific War Online Encyclopedia). ATP 3-21.8's two-soldier deliberate
+ *   position is hours more (6–8 by a secondary source); the armpit-deep
+ *   hole with frontal cover is what full cover stands for here.
+ * - **Partial cover — a hasty prone shelter, about ½ m deep, with the spoil
+ *   thrown up in front (FM 21-75; FM 5-103 asks at least 1½ ft) — after 30**
+ *   (ours: a third of the foxhole's time for about half its earth, the
+ *   parapet being thrown up first).
+ * - **Never overhead cover**: FM 5-103 has soldiers "at least ten times more
+ *   protected from indirect fire" under it, but it takes logs, dirt and hours
+ *   no battle here lasts. Only a position prepared before the battle has it
+ *   (decision 48).
+ * - The tools still come out after 3 turns in place (ours, as before).
+ */
+export const RESEARCH_DIG_IN = {
+  startsAfterTurns: 3, // ours, as the document's clock
+  /** Turns of work after which each level is reached. */
+  levels: [
+    { cover: "partial", afterWorkTurns: 30 }, // ours, from FM 21-75's prone shelter
+    { cover: "full", afterWorkTurns: 90 }, // FM 5-15 (1944): 90 minutes a foxhole
+  ] as const satisfies readonly { cover: CoverState; afterWorkTurns: number }[],
+} as const;
+
 /** Camouflage (הסוואה): worked at over time, and undone by moving. */
 export const CAMOUFLAGE = {
   /** Detection chance removed per completed step. */

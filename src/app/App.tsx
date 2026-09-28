@@ -128,13 +128,23 @@ interface AppProps {
   onLeave: () => void;
 }
 
+/**
+ * A `?seed=` in the address plays the battle on other dice — for testing the
+ * same scenario many times over. Anything but a positive whole number is
+ * ignored, and the scenario's own seed stands.
+ */
+function seedFromUrl(): number | undefined {
+  const seed = Number(new URL(window.location.href).searchParams.get("seed") ?? "");
+  return Number.isSafeInteger(seed) && seed > 0 ? seed : undefined;
+}
+
 export function App({ scenario, onLeave }: AppProps) {
   // The engine lives in a ref (mutable, imperative); React state mirrors it.
   // Choosing another battle remounts this component rather than rebuilding it.
   // The first turn is not begun here: the battle opens on mission planning
   // (rules decision 38), and begins when both sides have planned.
   const initRef = useRef<{ scn: Scenario } | null>(null);
-  if (!initRef.current) initRef.current = { scn: scenario.build() };
+  if (!initRef.current) initRef.current = { scn: scenario.build(seedFromUrl()) };
   const { scn } = initRef.current;
   const game = scn.game;
 
