@@ -7,6 +7,7 @@ import {
   distance,
   makeCommandGroup,
   makeInfantry,
+  type CoverState,
   type Echelon as EngineEchelon,
   type FireAllotment,
   type FireMethod,
@@ -136,9 +137,11 @@ export interface BattleOptions {
   /**
    * What a position prepared before the battle starts with. `full` — dug in
    * with overhead cover — since rules decision 48 (2026-09-28), as the
-   * scenarios have it; `partial` was the convention before.
+   * scenarios have it; `partial` was the convention before. `none`: the
+   * defender has prepared nothing and starts in the open, digging in as any
+   * force that stays put does (a hasty defence).
    */
-  preparedCover?: "partial" | "full";
+  preparedCover?: CoverState;
   /**
    * A fire plan for the attacker (not in a meeting): each turn, this many
    * shells and bombs on the objective — spread across the defender's
@@ -649,7 +652,7 @@ export function judge(
   echelon: Echelon,
   variants: RuleVariants,
   battles: number,
-  preparedCover: "partial" | "full" = "full",
+  preparedCover: CoverState = "full",
   drill?: SquadDrill,
   fires?: FirePlan,
   defenderFires?: DefenderFires,

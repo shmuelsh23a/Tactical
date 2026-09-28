@@ -500,13 +500,48 @@ its break:
   is dropped.
 - Attackers still give up at 19–25%.
 
+## Attacks on a hasty defence (no prepared position)
+
+`--prepared-cover none` (harness option): the defender starts in the open
+and digs in as any force that stays put does. 100 battles a cell, research
+figures, defender breaks at 50% (decision 49):
+
+| Battle | Fire | Defender's position | Attacker wins | Attacker lost at break | Defender lost at break | Out by explosives | Minutes |
+|---|---|---|---|---|---|---|---|
+| Platoon 2:1 | a platoon's own | none / partial / full | 68% (all three) | 25% | 56% | 40% | 14 |
+| Company 2:1 | a bomb a turn | none / partial / full | 8% (all three) | 20% | 49% | 32% | 15 |
+| Company 2:1 | calibrated | **none** | **95%** | 24% | 38% | **92%** | 6 |
+| Company 2:1 | calibrated | partial | 81% | 25% | 40% | 81% | 11 |
+| Company 2:1 | calibrated | full | 8% | 22% | 33% | 69% | 12 |
+| Company 3:1 | a bomb a turn | none / partial / full | 98% (all three) | — | 44% | 36% | 13 |
+| Company 3:1 | calibrated | none | 100% | — | 42% | 96% | 4 |
+| Company 3:1 | calibrated | full | 95% | — | 39% | 75% | 10 |
+
+- **Without a fire plan, preparing makes no difference at all**, battle for
+  battle: a defender in the open digs to full cover by its 7th minute
+  (`DIG_IN`: 3 turns, then 2 a level), before an attacker 700 m off reaches
+  it. Digging is on a pre-decision-40 clock: at 60 s a turn, a squad goes
+  from nothing to a full fighting position in 7 minutes, where doctrine's
+  figures for a hasty position are of the order of half an hour and for a
+  deliberate one hours (⚠️ from memory, not yet checked against the
+  sources).
+- **With a fire plan, a hasty defender is caught in the open.** The 2:1
+  attack wins 95% in 6 minutes, 92% by explosives — past the 75% target,
+  and far above what the planning ratios suggest (about 2.5:1 for a hasty
+  defence, so 2:1 should be a close fight).
+- Dug-in cover (`cover`) never puts a force under a roof against shells;
+  only a prepared `baseCover: "full"` does. So the swing from 95% to 8% is
+  overhead cover plus the first minutes in the open.
+
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **The 2:1 attack on a dug-in position** fails (8%), accepted with the
-   defender's breakpoint at 50% (decision 49). A 2:1 attack on a hasty
-   position — not dug in — has not been measured yet.
+1. **Digging in is too fast for a 60 s turn** (*Attacks on a hasty
+   defence*): full cover in 7 minutes. Until it is slowed, a hasty and a
+   prepared defence are the same against small arms, and a 2:1 attack with
+   mortars swings from 95% (hasty, first minutes) to 8% (prepared). The 2:1
+   on a dug-in position failing (8%) is accepted (decision 49).
 2. **The fire a battle is given.** 75% holds with a mortar section on call all
    battle (69–75% with full cover). Missions past about 8 a side go unfired
    (decision 48's sweep).
