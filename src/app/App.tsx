@@ -179,6 +179,8 @@ export function App({ scenario, onLeave }: AppProps) {
   /** Range at which a force holding its fire may open up; null = any range. */
   const [engagementRange, setEngagementRange] = useState<number | null>(null);
   const [grenades, setGrenades] = useState(1);
+  /** On the research figures an assault's grenades are counted a man (rules decision 46). */
+  const perManGrenades = game.lethality === "research";
   /**
    * While on, a click on the map points the selected force's sector of
    * observation instead of ordering it somewhere — the two are both "click a
@@ -1090,7 +1092,7 @@ export function App({ scenario, onLeave }: AppProps) {
               (r.grenadeHits > 0 ? `, ${r.grenadeHits} פגיעות רימון` : "") +
               `, ${casualtyReport(r.defenderCasualties, true)}`
             : `${went}` +
-              (grenades > 0 ? ` עם ${grenades} רימונים` : "") +
+              (grenades > 0 ? (perManGrenades ? ` עם ${grenades} רימונים ללוחם` : ` עם ${grenades} רימונים`) : "") +
               `, ${casualtyReport(r.defenderCasualties, false)}`,
         );
         if (r.selfCasualties > 0) {
@@ -1853,9 +1855,10 @@ export function App({ scenario, onLeave }: AppProps) {
                     </>
                   ) : (
                     <>
-                      <label>רימונים:</label>
+                      {/* A count a man on the research figures, for the force on the document's (rules decision 46). */}
+                      <label>{perManGrenades ? "רימונים ללוחם:" : "רימונים:"}</label>
                       <div className="seg">
-                        {[0, 1, 2, 3].map((n) => (
+                        {(perManGrenades ? [0, 1, 2] : [0, 1, 2, 3]).map((n) => (
                           <button
                             key={n}
                             className={grenades === n ? "on" : ""}
@@ -1867,7 +1870,10 @@ export function App({ scenario, onLeave }: AppProps) {
                       </div>
                       <p className="hint">
                         הסתערות עד {ASSAULT_RANGE_M}מ' (מסומן סביב הכוח הנבחר): אש הסתערות 70%
-                        לכל לוחם כשיר, וכל רימון 30% פגיעה באויב · 5% פגיעה עצמית.
+                        לכל לוחם כשיר,{" "}
+                        {perManGrenades
+                          ? "וכל לוחם זורק את רימוניו אל עמדת האויב (רסס עד כ-5 מ') · 5% פגיעה עצמית לכל רימון."
+                          : "וכל רימון 30% פגיעה באויב · 5% פגיעה עצמית."}
                       </p>
                     </>
                   )}

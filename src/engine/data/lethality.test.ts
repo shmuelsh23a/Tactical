@@ -11,6 +11,7 @@ import {
   discOverlap,
   explosiveFor,
   hitChanceAt,
+  GRENADES_CARRIED,
   RATE_OF_FIRE,
   RESEARCH_ROUNDS_FOR_EFFECT,
   SMALL_ARMS_COMBAT_FACTOR,
@@ -24,6 +25,7 @@ import { replayGame } from "../recording.js";
 import { makeInfantry, makeVehicle } from "../units.js";
 import { resolveBlast, resolveDirectExplosive } from "../combat/explosives.js";
 import { resolveDirectFire } from "../combat/directFire.js";
+import { resolveAssault } from "../combat/assault.js";
 import { Rng } from "../rng.js";
 
 describe("the turn and the wound behind the research figures (rules decisions 40–41)", () => {
@@ -92,7 +94,7 @@ describe("blast bands from a lethal area (rules decision 41)", () => {
   });
 
   it("leaves what the sources were not read for as the document has it", () => {
-    for (const key of ["grenade", "apMine", "atMine", "rpgVsArmor"]) {
+    for (const key of ["apMine", "atMine", "rpgVsArmor"]) {
       expect(explosiveFor(key, "research")).toEqual(EXPLOSIVES[key]);
     }
     for (const key of Object.keys(EXPLOSIVES)) {
@@ -262,5 +264,45 @@ describe("the calibration to 75% explosives (rules decision 43)", () => {
     expect(rounds("research")).toBe(RESEARCH_ROUNDS_FOR_EFFECT.mortar);
     expect(rounds("research")).toBe(24);
     expect(rounds("document")).toBe(12);
+  });
+});
+
+describe("hand grenades a man, each an M67 (rules decision 46)", () => {
+  const assaultWith = (lethality: "document" | "research", grenades: number, seed = 1) => {
+    const attacker = makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 9);
+    const defender = makeInfantry("D", "RED", "platoon", { x: 0, y: 20 }, 60);
+    return resolveAssault(new Rng(seed), attacker, defender, { grenades, lethality });
+  };
+
+  it("counts the M67's lethal area like the 40 mm's", () => {
+    expect(LETHAL_AREA_M2.grenade).toBe(79);
+    expect(GRENADES_CARRIED).toBe(2);
+    const grenade = explosiveFor("grenade", "research")!;
+    expect(grenade.delivery).toBe("assault");
+    expect(lookupBand(grenade.blastBands, 0)!.value).toBeLessThan(0.1);
+  });
+
+  it("has every man going in throw his, up to the two he carries", () => {
+    // Nine men, one each: nine blasts, so far more men hit than two grenades at 30% could.
+    let research = 0;
+    let document = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      research += assaultWith("research", 1, seed).grenadeHits;
+      document += assaultWith("document", 1, seed).grenadeHits;
+    }
+    expect(research / 200).toBeGreaterThan(3);
+    expect(document / 200).toBeLessThan(0.5);
+    // A third grenade a man is more than he carries.
+    let two = 0;
+    let three = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      two += assaultWith("research", 2, seed).grenadeHits;
+      three += assaultWith("research", 3, seed).grenadeHits;
+    }
+    expect(three).toBe(two);
+  });
+
+  it("throws none when told none", () => {
+    expect(assaultWith("research", 0).grenadeHits).toBe(0);
   });
 });

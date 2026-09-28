@@ -2068,6 +2068,7 @@ export class Game {
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
       turn: this.turn,
+      lethality: this.lethality,
       // Ruling 1, on trial: the defender fires back, at a rate being measured.
       ...(reply ? { replyChance: reply } : {}),
     });

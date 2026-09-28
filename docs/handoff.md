@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–45: a turn is 60 s; blast, the tank gun and rates of fire are set from published data; the whole is calibrated so explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints; and squads fire their grenadiers ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-28, after rules decisions 40–46: a turn is 60 s; blast, the tank gun and rates of fire are set from published data; the whole is calibrated so explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints; and squads fire their grenadiers ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 630 tests, 33 files
+npm run check       lint + typecheck clean, 635 tests, 33 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 ```
@@ -90,6 +90,10 @@ counts its men down or broken — and a player's squads had no grenadiers;
 they fire them now, by the drill's rule. The demo now goes to turn 7 and
 ends at 33% really lost; the company battle with mortars called ends on
 turn 8, 61% of its casualties by explosives.
+
+**Then hand grenades** (decision 46): every man going in throws his, up to
+the two he carries, each a blast of the M67's lethal area. Platoon battles
+are now 30–40% explosives; the calibrated company battles did not move.
 
 What it left open, for the author, in order (validation.md, *Open*):
 1. **The fire a battle is given**: 75% needs a mortar section on call all

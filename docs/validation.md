@@ -381,6 +381,31 @@ riflemen alone gave 4–10%. Where a company's mortars are on call it is
 **78–83%**. Most explosives come from the higher echelons, as they do in the
 sources' wars.
 
+## Hand grenades (rules decision 46)
+
+An assault's grenades were a count for the force (two in the drill, 0–3 for
+a player), each 30% to hit one man: 1–3% of the losses in the harness, where
+close combat is a grenade's work.
+
+- **Every man going in throws his**, up to the two he carries.
+- **Each is a blast of the M67's lethal area**: its published 5 m killing
+  radius (casualty radius 15 m), 79 m², the same criterion as the 40 mm's.
+  One grenade puts out **0.39** men of a squad in the open; its lethal area
+  predicts 0.36.
+- The self-hit stays the document's 5% a grenade.
+
+**Measured**, 60 harness battles a cell, research figures:
+
+| Battle | Grenades that caught someone, before → after | Own men hit, before → after |
+|---|---|---|
+| Platoon 3:1 attack | 27 → 37 | 4 → 16 |
+| Platoon 2:1 attack | 9 → 19 | 3 → 8 |
+| Company 2:1 attack | 55 → 97 | 7 → 18 |
+
+Out by explosives (100 battles a cell): platoon meeting 22% → 31%, platoon
+3:1 attack 26% → 30%, platoon 2:1 attack 37% → 40%; the company battles moved
+by a point, and the calibrated ones not at all (83%, 78%).
+
 ## Open
 
 For the author, in rough order of what they move:
@@ -396,9 +421,8 @@ For the author, in rough order of what they move:
 4. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.
-5. **Not researched yet**: the hand grenade (30% a man in an assault;
-   M67: 5 m killing radius, 15 m casualty radius), the charges (a 100–200 m
-   reach at 50% activation), and the armour damage table (a flat 20%
+5. **Not researched yet**: the charges (a 100–200 m reach at 50%
+   activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review
    (agenda item 4) covers the last.
 

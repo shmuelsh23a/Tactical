@@ -55,7 +55,10 @@ export interface SquadDrill {
   openFireRange: number;
   /** A defender with nothing to shoot at covers its front (חיפוי). */
   coverWhenIdle: boolean;
-  /** Assault inside this range, throwing this many grenades. */
+  /**
+   * Assault inside this range, throwing this many grenades — a man on the
+   * research figures (rules decision 46), for the force on the document's.
+   */
   assault: { range: number; grenades: number };
   /**
    * The squad's grenadiers (author, 2026-09-28): one 40 mm launcher for every
@@ -105,7 +108,7 @@ export const PLAIN_SCRIPT: SquadDrill = {
   attackFireRange: 400,
   openFireRange: 400,
   coverWhenIdle: true,
-  assault: { range: 25, grenades: 2 },
+  assault: { range: 25, grenades: 1 },
   grenadiers: SQUAD_GRENADIERS,
   breakContact: null,
   commandGroupBehind: 80,
@@ -132,7 +135,7 @@ export const WESTERN_DRILL: SquadDrill = {
   attackFireRange: 300,
   openFireRange: 200,
   coverWhenIdle: true,
-  assault: { range: 25, grenades: 2 },
+  assault: { range: 25, grenades: 1 },
   grenadiers: SQUAD_GRENADIERS,
   breakContact: { readyShareBelow: 0.5, fallBack: 150 },
   commandGroupBehind: 80,

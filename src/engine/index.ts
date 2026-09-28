@@ -97,6 +97,7 @@ export {
   FIRE_UNIT_TUBES,
   SMALL_ARMS_COMBAT_FACTOR,
   RESEARCH_ROUNDS_FOR_EFFECT,
+  GRENADES_CARRIED,
   freshness,
   meanRate,
   rateDistribution,

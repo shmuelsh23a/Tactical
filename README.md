@@ -1680,6 +1680,25 @@ on the stated reasoning, still awaiting the author's word.
       target what landed on it.
     - On the document's figures a rout still counts whole, as decision 19
       set it.
+46. ✅ **Hand grenades: every man throws his, and each is an M67** (author,
+    2026-09-28). They caused 1–3% of the losses: an assault threw two for
+    the whole squad (the drill) or 0–3 (a player), each 30% to hit one man.
+    On the research figures:
+    - **An assault's grenades are counted a man**: every man still going in
+      throws up to the two he carries (`GRENADES_CARRIED`). The drill throws
+      one each; a player picks 0, 1 or 2 a man (`רימונים ללוחם`).
+    - **Each grenade is a blast** on the defender's position, of the M67's
+      lethal area — its 5 m killing radius, **79 m²**, the same criterion as
+      the 40 mm's (`LETHAL_AREA_M2.grenade`). One grenade puts out 0.39 men
+      of a squad in the open, as its lethal area predicts (0.36). A nine-man
+      assault's grenades put out about 3.5 men, beside its fire's 3.8.
+    - The self-hit stays the document's 5% a grenade, so a squad's own
+      grenades now wound it about four times as often as before.
+    - **What it moved:** explosives' share in the platoon battles rose from
+      22–37% to 30–40%; company battles moved a point; the calibrated
+      company battles did not (83%, 78%; the 2:1 attack wins 56%).
+    - On the document's figures a count is for the force and each grenade
+      30% to hit one man, as before.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
