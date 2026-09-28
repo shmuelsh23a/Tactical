@@ -349,6 +349,20 @@ figures). "Att" and "def" are the loser's median casualties at its break:
 - **A one-squad defender** (the platoon 3:1 attack) can only lose whole men:
   6 of 9 is 67%.
 
+**A rout counts by its casualties (rules decision 45).** A playtest found the
+low tail: in the demo, one tank round routed a squad with 3 men out, the
+routed squad counted whole (8 of 24, past 30%), and the attack ended at 12%
+casualties. On the research figures a routed force now counts only its men
+down or broken. Measured (`npm run validate`, 100 battles a cell):
+
+| Battle | Attacker lost at its break, before | After | Attacker wins, before → after |
+|---|---|---|---|
+| Platoon 2:1 attack | 19% (14–25%) | 22% (17–28%) | 57% → 61% |
+| Company 2:1 attack, a bomb a turn | 18% (14–22%) | 19% (16–23%) | 3% → 6% |
+| Company 2:1 attack, calibrated | 20% (15–26%) | 21% (16–26%) | 61% → 56% |
+
+Defenders' figures and the explosives' share did not move.
+
 ## The squad's grenadiers (with decision 44)
 
 The drill now fires a squad's grenadiers alongside its rifles (`grenadiers`
@@ -358,6 +372,9 @@ in [`app/drill.ts`](../src/app/drill.ts), ⚠️ ours):
   squad, one in a fire team, as a NATO squad carries them.
 - Each fires its drawn rate of rifle grenades at the squad's target, once the
   target is inside the table's 100 m.
+
+A player's squads fire them too, by the same function (decision 45): until
+then only the drill's squads carried them.
 
 They are a platoon battle's own explosives, **22–36%** of its losses where
 riflemen alone gave 4–10%. Where a company's mortars are on call it is

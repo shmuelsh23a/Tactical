@@ -2577,12 +2577,12 @@ export class Game {
    */
   sideBroken(side: Side): boolean {
     if (!this.morale) return false;
-    // By posture on the research figures (rules decision 44); two thirds on the document's.
-    const share =
-      this.lethality === "research"
-        ? SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"]
-        : undefined;
-    return sideBroken(this.units, side, share);
+    // By posture on the research figures (rules decision 44), where a routed
+    // force counts only its men down or broken (decision 45); two thirds, and
+    // a rout counted whole, on the document's.
+    if (this.lethality !== "research") return sideBroken(this.units, side);
+    const share = SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"];
+    return sideBroken(this.units, side, share, false);
   }
 
   /**

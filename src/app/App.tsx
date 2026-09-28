@@ -76,6 +76,7 @@ import {
   type LogEntry,
 } from "./hotseat.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
+import { SQUAD_GRENADIERS, fireGrenadiers } from "./drill.js";
 import { Debrief } from "./Debrief.js";
 import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
@@ -963,6 +964,30 @@ export function App({ scenario, onLeave }: AppProps) {
     checkVictory();
   }
 
+  /**
+   * A squad's grenadiers at its target, logged once for the volley: the
+   * firer is told how many rounds and hits at what chance, the target what
+   * landed on it — the same split as a rifle line (rules decision 13).
+   */
+  function logGrenadiers(squad: Unit, target: Unit) {
+    const volleys = fireGrenadiers(game, squad, target, SQUAD_GRENADIERS.menPerLauncher);
+    for (const v of volleys) logCoveringFire(v.coveringFire);
+    const fired = volleys.filter((v) => v.fired);
+    if (!fired.length) return;
+    const rounds = fired.reduce((n, v) => n + (v.rounds ?? 1), 0);
+    const hits = fired.reduce((n, v) => n + (v.hits ?? (v.hit ? 1 : 0)), 0);
+    const casualties = fired.reduce(
+      (n, v) => n + (v.blast?.targets ?? []).filter((t) => t.unitId === target.id).reduce((m, t) => m + t.newCasualties, 0),
+      0,
+    );
+    const who = `${squad.name} → ${target.name}`;
+    pushPerSide(casualties > 0 ? "casualty" : "fire", viewingSide, (reader) =>
+      target.side === reader
+        ? `${who}: רימוני רובה — ${hits} פגיעות — ${casualtyReport(casualties, true)}`
+        : `${who}: רימוני רובה — ${hits}/${rounds} פגיעות ב-${Math.round(fired[0]!.hitChance * 100)}% — ${casualtyReport(casualties, false)}`,
+    );
+  }
+
   function handleFireAt(enemyId: string) {
     if (!selectedOwn || enginePhase !== "combat") return;
     // One action per force per fire phase. (A command group may fire too, but
@@ -1027,6 +1052,9 @@ export function App({ scenario, onLeave }: AppProps) {
                   false,
                 )}`,
           );
+          // Its grenadiers fire with its rifles (rules decision 45), as a
+          // simulated squad's do — only inside the rifle grenade's reach.
+          if (selectedOwn.kind === "infantry") logGrenadiers(selectedOwn, target);
         }
       }
       if (target.neutralized) {

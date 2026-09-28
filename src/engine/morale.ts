@@ -396,7 +396,17 @@ export function forceMorale(units: readonly Unit[], unit: Unit): ForceMorale | u
  * False for a side whose men carry no pools — without morale a side is beaten
  * only when every force is out.
  */
-export function sideBroken(units: readonly Unit[], side: Side, share: number = SIDE_BREAK_SHARE): boolean {
+export function sideBroken(
+  units: readonly Unit[],
+  side: Side,
+  share: number = SIDE_BREAK_SHARE,
+  /**
+   * Whether a force that routed counts every man against its side (rules
+   * decision 19) or only those down or broken (decision 45, with the
+   * historical breakpoints: a squad that runs is not a squad lost).
+   */
+  routedCountsWhole = true,
+): boolean {
   const own = units.filter((u) => u.side === side);
   if (!own.some(hasMorale)) return false;
   let total = 0;
@@ -411,7 +421,7 @@ export function sideBroken(units: readonly Unit[], side: Side, share: number = S
     }
     const soldiers = u.soldiers ?? [];
     total += soldiers.length;
-    if (u.neutralized || u.routing || u.surrendered) {
+    if (u.neutralized || u.surrendered || (u.routing && routedCountsWhole)) {
       lost += soldiers.length;
       continue;
     }

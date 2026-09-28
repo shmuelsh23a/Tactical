@@ -403,8 +403,8 @@ describe("forces break", () => {
 });
 
 describe("the game plays it", () => {
-  function battle(seed: number) {
-    const g = new Game({ seed, morale: true, enforceC2: false });
+  function battle(seed: number, lethality: "document" | "research" = "research") {
+    const g = new Game({ seed, morale: true, enforceC2: false, lethality });
     const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const hq = g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: -250 }));
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 90 }, 8));
@@ -436,8 +436,9 @@ describe("the game plays it", () => {
     expect(g.fire(blue.id, red.id, { weapon: "smallArms" })).toMatchObject({ fired: false, reason: "withdrawing" });
   });
 
-  it("a side breaks at two thirds of its fighting strength gone", () => {
-    const { g, blue, red } = battle(21);
+  it("a side breaks at two thirds of its fighting strength gone, on the document's figures", () => {
+    // Decision 19's rule, a rout counted whole: the document's figures (decision 45).
+    const { g, blue, red } = battle(21, "document");
     expect(g.sideBroken("BLUE")).toBe(false);
     blue.routing = true;
     expect(g.sideBroken("BLUE")).toBe(true);
@@ -690,5 +691,36 @@ describe("a side's breakpoint by posture (rules decision 44)", () => {
     expect(replayGame(g.toRecording()).attackers).toEqual(["BLUE"]);
     expect(battle({}, 0).toRecording().attackers).toBeUndefined();
     expect(() => new Game({ seed: 1, attackers: ["GREEN" as never] })).toThrow(/attackers/);
+  });
+});
+
+describe("a rout counts by its casualties on the research figures (rules decision 45)", () => {
+  // A platoon of three squads attacking: one squad routs with 3 down and 1 broken.
+  const platoon = (lethality: "document" | "research") => {
+    const g = new Game({ seed: 1, morale: true, lethality, attackers: ["BLUE"] });
+    for (const i of [1, 2, 3]) g.addUnit(makeInfantry(`B${i}`, "BLUE", "squad", { x: i * 50, y: 0 }, 8));
+    g.addUnit(makeInfantry("R", "RED", "platoon", { x: 0, y: 900 }, 20));
+    const hit = g.getUnit("B1");
+    hit.routing = true;
+    hit.soldiers!.slice(0, 3).forEach((s) => (s.neutralized = true));
+    hit.soldiers![3]!.morale!.state = "broken";
+    return g;
+  };
+
+  it("does not end an attack on one squad's rout, 4 men of 24", () => {
+    expect(platoon("research").sideBroken("BLUE")).toBe(false);
+  });
+
+  it("still breaks the attack at 30% of its men really down or broken", () => {
+    const g = platoon("research");
+    g.getUnit("B2").soldiers!.slice(0, 4).forEach((s) => (s.neutralized = true));
+    // 8 of 24: 33%.
+    expect(g.sideBroken("BLUE")).toBe(true);
+  });
+
+  it("keeps decision 19's whole-force count on the document's figures", () => {
+    expect(platoon("document").sideBroken("BLUE")).toBe(false); // 8 of 24 is under two thirds
+    expect(sideBroken(platoon("document").units, "BLUE", 0.3)).toBe(true);
+    expect(sideBroken(platoon("research").units, "BLUE", 0.3, false)).toBe(false);
   });
 });

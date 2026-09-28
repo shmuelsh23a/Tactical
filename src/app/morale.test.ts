@@ -8,8 +8,8 @@ import { describeOutcome, describeStandingOrder, moraleReportHe, reasonHe, unitN
  * states and never a number, and of the enemy's only what can be watched — a
  * force running, or giving itself up.
  */
-function battle() {
-  const g = new Game({ seed: 4, morale: true, enforceC2: false });
+function battle(lethality: "document" | "research" = "research") {
+  const g = new Game({ seed: 4, morale: true, enforceC2: false, lethality });
   const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8, "כיתה"));
   g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: -100 }));
   const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 8, "אויב"));
@@ -59,7 +59,8 @@ describe("what the enemy may see of a force's morale", () => {
 
 describe("a side that breaks has lost", () => {
   it("though it still has forces on the map", () => {
-    const { g, blue } = battle();
+    // Its only force routed: whole, on the document's figures (decision 19).
+    const { g, blue } = battle("document");
     expect(sideDefeated(g, "BLUE")).toBe(false);
     blue.routing = true;
     expect(sideDefeated(g, "BLUE")).toBe(true);

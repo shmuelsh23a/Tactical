@@ -1659,6 +1659,27 @@ on the stated reasoning, still awaiting the author's word.
       battle's own explosives: 22–36% of its losses, against 75–80% where a
       company's mortars are on call — most explosives come from higher
       echelons, as the author expected.
+45. ✅ **A rout counts by its casualties, and a player's squads fire their
+    grenadiers** (author, 2026-09-28, after a playtest of all three
+    battles). In the demo one tank round put 3 men of a squad out and broke a
+    fourth; the squad routed, a routed force counted **whole** against its
+    side (decision 19), and BLUE's attack was over at 3 casualties of 24 —
+    12%, where decision 44's rule of thumb is 20–25%. On the research
+    figures:
+    - **A routed force counts only its men down or broken** towards its
+      side's breakpoint. A surrendered or neutralised force still counts
+      whole. Replayed, the demo now fights on to turn 7 and ends at 8 of 24
+      really lost; in the harness a losing attacker's casualties at the break
+      rose from a median 19% (p10 14%) to 22% (p10 17%) in the platoon 2:1
+      attack, and the calibrated 2:1 company attack wins 56% (was 61%).
+    - **A player's squad fires its grenadiers with its rifles**, by the same
+      rule as the drill (`fireGrenadiers`, `SQUAD_GRENADIERS` in
+      [`app/drill.ts`](src/app/drill.ts)): one 40 mm launcher per four men
+      still fighting, inside 100 m. Until now only the drill's squads had
+      them. The log tells the firer rounds, hits and the chance, and the
+      target what landed on it.
+    - On the document's figures a rout still counts whole, as decision 19
+      set it.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
