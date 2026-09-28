@@ -595,16 +595,36 @@ the odds — the principle holds. Against a prepared defender the same
 harness gives the 2:1 attack 8% and the 3:1 attack 95%.
 
 **The smart attacker in the browser** (a scripted player bounding by
-halves, command groups following, a fire plan on the objective area — not
-on where each squad lies — lifted at 150 m; the defender played by the
-drill). Seeds 11–18 on `?seed=`:
+halves, command groups following, a mortar fire plan on the objective area —
+not on where each squad lies — lifted at 150 m, then mortar smoke on the
+objective from 400 m; the defender played by the drill). Seeds 11–18 on
+`?seed=`, 60 s turns, research figures:
 
-| Scenario | Smoke | Attacker wins | When it lost |
-|---|---|---|---|
-| `telAzekaAssault2` — two platoons on a prepared platoon, 59 v 32 | none (script bug) | **1 of 8** | broke on turns 6–8 at 17–27 of 59 down or broken, having put out 5–10 |
-| `telAzekaAssault` — a company on a prepared platoon, 86 v 32 | none (script bug) | 2 of 4 | broke at 24–25 of 86 |
+| Scenario | Attacker wins | Draws | Defender wins | Over by |
+|---|---|---|---|---|
+| `telAzekaAssault` — a company on a prepared platoon, 86 v 32 | **7** | 1 | 0 | turn 8–10 |
+| `telAzekaAssault2` — two platoons on a prepared platoon, 59 v 32 | **3** | 2 | 3 | turn 8–9 |
 
-With smoke fixed: *running — to be filled in.*
+- **3:1 wins and 2:1 is a coin toss for a skilled attacker**, where the plain
+  drill wins 95% and 8%. A good plan — smoke, a fire plan, bounding — can
+  sometimes carry an attack below 3:1, which is as it should be; 3:1 is
+  what makes it reliable.
+- **The mortars decide it before the infantry closes.** Infantry walks 50 m
+  a turn, half that under fire, less uphill: 14–25 m a minute up the tel, so
+  the battle is over in 8–10 minutes with the attackers still 150–300 m out.
+  75–100% of the casualties are by explosives.
+- **So the odds act mostly through what a side can lose**, not through its
+  fire: both sides have the same mortar section, and on seeds 11–13 the two
+  scenarios ended with the same casualties on both sides — the third
+  platoon never came into range — but at 86 men BLUE could lose them and
+  still go on. An attacker at 3:1 usually brings more fire support as well;
+  these scenarios give both sides the same.
+- **Earlier browser results were off.** Before 2026-09-28's fix the script
+  read every position 36 m off (the symbol image is not centred on the
+  unit), locked distant squads out of the order cycle, and never laid smoke
+  (a wrong button label): its attack crept forward at 14 m a bound. The
+  earlier "3:1 wins by turn 3–4" and the first run of these seeds (1 of 8,
+  2 of 4) were with that script.
 
 ## Open
 
