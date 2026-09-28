@@ -567,6 +567,45 @@ which is what full cover's −50% already is.
   company battle, RED-1 and RED-3 at Tel Azeka, RED at Yokneam — no longer
   dig in by minute 7; they hold what the ground gives them.
 
+## The design principles, measured
+
+The author's principles (README, *Design principles*, 2026-09-28): a
+prepared position gives the defender its superiority and makes an attack
+need 3:1; in a meeting engagement nobody has a defender's bonus, so numbers
+should win; fortifying during battle belongs to the higher echelons.
+
+**Meeting engagements at odds** (`meetingOdds`, harness, 100 battles a
+cell, research figures, nobody prepared, both sides advancing). Win shares
+are BLUE (the larger) / RED / draw:
+
+| Echelon | Odds | Men | Larger wins | Smaller wins | Draw | Out by explosives |
+|---|---|---|---|---|---|---|
+| Squad | even | 9 v 9 | 50% | 41% | 9% | 53% |
+| Squad | ~2:1 | 9 v 5 | 72% | 28% | 0% | 43% |
+| Squad | ~2.3:1 | 9 v 4 | 80% | 15% | 5% | 37% |
+| Platoon | even | 36 v 36 | 35% | 37% | 28% | 30% |
+| Platoon | 2:1 | 36 v 18 | 88% | 9% | 3% | 36% |
+| Platoon | 4:1 | 36 v 9 | 100% | 0% | 0% | 24% |
+| Company | even | 113 v 113 | 43% | 39% | 18% | 36% |
+| Company | ~1.6:1 | 113 v 72 | 74% | 12% | 14% | 38% |
+| Company | ~3:1 | 113 v 36 | 100% | 0% | 0% | 21% |
+
+With nobody prepared, the larger force wins, and more surely the larger
+the odds — the principle holds. Against a prepared defender the same
+harness gives the 2:1 attack 8% and the 3:1 attack 95%.
+
+**The smart attacker in the browser** (a scripted player bounding by
+halves, command groups following, a fire plan on the objective area — not
+on where each squad lies — lifted at 150 m; the defender played by the
+drill). Seeds 11–18 on `?seed=`:
+
+| Scenario | Smoke | Attacker wins | When it lost |
+|---|---|---|---|
+| `telAzekaAssault2` — two platoons on a prepared platoon, 59 v 32 | none (script bug) | **1 of 8** | broke on turns 6–8 at 17–27 of 59 down or broken, having put out 5–10 |
+| `telAzekaAssault` — a company on a prepared platoon, 86 v 32 | none (script bug) | 2 of 4 | broke at 24–25 of 86 |
+
+With smoke fixed: *running — to be filled in.*
+
 ## Open
 
 For the author, in rough order of what they move:
