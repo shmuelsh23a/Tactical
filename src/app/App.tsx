@@ -958,7 +958,7 @@ export function App({ scenario, onLeave }: AppProps) {
         // target's map anyway (rules decision 13) — so an engagement under
         // orders crosses, worded as each side is entitled to read it.
         pushPerSide(engagement.newCasualties > 0 ? "casualty" : "fire", side, (reader) =>
-          describeExecution(done, nameOf, engaged?.side === reader ? "target" : "firer"),
+          describeExecution(done, nameOf, engaged?.side === reader ? "target" : "firer", reader === side),
         );
         if (engaged?.neutralized) {
           const down = engaged;

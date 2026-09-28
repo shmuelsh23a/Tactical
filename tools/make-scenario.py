@@ -247,6 +247,10 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
     require_bool(spec, "locationError", "spec")
+    require(
+        not (spec.get("locationError") and spec.get("trackIntel") is False),
+        "spec: locationError needs trackIntel (nothing is reported without it)",
+    )
     for key in ("commandEchelon", "fireSupport"):
         require(isinstance(spec.get(key, {}), dict), f"spec: {key} must be an object keyed by side")
     attackers = spec.get("attackers", [])
@@ -445,7 +449,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     ]
     if spec.get("morale"):
         lines.append("    morale: true,")
-    if spec.get("locationError", True) and spec.get("trackIntel", True):
+    if spec.get("locationError", spec.get("trackIntel", True)):
         lines.append("    locationError: true,")
     if spec.get("attackers"):
         lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")

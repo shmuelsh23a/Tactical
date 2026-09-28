@@ -434,6 +434,8 @@ export class Game {
    * so turning it on moves no other roll in the game.
    */
   private readonly locationRng: Rng;
+  /** Bounds each force has made — which stand a report was of (rules decision 51). */
+  private readonly bounds = new Map<string, number>();
   /**
    * How many of {@link registeredTargets} came with the options rather than
    * from mission planning — the recording's header carries those, its journal
@@ -545,6 +547,8 @@ export class Game {
     this.lethality = opts.lethality ?? "research";
     this.attackers = [...(opts.attackers ?? [])];
     this.locationError = opts.locationError ?? false;
+    // Without the knowledge model nothing is reported, so nothing could be off.
+    if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     this.locationRng = new Rng(unitSeed(opts.seed, LOCATION_ERROR_STREAM));
     if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
     if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
@@ -1418,6 +1422,7 @@ export class Game {
 
     const from = unit.position;
     unit.position = { ...to };
+    this.bounds.set(unit.id, (this.bounds.get(unit.id) ?? 0) + 1);
     unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
 
@@ -1471,20 +1476,28 @@ export class Game {
    * Note that `side` has observed `unitId` where it now stands. Silently does
    * nothing when the knowledge model is off, so callers need no guard.
    */
-  private observe(side: Side, unitId: string, source: ContactSource, observer: Unit | undefined): void {
+  private observe(side: Side, unitId: string, source: ContactSource, observer: Unit | undefined, from?: Point): void {
     if (!this.trackIntel) return;
     const unit = this.units.find((u) => u.id === unitId);
     if (!unit || unit.side === side) return;
-    this.report(side, unit, unit.position, source, observer);
+    this.report(side, unit, unit.position, source, observer, from);
   }
 
   /**
    * Put what `side` saw of `unit` at `at` in its ledger — where it is, or,
    * with location error (rules decision 51), where `observer` judged it to
    * be: off along the sight line by the eye's range estimate and across it by
-   * the compass. No observer is a UAV's look straight down.
+   * the compass, looking from `from` (where it stands unless told). No
+   * observer is a UAV's look straight down.
    */
-  private report(side: Side, unit: Unit, at: Point, source: ContactSource, observer: Unit | undefined): void {
+  private report(
+    side: Side,
+    unit: Unit,
+    at: Point,
+    source: ContactSource,
+    observer: Unit | undefined,
+    from: Point | undefined = observer?.position,
+  ): void {
     if (!this.locationError) {
       this.intel.record(side, unit.id, at, this.turn, source, unit.neutralized);
       return;
@@ -1501,16 +1514,21 @@ export class Game {
       reported = { x: at.x + normal() * UAV_LOCATION_ERROR_M, y: at.y + normal() * UAV_LOCATION_ERROR_M };
       sigma = UAV_LOCATION_ERROR_M;
     } else {
-      const range = distance(observer.position, at);
+      const eye = from ?? observer.position;
+      const range = distance(eye, at);
       const s = locationSigma(range, observer.observationPost ? LOCATION_ERROR.observationPost : LOCATION_ERROR.eye);
       const along = normal() * s.along;
       const across = normal() * s.across;
-      const ux = range > 0 ? (at.x - observer.position.x) / range : 1;
-      const uy = range > 0 ? (at.y - observer.position.y) / range : 0;
+      const ux = range > 0 ? (at.x - eye.x) / range : 1;
+      const uy = range > 0 ? (at.y - eye.y) / range : 0;
       reported = { x: at.x + along * ux - across * uy, y: at.y + along * uy + across * ux };
       sigma = Math.sqrt((s.along ** 2 + s.across ** 2) / 2);
     }
-    this.intel.record(side, unit.id, reported, this.turn, source, unit.neutralized, { truth: at, sigma });
+    this.intel.record(side, unit.id, reported, this.turn, source, unit.neutralized, {
+      stand: this.bounds.get(unit.id) ?? 0,
+      sigma,
+      observer: observer?.id ?? "#uav",
+    });
   }
 
   /**
@@ -1785,7 +1803,8 @@ export class Game {
         // The contact is where the shot was taken, not where the bound ended:
         // the coverer saw the force it engaged, and by construction may not be
         // able to see where it went afterwards.
-        this.observe(actor.side, coverer.id, "fire", actor);
+        // The mover saw the shot from where it was caught, not from the end of its bound.
+        this.observe(actor.side, coverer.id, "fire", actor, at);
         this.intelRecordAt(coverer.side, actor, at, coverer);
         taken.push({
           coveringId: coverer.id,

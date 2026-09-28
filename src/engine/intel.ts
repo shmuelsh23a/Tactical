@@ -1,4 +1,4 @@
-import { distance, type Point } from "./geometry.js";
+import type { Point } from "./geometry.js";
 import type { Side } from "./types.js";
 
 /**
@@ -43,14 +43,27 @@ export interface Contact {
 
 /**
  * How good a report is, when sightings carry location error (rules decision
- * 51): the observer's estimate, its spread, and — the umpire's alone — where
- * the force really stood when it was made.
+ * 51): its spread, who made it, and — the umpire's alone — which of the
+ * force's stands it was made of.
  */
 export interface LocationFix {
-  /** Where the force truly stood. Never shown: it only tells whether it has moved since. */
-  truth: Point;
+  /**
+   * How many bounds the force had made when it was seen. Never shown: two
+   * reports of the same stand are of a force that has not moved between them.
+   */
+  stand: number;
   /** The report's spread, in metres (one standard deviation a side). */
   sigma: number;
+  /** Who made it: one observer's second look in the same minute is not a new estimate. */
+  observer: string;
+}
+
+/** The spread behind a report, and who has already added to it this turn. */
+interface HeldFix {
+  stand: number;
+  sigma: number;
+  turn: number;
+  observers: Set<string>;
 }
 
 /**
@@ -61,7 +74,7 @@ export interface LocationFix {
 export class IntelLedger {
   private readonly bySide = new Map<Side, Map<string, Contact>>();
   /** The spread behind each side's reports, by side and force (rules decision 51). */
-  private readonly fixes = new Map<Side, Map<string, LocationFix>>();
+  private readonly fixes = new Map<Side, Map<string, HeldFix>>();
 
   /**
    * Note that `side` has just observed `unitId` at `position`.
@@ -70,7 +83,9 @@ export class IntelLedger {
    * decision 51). A force that has not moved since the side's last estimate
    * of it is watched, not found again: the two estimates are combined, each
    * weighted by how good it is, so a force watched for longer is placed
-   * better. A force that has moved is placed afresh.
+   * better — but each observer adds to it at most once a turn, since the
+   * same eye a few seconds later makes the same mistake. A force that has
+   * moved is placed afresh.
    */
   record(
     side: Side,
@@ -95,17 +110,24 @@ export class IntelLedger {
     if (fix) {
       const before = fixes.get(unitId);
       const known = contacts.get(unitId);
-      let sigma = fix.sigma;
-      if (before && known && distance(before.truth, fix.truth) < 1e-6) {
-        const w0 = 1 / before.sigma ** 2;
-        const w1 = 1 / fix.sigma ** 2;
-        at = {
-          x: (known.lastKnownPosition.x * w0 + position.x * w1) / (w0 + w1),
-          y: (known.lastKnownPosition.y * w0 + position.y * w1) / (w0 + w1),
-        };
-        sigma = 1 / Math.sqrt(w0 + w1);
+      if (before && known && before.stand === fix.stand) {
+        const observers = before.turn === turn ? before.observers : new Set<string>();
+        if (observers.has(fix.observer)) {
+          // Seen again by the same eye this minute: the report stands.
+          at = { ...known.lastKnownPosition };
+        } else {
+          const w0 = 1 / before.sigma ** 2;
+          const w1 = 1 / fix.sigma ** 2;
+          at = {
+            x: (known.lastKnownPosition.x * w0 + position.x * w1) / (w0 + w1),
+            y: (known.lastKnownPosition.y * w0 + position.y * w1) / (w0 + w1),
+          };
+          observers.add(fix.observer);
+          fixes.set(unitId, { stand: fix.stand, sigma: 1 / Math.sqrt(w0 + w1), turn, observers });
+        }
+      } else {
+        fixes.set(unitId, { stand: fix.stand, sigma: fix.sigma, turn, observers: new Set([fix.observer]) });
       }
-      fixes.set(unitId, { truth: { ...fix.truth }, sigma });
     } else {
       fixes.delete(unitId);
     }

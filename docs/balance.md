@@ -1606,6 +1606,10 @@ reproduces:
 - `--location-error`: every sighting in the game carries the error
   (`GameOptions.locationError`).
 
+The tables below were measured before a review tightened how repeated
+sightings combine (at most once an observer a turn). They were rerun on the
+final code; see *Rerun* at the end of the round.
+
 Company, plain drill, full cover, morale on, 300 battles a cell, seeds from
 1000. Both sides have the calibrated mortar section (decision 43: 12
 missions, fire for effect).
@@ -1638,6 +1642,9 @@ in brackets):
 | fire for effect, registered on the plan | 22% (95%) | 0% (17%) |
 | adjust, registered on the plan | 22% (95%) | 0% (17%) |
 
+The last two rows are identical by construction, not a harness bug: a
+registered target goes straight to effect whatever the method (decision 39).
+
 The thirteenth round's best configuration (Western drill; attacker 4
 missions registered, fire for effect; defender 4 missions registered at 200
 and 400 m, observation posts, fire for effect), 200 a cell:
@@ -1660,7 +1667,9 @@ and 400 m, observation posts, fire for effect), 200 a cell:
   research figures is a disc of about 12 m radius, and a squad in overhead
   cover is hurt only by a near-direct hit. That is why the answer is so
   sensitive.
-- **Location error alone changes little** (2 points either way). By the
+- **Location error alone changes little** in the calibrated battles (2
+  points either way; 6 in the Western-drill 3:1 row, 200 battles a cell, which
+  is inside its noise). By the
   time a side sees an enemy, it is inside 300–400 m. At that range the
   error is 60–80 m along the line, and repeated sightings of a force
   holding still bring it down. The defender's calls on a moving attacker
@@ -1677,6 +1686,21 @@ and 400 m, observation posts, fire for effect), 200 a cell:
   none of these. The defender's side has observation posts (decision 38),
   and the attacker's side needs its equivalent before the fire plan can be
   judged.
+
+### Rerun on the final code
+
+The first table, rerun after repeated sightings were limited to one
+estimate an observer a turn (300 a cell, same seeds):
+
+| Planning error | Location error | 3:1 win | 3:1 out by HE | 2:1 win | 2:1 out by HE |
+|---|---|---|---|---|---|
+| none | off | 95% | 75% | 7% | 69% |
+| none | on | 95% | 75% | 6% | 69% |
+| 0.2 | off | 21% | 67% | 0% | 57% |
+| 0.2 | on | 20% | 67% | 0% | 57% |
+
+Nothing that matters moved. Location error alone now costs the attacker
+nothing at 3:1 (95%, was 93%).
 
 ## How the engine scales, 2026-09-23
 

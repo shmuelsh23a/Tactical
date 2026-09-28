@@ -1760,7 +1760,10 @@ on the stated reasoning, still awaiting the author's word.
       deviations), never under 5 m. An observation post's range card halves
       the range error, and a UAV is off by 15 m whatever the range. A force
       that stays put and is seen again is placed better, the estimates
-      weighted by how good each is. One that moves is placed afresh. The
+      weighted by how good each is — each observer adding to it at most once
+      a turn, since the same eye seconds later makes the same mistake. One
+      that has made a bound since is placed afresh, even back where it stood.
+      The debrief tells an enemy's bound without where it went. The
       side's map draws every enemy at its report, even one in sight this
       turn. Fire still resolves on the truth, so a mission called on a report
       lands around where the force was judged to be. The error is drawn
@@ -1792,6 +1795,10 @@ on the stated reasoning, still awaiting the author's word.
       wins only 66%. Adjusting fire does not bring it back, because an
       adjusted mission walks its rounds onto the point it was given, and
       the dug-in defender is not seen in time to give it a better one.
+    - ⚠️ **What still gives the true range away:** fire resolves on the
+      truth, so a firer's hit chance (in its log line) and an "out of range"
+      refusal read off the true range band, not the estimate. Accepted for
+      now — the shooter's own sight picture is not what this rule is about.
     - **Open for the author:** with this, 3:1 no longer wins against a
       prepared platoon under the plain drill, which breaks the design
       principle. What should give the attacker the defender's location

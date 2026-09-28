@@ -35,9 +35,8 @@ describe("the figures", () => {
 describe("the ledger", () => {
   it("combines two estimates of a force that has not moved, weighted by how good each is", () => {
     const intel = new IntelLedger();
-    const truth = { x: 0, y: 0 };
-    intel.record("BLUE", "RED-1", { x: 100, y: 0 }, 1, "movement", false, { truth, sigma: 100 });
-    intel.record("BLUE", "RED-1", { x: 0, y: 20 }, 2, "movement", false, { truth, sigma: 50 });
+    intel.record("BLUE", "RED-1", { x: 100, y: 0 }, 1, "movement", false, { stand: 0, sigma: 100, observer: "BLUE-1" });
+    intel.record("BLUE", "RED-1", { x: 0, y: 20 }, 2, "movement", false, { stand: 0, sigma: 50, observer: "BLUE-1" });
     // Weights 1/100² and 1/50²: the better report counts four times as much.
     const at = intel.contactFor("BLUE", "RED-1")!.lastKnownPosition;
     expect(at.x).toBeCloseTo(20);
@@ -47,15 +46,26 @@ describe("the ledger", () => {
 
   it("places a force afresh once it has moved", () => {
     const intel = new IntelLedger();
-    intel.record("BLUE", "RED-1", { x: 100, y: 0 }, 1, "movement", false, { truth: { x: 0, y: 0 }, sigma: 10 });
-    intel.record("BLUE", "RED-1", { x: 500, y: 0 }, 2, "movement", false, { truth: { x: 450, y: 0 }, sigma: 100 });
+    intel.record("BLUE", "RED-1", { x: 100, y: 0 }, 1, "movement", false, { stand: 0, sigma: 10, observer: "BLUE-1" });
+    intel.record("BLUE", "RED-1", { x: 500, y: 0 }, 2, "movement", false, { stand: 1, sigma: 100, observer: "BLUE-1" });
     expect(intel.contactFor("BLUE", "RED-1")!.lastKnownPosition).toEqual({ x: 500, y: 0 });
     expect(intel.spreadOf("BLUE", "RED-1")).toBe(100);
   });
 
+  it("takes one observer's second look in the same turn as the same estimate", () => {
+    const intel = new IntelLedger();
+    intel.record("BLUE", "RED-1", { x: 100, y: 0 }, 1, "fire", false, { stand: 0, sigma: 100, observer: "BLUE-1" });
+    intel.record("BLUE", "RED-1", { x: -100, y: 0 }, 1, "fire", false, { stand: 0, sigma: 100, observer: "BLUE-1" });
+    expect(intel.contactFor("BLUE", "RED-1")!.lastKnownPosition).toEqual({ x: 100, y: 0 });
+    expect(intel.spreadOf("BLUE", "RED-1")).toBe(100);
+    // Another observer that turn is a second estimate.
+    intel.record("BLUE", "RED-1", { x: -100, y: 0 }, 1, "fire", false, { stand: 0, sigma: 100, observer: "BLUE-2" });
+    expect(intel.contactFor("BLUE", "RED-1")!.lastKnownPosition.x).toBeCloseTo(0);
+  });
+
   it("forgets the spread with the contact", () => {
     const intel = new IntelLedger();
-    intel.record("BLUE", "RED-1", { x: 1, y: 0 }, 1, "movement", false, { truth: { x: 0, y: 0 }, sigma: 10 });
+    intel.record("BLUE", "RED-1", { x: 1, y: 0 }, 1, "movement", false, { stand: 0, sigma: 10, observer: "BLUE-1" });
     intel.expire(10, 3);
     expect(intel.spreadOf("BLUE", "RED-1")).toBeUndefined();
   });
@@ -105,12 +115,31 @@ describe("a sighting with location error", () => {
     expect(g.reportSpread("BLUE", "RED-1")).toBe(UAV_LOCATION_ERROR_M);
   });
 
-  it("is placed better the longer a force that stays put is watched", () => {
+  it("is placed better the longer a force that stays put is watched, a turn at a time", () => {
     const { g, blue, red } = pair(11, true);
     g.fire(blue.id, red.id, { weapon: "smallArms" });
     const first = g.reportSpread("BLUE", red.id)!;
+    // A second shot the same minute is the same eye making the same mistake.
+    expect(g.fire(blue.id, red.id, { weapon: "smallArms" }).fired).toBe(true);
+    expect(g.reportSpread("BLUE", red.id)).toBe(first);
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("combat");
     g.fire(blue.id, red.id, { weapon: "smallArms" });
     expect(g.reportSpread("BLUE", red.id)!).toBeLessThan(first);
+  });
+
+  it("places a force that moved afresh, even back to where it stood", () => {
+    const { g, blue, red } = pair(11, true);
+    g.fire(blue.id, red.id, { weapon: "smallArms" });
+    const first = g.reportSpread("BLUE", red.id)!;
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    g.moveUnit(red.id, { x: 0, y: -20 }, "normal");
+    g.moveUnit(red.id, { x: 0, y: 0 }, "normal");
+    g.advanceToPhase("combat");
+    g.fire(blue.id, red.id, { weapon: "smallArms" });
+    // Not combined with the old estimate: the spread is a single report's again.
+    expect(g.reportSpread("BLUE", red.id)).toBeCloseTo(first, 0);
   });
 
   it("replays out of a recording, reports and all", () => {
@@ -130,5 +159,11 @@ describe("a sighting with location error", () => {
     const recording = g.toRecording();
     expect(recording.locationError).toBeUndefined();
     expect(replayGame(recording).locationError).toBe(false);
+  });
+});
+
+describe("the option", () => {
+  it("needs the knowledge model: without it nothing is reported", () => {
+    expect(() => new Game({ seed: 1, locationError: true })).toThrow(/trackIntel/);
   });
 });

@@ -412,18 +412,20 @@ export function isRoutineOrderReason(reason?: string): boolean {
   return reason === "no movement left" || reason === "already acted";
 }
 
-/** The bound a force made under orders, or `null` if it did not move. */
-export function describeBound(done: StandingOrderExecution, nameOf: NameOf): string | null {
+/**
+ * The bound a force made under orders, or `null` if it did not move.
+ * `placeKnown`: whether the reader may be told where it went — its own side
+ * or the umpire. An enemy's bound is only ever an estimate on the reader's
+ * map (rules decision 51), so its line carries no coordinates.
+ */
+export function describeBound(done: StandingOrderExecution, nameOf: NameOf, placeKnown = true): string | null {
   if (!done.moved) return null;
   const name = nameOf(done.unitId);
+  const to = (prefix: string) => (placeKnown ? `${prefix}${at(done.moved!.to)}` : "");
   if (done.moved.withdrawing) {
-    return done.moved.arrived
-      ? `${name} השלים נסיגה ל${at(done.moved.to)}`
-      : `${name} נסוג לפי פקודה ל${at(done.moved.to)}`;
+    return done.moved.arrived ? `${name} השלים נסיגה${to(" ל")}` : `${name} נסוג לפי פקודה${to(" ל")}`;
   }
-  return done.moved.arrived
-    ? `${name} הגיע ליעד ${at(done.moved.to)}`
-    : `${name} מתקדם לפי פקודה ל${at(done.moved.to)}`;
+  return done.moved.arrived ? `${name} הגיע ליעד${to(" ")}` : `${name} מתקדם לפי פקודה${to(" ל")}`;
 }
 
 /**
@@ -445,6 +447,7 @@ export function describeExecution(
   done: StandingOrderExecution,
   nameOf: NameOf,
   view: ExecutionView = "umpire",
+  placeKnown = true,
 ): string {
   const name = nameOf(done.unitId);
   // **The shot first.** `executionVisibleTo` lets an enemy step through because
@@ -466,13 +469,16 @@ export function describeExecution(
       counted,
     )}`;
   }
-  const bound = describeBound(done, nameOf);
+  const bound = describeBound(done, nameOf, placeKnown);
   if (bound) return bound;
   return `${name}: ${reasonHe(done.reason)}`;
 }
 
-/** One line of after-action narration for a recorded action. */
-export function describeAction(action: RecordedAction, names: Map<string, string>): string {
+/**
+ * One line of after-action narration for a recorded action, read through
+ * `lens`: an enemy's move is told without where it went (rules decision 51).
+ */
+export function describeAction(action: RecordedAction, names: Map<string, string>, lens: Lens = FULL_VIEW): string {
   const who = (id: string) => names.get(id) ?? id;
 
   switch (action.kind) {
@@ -503,7 +509,7 @@ export function describeAction(action: RecordedAction, names: Map<string, string
         action.opts.method === "effect" ? "אש לאפקט מייד" : "תיקון ואש לאפקט"
       }`;
     case "moveUnit":
-      return `${who(action.unitId)} נע ${action.mode === "run" ? "בריצה" : "רגיל"} אל ${at(action.to)}`;
+      return `${who(action.unitId)} נע ${action.mode === "run" ? "בריצה" : "רגיל"}${lens.isOwn(action.unitId) ? ` אל ${at(action.to)}` : ""}`;
     case "fire":
       return `${who(action.attackerId)} → ${who(action.targetId)} (${term(weaponHe, action.opts.weapon)})`;
     case "fireExplosive":
@@ -813,6 +819,7 @@ export function describeOutcome(
             done,
             who,
             umpire ? "umpire" : done.engaged && lens.isOwn(done.engaged.targetId) ? "target" : "firer",
+            umpire || lens.isOwn(done.unitId),
           ),
         )
         .join(" · ");
