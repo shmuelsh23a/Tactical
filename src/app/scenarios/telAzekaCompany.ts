@@ -74,13 +74,13 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
   // Dressed before it is added: addUnit records a force as it stands, so
   // a force camouflaged or covered after the fact would replay undressed.
   const reda1 = makeInfantry("RED-A-1", "RED", "squad", { x: 560, y: 560 }, 8, "מחלקה א'/1");
-  reda1.baseCover = "partial";
+  reda1.baseCover = "full";
   game.addUnit(reda1);
   const reda2 = makeInfantry("RED-A-2", "RED", "squad", { x: 650, y: 520 }, 8, "מחלקה א'/2");
-  reda2.baseCover = "partial";
+  reda2.baseCover = "full";
   game.addUnit(reda2);
   const reda3 = makeInfantry("RED-A-3", "RED", "squad", { x: 470, y: 510 }, 8, "מחלקה א'/3");
-  reda3.baseCover = "partial";
+  reda3.baseCover = "full";
   game.addUnit(reda3);
   game.addUnit(makeCommandGroup("RED-B-HQ", "RED", "platoon", { x: 650, y: 300 }, 3, "חפ\"ק מ\"מ ב'"));
   // On the summit.

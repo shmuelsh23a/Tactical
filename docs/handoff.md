@@ -97,13 +97,25 @@ its own side 1.5% of the time (decision 47), not the document's 5%. Platoon
 battles are now 30–40% explosives; the calibrated company battles did not
 move.
 
+**Then a smarter attacker and a 3:1 scenario** (`telAzekaAssault`: a
+company against a platoon, 12 missions a side). A scripted player bounding
+by halves behind a registered-target fire plan wins it by turn 3–4; without
+its own mortars it loses.
+
+**Then decision 48**: prepared positions start in full (overhead) cover,
+and on the research figures a squad the attrition rule neutralised counts
+by its casualties. The calibrated 3:1 attack wins 87%, 75% by explosives;
+the 2:1 wins 2% (was 56%) — mostly the overhead cover. A sweep of mortar
+missions × rounds found that more than about 8 missions a side are never
+fired, and that rounds a mission matter more (validation.md).
+
 What it left open, for the author, in order (validation.md, *Open*):
-1. **The fire a battle is given**: 75% needs a mortar section on call all
-   battle. The company scenario has it now — twelve missions a side (author,
-   2026-09-28; it had 4 and 3) — but nobody has played it that way yet.
-2. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
-3. **A defender's breakpoint** sits at 42–50% against the rule of thumb's
-   40%, traded for the 2:1 attack's planning target.
+1. **The 2:1 attack on a dug-in position** wins 2%: accept (doctrine asks
+   3:1), or bring the defender's 60% breakpoint toward 40%.
+2. **The fire a battle is given**: 75% needs a mortar section on call all
+   battle; past about 8 missions a side the rest go unfired.
+3. **Ammunition** (backlog 12): nothing runs out by the bomb; the mission
+   allotment is the only limit.
 
 Not yet played by a person on the new figures; driven in the browser only to
 turn 1 of the company battle.

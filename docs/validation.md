@@ -412,18 +412,81 @@ Out by explosives (100 battles a cell): platoon meeting 22% → 31%, platoon
 3:1 attack 26% → 30%, platoon 2:1 attack 37% → 40%; the company battles moved
 by a point, and the calibrated ones not at all (83%, 78%).
 
+## Prepared positions, half-strength squads, and mortar ammunition (rules decision 48)
+
+**Prepared positions start in full cover** — dug in, with overhead cover —
+where they started in partial. It is set in the three Tel Azeka specs
+(`baseCover: "full"`) and is the harness's default (`--prepared-cover
+partial` for the old). Small arms meet the same cover either way: a
+defender that stays put digs itself to full cover by its 7th turn (3 turns
+before the tools come out, 2 a level), before an attacker 700 m off is in
+range, so with no fire plan the battles came out identical, battle for
+battle. What changes is the shelling: a force in full cover is under a
+roof (`underRoof`), and the first turns.
+
+**A squad the attrition rule neutralised counts by its casualties**, on the
+research figures, as a routed one already did (decision 45): a squad down to
+half strength is not a squad lost. A surrendered force still counts whole.
+
+**Measured**, calibrated company battles (12 missions of 24 a side, 100
+battles a cell, research figures), each change on its own:
+
+| Battle | Partial cover, before | Partial + decision 48 | Full cover | Both | Out by explosives, partial → full |
+|---|---|---|---|---|---|
+| Company 3:1 attack, attacker wins | 95% | 95% | 88% | **87%** | 83% → 75% |
+| Company 2:1 attack, attacker wins | 56% | 34% | 7% | **2%** | 78% → 69% |
+
+`npm run validate` now gives (research): 3:1 wins 87%, defender breaks at
+42% (36–50%), 75% by explosives; 2:1 wins 2%, attacker breaks at 22%
+(18–29%), 69% by explosives. **The 2:1 attack on a dug-in company no longer
+wins** — the doctrinal 3:1 does. The 30–70% planning target decision 44
+traded for is lost; see *Open*.
+
+**Mortar ammunition — does it need a limit?** Both sides given the same
+allotment, fire for effect at once, 60 battles a cell, research figures:
+
+| Battle | Cover | Missions × rounds a side | Attacker wins | Out by explosives |
+|---|---|---|---|---|
+| 2:1 | full | none (a bomb a turn) | 3% | — |
+| 2:1 | full | 2 × 24 … 12 × 24 | 0–3% | 56–69% |
+| 2:1 | partial | 2 × 24 … 12 × 24 | 2–35% | 66–78% |
+| 3:1 | full | none (a bomb a turn) | 92% | — |
+| 3:1 | full | 2 × 24 | 48% | 65–75% |
+| 3:1 | full | 4 × 12 | 65% | |
+| 3:1 | full | 4 × 24 | 90% | |
+| 3:1 | full | 8 × 12 | 73% | |
+| 3:1 | full | 8 × 24 | 88% | |
+| 3:1 | full | 12 × 12, 12 × 24 | as 8 × 12, 8 × 24 | |
+| 3:1 | partial | 2 × 24 … 12 × 24 | 85–98% | 73–83% |
+
+- **More than about 8 missions a side is never fired**: 8 and 12 give the
+  same battles. One mission in hand a weapon, the adjustment and the
+  delivery hold a section to about 8 in the battle's 10–15 minutes. The
+  count is already a limit only below that.
+- **Rounds a mission move it more than missions**: 4 × 24 beats 8 × 12.
+- **Starving both sides helps the defender**: at 2 × 24 the 3:1 attack
+  wins 48%, where a bomb a turn gives it 92% — the attacker's fire plan is
+  what gets it across.
+
+The engine does not count bombs (backlog 12), so the missions × rounds
+allotment is the limit. **12 × 24 a side is past what a section fires in a
+company battle; 8 × 24 plays the same.** A per-tube bomb count would matter
+only for longer battles or several battles in a row (a campaign).
+
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **The fire a battle is given.** 75% holds with a mortar section on call all
-   battle, which the company scenario now has (twelve missions a side). The
-   harness's default (a bomb a turn) gives 19–31%. The company battle has not
-   been played by a person on it yet.
-2. **Ammunition** (backlog 12): nothing runs out, whatever the rate — a
-   grenadier fires his rate every turn.
-3. **A defender's breakpoint**: 42–50% casualties against the rule of
-   thumb's 40%, traded for the 2:1 attack's planning target.
+1. **The 2:1 attack on a dug-in position** (decision 48) wins 2% with
+   fire support, where decision 44 set the breakpoints for 30–70%. Either
+   that is right (doctrine asks 3:1, which wins 87%), or the defender's 60%
+   comes down toward the rule of thumb's 40% — which decision 48 now allows.
+2. **The fire a battle is given.** 75% holds with a mortar section on call all
+   battle (69–75% with full cover). Missions past about 8 a side go unfired
+   (decision 48's sweep).
+3. **Ammunition** (backlog 12): nothing runs out by the bomb, whatever the
+   rate — a grenadier fires his rate every turn. The mission allotment is
+   the only limit.
 4. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.

@@ -64,7 +64,7 @@ export function buildTelAzekaScenario(seed = 1948): Scenario {
   // Dressed before it is added: addUnit records a force as it stands, so
   // a force camouflaged or covered after the fact would replay undressed.
   const red2 = makeInfantry("RED-2", "RED", "squad", { x: 560, y: 560 }, 8, "מחלקה ב'/2");
-  red2.baseCover = "partial";
+  red2.baseCover = "full";
   game.addUnit(red2);
   // On the northern spur, the only RED force that sees the valley floor — and, if BLUE comes up the ridge, the one watching the wrong ground.
   game.addUnit(makeInfantry("RED-3", "RED", "squad", { x: 700, y: 250 }, 6, "מחלקה ב'/3"));

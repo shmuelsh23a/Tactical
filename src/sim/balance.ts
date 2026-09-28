@@ -134,8 +134,9 @@ export interface BattleOptions {
   /** How both sides' squads fight (src/app/drill.ts). The plain script unless given. */
   drill?: SquadDrill;
   /**
-   * What a position prepared before the battle starts with. `partial` is the
-   * scenarios' convention today; `full` is the open question (docs/balance.md).
+   * What a position prepared before the battle starts with. `full` — dug in
+   * with overhead cover — since rules decision 48 (2026-09-28), as the
+   * scenarios have it; `partial` was the convention before.
    */
   preparedCover?: "partial" | "full";
   /**
@@ -340,7 +341,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
       f.kind === "command"
         ? makeCommandGroup(f.id, side, f.echelon, f.at, f.men)
         : makeInfantry(f.id, side, f.echelon, f.at, f.men);
-    if (f.prepared) u.baseCover = opts.preparedCover ?? "partial";
+    if (f.prepared) u.baseCover = opts.preparedCover ?? "full";
     g.addUnit(u);
   }
   if (opts.defenderPlan && kind !== "meeting") {
@@ -648,7 +649,7 @@ export function judge(
   echelon: Echelon,
   variants: RuleVariants,
   battles: number,
-  preparedCover: "partial" | "full" = "partial",
+  preparedCover: "partial" | "full" = "full",
   drill?: SquadDrill,
   fires?: FirePlan,
   defenderFires?: DefenderFires,

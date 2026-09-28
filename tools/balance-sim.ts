@@ -11,7 +11,7 @@
  *   npm run balance -- --defender-fires mortar=4x6,registered=200/400    # the defender's, and targets it registered
  *   npm run balance -- --fires mortar=4,method=effect --defender-fires mortar=4,method=effect   # fire for effect at once (decision 39)
  *   npm run balance -- --displace 100                # a defender moves off a shelled position
- *   npm run balance -- --prepared-cover full         # a prepared position starts in full cover, not partial
+ *   npm run balance -- --prepared-cover partial      # a prepared position starts in partial cover, not full (decision 48)
  *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
  *   npm run balance -- --defender-ops --alternate 150 --displace 100   # the defender's mission plan (decision 38)
  *   npm run balance -- --any-echelon               # any side may call any weapon: rules decision 37 off
@@ -66,7 +66,7 @@ const echelons = list<Echelon>("--echelons", ECHELONS);
 const moraleArg = value("--morale");
 const morales = moraleArg === "on" ? [true] : moraleArg === "off" ? [false] : [true, false];
 const swap = args.includes("--swap");
-const preparedCover = value("--prepared-cover") === "full" ? "full" : "partial";
+const preparedCover = value("--prepared-cover") === "partial" ? "partial" : "full";
 const drills = { plain: PLAIN_SCRIPT, western: WESTERN_DRILL } as const;
 const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
 const drill: SquadDrill | undefined = drills[drillName] && { ...drills[drillName] };

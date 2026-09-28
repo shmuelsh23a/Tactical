@@ -100,21 +100,23 @@ describe("the Elah valley scenario on Tel Azeka", () => {
     //
     // Ruled by the author 2026-09-16: a force that prepared the position before
     // the battle starts dug in. The turn-1 fire phase is where that is either
-    // true or not, so that is what is checked.
+    // true or not, so that is what is checked. Full cover since 2026-09-28
+    // (rules decision 48): a position prepared before the battle is dug in
+    // with overhead cover.
     const { game: fresh } = buildTelAzekaScenario();
-    expect(fresh.getUnit("RED-2").baseCover).toBe("partial");
-    expect(fresh.getUnit("RED-2").cover, "at setup").toBe("partial");
+    expect(fresh.getUnit("RED-2").baseCover).toBe("full");
+    expect(fresh.getUnit("RED-2").cover, "at setup").toBe("full");
 
     fresh.beginTurn();
     fresh.advanceToPhase("combat");
-    expect(fresh.getUnit("RED-2").cover, "through turn 1's fire phase").toBe("partial");
+    expect(fresh.getUnit("RED-2").cover, "through turn 1's fire phase").toBe("full");
     // …and what actually resolves a shot agrees, which is the half that
     // matters: `cover` is a field, `coverAgainst` is what the firer reads.
-    expect(fresh.coverAgainst(fresh.getUnit("RED-2")), "as a firer reads it").toBe("partial");
+    expect(fresh.coverAgainst(fresh.getUnit("RED-2")), "as a firer reads it").toBe("full");
 
     fresh.advanceToPhase("summary");
     fresh.advancePhase(); // the upkeep that closes turn 1
-    expect(fresh.getUnit("RED-2").cover, "from turn 2").toBe("partial");
+    expect(fresh.getUnit("RED-2").cover, "from turn 2").toBe("full");
 
     // …and the force that prepared nothing is still in the open.
     expect(fresh.getUnit("RED-1").cover).toBe("none");

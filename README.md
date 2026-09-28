@@ -1707,6 +1707,27 @@ on the stated reasoning, still awaiting the author's word.
     attack, 8 → 2 in the 2:1, 18 → 4 in the company 2:1 — about what it was
     when a squad threw two. The grenades still catching someone did not
     change (36, 24, 100).
+48. ✅ **A prepared position is dug in with overhead cover, and a squad left
+    at half strength is not a squad lost** (author, 2026-09-28).
+    - **Prepared positions start in full cover**, not partial: the Tel Azeka
+      specs set `baseCover: "full"`, and it is the harness's default
+      (`--prepared-cover partial` for the old). A defender that stays put
+      digs itself to full cover by turn 7 anyway, so small arms meet the
+      same cover; the difference is overhead cover against shells, and the
+      first turns.
+    - **On the research figures, a force the attrition rule neutralised
+      counts only its men down or broken** toward its side's breakpoint, as
+      a routed one does (decision 45). A surrendered force still counts
+      whole; on the document's figures, all three count whole.
+    - **What it moved** (calibrated company battles, 100 a cell): the 3:1
+      attack wins 87% (was 95%), 75% by explosives; the 2:1 attack wins 2%
+      (was 56%), 69% by explosives. Full cover alone takes the 2:1 to 7%.
+      The 2:1 attack's 30–70% target (decision 44) is lost; open for the
+      author.
+    - **Mortar ammunition**: a sweep of missions × rounds (validation.md)
+      found that more than about 8 missions a side are never fired in a
+      company battle, and rounds a mission matter more than missions. No
+      bomb count was added; the mission allotment is the limit.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

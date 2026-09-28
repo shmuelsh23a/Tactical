@@ -245,7 +245,7 @@
         560,
         560
       ],
-      "baseCover": "partial",
+      "baseCover": "full",
       "note": "The platoon battle's shoulder position, covering the southern approach."
     },
     {
@@ -259,7 +259,7 @@
         650,
         520
       ],
-      "baseCover": "partial"
+      "baseCover": "full"
     },
     {
       "id": "RED-A-3",
@@ -272,7 +272,7 @@
         470,
         510
       ],
-      "baseCover": "partial"
+      "baseCover": "full"
     }
   ],
   "charges": [
