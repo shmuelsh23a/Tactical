@@ -2,6 +2,7 @@ import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "../data/explosives.js";
+import type { Lethality } from "../data/lethality.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
@@ -40,6 +41,8 @@ export function resolveIndirectFire(
     underRoof?: (unit: Unit) => boolean;
     /** On trial: scatter by this CEP instead of the document's table. */
     cepM?: number;
+    /** Whose blast figures (rules decision 41). The document's unless given. */
+    lethality?: Lethality;
   } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];
@@ -58,7 +61,7 @@ export function resolveIndirectFire(
   const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
     factorFor: (u) => shellFactor(u, fuze, underRoof(u)),
     airburst: fuze === "airburst",
-  });
+  }, opts.lethality ?? "document");
   return { weapon: weaponKey, aim, dispersion, blast };
 }
 

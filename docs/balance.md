@@ -9,6 +9,14 @@ until we work on balance*.
 Each row says who chose it and where it lives. "Author" means he gave the
 figure; "ours" means the code needed one and the README records the reasoning.
 
+**Since rules decision 41 (2026-09-28) a new game plays the research blast
+figures**: each weapon's blast bands come from its published lethal area, and
+the tank gun hits to 2 km. Every round on this page before that date was
+measured on the document's tables. `npm run balance -- --lethality document`
+reproduces them; without the flag the harness plays the research figures. What
+the change moved, and why explosives now fall short of the 75% principle, is on
+[validation.md](validation.md).
+
 ## Detection and concealment (rules decision 12)
 
 [`src/engine/data/concealment.ts`](../src/engine/data/concealment.ts)

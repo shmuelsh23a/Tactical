@@ -17,7 +17,8 @@
     "check": "npm run lint && npm run typecheck && npm test",
     "test": "vitest run",
     "test:watch": "vitest",
-    "balance": "vite-node tools/balance-sim.ts"
+    "balance": "vite-node tools/balance-sim.ts",
+    "validate": "vite-node tools/validation-sim.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

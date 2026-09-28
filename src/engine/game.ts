@@ -27,6 +27,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
+import { LETHALITIES, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -371,6 +372,15 @@ export interface GameOptions {
    * off, so the fire it called still replays.
    */
   fireSupportByEchelon?: boolean;
+  /**
+   * Whose figures a blast and the tank gun play (rules decision 41):
+   * `research`, the default, sets how far a shell, a bomb, a grenade or a
+   * tank round reaches the men of a force, and how far a tank gun hits, from
+   * published data (docs/validation.md); `document` plays the rules
+   * document's tables. A recording made before the decision reads it as
+   * `document`, so the battle it holds still replays.
+   */
+  lethality?: Lethality;
 }
 
 /**
@@ -394,6 +404,8 @@ export class Game {
   readonly commandEchelons: Partial<Record<Side, Echelon>>;
   /** Whether rules decision 37 is in force: who may call a weapon depends on the echelon. */
   readonly fireSupportByEchelon: boolean;
+  /** Whose blast and tank-gun figures this game plays (rules decision 41). */
+  readonly lethality: Lethality;
   /**
    * How many of {@link registeredTargets} came with the options rather than
    * from mission planning — the recording's header carries those, its journal
@@ -500,6 +512,8 @@ export class Game {
       }
     }
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
+    this.lethality = opts.lethality ?? "research";
+    if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
     for (const t of opts.registeredTargets ?? []) {
       if (!this.sides.includes(t.side) || !isIndirect(t.weapon) || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
@@ -589,6 +603,7 @@ export class Game {
       ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.fireSupport) } : {}),
       ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
+      lethality: this.lethality,
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -1215,6 +1230,7 @@ export class Game {
           // 2026-09-23: a prepared position has overhead cover).
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           cepM,
+          lethality: this.lethality,
         }),
       );
       // What the side saw of it teaches the next round; a round seen on the
@@ -1912,6 +1928,7 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
       turn: this.turn,
+      lethality: this.lethality,
     });
     if (result.fired) {
       this.exchangeContact(attacker, target);

@@ -3,6 +3,7 @@ import { roll } from "../dice.js";
 import { distance, lookupBand, type Point } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
+import { explosiveFor, type Lethality } from "../data/lethality.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
   applyComponentDamage,
@@ -53,8 +54,9 @@ export function resolveBlast(
   candidates: Unit[],
   turn = 0,
   shell?: ShellEffect,
+  lethality: Lethality = "document",
 ): BlastResult {
-  const weapon = EXPLOSIVES[weaponKey];
+  const weapon = explosiveFor(weaponKey, lethality);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
 
   const targets: BlastTargetResult[] = [];
@@ -62,7 +64,10 @@ export function resolveBlast(
   for (const unit of candidates) {
     if (unit.neutralized && unit.kind === "vehicle" && unit.vehicle?.destroyed) continue;
     const dist = distance(impact, unit.position);
-    const band = lookupBand(weapon.blastBands, dist);
+    // The research figures are lethal areas against men (rules decision 41):
+    // a vehicle is reached, and connected with, as the document has it.
+    const bands = unit.kind === "infantry" ? weapon.blastBands : EXPLOSIVES[weaponKey]!.blastBands;
+    const band = lookupBand(bands, dist);
     if (!band) continue; // outside the lethal radius
     // A shell against men: posture, cover and fuze (rules decisions 29–31).
     const blastChance = unit.kind === "infantry" && shell ? Math.min(1, band.value * shell.factorFor(unit)) : band.value;
@@ -148,9 +153,10 @@ export function resolveDirectExplosive(
   weaponKey: string,
   attacker: Unit,
   target: Unit,
-  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number } = {},
+  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number; lethality?: Lethality } = {},
 ): DirectExplosiveResult {
-  const weapon = EXPLOSIVES[weaponKey];
+  const lethality = opts.lethality ?? "document";
+  const weapon = explosiveFor(weaponKey, lethality);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
   if (weapon.delivery !== "directFire") {
     throw new Error(`${weaponKey} is not a direct-fire weapon`);
@@ -175,6 +181,6 @@ export function resolveDirectExplosive(
   result.hit = true;
 
   const candidates = [target, ...(opts.collateral ?? [])];
-  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0);
+  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, undefined, lethality);
   return result;
 }

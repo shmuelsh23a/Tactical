@@ -38,6 +38,7 @@ import type { RuleVariants } from "./data/variants.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { MapLineKind, Terrain } from "./terrain.js";
 import { OBJECT_HEIGHT_M } from "./data/terrain.js";
+import { LETHALITIES, type Lethality } from "./data/lethality.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -189,6 +190,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
     throw malformed("commandEchelon");
   }
   if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
+  if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -306,6 +308,12 @@ export interface GameRecording {
    * whatever it liked, and still replays.
    */
   fireSupportByEchelon?: boolean;
+  /**
+   * Whose blast and tank-gun figures the battle played (rules decision 41).
+   * Read as **`document`** when absent: a battle recorded before the decision
+   * was fought on the document's tables.
+   */
+  lethality?: Lethality;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -460,6 +468,7 @@ export function replayWithOutcomes(
       : {}),
     ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
+    lethality: recording.lethality ?? "document",
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-23 (second session), after rules decisions 36–39 and the eleventh to thirteenth balance rounds. The artillery stage is closed. The business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-28, after rules decisions 40–41: a turn is 60 s, and blast and the tank gun are set from published data ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -19,12 +19,15 @@ out of here on purpose:
   verify a change for real.
 - [docs/business-plan.md](business-plan.md) — who it is for, editions, free
   and paid, build order, and the open business items.
+- [docs/validation.md](validation.md) — the game's numbers against the
+  research, with sources, and what `npm run validate` measures.
 
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 585 tests, 31 files
+npm run check       lint + typecheck clean, 612 tests, 33 files
 npm run balance     the balance harness; see balance.md for every run recorded
+npm run validate    the numbers against the sources; see validation.md
 ```
 
 The app opens on a **scenario picker** (Yokneam, Tel Azeka, and a company
@@ -51,6 +54,30 @@ Instructions are vendor-neutral: [AGENTS.md](../AGENTS.md) is canonical,
 call the project's npm scripts and a reviewer that reads
 [review-checklist.md](review-checklist.md). Any assistant should be able to work
 here from AGENTS.md alone.
+
+## Start here: the validation pass (2026-09-28)
+
+The author asked how valid the numbers are, and ruled (decisions 40–41):
+**a turn is 60 s**, and **the tables follow the research**. Built:
+`data/lethality.ts` derives each explosive's blast bands from its published
+lethal area, the tank gun hits to 2 km, and `GameOptions.lethality` keeps the
+document's tables a per-game option (a recording from before replays on them).
+`npm run validate` measures the result. Everything is on
+[validation.md](validation.md), with sources.
+
+What it left open, for the author, in order (validation.md, *Open*):
+1. **The volume of fire.** One round no longer reaches 200 m, so explosives
+   now put out 4–31% of the men in the harness, not the 75% of his principle.
+   Rates per 60 s turn (3 bombs a barrel is the document's) decide it.
+2. **Morale's breakpoints**: forces break at a median 35–67% losses; the
+   historical rule of thumb is 20–40%.
+3. **Small arms a minute**: kept as the document has them; no open source
+   gives a combat rate to set them by.
+4. **Rifle grenades** are nearly useless at one round a turn with the
+   research blast.
+
+Not yet played by a person on the new figures; driven in the browser only to
+turn 1 of the company battle.
 
 ## Next session: what is left of the author's agenda (2026-09-23)
 

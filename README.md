@@ -36,6 +36,7 @@ npm test             # the suite alone
 npm run typecheck    # strict type-check alone (engine + app)
 npm run lint         # the architectural rules alone (eslint.config.js)
 npm run build:engine # emit the engine as a standalone library -> dist/
+npm run validate     # the game's numbers measured against the sources -> docs/validation.md
 ```
 
 ## Stage 2 — browser UI (hotseat) — in progress
@@ -319,6 +320,8 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 
 - Covering fire (חיפוי): a force holds its action to answer the first enemy it
   sees move, fire or assault (rules decision 18)
+- Blast and the tank gun from published data (rules decision 41), with the
+  document's tables kept as a per-game option; a turn is 60 s (decision 40)
 - Morale and suppression — **not from the document**, which has none: traits,
   a pool of will, leaders, tests, rallies, routs, surrender and a side that
   breaks (rules decision 19, a module like the others)
@@ -1538,6 +1541,48 @@ on the stated reasoning, still awaiting the author's word.
       echelon, Jev will (backlog 15).
     - Journalled only when `effect`, so a call from before reads as the
       adjusting it was.
+40. ✅ **A turn is 60 seconds** (author, 2026-09-28). The document never
+    said. `TURN_SECONDS` in [`data/lethality.ts`](src/engine/data/lethality.ts).
+    It is what lets a rate in the rules be read against a rate in the sources
+    — rounds a minute, hits a minute, losses a minute — and it is the time
+    basis of [docs/validation.md](docs/validation.md). The document's movement
+    (50 m a turn walking, 100 m running) reads as tactical movement in bounds
+    at this scale. Nothing else changed with it: no rate was rescaled.
+41. ✅ **Blast and the tank gun from published data** (author, 2026-09-28:
+    "adapt our table to what is acceptable in research"). The document's
+    blast bands reached men 50–200 m from a round at 25–70% each; published
+    lethal areas reach a few tens of metres. On a squad in the open, a round
+    anywhere within 50 m put out **3.5×** (155 mm) to **20×** (40 mm grenade)
+    the men its lethal area predicts. Now, with `GameOptions.lethality`
+    `research` (the default):
+    - **Each weapon's blast bands are derived from its lethal area** against
+      standing men (`LETHAL_AREA_M2`): the share of a force's 25 m-radius
+      footprint the lethal area covers, divided by the 0.6 of hits that put a
+      man out, in 10 m rings. The bands give the lethal area back exactly —
+      a test integrates them. Posture, cover and fuze scale them as before
+      (decisions 29–31).
+    - **Against men only.** A vehicle is reached, and a tank round or a
+      charge connects with it, by the document's bands, under either setting.
+    - Artillery **971 m²** (155 mm), mortar **476 m²** (81 mm, ours: scaled by
+      the published casualty radii), tank HE **390 m²** (ours: a 105 mm
+      shell's), rifle grenade **79 m²** (40 mm, 5 m radius), RPG against men
+      **154 m²** (ours, unverified). A shell on the point is about as deadly
+      as before; it stops reaching at about 40 m instead of 200.
+    - **The tank gun hits 90% to 2,000 m, 50% to 3,000 m** (modern fire
+      control; the 3,000 m band is ours), where the document stopped at
+      1,500 m with 90% only to 300 m.
+    - Unchanged, and why, on [docs/validation.md](docs/validation.md): small
+      arms and the coaxial gun (no source gives a per-minute rate to set them
+      by), the RPG against armour and the wound roll (they agree with the
+      sources), the hand grenade and the charges (not researched).
+    - The document's tables stay verbatim in `data/explosives.ts`;
+      `lethality: "document"` plays them. A recording made before the
+      decision carries no `lethality` and replays on them.
+    - **What it moved:** without a fire plan, explosives now put out about 4%
+      of the men in a company attack (was 23–31%); with the mortar plan, 13–31%
+      (was 46–76%). The principle that explosives cause about 75% of losses
+      now has to come from the **volume** of fire, not the reach of one round
+      — a question for the balance pass (docs/validation.md, *Open*).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

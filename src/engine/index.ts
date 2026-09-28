@@ -84,6 +84,18 @@ export {
 } from "./data/planning.js";
 export { CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
+export {
+  TURN_SECONDS,
+  LETHALITIES,
+  FORCE_FOOTPRINT_RADIUS_M,
+  INCAPACITATED_PER_HIT,
+  LETHAL_AREA_M2,
+  RESEARCH_TANK_TO_HIT,
+  blastBandsFromLethalArea,
+  explosiveFor,
+  hitChanceAt,
+  type Lethality,
+} from "./data/lethality.js";
 export * as MORALE_RULES from "./data/morale.js";
 export { type RuleVariants } from "./data/variants.js";
 

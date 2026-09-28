@@ -12,6 +12,7 @@ import {
   type FireMethod,
   type Fuze,
   type GameOptions,
+  type Lethality,
   type MoraleReport,
   type Point,
   type RuleVariants,
@@ -162,6 +163,8 @@ export interface BattleOptions {
    * drill's displacement goes to.
    */
   defenderPlan?: { observationPosts?: boolean; alternateAt?: number };
+  /** Whose blast and tank-gun figures (rules decision 41). The game's default, `research`, unless given. */
+  lethality?: Lethality;
 }
 
 /**
@@ -314,6 +317,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // the platoon defending against a company is one of its company's.
     commandEchelon: { RED: echelon, BLUE: echelon },
     ...(opts.anyEchelon ? { fireSupportByEchelon: false } : {}),
+    ...(opts.lethality ? { lethality: opts.lethality } : {}),
   };
   const g = new Game(gameOptions);
   const relabel = (fs: ForceSpec[], to: "B" | "R") => fs.map((f) => ({ ...f, id: to + f.id.slice(1) }));

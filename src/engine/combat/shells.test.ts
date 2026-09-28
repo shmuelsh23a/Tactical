@@ -86,7 +86,10 @@ describe("a mission in play (decisions 30–34)", () => {
    * unless it is put beyond the observing range.
    */
   function setUp(opts: Partial<GameOptions> = {}, blueAt = 1500) {
-    const g = new Game({ commandEchelon: BATTALIONS, seed: 4, enforceC2: false, ...opts });
+    // The document's blast bands: these tests measure posture and timing
+    // against the table's own figures (rules decision 41 changes the bands,
+    // not the posture rules).
+    const g = new Game({ commandEchelon: BATTALIONS, seed: 4, enforceC2: false, lethality: "document", ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: blueAt }, 8));
     g.beginTurn();
