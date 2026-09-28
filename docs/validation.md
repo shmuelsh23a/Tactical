@@ -207,11 +207,11 @@ cell, morale on (temporary edits, not committed):
 
 **Where it falls short of 75%**, and why that is right:
 
-- A battle given little fire, such as the harness's default of one bomb a turn
-  or the company scenario's 4 and 3 missions, is a battle fought mostly with
-  rifles.
-- A platoon battle has no indirect fire at all (decision 37), and its squads
-  have no grenadiers. They would be the platoon's own explosives.
+- A battle given little fire, such as the harness's default of one bomb a
+  turn, is a battle fought mostly with rifles. The company battle on Tel Azeka
+  now gives each side twelve missions, the calibrated fire (it had 4 and 3).
+- A platoon battle has no indirect fire at all (decision 37). Its explosives
+  are its squads' grenadiers (decision 44, below).
 
 ## Rates of fire (rules decision 42) — changed
 
@@ -369,8 +369,9 @@ sources' wars.
 For the author, in rough order of what they move:
 
 1. **The fire a battle is given.** 75% holds with a mortar section on call all
-   battle. The company scenario's allotment (4 and 3 missions) and the
-   harness's default (a bomb a turn) give 19–31%.
+   battle, which the company scenario now has (twelve missions a side). The
+   harness's default (a bomb a turn) gives 19–31%. The company battle has not
+   been played by a person on it yet.
 2. **Ammunition** (backlog 12): nothing runs out, whatever the rate — a
    grenadier fires his rate every turn.
 3. **A defender's breakpoint**: 42–50% casualties against the rule of

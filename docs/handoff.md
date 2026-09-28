@@ -84,7 +84,8 @@ battles with mortars 78–83%.
 
 What it left open, for the author, in order (validation.md, *Open*):
 1. **The fire a battle is given**: 75% needs a mortar section on call all
-   battle. The company scenario's 4 and 3 missions give much less.
+   battle. The company scenario has it now — twelve missions a side (author,
+   2026-09-28; it had 4 and 3) — but nobody has played it that way yet.
 2. **Ammunition** (backlog 12): nothing runs out, whatever the rate.
 3. **A defender's breakpoint** sits at 42–50% against the rule of thumb's
    40%, traded for the 2:1 attack's planning target.

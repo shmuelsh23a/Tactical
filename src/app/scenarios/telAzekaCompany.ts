@@ -20,7 +20,8 @@ export function buildTelAzekaCompanyTerrain(): Terrain {
  * The Tel Azeka ground at the next echelon up: a BLUE company taking the tel
  * from the south against a RED company holding it, each commanded at company
  * level, so each has its company mortars (rules decision 37) as fire missions
- * (decision 34) — four for the attacker, three for the defender. It is the
+ * (decision 34) — twelve a side, the mortar section on call all battle that
+ * rules decision 43 was calibrated on (author, 2026-09-28). It is the
  * battle the planning stage (decision 38) and the call-for-fire control are
  * played on: both demo platoon battles have no indirect fire at all.
  *
@@ -46,8 +47,8 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {
-      BLUE: [{ weapon: "mortar", missions: 4 }],
-      RED: [{ weapon: "mortar", missions: 3 }],
+      BLUE: [{ weapon: "mortar", missions: 12 }],
+      RED: [{ weapon: "mortar", missions: 12 }],
     },
     terrain: buildTelAzekaCompanyTerrain(),
   });

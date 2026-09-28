@@ -1627,11 +1627,13 @@ on the stated reasoning, still awaiting the author's word.
       --defender-fires calibrated`). There explosives put out **82%** (3:1
       attack) and **77%** (2:1) of the men, and the 2:1 attacker wins
       **63%**, inside its 30–70% planning target.
+    - **The company battle on Tel Azeka plays it**: twelve mortar missions a
+      side (author, 2026-09-28; it had 4 and 3).
     - **Where it does not reach 75%**: a battle with little fire — the
-      harness's default of one bomb a turn (19–21%), the company scenario's
-      4 and 3 missions — and every platoon battle, which has no indirect fire
-      (decision 37) and squads without grenadiers. The share follows the fire
-      a battle is given, as it does in the sources.
+      harness's default of one bomb a turn (19–21%) — and every platoon
+      battle, which has no indirect fire (decision 37); its explosives are
+      its squads' grenadiers (decision 44). The share follows the fire a
+      battle is given, as it does in the sources.
 44. ✅ **A side gives up at the historical breakpoints** (author,
     2026-09-28: "adapt the morale to historical rules of thumb"). An attack
     stops at about 20–25% losses and a defence cannot hold at about 40% (the
