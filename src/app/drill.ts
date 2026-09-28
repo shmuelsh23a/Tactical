@@ -7,7 +7,9 @@ import {
   type MovementMode,
   type Point,
   type Side,
+  type DirectExplosiveResult,
   type Unit,
+  type WithCoveringFire,
 } from "../engine/index.js";
 import { sideView } from "./hotseat.js";
 
@@ -53,7 +55,10 @@ export interface SquadDrill {
   openFireRange: number;
   /** A defender with nothing to shoot at covers its front (חיפוי). */
   coverWhenIdle: boolean;
-  /** Assault inside this range, throwing this many grenades. */
+  /**
+   * Assault inside this range, throwing this many grenades — a man on the
+   * research figures (rules decision 46), for the force on the document's.
+   */
   assault: { range: number; grenades: number };
   /**
    * The squad's grenadiers (author, 2026-09-28): one 40 mm launcher for every
@@ -82,6 +87,14 @@ export interface SquadDrill {
 }
 
 /**
+ * How a squad carries its grenadiers (author, 2026-09-28): one 40 mm launcher
+ * for every four men still fighting. The drills' default, and the live
+ * game's: a player's squad fires its grenadiers with its rifles, as a
+ * simulated one does (rules decision 45).
+ */
+export const SQUAD_GRENADIERS = { menPerLauncher: 4 } as const;
+
+/**
  * The plain script the balance harness first measured with: everyone shoots
  * the nearest enemy in reach, half bound while half fire, nobody breaks
  * contact. Kept as the baseline a drill is compared against.
@@ -95,8 +108,8 @@ export const PLAIN_SCRIPT: SquadDrill = {
   attackFireRange: 400,
   openFireRange: 400,
   coverWhenIdle: true,
-  assault: { range: 25, grenades: 2 },
-  grenadiers: { menPerLauncher: 4 },
+  assault: { range: 25, grenades: 1 },
+  grenadiers: SQUAD_GRENADIERS,
   breakContact: null,
   commandGroupBehind: 80,
 };
@@ -122,8 +135,8 @@ export const WESTERN_DRILL: SquadDrill = {
   attackFireRange: 300,
   openFireRange: 200,
   coverWhenIdle: true,
-  assault: { range: 25, grenades: 2 },
-  grenadiers: { menPerLauncher: 4 },
+  assault: { range: 25, grenades: 1 },
+  grenadiers: SQUAD_GRENADIERS,
   breakContact: { readyShareBelow: 0.5, fallBack: 150 },
   commandGroupBehind: 80,
 };
@@ -324,7 +337,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill): voi
       game.assault(u.id, target.id, drill.assault.grenades);
     } else {
       game.fire(u.id, target.id, { weapon: u.kind === "vehicle" ? "sustainedMg" : "smallArms" });
-      fireGrenadiers(game, u, target, drill);
+      if (drill.grenadiers) fireGrenadiers(game, u, target, drill.grenadiers.menPerLauncher);
     }
   }
 }
@@ -335,14 +348,24 @@ const RIFLE_GRENADE_RANGE = EXPLOSIVES.rifleGrenade!.toHitBands!.at(-1)!.maxRang
 /**
  * A squad's grenadiers fire at its target, each his launcher's rate for the
  * turn — only inside the weapon's reach, so a shot out of range is never
- * taken (it would still spring the enemy's covering fire).
+ * taken (it would still spring the enemy's covering fire). Returns what each
+ * launcher fired, for the log; none when it had nothing to fire at.
  */
-function fireGrenadiers(game: Game, u: Unit, target: Unit, drill: SquadDrill): void {
-  if (!drill.grenadiers || u.kind !== "infantry" || !inPlay(u) || target.neutralized) return;
-  if (distance(u.position, target.position) > RIFLE_GRENADE_RANGE) return;
+export function fireGrenadiers(
+  game: Game,
+  u: Unit,
+  target: Unit,
+  menPerLauncher: number,
+): WithCoveringFire<DirectExplosiveResult>[] {
+  const volleys: WithCoveringFire<DirectExplosiveResult>[] = [];
+  if (u.kind !== "infantry" || !inPlay(u) || target.neutralized) return volleys;
+  if (distance(u.position, target.position) > RIFLE_GRENADE_RANGE) return volleys;
   const ready = (u.soldiers ?? []).filter((s) => !s.neutralized && s.morale?.state !== "broken").length;
-  const launchers = Math.floor(ready / drill.grenadiers.menPerLauncher);
+  const launchers = Math.floor(ready / menPerLauncher);
   for (let i = 0; i < launchers && !target.neutralized; i++) {
-    if (!game.fireExplosive("rifleGrenade", u.id, target.id).fired) return;
+    const r = game.fireExplosive("rifleGrenade", u.id, target.id);
+    volleys.push(r);
+    if (!r.fired) break;
   }
+  return volleys;
 }

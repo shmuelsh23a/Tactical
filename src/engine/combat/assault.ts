@@ -4,6 +4,8 @@ import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
 import { refreshUnitStatus, woundHit } from "../units.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
+import { GRENADES_CARRIED, RESEARCH_GRENADE_SELF_HIT, type Lethality } from "../data/lethality.js";
+import { resolveBlast } from "./explosives.js";
 
 /**
  * How close a force has to be to assault. The document places the assault in
@@ -54,6 +56,13 @@ export function resolveAssault(
      * the assault landed.
      */
     replyChance?: number;
+    /**
+     * Whose figures (rules decision 46): on `research`, `grenades` is a count
+     * a man (up to {@link GRENADES_CARRIED}) and each grenade is a blast of
+     * the M67's lethal area; on the document's, a count for the force, each
+     * 30% to hit one man.
+     */
+    lethality?: Lethality;
   } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
@@ -90,16 +99,27 @@ export function resolveAssault(
     if (hit.casualty) result.defenderCasualties++;
   }
 
-  // Grenades.
-  const grenades = opts.grenades ?? 0;
+  // Grenades. On the research figures every man going in throws his, and
+  // each lands on the defender's position as a blast (rules decision 46).
+  const research = opts.lethality === "research";
+  const perMan = Math.max(0, Math.min(GRENADES_CARRIED, Math.floor(opts.grenades ?? 0)));
+  const grenades = research ? accuracy.length * perMan : (opts.grenades ?? 0);
   for (let i = 0; i < grenades; i++) {
-    if (rng.chance(ASSAULT.grenadeHitChance)) {
+    if (research) {
+      const caught = resolveBlast(rng, "grenade", defender.position, [defender], turn, undefined, "research").targets[0];
+      if (caught?.caught) {
+        result.grenadeHits++;
+        result.grenadeDamage += caught.damage;
+        result.defenderCasualties += caught.newCasualties;
+      }
+    } else if (rng.chance(ASSAULT.grenadeHitChance)) {
       result.grenadeHits++;
       const hit = woundHit(rng, defender, turn, "explosive");
       result.grenadeDamage += hit.damage;
       if (hit.casualty) result.defenderCasualties++;
     }
-    if (rng.chance(ASSAULT.grenadeSelfHitChance)) {
+    // Rules decision 47: fewer self-inflicted wounds a grenade on the research figures.
+    if (rng.chance(research ? RESEARCH_GRENADE_SELF_HIT : ASSAULT.grenadeSelfHitChance)) {
       if (woundHit(rng, attacker, turn, "explosive").casualty) result.selfCasualties++;
     }
   }

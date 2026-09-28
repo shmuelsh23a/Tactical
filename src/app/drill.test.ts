@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { Game, makeCommandGroup, makeInfantry } from "../engine/index.js";
-import { DrillState, PLAIN_SCRIPT, WESTERN_DRILL, drillCombat, drillMovement, type DrillTask } from "./drill.js";
+import {
+  DrillState,
+  PLAIN_SCRIPT,
+  SQUAD_GRENADIERS,
+  WESTERN_DRILL,
+  drillCombat,
+  drillMovement,
+  fireGrenadiers,
+  type DrillTask,
+} from "./drill.js";
 
 /**
  * The squad drill (backlog 15 and 20): data a simulated subordinate carries
@@ -100,5 +109,37 @@ describe("the squad drill", () => {
     const order = g.standingOrderFor(blue.id);
     expect(order?.destination == null || order.withdraw === true).toBe(true);
     expect(blue.position.y).toBeLessThanOrEqual(y);
+  });
+});
+
+describe("a squad's grenadiers (rules decision 45)", () => {
+  const facing = (range: number, men = 9) => {
+    const g = new Game({ seed: 3, enforceC2: false });
+    const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, men));
+    const red = g.addUnit(makeInfantry("R", "RED", "platoon", { x: 0, y: range }, 30));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    return { g, blue, red };
+  };
+
+  it("fires one launcher for every four men still fighting, inside the rifle grenade's reach", () => {
+    const { g, blue, red } = facing(80);
+    const volleys = fireGrenadiers(g, blue, red, SQUAD_GRENADIERS.menPerLauncher);
+    expect(volleys).toHaveLength(2);
+    expect(volleys.every((v) => v.fired)).toBe(true);
+    // A fire team carries one.
+    const team = facing(80, 4);
+    expect(fireGrenadiers(team.g, team.blue, team.red, 4)).toHaveLength(1);
+  });
+
+  it("holds them beyond it, so no shot is taken that could not land", () => {
+    const { g, blue, red } = facing(150);
+    expect(fireGrenadiers(g, blue, red, SQUAD_GRENADIERS.menPerLauncher)).toHaveLength(0);
+    expect(blue.firedThisTurn).toBe(false);
+  });
+
+  it("is the drills' own rule", () => {
+    expect(PLAIN_SCRIPT.grenadiers).toBe(SQUAD_GRENADIERS);
+    expect(WESTERN_DRILL.grenadiers).toBe(SQUAD_GRENADIERS);
   });
 });

@@ -733,7 +733,9 @@ export function describeOutcome(
       if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
       // Whether the round found anything is the part that needed watching.
       // Several rounds in the turn (rules decision 42): how many, and how many hit.
-      const volley = r.rounds && r.rounds > 1 ? `${r.rounds} פגזים ` : "";
+      const weapon = action?.kind === "fireExplosive" ? action.weaponKey : undefined;
+      const unit = weapon === "rifleGrenade" ? "רימונים" : weapon?.startsWith("rpg") ? "רקטות" : "פגזים";
+      const volley = r.rounds && r.rounds > 1 ? `${r.rounds} ${unit} ` : "";
       if (!observed) return `ירה ${volley}ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
       if (!r.hit) return `${volley}החטאה (${pct(r.hitChance)})`;
       const caught = (r.blast?.targets ?? []).filter((t) => t.caught);

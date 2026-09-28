@@ -1659,6 +1659,54 @@ on the stated reasoning, still awaiting the author's word.
       battle's own explosives: 22–36% of its losses, against 75–80% where a
       company's mortars are on call — most explosives come from higher
       echelons, as the author expected.
+45. ✅ **A rout counts by its casualties, and a player's squads fire their
+    grenadiers** (author, 2026-09-28, after a playtest of all three
+    battles). In the demo one tank round put 3 men of a squad out and broke a
+    fourth; the squad routed, a routed force counted **whole** against its
+    side (decision 19), and BLUE's attack was over at 3 casualties of 24 —
+    12%, where decision 44's rule of thumb is 20–25%. On the research
+    figures:
+    - **A routed force counts only its men down or broken** towards its
+      side's breakpoint. A surrendered or neutralised force still counts
+      whole. Replayed, the demo now fights on to turn 7 and ends at 8 of 24
+      really lost; in the harness a losing attacker's casualties at the break
+      rose from a median 19% (p10 14%) to 22% (p10 17%) in the platoon 2:1
+      attack, and the calibrated 2:1 company attack wins 56% (was 61%).
+    - **A player's squad fires its grenadiers with its rifles**, by the same
+      rule as the drill (`fireGrenadiers`, `SQUAD_GRENADIERS` in
+      [`app/drill.ts`](src/app/drill.ts)): one 40 mm launcher per four men
+      still fighting, inside 100 m. Until now only the drill's squads had
+      them. The log tells the firer rounds, hits and the chance, and the
+      target what landed on it.
+    - On the document's figures a rout still counts whole, as decision 19
+      set it.
+46. ✅ **Hand grenades: every man throws his, and each is an M67** (author,
+    2026-09-28). They caused 1–3% of the losses: an assault threw two for
+    the whole squad (the drill) or 0–3 (a player), each 30% to hit one man.
+    On the research figures:
+    - **An assault's grenades are counted a man**: every man still going in
+      throws up to the two he carries (`GRENADES_CARRIED`). The drill throws
+      one each; a player picks 0, 1 or 2 a man (`רימונים ללוחם`).
+    - **Each grenade is a blast** on the defender's position, of the M67's
+      lethal area — its 5 m killing radius, **79 m²**, the same criterion as
+      the 40 mm's (`LETHAL_AREA_M2.grenade`). One grenade puts out 0.39 men
+      of a squad in the open, as its lethal area predicts (0.36). A nine-man
+      assault's grenades put out about 3.5 men, beside its fire's 3.8.
+    - The self-hit was the document's 5% a grenade, so a squad's own
+      grenades wounded it about four times as often — see decision 47.
+    - **What it moved:** explosives' share in the platoon battles rose from
+      22–37% to 30–40%; company battles moved a point; the calibrated
+      company battles did not (83%, 78%; the 2:1 attack wins 56%).
+    - On the document's figures a count is for the force and each grenade
+      30% to hit one man, as before.
+47. ✅ **A grenade wounds its own side 1.5% of the time**, on the research
+    figures (author, 2026-09-28), where the document gives 5%
+    (`RESEARCH_GRENADE_SELF_HIT`, ours: no published rate was found). With
+    every man throwing (decision 46), 5% wounded a squad's own men four times
+    as often as before; at 1.5%, over 60 battles, 16 → 5 in the platoon 3:1
+    attack, 8 → 2 in the 2:1, 18 → 4 in the company 2:1 — about what it was
+    when a squad threw two. The grenades still catching someone did not
+    change (36, 24, 100).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

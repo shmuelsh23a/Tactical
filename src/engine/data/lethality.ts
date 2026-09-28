@@ -65,6 +65,9 @@ export const INCAPACITATED_PER_HIT = (10 - WOUND_SEVERITY.light) / 10;
  *   casualty radius.
  * - `rpgVsInfantry`: **154 m²**, a 7 m radius — ours, unverified: between the
  *   40 mm grenade and the 105 mm shell. No open figure was found.
+ * - `grenade`: **79 m²**, a 5 m radius — the M67 hand grenade's published
+ *   killing radius (its casualty radius is 15 m), taken on the same criterion
+ *   as the 40 mm's 5 m so the two compare (rules decision 46).
  */
 export const LETHAL_AREA_M2: Readonly<Record<string, number>> = {
   artillery: 971,
@@ -72,7 +75,26 @@ export const LETHAL_AREA_M2: Readonly<Record<string, number>> = {
   tankRound: 390,
   rifleGrenade: 79,
   rpgVsInfantry: 154,
+  grenade: 79,
 };
+
+/**
+ * Hand grenades a soldier carries (rules decision 46): **2**, the standard
+ * load. On the research figures an assault's grenades are counted a man —
+ * each man still going in throws up to this many — where the document
+ * counted them for the whole force.
+ */
+export const GRENADES_CARRIED = 2;
+
+/**
+ * A grenade's chance to wound one of the thrower's own men, on the research
+ * figures (rules decision 47): **1.5%**, where the document gives 5%. With
+ * every man throwing his (decision 46) a squad throws about four times the
+ * grenades it did, and at 5% its own grenades wounded it four times as often;
+ * 1.5% brings that back to about what it was. Ours — no published rate was
+ * found.
+ */
+export const RESEARCH_GRENADE_SELF_HIT = 0.015;
 
 /**
  * The tank gun's chance to hit by range, with modern fire control. The
