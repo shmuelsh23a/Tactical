@@ -473,14 +473,40 @@ allotment is the limit. **12 × 24 a side is past what a section fires in a
 company battle; 8 × 24 plays the same.** A per-tube bomb count would matter
 only for longer battles or several battles in a row (a campaign).
 
+## The defender's breakpoint at 50% (rules decision 49)
+
+With prepared positions dug in (decision 48) the calibrated 2:1 company
+attack won 2%, so the defender's breakpoint was swept down from 60% toward
+the rule of thumb's 40% (100 battles a cell, research figures, the
+attacker's held at 30%). "Def lost" is the defender's median casualties at
+its break:
+
+| Defender breaks at | Calibrated 3:1: wins / def lost / explosives | Calibrated 2:1: wins / def lost | 2:1, a bomb a turn: wins / def lost | Platoon 2:1: wins / def lost |
+|---|---|---|---|---|
+| 60% (decision 44) | 87% / 42% / 75% | 2% / 35% | 3% / 54% | 63% / 67% |
+| 55% | 91% / 42% / 74% | 3% / 35% | 5% / 51% | 65% / 61% |
+| **50%** | **95% / 39% / 75%** | **8% / 33%** | **8% / 49%** | **68% / 56%** |
+| 45% | 97% / 31% / 87% | 11% / 32% | 12% / 43% | 68% / 56% |
+| 40% | 99% / 31% / 91% | 22% / 29% | 17% / 36% | 70% / 50% |
+| 35% | 100% / 28% / 95% | 38% / 26% | 27% / 32% | 71% / 44% |
+
+- **No setting meets both targets.** The 2:1 attack gets back into 30–70%
+  only at 35–40%, where defenders quit at 26–29% casualties and the 3:1
+  attack is a walkover at 91–95% explosives.
+- **The author took 50%** (2026-09-28): defenders break at 33–49%
+  casualties, centred on 40%; the calibrated 3:1 attack wins 95% at 75%
+  explosives. A 2:1 attack on a dug-in position fails (8%), as doctrine's
+  demand for 3:1 says it should; the 30–70% target decision 44 kept for it
+  is dropped.
+- Attackers still give up at 19–25%.
+
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **The 2:1 attack on a dug-in position** (decision 48) wins 2% with
-   fire support, where decision 44 set the breakpoints for 30–70%. Either
-   that is right (doctrine asks 3:1, which wins 87%), or the defender's 60%
-   comes down toward the rule of thumb's 40% — which decision 48 now allows.
+1. **The 2:1 attack on a dug-in position** fails (8%), accepted with the
+   defender's breakpoint at 50% (decision 49). A 2:1 attack on a hasty
+   position — not dug in — has not been measured yet.
 2. **The fire a battle is given.** 75% holds with a mortar section on call all
    battle (69–75% with full cover). Missions past about 8 a side go unfired
    (decision 48's sweep).

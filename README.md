@@ -1640,7 +1640,7 @@ on the stated reasoning, still awaiting the author's word.
     Dupuy Institute; US doctrine calls a unit destroyed at 30%); ours broke at
     44–78%. On the research figures a side breaks when this share of its men
     are down, broken, or in a force that fled (`SIDE_BREAK_BY_POSTURE`):
-    **30% attacking, 60% defending**, where decision 19 gave two thirds to
+    **30% attacking, 60% defending** (50% since decision 49), where decision 19 gave two thirds to
     both. The shares sit above the losses they stand for because broken and
     fled men count too; measured, an attacker gives up at a median **16–25%
     casualties** and a defender at **42–50%**, and the 2:1 company attack
@@ -1728,6 +1728,15 @@ on the stated reasoning, still awaiting the author's word.
       found that more than about 8 missions a side are never fired in a
       company battle, and rounds a mission matter more than missions. No
       bomb count was added; the mission allotment is the limit.
+49. ✅ **A defender gives up at 50%, not 60%**, on the research figures
+    (author, 2026-09-28; `SIDE_BREAK_BY_POSTURE.defending`). Swept from 60%
+    down to 35% (validation.md): at 50% defenders break at a median 33–49%
+    casualties, centred on the rule of thumb's 40%, and the calibrated 3:1
+    company attack wins 95% at 75% explosives. The 2:1 attack on a dug-in
+    position wins 8%, which is accepted — doctrine asks 3:1 — and decision
+    44's 30–70% target for it is dropped. Lower settings bring the 2:1 back
+    only by making the 3:1 a walkover (91–95% explosives) and defenders
+    quit under 30%.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

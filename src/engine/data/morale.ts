@@ -231,13 +231,17 @@ export const SIDE_BREAK_SHARE = 2 / 3;
  * 30%). A side counts down, broken and fled men against these, so they sit
  * above the losses they stand for; they are set so that the **casualties** at
  * the break come out at the rule of thumb in the balance harness — an attacker
- * at a median 18–25%, a defender at 43–50% — while the 2:1 company attack
- * with fire support still wins 62%, inside its planning target
- * (docs/validation.md, *Where a side gives up*). 0.55 for the defender came
- * closer to 40% and let that attack win 78%. Which side is attacking is
- * `GameOptions.attackers`; a side not named defends.
+ * at a median 19–25%, a defender at 33–49% (docs/validation.md, *Where a side
+ * gives up*). The defender's was 0.6 until prepared positions were dug in
+ * with overhead cover (decision 48), which left the 2:1 company attack with
+ * fire support winning 2%; the author took 0.5 (rules decision 49,
+ * 2026-09-28), which centres the defender's casualties on 40% and keeps the
+ * 3:1 attack at 75% explosives, and accepted that a 2:1 attack on a dug-in
+ * position fails (8%). Below 0.5 the 3:1 attack is a walkover at 87–95%
+ * explosives. Which side is attacking is `GameOptions.attackers`; a side not
+ * named defends.
  */
-export const SIDE_BREAK_BY_POSTURE = { attacking: 0.3, defending: 0.6 } as const;
+export const SIDE_BREAK_BY_POSTURE = { attacking: 0.3, defending: 0.5 } as const;
 
 /**
  * Suppression (דיכוי): a force-level count of how hard it is being shot at,

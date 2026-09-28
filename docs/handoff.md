@@ -110,8 +110,9 @@ missions × rounds found that more than about 8 missions a side are never
 fired, and that rounds a mission matter more (validation.md).
 
 What it left open, for the author, in order (validation.md, *Open*):
-1. **The 2:1 attack on a dug-in position** wins 2%: accept (doctrine asks
-   3:1), or bring the defender's 60% breakpoint toward 40%.
+1. **Settled — decision 49**: the defender's breakpoint is 50%. Defenders
+   break at 33–49% casualties, the calibrated 3:1 wins 95% at 75%
+   explosives, and a 2:1 attack on a dug-in position fails (8%) by design.
 2. **The fire a battle is given**: 75% needs a mortar section on call all
    battle; past about 8 missions a side the rest go unfired.
 3. **Ammunition** (backlog 12): nothing runs out by the bomb; the mission
