@@ -99,7 +99,7 @@ move.
 
 **Then a smarter attacker and a 3:1 scenario** (`telAzekaAssault`: a
 company against a platoon, 12 missions a side; `telAzekaAssault2`, two
-platoons, for 2:1). The scripted player (scratch, not in the repo) bounds
+platoons, for 2:1). The scripted player (`tools/smart-attacker.mjs`) bounds
 by halves behind a fire plan and lays smoke; with its position-reading bug
 fixed it wins the 3:1 attack 7 of 8 and the 2:1 attack 3 of 8
 (validation.md, *The design principles, measured*). `?seed=N` plays a

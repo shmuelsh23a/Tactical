@@ -594,7 +594,7 @@ With nobody prepared, the larger force wins, and more surely the larger
 the odds — the principle holds. Against a prepared defender the same
 harness gives the 2:1 attack 8% and the 3:1 attack 95%.
 
-**The smart attacker in the browser** (a scripted player bounding by
+**The smart attacker in the browser** (`tools/smart-attacker.mjs`: a scripted player bounding by
 halves, command groups following, a mortar fire plan on the objective area —
 not on where each squad lies — lifted at 150 m, then mortar smoke on the
 objective from 400 m; the defender played by the drill). Seeds 11–18 on
