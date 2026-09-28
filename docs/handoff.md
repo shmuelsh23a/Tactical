@@ -109,10 +109,15 @@ the 2:1 wins 2% (was 56%) — mostly the overhead cover. A sweep of mortar
 missions × rounds found that more than about 8 missions a side are never
 fired, and that rounds a mission matter more (validation.md).
 
+**Then decisions 49–50**: a defender gives up at 50%, and on the research
+figures digging takes minutes — partial cover after 30, full after 90 (FM
+5-15, 1944), never overhead cover. A 2:1 company attack without mortars
+wins 59% against a hasty defence and 8% against a prepared one.
+
 What it left open, for the author, in order (validation.md, *Open*):
-1. **Settled — decision 49**: the defender's breakpoint is 50%. Defenders
-   break at 33–49% casualties, the calibrated 3:1 wins 95% at 75%
-   explosives, and a 2:1 attack on a dug-in position fails (8%) by design.
+1. **Which scenario forces start prepared** (decision 50): digging now
+   takes 30 minutes to partial cover and 90 to full, so RED platoon B, RED-1
+   and RED-3 at Tel Azeka, and RED at Yokneam stay in the open.
 2. **The fire a battle is given**: 75% needs a mortar section on call all
    battle; past about 8 missions a side the rest go unfired.
 3. **Ammunition** (backlog 12): nothing runs out by the bomb; the mission

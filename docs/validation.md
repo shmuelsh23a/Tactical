@@ -520,11 +520,7 @@ figures, defender breaks at 50% (decision 49):
 - **Without a fire plan, preparing makes no difference at all**, battle for
   battle: a defender in the open digs to full cover by its 7th minute
   (`DIG_IN`: 3 turns, then 2 a level), before an attacker 700 m off reaches
-  it. Digging is on a pre-decision-40 clock: at 60 s a turn, a squad goes
-  from nothing to a full fighting position in 7 minutes, where doctrine's
-  figures for a hasty position are of the order of half an hour and for a
-  deliberate one hours (⚠️ from memory, not yet checked against the
-  sources).
+  it. Digging was on a pre-decision-40 clock — fixed by decision 50, below.
 - **With a fire plan, a hasty defender is caught in the open.** The 2:1
   attack wins 95% in 6 minutes, 92% by explosives — past the 75% target,
   and far above what the planning ratios suggest (about 2.5:1 for a hasty
@@ -533,15 +529,52 @@ figures, defender breaks at 50% (decision 49):
   only a prepared `baseCover: "full"` does. So the swing from 95% to 8% is
   overhead cover plus the first minutes in the open.
 
+## Digging in takes minutes (rules decision 50)
+
+The dig-in clock was the document's — the tools out after 3 turns, a level
+every 2 — set before a turn was 60 s. **On the research figures**:
+
+| Level | After this much work | Source |
+|---|---|---|
+| Partial — a hasty prone shelter, about ½ m deep, spoil thrown up in front | 30 minutes | Depth: FM 21-75 ("about one-half meter"), FM 5-103 ("at least 1½ feet"). Time: **ours**, a third of the foxhole's for about half its earth |
+| Full — an individual foxhole, frontal cover | 90 minutes | US Army, FM 5-15 *Field Fortifications* (1944): "90 minutes for a soldier to excavate and camouflage an individual rifleman's foxhole" ([Pacific War Online Encyclopedia](http://pwencycl.kgbudge.com/F/o/Fortifications.htm)) |
+| Overhead cover | never, in a battle | FM 5-103: "at least ten times more protected from indirect fire" under it; a two-soldier deliberate position is 6–8 hours and overhead cover 2–4 more (secondary; FM 5-103's own time table is an image and could not be read) |
+
+The tools still come out after 3 turns in place (ours). FM 5-103 also
+puts the worth of frontal cover at about half the small-arms casualties,
+which is what full cover's −50% already is.
+
+**Measured** (100 battles a cell, research figures, defender breaks at
+50%). "Hasty" is `--prepared-cover none`; the prepared rows did not move:
+
+| Battle | Fire | Hasty, before → after | Partial, before → after | Prepared (full) |
+|---|---|---|---|---|
+| Platoon 2:1 | platoon's own | 68% → **90%** | 68% → 77% | 68% |
+| Company 2:1 | a bomb a turn | 8% → **59%** | 8% → 27% | 8% |
+| Company 2:1 | calibrated | 95% → **100%** (93% explosives) | 81% → 89% | 8% |
+| Company 3:1 | a bomb a turn | 98% → 100% | 98% → 100% | 98% |
+| Company 3:1 | calibrated | 100% | 100% | 95% |
+
+- **Preparing a position now matters**, with or without a fire plan: a 2:1
+  company attack without mortars wins 59% against a hasty defence and 8%
+  against a prepared one. The planning ratios give about 2.5:1 for a hasty
+  defence and 3:1 for a prepared one, so a 2:1 attack on a hasty defence
+  should be a close fight, and it is.
+- **A hasty defender under a mortar section is lost** (100%, 93% by
+  explosives): it has no cover at all for its first half hour.
+- `npm run validate` did not move: its defenders are prepared.
+- Scenario forces without a prepared position — RED platoon B in the
+  company battle, RED-1 and RED-3 at Tel Azeka, RED at Yokneam — no longer
+  dig in by minute 7; they hold what the ground gives them.
+
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **Digging in is too fast for a 60 s turn** (*Attacks on a hasty
-   defence*): full cover in 7 minutes. Until it is slowed, a hasty and a
-   prepared defence are the same against small arms, and a 2:1 attack with
-   mortars swings from 95% (hasty, first minutes) to 8% (prepared). The 2:1
-   on a dug-in position failing (8%) is accepted (decision 49).
+1. **Which scenario forces should start prepared.** Since decision 50 a
+   force that has not prepared its position stays in the open for 30
+   minutes; RED platoon B (company battle), RED-1 and RED-3 (Tel Azeka) and
+   RED at Yokneam have none.
 2. **The fire a battle is given.** 75% holds with a mortar section on call all
    battle (69–75% with full cover). Missions past about 8 a side go unfired
    (decision 48's sweep).

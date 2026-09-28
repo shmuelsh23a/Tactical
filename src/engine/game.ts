@@ -2440,6 +2440,8 @@ export class Game {
       this.units,
       (at) => coverFromObjects(this.terrain, at),
       (u) => this.preparedCoverAt(u),
+      // Digging takes minutes on the research figures (rules decision 50).
+      this.lethality,
     );
     return { chargeWork, morale };
   }
