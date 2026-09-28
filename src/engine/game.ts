@@ -27,7 +27,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
-import { LETHALITIES, type Lethality } from "./data/lethality.js";
+import { LETHALITIES, roundsPerTurnFor, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -1055,14 +1055,23 @@ export class Game {
       !this.observes(m.side, m.target, m.observedByUav ?? false) ||
       m.adjustingRounds >= MAX_ADJUSTING_ROUNDS;
     const rounds = forEffect ? m.roundsForEffect : 1;
-    const queued = this.internally(() =>
-      this.queueIndirectFire(m.weapon, m.side, m.target, {
-        ...(m.firingFrom ? { firingFrom: m.firingFrom } : {}),
-        ...(m.fuze ? { fuze: m.fuze } : {}),
-        ...(m.observedByUav ? { observedByUav: true } : {}),
-        ...(rounds > 1 ? { rounds } : {}),
-      }),
-    );
+    // The fire unit lands at most its rate times its tubes in a turn (rules
+    // decision 42); the rest of the rounds for effect land on the turns after.
+    const perTurn = roundsPerTurnFor(m.weapon, this.lethality);
+    const volleys: number[] = [];
+    for (let left = rounds; left > 0; left -= perTurn) volleys.push(Math.min(left, perTurn));
+    const queued = this.internally(() => {
+      const sent = volleys.map((n, later) =>
+        this.queueIndirectFire(m.weapon, m.side, m.target, {
+          ...(m.firingFrom ? { firingFrom: m.firingFrom } : {}),
+          ...(m.fuze ? { fuze: m.fuze } : {}),
+          ...(m.observedByUav ? { observedByUav: true } : {}),
+          ...(n > 1 ? { rounds: n } : {}),
+          ...(later ? { laterBy: later } : {}),
+        }),
+      );
+      return sent[0]!;
+    });
     if (forEffect) {
       m.status = "done";
       m.forEffectOnTurn = this.turn;
@@ -1081,7 +1090,14 @@ export class Game {
     weaponKey: string,
     side: Side,
     target: Point,
-    opts: { firingFrom?: Point; observedByUav?: boolean; rounds?: number; fuze?: Fuze } = {},
+    opts: {
+      firingFrom?: Point;
+      observedByUav?: boolean;
+      rounds?: number;
+      fuze?: Fuze;
+      /** Turns after the weapon's delay: the later volleys of a mission beyond its fire unit's rate (rules decision 42). */
+      laterBy?: number;
+    } = {},
   ): PendingFireMission {
     this.requirePhase("targeting");
     const weapon = EXPLOSIVES[weaponKey];
@@ -1094,6 +1110,8 @@ export class Game {
       throw new Error(`${side}'s fire is assigned as missions: call for fire`);
     }
     if (this.journalDepth === 0) this.requireMayCall(side, weaponKey);
+    // Only a mission spreads its own volleys; a call from outside lands when it lands.
+    if (opts.laterBy !== undefined && this.journalDepth === 0) throw new Error("laterBy is set by a fire mission, not by a caller");
     const rounds = opts.rounds ?? 1;
     if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds, not ${rounds}`);
@@ -1105,7 +1123,7 @@ export class Game {
       weapon: weaponKey,
       side,
       target,
-      resolvesOnTurn: this.turn + (weapon.impactDelayTurns ?? 1),
+      resolvesOnTurn: this.turn + (weapon.impactDelayTurns ?? 1) + (opts.laterBy ?? 0),
       observedByUav: opts.observedByUav ?? false,
       // Only when not the default, so a digest of an older game is unchanged.
       ...(rounds > 1 ? { rounds } : {}),
@@ -1115,7 +1133,7 @@ export class Game {
     (mission as PendingFireMission & { firingFrom?: Point }).firingFrom = opts.firingFrom;
     this.pendingFire.push(mission);
     // As adopted: the defaults are left out, as they are on the mission.
-    const { rounds: _r, fuze: _f, ...rest } = opts;
+    const { rounds: _r, fuze: _f, laterBy: _l, ...rest } = opts;
     this.journal({
       kind: "queueIndirectFire",
       weaponKey,
@@ -2258,7 +2276,7 @@ export class Game {
       const caught = (result.blast?.targets ?? []).filter((t) => t.caught);
       return {
         targetId: target.id,
-        hits: result.hit ? 1 : 0,
+        hits: result.hits ?? (result.hit ? 1 : 0),
         newCasualties: caught.reduce((n, t) => n + t.newCasualties, 0),
         hitChance: result.hitChance,
       };

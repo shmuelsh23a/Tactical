@@ -12,12 +12,14 @@ import { WOUND_SEVERITY } from "./casualties.js";
 export const TURN_SECONDS = 60;
 
 /**
- * Which blast and tank-gun figures a game plays (rules decision 41):
+ * Which blast, tank-gun and rate-of-fire figures a game plays (rules
+ * decisions 41–42):
  *
  * - `document`: the rules document's tables, as transcribed in
  *   `explosives.ts`.
  * - `research`: the same weapons, with the reach of their blast against men,
- *   and the tank gun's reach, set from published data (docs/validation.md).
+ *   the tank gun's reach, and their rates of fire set from published data
+ *   (docs/validation.md).
  *
  * A new game plays `research`. A recording made before the decision replays
  * with `document`, so the battle it holds still plays as it was fought.
@@ -84,6 +86,55 @@ export const RESEARCH_TANK_TO_HIT: readonly RangeBand[] = [
   { maxRange: 3000, value: 0.5 },
 ];
 
+/**
+ * Rounds a weapon fires in a turn — its sustained or practical rate a minute
+ * (rules decision 42). Sources in docs/validation.md; all read secondhand.
+ *
+ * - `mortar`: **8** a tube — the low end of the 81 mm M252's sustained 8–16
+ *   (20–30 for short periods only). The document's 3 is below every mortar's
+ *   sustained rate.
+ * - `artillery`: **2** a gun — the 155 mm M777's sustained rate (4 for short
+ *   periods). The document's 2 already is.
+ * - `tankRound`: **5** — the low end of the 5–7 a crew sustains with a manual
+ *   loader; qualification asks a loader for a round in 7 s and a crew for its
+ *   second round within 10 s of the first.
+ * - `rifleGrenade`: **5** — the low end of the 40 mm M203/M320's 5–7 aimed
+ *   rounds a minute.
+ * - `rpgVsInfantry`, `rpgVsArmor`: **4** — the low end of a gunner and
+ *   assistant's 4–6.
+ *
+ * The low end each time: these are rates on a range, and a crew in a fight
+ * also has to find its next target. Nothing counts ammunition yet (backlog
+ * 12), so a weapon fires its rate every turn it is told to.
+ */
+export const RESEARCH_ROUNDS_PER_TURN: Readonly<Record<string, number>> = {
+  mortar: 8,
+  artillery: 2,
+  tankRound: 5,
+  rifleGrenade: 5,
+  rpgVsInfantry: 4,
+  rpgVsArmor: 4,
+};
+
+/**
+ * Tubes in the fire unit that answers a mission (rules decision 36's own
+ * reading): a **3-tube** mortar section and a **6-gun** battery.
+ */
+export const FIRE_UNIT_TUBES: Readonly<Record<string, number>> = { mortar: 3, artillery: 6 };
+
+/**
+ * The most rounds a fire unit lands in one turn: its rate times its tubes
+ * (rules decision 42) — 24 bombs, 12 shells. A mission's rounds for effect
+ * beyond that land on the turns after. The document never applied its own
+ * rate, so under it there is no ceiling, as before.
+ */
+export function roundsPerTurnFor(weapon: string, lethality: Lethality): number {
+  if (lethality === "document") return Infinity;
+  const rate = RESEARCH_ROUNDS_PER_TURN[weapon];
+  const tubes = FIRE_UNIT_TUBES[weapon];
+  return rate !== undefined && tubes !== undefined ? rate * tubes : Infinity;
+}
+
 /** The width of one derived band. */
 const BAND_STEP_M = 10;
 
@@ -143,6 +194,7 @@ const RESEARCH_EXPLOSIVES: Readonly<Record<string, ExplosiveWeapon>> = Object.fr
         ...w,
         ...(area !== undefined ? { blastBands: blastBandsFromLethalArea(area) } : {}),
         ...(key === "tankRound" ? { toHitBands: RESEARCH_TANK_TO_HIT } : {}),
+        ...(RESEARCH_ROUNDS_PER_TURN[key] !== undefined ? { roundsPerTurn: RESEARCH_ROUNDS_PER_TURN[key] } : {}),
       },
     ];
   }),

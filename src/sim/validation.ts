@@ -7,6 +7,8 @@ import {
   makeInfantry,
   resolveBlast,
   resolveDirectFire,
+  resolveDirectExplosive,
+  makeVehicle,
   type CoverState,
   type Lethality,
   type Side,
@@ -166,6 +168,43 @@ export function measureBreaks(
     medianMinutes: (quantile(results.map((r) => r.turns), 0.5) * TURN_SECONDS) / 60,
   };
 }
+
+export interface LauncherMeasurement {
+  weapon: string;
+  lethality: Lethality;
+  range: number;
+  /** Rounds fired in the minute. */
+  rounds: number;
+  /** Men put out of a squad of nine standing in the open, in the minute. */
+  casualtiesPerMinute: number;
+}
+
+/**
+ * A minute (one turn) of a direct-fire launcher at a squad standing in the
+ * open (rules decision 42): its rate of fire, each round rolled to hit.
+ */
+export function measureLauncherMinute(weapon: string, lethality: Lethality, range: number, trials = 2000, seed = 1): LauncherMeasurement {
+  const rng = new Rng(seed);
+  let casualties = 0;
+  let rounds = 0;
+  for (let i = 0; i < trials; i++) {
+    const firer =
+      weapon === "tankRound"
+        ? makeVehicle("F", "BLUE", { x: 0, y: range })
+        : makeInfantry("F", "BLUE", "squad", { x: 0, y: range }, SQUAD_MEN);
+    const r = resolveDirectExplosive(rng, weapon, firer, squad("T"), { lethality, turn: 1 });
+    rounds += r.rounds ?? (r.fired ? 1 : 0);
+    casualties += (r.blast?.targets ?? []).reduce((n, t) => n + t.newCasualties, 0);
+  }
+  return { weapon, lethality, range, rounds: rounds / trials, casualtiesPerMinute: casualties / trials };
+}
+
+/** The launchers measured a minute at a time, and the range each is measured at. */
+export const LAUNCHERS: readonly { weapon: string; range: number }[] = [
+  { weapon: "tankRound", range: 500 },
+  { weapon: "rpgVsInfantry", range: 150 },
+  { weapon: "rifleGrenade", range: 80 },
+];
 
 /** The weapons whose rounds are measured: those with a published lethal area. */
 export const MEASURED_WEAPONS: readonly string[] = Object.keys(LETHAL_AREA_M2);

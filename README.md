@@ -320,8 +320,9 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 
 - Covering fire (חיפוי): a force holds its action to answer the first enemy it
   sees move, fire or assault (rules decision 18)
-- Blast and the tank gun from published data (rules decision 41), with the
-  document's tables kept as a per-game option; a turn is 60 s (decision 40)
+- Blast, the tank gun and rates of fire from published data (rules decisions
+  41–42), with the document's tables kept as a per-game option; a turn is
+  60 s (decision 40)
 - Morale and suppression — **not from the document**, which has none: traits,
   a pool of will, leaders, tests, rallies, routs, surrender and a side that
   breaks (rules decision 19, a module like the others)
@@ -1583,6 +1584,32 @@ on the stated reasoning, still awaiting the author's word.
       (was 46–76%). The principle that explosives cause about 75% of losses
       now has to come from the **volume** of fire, not the reach of one round
       — a question for the balance pass (docs/validation.md, *Open*).
+42. ✅ **Rates of fire from published data** (author, 2026-09-28: "research
+    the rates of fire per minute and adapt them"). With a 60 s turn
+    (decision 40) a rate is rounds a turn. Under `lethality: "research"`
+    (`RESEARCH_ROUNDS_PER_TURN` in [`data/lethality.ts`](src/engine/data/lethality.ts)):
+    - **A direct-fire launcher fires its rate in one action**, each round
+      rolled to hit: tank gun **5** (a crew sustains 5–7 with a manual
+      loader), rifle grenade **5** (40 mm: 5–7 aimed), RPG **4** (4–6 with an
+      assistant). The crew stops when its target is down. The document fired
+      one round a turn.
+    - **A fire unit lands at most its rate times its tubes a turn**: mortar
+      **8** a tube (81 mm sustained 8–16; the document's 3 was below every
+      mortar's) × 3 tubes = 24; artillery **2** a gun (155 mm M777
+      sustained; the same as the document's) × 6 guns = 12. A mission's rounds
+      for effect beyond that land on the turns after. The document's rates
+      were never applied, and under `document` still are not.
+    - The low end of each published range: those are rates on a range, and a
+      crew in a fight also has to find its next target.
+    - **What it moved:** a minute of a rifle grenade or an RPG at a squad in
+      the open puts out about what the document's one round did (1.7 and 0.8
+      men against 2.2 and 0.9) — the document's single "round" reads as a
+      minute of fire. A tank at 500 m puts out **5.0 men a minute against
+      2.0**. Indirect fire is unchanged in the harness: 12 bombs and 6 shells
+      for effect are inside one turn's ceiling. What limits it is decision
+      36's rounds for effect, not the rate (docs/validation.md, *Open*).
+    - **Nothing counts ammunition** (backlog 12): a tank fires 5 rounds every
+      turn it is told to, where a real one carries about 40.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

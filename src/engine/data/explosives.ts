@@ -50,7 +50,12 @@ export interface ExplosiveWeapon {
    */
   usesArmorTable?: boolean;
 
-  /** Rounds available per barrel per turn. */
+  /**
+   * Rounds per barrel per turn. The document's (3 bombs, 2 shells) were never
+   * applied by the engine; the research figures' are (rules decision 42): a
+   * direct-fire weapon fires this many in one action, and a fire unit lands
+   * this many a tube a turn (`roundsPerTurnFor` in lethality.ts).
+   */
   roundsPerTurn?: number;
   /** Turns between firing and impact (שיהוי). */
   impactDelayTurns?: number;

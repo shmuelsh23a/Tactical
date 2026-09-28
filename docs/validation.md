@@ -1,7 +1,7 @@
 # Validation — the game's numbers against the sources
 
-**First written 2026-09-28**, with rules decisions 40 (a turn is 60 s) and 41
-(blast and the tank gun from published data). This page records what the
+**First written 2026-09-28**, with rules decisions 40 (a turn is 60 s), 41
+(blast and the tank gun from published data) and 42 (rates of fire). This page records what the
 research says about the numbers that decide a firefight — hit chances, blast
 and wounds — and what `npm run validate` measures the game doing. Rerun it after
 any change to those numbers and update the tables here.
@@ -167,9 +167,69 @@ reaching far.
 | Company 2:1 attack, mortar fire plan | 46% | 13% |
 
 With the reach corrected, the harness's fire plans are too thin to reach 75%.
-The document gives 3 bombs a minute a barrel. An 81 mm mortar's sustained rate
-is higher (unverified; FM 7-90 was blocked). A company's mortar section fires
-several barrels. See *Open*.
+The rate of fire is not what holds them back (next section). The number of
+rounds a mission fires for effect is, and so is the number of missions.
+See *Open*.
+
+## Rates of fire (rules decision 42) — changed
+
+With a 60 s turn, a rate is rounds a turn. The figures below are secondhand,
+from manufacturers' and encyclopaedic specifications read through search
+results. Where a range is published, the game takes its **low end**, because
+those are rates on a range and a crew in a fight also has to find its next
+target.
+
+| Weapon | Published | Document | Research figure |
+|---|---|---|---|
+| Mortar (81 mm M252) | 8–16 sustained; 20–30 for short periods | 3 a tube (never applied) | **8** a tube; a 3-tube section lands up to 24 a turn |
+| Mortar (60 mm M224) | up to 20 sustained; 30 for short periods | — | (the 81 mm's is used) |
+| Artillery (155 mm M777) | 2 sustained; 4 for short periods | 2 a gun (never applied) | **2** a gun; a 6-gun battery lands up to 12 a turn |
+| Artillery (155 mm M109A6) | up to 4–8 for short periods; far less sustained | — | (the M777's is used) |
+| Tank gun, manual loader | 5–7 sustained; a qualified loader loads any round in 7 s | 1 a turn | **5** |
+| Rifle grenade (40 mm M203/M320) | 5–7 aimed; 15–17 for area suppression | 1 a turn | **5** |
+| RPG-7, gunner and assistant | 4–6 | 1 a turn | **4** |
+
+The peer-reviewed work supports the upper rates for guns, over the few
+minutes a fight here lasts:
+
+- Howitzer crews firing 60-round missions as fast as they could load kept
+  their rate through the whole mission ([Paragallo et al.
+  1979](https://consensus.app/papers/details/1589e347d79f5e7a8d4302c81cdbaa5a/?utm_source=claude_desktop)).
+- A 155 mm barrel with jacket cooling fires 3 rounds a minute continuously
+  without reaching cook-off ([Dubey et al.
+  2022](https://consensus.app/papers/details/1bdace81cd9852dc9172eeaf8deeb637/?utm_source=claude_desktop)).
+  2 is well inside that.
+- Tank crews qualify by engaging within 5 s of a target appearing, firing the
+  first round within 5 s and the second within 10 s ([Fingerman
+  1978](https://consensus.app/papers/details/858b69d4f7a357bd9e9f3b3348f5408c/?utm_source=claude_desktop)).
+
+**How the engine applies them.**
+
+- A direct-fire launcher fires its rate in one action, each round rolled to
+  hit. The crew stops when its target is down.
+- A fire unit lands at most its rate × its tubes in a turn. Rounds for effect
+  beyond that land on the turns after. Under `document` there is no ceiling,
+  as before.
+
+**Measured**, one minute at a nine-man squad standing in the open:
+
+| Weapon | Range | Document: rounds, men out | Research: rounds, men out |
+|---|---|---|---|
+| Tank gun | 500 m | 1.0, 1.96 | 3.8, 4.99 |
+| RPG against men | 150 m | 1.0, 0.86 | 4.0, 0.82 |
+| Rifle grenade | 80 m | 1.0, 2.19 | 5.0, 1.72 |
+
+- **The document's single "round" reads as a minute of fire.** With the
+  research blast and the research rate, a rifle grenade and an RPG put out
+  about what the document's one round did.
+- **The tank is the exception**: 2.5 times the document. Its HE round's
+  lethal area is a proxy (above).
+- **Nothing counts ammunition** (backlog 12). A tank fires 5 rounds every turn
+  it is told to, where an M1A2 carries 42.
+- **Indirect fire in the harness is unchanged**: 12 bombs or 6 shells for
+  effect are inside one turn's ceiling of 24 and 12. What would change it is
+  the rounds for effect (decision 36) and how many missions a company is
+  given.
 
 ## Small arms — kept, and not settled
 
@@ -223,15 +283,15 @@ stationary:
 
 For the author, in rough order of what they move:
 
-1. **The volume of fire.** Rates of fire per 60 s turn: 3 bombs a barrel
-   (document) against an 81 mm's published sustained rate, and how many
-   barrels a company's section has. This is what decides whether explosives
-   reach 75% again.
+1. **The volume of indirect fire.** The rates are set (decision 42) and do
+   not bind. Rounds for effect (12 bombs, 6 shells, decision 36) and the
+   missions a company is given decide whether explosives reach 75% again.
+   Doctrine asks "seldom less than five rounds for each mortar" (FM 7-90),
+   which would be 15 for a 3-tube section.
 2. **Morale's breakpoints**: 35–67% losses at the break against about 20–40%.
 3. **Small arms per minute**: a source with a combat rate in it, or a ruling.
-4. **Rifle grenades**: at one round a turn, the research figure makes the
-   weapon nearly useless. A grenadier fires several a minute; the game has no
-   rate for it.
+4. **Ammunition** (backlog 12): with rates of fire, a tank or a launcher
+   fires its rate every turn. The tank is where this shows first.
 5. **The figures that are ours**: the mortar's and tank HE's lethal areas,
    the RPG's against men, and the 25 m footprint.
 6. **Not researched yet**: the hand grenade (30% a man in an assault;
@@ -253,5 +313,10 @@ These were not peer-reviewed and were read through search results.
 - [RPG-7 — GlobalSecurity](https://www.globalsecurity.org/military/world/russia/rpg-7.htm)
 - [How an RPG works — Military.com](https://www.military.com/daily-news/2019/06/07/how-rpg-works.html)
 - [The accuracy of tank main armaments — BRL](https://apps.dtic.mil/sti/tr/pdf/ADA182415.pdf)
+- [M252 mortar](https://en.wikipedia.org/wiki/M252_mortar), [M224 mortar](https://en.wikipedia.org/wiki/M224_mortar)
+- [M777 howitzer](https://en.wikipedia.org/wiki/M777_howitzer), [M109A6 Paladin — FAS](https://man.fas.org/dod-101/sys/land/m109a6.htm)
+- [M320 grenade launcher module](https://en.wikipedia.org/wiki/M320_Grenade_Launcher_Module), [M203 grenade launcher](https://en.wikipedia.org/wiki/M203_grenade_launcher)
+- [RPG-7 — Defense Update](https://defense-update.com/20060726_rpg-7rpg-7vrpg-7vr-rocket-propelled-grenade-launcher-multi-purpose-weapon.html)
+- [Autoloader](https://en.wikipedia.org/wiki/Autoloader) (loader and autoloader rates)
 - [Principles of fire support — USMC TBS](https://www.trngcmd.marines.mil/Portals/207/Docs/TBS/B2C2437%20Principles%20of%20Fire%20Support.pdf)
   (effective casualty radii, through search results)

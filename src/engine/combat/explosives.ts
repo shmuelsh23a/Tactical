@@ -138,9 +138,47 @@ export interface DirectExplosiveResult {
   fired: boolean;
   reason?: string;
   range: number;
+  /** Whether any round hit. */
   hit: boolean;
   hitChance: number;
+  /**
+   * Every round's blast together: what each force it caught took from all of
+   * them. One round's, when one was fired.
+   */
   blast?: BlastResult;
+  /**
+   * Rounds fired this turn — the weapon's rate of fire, or fewer if the
+   * target went down first (rules decision 42). Absent: one.
+   */
+  rounds?: number;
+  /** Rounds that hit, when more than one was fired. */
+  hits?: number;
+}
+
+/** How bad an armour effect is, to keep the worst of several rounds'. */
+const armourSeverity = (e: NonNullable<BlastTargetResult["armorEffect"]>) =>
+  (e.destroyed ? 4 : 0) + (e.mobilityKilled ? 2 : 0) + (e.penetrated ? 1 : 0);
+
+/** Several rounds' blasts as one: each force's damage and casualties summed, its worst armour effect kept. */
+function mergeBlasts(blasts: BlastResult[]): BlastResult {
+  const byUnit = new Map<string, BlastTargetResult>();
+  for (const b of blasts) {
+    for (const t of b.targets) {
+      const seen = byUnit.get(t.unitId);
+      if (!seen) {
+        byUnit.set(t.unitId, { ...t });
+        continue;
+      }
+      seen.caught ||= t.caught;
+      seen.damage += t.damage;
+      seen.newCasualties += t.newCasualties;
+      seen.neutralized = t.neutralized;
+      if (t.armorEffect && (!seen.armorEffect || armourSeverity(t.armorEffect) >= armourSeverity(seen.armorEffect))) {
+        seen.armorEffect = t.armorEffect;
+      }
+    }
+  }
+  return { weapon: blasts[0]!.weapon, impact: blasts[0]!.impact, targets: [...byUnit.values()] };
 }
 
 /**
@@ -177,10 +215,27 @@ export function resolveDirectExplosive(
   result.hitChance = Math.min(1, band.value * suppressionAccuracy(attacker));
   attacker.firedThisTurn = true;
 
-  if (!rng.chance(result.hitChance)) return result; // missed
-  result.hit = true;
-
+  // The document fires one round a turn; the research figures, the weapon's
+  // rate of fire (rules decision 42). The crew stops when the target is down.
+  const rate = weapon.roundsPerTurn ?? 1;
   const candidates = [target, ...(opts.collateral ?? [])];
-  result.blast = resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, undefined, lethality);
+  const blasts: BlastResult[] = [];
+  let rounds = 0;
+  while (rounds < rate && !(rounds > 0 && isDown(target))) {
+    rounds++;
+    if (!rng.chance(result.hitChance)) continue; // missed
+    blasts.push(resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, undefined, lethality));
+  }
+  result.hit = blasts.length > 0;
+  if (blasts.length) result.blast = blasts.length === 1 ? blasts[0] : mergeBlasts(blasts);
+  if (rate > 1) {
+    result.rounds = rounds;
+    result.hits = blasts.length;
+  }
   return result;
+}
+
+/** A target no crew would go on firing at: neutralised, or a vehicle destroyed. */
+function isDown(target: Unit): boolean {
+  return target.neutralized || target.vehicle?.destroyed === true;
 }

@@ -11,11 +11,13 @@ import {
   discOverlap,
   explosiveFor,
   hitChanceAt,
+  RESEARCH_ROUNDS_PER_TURN,
+  roundsPerTurnFor,
 } from "./lethality.js";
 import { Game } from "../game.js";
 import { replayGame } from "../recording.js";
 import { makeInfantry, makeVehicle } from "../units.js";
-import { resolveBlast } from "../combat/explosives.js";
+import { resolveBlast, resolveDirectExplosive } from "../combat/explosives.js";
 import { Rng } from "../rng.js";
 
 describe("the turn and the wound behind the research figures (rules decisions 40–41)", () => {
@@ -84,9 +86,11 @@ describe("blast bands from a lethal area (rules decision 41)", () => {
   });
 
   it("leaves what the sources were not read for as the document has it", () => {
-    for (const key of ["grenade", "apMine", "atMine", "rpgVsArmor"]) {
+    for (const key of ["grenade", "apMine", "atMine"]) {
       expect(explosiveFor(key, "research")).toEqual(EXPLOSIVES[key]);
     }
+    // The RPG against armour: its rate of fire only (rules decision 42).
+    expect(explosiveFor("rpgVsArmor", "research")).toEqual({ ...EXPLOSIVES.rpgVsArmor, roundsPerTurn: 4 });
     for (const key of Object.keys(EXPLOSIVES)) {
       expect(explosiveFor(key, "document")).toBe(EXPLOSIVES[key]);
     }
@@ -136,5 +140,68 @@ describe("a game's lethality (rules decision 41)", () => {
         .targets;
     expect(at150("document")[0]?.blastChance).toBe(0.25);
     expect(at150("research")).toHaveLength(0);
+  });
+});
+
+describe("rates of fire (rules decision 42)", () => {
+  const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
+
+  it("fires a launcher's rate in one action, and one round under the document", () => {
+    const shoot = (lethality: "document" | "research") => {
+      const tank = makeVehicle("T", "BLUE", { x: 0, y: 2500 });
+      const target = makeInfantry("R", "RED", "platoon", { x: 0, y: 0 }, 30);
+      return { r: resolveDirectExplosive(new Rng(3), "tankRound", tank, target, { lethality }), target };
+    };
+    const { r: research, target } = shoot("research");
+    // Every round of its rate, unless the target went down first.
+    if (!target.neutralized) expect(research.rounds).toBe(RESEARCH_ROUNDS_PER_TURN.tankRound);
+    expect(research.rounds).toBeGreaterThan(1);
+    expect(research.hits).toBeLessThanOrEqual(research.rounds!);
+    const { r: doc } = shoot("document");
+    expect(doc.rounds).toBeUndefined();
+    expect(doc.hits).toBeUndefined();
+  });
+
+  it("stops firing at a target that is down", () => {
+    const tank = makeVehicle("T", "BLUE", { x: 0, y: 100 });
+    const target = makeInfantry("R", "RED", "fireTeam" as never, { x: 0, y: 0 }, 1);
+    const r = resolveDirectExplosive(new Rng(1), "tankRound", tank, target, { lethality: "research" });
+    expect(r.hit).toBe(true);
+    if (target.neutralized) expect(r.rounds).toBeLessThan(RESEARCH_ROUNDS_PER_TURN.tankRound!);
+  });
+
+  it("lands a fire unit's rate times its tubes in a turn, and the rest on the turns after", () => {
+    expect(roundsPerTurnFor("mortar", "research")).toBe(24);
+    expect(roundsPerTurnFor("artillery", "research")).toBe(12);
+    expect(roundsPerTurnFor("mortar", "document")).toBe(Infinity);
+    const game = (lethality: "document" | "research") => {
+      const g = new Game({
+        seed: 5,
+        enforceC2: false,
+        lethality,
+        commandEchelon: BATTALIONS,
+        fireSupport: { BLUE: [{ weapon: "artillery", missions: 1, roundsForEffect: 30 }] },
+      });
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+      g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 3000 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("targeting");
+      g.callForFire("BLUE", "artillery", { x: 0, y: 0 }, { method: "effect" });
+      return g.pendingFire.map((f) => [f.resolvesOnTurn, f.rounds ?? 1]);
+    };
+    expect(game("research")).toEqual([
+      [3, 12],
+      [4, 12],
+      [5, 6],
+    ]);
+    expect(game("document")).toEqual([[3, 30]]);
+  });
+
+  it("keeps the spreading of volleys the engine's own", () => {
+    const g = new Game({ seed: 1, enforceC2: false, commandEchelon: BATTALIONS });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("targeting");
+    expect(() => g.queueIndirectFire("mortar", "BLUE", { x: 0, y: 0 }, { laterBy: 1 })).toThrow(/laterBy/);
   });
 });

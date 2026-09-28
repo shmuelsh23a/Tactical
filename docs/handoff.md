@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–41: a turn is 60 s, and blast and the tank gun are set from published data ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-28, after rules decisions 40–42: a turn is 60 s, and blast, the tank gun and rates of fire are set from published data ([validation.md](validation.md)). Before that: decisions 36–39 and the eleventh to thirteenth balance rounds (2026-09-23); the artillery stage is closed; the business plan is settled (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 612 tests, 33 files
+npm run check       lint + typecheck clean, 616 tests, 33 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 ```
@@ -65,16 +65,21 @@ document's tables a per-game option (a recording from before replays on them).
 `npm run validate` measures the result. Everything is on
 [validation.md](validation.md), with sources.
 
+**Rates of fire** followed the same day (decision 42): a launcher fires its
+published rate in one action (tank 5, rifle grenade 5, RPG 4), and a fire
+unit lands at most rate × tubes a turn (mortar 8 × 3, artillery 2 × 6).
+
 What it left open, for the author, in order (validation.md, *Open*):
-1. **The volume of fire.** One round no longer reaches 200 m, so explosives
-   now put out 4–31% of the men in the harness, not the 75% of his principle.
-   Rates per 60 s turn (3 bombs a barrel is the document's) decide it.
+1. **The volume of indirect fire.** One round no longer reaches 200 m, so
+   explosives now put out 4–31% of the men in the harness, not the 75% of his
+   principle. The rates do not bind: rounds for effect (decision 36) and the
+   missions a company gets decide it.
 2. **Morale's breakpoints**: forces break at a median 35–67% losses; the
    historical rule of thumb is 20–40%.
 3. **Small arms a minute**: kept as the document has them; no open source
    gives a combat rate to set them by.
-4. **Rifle grenades** are nearly useless at one round a turn with the
-   research blast.
+4. **Ammunition** (backlog 12): a tank now fires 5 rounds a turn, every
+   turn, with nothing to run out of.
 
 Not yet played by a person on the new figures; driven in the browser only to
 turn 1 of the company battle.

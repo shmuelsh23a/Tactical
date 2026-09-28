@@ -10,7 +10,9 @@
  * thin: everything worth checking lives in src/sim, where the suite reaches it.
  */
 import {
+  LAUNCHERS,
   MEASURED_WEAPONS,
+  measureLauncherMinute,
   measureBreaks,
   measureRifleFire,
   measureRound,
@@ -35,6 +37,16 @@ for (const w of MEASURED_WEAPONS) {
   for (const l of LETHALITIES) {
     const m = measureRound(w, l);
     console.log(`| ${w} | ${l} | ${f2(m.onTarget)} | ${f2(m.within50)} | ${m.predictedOnTarget === undefined ? "—" : f2(m.predictedOnTarget)} |`);
+  }
+}
+
+console.log("\n## A minute of a launcher at a squad of nine standing in the open\n");
+console.log("| Weapon | Range | Lethality | Rounds | Men put out a minute |");
+console.log("|---|---|---|---|---|");
+for (const { weapon, range } of LAUNCHERS) {
+  for (const l of LETHALITIES) {
+    const m = measureLauncherMinute(weapon, l, range);
+    console.log(`| ${weapon} | ${range} m | ${l} | ${m.rounds.toFixed(1)} | ${f2(m.casualtiesPerMinute)} |`);
   }
 }
 

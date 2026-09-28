@@ -732,8 +732,10 @@ export function describeOutcome(
       const r = outcome.result;
       if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
       // Whether the round found anything is the part that needed watching.
-      if (!observed) return `ירה ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
-      if (!r.hit) return `החטאה (${pct(r.hitChance)})`;
+      // Several rounds in the turn (rules decision 42): how many, and how many hit.
+      const volley = r.rounds && r.rounds > 1 ? `${r.rounds} פגזים ` : "";
+      if (!observed) return `ירה ${volley}ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
+      if (!r.hit) return `${volley}החטאה (${pct(r.hitChance)})`;
       const caught = (r.blast?.targets ?? []).filter((t) => t.caught);
       const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
       const armour = caught.find((t) => t.armorEffect)?.armorEffect;
@@ -747,7 +749,8 @@ export function describeOutcome(
           ? `, ${casualties} נפגעים`
           : ""
         : `, ${casualtyReport(casualties, false)}`;
-      return `פגיעה (${pct(r.hitChance)})${losses}${armourText}`;
+      const hits = r.rounds && r.rounds > 1 ? `${r.hits}/${r.rounds} פגיעות` : "פגיעה";
+      return `${hits} (${pct(r.hitChance)})${losses}${armourText}`;
     }
 
     case "assault": {

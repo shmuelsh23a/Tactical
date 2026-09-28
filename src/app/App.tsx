@@ -989,10 +989,15 @@ export function App({ scenario, onLeave }: AppProps) {
         // A shot that was never taken is the firer's own bookkeeping; a round
         // going downrange is an exchange both sides are in (decisions 13, 17).
         if (!r.fired) pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
-        else if (!r.hit) pushLog(`${selectedOwn.name} ירה פגז — החטאה`, "fire", sharedBy(viewingSide));
+        else if (!r.hit)
+          pushLog(
+            `${selectedOwn.name} ירה ${r.rounds && r.rounds > 1 ? `${r.rounds} פגזים` : "פגז"} — החטאה`,
+            "fire",
+            sharedBy(viewingSide),
+          );
         else
           pushLog(
-            `${selectedOwn.name} פגע ב${target.name} בפגז טנק`,
+            `${selectedOwn.name} פגע ב${target.name} ${r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}`,
             "casualty",
             sharedBy(viewingSide),
           );
