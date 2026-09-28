@@ -12,7 +12,7 @@ import { FLAT_GROUND } from "./terrain.js";
 
 /** RED covering a lane BLUE is about to walk up, with the game in the fire phase. */
 function covered(seed = 1, redAt = { x: 0, y: 0 }, blueAt = { x: 0, y: 200 }) {
-  const g = new Game({ seed, enforceC2: false, terrain: FLAT_GROUND });
+  const g = new Game({ lethality: "document", seed, enforceC2: false, terrain: FLAT_GROUND });
   const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", redAt, 8));
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", blueAt, 8));
   g.beginTurn();
@@ -145,7 +145,7 @@ describe("covering fire", () => {
   describe("with the knowledge model on", () => {
     /** As `covered`, but the sides keep a picture of each other. */
     function watched(seed = 1, redAt = { x: 0, y: 0 }, blueAt = { x: 0, y: 200 }) {
-      const g = new Game({ seed, enforceC2: false, trackIntel: true, terrain: FLAT_GROUND });
+      const g = new Game({ lethality: "document", seed, enforceC2: false, trackIntel: true, terrain: FLAT_GROUND });
       const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", redAt, 8));
       const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", blueAt, 8));
       g.beginTurn();
@@ -251,7 +251,7 @@ describe("covering fire", () => {
   });
 
   it("does not spend a second coverer on answering the first one's shot", () => {
-    const g = new Game({ seed: 1, enforceC2: false, terrain: FLAT_GROUND });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false, terrain: FLAT_GROUND });
     const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 8));
     const blueCoverer = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 100 }, 8));
     const blueMover = g.addUnit(makeInfantry("BLUE-2", "BLUE", "squad", { x: 60, y: 100 }, 8));
@@ -269,7 +269,7 @@ describe("covering fire", () => {
   });
 
   it("does not answer its own side", () => {
-    const g = new Game({ seed: 1, enforceC2: false, terrain: FLAT_GROUND });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false, terrain: FLAT_GROUND });
     const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 8));
     const friend = g.addUnit(makeInfantry("RED-2", "RED", "squad", { x: 0, y: 100 }, 8));
     g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 500, y: 500 }, 8));
@@ -311,7 +311,7 @@ describe("covering fire", () => {
   });
 
   it("is small arms against armour, and says so rather than spending itself", () => {
-    const g = new Game({ seed: 1, enforceC2: false, terrain: FLAT_GROUND });
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false, terrain: FLAT_GROUND });
     const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 8));
     const tank = g.addUnit(makeVehicle("BLUE-T", "BLUE", { x: 0, y: 200 }, 180));
     g.beginTurn();

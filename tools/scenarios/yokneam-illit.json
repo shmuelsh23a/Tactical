@@ -2,6 +2,7 @@
   "slug": "yokneamIllit",
   "title": "תרגיל הדגמה — מגע ראשון",
   "brief": "כחול: תוקף מהשטח הנמוך בצפון. אדום: מחזיק עמדה בשולי יקנעם עילית, על הגבעה בדרום.",
+  "attackers": ["BLUE"],
   "seed": 2026,
   "trackIntel": true,
   "enforceC2": true,

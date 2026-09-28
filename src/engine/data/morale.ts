@@ -224,6 +224,22 @@ export const FORCE_BREAK_SHARE = 0.5;
 export const SIDE_BREAK_SHARE = 2 / 3;
 
 /**
+ * The same, by posture, on the research figures (rules decision 44, the
+ * author, 2026-09-28: "adapt the morale to historical rules of thumb"): an
+ * attack stops at about 20–25% losses, and a defence cannot hold at about 40%
+ * (the Dupuy Institute's breakpoints; US doctrine calls a unit destroyed at
+ * 30%). A side counts down, broken and fled men against these, so they sit
+ * above the losses they stand for; they are set so that the **casualties** at
+ * the break come out at the rule of thumb in the balance harness — an attacker
+ * at a median 18–25%, a defender at 43–50% — while the 2:1 company attack
+ * with fire support still wins 62%, inside its planning target
+ * (docs/validation.md, *Where a side gives up*). 0.55 for the defender came
+ * closer to 40% and let that attack win 78%. Which side is attacking is
+ * `GameOptions.attackers`; a side not named defends.
+ */
+export const SIDE_BREAK_BY_POSTURE = { attacking: 0.3, defending: 0.6 } as const;
+
+/**
  * Suppression (דיכוי): a force-level count of how hard it is being shot at,
  * added the moment fire arrives and halved at every end of turn. It is the
  * fast layer — this turn and the next — beside the slow pool of will.

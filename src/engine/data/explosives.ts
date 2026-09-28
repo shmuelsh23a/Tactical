@@ -50,7 +50,11 @@ export interface ExplosiveWeapon {
    */
   usesArmorTable?: boolean;
 
-  /** Rounds available per barrel per turn. */
+  /**
+   * Rounds per barrel per turn, as the document gives them. The engine never
+   * applied them; the research rates, a range drawn each turn, are
+   * `RATE_OF_FIRE` in lethality.ts (rules decision 42).
+   */
   roundsPerTurn?: number;
   /** Turns between firing and impact (שיהוי). */
   impactDelayTurns?: number;

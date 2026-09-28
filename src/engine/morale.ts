@@ -396,7 +396,7 @@ export function forceMorale(units: readonly Unit[], unit: Unit): ForceMorale | u
  * False for a side whose men carry no pools — without morale a side is beaten
  * only when every force is out.
  */
-export function sideBroken(units: readonly Unit[], side: Side): boolean {
+export function sideBroken(units: readonly Unit[], side: Side, share: number = SIDE_BREAK_SHARE): boolean {
   const own = units.filter((u) => u.side === side);
   if (!own.some(hasMorale)) return false;
   let total = 0;
@@ -417,7 +417,7 @@ export function sideBroken(units: readonly Unit[], side: Side): boolean {
     }
     lost += soldiers.filter((s) => s.neutralized || s.morale?.state === "broken").length;
   }
-  return total > 0 && lost / total >= SIDE_BREAK_SHARE;
+  return total > 0 && lost / total >= share;
 }
 
 // ---------------------------------------------------------------------------

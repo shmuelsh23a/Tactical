@@ -36,6 +36,7 @@ npm test             # the suite alone
 npm run typecheck    # strict type-check alone (engine + app)
 npm run lint         # the architectural rules alone (eslint.config.js)
 npm run build:engine # emit the engine as a standalone library -> dist/
+npm run validate     # the game's numbers measured against the sources -> docs/validation.md
 ```
 
 ## Stage 2 — browser UI (hotseat) — in progress
@@ -319,6 +320,10 @@ const result = g.fire(blue.id, red.id, { weapon: "smallArms" });
 
 - Covering fire (חיפוי): a force holds its action to answer the first enemy it
   sees move, fire or assault (rules decision 18)
+- Blast, the tank gun and rates of fire from published data, calibrated so
+  explosives cause 75% of losses where fire support is used (rules decisions
+  41–43), with the document's tables kept as a per-game option; a turn is 60 s
+  (decision 40)
 - Morale and suppression — **not from the document**, which has none: traits,
   a pool of will, leaders, tests, rallies, routs, surrender and a side that
   breaks (rules decision 19, a module like the others)
@@ -1538,6 +1543,122 @@ on the stated reasoning, still awaiting the author's word.
       echelon, Jev will (backlog 15).
     - Journalled only when `effect`, so a call from before reads as the
       adjusting it was.
+40. ✅ **A turn is 60 seconds** (author, 2026-09-28). The document never
+    said. `TURN_SECONDS` in [`data/lethality.ts`](src/engine/data/lethality.ts).
+    It is what lets a rate in the rules be read against a rate in the sources
+    — rounds a minute, hits a minute, losses a minute — and it is the time
+    basis of [docs/validation.md](docs/validation.md). The document's movement
+    (50 m a turn walking, 100 m running) reads as tactical movement in bounds
+    at this scale. Nothing else changed with it: no rate was rescaled.
+41. ✅ **Blast and the tank gun from published data** (author, 2026-09-28:
+    "adapt our table to what is acceptable in research"). The document's
+    blast bands reached men 50–200 m from a round at 25–70% each; published
+    lethal areas reach a few tens of metres. On a squad in the open, a round
+    anywhere within 50 m put out **3.5×** (155 mm) to **20×** (40 mm grenade)
+    the men its lethal area predicts. Now, with `GameOptions.lethality`
+    `research` (the default):
+    - **Each weapon's blast bands are derived from its lethal area** against
+      standing men (`LETHAL_AREA_M2`): the share of a force's 25 m-radius
+      footprint the lethal area covers, divided by the 0.6 of hits that put a
+      man out, in 10 m rings. The bands give the lethal area back exactly —
+      a test integrates them. Posture, cover and fuze scale them as before
+      (decisions 29–31).
+    - **Against men only.** A vehicle is reached, and a tank round or a
+      charge connects with it, by the document's bands, under either setting.
+    - Artillery **971 m²** (155 mm), mortar **476 m²** (81 mm, ours: scaled by
+      the published casualty radii), tank HE **390 m²** (ours: a 105 mm
+      shell's), rifle grenade **79 m²** (40 mm, 5 m radius), RPG against men
+      **154 m²** (ours, unverified). A shell on the point is about as deadly
+      as before; it stops reaching at about 40 m instead of 200.
+    - **The tank gun hits 90% to 2,000 m, 50% to 3,000 m** (modern fire
+      control; the 3,000 m band is ours), where the document stopped at
+      1,500 m with 90% only to 300 m.
+    - Unchanged, and why, on [docs/validation.md](docs/validation.md): small
+      arms and the coaxial gun (no source gives a per-minute rate to set them
+      by), the RPG against armour and the wound roll (they agree with the
+      sources), the hand grenade and the charges (not researched).
+    - The document's tables stay verbatim in `data/explosives.ts`;
+      `lethality: "document"` plays them. A recording made before the
+      decision carries no `lethality` and replays on them.
+    - **What it moved:** without a fire plan, explosives now put out about 4%
+      of the men in a company attack (was 23–31%); with the mortar plan, 13–31%
+      (was 46–76%). The principle that explosives cause about 75% of losses
+      now has to come from the **volume** of fire, not the reach of one round
+      — a question for the balance pass (docs/validation.md, *Open*).
+42. ✅ **Rates of fire: a range, drawn each turn, lower as a crew tires**
+    (author, 2026-09-28). First cut the same day at the published rates, and
+    revised: "these are firing range numbers — no tank fires 5 rounds a
+    minute." Under `lethality: "research"` (`RATE_OF_FIRE` in
+    [`data/lethality.ts`](src/engine/data/lethality.ts)):
+    - **Each weapon has a low rate and a high one.** The low is the lowest
+      figure there is (the document's where it gave one) and is the
+      **likeliest**; the high is the highest published rate, the **outlier**:
+      tank gun 1–7, rifle grenade 1–7, RPG 1–6, mortar 3–30 a tube,
+      artillery 2–4 a gun.
+    - **What a crew fires in a turn is drawn**: a geometric tail above the
+      low rate, each round above it 0.6 as likely as the one below for a fresh
+      crew and 0.15 for a tired one (`TAIL_WEIGHT`, ours). A crew goes from
+      fresh to tired over **10 turns of firing** (`FATIGUE_TURNS`, ours). A
+      fresh tank crew averages 2.3 rounds a minute, a tired one 1.2.
+    - A direct-fire launcher fires its drawn rate in one action, each round
+      rolled to hit, and stops when its target is down. A fire unit (3 tubes,
+      6 guns) lands its tubes × its drawn rate a turn, and a mission's rounds
+      for effect beyond that land on the turns after; the fire unit tires with
+      the turns it has fired.
+    - Under `document` nothing changed: one round, no ceiling, the same rng
+      draws. `turnsFiring` is kept only on the research figures.
+    - Nothing counts ammunition (backlog 12).
+43. ✅ **Calibrated to 75% of losses by explosives** (author, 2026-09-28: "I
+    want the numbers to reflect 75% HE casualties"; the sources give 72–78%,
+    docs/validation.md). Measured, not argued: with the rates of decision 42
+    the share of explosives stayed at 13–31%, and the fire's **volume** and
+    the rifle's **deadliness** were what moved it. Under
+    `lethality: "research"`:
+    - **Small arms hit a third as often** (`SMALL_ARMS_COMBAT_FACTOR`): men
+      under fire hit 7–10 times less than in trials (Rowland 1987); ⅓ is the
+      smallest factor that reaches the target, the table's figures not being
+      trial figures either. The coaxial gun and the assault keep their tables.
+    - **A mortar mission fires 24 bombs for effect** (`RESEARCH_ROUNDS_FOR_EFFECT`),
+      8 a tube from a 3-tube section, where decision 36 gave 12 — doctrine
+      asks "seldom less than five rounds for each mortar". Artillery stays 6.
+    - **The fire it was calibrated on** is a company's mortar section on
+      call all battle: twelve missions a side, fired for effect at once
+      (`CALIBRATED_FIRE_PLAN`, `npm run balance -- --fires calibrated
+      --defender-fires calibrated`). There explosives put out **82%** (3:1
+      attack) and **77%** (2:1) of the men, and the 2:1 attacker wins
+      **63%**, inside its 30–70% planning target.
+    - **The company battle on Tel Azeka plays it**: twelve mortar missions a
+      side (author, 2026-09-28; it had 4 and 3).
+    - **Where it does not reach 75%**: a battle with little fire — the
+      harness's default of one bomb a turn (19–21%) — and every platoon
+      battle, which has no indirect fire (decision 37); its explosives are
+      its squads' grenadiers (decision 44). The share follows the fire a
+      battle is given, as it does in the sources.
+44. ✅ **A side gives up at the historical breakpoints** (author,
+    2026-09-28: "adapt the morale to historical rules of thumb"). An attack
+    stops at about 20–25% losses and a defence cannot hold at about 40% (the
+    Dupuy Institute; US doctrine calls a unit destroyed at 30%); ours broke at
+    44–78%. On the research figures a side breaks when this share of its men
+    are down, broken, or in a force that fled (`SIDE_BREAK_BY_POSTURE`):
+    **30% attacking, 60% defending**, where decision 19 gave two thirds to
+    both. The shares sit above the losses they stand for because broken and
+    fled men count too; measured, an attacker gives up at a median **16–25%
+    casualties** and a defender at **42–50%**, and the 2:1 company attack
+    with fire support still wins **61%**. 55% for the defender came closer to
+    40% and let that attack win 78%.
+    - **Who attacks is said, not guessed**: `GameOptions.attackers` (a side
+      not named defends; both, in a meeting engagement), carried by the
+      recording and set in each scenario spec (`"attackers": ["BLUE"]`).
+    - Still morale, not a fixed casualty rule: broken and fled men count, and
+      a force still breaks by its own pool (the peer-reviewed work warns
+      against a fixed breakpoint — Helmbold 1971, Wainstein 1986).
+    - The squad drill's **grenadiers** arrived with it (author, same day): one
+      40 mm launcher for every four men still fighting, firing rifle grenades
+      at the squad's target inside 100 m alongside its rifles
+      ([`app/drill.ts`](src/app/drill.ts), ⚠️ ours). They are a platoon
+      battle's own explosives: 22–36% of its losses, against 75–80% where a
+      company's mortars are on call — most explosives come from higher
+      echelons, as the author expected.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

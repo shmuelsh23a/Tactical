@@ -11,12 +11,16 @@ import {
   runBattle,
   runCell,
 } from "./balance.js";
+import { PLAIN_SCRIPT } from "../app/drill.js";
 
 /**
  * The balance harness is a tool, but a tool the suite keeps honest: a few
  * battles of every kind, so that an engine change which breaks the script
  * fails here rather than the next time somebody wants a number.
  */
+/** The plain script without its grenadiers, to measure indirect fire alone. */
+const RIFLEMEN_ONLY = { ...PLAIN_SCRIPT, grenadiers: null };
+
 describe("the balance harness", () => {
   it("plays every kind of battle at every echelon to an end, with and without morale", () => {
     for (const kind of BATTLE_KINDS) {
@@ -61,7 +65,8 @@ describe("the sweep over what is still open", () => {
 
 describe("the fire plan, and what put the men out", () => {
   it("brings the attacker's shells down on the objective, and counts who they put out", () => {
-    const quiet = runBattle(1000, "platoon", "attack3", { morale: true });
+    // Riflemen only: the grenadiers' rounds are explosives too.
+    const quiet = runBattle(1000, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY });
     expect(quiet.outBy.explosive).toBe(0);
     const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "company", "attack3", { morale: true, fires: FIRE_PLAN }));
     expect(shelled.some((r) => r.outBy.explosive > 0)).toBe(true);
@@ -70,7 +75,7 @@ describe("the fire plan, and what put the men out", () => {
 
   it("strikes a mortar plan from a platoon's battle, unless rules decision 37 is off", () => {
     const planned = (anyEchelon: boolean) =>
-      [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN, anyEchelon }));
+      [1000, 1001, 1002].map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, fires: FIRE_PLAN, anyEchelon, lethality: "document", drill: RIFLEMEN_ONLY }));
     expect(planned(false).every((r) => r.outBy.explosive === 0)).toBe(true);
     expect(planned(true).some((r) => r.outBy.explosive > 0)).toBe(true);
     expect(callableAt("platoon", "mortar")).toBe(false);
@@ -86,5 +91,17 @@ describe("the defender's mission plan (decision 38)", () => {
     const planned = runBattle(1000, "platoon", "attack1", { morale: true, defenderPlan: { observationPosts: true, alternateAt: 150 } });
     expect(plain.turns).toBeGreaterThan(0);
     expect(planned.turns).toBeGreaterThan(0);
+  });
+});
+
+describe("the squad's grenadiers", () => {
+  it("fire rifle grenades alongside the rifles, and are the platoon's explosives", () => {
+    const seeds = [1000, 1001, 1002, 1003];
+    const withThem = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true }));
+    const without = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY }));
+    // Without them the only explosives are the assault's hand grenades.
+    const he = (rs: typeof withThem) => rs.reduce((n, r) => n + r.outBy.explosive, 0);
+    expect(he(withThem)).toBeGreaterThan(2 * he(without));
+    expect(PLAIN_SCRIPT.grenadiers).toEqual({ menPerLauncher: 4 });
   });
 });

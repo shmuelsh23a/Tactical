@@ -8,6 +8,7 @@ import {
   type CoverState,
 } from "../data/directFire.js";
 import { refreshUnitStatus, woundHit } from "../units.js";
+import { SMALL_ARMS_COMBAT_FACTOR, type Lethality } from "../data/lethality.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
 
 /**
@@ -32,6 +33,8 @@ function coaxialGunners(vehicle: Unit): number[] {
 
 export interface DirectFireOptions {
   weapon: WeaponClass;
+  /** Whose figures (rules decision 43): on `research`, small arms hit a third as often. The document's unless given. */
+  lethality?: Lethality;
   /** Cover state of the target; scales the hit chance (full cover halves it). */
   cover?: CoverState;
   /**
@@ -111,8 +114,10 @@ export function resolveDirectFire(
   const cover = opts.cover ?? "none";
   // Cover cuts the chance proportionally ("-50% מסיכויי הפגיעה"), so it scales
   // the situational chance rather than being subtracted from it.
+  // Small arms in a fight, on the research figures (rules decision 43).
+  const combat = opts.lethality === "research" && opts.weapon === "smallArms" ? SMALL_ARMS_COMBAT_FACTOR : 1;
   const hitChance = clamp01(
-    band.value * (opts.targetMovementFactor ?? 1) * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])),
+    band.value * combat * (opts.targetMovementFactor ?? 1) * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])),
   );
 
   // The men who will still fight — a broken man keeps his head down — each

@@ -194,7 +194,7 @@ that applies them sits in `src/engine/combat/`.
 | תנועה | [`data/movement.ts`](../src/engine/data/movement.ts) | [`combat/detection.ts`](../src/engine/combat/detection.ts) |
 | כטב"מ | [`data/uav.ts`](../src/engine/data/uav.ts) | [`combat/detection.ts`](../src/engine/combat/detection.ts) |
 | ירי קליעי | [`data/directFire.ts`](../src/engine/data/directFire.ts) | [`combat/directFire.ts`](../src/engine/combat/directFire.ts) |
-| נפיצים | [`data/explosives.ts`](../src/engine/data/explosives.ts) | [`combat/explosives.ts`](../src/engine/combat/explosives.ts), [`combat/indirectFire.ts`](../src/engine/combat/indirectFire.ts) |
+| נפיצים | [`data/explosives.ts`](../src/engine/data/explosives.ts) (the document's); [`data/lethality.ts`](../src/engine/data/lethality.ts) (the research figures, rules decision 41) | [`combat/explosives.ts`](../src/engine/combat/explosives.ts), [`combat/indirectFire.ts`](../src/engine/combat/indirectFire.ts) |
 | עשן | [`data/smoke.ts`](../src/engine/data/smoke.ts) | [`upkeep.ts`](../src/engine/upkeep.ts) |
 | הסתערות | [`data/casualties.ts`](../src/engine/data/casualties.ts) | [`combat/assault.ts`](../src/engine/combat/assault.ts) |
 | פו"ש | [`data/c2.ts`](../src/engine/data/c2.ts) | [`game.ts`](../src/engine/game.ts) |

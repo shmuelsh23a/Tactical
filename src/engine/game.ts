@@ -27,6 +27,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
+import { FIRE_UNIT_TUBES, LETHALITIES, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -118,7 +119,7 @@ import {
 } from "./morale.js";
 import { SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { PREPARED } from "./data/morale.js";
+import { PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
 
 /** The seven phases of a turn, in order (סדר התור). */
@@ -371,6 +372,22 @@ export interface GameOptions {
    * off, so the fire it called still replays.
    */
   fireSupportByEchelon?: boolean;
+  /**
+   * Whose figures a blast and the tank gun play (rules decision 41):
+   * `research`, the default, sets how far a shell, a bomb, a grenade or a
+   * tank round reaches the men of a force, and how far a tank gun hits, from
+   * published data (docs/validation.md); `document` plays the rules
+   * document's tables. A recording made before the decision reads it as
+   * `document`, so the battle it holds still replays.
+   */
+  lethality?: Lethality;
+  /**
+   * The sides attacking (rules decision 44): on the research figures a side
+   * attacking gives up at the historical attacker's breakpoint, one
+   * defending at the defender's. A side not named defends; in a meeting
+   * engagement both attack.
+   */
+  attackers?: Side[];
 }
 
 /**
@@ -394,6 +411,10 @@ export class Game {
   readonly commandEchelons: Partial<Record<Side, Echelon>>;
   /** Whether rules decision 37 is in force: who may call a weapon depends on the echelon. */
   readonly fireSupportByEchelon: boolean;
+  /** Whose blast and tank-gun figures this game plays (rules decision 41). */
+  readonly lethality: Lethality;
+  /** The sides attacking (rules decision 44). */
+  readonly attackers: Side[];
   /**
    * How many of {@link registeredTargets} came with the options rather than
    * from mission planning — the recording's header carries those, its journal
@@ -408,6 +429,8 @@ export class Game {
   }
   /** Every fire mission called, in the order called. */
   private readonly missions: FireMission[] = [];
+  /** Turns each side's fire units have fired, by `side:weapon` — what tires them (rules decision 42). */
+  private readonly fireUnitTurns = new Map<string, number>();
   /** Every fire mission called, in the order called — copies: change them and nothing happens. */
   get fireMissions(): FireMission[] {
     return cloneForRecord(this.missions);
@@ -500,6 +523,10 @@ export class Game {
       }
     }
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
+    this.lethality = opts.lethality ?? "research";
+    this.attackers = [...(opts.attackers ?? [])];
+    if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
+    if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
     for (const t of opts.registeredTargets ?? []) {
       if (!this.sides.includes(t.side) || !isIndirect(t.weapon) || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
@@ -518,7 +545,7 @@ export class Game {
       }
       const weapons = new Set<string>();
       for (const a of list) {
-        const rounds = a.roundsForEffect ?? DEFAULT_ROUNDS_FOR_EFFECT[a.weapon] ?? NaN;
+        const rounds = a.roundsForEffect ?? this.defaultRoundsForEffect(a.weapon) ?? NaN;
         if (
           !isIndirect(a.weapon) ||
           weapons.has(a.weapon) ||
@@ -589,6 +616,8 @@ export class Game {
       ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.fireSupport) } : {}),
       ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
+      lethality: this.lethality,
+      ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -973,7 +1002,7 @@ export class Game {
       throw new Error(`no such method of fire: ${String(opts.method)}`);
     }
     const allotment = this.fireSupport[side]?.find((a) => a.weapon === weaponKey);
-    const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? defaultRoundsForEffect(weaponKey);
+    const roundsForEffect = recordedRounds ?? allotment?.roundsForEffect ?? this.defaultRoundsForEffect(weaponKey) ?? defaultRoundsForEffect(weaponKey);
     if (!Number.isInteger(roundsForEffect) || roundsForEffect < 1 || roundsForEffect > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds for effect, not ${roundsForEffect}`);
     }
@@ -1026,6 +1055,34 @@ export class Game {
     this.journal({ kind: "checkFire", side });
   }
 
+  /** A mission's rounds for effect when nobody set them: the research figure (rules decision 43) or the document's (decision 36). */
+  private defaultRoundsForEffect(weapon: string): number | undefined {
+    return this.lethality === "research" ? RESEARCH_ROUNDS_FOR_EFFECT[weapon] : DEFAULT_ROUNDS_FOR_EFFECT[weapon];
+  }
+
+  /**
+   * How `rounds` land, turn by turn (rules decision 42). Under the research
+   * figures each turn's volley is the fire unit's tubes times a rate drawn for
+   * that turn, lower as the unit tires from the turns it has already fired;
+   * under the document, all of them at once. Drawn when the mission sends its
+   * rounds, so a recording replays them from its calls.
+   */
+  private volleysFor(side: Side, weapon: string, rounds: number): number[] {
+    const rof = RATE_OF_FIRE[weapon];
+    const tubes = FIRE_UNIT_TUBES[weapon];
+    if (this.lethality !== "research" || !rof || !tubes) return [rounds];
+    const key = `${side}:${weapon}`;
+    const volleys: number[] = [];
+    for (let left = rounds; left > 0; ) {
+      const fired = this.fireUnitTurns.get(key) ?? 0;
+      const n = Math.min(left, tubes * rollRate(rof, freshness(fired), this.rng.next()));
+      this.fireUnitTurns.set(key, fired + 1);
+      volleys.push(n);
+      left -= n;
+    }
+    return volleys;
+  }
+
   /**
    * One turn of a fire mission: an adjusting round, or the rounds for effect.
    * While its last adjusting round is still in the air, it waits to see where
@@ -1040,14 +1097,21 @@ export class Game {
       !this.observes(m.side, m.target, m.observedByUav ?? false) ||
       m.adjustingRounds >= MAX_ADJUSTING_ROUNDS;
     const rounds = forEffect ? m.roundsForEffect : 1;
-    const queued = this.internally(() =>
-      this.queueIndirectFire(m.weapon, m.side, m.target, {
-        ...(m.firingFrom ? { firingFrom: m.firingFrom } : {}),
-        ...(m.fuze ? { fuze: m.fuze } : {}),
-        ...(m.observedByUav ? { observedByUav: true } : {}),
-        ...(rounds > 1 ? { rounds } : {}),
-      }),
-    );
+    // The fire unit lands at most its rate times its tubes in a turn (rules
+    // decision 42); the rest of the rounds for effect land on the turns after.
+    const volleys = this.volleysFor(m.side, m.weapon, rounds);
+    const queued = this.internally(() => {
+      const sent = volleys.map((n, later) =>
+        this.queueIndirectFire(m.weapon, m.side, m.target, {
+          ...(m.firingFrom ? { firingFrom: m.firingFrom } : {}),
+          ...(m.fuze ? { fuze: m.fuze } : {}),
+          ...(m.observedByUav ? { observedByUav: true } : {}),
+          ...(n > 1 ? { rounds: n } : {}),
+          ...(later ? { laterBy: later } : {}),
+        }),
+      );
+      return sent[0]!;
+    });
     if (forEffect) {
       m.status = "done";
       m.forEffectOnTurn = this.turn;
@@ -1066,7 +1130,14 @@ export class Game {
     weaponKey: string,
     side: Side,
     target: Point,
-    opts: { firingFrom?: Point; observedByUav?: boolean; rounds?: number; fuze?: Fuze } = {},
+    opts: {
+      firingFrom?: Point;
+      observedByUav?: boolean;
+      rounds?: number;
+      fuze?: Fuze;
+      /** Turns after the weapon's delay: the later volleys of a mission beyond its fire unit's rate (rules decision 42). */
+      laterBy?: number;
+    } = {},
   ): PendingFireMission {
     this.requirePhase("targeting");
     const weapon = EXPLOSIVES[weaponKey];
@@ -1079,6 +1150,8 @@ export class Game {
       throw new Error(`${side}'s fire is assigned as missions: call for fire`);
     }
     if (this.journalDepth === 0) this.requireMayCall(side, weaponKey);
+    // Only a mission spreads its own volleys; a call from outside lands when it lands.
+    if (opts.laterBy !== undefined && this.journalDepth === 0) throw new Error("laterBy is set by a fire mission, not by a caller");
     const rounds = opts.rounds ?? 1;
     if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_ROUNDS_PER_MISSION) {
       throw new Error(`a mission fires 1 to ${MAX_ROUNDS_PER_MISSION} rounds, not ${rounds}`);
@@ -1090,7 +1163,7 @@ export class Game {
       weapon: weaponKey,
       side,
       target,
-      resolvesOnTurn: this.turn + (weapon.impactDelayTurns ?? 1),
+      resolvesOnTurn: this.turn + (weapon.impactDelayTurns ?? 1) + (opts.laterBy ?? 0),
       observedByUav: opts.observedByUav ?? false,
       // Only when not the default, so a digest of an older game is unchanged.
       ...(rounds > 1 ? { rounds } : {}),
@@ -1100,7 +1173,7 @@ export class Game {
     (mission as PendingFireMission & { firingFrom?: Point }).firingFrom = opts.firingFrom;
     this.pendingFire.push(mission);
     // As adopted: the defaults are left out, as they are on the mission.
-    const { rounds: _r, fuze: _f, ...rest } = opts;
+    const { rounds: _r, fuze: _f, laterBy: _l, ...rest } = opts;
     this.journal({
       kind: "queueIndirectFire",
       weaponKey,
@@ -1215,6 +1288,7 @@ export class Game {
           // 2026-09-23: a prepared position has overhead cover).
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           cepM,
+          lethality: this.lethality,
         }),
       );
       // What the side saw of it teaches the next round; a round seen on the
@@ -1633,6 +1707,7 @@ export class Game {
         actor.cover = this.groundCoverAt(at);
         const result = resolveDirectFire(this.rng, coverer, actor, {
           weapon: posture.weapon,
+          lethality: this.lethality,
           turn: this.turn,
           cover: actor.cover,
           // A force caught on the move is the case the movement table is
@@ -1863,8 +1938,10 @@ export class Game {
     // men has fewer shooters.
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
+    const alreadyFired = attacker.firedThisTurn;
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
+      lethality: this.lethality,
       // A target that moved is easier or harder to hit (decision 22), and one
       // that fired from full cover keeps −30% (decision 23).
       ...this.movementTerms(target, target.movedThisTurn > 0),
@@ -1877,12 +1954,22 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) {
+      this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fire", attackerId, targetId, opts });
     return { ...fireResult, coveringFire };
+  }
+
+  /**
+   * A turn of firing tires a force's crews (rules decision 42) — counted only
+   * on the research figures, and once a turn however many of its weapons
+   * fired: `alreadyFired` is whether it had fired this turn before this shot.
+   */
+  private tire(unit: Unit, alreadyFired: boolean): void {
+    if (this.lethality === "research" && !alreadyFired) unit.turnsFiring = (unit.turnsFiring ?? 0) + 1;
   }
 
   fireExplosive(
@@ -1908,12 +1995,15 @@ export class Game {
     }
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
+    const alreadyFired = attacker.firedThisTurn;
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
       collateral,
       turn: this.turn,
+      lethality: this.lethality,
     });
     if (result.fired) {
+      this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       const caught = result.blast?.targets ?? [];
       const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);
@@ -2241,7 +2331,7 @@ export class Game {
       const caught = (result.blast?.targets ?? []).filter((t) => t.caught);
       return {
         targetId: target.id,
-        hits: result.hit ? 1 : 0,
+        hits: result.hits ?? (result.hit ? 1 : 0),
         newCasualties: caught.reduce((n, t) => n + t.newCasualties, 0),
         hitChance: result.hitChance,
       };
@@ -2486,7 +2576,13 @@ export class Game {
    * though it still has forces on the map. Always false without morale.
    */
   sideBroken(side: Side): boolean {
-    return this.morale && sideBroken(this.units, side);
+    if (!this.morale) return false;
+    // By posture on the research figures (rules decision 44); two thirds on the document's.
+    const share =
+      this.lethality === "research"
+        ? SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"]
+        : undefined;
+    return sideBroken(this.units, side, share);
   }
 
   /**

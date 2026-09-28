@@ -16,6 +16,8 @@
  *   npm run balance -- --defender-ops --alternate 150 --displace 100   # the defender's mission plan (decision 38)
  *   npm run balance -- --any-echelon               # any side may call any weapon: rules decision 37 off
  *   npm run balance -- --morale on                   # only with morale (or: off)
+ *   npm run balance -- --fires calibrated --defender-fires calibrated   # the fire decision 43 was calibrated on
+ *   npm run balance -- --lethality document          # the document's blast tables (rules decision 41; default research)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
  * on purpose: tools/ is outside the typecheck and the suite, so everything
@@ -26,6 +28,8 @@ import {
   CONFIGURATIONS,
   ECHELONS,
   FIRE_PLAN,
+  CALIBRATED_FIRE_PLAN,
+  CALIBRATED_DEFENDER_FIRES,
   type FirePlan,
   type DefenderFires,
   MARKDOWN_HEADER,
@@ -37,7 +41,7 @@ import {
   type BattleKind,
   type Echelon,
 } from "../src/sim/balance.js";
-import type { FireAllotment, RuleVariants } from "../src/engine/index.js";
+import { LETHALITIES, type FireAllotment, type Lethality, type RuleVariants } from "../src/engine/index.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
 
 const args = process.argv.slice(2);
@@ -86,6 +90,7 @@ const firesArg = value("--fires");
 const fires: FirePlan | undefined = (() => {
   if (!firesArg) return undefined;
   if (firesArg === "plan") return FIRE_PLAN;
+  if (firesArg === "calibrated") return CALIBRATED_FIRE_PLAN;
   const plan: FirePlan = { missions: [], liftAt: FIRE_PLAN.liftAt };
   for (const part of firesArg.split(",")) {
     const [key = "", v = ""] = part.split("=");
@@ -103,6 +108,7 @@ const fires: FirePlan | undefined = (() => {
 const defenderArg = value("--defender-fires");
 const defenderFires: DefenderFires | undefined = (() => {
   if (!defenderArg) return undefined;
+  if (defenderArg === "calibrated") return CALIBRATED_DEFENDER_FIRES;
   const d: DefenderFires = { missions: [] };
   for (const part of defenderArg.split(",")) {
     const [key = "", v = ""] = part.split("=");
@@ -117,6 +123,8 @@ const defenderFires: DefenderFires | undefined = (() => {
 // --any-echelon — rules decision 37 off. With it on, a weapon the battle's
 // echelon may not call is struck from the fire plans, and said so here.
 const anyEchelon = args.includes("--any-echelon");
+const lethality = value("--lethality") as Lethality | undefined;
+if (lethality && !LETHALITIES.includes(lethality)) throw new Error(`--lethality: "${lethality}" is not one of ${LETHALITIES.join(", ")}`);
 if (!anyEchelon) {
   const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
     .flatMap((a) => echelons.filter((e) => !callableAt(e, a.weapon)).map((e) => `${a.weapon} at ${e}`));
@@ -156,7 +164,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}) })));
       }
     }
   }

@@ -32,6 +32,7 @@ npm test             # vitest alone
 npm run typecheck    # strict tsc alone
 npm run lint         # the architectural rules alone
 npm run balance      # headless battles -> the table on docs/balance.md (not part of check)
+npm run validate     # the game's numbers against the sources -> docs/validation.md (not part of check)
 ```
 
 Node **24** — pinned in `.nvmrc`, declared in `engines`, and read from that same
@@ -107,6 +108,12 @@ one it is in your reply, too.
   wrong, change how the value is applied in `src/engine/combat/`, not the value
   itself — see rules decision 7, where the cover modifier stayed `-0.5` and only
   its application became proportional.
+  Figures set from published data rather than the document live beside the
+  tables, never in them: [`data/lethality.ts`](src/engine/data/lethality.ts)
+  holds the research blast and tank-gun figures (rules decision 41), chosen
+  per game by `GameOptions.lethality`, and cites its sources in
+  [docs/validation.md](docs/validation.md). A number taken from research goes
+  there with its source, and `npm run validate` measures it.
 - **All randomness comes from `Rng`** — a game must replay bit-for-bit from its
   seed, which is what makes tests, replays and future networked play possible.
   *(enforced)* Watch the **number** of draws too: rolling for a different set of
