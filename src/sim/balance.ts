@@ -104,12 +104,24 @@ const NORTH = 100;
 const X = 1000;
 
 /** BLUE starts in the north and advances south; RED holds or advances north. */
-function layout(echelon: Echelon, kind: BattleKind): { blue: ForceSpec[]; red: ForceSpec[] } {
+function layout(echelon: Echelon, kind: BattleKind, meetingOdds: 1 | 2 | 3 = 1): { blue: ForceSpec[]; red: ForceSpec[] } {
   if (kind === "meeting") {
     const south = NORTH + (echelon === "company" ? 800 : echelon === "platoon" ? 700 : 600);
     const make = (p: string, y: number, facing: 1 | -1) =>
       echelon === "squad" ? [single(`${p}-1`, X, y, ORG.squad)] : echelon === "platoon" ? platoon(p, X, y, facing) : company(p, X, y, facing);
-    return { blue: make("B", NORTH, 1), red: make("R", south, -1) };
+    // At odds, RED is cut down as the attack layouts cut the defender — but
+    // nobody has prepared anything: two forces on the move that run into each other.
+    const red =
+      meetingOdds === 1
+        ? make("R", south, -1)
+        : meetingOdds === 2
+          ? echelon === "squad" ? [single("R-1", X, south, 5)]
+            : echelon === "platoon" ? [single("R-1", X - 40, south, ORG.squad), single("R-2", X + 40, south, ORG.squad)]
+              : [...platoon("R1", X - 150, south, -1), ...platoon("R2", X + 150, south, -1)]
+          : echelon === "squad" ? [single("R-1", X, south, ORG.fireTeam)]
+            : echelon === "platoon" ? [single("R-1", X, south, ORG.squad)]
+              : platoon("R", X, south, -1);
+    return { blue: make("B", NORTH, 1), red };
   }
   const south = NORTH + 700;
   const attacker = echelon === "squad" ? [single("B-1", X, NORTH, ORG.squad)] : echelon === "platoon" ? platoon("B", X, NORTH, 1) : company("B", X, NORTH, 1);
@@ -128,6 +140,12 @@ function layout(echelon: Echelon, kind: BattleKind): { blue: ForceSpec[]; red: F
 
 export interface BattleOptions {
   morale: boolean;
+  /**
+   * A meeting engagement at odds: BLUE at full strength, RED at about a half
+   * (2) or a third (3), neither prepared. Ignored for an attack. Even odds
+   * unless given.
+   */
+  meetingOdds?: 1 | 2 | 3;
   /** Put RED where BLUE would start and the reverse — separates side from position. */
   swap?: boolean;
   /** What is on trial in the engine (data/variants.ts). */
@@ -275,7 +293,7 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
 export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
-  const laid = layout(echelon, kind);
+  const laid = layout(echelon, kind, opts.meetingOdds);
   const callable = (weapon: string) => opts.anyEchelon || callableAt(echelon, weapon);
   // The defender's registered targets: on the line from its position toward
   // where the attacker starts. Swap relabels the sides, not the ground: the

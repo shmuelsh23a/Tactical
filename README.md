@@ -1796,6 +1796,23 @@ Still modelled by reasonable assumption (flag if you want them changed):
   so replays, networked play, and recordings stay reproducible. An AI player
   (backlog 15) is not an exception to this: it chooses *decisions*, in the same
   places a human chooses them, and every outcome is still rolled by the engine.
+- **The battle teaches the lessons leaders should learn** (author,
+  2026-09-28). The outcomes a force ratio and a preparation give should come
+  out of the rules the way doctrine and history say, so a player learns them
+  by playing:
+  - **A prepared position is what gives the defender its superiority**, and
+    what makes an attack need **3:1**. Attacked below it, a prepared defender
+    should hold; at 3:1 the attack should succeed.
+  - **In a meeting engagement nobody has prepared anything**, so nobody has a
+    defender's bonus: the larger force should win. What the ground offers —
+    a building, a crest — still favours whoever reaches it first.
+  - **Fortifying during the battle belongs to the higher echelons**, whose
+    battles last hours. A squad-to-company fight is over before anyone digs
+    (rules decision 50: 30 minutes to a prone shelter, 90 to a foxhole).
+  - **The scenarios so far are test beds**, not the battles the game will
+    ship; real ones come later (backlog 17).
+
+  Measured against these in validation.md, *The design principles, measured*.
 
 ## Roadmap
 

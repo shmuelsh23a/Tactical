@@ -105,3 +105,12 @@ describe("the squad's grenadiers", () => {
     expect(PLAIN_SCRIPT.grenadiers).toEqual({ menPerLauncher: 4 });
   });
 });
+
+describe("a meeting engagement at odds", () => {
+  it("cuts RED to about a half or a third, and prepares nothing", () => {
+    const men = (odds: 1 | 2 | 3) => runBattle(5, "platoon", "meeting", { morale: true, meetingOdds: odds }).men;
+    expect(men(1)).toEqual({ BLUE: 36, RED: 36 });
+    expect(men(2)).toEqual({ BLUE: 36, RED: 18 });
+    expect(men(3)).toEqual({ BLUE: 36, RED: 9 });
+  });
+});
