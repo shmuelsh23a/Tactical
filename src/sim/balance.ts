@@ -2,6 +2,10 @@ import { sideDefeated } from "../app/hotseat.js";
 import { DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import {
   ECHELON_RANK,
+  LOCATION_ERROR,
+  Rng,
+  locationSigma,
+  unitSeed,
   FIRE_SUPPORT_MIN_ECHELON,
   Game,
   distance,
@@ -187,6 +191,40 @@ export interface BattleOptions {
   defenderPlan?: { observationPosts?: boolean; alternateAt?: number };
   /** Whose blast and tank-gun figures (rules decision 41). The game's default, `research`, unless given. */
   lethality?: Lethality;
+  /**
+   * Neither side plans its fires on where the other truly is (rules decision
+   * 51's harness half). The attacker's planned targets are each position's
+   * centre as an observer at its start line would judge it
+   * ({@link estimateFrom}); the defender's points on the approach are off
+   * the line the attacker really comes by, by the same share of their
+   * distance. The number is that share of the range, one standard deviation:
+   * 0.2 is an eye's ({@link LOCATION_ERROR}), less a position reconnoitred.
+   * Absent or 0, both plan on the truth, as every table before 2026-09-28.
+   */
+  planningError?: number;
+  /** Sightings carry location error in the game (rules decision 51, `GameOptions.locationError`). */
+  locationError?: boolean;
+}
+
+/** A standard normal draw (Box–Muller). */
+function normal(rng: Rng): number {
+  return Math.sqrt(-2 * Math.log(1 - rng.next())) * Math.cos(2 * Math.PI * rng.next());
+}
+
+/**
+ * Where an observer at `from` would put a force at `truth` (rules decision
+ * 51's figures, an eye's): off along the sight line by a fifth of the range
+ * and across it by the compass. The harness's pre-battle intelligence, drawn
+ * from its own stream so the game's rolls do not move.
+ */
+export function estimateFrom(rng: Rng, from: Point, truth: Point, rangeShare: number = LOCATION_ERROR.eye.rangeShare): Point {
+  const range = distance(from, truth);
+  const s = locationSigma(range, { ...LOCATION_ERROR.eye, rangeShare });
+  const along = normal(rng) * s.along;
+  const across = normal(rng) * s.across;
+  const ux = range > 0 ? (truth.x - from.x) / range : 1;
+  const uy = range > 0 ? (truth.y - from.y) / range : 0;
+  return { x: truth.x + along * ux - across * uy, y: truth.y + along * uy + across * ux };
 }
 
 /**
@@ -300,28 +338,35 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
   // defender stands where `laid.red` does whichever side it is.
   const defenderSide: Side = opts.swap ? "BLUE" : "RED";
   // The attacker's planned targets: the centre of each position it is
-  // attacking, as its intelligence has them — one a defending platoon.
+  // attacking, as its intelligence has them — one a defending platoon. With
+  // `planningError`, as its start line judged them, not where they are.
+  const intelRng = new Rng(unitSeed(seed, "#planning-error"));
+  const attackerStart = (() => {
+    const inf = laid.blue.filter((f) => f.kind === "infantry");
+    return { x: inf.reduce((t, f) => t + f.at.x, 0) / inf.length, y: inf.reduce((t, f) => t + f.at.y, 0) / inf.length };
+  })();
   const plannedTargets: Point[] = (() => {
     const byPosition = new Map<string, Point[]>();
     for (const f of laid.red.filter((f) => f.kind === "infantry")) {
       const key = f.id.split("-")[0]!;
       byPosition.set(key, [...(byPosition.get(key) ?? []), f.at]);
     }
-    return [...byPosition.values()].map((ps) => ({
-      x: ps.reduce((t, p) => t + p.x, 0) / ps.length,
-      y: ps.reduce((t, p) => t + p.y, 0) / ps.length,
-    }));
+    return [...byPosition.values()].map((ps) => {
+      const centre = { x: ps.reduce((t, p) => t + p.x, 0) / ps.length, y: ps.reduce((t, p) => t + p.y, 0) / ps.length };
+      return opts.planningError ? estimateFrom(intelRng, attackerStart, centre, opts.planningError) : centre;
+    });
   })();
   const attackerSide = other(defenderSide);
   const registeredTargets = (() => {
     if (kind === "meeting") return [];
     const y0 = laid.red.find((f) => f.kind === "infantry")!.at.y;
     const toward = Math.sign(laid.blue.find((f) => f.kind === "infantry")!.at.y - y0);
-    const defender = (callable("mortar") ? opts.defenderFires?.registeredAt ?? [] : []).map((m) => ({
-      side: defenderSide,
-      weapon: "mortar",
-      at: { x: X, y: y0 + toward * m },
-    }));
+    // The defender guesses the approach: with `planningError` it is off the
+    // line the attacker really takes by that share of the point's distance.
+    const defender = (callable("mortar") ? opts.defenderFires?.registeredAt ?? [] : []).map((m) => {
+      const across = opts.planningError ? normal(intelRng) * m * opts.planningError : 0;
+      return { side: defenderSide, weapon: "mortar", at: { x: X + across, y: y0 + toward * m } };
+    });
     const attacker = !opts.fires?.registered
       ? []
       : opts.fires.missions.filter((a) => callable(a.weapon)).flatMap((a) => plannedTargets.map((at) => ({ side: attackerSide, weapon: a.weapon, at })));
@@ -341,6 +386,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     seed,
     morale: opts.morale,
     trackIntel: true,
+    ...(opts.locationError ? { locationError: true } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),

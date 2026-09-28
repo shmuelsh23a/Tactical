@@ -192,6 +192,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
+  if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -317,6 +318,12 @@ export interface GameRecording {
   lethality?: Lethality;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
+  /**
+   * Whether a sighting carried location error (rules decision 51). Read as
+   * **off** when absent: a battle recorded before it was played with exact
+   * sightings.
+   */
+  locationError?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -473,6 +480,7 @@ export function replayWithOutcomes(
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     lethality: recording.lethality ?? "document",
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
+    ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

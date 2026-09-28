@@ -109,6 +109,12 @@ export {
   hitChanceAt,
   type Lethality,
 } from "./data/lethality.js";
+export {
+  LOCATION_ERROR,
+  UAV_LOCATION_ERROR_M,
+  locationSigma,
+  type LocationErrorFigures,
+} from "./data/locationError.js";
 export * as MORALE_RULES from "./data/morale.js";
 export { type RuleVariants } from "./data/variants.js";
 

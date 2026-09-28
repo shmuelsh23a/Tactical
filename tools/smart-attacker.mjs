@@ -5,7 +5,10 @@
  *
  * It plays the attacking side of a scenario (`GameOptions.attackers`):
  *   - plans a fire plan on the objective area — its centre and 90 m to either
- *     side, not where each defending squad lies — and registers it;
+ *     side, not where each defending squad lies — and registers it. The
+ *     centre is where its start line would judge the defence to be, off by a
+ *     fifth of the range along the line of sight (rules decision 51's eye),
+ *     not where the umpire has it;
  *   - bounds by halves, 50 m at a walk, the other half holding and firing; a
  *     squad the command group could not reach last turn bounds on the next;
  *   - moves its command groups behind their squads, to keep them in the
@@ -21,7 +24,10 @@
  *   SEED=12 node tools/smart-attacker.mjs telAzekaAssault2 30
  *
  * Env: SEED (plays on other dice, via `?seed=`), NOFIRE (no fire plan),
- * NOSMOKE (no smoke), BASE_URL (default http://localhost:5199),
+ * PLANNING_ERROR (the share of range the fire plan's centre is off by,
+ * default 0.2; 0 plans on the truth, as every run before 2026-09-28),
+ * NOSMOKE (no smoke), SHOT (a screenshot of the last screen, to this path),
+ * BASE_URL (default http://localhost:5199),
  * PLAYWRIGHT_DIR (where `playwright` resolves; default the global
  * node_modules of this container), CHROMIUM (the browser binary).
  *
@@ -78,21 +84,35 @@ const toward = (a, b, d) => { const r = dist(a, b); return r <= d ? { ...b } : {
 const rosterEntries = () => p.evaluate(() => [...document.querySelectorAll(".roster li")].map((li) => li.innerText.trim().replace(/\s+/g, " ")));
 const alive = (entry) => !/0\/|נוטרל|נשבר|נכנע|בורח/.test(entry);
 
-const setup = await p.evaluate(async ({ scenario, seed }) => {
+const setup = await p.evaluate(async ({ scenario, seed, share }) => {
   const mod = await import(`/src/app/scenarios/${scenario}.ts`);
+  const { Rng, unitSeed, distance, locationSigma, LOCATION_ERROR } = await import("/src/engine/index.ts");
   const build = Object.values(mod).find((f) => typeof f === "function" && /Scenario$/.test(f.name));
   const { game } = build(seed);
   const att = game.attackers[0] ?? "BLUE"; const def = att === "BLUE" ? "RED" : "BLUE";
   const d = game.units.filter((u) => u.side === def && u.kind !== "command");
+  const a = game.units.filter((u) => u.side === att && u.kind !== "command");
+  const mean = (us) => ({ x: us.reduce((t, u) => t + u.position.x, 0) / us.length, y: us.reduce((t, u) => t + u.position.y, 0) / us.length });
+  // Where the defence truly is, and where the attacker's start line judges it
+  // to be: the umpire's centre, off along the sight line by `share` of the
+  // range and across it by the compass (rules decision 51's figures).
+  const truth = mean(d), from = mean(a);
+  const range = distance(from, truth);
+  const s = locationSigma(range, { ...LOCATION_ERROR.eye, rangeShare: share });
+  const rng = new Rng(unitSeed(game.seed, "#planning-error"));
+  const normal = () => Math.sqrt(-2 * Math.log(1 - rng.next())) * Math.cos(2 * Math.PI * rng.next());
+  const along = share > 0 ? normal() * s.along : 0, across = share > 0 ? normal() * s.across : 0;
+  const ux = (truth.x - from.x) / range, uy = (truth.y - from.y) / range;
   return {
     attacker: att,
-    // The positions the attacker's tasking names: where the defender is thought to be.
-    targets: d.map((u) => ({ x: u.position.x, y: u.position.y })),
+    truth,
+    estimate: { x: truth.x + along * ux - across * uy, y: truth.y + along * uy + across * ux },
     units: game.units.map((u) => ({ id: u.id, name: u.name, side: u.side, kind: u.kind })),
   };
-}, { scenario, seed: process.env.SEED ? Number(process.env.SEED) : undefined });
+}, { scenario, seed: process.env.SEED ? Number(process.env.SEED) : undefined, share: Number(process.env.PLANNING_ERROR ?? 0.2) });
 const byName = Object.fromEntries(setup.units.map((u) => [u.name, u]));
-const objective = { x: setup.targets.reduce((s, t) => s + t.x, 0) / setup.targets.length, y: setup.targets.reduce((s, t) => s + t.y, 0) / setup.targets.length };
+const objective = setup.estimate;
+console.log(`PLAN centre off the defence by ${Math.round(Math.hypot(objective.x - setup.truth.x, objective.y - setup.truth.y))} m`);
 // Realistic intelligence: the tasking names the area, not where each squad lies.
 // The registered targets are the objective's centre and two points 90 m to either side.
 setup.targets = [objective, { x: objective.x - 90, y: objective.y }, { x: objective.x + 90, y: objective.y }];
@@ -228,6 +248,7 @@ while (!over && steps < maxTurns * 30) {
   console.log("stuck with buttons", JSON.stringify(bs)); break;
 }
 const calls = { made: stats.fireCalls };
+if (process.env.SHOT) await p.screenshot({ path: process.env.SHOT });
 // The umpire's account: save the recording in-page and replay it.
 const umpire = await p.evaluate(async () => {
   let blob; const orig = URL.createObjectURL; URL.createObjectURL = (b) => { blob = b; return "blob:x"; };
@@ -249,10 +270,19 @@ const umpire = await p.evaluate(async () => {
   const fires = steps.filter((s) => s.outcome?.kind === "fire" || s.outcome?.kind === "fireExplosive").map((s) => {
     const r = s.outcome.result; return `${s.action.kind}:${s.action.attackerId}->${s.action.targetId} ${r.fired ? (r.hits ?? (r.hit ? 1 : 0)) + "h/" + (r.newCasualties ?? (r.blast?.targets ?? []).reduce((n, t) => n + t.newCasualties, 0)) + "c" : "no:" + r.reason}`;
   });
-  return { lethality: rec.lethality, attackers: rec.attackers, turn: game.turn, sides, kinds, outBy: { he, sa }, fires: fires.slice(0, 40) };
+  // How far each side's picture was from the truth at the end (rules decision 51).
+  const off = {};
+  for (const s of ["BLUE", "RED"]) {
+    off[s] = game.contactsFor(s).map((c) => {
+      const u = game.units.find((x) => x.id === c.unitId);
+      return Math.round(Math.hypot(c.lastKnownPosition.x - u.position.x, c.lastKnownPosition.y - u.position.y));
+    });
+  }
+  return { lethality: rec.lethality, locationError: rec.locationError ?? false, contactsOff: off, attackers: rec.attackers, turn: game.turn, sides, kinds, outBy: { he, sa }, fires: fires.slice(0, 40) };
 });
 const side = (x) => `${x.down} down ${x.broken} broken of ${x.men}`;
 console.log("SMART " + JSON.stringify(stats)); console.log(`RESULT ${scenario} [${style}] turn ${umpire.turn}: BLUE ${side(umpire.sides.BLUE)} | RED ${side(umpire.sides.RED)} | out by HE ${umpire.outBy.he}, small arms ${umpire.outBy.sa} | actions ${JSON.stringify(umpire.kinds)} | player ${JSON.stringify(stats)} fire calls ${calls.made}`);
+console.log(`CONTACTS locationError ${umpire.locationError}, each side's reports off the truth by (m): ${JSON.stringify(umpire.contactsOff)}`);
 console.log("FORCES " + JSON.stringify(Object.fromEntries(Object.entries(umpire.sides).map(([k, v]) => [k, v.forces]))));
 const result = await p.evaluate(() => ({
   log: [...document.querySelectorAll(".log li, .log div")].map((x) => x.innerText.trim().replace(/\s+/g, " ")).filter(Boolean),

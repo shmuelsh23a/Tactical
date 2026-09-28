@@ -51,6 +51,7 @@ export function buildYokneamIllitScenario(seed = 2026): Scenario {
     trackIntel: true,
     enforceC2: true,
     morale: true,
+    locationError: true,
     attackers: ["BLUE"],
     terrain: buildYokneamIllitTerrain(),
   });

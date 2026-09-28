@@ -26,6 +26,9 @@ The spec, in full — everything not marked optional is required:
       "trackIntel": true,                   optional (default true)
       "enforceC2": true,                    optional (default true)
       "morale": true,                       optional (default false; decision 19)
+      "locationError": true,                optional (default true): a sighting
+                                            reports where its observer judged
+                                            the force to be (decision 51)
       "commandEchelon": {"BLUE": "company"}, optional: what each side's player
                                             commands (decision 37); undeclared,
                                             the engine reads it off the forces
@@ -142,7 +145,7 @@ MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
-    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "about", "window", "forces", "charges",
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
@@ -243,6 +246,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "trackIntel", "spec")
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
+    require_bool(spec, "locationError", "spec")
     for key in ("commandEchelon", "fireSupport"):
         require(isinstance(spec.get(key, {}), dict), f"spec: {key} must be an object keyed by side")
     attackers = spec.get("attackers", [])
@@ -441,6 +445,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     ]
     if spec.get("morale"):
         lines.append("    morale: true,")
+    if spec.get("locationError", True) and spec.get("trackIntel", True):
+        lines.append("    locationError: true,")
     if spec.get("attackers"):
         lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")
     if spec.get("commandEchelon"):

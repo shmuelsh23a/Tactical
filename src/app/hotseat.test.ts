@@ -3,6 +3,7 @@ import { Game, makeInfantry, type Heightfield } from "../engine/index.js";
 import {
   disclose,
   hasEyesOn,
+  sideView,
   readableBy,
   SIDES,
   type Audience,
@@ -137,5 +138,33 @@ describe("having eyes on a force", () => {
     expect(hasEyesOn(g, "RED", victim)).toBe(true);
     watcher.neutralized = true;
     expect(hasEyesOn(g, "RED", victim)).toBe(false);
+  });
+});
+
+/**
+ * Rules decision 51: with location error a side draws an enemy where its
+ * observers judged it to be — even one in sight this turn — and never where
+ * the umpire has it.
+ */
+describe("what a side is shown of an enemy it can see", () => {
+  function seen(locationError: boolean) {
+    const g = new Game({ seed: 7, trackIntel: true, enforceC2: false, locationError });
+    const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 400 }, 8));
+    const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire(blue.id, red.id, { weapon: "smallArms" });
+    return { g, red, drawn: sideView(g, "BLUE").units.find((u) => u.id === red.id)! };
+  }
+
+  it("draws it where it was reported, not where it stands", () => {
+    const { g, red, drawn } = seen(true);
+    expect(drawn.position).toEqual(g.contactFor("BLUE", red.id)!.lastKnownPosition);
+    expect(drawn.position).not.toEqual(red.position);
+  });
+
+  it("draws it where it stands when sightings are exact", () => {
+    const { red, drawn } = seen(false);
+    expect(drawn.position).toEqual(red.position);
   });
 });

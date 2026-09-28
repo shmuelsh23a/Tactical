@@ -1750,6 +1750,55 @@ on the stated reasoning, still awaiting the author's word.
       against a hasty defence and 8% against a prepared one (both were 8%);
       with a mortar section, a hasty defender is lost (100%). Prepared
       defences and `npm run validate` did not move (validation.md).
+51. ⚠️ **Neither side knows exactly where the other is** (author,
+    2026-09-28: "the blue and red won't know exactly where the other side
+    is and the pre-planned fires won't be accurate"). Two halves:
+    - **A sighting carries location error** (`GameOptions.locationError`,
+      [`data/locationError.ts`](src/engine/data/locationError.ts)). A contact
+      is where its observer judged the force to be: off along the sight line
+      by **20% of the range** and across it by **10 mils** (standard
+      deviations), never under 5 m. An observation post's range card halves
+      the range error, and a UAV is off by 15 m whatever the range. A force
+      that stays put and is seen again is placed better, the estimates
+      weighted by how good each is. One that moves is placed afresh. The
+      side's map draws every enemy at its report, even one in sight this
+      turn. Fire still resolves on the truth, so a mission called on a report
+      lands around where the force was judged to be. The error is drawn
+      from its own seeded stream, so it moves no other roll. It is on in
+      every scenario (the spec's `locationError`, default on), off in a
+      game that does not ask for it, and read as off in a recording made
+      before it.
+    - **The test players plan their fires on an estimate.** The harness's
+      attacker used to register its fires on the exact centre of each
+      defending position, and the smart attacker built its fire plan
+      around it. Now both use where the attacker's start line would judge
+      the position to be, by the same figures (`--planning-error`,
+      `PLANNING_ERROR`). The harness's defender registers its approach
+      points off the line the attacker really takes, by the same share of
+      the distance.
+    - **Why the figures:** troops' range estimates by eye err by 20% or
+      more (Armored Medical Research Laboratory, 1945), and a compass by
+      10–17 mils. Doctrine's target location error categories put an
+      observer with map and compass at CAT IV–V (31–305 m). The 5 m floor,
+      the post's halving and the UAV's 15 m are ours. The fusion of
+      repeated sightings is ours too, and optimistic: one observer's
+      errors are not independent from minute to minute. Sources in
+      [docs/validation.md](docs/validation.md), *Where the enemy is*.
+    - **What it moved** (calibrated company battles, 300 a cell,
+      [balance.md](docs/balance.md), *Fourteenth round*): the 3:1 attack
+      falls from **95% to 20%**, and the 2:1 from 7% to 0%. It is almost all
+      the fire plan: location error alone moves neither attack more than
+      2 points. An attacker firing on a plan off by 5% of the range already
+      wins only 66%. Adjusting fire does not bring it back, because an
+      adjusted mission walks its rounds onto the point it was given, and
+      the dug-in defender is not seen in time to give it a better one.
+    - **Open for the author:** with this, 3:1 no longer wins against a
+      prepared platoon under the plain drill, which breaks the design
+      principle. What should give the attacker the defender's location
+      before the assault? Reconnaissance, observation posts for the
+      attacker (decision 38 gave them only to the defender in the harness),
+      UAVs (backlog 4), or more fire. The 20% itself is also open: a
+      position that has been reconnoitred is known better.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

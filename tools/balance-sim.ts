@@ -18,6 +18,7 @@
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *   npm run balance -- --fires calibrated --defender-fires calibrated   # the fire decision 43 was calibrated on
  *   npm run balance -- --lethality document          # the document's blast tables (rules decision 41; default research)
+ *   npm run balance -- --planning-error --location-error   # fires planned on an estimate (0.2 of range; --planning-error 0.1 for less); sightings off by the eye's error (rules decision 51)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
  * on purpose: tools/ is outside the typecheck and the suite, so everything
@@ -124,6 +125,11 @@ const defenderFires: DefenderFires | undefined = (() => {
 // echelon may not call is struck from the fire plans, and said so here.
 const anyEchelon = args.includes("--any-echelon");
 const lethality = value("--lethality") as Lethality | undefined;
+// --planning-error [share]: 0.2 (an eye's range error) unless a share is given
+const planningError = args.includes("--planning-error")
+  ? /^\d*\.?\d+$/.test(value("--planning-error") ?? "") ? Number(value("--planning-error")) : 0.2
+  : 0;
+const locationError = args.includes("--location-error");
 if (lethality && !LETHALITIES.includes(lethality)) throw new Error(`--lethality: "${lethality}" is not one of ${LETHALITIES.join(", ")}`);
 if (!anyEchelon) {
   const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
@@ -159,12 +165,13 @@ if (args.includes("--sweep")) {
   }
 } else {
   const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
-  console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${trial}\n`);
+  const intel = [planningError > 0 && `fires planned on an estimate (${planningError} of range)`, locationError && "sightings with location error"].filter(Boolean).join(", ");
+  console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${intel ? ", " + intel : ""}${trial}\n`);
   console.log(MARKDOWN_HEADER);
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError })));
       }
     }
   }

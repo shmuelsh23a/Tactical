@@ -176,13 +176,16 @@ export function sideView(game: Game, side: Side): SideView {
     if (!truth || isGone(truth)) continue;
     const seenNow = contact.lastSeenTurn >= game.turn;
     if (!seenNow) staleIds.add(truth.id);
+    // With location error (rules decision 51) even a force in sight this turn
+    // is drawn where its observers judged it to be, not where it stands.
+    const placed = game.locationError ? { ...truth, position: { ...contact.lastKnownPosition } } : truth;
     // A copy of the *report*, not of the force: an old contact carries where it
     // was and how it looked when it was last seen, so a player cannot read a
     // force's current position — or its collapse — off a stale mark.
     enemies.push(
       outsideView(
         seenNow
-          ? truth
+          ? placed
           : {
               ...truth,
               position: { ...contact.lastKnownPosition },

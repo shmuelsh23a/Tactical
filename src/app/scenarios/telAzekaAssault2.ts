@@ -35,6 +35,7 @@ export function buildTelAzekaAssault2Scenario(seed = 1967): Scenario {
     trackIntel: true,
     enforceC2: true,
     morale: true,
+    locationError: true,
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {

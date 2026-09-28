@@ -1,4 +1,4 @@
-import type { Point } from "./geometry.js";
+import { distance, type Point } from "./geometry.js";
 import type { Side } from "./types.js";
 
 /**
@@ -42,14 +42,36 @@ export interface Contact {
 }
 
 /**
+ * How good a report is, when sightings carry location error (rules decision
+ * 51): the observer's estimate, its spread, and — the umpire's alone — where
+ * the force really stood when it was made.
+ */
+export interface LocationFix {
+  /** Where the force truly stood. Never shown: it only tells whether it has moved since. */
+  truth: Point;
+  /** The report's spread, in metres (one standard deviation a side). */
+  sigma: number;
+}
+
+/**
  * The contacts every side holds. Purely a record of observations — it never
  * rolls anything, so a game with the module switched off draws exactly the
  * same numbers from the rng as one with it on.
  */
 export class IntelLedger {
   private readonly bySide = new Map<Side, Map<string, Contact>>();
+  /** The spread behind each side's reports, by side and force (rules decision 51). */
+  private readonly fixes = new Map<Side, Map<string, LocationFix>>();
 
-  /** Note that `side` has just observed `unitId` at `position`. */
+  /**
+   * Note that `side` has just observed `unitId` at `position`.
+   *
+   * With a `fix`, `position` is an observer's estimate, not the truth (rules
+   * decision 51). A force that has not moved since the side's last estimate
+   * of it is watched, not found again: the two estimates are combined, each
+   * weighted by how good it is, so a force watched for longer is placed
+   * better. A force that has moved is placed afresh.
+   */
   record(
     side: Side,
     unitId: string,
@@ -57,21 +79,50 @@ export class IntelLedger {
     turn: number,
     source: ContactSource,
     neutralized = false,
+    fix?: LocationFix,
   ): Contact {
     let contacts = this.bySide.get(side);
     if (!contacts) {
       contacts = new Map();
       this.bySide.set(side, contacts);
     }
+    let fixes = this.fixes.get(side);
+    if (!fixes) {
+      fixes = new Map();
+      this.fixes.set(side, fixes);
+    }
+    let at = { ...position };
+    if (fix) {
+      const before = fixes.get(unitId);
+      const known = contacts.get(unitId);
+      let sigma = fix.sigma;
+      if (before && known && distance(before.truth, fix.truth) < 1e-6) {
+        const w0 = 1 / before.sigma ** 2;
+        const w1 = 1 / fix.sigma ** 2;
+        at = {
+          x: (known.lastKnownPosition.x * w0 + position.x * w1) / (w0 + w1),
+          y: (known.lastKnownPosition.y * w0 + position.y * w1) / (w0 + w1),
+        };
+        sigma = 1 / Math.sqrt(w0 + w1);
+      }
+      fixes.set(unitId, { truth: { ...fix.truth }, sigma });
+    } else {
+      fixes.delete(unitId);
+    }
     const contact: Contact = {
       unitId,
       lastSeenTurn: turn,
-      lastKnownPosition: { ...position },
+      lastKnownPosition: at,
       source,
       lastKnownNeutralized: neutralized,
     };
     contacts.set(unitId, contact);
     return contact;
+  }
+
+  /** How far `side`'s report of `unitId` may be off, in metres (one standard deviation), if it carries location error. */
+  spreadOf(side: Side, unitId: string): number | undefined {
+    return this.fixes.get(side)?.get(unitId)?.sigma;
   }
 
   /** Everything `side` has ever picked up, oldest report first. */
@@ -99,10 +150,11 @@ export class IntelLedger {
    */
   expire(currentTurn: number, afterTurns: number): Contact[] {
     const dropped: Contact[] = [];
-    for (const contacts of this.bySide.values()) {
+    for (const [side, contacts] of this.bySide) {
       for (const [unitId, contact] of contacts) {
         if (currentTurn - contact.lastSeenTurn >= afterTurns) {
           contacts.delete(unitId);
+          this.fixes.get(side)?.delete(unitId);
           dropped.push(contact);
         }
       }

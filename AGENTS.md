@@ -192,7 +192,14 @@ one it is in your reply, too.
   from `game.contactsFor(side)`, so an enemy shows up where it was last seen
   rather than where it is. When adding anything the player looks at, ask which
   of the two it should read; when adding anything that *resolves*, use the
-  truth (firing at a stale mark is meant to miss).
+  truth (firing at a stale mark is meant to miss). With
+  `GameOptions.locationError` (rules decision 51, on in every scenario) a
+  contact is an *estimate* even when it is fresh: `sideView` draws every
+  enemy at its report, never at `unit.position`. The same goes for a test
+  player's plan: the smart attacker plans fires on an estimate
+  (`PLANNING_ERROR`, default 0.2). The harness plans on the layout's truth
+  unless given `--planning-error`, only so its older tables reproduce, and a
+  new measurement should pass it.
 - **The debrief must not teach what a side never saw.** Anything added to the
   review goes through [`debriefView.ts`](src/app/debriefView.ts) — which action
   a side may see, and what it may be told the action produced (rules decision

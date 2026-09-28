@@ -49,6 +49,7 @@ export function buildTelAzekaScenario(seed = 1948): Scenario {
     trackIntel: true,
     enforceC2: true,
     morale: true,
+    locationError: true,
     attackers: ["BLUE"],
     terrain: buildTelAzekaTerrain(),
   });

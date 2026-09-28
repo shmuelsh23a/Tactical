@@ -1588,6 +1588,96 @@ Defender 4 mortar missions registered 200 m and 400 m out.
   fire for effect. The harness's own default stays `adjust`, so every earlier
   row reproduces.
 
+## Fourteenth round: nobody knows exactly where the enemy is, 2026-09-28
+
+The author's question: in an attack neither side knows exactly where the
+other is, so a pre-planned fire cannot be accurate. Was that accounted for?
+Only in the engine. The harness's attacker planned its fires on the **exact
+centre** of each defending position, taken from the layout. The smart
+attacker built its fire plan around the same exact centre. Rules decision 51
+adds the two halves, both off by default in the harness so every earlier row
+reproduces:
+
+- `--planning-error [share]`: the attacker's planned targets are where its
+  start line would judge each position to be. They are off along the sight
+  line by `share` of the range (0.2 unless given) and across it by 10 mils.
+  The defender's registered approach points are off the attacker's real
+  line by the same share of their distance.
+- `--location-error`: every sighting in the game carries the error
+  (`GameOptions.locationError`).
+
+Company, plain drill, full cover, morale on, 300 battles a cell, seeds from
+1000. Both sides have the calibrated mortar section (decision 43: 12
+missions, fire for effect).
+
+| Planning error | Location error | 3:1 win | 3:1 out by HE | 2:1 win | 2:1 out by HE |
+|---|---|---|---|---|---|
+| none | off | **95%** | 75% | 7% | 69% |
+| none | on | 93% | 76% | 5% | 69% |
+| 0.2 | off | 21% | 67% | 0% | 57% |
+| **0.2** | **on** | **20%** | 69% | **0%** | 57% |
+
+How big the planning error has to be (location error on):
+
+| Planning error (share of range) | Off by at ~700 m (1 SD) | 3:1 win | 2:1 win |
+|---|---|---|---|
+| 0 | 0 | 93% | 5% |
+| 0.05 | 35 m | 66% | 1% |
+| 0.1 | 70 m | 41% | 0% |
+| 0.15 | 105 m | 29% | 1% |
+| 0.2 | 140 m | 20% | 0% |
+| 0.3 | 210 m | 13% | 0% |
+
+The attacker's method, planning error 0.2 and location error on (none, off
+in brackets):
+
+| Attacker's fires | 3:1 win | 2:1 win |
+|---|---|---|
+| fire for effect on the plan (calibrated) | 20% (95%) | 0% (7%) |
+| adjust, not registered | 5% (25%) | 0% (0%) |
+| fire for effect, registered on the plan | 22% (95%) | 0% (17%) |
+| adjust, registered on the plan | 22% (95%) | 0% (17%) |
+
+The thirteenth round's best configuration (Western drill; attacker 4
+missions registered, fire for effect; defender 4 missions registered at 200
+and 400 m, observation posts, fire for effect), 200 a cell:
+
+| Planning error | Location error | 3:1 win | 2:1 win |
+|---|---|---|---|
+| none | off | 51% | 36% |
+| 0.2 | off | 15% | 5% |
+| 0.2 | on | 21% | 3% |
+
+### What it says
+
+- **The attack's success was the fire plan's perfect intelligence.** With
+  the plan off by an eye's error the calibrated 3:1 attack wins 20%, not
+  95%, and explosives fall from 75% of losses to 69%. The attacker's bombs
+  fall around where it thought the platoon was, and the platoon, dug in with
+  overhead cover and a lethal area of a few tens of metres, is not there.
+- **Even a small error costs most of it.** At 5% of the range, 35 m, the
+  3:1 attack already falls to 66%. A mortar bomb's lethal area on the
+  research figures is a disc of about 12 m radius, and a squad in overhead
+  cover is hurt only by a near-direct hit. That is why the answer is so
+  sensitive.
+- **Location error alone changes little** (2 points either way). By the
+  time a side sees an enemy, it is inside 300–400 m. At that range the
+  error is 60–80 m along the line, and repeated sightings of a force
+  holding still bring it down. The defender's calls on a moving attacker
+  were never precise anyway (first-round CEP 100 m).
+- **Adjusting fire cannot rescue a wrong plan.** An adjusted mission walks
+  its rounds onto the point it was given, not onto the enemy. The attacker
+  sees the dug-in defender too late to give it a better point. Adjusting
+  also spends minutes, which is why it does worse than firing for effect.
+- **So under realistic intelligence, 3:1 does not win against a prepared
+  platoon in the harness.** That breaks the design principle, so it is an
+  open question for the author (README, decision 51). What gives an attacker
+  the defender's location in reality is reconnaissance: observers,
+  patrols, a UAV, contact with the forward edge. The harness's attacker has
+  none of these. The defender's side has observation posts (decision 38),
+  and the attacker's side needs its equivalent before the fire plan can be
+  judged.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

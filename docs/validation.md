@@ -626,24 +626,67 @@ objective from 400 m; the defender played by the drill). Seeds 11–18 on
   earlier "3:1 wins by turn 3–4" and the first run of these seeds (1 of 8,
   2 of 4) were with that script.
 
+## Where the enemy is (rules decision 51)
+
+**What the sources say.** US fire support grades how well a target's
+position is known as **target location error** (TLE). The categories run
+CAT I (0–6 m), CAT II (7–15 m), CAT III (16–30 m), CAT IV (31–91 m) and
+CAT V (92–305 m) to CAT VI (worse). A ground observer who fixes a target
+by laser rangefinder, GPS and magnetic compass is limited by the compass,
+typically 10–17 mils. That is 50–85 m at 5 km, CAT IV–V. Without the
+rangefinder, the range is judged by eye. The Armored Medical Research
+Laboratory at Fort Knox found in 1945 that troops' range estimates err by
+**about 20% or more**, and that this is why tank gunners had to bracket
+with several rounds before hitting.
+
+**What the game does** (`data/locationError.ts`, with
+`GameOptions.locationError`):
+
+| Who sees | Along the sight line (1 SD) | Across it (1 SD) | At 400 m | At 1,000 m |
+|---|---|---|---|---|
+| A force, by eye | 20% of range | 10 mils | 80 m × 5 m | 200 m × 10 m |
+| An observation post (range card) | 10% of range (**ours**) | 10 mils | 40 m × 5 m | 100 m × 10 m |
+| A UAV | 15 m (**ours**) | 15 m | 15 m | 15 m |
+
+- The 20% is read as a standard deviation. The 1945 figure is a typical
+  error, so this is if anything generous to the observer.
+- Never under 5 m (**ours**): the observer's own place on the map.
+- A force that holds still and is seen again is placed better. The
+  estimates are combined, each weighted by the inverse of its variance
+  (**ours**). This is optimistic, because one observer's errors are
+  correlated from minute to minute. It is the lever if contacts turn out
+  too sharp after a few turns.
+- These fall in CAT IV–V at the ranges an infantry battle is fought, which
+  is where the doctrine puts an observer with map and compass.
+
+**What it moved** (balance.md, *Fourteenth round*): a calibrated company
+attack at 3:1 on a prepared platoon falls from 95% to 20% when the
+attacker's fire plan is made on an eye's estimate rather than on the
+truth. Location error in the fight itself moves it 2 points. The fire plan
+was the whole of it.
+
 ## Open
 
 For the author, in rough order of what they move:
 
-1. **Which scenario forces should start prepared.** Since decision 50 a
+1. **What gives an attacker the defender's location** (decision 51). On an
+   eye's estimate the 3:1 attack no longer wins; reconnaissance is what
+   would. Nothing in the game or the harness does it for the attacker yet.
+
+2. **Which scenario forces should start prepared.** Since decision 50 a
    force that has not prepared its position stays in the open for 30
    minutes; RED platoon B (company battle), RED-1 and RED-3 (Tel Azeka) and
    RED at Yokneam have none.
-2. **The fire a battle is given.** 75% holds with a mortar section on call all
+3. **The fire a battle is given.** 75% holds with a mortar section on call all
    battle (69–75% with full cover). Missions past about 8 a side go unfired
    (decision 48's sweep).
-3. **Ammunition** (backlog 12): nothing runs out by the bomb, whatever the
+4. **Ammunition** (backlog 12): nothing runs out by the bomb, whatever the
    rate — a grenadier fires his rate every turn. The mission allotment is
    the only limit.
-4. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
+5. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.
-5. **Not researched yet**: the charges (a 100–200 m reach at 50%
+6. **Not researched yet**: the charges (a 100–200 m reach at 50%
    activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review
    (agenda item 4) covers the last.
@@ -668,3 +711,11 @@ These were not peer-reviewed and were read through search results.
 - [Autoloader](https://en.wikipedia.org/wiki/Autoloader) (loader and autoloader rates)
 - [Principles of fire support — USMC TBS](https://www.trngcmd.marines.mil/Portals/207/Docs/TBS/B2C2437%20Principles%20of%20Fire%20Support.pdf)
   (effective casualty radii, through search results)
+- Target location error categories, and a magnetic compass's 10–17 mils —
+  read through search results summarising ATP 3-09.30 (*Observed Fires*),
+  FM 6-30 and [An Analysis of Target Location Error](https://trace.tennessee.edu/cgi/viewcontent.cgi?httpsredir=1&article=6123&context=utk_gradthes)
+  (University of Tennessee thesis); the source sites were blocked.
+- [Study of errors in range estimation with the unaided eye](https://collections.nlm.nih.gov/catalog/nlm:nlmuid-101677642-bk)
+  (Armored Medical Research Laboratory, Fort Knox, 1945), and its "20% or
+  more" as cited in *Tactical Display for Soldiers* (National Research
+  Council, 1997); read through search results.
