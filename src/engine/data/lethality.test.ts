@@ -12,6 +12,7 @@ import {
   explosiveFor,
   hitChanceAt,
   GRENADES_CARRIED,
+  RESEARCH_GRENADE_SELF_HIT,
   RATE_OF_FIRE,
   RESEARCH_ROUNDS_FOR_EFFECT,
   SMALL_ARMS_COMBAT_FACTOR,
@@ -300,6 +301,18 @@ describe("hand grenades a man, each an M67 (rules decision 46)", () => {
       three += assaultWith("research", 3, seed).grenadeHits;
     }
     expect(three).toBe(two);
+  });
+
+  it("wounds its own men 1.5% a grenade, where the document says 5% (rules decision 47)", () => {
+    expect(RESEARCH_GRENADE_SELF_HIT).toBe(0.015);
+    let research = 0;
+    let document = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      research += assaultWith("research", 1, seed).selfCasualties;
+      document += assaultWith("document", 9, seed).selfCasualties;
+    }
+    // Nine grenades either way; far fewer of the thrower's own men put out.
+    expect(research).toBeLessThan(document / 2);
   });
 
   it("throws none when told none", () => {

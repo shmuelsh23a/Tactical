@@ -392,7 +392,9 @@ close combat is a grenade's work.
   radius (casualty radius 15 m), 79 m², the same criterion as the 40 mm's.
   One grenade puts out **0.39** men of a squad in the open; its lethal area
   predicts 0.36.
-- The self-hit stays the document's 5% a grenade.
+- The self-hit is **1.5%** a grenade (decision 47, ours), where the document
+  gives 5%: at 5%, with four times the grenades, a squad's own grenades
+  wounded it four times as often.
 
 **Measured**, 60 harness battles a cell, research figures:
 
@@ -401,6 +403,10 @@ close combat is a grenade's work.
 | Platoon 3:1 attack | 27 → 37 | 4 → 16 |
 | Platoon 2:1 attack | 9 → 19 | 3 → 8 |
 | Company 2:1 attack | 55 → 97 | 7 → 18 |
+
+At 1.5% a grenade (decision 47) the own men hit fell to 5, 2 and 4 — about
+where they were before — and the grenades catching someone stayed at 36, 24
+and 100.
 
 Out by explosives (100 battles a cell): platoon meeting 22% → 31%, platoon
 3:1 attack 26% → 30%, platoon 2:1 attack 37% → 40%; the company battles moved

@@ -4,7 +4,7 @@ import type { Unit } from "../types.js";
 import { ASSAULT } from "../data/casualties.js";
 import { refreshUnitStatus, woundHit } from "../units.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
-import { GRENADES_CARRIED, type Lethality } from "../data/lethality.js";
+import { GRENADES_CARRIED, RESEARCH_GRENADE_SELF_HIT, type Lethality } from "../data/lethality.js";
 import { resolveBlast } from "./explosives.js";
 
 /**
@@ -118,7 +118,8 @@ export function resolveAssault(
       result.grenadeDamage += hit.damage;
       if (hit.casualty) result.defenderCasualties++;
     }
-    if (rng.chance(ASSAULT.grenadeSelfHitChance)) {
+    // Rules decision 47: fewer self-inflicted wounds a grenade on the research figures.
+    if (rng.chance(research ? RESEARCH_GRENADE_SELF_HIT : ASSAULT.grenadeSelfHitChance)) {
       if (woundHit(rng, attacker, turn, "explosive").casualty) result.selfCasualties++;
     }
   }

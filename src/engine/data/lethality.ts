@@ -87,6 +87,16 @@ export const LETHAL_AREA_M2: Readonly<Record<string, number>> = {
 export const GRENADES_CARRIED = 2;
 
 /**
+ * A grenade's chance to wound one of the thrower's own men, on the research
+ * figures (rules decision 47): **1.5%**, where the document gives 5%. With
+ * every man throwing his (decision 46) a squad throws about four times the
+ * grenades it did, and at 5% its own grenades wounded it four times as often;
+ * 1.5% brings that back to about what it was. Ours — no published rate was
+ * found.
+ */
+export const RESEARCH_GRENADE_SELF_HIT = 0.015;
+
+/**
  * The tank gun's chance to hit by range, with modern fire control. The
  * document's 90% ends at 300 m and nothing is fired beyond 1,500 m; a
  * stabilised gun with a laser rangefinder and a ballistic computer is rated

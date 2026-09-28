@@ -1692,13 +1692,21 @@ on the stated reasoning, still awaiting the author's word.
       the 40 mm's (`LETHAL_AREA_M2.grenade`). One grenade puts out 0.39 men
       of a squad in the open, as its lethal area predicts (0.36). A nine-man
       assault's grenades put out about 3.5 men, beside its fire's 3.8.
-    - The self-hit stays the document's 5% a grenade, so a squad's own
-      grenades now wound it about four times as often as before.
+    - The self-hit was the document's 5% a grenade, so a squad's own
+      grenades wounded it about four times as often — see decision 47.
     - **What it moved:** explosives' share in the platoon battles rose from
       22–37% to 30–40%; company battles moved a point; the calibrated
       company battles did not (83%, 78%; the 2:1 attack wins 56%).
     - On the document's figures a count is for the force and each grenade
       30% to hit one man, as before.
+47. ✅ **A grenade wounds its own side 1.5% of the time**, on the research
+    figures (author, 2026-09-28), where the document gives 5%
+    (`RESEARCH_GRENADE_SELF_HIT`, ours: no published rate was found). With
+    every man throwing (decision 46), 5% wounded a squad's own men four times
+    as often as before; at 1.5%, over 60 battles, 16 → 5 in the platoon 3:1
+    attack, 8 → 2 in the 2:1, 18 → 4 in the company 2:1 — about what it was
+    when a squad threw two. The grenades still catching someone did not
+    change (36, 24, 100).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
