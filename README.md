@@ -1885,6 +1885,39 @@ on the stated reasoning, still awaiting the author's word.
       force told to scout) carry binoculars that give it an observation
       post's 600 m against a still force, and should that come with a longer
       look (more turns halted) to sharpen the report?
+54. ⚠️ **Scouts carry binoculars, and a longer look sharpens a report**
+    (author, 2026-09-29: "yes, give scouts binoculars and let a longer look
+    sharpen it"). Two recorded options, on in every scenario:
+    - **`GameOptions.binoculars`**: a scouting force that has halted (not
+      moved, not fired this turn) watches as an observation post does: a
+      still enemy to 600 m, a moving one to 1,000 m, and half the eye's
+      range error (`lookingThroughBinoculars`).
+    - **`GameOptions.keepEyesOn`**: a force in position keeps its eyes on a
+      still enemy its side holds fresh (seen this turn or last), within its
+      reach and sight, without rolling to find it again. Each turn's look
+      is one more estimate, one per observer per turn (decision 51), so a
+      report watched for n turns is √n times sharper. A force that moves
+      is placed afresh.
+    - **The map rings each enemy mark** with the circle it is inside half
+      the time (1.18 standard deviations), in play and in the side's
+      debrief. The player sees the look sharpen.
+    - **The drill** (decision 52) now finds, fixes, then assaults. The
+      scouts bound and observe, look for the position at the objective (an
+      enemy within 250 m of it), halt while they hold it in sight, and the
+      main body waits `lookTurns` consecutive turns of that (`--look N`,
+      `LOOK`). A contact lost starts the count again. The guns can wait for
+      a sharp report (`aim=N` in `--fires`, `AIM`).
+    - **What it moved** (balance.md, *Seventeenth round*; company, fires
+      planned on an estimate, location error on, one scout, guns waiting
+      for its report): with binoculars and a 4-turn look the 3:1 attack
+      wins **86%** against a defender with fire discipline (was 1%) and
+      **95%** against one that opens up at 400 m (was 66%). That is what
+      perfect intelligence gave before decision 51. The 2:1 attack stays
+      lost (1%), and an 8-turn look lifts it to 21%. Binoculars without
+      the look do worse (21–26%): the scout finds the enemy at 600 m, the
+      company goes at once, and the guns fire on a rough report.
+    - The 600 m and 1,000 m are the observation post's (decision 38), the
+      halving its range card's (decision 51). All ⚠️ ours.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

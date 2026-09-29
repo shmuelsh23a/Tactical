@@ -1813,6 +1813,57 @@ Western 7% → 6%).
   enough, or look long enough, to fix the position. That is a question for
   the author (README, decision 53).
 
+## Seventeenth round: binoculars, and a longer look, 2026-09-29
+
+The author: "give scouts binoculars and let a longer look sharpen it."
+Rules decision 54: a halted scout watches as an observation post does
+(`--binoculars`), and a force in position keeps its eyes on a still enemy
+it has found, each turn's look sharpening the report (`--keep-eyes-on`).
+The drill finds, fixes, then assaults (`--look N`: the main body waits N
+consecutive turns of the scouts holding the enemy at the objective), and the
+guns can wait for a sharp report (`aim=N`).
+
+Company, morale on, 200 battles a cell. Fires planned on an estimate (0.2),
+location error on, still detection on, the defender's calibrated mortars,
+one scout bounding and halting one turn a bound, and the attacker's mortars
+firing for effect only on what the side has seen.
+
+| Scout | Look | Guns wait for | Western 3:1 | Western 2:1 | Plain 3:1 | Plain 2:1 |
+|---|---|---|---|---|---|---|
+| eyes | — | any report | 1% | 0% | 66% | 0% |
+| eyes | 4 turns | ≤40 m | 1% | 0% | 70% | 0% |
+| binoculars | — | any report | 21% | 1% | 26% | 0% |
+| **binoculars** | **4 turns** | any report | **86%** | 1% | **95%** | 1% |
+| binoculars | 4 turns | ≤40 m | 82% | 3% | 90% | 2% |
+| binoculars | 8 turns | ≤40 m | 85% | **21%** | 92% | **21%** |
+
+The Western drill's defender holds its fire to 200 m; the plain drill's
+opens up at 400 m.
+
+### What it says
+
+- **Find, fix, then assault.** With binoculars and a 4-turn look the 3:1
+  attack wins 86–95%, where it won 1–66%. That is what perfect intelligence
+  gave before decision 51 (95%), now earned by a scout.
+- **Binoculars alone make it worse** (21–26%): the scout finds the position
+  at 600 m, the company goes at once, and the guns fire on a report 60 m
+  off. The look is the half that pays.
+- **The look is what sharpens it.** In a traced battle (Western drill, seed
+  1002) the scout bounded and halted forward and found a squad at 550 m on
+  turn 8, 39 m off. Held in sight, the report narrowed to 28, 23, 20, 18 and
+  14 m. The guns landed 0–12 m from the squads, the defence broke on turn 18
+  with 13 men down, and the attacker lost nobody.
+- **Waiting for a 40 m report adds nothing** once there is a look: by the
+  time the company goes, the report is sharper than that anyway.
+- **A longer look buys 2:1** (21% at 8 turns) at the cost of time: battles
+  run 38–47 turns.
+- **Without binoculars the look buys nothing**: the scout sees nothing it
+  can hold at 300 m before the defender's mortars find it.
+- The scouts no longer stop for a command group glimpsed away from the
+  objective: in an earlier version the scout's binoculars picked up the
+  defender's moving command group from the start line, the scout stopped
+  there, and the company went in blind.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
