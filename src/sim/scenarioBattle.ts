@@ -471,7 +471,7 @@ function askAttackerFire(
       }),
       // Smoke once the company is moving: a screen on a mark blinds it while the squads close.
       ...(company.released !== undefined
-        ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs no mission)` }))
+        ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs one of your missions)` }))
         : []),
       { id: "hold", label: "hold fire this turn" },
     ],

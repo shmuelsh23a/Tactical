@@ -1970,6 +1970,15 @@ on the stated reasoning, still awaiting the author's word.
       it is rarely seen. The scripted commander firing command groups first
       wins the tel's 3:1 attack 25%, squads first 59%.
 
+56. ✅ **Smoke from the tubes costs a fire mission** (author, 2026-09-29:
+    "yes, smoke should cost a mission"; `GameOptions.smokeCostsMission`).
+    Before, mortar and artillery smoke was free and unlimited once a side
+    could call the weapon. Now a screen is drawn from the side's allotment
+    (decision 34) like a mission of HE, and is refused when none are left.
+    A grenade's smoke is the squad's own and stays free. On by default; a
+    recording made before it reads it as off and replays with free smoke.
+    The live UI says "no missions left" for smoke as it does for HE.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

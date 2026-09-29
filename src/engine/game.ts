@@ -436,6 +436,13 @@ export interface GameOptions {
    * Off by default.
    */
   commandSuccession?: boolean;
+  /**
+   * A smoke screen from the tubes costs a fire mission (rules decision 56,
+   * author 2026-09-29): mortar or artillery smoke is drawn from the side's
+   * allotment like a mission of HE. A grenade's smoke is the squad's own. On
+   * by default; a recording made before it reads it as off.
+   */
+  smokeCostsMission?: boolean;
 }
 
 /**
@@ -473,6 +480,10 @@ export class Game {
   readonly keepEyesOn: boolean;
   /** Whether losing a command group has effect (rules decision 55). */
   readonly commandSuccession: boolean;
+  /** Whether tube smoke costs a fire mission (rules decision 56). */
+  readonly smokeCostsMission: boolean;
+  /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
+  private readonly smokeMissions: { side: Side; weapon: string }[] = [];
   /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
   private readonly inCommand = new Map<Side, string | null>();
   /** The turn each side's successor is in command from (rules decision 55). */
@@ -606,6 +617,7 @@ export class Game {
     this.binoculars = opts.binoculars ?? false;
     this.keepEyesOn = opts.keepEyesOn ?? false;
     this.commandSuccession = opts.commandSuccession ?? false;
+    this.smokeCostsMission = opts.smokeCostsMission ?? true;
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
@@ -715,6 +727,7 @@ export class Game {
       ...(this.binoculars ? { binoculars: true } : {}),
       ...(this.keepEyesOn ? { keepEyesOn: true } : {}),
       ...(this.commandSuccession ? { commandSuccession: true } : {}),
+      ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -1039,7 +1052,9 @@ export class Game {
     if (!list) return undefined;
     const allotted = list.filter((a) => a.weapon === weapon).reduce((n, a) => n + a.missions, 0);
     const called = this.missions.filter((m) => m.side === side && m.weapon === weapon).length;
-    return allotted - called;
+    // A screen from the tubes is a mission too (rules decision 56).
+    const smoke = this.smokeMissions.filter((m) => m.side === side && m.weapon === weapon).length;
+    return allotted - called - smoke;
   }
 
   /**
@@ -2299,6 +2314,12 @@ export class Game {
       throw new PhaseError(`Smoke can only be deployed in targeting or combat phases`);
     }
     this.requireMayCall(side, source);
+    // From the tubes, it is drawn from the side's missions (rules decision 56).
+    const costs = this.smokeCostsMission && source !== "grenade" && this.fireMissionsLeft(side, source) !== undefined;
+    if (costs && this.fireMissionsLeft(side, source)! <= 0) {
+      throw new Error(`${side} has no ${source} missions left for smoke (rules decision 56)`);
+    }
+    if (costs) this.smokeMissions.push({ side, weapon: source });
     const delay = EXPLOSIVES[source]?.impactDelayTurns ?? 0;
     const durationTurns = SMOKE_DURATION_TURNS[source];
     const common = { source, radius, durationTurns, arrivesOnTurn: this.turn + delay };

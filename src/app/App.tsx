@@ -415,6 +415,11 @@ export function App({ scenario, onLeave }: AppProps) {
     }
     try {
       if (mission === "smoke") {
+        // Smoke from the tubes is a fire mission (rules decision 56).
+        if (smokeSource !== "grenade" && game.fireMissionsLeft(viewingSide, smokeSource) === 0) {
+          pushLog(`לא נותרו משימות ${tubeHe[smokeSource]}`, "info", onlyFor(viewingSide));
+          return;
+        }
         const order = game.deploySmoke(smokeSource, viewingSide, { x, y });
         const what = `מסך עשן (${smokeSourceHe[smokeSource]}, רדיוס ${order.radius}מ')`;
         pushLog(

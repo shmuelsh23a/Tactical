@@ -197,6 +197,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.binoculars !== undefined && typeof r.binoculars !== "boolean") throw malformed("binoculars");
   if (r.keepEyesOn !== undefined && typeof r.keepEyesOn !== "boolean") throw malformed("keepEyesOn");
   if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
+  if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -340,6 +341,11 @@ export interface GameRecording {
   keepEyesOn?: boolean;
   /** Whether losing a command group had effect (rules decision 55). Read as **off** when absent. */
   commandSuccession?: boolean;
+  /**
+   * Whether tube smoke cost a fire mission (rules decision 56). Read as
+   * **off** when absent: a battle recorded before it laid smoke for free.
+   */
+  smokeCostsMission?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -501,6 +507,7 @@ export function replayWithOutcomes(
     ...(recording.binoculars ? { binoculars: true } : {}),
     ...(recording.keepEyesOn ? { keepEyesOn: true } : {}),
     ...(recording.commandSuccession ? { commandSuccession: true } : {}),
+    smokeCostsMission: recording.smokeCostsMission ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 
