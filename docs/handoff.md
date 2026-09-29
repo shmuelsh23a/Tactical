@@ -149,6 +149,14 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Then (author: "can you spin up an agent that takes Jev's role", then
+   "destroying the command group should have effect; do 1-3"):**
+   `npm run jev-sim` puts the company commander's decisions as typed
+   questions; two Claude agents played them (3:1: 3 of 4; 2:1: 0 of 4) and
+   found a scout bug, fixed. Rules decision 55 (command succession), more
+   information and control in the questions. The scripted commander now
+   wins the tel's 3:1 59% firing on squads first (balance.md, *Nineteenth
+   round*). A second agent run on the fixed questions is recorded there.
 0. **Then (author: "do both"):** traced why the tel stays low, and moved the
    company choices out of `SquadDrill` into `app/company.ts`
    (`CompanyOrders`, `ScriptedCompany`). No spot in reach sees all three

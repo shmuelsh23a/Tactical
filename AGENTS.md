@@ -34,6 +34,7 @@ npm run lint         # the architectural rules alone
 npm run balance      # headless battles -> the table on docs/balance.md (not part of check)
 npm run validate     # the game's numbers against the sources -> docs/validation.md (not part of check)
 npm run scenario-sim # the generated scenarios on their real ground, headless: a scripted company commander (not part of check)
+npm run jev-sim -- --seed 11 --answers a.json  # play the company commander by typed questions, one at a time (an agent standing in for Jev)
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
 ```
 

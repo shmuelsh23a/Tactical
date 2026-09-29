@@ -1942,6 +1942,34 @@ on the stated reasoning, still awaiting the author's word.
       (backlog 15), and a dead-ground finder for it is the next thing to
       build.
 
+55. ⚠️ **Losing a command group has effect** (author, 2026-09-29:
+    "destroying the command group should have effect";
+    `GameOptions.commandSuccession`, `SUCCESSION_TURNS` in
+    [`data/c2.ts`](src/engine/data/c2.ts)). Before, a command group out of
+    action still passed orders (the order interval was measured from it
+    wherever it lay) and the side still called its guns; only morale felt
+    it.
+    - When a command group goes out of action (its men down, routing or
+      surrendered), the forces it commanded (lower echelons within its
+      command reach, the morale rules' 300 m for a platoon, 500 m for a
+      company) take **no new orders for 2 turns** while someone takes
+      over. Their standing orders go on.
+    - When it is the side's senior command group, command passes to the
+      next in line after the same 2 turns, and meanwhile **the side calls
+      no fire**. With none left, it gives no new orders and calls no fire
+      at all.
+    - Doctrine prescribes a succession of command at every level; no time
+      for it was found. The 2 turns are ours.
+    - On in every scenario (the spec's `commandSuccession`),
+      `--command-succession` in the harness, recorded, and read as off in
+      an older recording.
+    - **What it moved**: little for an attacker firing on a dug-in
+      defender (balance.md, *Nineteenth round*). A defender holds its
+      ground on standing orders and hardly needs new ones, and its senior
+      command post, which calls its mortars, sits behind the summit where
+      it is rarely seen. The scripted commander firing command groups first
+      wins the tel's 3:1 attack 25%, squads first 59%.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

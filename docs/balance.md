@@ -2016,6 +2016,63 @@ the scouts have found several. The squads (what holds the position) or the
 command group (what directs it)? In the game that is the company
 commander's call, so Jev's.
 
+## Nineteenth round: an agent as Jev, and what it found, 2026-09-29
+
+**An agent in Jev's place.** `npm run jev-sim` puts the attacking company
+commander's decisions to whoever answers them as typed questions
+(`src/sim/companyQuestions.ts`): how many scouts and from which observation
+point, where the company waits, send it in now, which way, whether the
+scouts give a base of fire, which mark the mortars fire on (or smoke), and
+what a scout in trouble does. A battle is its seed and the answers so far,
+replayed each run to the next question, so an agent never touches the
+game's state, and the picture it is given is drawn only from its side's
+view. Two Claude agents played seeds 11–14 of each assault.
+
+| Seeds 11–14 | Agent | Scripted, best then | Scripted, no recon |
+|---|---|---|---|
+| 3:1 | 3 wins, 1 loss | 2 wins, 2 losses | 1 win, 1 draw, 2 losses |
+| 2:1 | 1 draw, 3 losses | 4 losses | 1 draw, 3 losses |
+
+Both agents found on their own that three or four missions on one squad
+before the company moved took it out, where missions spread about did
+little, and that firing on the command group did almost nothing.
+
+**What they found wrong, and what changed:**
+- **A bug: scouts froze short of their points.** The commander told every
+  scout to lie up as soon as the side had any enemy near the objective in
+  sight; the first glimpse of a command group froze them wherever they
+  were, in five of the eight battles. Now a scout on its way goes on, and
+  lies up at its point; at its point it does not give up while the enemy
+  is in sight.
+- **Losing a command group did nothing to orders or fire.** Rules decision
+  55.
+- **The questions lacked what a commander has** (item 2): when the attack
+  is called off, a damage report after a mission (in words, as the side
+  saw it), firing on last-seen marks, what each observation point sees,
+  and the danger-close lift. Added.
+- **No control after "go"** (item 3): now the axis (straight, or by a
+  scout's observation point), a base of fire from the scouts, mortar smoke
+  once the company is moving, and a scout under fire or slow can be told to
+  go on, lie up or pull back. Smoke costs no mission in the engine: nothing
+  rations it.
+
+**The scripted commander again**, with the scout fix and decision 55 in,
+200 battles a row on the tel (two scouts at two points, a 4-turn look, the
+company in dead ground, the guns waiting for a mark within 40 m):
+
+| Guns take first | Drill | 3:1 | 2:1 |
+|---|---|---|---|
+| nearest the objective | plain | 46% | 32% |
+| **squads** | plain | **59%** | **39%** |
+| command groups | plain | 25% | 23% |
+| squads | Western | 39% | 35% |
+| command groups | Western | 25% | 25% |
+
+(Before the scout fix: 28–37% and 23–25%.) Squads first is the best rule
+the scripted commander has. Command groups first is the worst even with
+decision 55: a defender holds on standing orders, and the one that calls
+its mortars is behind the summit.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
