@@ -102,3 +102,12 @@ describe("the rendered symbol cache", () => {
     expect(again.dataUrl).toBe(first.dataUrl);
   });
 });
+
+describe("a stale mark (rules decision 57)", () => {
+  it("is drawn as APP-6 draws an anticipated unit: a broken frame", () => {
+    const u = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9);
+    expect(buildSidc(u)[3]).toBe("P");
+    expect(buildSidc(u, true)[3]).toBe("A");
+    expect(renderUnitSymbol(u, 30, true).dataUrl).not.toBe(renderUnitSymbol(u, 30).dataUrl);
+  });
+});

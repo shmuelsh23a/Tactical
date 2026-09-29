@@ -443,6 +443,13 @@ export interface GameOptions {
    * by default; a recording made before it reads it as off.
    */
   smokeCostsMission?: boolean;
+  /**
+   * An enemy mark stays on the side's map where it was last seen, however long
+   * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
+   * Before, a report nobody refreshed for three turns was dropped (decision
+   * 12). On by default; a recording made before it reads it as off.
+   */
+  keepStaleMarks?: boolean;
 }
 
 /**
@@ -482,6 +489,8 @@ export class Game {
   readonly commandSuccession: boolean;
   /** Whether tube smoke costs a fire mission (rules decision 56). */
   readonly smokeCostsMission: boolean;
+  /** Whether a mark stays where it was last seen (rules decision 57). */
+  readonly keepStaleMarks: boolean;
   /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
   private readonly smokeMissions: { side: Side; weapon: string }[] = [];
   /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
@@ -618,6 +627,7 @@ export class Game {
     this.keepEyesOn = opts.keepEyesOn ?? false;
     this.commandSuccession = opts.commandSuccession ?? false;
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
+    this.keepStaleMarks = opts.keepStaleMarks ?? true;
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
@@ -728,6 +738,7 @@ export class Game {
       ...(this.keepEyesOn ? { keepEyesOn: true } : {}),
       ...(this.commandSuccession ? { commandSuccession: true } : {}),
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
+      ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -2707,8 +2718,9 @@ export class Game {
   // ---- upkeep ----
 
   private endOfTurnUpkeep(): { chargeWork: ChargeWorkReport[]; morale: MoraleReport[] } {
-    // A report nobody has refreshed for three turns is no longer a contact.
-    this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
+    // A report nobody has refreshed for three turns is no longer a contact —
+    // unless marks stay where last seen (rules decision 57).
+    if (!this.keepStaleMarks) this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
     applyBleeding(this.rng, this.units, this.turn);
     this.smoke = decaySmoke(this.smoke);
     // Before the per-turn flags are cleared: the work is judged on what the

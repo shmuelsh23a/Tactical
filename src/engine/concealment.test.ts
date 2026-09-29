@@ -214,8 +214,8 @@ describe("cover as the shot sees it", () => {
 });
 
 describe("contacts that go cold", () => {
-  it("drops a report nobody has refreshed for three turns", () => {
-    const g = new Game({ seed: 6, trackIntel: true, enforceC2: false });
+  it("drops a report nobody has refreshed for three turns, under decision 12's rule", () => {
+    const g = new Game({ seed: 6, trackIntel: true, enforceC2: false, keepStaleMarks: false });
     const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 250 }, 8));
     g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
     g.beginTurn();
@@ -569,5 +569,35 @@ describe("digging in takes minutes on the research figures (rules decision 50)",
     };
     expect(held("research")).toBe("none");
     expect(held("document")).toBe("full");
+  });
+});
+
+describe("a mark kept where last seen (rules decision 57)", () => {
+  it("stays on the map, stale, however long nobody refreshes it", () => {
+    const g = new Game({ seed: 6, trackIntel: true, enforceC2: false });
+    const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 250 }, 8));
+    g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.moveUnit(blue.id, { x: 0, y: 210 }, "normal");
+    g.advanceToPhase("combat");
+    expect(g.knows("RED", blue.id)).toBe(true);
+    const seenOn = g.contactFor("RED", blue.id)!.lastSeenTurn;
+    blue.position = { x: 900, y: 900 };
+    for (let t = 0; t < OBSERVATION.contactExpiryTurns + 5; t++) {
+      g.advanceToPhase("initiative");
+      g.advanceToPhase("combat");
+    }
+    expect(g.knows("RED", blue.id)).toBe(true);
+    expect(g.contactFor("RED", blue.id)!.lastSeenTurn).toBe(seenOn);
+  });
+
+  it("is read as off in a recording made before it", () => {
+    const g = new Game({ seed: 6, trackIntel: true, enforceC2: false });
+    g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
+    const rec = g.toRecording();
+    expect(rec.keepStaleMarks).toBe(true);
+    delete (rec as { keepStaleMarks?: boolean }).keepStaleMarks;
+    expect(replayGame(rec).keepStaleMarks).toBe(false);
   });
 });

@@ -198,6 +198,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.keepEyesOn !== undefined && typeof r.keepEyesOn !== "boolean") throw malformed("keepEyesOn");
   if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
   if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
+  if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -346,6 +347,8 @@ export interface GameRecording {
    * **off** when absent: a battle recorded before it laid smoke for free.
    */
   smokeCostsMission?: boolean;
+  /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
+  keepStaleMarks?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -508,6 +511,7 @@ export function replayWithOutcomes(
     ...(recording.keepEyesOn ? { keepEyesOn: true } : {}),
     ...(recording.commandSuccession ? { commandSuccession: true } : {}),
     smokeCostsMission: recording.smokeCostsMission ?? false,
+    keepStaleMarks: recording.keepStaleMarks ?? false,
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

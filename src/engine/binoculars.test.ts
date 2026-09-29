@@ -104,8 +104,8 @@ describe("a longer look", () => {
   });
 
   it("without it, a still enemy is found again only by luck, and lost after three turns without", () => {
-    const { g } = watch({ binoculars: true, keepEyesOn: false }, 500, 30);
-    const kept = watch({ binoculars: true, keepEyesOn: true }, 500, 30).g;
+    const { g } = watch({ binoculars: true, keepEyesOn: false, keepStaleMarks: false }, 500, 30);
+    const kept = watch({ binoculars: true, keepEyesOn: true, keepStaleMarks: false }, 500, 30).g;
     expect(kept.knows("BLUE", "R")).toBe(true);
     expect(kept.reportSpread("BLUE", "R")!).toBeLessThan(g.reportSpread("BLUE", "R") ?? Infinity);
   });

@@ -402,7 +402,8 @@ function Token({
   onSelectUnit,
   onFireAt,
 }: TokenProps) {
-  const sym = renderUnitSymbol(unit, 30);
+  // A stale mark is drawn with a broken frame: the enemy may no longer be there (rules decision 57).
+  const sym = renderUnitSymbol(unit, 30, stale);
   const friendly = unit.side === viewingSide;
 
   function handleClick(e: React.MouseEvent) {

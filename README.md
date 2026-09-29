@@ -1978,6 +1978,17 @@ on the stated reasoning, still awaiting the author's word.
     A grenade's smoke is the squad's own and stays free. On by default; a
     recording made before it reads it as off and replays with free smoke.
     The live UI says "no missions left" for smoke as it does for HE.
+57. ✅ **A mark stays where the enemy was last seen, drawn as stale**
+    (author, 2026-09-29: "keep marks on last seen, mark them with broken
+    lines so the player knows they are stale"; `GameOptions.keepStaleMarks`).
+    Before, a contact nobody had seen for `contactExpiryTurns` turns was
+    dropped from the side's picture, so a force that went to ground simply
+    vanished off the map. Now the mark stays at its last-seen position until
+    the side sees it again or learns it is gone, and a mark not in sight this
+    turn or last is drawn with a broken frame (APP-6 status "anticipated",
+    the dashed outline) so the player reads it as where the enemy *was*.
+    On by default; a recording made before it reads it as off and replays
+    with marks that expire.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
