@@ -137,7 +137,7 @@ const watchTurns = Number(process.env.WATCH ?? 0);
 let scoutWatched = 0;
 // LOOK=n: find, fix, then assault — the company waits n turns after the scout's first contact.
 const lookTurns = Number(process.env.LOOK ?? 0);
-let foundOn = null;
+let lookedTurns = 0;
 const known = {}; // last known own positions by name
 const missed = {}; // squads that could not be ordered last time
 let turnNo = 0;
@@ -207,15 +207,19 @@ async function movement(side) {
   const foes = await enemies();
   if (scout) {
     const s = pos[scout];
-    if (foes.length && foundOn == null) foundOn = turnNo;
-    const looked = foundOn != null && turnNo - foundOn >= lookTurns;
+    // What the scout was sent to find is the position at the objective, not any enemy anywhere,
+    // and held in sight — a fresh mark, not a stale one. Lose it, and the count starts again.
+    const fresh = await p.evaluate(() => [...document.querySelectorAll("g.token-enemy:not(.token-stale):not(.token-neutralised) image")].length);
+    const holding = fresh > 0 && foes.some((f) => dist(f, objective) <= 250);
+    lookedTurns = holding ? lookedTurns + 1 : 0;
+    const looked = lookedTurns > lookTurns;
     if (!released && (looked || !s || dist(s.at, objective) <= 50)) { released = true; stats.released = turnNo; }
     if (s) {
       await select(scout);
       if (!stats.scouting) { await clickBtn(/^צא לסיור$/); stats.scouting = true; }
       await clickBtn(/^אחזקת אש$/);
       // Walk on until something is found; then lie up and watch.
-      const halt = released || foundOn != null || scoutWatched < watchTurns;
+      const halt = released || lookedTurns > 0 || scoutWatched < watchTurns;
       scoutWatched = halt ? scoutWatched + 1 : 0;
       if (halt) await clickBtn(/^החזק מקום ואל תירה$/);
       else await clickWorld(toward(s.at, objective, 50));

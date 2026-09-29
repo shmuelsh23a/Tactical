@@ -185,13 +185,53 @@ describe("the drill's reconnaissance", () => {
     expect(ys).toEqual([40, 40, 90, 90, 90, 140]);
   });
 
+  it("is not stopped by an enemy away from the objective: it was sent to find the position there", () => {
+    const { g, lead, rest } = company();
+    const state = new DrillState();
+    g.advanceToPhase("movement");
+    drillMovement(g, attack, drill, state);
+    // A command group off to the flank, 500 m from the objective, fires on the scout.
+    const hq = g.addUnit(makeInfantry("RHQ", "RED", "squad", { x: 300, y: 150 }, 3));
+    g.advanceToPhase("combat");
+    g.fire(hq.id, lead.id, { weapon: "smallArms" });
+    expect(g.knows("BLUE", hq.id)).toBe(true);
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    const at = { ...lead.position };
+    drillMovement(g, attack, drill, state);
+    expect(state.reconDone.has("BLUE")).toBe(false);
+    expect(lead.position.y).toBeGreaterThan(at.y);
+    expect(rest.position).toEqual({ x: 80, y: 0 });
+  });
+
+  it("with a look, holds the attack while the scout keeps the enemy in sight, then lets it go", () => {
+    const { g, lead, rest } = company();
+    const state = new DrillState();
+    const looking = { ...PLAIN_SCRIPT, recon: { forces: 1, lookTurns: 2 } };
+    g.advanceToPhase("movement");
+    drillMovement(g, attack, looking, state);
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 450 }, 9));
+    const released: boolean[] = [];
+    for (let t = 0; t < 4; t++) {
+      g.advanceToPhase("combat");
+      g.fire(red.id, lead.id, { weapon: "smallArms" }); // keeps it in the scout's sight
+      g.advanceToPhase("initiative");
+      g.advanceToPhase("movement");
+      drillMovement(g, attack, looking, state);
+      released.push(state.reconDone.has("BLUE"));
+    }
+    // Held one turn, two, then past the two-turn look: it goes.
+    expect(released).toEqual([false, false, true, true]);
+    expect(rest.position).not.toEqual({ x: 80, y: 0 });
+  });
+
   it("lets the attack go once the side has found the enemy, and the scout lies up and watches", () => {
     const { g, lead, rest } = company();
     const state = new DrillState();
     g.advanceToPhase("movement");
     drillMovement(g, attack, drill, state);
     // A contact reported: the enemy fired on the scout.
-    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 300 }, 9));
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 450 }, 9)); // at the objective (600): what the scout was sent to find
     g.advanceToPhase("combat");
     g.fire(red.id, lead.id, { weapon: "smallArms" });
     expect(g.knows("BLUE", red.id)).toBe(true);
