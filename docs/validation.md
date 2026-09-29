@@ -631,12 +631,24 @@ objective from 400 m; the defender played by the drill). Seeds 11–18 on
 
 | Scenario | Plan on the truth | Plan on an estimate (0.2 of range) | Estimate, with a scout first (`RECON=1`) |
 |---|---|---|---|
-| `telAzekaAssault` (3:1) | 8 wins | **2 wins**, 6 losses | (being measured) |
-| `telAzekaAssault2` (2:1) | 6 wins, 2 draws | **2 wins**, 6 losses | (being measured) |
+| `telAzekaAssault` (3:1) | 8 wins | **2 wins**, 6 losses | 1 win, 1 draw, 6 losses |
+| `telAzekaAssault2` (2:1) | 6 wins, 2 draws | **2 wins**, 6 losses | 1 win, 7 losses |
 
   The estimates were off by 6–162 m (the same draw for both scenarios on a
   seed). The attacks won on the estimate were the seeds where it was off by
   6, 19 and 49 m.
+- **Reconnaissance did not pay in the browser** (decision 52). The scout,
+  the squad nearest the defence (BLUE-2-1), found it on turn 7 or 8 in
+  every run, and lost 6–8 of its 8 men doing it. The mortars then fired on
+  its reports, 9–10 calls as before. The defence lost no more than it did to
+  fire on the estimate (5–11 men down), and the scout's losses counted
+  toward the attacker's 30% breakpoint, which it reached a squad sooner. In
+  the harness the same drill takes the 3:1 attack from 20% to 59%
+  (balance.md, *Fifteenth round*). What differs is not yet known. The
+  likeliest cause is that on the tel the defender's positions are dug in
+  with overhead cover (decision 48), so a report 60 m off is still not
+  close enough for a mortar to hurt them, while the harness's flat ground
+  rewards it more. Worth a trace before any ruling.
 
 ## Where the enemy is (rules decision 51)
 

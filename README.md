@@ -1829,6 +1829,12 @@ on the stated reasoning, still awaiting the author's word.
       more men out in front is more men under the defender's fire, and they
       count toward the attacker's breakpoint. Waiting while firing on the
       estimate anyway gives 37%. The 2:1 attack stays lost (0–6%).
+    - **In the browser it did not pay** (validation.md): the smart attacker
+      with `RECON=1` won the 3:1 scenario 1 of 8 (2 of 8 without), and the
+      2:1 1 of 8 (2 of 8). Its scout found the defence every time and lost
+      6–8 of its 8 men doing it, but the mortars firing on its reports hurt
+      the dug-in defence no more than fire on the estimate had. Why the
+      harness and the browser differ is not yet traced.
     - **Against a defender with fire discipline it does not work** (the
       Western drill, which holds fire to 200 m): 7% without recon, 1% with.
       The scout walks to 250 m and never sees the dug-in position, because

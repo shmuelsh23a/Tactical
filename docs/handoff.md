@@ -142,6 +142,10 @@ from 8 of 8 to 2 of 8. Reconnaissance (decision 52: `--recon 1` with
 `--fires calibrated-wait`, `RECON=1`) brings the harness's 3:1 back to 59%
 when the defender opens fire at 400 m — and does nothing against a defender
 with fire discipline, because a still force is found only inside 20 m.
+In the browser the smart attacker's scout did not pay (1 of 8 at 3:1, 2 of
+8 without it): the reports did not make the mortars hurt the dug-in defence
+more, and the scout's losses counted toward the breakpoint. Why the harness
+and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
