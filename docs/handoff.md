@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-29, after rules decisions 51–52 (branch `claude/attack-accuracy-unknown-positions-ln9i7x`): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-29, after rules decisions 51–53 (branch `claude/attack-accuracy-unknown-positions-ln9i7x`): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -149,6 +149,13 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Waiting on the author (decision 53, 2026-09-29):** a force in
+   position now finds a still enemy out to 300 m (600 m from an OP), and the
+   scouts can bound and observe, but it moves nothing: the defender sees
+   the halted scout as easily and shells it. An experiment giving a halted
+   scout an OP's 600 m (binoculars) takes the Western-drill 3:1 attack from
+   1% to 42%. Should scouts carry binoculars (backlog 4), and should a
+   longer look sharpen the report? balance.md, *Sixteenth round*.
 0. **Waiting on the author (decisions 51–52):** what should let an attacker
    find a still, dug-in defender before the assault — a longer detection
    band for a force that stops and watches, binoculars (backlog 4), UAVs,

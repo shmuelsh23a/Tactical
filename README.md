@@ -1848,6 +1848,43 @@ on the stated reasoning, still awaiting the author's word.
       force that stops and watches, or has binoculars, find a still force
       further out than 20 m? That is the rule that decides whether ground
       reconnaissance can be taught.
+53. ⚠️ **A force in position finds a still enemy beyond 20 m** (author,
+    2026-09-29: "let observers find a still enemy further than 20 m";
+    `GameOptions.stillDetection`, `STILL_DETECTION` in
+    [`data/concealment.ts`](src/engine/data/concealment.ts)). The
+    document's 20 m band is in its **movement** table: what a force turns up
+    as it goes. A force that has not moved this turn now finds a still enemy
+    out to **300 m** (the table's visible band), **600 m** from an
+    observation post. Its chance is the one it has inside 20 m (cover,
+    camouflage, scouting and sector as before), falling off in a straight
+    line to nothing at the edge. A force on the move keeps the 20 m.
+    - **Why these figures:** the US Army's camouflage trials (Natick, 2009,
+      913 observers) put the range at which half the observers pick out a
+      camouflaged soldier at a few hundred metres. The 300 m, the 600 m and
+      the straight line are ours.
+    - It rolls for more pairs of forces, so it is a recorded option: on in
+      every scenario (the spec's `stillDetection`, default on),
+      `--still-detection` in the harness, and read as off in a recording
+      made before it.
+    - The drill's scouts can now **bound and observe**: halt `watchTurns`
+      turns after each 50 m bound (`--watch N`, `WATCH` in the smart
+      attacker).
+    - **What it moved: almost nothing** (balance.md, *Sixteenth round*).
+      The rule is symmetric, and the defender has more eyes and the mortars.
+      A scout halted 300 m out is seen by five defending forces as easily as
+      it sees them, and is shelled before it finds anything. Against the
+      Western drill the 3:1 attack stays at 1%.
+    - **What would move it: optics.** As an experiment only (not in the
+      code), a halted scout that sees as far as an observation post (600 m)
+      takes that 3:1 attack from **1% to 42%**. Against the plain drill,
+      which gives itself away at 400 m anyway, the same change lowers it
+      (64% → 35%): the scout finds the position sooner but from twice as far,
+      so its report is twice as far off. So the lesson "recon observes
+      before it is observed" needs the scout to out-see the defender:
+      binoculars (backlog 4). **Open for the author**: should a scout (or any
+      force told to scout) carry binoculars that give it an observation
+      post's 600 m against a still force, and should that come with a longer
+      look (more turns halted) to sharpen the report?
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -1764,6 +1764,55 @@ attacker mostly loses, and the attacker's own where it mostly wins.
   hundreds of metres, cannot happen under the 20 m band. That is a question
   for the author (README, decision 52).
 
+## Sixteenth round: watching finds a still enemy, 2026-09-29
+
+The author: "let observers find a still enemy further than 20 m." Rules
+decision 53 (`--still-detection`): a force in position finds a still enemy
+out to 300 m (600 m from an observation post), at its chance inside 20 m
+falling off in a straight line to the edge. The scouts can bound and
+observe (`--watch N`: halt N turns after each 50 m bound).
+
+Company, morale on, fires planned on an estimate (0.2), location error on,
+the defender's calibrated mortars, the attacker's fires waiting for contact
+(`--fires calibrated-wait`), one scout (`--recon 1`). 300 battles a cell
+(200 for the experiment).
+
+| Scout | Still detection | Plain 3:1 | Plain 2:1 | Western 3:1 | Western 2:1 |
+|---|---|---|---|---|---|
+| walks on | off | 59% | 0% | 1% | 0% |
+| walks on | on | 60% | 0% | 1% | 0% |
+| halts 1 turn a bound | off | 66% | 0% | 1% | 0% |
+| halts 1 turn a bound | on | 64% | 0% | 1% | — |
+| halts 2 turns a bound | off | 60% | 0% | — | — |
+| halts 2 turns a bound | on | 57% | 0% | — | — |
+| halts 4 turns a bound | either | draw (60 turns) | draw | — | — |
+| *experiment: halted scout sees 600 m* | on, halts 1 | *35%* | *1%* | *42%* | *5%* |
+| *experiment: halted scout sees 600 m* | on, halts 2 | *32%* | *0%* | *38%* | *1%* |
+
+Without the scout, still detection moves nothing either (plain 20% → 20%,
+Western 7% → 6%).
+
+### What it says
+
+- **The rule is symmetric, and the defender wins the exchange.** A traced
+  battle (Western drill, halting 2 turns): the scout halted 400 m, 350 m,
+  then 300 m out, found nothing (still detection reaches 300 m, and its
+  chance is nil at the edge), and at 300 m was shelled by the defender's
+  mortars. Five defending forces had been watching it at the same 300 m.
+  (The halts come every 6 turns rather than every 3 because out ahead the
+  scout is outside its command group's every-turn order band.)
+- **Watching longer only costs time.** Halting 4 turns a bound, the attack
+  never arrives within the harness's 60 turns.
+- **Optics would make the lesson.** The experiment, a halted scout that
+  sees a still force as far as an observation post (600 m), is not in the
+  code. Against fire discipline it takes the 3:1 attack from 1% to 42%.
+  Against the plain drill it lowers it, 64% to 35%: the scout finds the
+  position sooner but from twice as far, and a report from 600 m is off
+  by twice as much (120 m along the line, rules decision 51). So what the
+  scout needs is to see further than it is seen, and then to get close
+  enough, or look long enough, to fix the position. That is a question for
+  the author (README, decision 53).
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
