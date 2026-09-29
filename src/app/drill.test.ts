@@ -10,6 +10,7 @@ import {
   fireGrenadiers,
   type DrillTask,
 } from "./drill.js";
+import type { CompanyOrders } from "./company.js";
 
 /**
  * The squad drill (backlog 15 and 20): data a simulated subordinate carries
@@ -148,36 +149,50 @@ describe("a squad's grenadiers (rules decision 45)", () => {
  * Reconnaissance (rules decision 52): the squad nearest the objective goes
  * ahead scouting on hold-fire; the rest wait until it has found something.
  */
-describe("the drill's reconnaissance", () => {
-  function company() {
+/**
+ * How a squad carries out its company's reconnaissance orders (rules
+ * decisions 52–54). Which squads scout and when the rest go are the
+ * company's (`company.test.ts`); how a scout bounds, looks, holds its fire
+ * and lies up, and how the rest wait, are the drill's.
+ */
+describe("the drill carrying out its company's orders", () => {
+  function field() {
     const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
     const lead = g.addUnit(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 40 }, 9));
     const rest = g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 80, y: 0 }, 9));
     g.beginTurn();
+    g.setScouting(lead.id, true);
     return { g, lead, rest };
   }
-  const drill = { ...PLAIN_SCRIPT, recon: { forces: 1 } };
+  const orders = (o: Partial<CompanyOrders> = {}): DrillTask => ({
+    ...attack,
+    company: { scouts: new Map([["B1", null]]), scoutsLieUp: false, hold: true, waitAt: new Map(), ...o },
+  });
 
-  it("sends the squad nearest the objective ahead, scouting and holding its fire, and holds the rest", () => {
-    const { g, lead, rest } = company();
-    const state = new DrillState();
+  it("sends the scout ahead holding its fire, and holds the rest where they stand", () => {
+    const { g, lead, rest } = field();
     g.advanceToPhase("movement");
-    drillMovement(g, attack, drill, state);
-    expect(lead.scouting).toBe(true);
+    drillMovement(g, orders(), PLAIN_SCRIPT, new DrillState());
     expect(lead.position.y).toBeGreaterThan(40);
     expect(g.standingOrderFor(lead.id)?.holdFire).toBe(true);
     expect(rest.position).toEqual({ x: 80, y: 0 });
-    expect(rest.scouting).toBeFalsy();
+  });
+
+  it("holds the rest where the company says: in dead ground, if it has any sense", () => {
+    const { g, rest } = field();
+    g.advanceToPhase("movement");
+    drillMovement(g, orders({ waitAt: new Map([["B2", { x: 80, y: -40 }]]) }), PLAIN_SCRIPT, new DrillState());
+    expect(rest.position).toEqual({ x: 80, y: -40 });
   });
 
   it("bounds and observes: after each bound the scout halts to watch", () => {
-    const { g, lead } = company();
+    const { g, lead } = field();
     const state = new DrillState();
-    const looking = { ...PLAIN_SCRIPT, recon: { forces: 1, watchTurns: 2 } };
+    const looking = { ...PLAIN_SCRIPT, scouting: { watchTurns: 2 } };
     const ys: number[] = [];
     for (let t = 0; t < 6; t++) {
       g.advanceToPhase("movement");
-      drillMovement(g, attack, looking, state);
+      drillMovement(g, orders(), looking, state);
       ys.push(Math.round(lead.position.y));
       g.advanceToPhase("initiative");
     }
@@ -185,68 +200,41 @@ describe("the drill's reconnaissance", () => {
     expect(ys).toEqual([40, 40, 90, 90, 90, 140]);
   });
 
-  it("is not stopped by an enemy away from the objective: it was sent to find the position there", () => {
-    const { g, lead, rest } = company();
+  it("goes to its observation point and lies up there", () => {
+    const { g, lead } = field();
     const state = new DrillState();
-    g.advanceToPhase("movement");
-    drillMovement(g, attack, drill, state);
-    // A command group off to the flank, 500 m from the objective, fires on the scout.
-    const hq = g.addUnit(makeInfantry("RHQ", "RED", "squad", { x: 300, y: 150 }, 3));
-    g.advanceToPhase("combat");
-    g.fire(hq.id, lead.id, { weapon: "smallArms" });
-    expect(g.knows("BLUE", hq.id)).toBe(true);
-    g.advanceToPhase("initiative");
-    g.advanceToPhase("movement");
-    const at = { ...lead.position };
-    drillMovement(g, attack, drill, state);
-    expect(state.reconDone.has("BLUE")).toBe(false);
-    expect(lead.position.y).toBeGreaterThan(at.y);
-    expect(rest.position).toEqual({ x: 80, y: 0 });
-  });
-
-  it("with a look, holds the attack while the scout keeps the enemy in sight, then lets it go", () => {
-    const { g, lead, rest } = company();
-    const state = new DrillState();
-    const looking = { ...PLAIN_SCRIPT, recon: { forces: 1, lookTurns: 2 } };
-    g.advanceToPhase("movement");
-    drillMovement(g, attack, looking, state);
-    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 450 }, 9));
-    const released: boolean[] = [];
-    for (let t = 0; t < 4; t++) {
-      g.advanceToPhase("combat");
-      g.fire(red.id, lead.id, { weapon: "smallArms" }); // keeps it in the scout's sight
-      g.advanceToPhase("initiative");
+    const post = { x: 0, y: 140 };
+    for (let t = 0; t < 5; t++) {
       g.advanceToPhase("movement");
-      drillMovement(g, attack, looking, state);
-      released.push(state.reconDone.has("BLUE"));
+      drillMovement(g, orders({ scouts: new Map([["B1", post]]) }), PLAIN_SCRIPT, state);
+      g.advanceToPhase("initiative");
     }
-    // Held one turn, two, then past the two-turn look: it goes.
-    expect(released).toEqual([false, false, true, true]);
-    expect(rest.position).not.toEqual({ x: 80, y: 0 });
+    expect(lead.position).toEqual(post);
   });
 
-  it("lets the attack go once the side has found the enemy, and the scout lies up and watches", () => {
-    const { g, lead, rest } = company();
-    const state = new DrillState();
-    g.advanceToPhase("movement");
-    drillMovement(g, attack, drill, state);
-    // A contact reported: the enemy fired on the scout.
-    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 450 }, 9)); // at the objective (600): what the scout was sent to find
+  it("lies up and watches when told, and never fires: what it sees stays on the map", () => {
+    const { g, lead } = field();
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 200 }, 9));
     g.advanceToPhase("combat");
     g.fire(red.id, lead.id, { weapon: "smallArms" });
     expect(g.knows("BLUE", red.id)).toBe(true);
-    drillCombat(g, attack, drill, state);
-    expect(lead.firedThisTurn).toBe(false); // the scout does not give itself away
+    drillCombat(g, orders(), PLAIN_SCRIPT);
+    expect(lead.firedThisTurn).toBe(false);
     g.advanceToPhase("initiative");
     g.advanceToPhase("movement");
-    const scoutAt = { ...lead.position };
-    drillMovement(g, attack, drill, state);
-    expect(state.reconDone.has("BLUE")).toBe(true);
-    // Half the attack bounds each turn under overwatch: give it two.
-    g.advanceToPhase("initiative");
-    g.advanceToPhase("movement");
-    drillMovement(g, attack, drill, state);
-    expect(lead.position).toEqual(scoutAt);
+    const at = { ...lead.position };
+    drillMovement(g, orders({ scoutsLieUp: true }), PLAIN_SCRIPT, new DrillState());
+    expect(lead.position).toEqual(at);
+  });
+
+  it("lets the rest go when the company does", () => {
+    const { g, rest } = field();
+    const state = new DrillState();
+    for (let t = 0; t < 2; t++) {
+      g.advanceToPhase("movement");
+      drillMovement(g, orders({ hold: false, scoutsLieUp: true }), PLAIN_SCRIPT, state);
+      g.advanceToPhase("initiative");
+    }
     expect(rest.position).not.toEqual({ x: 80, y: 0 });
   });
 });

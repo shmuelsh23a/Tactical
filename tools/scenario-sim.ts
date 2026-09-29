@@ -6,6 +6,7 @@
  *   npm run scenario-sim -- --scenario telAzekaAssault --n 100
  *   npm run scenario-sim -- --scenario telAzekaAssault2 --drill western
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --aim 40   # a scout first (decisions 52-54)
+ *   npm run scenario-sim -- --recon 2 --watch 1 --look 4 --wait-for-contact --scout-from vantage   # two scouts, each from an observation point
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --wait-in dead-ground   # the company waits out of sight
  *   npm run scenario-sim -- … --scout-from vantage  # the scouts watch from the spot that sees the objective from 350-550 m
  *   npm run scenario-sim -- --planning-error 0      # the plan on the truth, as before decision 51
@@ -16,7 +17,8 @@
  */
 import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
-import { DEFAULT_COMPANY_PLAN, runScenario, type CompanyPlan } from "../src/sim/scenarioBattle.js";
+import { DEFAULT_FIRE_CHOICES, runScenario, type FirePlanChoices } from "../src/sim/scenarioBattle.js";
+import type { CompanyPlan } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -31,33 +33,38 @@ const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
 const base = drills[drillName];
 if (!base) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
 const drill: SquadDrill = { ...base };
+// How a scout bounds and looks is the drill's; which squads scout, from where,
+// and when the rest go are the company commander's (src/app/company.ts).
+if (value("--watch")) drill.scouting = { watchTurns: Number(value("--watch")) };
 const recon = value("--recon");
-if (recon) {
-  drill.recon = {
-    forces: Number(recon),
-    ...(value("--watch") ? { watchTurns: Number(value("--watch")) } : {}),
-    ...(value("--look") ? { lookTurns: Number(value("--look")) } : {}),
-  };
-}
-const waitIn = value("--wait-in") === "dead-ground" ? "deadGround" : "place";
-const plan: CompanyPlan = {
-  ...DEFAULT_COMPANY_PLAN,
+const company: CompanyPlan = {
+  ...(recon
+    ? {
+        recon: {
+          scouts: Number(recon),
+          ...(value("--look") ? { lookTurns: Number(value("--look")) } : {}),
+          ...(value("--scout-from") === "vantage" ? { scoutFrom: "vantage" as const } : {}),
+        },
+      }
+    : {}),
+  ...(value("--wait-in") === "dead-ground" ? { waitIn: "deadGround" as const } : {}),
+};
+const fire: FirePlanChoices = {
+  ...DEFAULT_FIRE_CHOICES,
   ...(value("--planning-error") !== undefined ? { planningError: Number(value("--planning-error")) } : {}),
   ...(args.includes("--no-register") ? { register: false } : {}),
   ...(args.includes("--wait-for-contact") ? { waitForContact: true } : {}),
   ...(value("--aim") ? { aimWithin: Number(value("--aim")) } : {}),
-  waitIn,
-  ...(value("--scout-from") === "vantage" ? { scoutFrom: "vantage" as const } : {}),
 };
 
-console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${drill.recon ? `, recon ${JSON.stringify(drill.recon)}` : ""}, plan ${JSON.stringify(plan)}\n`);
+console.log(`${n} battles a scenario from seed ${first}, ${drill.name}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}\n`);
 console.log("| Scenario | Attacker wins | Defender wins | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|");
 for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
   const seeds = Array.from({ length: n }, (_, i) => first + i);
-  const s = runScenario(listing, seeds, { drill, plan });
+  const s = runScenario(listing, seeds, { drill, company, fire });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} |`);

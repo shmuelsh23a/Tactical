@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Game, makeInfantry, type Heightfield, type Terrain } from "../engine/index.js";
-import { bestVantage, isDeadGround, nearestDeadGround } from "./deadGround.js";
+import { bestVantage, bestVantages, isDeadGround, nearestDeadGround } from "./deadGround.js";
 
 /**
  * A ridge running north–south across a 400 m square: 0 m at both edges,
@@ -88,5 +88,29 @@ describe("a vantage point", () => {
     // 280-320 m out, every spot on the map is west of a 200 m crest the targets lie east of.
     const wall: Terrain = { heightfield: ridge(200), objects: [] };
     expect(bestVantage({ terrain: wall, targets, minRange: 280, maxRange: 320 }, from, { width: 400, height: 400 })).toBeNull();
+  });
+});
+
+describe("several vantage points", () => {
+  const flat: Terrain = { objects: [] };
+  // Two suspected positions 400 m apart: no spot within 150 m of both.
+  const targets = [{ x: 50, y: 100 }, { x: 350, y: 100 }];
+  const from = { x: 200, y: 390 };
+  it("adds a second point only for what the first cannot see", () => {
+    const two = bestVantages({ terrain: flat, targets, minRange: 50, maxRange: 150 }, from, 3, { width: 400, height: 400 });
+    expect(two).toHaveLength(2);
+    const sees = (p: { x: number; y: number }) => targets.filter((t) => Math.hypot(p.x - t.x, p.y - t.y) <= 150).length;
+    expect(two.map(sees)).toEqual([1, 1]);
+    expect(Math.sign(two[0]!.x - 200)).not.toBe(Math.sign(two[1]!.x - 200));
+  });
+
+  it("stops at one when one sees everything", () => {
+    const one = bestVantages({ terrain: flat, targets, minRange: 50, maxRange: 400 }, from, 3, { width: 400, height: 400 });
+    expect(one).toHaveLength(1);
+  });
+
+  it("keeps outside the reach of every suspected point", () => {
+    const pts = bestVantages({ terrain: flat, targets, minRange: 120, maxRange: 400 }, from, 2, { width: 400, height: 400 });
+    for (const p of pts) for (const t of targets) expect(Math.hypot(p.x - t.x, p.y - t.y)).toBeGreaterThanOrEqual(120);
   });
 });

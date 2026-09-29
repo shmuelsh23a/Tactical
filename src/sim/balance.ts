@@ -1,5 +1,6 @@
 import { sideDefeated } from "../app/hotseat.js";
 import { DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import {
   ECHELON_RANK,
   LOCATION_ERROR,
@@ -191,6 +192,12 @@ export interface BattleOptions {
   defenderPlan?: { observationPosts?: boolean; alternateAt?: number };
   /** Whose blast and tank-gun figures (rules decision 41). The game's default, `research`, unless given. */
   lethality?: Lethality;
+  /**
+   * The attacking company commander's plan (`app/company.ts`): scouts, where
+   * they watch from, where the rest wait (rules decisions 52–54). Absent: the
+   * whole attack goes at once, as every table before 2026-09-29.
+   */
+  company?: CompanyPlan;
   /**
    * Neither side plans its fires on where the other truly is (rules decision
    * 51's harness half). The attacker's planned targets are each position's
@@ -486,6 +493,16 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     BLUE: { side: "BLUE", attacking: attackers.includes("BLUE"), objective: objective.BLUE },
     RED: { side: "RED", attacking: attackers.includes("RED"), objective: objective.RED },
   };
+  // The attacking company commander (rules decisions 52–54), looking for the
+  // enemy where its plan puts it. The harness's ground is flat and open.
+  const commander =
+    opts.company && kind !== "meeting"
+      ? new ScriptedCompany(g, attackerSide, objective[attackerSide], plannedTargets, opts.company, {
+          terrain: g.terrain,
+          width: 2 * X,
+          height: NORTH + 1100,
+        })
+      : undefined;
   g.beginTurn();
   let liftedFires = false;
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
@@ -568,9 +585,10 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // executor, working from the same fog-bound view, that will carry out a
     // simulated subordinate's orders.
     note(g.advanceToPhase("movement").morale);
+    if (commander) tasks[attackerSide].company = commander.orders(g);
     for (const side of order) drillMovement(g, tasks[side], drill, drillState);
     g.advanceToPhase("combat");
-    for (const side of order) drillCombat(g, tasks[side], drill, drillState);
+    for (const side of order) drillCombat(g, tasks[side], drill);
     for (const u of g.units) {
       if (u.kind === "command") continue;
       const s = u.suppression ?? 0;

@@ -50,6 +50,7 @@ import {
 } from "../src/sim/balance.js";
 import { LETHALITIES, type FireAllotment, type Lethality, type RuleVariants } from "../src/engine/index.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
+import type { CompanyPlan } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -162,7 +163,11 @@ const reconArg = value("--recon");
 const watchArg = value("--watch");
 // --look 4 — find, fix, then assault: the main body waits this many turns after the first contact
 const lookArg = value("--look");
-if (reconArg) drill.recon = { forces: Number(reconArg), ...(watchArg ? { watchTurns: Number(watchArg) } : {}), ...(lookArg ? { lookTurns: Number(lookArg) } : {}) };
+// The scouts are the company's (app/company.ts); how a scout bounds and looks is the drill's.
+const company: CompanyPlan | undefined = reconArg
+  ? { recon: { scouts: Number(reconArg), ...(lookArg ? { lookTurns: Number(lookArg) } : {}) } }
+  : undefined;
+if (watchArg) drill.scouting = { watchTurns: Number(watchArg) };
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
@@ -191,7 +196,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn, ...(company ? { company } : {}) })));
       }
     }
   }

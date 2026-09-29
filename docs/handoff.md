@@ -149,6 +149,14 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Then (author: "do both"):** traced why the tel stays low, and moved the
+   company choices out of `SquadDrill` into `app/company.ts`
+   (`CompanyOrders`, `ScriptedCompany`). No spot in reach sees all three
+   of RED's squads, so the commander now sends two scouts to two
+   observation points. On the tel that gives 3:1 28–37% and 2:1 23–25%. The
+   guns aim well (median 22 m) but half their missions go at command groups
+   in the open. **Waiting on the author:** which target the company's guns
+   take when several are found (balance.md, *Why the tel stays low*).
 0. **Built 2026-09-29 (author: "go ahead with the headless runner and
    dead-ground finder"):** `npm run scenario-sim` plays the scenarios on
    their real ground headless with a scripted company commander; dead

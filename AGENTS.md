@@ -138,6 +138,17 @@ one it is in your reply, too.
   consequence worth remembering: a hotseat battle journals *orders*, not moves,
   so anything that reads a recording (extent, narration, digests) has to work
   from the order.
+- **Squads are scripted; companies decide.** In the real game only squads
+  and platoons are scripted, and company and up is Jev's (README, backlog
+  15). So a company-level choice (which squads scout, from where, where the
+  rest wait, when they go) is a `CompanyOrders` from
+  [`company.ts`](src/app/company.ts), issued by `ScriptedCompany` in the
+  harness and the headless runner and by Jev in the game. The squad drill
+  ([`drill.ts`](src/app/drill.ts)) only carries orders out. Don't put a
+  company decision in `SquadDrill`. Tools that compute options for a
+  commander (dead ground, observation points) live in
+  [`deadGround.ts`](src/app/deadGround.ts) and read the ground with the
+  engine's own sight test.
 - **Posture drives both being seen and being hit.** `stationaryTurns`, `cover`
   and `camouflageTurns` on a `Unit` are maintained by `endTurnUnitUpkeep` and
   read by `detectionChance` and by fire resolution — a force is hidden because

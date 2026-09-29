@@ -1958,6 +1958,64 @@ bounding and halting a turn a bound, a 4-turn look, the guns waiting for it.
   squad at a time; and the company's assault up the slope. The next traces
   should compare where the scout watches from with where the squads are.
 
+### Why the tel stays low, traced, 2026-09-29
+
+**Where the scout watches from, against where the squads are.** On seed
+1000–1005 the observation point the commander chose saw two of RED's three
+squads at most, and so did the best spot chosen on the true positions:
+squad A-2, on the east of the shoulder, is hidden from every spot 350–550 m
+out on the attacker's side. It can be seen only from the east, from the
+valley below the tel's east face, and **no spot in reach sees all three**.
+One scout can never fix the whole position. Two smaller faults went with
+it: the ring was measured from the plan's centre, so on two seeds the point
+was 250–320 m from a squad, inside its reach; and the walk to it was
+130–400 m.
+
+So the commander now chooses **several observation points**
+(`bestVantages`), each for what the others cannot see, each at least 350 m
+from every point the plan suspects, and gives one to each scout. On
+Tel Azeka with the true positions it sends one scout south-west and one
+east.
+
+**The company level moved out of the drill** (the author's item from the
+architecture proposal). `SquadDrill.recon` is gone. `app/company.ts` holds
+the company's decisions: `CompanyOrders` (which forces scout and from
+where, whether the rest hold and where, whether the scouts lie up) and
+`ScriptedCompany`, the rule-based commander that issues them. Jev will
+issue the same orders. The drill keeps what a squad does:
+`SquadDrill.scouting.watchTurns` (bound and observe), holding its fire,
+lying up at its point, waiting where told. The harness and the headless
+runner both use the same commander (`--recon N`, `--look N`, `--watch N`
+as before, `--scout-from vantage`). The flat harness reproduces the
+seventeenth round (Western drill, binoculars, 4-turn look: 83% at 3:1, 1%
+at 2:1).
+
+On the tel, 200 battles a row, a 4-turn look, the guns waiting for the
+scouts, the company in dead ground:
+
+| Scouts | Guns wait for | Drill | 3:1 | 2:1 |
+|---|---|---|---|---|
+| one, one observation point | any report | plain | 31% | 17% |
+| one, one observation point | any report | Western | 24% | 14% |
+| two, two points | any report | plain | 32% | 23% |
+| two, two points | any report | Western | 25% | 24% |
+| two, two points | ≤40 m | plain | **37%** | **23%** |
+| two, two points | ≤40 m | Western | **28%** | **25%** |
+
+**Where the guns aim.** Over 40 battles (two scouts, ≤40 m, plain), 416
+missions: median 22 m from the nearest live defender, 10% within 5 m, 37%
+within 15 m. The aim is good. But **half the missions went at forces in the
+open, the command groups**, and the other half at squads under overhead
+cover, where a mortar mission does little (decision 48). The defence loses
+16–20% of its men. The commander fires on the enemy nearest the objective,
+and a platoon's command group near its squads is that as often as a squad
+is. Killing it does not break a defence, whose breakpoint counts men.
+
+**Open for the author:** which target the company's guns should take when
+the scouts have found several. The squads (what holds the position) or the
+command group (what directs it)? In the game that is the company
+commander's call, so Jev's.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

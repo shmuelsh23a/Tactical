@@ -1,6 +1,6 @@
 import { sideDefeated, sideView } from "../app/hotseat.js";
-import { DrillState, drillCombat, drillMovement, isScout, type DrillTask, type SquadDrill } from "../app/drill.js";
-import { bestVantage, nearestDeadGround } from "../app/deadGround.js";
+import { DrillState, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
   CE_PER_SIGMA,
@@ -29,9 +29,10 @@ import { estimateFrom } from "./balance.js";
  * scripted; company and up are Jev's (README, backlog 15). So:
  * - **squads** fight by the drill (`src/app/drill.ts`), on both sides — the
  *   same executor the game will use;
- * - **the attacking company commander** is scripted here, a stand-in for Jev:
- *   {@link CompanyPlan} is the handful of choices it makes — where it thinks
- *   the enemy is, whether to send a scout, where to wait, when to fire;
+ * - **the attacking company commander** is scripted, a stand-in for Jev:
+ *   `ScriptedCompany` (`app/company.ts`) decides its scouts, their
+ *   observation points and where the rest wait; {@link FirePlanChoices}
+ *   holds where it thinks the enemy is and when its guns fire;
  * - **the defender** holds by the drill and calls its mortars on the nearest
  *   attacker it knows of, fire for effect, as the browser tool's defender does.
  *
@@ -40,7 +41,11 @@ import { estimateFrom } from "./balance.js";
  * the one thing the browser tool also takes from the umpire: the **tasking**,
  * where the defence is, which it spoils by an observer's error before use.
  */
-export interface CompanyPlan {
+/**
+ * The attacking commander's fire and plan (the scripted stand-in for Jev):
+ * where it thinks the enemy is, and when its guns fire.
+ */
+export interface FirePlanChoices {
   /**
    * How far off the plan puts the defence: that share of the range from the
    * start line, one standard deviation (rules decision 51). 0.2 is an eye's.
@@ -55,40 +60,23 @@ export interface CompanyPlan {
    */
   waitForContact: boolean;
   aimWithin?: number;
-  /**
-   * Where the company waits while its scouts look: at its start line, or in
-   * the nearest dead ground out of sight of where the plan puts the enemy
-   * (`deadGround.ts`).
-   */
-  waitIn: "place" | "deadGround";
-  /**
-   * Where the scouts watch from: straight at the objective, or from the spot
-   * that sees most of where the plan puts the enemy from beyond its reach
-   * ({@link VANTAGE_RING_M}, `bestVantage`).
-   */
-  scoutFrom?: "straight" | "vantage";
 }
 
-/**
- * The ring an observation point is chosen in, metres from where the plan puts
- * the enemy: beyond a still force's eye (300 m, decision 53), inside the
- * scout's binoculars (600 m, decision 54). Ours.
- */
-export const VANTAGE_RING_M = { min: 350, max: 550 } as const;
-
-export const DEFAULT_COMPANY_PLAN: CompanyPlan = {
+export const DEFAULT_FIRE_CHOICES: FirePlanChoices = {
   planningError: 0.2,
   register: true,
   waitForContact: false,
-  waitIn: "place",
 };
 
 export interface ScenarioBattleOptions {
-  /** How the attacker's squads fight — its `recon` is the company's scouts. */
+  /** How the attacker's squads fight. */
   drill: SquadDrill;
-  /** How the defender's squads fight. The attacker's drill, less its recon, unless given. */
+  /** How the defender's squads fight. The attacker's drill unless given. */
   defenderDrill?: SquadDrill;
-  plan: CompanyPlan;
+  /** The attacking company commander's plan: scouts, observation points, where to wait (`company.ts`). */
+  company?: CompanyPlan;
+  /** Its fire and its picture of the enemy. */
+  fire: FirePlanChoices;
   maxTurns?: number;
 }
 
@@ -124,7 +112,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? 60;
   const drill = opts.drill;
-  const defenderDrill = opts.defenderDrill ?? { ...drill, recon: undefined };
+  const defenderDrill = opts.defenderDrill ?? drill;
 
   // The tasking: where the defence is, spoilt by an observer's error from the
   // start line — drawn exactly as the browser tool draws it, so a seed puts
@@ -133,45 +121,28 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const own = g.units.filter((u) => u.side === attacker && u.kind !== "command");
   const truth = mean(defence);
   const startLine = mean(own);
-  const objective = opts.plan.planningError > 0
-    ? estimateFrom(new Rng(unitSeed(g.seed, "#planning-error")), startLine, truth, opts.plan.planningError)
+  const objective = opts.fire.planningError > 0
+    ? estimateFrom(new Rng(unitSeed(g.seed, "#planning-error")), startLine, truth, opts.fire.planningError)
     : truth;
   const planned = [objective, { x: objective.x - PLAN_SPREAD_M, y: objective.y }, { x: objective.x + PLAN_SPREAD_M, y: objective.y }];
 
   // Mission planning: the attacker registers its plan.
-  if (opts.plan.register && g.mayCall(attacker, MORTAR)) {
+  if (opts.fire.register && g.mayCall(attacker, MORTAR)) {
     for (const t of planned) g.registerTarget(attacker, MORTAR, t);
   }
 
-  // Where the company waits: out of sight of where the plan puts the enemy.
-  const waitAt = new Map<string, Point>();
-  if (opts.plan.waitIn === "deadGround" && drill.recon) {
-    const watchers = planned;
-    for (const u of own) {
-      const at = nearestDeadGround(
-        { terrain: g.terrain, watchers },
-        u.position,
-        { width: mapWidth, height: mapHeight, radius: 300, step: 20 },
-      );
-      if (at) waitAt.set(u.id, at);
-    }
-  }
-
-  // Where the scouts watch from: the commander's observation point.
-  let scoutTo: Point | undefined;
-  if (opts.plan.scoutFrom === "vantage" && drill.recon) {
-    const lead = [...own].sort((a, b) => distance(a.position, objective) - distance(b.position, objective))[0]!;
-    const targets = [...planned, { x: objective.x, y: objective.y - 80 }, { x: objective.x, y: objective.y + 80 }];
-    scoutTo =
-      bestVantage(
-        { terrain: g.terrain, targets, minRange: VANTAGE_RING_M.min, maxRange: VANTAGE_RING_M.max },
-        lead.position,
-        { width: mapWidth, height: mapHeight, step: 20 },
-      ) ?? undefined;
-  }
+  // The company commander: where the plan puts the enemy is what its scouts
+  // look for, what its observation points must see and what its waiting
+  // squads must be out of sight of — the plan's frontage and depth.
+  const suspected = [...planned, { x: objective.x, y: objective.y - 80 }, { x: objective.x, y: objective.y + 80 }];
+  const company = new ScriptedCompany(g, attacker, objective, suspected, opts.company ?? {}, {
+    terrain: g.terrain,
+    width: mapWidth,
+    height: mapHeight,
+  });
 
   const tasks: Record<Side, DrillTask> = {
-    [attacker]: { side: attacker, attacking: true, objective, waitAt, ...(scoutTo ? { scoutTo } : {}) },
+    [attacker]: { side: attacker, attacking: true, objective },
     [defender]: { side: defender, attacking: false, objective: startLine },
   } as Record<Side, DrillTask>;
   const state = new DrillState();
@@ -203,17 +174,18 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   for (let turn = 1; turn <= maxTurns; turn++) {
     result.turns = turn;
     g.advanceToPhase("targeting");
-    callAttackerFire(g, attacker, planned, objective, opts.plan, state, result);
+    callAttackerFire(g, attacker, planned, objective, opts.fire, company, result);
     callDefenderFire(g, defender, result);
 
     ignore(g.advanceToPhase("movement").morale);
+    tasks[attacker].company = company.orders(g);
     for (const side of g.initiativeOrder) drillMovement(g, tasks[side], side === attacker ? drill : defenderDrill, state);
-    if (result.released === undefined && (!drill.recon || state.reconDone.has(attacker))) {
-      result.released = turn;
+    if (result.released === undefined && company.released !== undefined) {
+      result.released = company.released || turn;
       result.downWhileWaiting = downOf(attacker);
     }
     g.advanceToPhase("combat");
-    for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill, state);
+    for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill);
     if (settle()) break;
     ignore(g.advanceToPhase("initiative").morale);
     if (settle()) break;
@@ -248,12 +220,12 @@ function callAttackerFire(
   side: Side,
   planned: readonly Point[],
   objective: Point,
-  plan: CompanyPlan,
-  state: DrillState,
+  plan: FirePlanChoices,
+  company: ScriptedCompany,
   result: ScenarioBattleResult,
 ): void {
   if (!mortarFree(g, side)) return;
-  const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !isScout(state, u));
+  const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   if (!squads.length) return;
   const safe = (p: Point) => squads.every((u) => distance(u.position, p) > DANGER_CLOSE_M);
   let aim: Point | undefined;
