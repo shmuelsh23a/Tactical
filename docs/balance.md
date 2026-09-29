@@ -1884,6 +1884,80 @@ inside the author's 85%. The plain script's defender opens fire at 400 m and
 gives its position away, and there it is still above. The 2:1 attack's 21%
 at an 8-turn look came from the unlimited sharpening.
 
+## Eighteenth round: the scenarios on their own ground, headless, 2026-09-29
+
+The harness is flat and empty; the scenarios are on the tel. The browser tool
+plays them at two minutes a battle and disagreed with the harness (the scout
+did not pay there). `npm run scenario-sim` (`src/sim/scenarioBattle.ts`)
+plays a generated scenario headless, about 150 battles a minute:
+- the **squads on both sides fight by the drill**, the executor the real
+  game uses (only squad and platoon are scripted in the game);
+- the **attacking company commander is scripted**, a stand-in for Jev
+  (backlog 15). `CompanyPlan` holds its choices: where it thinks the enemy
+  is (the tasking, spoilt by an eye's error, drawn as the browser tool draws
+  it), whether it registers its plan, whether its guns wait for the scouts,
+  where the company waits (`--wait-in dead-ground`), and where the scouts
+  watch from (`--scout-from vantage`);
+- the **defender** holds by the drill and calls its mortars, for effect, on
+  the nearest attacker it knows of, as the browser tool's defender does.
+
+Two tools for the commander, in `src/app/deadGround.ts`, both reading the
+ground with the engine's own sight test: **dead ground** (the nearest spot
+out of sight of where the enemy is or is thought to be) and a **vantage
+point** (the spot 350–550 m from where the plan puts the enemy that sees
+most of it, on the attacker's side: beyond a still force's 300 m, inside
+binoculars' 600 m). The drill waits where the order says (`DrillTask.waitAt`)
+and sends its scouts to the observation point (`DrillTask.scoutTo`).
+
+Company, morale on, 200 battles a row, seeds from 1000, the scenarios' own
+fire (12 mortar missions a side), decisions 51–54 on as the scenarios have
+them. The plan is on an estimate unless the row says so. Recon: one scout
+bounding and halting a turn a bound, a 4-turn look, the guns waiting for it.
+
+| Company | Drill | 3:1 (`telAzekaAssault`) | 2:1 (`telAzekaAssault2`) |
+|---|---|---|---|
+| plan on the truth | plain | 68% | 32% |
+| plan on the truth | Western | 76% | 40% |
+| plan on an estimate | plain | 20% | 9% |
+| plan on an estimate | Western | 23% | 11% |
+| + a scout, straight at the objective | plain | 21% | 7% |
+| + a scout, straight at the objective | Western | 18% | 7% |
+| + the company in dead ground | plain | 24% | 7% |
+| + the company in dead ground | Western | 16% | 7% |
+| + the scout to an observation point | plain | **28%** | **16%** |
+| + the scout to an observation point | Western | **18%** | **15%** |
+
+### What it says
+
+- **The runner agrees with the browser, not the harness.** Seeds 11–18
+  without recon: 1 of 8 and 0 of 8 (the browser 2 of 8 each). With a scout
+  the attack does not come near the harness's 82–92%.
+- **On the tel, the plan on the truth wins 68–76% at 3:1**, inside the
+  author's 85%. The loss to an estimated plan (to 20–23%) is as on flat
+  ground.
+- **Dead ground changes nothing here**: the start line is already out of
+  sight of where the plan puts the enemy, and the company lost nothing while
+  it waited (a median 0–5 men, the scout's).
+- **A scout straight at the objective finds the position at about 260 m**,
+  the slope hiding it until then. That is inside the defenders' own 300 m,
+  and they see it back and shell it.
+- **A scout sent to an observation point** sees from outside that reach and
+  lives (the company's losses while waiting fall to 0). The 3:1 attack gains
+  a little (plain 20% → 28%), the 2:1 more (9% → 16%). In a traced battle
+  the scout found one squad on its way, the guns neutralised it in four
+  missions landing 16–19 m off, and the rest of the platoon stayed out of
+  its sight.
+- **Found on the way: a lockstep** between bound-and-observe and command.
+  Out of the every-turn order band a scout that was refused its bound still
+  counted it as made, so each turn it could be ordered it wanted to halt,
+  and it never moved again. Fixed in the drill: a bound counts only if the
+  order got through.
+- **Open.** Why the tel stays near 20–30% where flat ground gives 82%: the
+  observation point is chosen by what it sees of the plan's points, which
+  may be the wrong ones (the plan is off by up to 150 m); one scout sees one
+  squad at a time; and the company's assault up the slope. The next traces
+  should compare where the scout watches from with where the squads are.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

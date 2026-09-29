@@ -175,7 +175,23 @@ export interface DrillTask {
   attacking: boolean;
   /** For an attacker, where it is going; for a defender, where the threat comes from. */
   objective: Point;
+  /**
+   * Where each force waits while its scouts look (rules decision 52): the
+   * commander's choice — out of the enemy's sight, if it has any sense
+   * (`deadGround.ts`). A force not named waits where it stands.
+   */
+  waitAt?: ReadonlyMap<string, Point>;
+  /**
+   * Where the scouts go to watch from (an observation point, `deadGround.ts`'s
+   * `bestVantage`): the commander's choice. They bound and observe to it, and
+   * lie up there; if they see nothing from it for {@link SCOUT_GIVE_UP_TURNS}
+   * turns they go on toward the objective. Absent: straight at the objective.
+   */
+  scoutTo?: Point;
 }
+
+/** Turns scouts watch from their observation point, seeing nothing, before they go on. */
+export const SCOUT_GIVE_UP_TURNS = 6;
 
 /**
  * What the drill remembers between turns: each force's strength at the start,
@@ -192,6 +208,8 @@ export class DrillState {
   readonly reconDone = new Set<Side>();
   /** Turns each scout has halted to watch since its last bound. */
   readonly watched = new Map<string, number>();
+  /** The turn each scout reached its observation point. */
+  readonly arrivedOn = new Map<string, number>();
   /** Consecutive turns each side's scouts have held the enemy at the objective in sight. */
   readonly lookedTurns = new Map<Side, number>();
 
@@ -346,23 +364,42 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
 
     if (scouts.has(u.id)) {
-      // Out ahead: bound and look until something is found, then go to ground and watch.
+      // Out ahead: bound and look — to the observation point if it was given
+      // one — until something is found, then go to ground and watch.
+      let goal = task.objective;
+      if (task.scoutTo) {
+        if (!state.arrivedOn.has(u.id) && distance(u.position, task.scoutTo) <= 10) state.arrivedOn.set(u.id, game.turn);
+        const since = state.arrivedOn.get(u.id);
+        if (since === undefined) goal = task.scoutTo;
+        else if (game.turn - since < SCOUT_GIVE_UP_TURNS) goal = u.position; // lie up and watch
+      }
       const watched = state.watched.get(u.id) ?? 0;
       // Holding the enemy in sight, it stays and watches; lose it, and it goes on looking.
       const halt =
-        (state.lookedTurns.get(side) ?? 0) > 0 || state.reconDone.has(side) || watched < (drill.recon?.watchTurns ?? 0);
-      state.watched.set(u.id, halt ? watched + 1 : 0);
-      game.setStandingOrder(
+        (state.lookedTurns.get(side) ?? 0) > 0 ||
+        state.reconDone.has(side) ||
+        watched < (drill.recon?.watchTurns ?? 0) ||
+        distance(u.position, goal) < 1;
+      const ordered = game.setStandingOrder(
         u.id,
         halt
           ? { gait: "normal", holdFire: true }
-          : { gait: "normal", destination: toward(u.position, task.objective, 50), holdFire: true },
+          : { gait: "normal", destination: toward(u.position, goal, 50), holdFire: true },
       );
+      // A bound counts only if the order got through: out of the every-turn
+      // band of command (rules decision 6) a refused bound is not a bound, and
+      // counting it locks bound-and-observe out of step with the order cycle.
+      state.watched.set(u.id, halt || !ordered ? watched + 1 : 0);
       return;
     }
     if (waiting) {
-      // The main body holds at its start line until the scouts report.
-      game.setStandingOrder(u.id, { gait: "normal" });
+      // The main body holds until the scouts report — where its commander
+      // told it to wait, or at its start line.
+      const at = task.waitAt?.get(u.id);
+      game.setStandingOrder(
+        u.id,
+        at && distance(u.position, at) > 5 ? { gait: "normal", destination: { ...at } } : { gait: "normal" },
+      );
       return;
     }
     if (nearest && distance(u.position, nearest.position) <= drill.assault.range + 5) {

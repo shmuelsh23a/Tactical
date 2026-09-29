@@ -149,7 +149,15 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
-0. **Next, proposed to the author (2026-09-29), not yet approved:** only squad and platoon
+0. **Built 2026-09-29 (author: "go ahead with the headless runner and
+   dead-ground finder"):** `npm run scenario-sim` plays the scenarios on
+   their real ground headless with a scripted company commander; dead
+   ground and a vantage point for it are in `src/app/deadGround.ts`. It
+   agrees with the browser: on the tel, recon lifts 3:1 only from about 20%
+   to 28% (balance.md, *Eighteenth round*); flat ground gave 82%. Tracing
+   why is the next step. Moving the company choices out of `SquadDrill`
+   (item a below) is still to do.
+0. **Proposed to the author (2026-09-29):** only squad and platoon
    are scripted in the real game; company and up is Jev plus an LLM call.
    So: (a) move the company-level choices (recon, the look, fires waiting)
    out of `SquadDrill` into a company plan that a scripted commander plays

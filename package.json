@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "balance": "vite-node tools/balance-sim.ts",
-    "validate": "vite-node tools/validation-sim.ts"
+    "validate": "vite-node tools/validation-sim.ts",
+    "scenario-sim": "vite-node tools/scenario-sim.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
