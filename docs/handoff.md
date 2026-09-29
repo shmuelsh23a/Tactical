@@ -149,6 +149,25 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Where the day ended (2026-09-29): the mortar thread, and what is open.**
+   The day began with the author's question whether pre-planned fires
+   account for neither side knowing where the other is. They did not: with
+   fires planned from an estimate (decision 51) the calibrated 3:1 fell from
+   95% to about 20%. Recon (decisions 52–54) brings the guns to a median 22 m
+   off. On the tel, headless, the scripted 3:1 wins 41–59% by target order
+   (squads first best, command first worst, 25%); 2:1 30–39%; on the truth
+   68–76%. So 3:1 sits well under the author's 85% ceiling (decision
+   rulings), and a company using platoon control (decision 59) does better
+   than the script. **Open, in the order proposed to the author:**
+   1. **Waiting on the author:** which target the company's guns take
+      first. Squads first measures best; decision 55 found a dug-in
+      defender's command group is low value.
+   2. Mortar lethality against men dug in, checked against the research
+      figures (the author asked whether the research has numbers; not done).
+   3. Why the tel stays low with good aim: no spot on the attacker's side
+      sees all three of RED's squads, so some fire goes on stale marks.
+   4. Another agent round as Jev on the new questions (decisions 58–59 and
+      the item 1 fixes), each agent in its own folder.
 0. **Then (author: "do 1 and 2, keep marks on last seen, mark them with
    broken lines; mission will have time limit in briefing"):** decision 57
    (a mark stays where last seen, drawn with a dashed frame) and 58 (each
