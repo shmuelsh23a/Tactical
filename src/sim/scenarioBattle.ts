@@ -5,6 +5,7 @@ import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
   CE_PER_SIGMA,
   EYE_HEIGHT,
+  groundHeight,
   Rng,
   distance,
   terrainBlocksSight,
@@ -18,7 +19,9 @@ import {
 import { estimateFrom } from "./balance.js";
 import { bestVantages } from "../app/deadGround.js";
 import { VANTAGE_RING_M } from "../app/company.js";
-import { viewOf, type Decider, type Question } from "./companyQuestions.js";
+import { casualtiesSeen, viewOf, type Decider, type Question } from "./companyQuestions.js";
+import { hasEyesOn } from "../app/hotseat.js";
+import type { IndirectFireResult } from "../engine/index.js";
 
 /**
  * The headless scenario runner: a generated scenario — real ground, its forces,
@@ -157,9 +160,33 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const suspected = [...planned, { x: objective.x, y: objective.y - 80 }, { x: objective.x, y: objective.y + 80 }];
   const ask = opts.decide;
   const mortarLeft = () => (g.mayCall(attacker, MORTAR) ? g.fireMissionsLeft(attacker, MORTAR) ?? null : null);
+  // What the attacker's mortars did since it was last asked, as its forces saw it.
+  const seenHits = new Map<string, number>();
+  const heard = (res: IndirectFireResult[] | undefined) => {
+    for (const r of res ?? []) {
+      if (r.side !== attacker) continue;
+      for (const t of r.blast.targets) {
+        const u = g.getUnit(t.unitId);
+        if (u.side === attacker || !t.caught || !hasEyesOn(g, attacker, u)) continue;
+        seenHits.set(u.id, (seenHits.get(u.id) ?? 0) + t.newCasualties);
+      }
+    }
+  };
+  const reports = (): string[] => {
+    const out = [...seenHits].map(
+      ([id, n]) => `${id}: hit by your mortars, ${casualtiesSeen(n)}${g.getUnit(id).neutralized ? ", now out of action" : ""}`,
+    );
+    seenHits.clear();
+    return out;
+  };
   const question = (q: Omit<Question, "turn" | "view">): string =>
-    ask!({ ...q, turn: g.turn, view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine }) });
+    ask!({
+      ...q,
+      turn: g.turn,
+      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine, reports: reports() }),
+    });
   const companyPlan = ask ? askPlan(g, attacker, objective, suspected, mapWidth, mapHeight, question) : opts.company ?? {};
+  const scoutFit = new Map<string, number>();
   const company = new ScriptedCompany(g, attacker, objective, suspected, companyPlan, {
     terrain: g.terrain,
     width: mapWidth,
@@ -198,22 +225,27 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   g.beginTurn();
   for (let turn = 1; turn <= maxTurns; turn++) {
     result.turns = turn;
-    g.advanceToPhase("targeting");
+    heard(g.advanceToPhase("targeting").resolved);
     if (ask) askAttackerFire(g, attacker, company, result, question);
     else callAttackerFire(g, attacker, planned, objective, opts.fire, company, result);
     callDefenderFire(g, defender, result);
 
-    ignore(g.advanceToPhase("movement").morale);
+    const moving = g.advanceToPhase("movement");
+    heard(moving.resolved);
+    ignore(moving.morale);
+    if (ask) askScouts(g, company, state, startLine, scoutFit, question);
     tasks[attacker].company = company.orders(g, ask ? { go: askGo(g, company, turn, question) } : undefined);
     for (const side of g.initiativeOrder) drillMovement(g, tasks[side], side === attacker ? drill : defenderDrill, state);
     if (result.released === undefined && company.released !== undefined) {
       result.released = company.released || turn;
       result.downWhileWaiting = downOf(attacker);
     }
-    g.advanceToPhase("combat");
+    heard(g.advanceToPhase("combat").resolved);
     for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill);
     if (settle()) break;
-    ignore(g.advanceToPhase("initiative").morale);
+    const next = g.advanceToPhase("initiative");
+    heard(next.resolved);
+    ignore(next.morale);
     if (settle()) break;
   }
   if (result.released === undefined) result.downWhileWaiting = downOf(attacker);
@@ -265,18 +297,23 @@ function askPlan(
     4,
     { width, height, step: 20 },
   );
+  // The suspected points by name: the plan's centre, then either flank, then its far and near side.
+  const names = ["the plan's centre", "its west", "its east", "its far side", "its near side"];
   const sees = (p: Point) =>
-    suspected.filter((t) => distance(p, t) <= VANTAGE_RING_M.max && !terrainBlocksSight(g.terrain, p, EYE_HEIGHT.infantry, t, EYE_HEIGHT.fullCover)).length;
+    suspected
+      .map((t, i) => ({ t, name: names[i] ?? `point ${i + 1}` }))
+      .filter(({ t }) => distance(p, t) <= VANTAGE_RING_M.max && !terrainBlocksSight(g.terrain, p, EYE_HEIGHT.infantry, t, EYE_HEIGHT.fullCover))
+      .map(({ name }) => name);
   const posts: (Point | null)[] = [];
   for (let i = 0; i < n; i++) {
     const a = question({
       id: `plan.post.${i + 1}`,
       kind: "choice",
-      ask: `Where does scout ${i + 1} watch from? An observation point sees the enemy's ground from outside its reach; the plan suspects the enemy at ${suspected.length} points around ${`(${Math.round(objective.x)}, ${Math.round(objective.y)})`}.`,
+      ask: `Where does scout ${i + 1} watch from? An observation point sees the enemy's ground from outside its reach (350-550 m) with binoculars; the plan suspects the enemy at its centre (${Math.round(objective.x)}, ${Math.round(objective.y)}) and 80-90 m to each side of it. A still, dug-in enemy is found only within 600 m through binoculars, and more easily the closer.`,
       options: [
         ...candidates.map((p, k) => ({
           id: `p${k + 1}`,
-          label: `observation point (${Math.round(p.x)}, ${Math.round(p.y)}): sees ${sees(p)} of the ${suspected.length} suspected points, ${Math.round(distance(p, objective))} m from the plan's centre, ${Math.round(distance(p, lead.position))} m from your leading squad`,
+          label: `observation point (${Math.round(p.x)}, ${Math.round(p.y)}), ground ${Math.round(groundHeight(g.terrain, p))} m: sees ${sees(p).join(", ")}; ${Math.round(distance(p, objective))} m from the plan's centre, ${Math.round(distance(p, lead.position))} m walk from your leading squad`,
         })),
         { id: "straight", label: "straight toward the plan's centre, bounding and looking" },
       ],
@@ -308,9 +345,11 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
   const why = lost
     ? "Your scouts are all out of action."
     : holding
-      ? `Your scouts have held the enemy in sight ${company.turnsHeldInSight} turn(s) in a row.`
-      : "Your scouts have not found the enemy yet.";
-  return (
+      ? company.turnsHeldInSight === 0
+        ? "Your side has just found the enemy near the objective."
+        : `Your side has held the enemy near the objective in sight ${company.turnsHeldInSight + 1} turns in a row.`
+      : "Your scouts have not found the enemy near the objective yet.";
+  const go =
     question({
       id: `go.${turn}`,
       kind: "noul",
@@ -319,8 +358,76 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
         { id: "yes", label: "yes: the company advances to the attack" },
         { id: "no", label: "no: keep holding while the scouts look" },
       ],
-    }) === "yes"
-  );
+    }) === "yes";
+  if (!go) return false;
+  // Which way it goes: straight, or by one of the scouts' observation points,
+  // coming in from that side.
+  const posts = [...company.posts].filter((e): e is [string, Point] => e[1] !== null);
+  if (posts.length) {
+    const axis = question({
+      id: `go.axis.${turn}`,
+      kind: "choice",
+      ask: "Which way does the company go in?",
+      options: [
+        { id: "straight", label: "straight at the plan's centre" },
+        ...posts.map(([id, p]) => ({
+          id: `via:${id}`,
+          label: `by ${id}'s observation point (${Math.round(p.x)}, ${Math.round(p.y)}), coming in from that side`,
+        })),
+      ],
+    });
+    company.setAxis(axis === "straight" ? undefined : posts.find(([id]) => `via:${id}` === axis)?.[1]);
+  }
+  if (company.liveScouts(g).length) {
+    company.setScoutsFire(
+      question({
+        id: `go.support.${turn}`,
+        kind: "noul",
+        ask: "Do your scouts open fire in support from where they are, as a base of fire? Firing gives their positions away.",
+        options: [
+          { id: "yes", label: "yes: the scouts open fire on what they can reach" },
+          { id: "no", label: "no: they stay hidden and keep watching" },
+        ],
+      }) === "yes",
+    );
+  }
+  return true;
+}
+
+/**
+ * A scout in trouble, or slow: asked when it has lost men since the last
+ * turn, or has not reached its observation point ten turns in. Go on, lie
+ * up where it is, or pull back to the company.
+ */
+function askScouts(
+  g: Game,
+  company: ScriptedCompany,
+  state: DrillState,
+  startLine: Point,
+  fitBefore: Map<string, number>,
+  question: (q: Omit<Question, "turn" | "view">) => string,
+): void {
+  if (company.released !== undefined) return;
+  for (const u of company.liveScouts(g)) {
+    const fit = (u.soldiers ?? []).filter((m) => !m.neutralized).length;
+    const hit = fit < (fitBefore.get(u.id) ?? fit);
+    fitBefore.set(u.id, fit);
+    const post = company.posts.get(u.id);
+    const slow = post !== null && post !== undefined && !state.arrivedOn.has(u.id) && g.turn > 1 && g.turn % 10 === 0;
+    if (!hit && !slow) continue;
+    const a = question({
+      id: `scout.${u.id}.${g.turn}`,
+      kind: "choice",
+      ask: `${u.id} ${hit ? `is under fire: ${fit}/${u.soldiers?.length ?? 0} fit` : "has not reached its observation point yet"}, at (${Math.round(u.position.x)}, ${Math.round(u.position.y)}). What now?`,
+      options: [
+        { id: "on", label: post ? `go on to its observation point (${Math.round(post.x)}, ${Math.round(post.y)})` : "go on as ordered" },
+        { id: "here", label: "lie up where it is and watch" },
+        { id: "back", label: "pull back to the company" },
+      ],
+    });
+    if (a === "here") company.setPost(u.id, u.position);
+    if (a === "back") company.setPost(u.id, startLine);
+  }
 }
 
 /**
@@ -338,27 +445,43 @@ function askAttackerFire(
   if (!mortarFree(g, side)) return;
   const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   const view = sideView(g, side);
+  // Every mark the side holds — in sight or last seen — that is not danger
+  // close to its own squads. Firing on a last-seen mark is firing on where
+  // the enemy was.
   const marks = view.units.filter(
-    (u) =>
-      u.side !== side &&
-      !u.neutralized &&
-      (g.contactFor(side, u.id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1 &&
-      squads.every((s) => distance(s.position, u.position) > DANGER_CLOSE_M),
+    (u) => u.side !== side && !u.neutralized && squads.every((s) => distance(s.position, u.position) > DANGER_CLOSE_M),
   );
   if (!marks.length) return;
   const a = question({
     id: `fire.${g.turn}`,
     kind: "choice",
-    ask: "Your mortar section is free. Fire a mission (12 bombs, for effect at once) on which mark?",
+    ask:
+      "Your mortar section is free. Fire a mission (12 bombs, for effect at once; a bomb kills within about 12 m, less against men dug in with overhead cover) on which mark? " +
+      `Marks within ${DANGER_CLOSE_M} m of your own squads are not offered (danger close): your fires lift as your squads close.`,
     options: [
-      ...marks.map((u) => ({
-        id: u.id,
-        label: `${u.id} (${u.kind === "command" ? "command group" : "infantry"}) at (${Math.round(u.position.x)}, ${Math.round(u.position.y)}), sure to ±${Math.round((view.spreads.get(u.id) ?? 0) * CE_PER_SIGMA)} m`,
-      })),
+      ...marks.map((u) => {
+        const seen = g.contactFor(side, u.id)?.lastSeenTurn ?? 0;
+        return {
+          id: u.id,
+          label:
+            `${u.id} (${u.kind === "command" ? "command group" : "infantry"}) at (${Math.round(u.position.x)}, ${Math.round(u.position.y)}), ` +
+            `sure to ±${Math.round((view.spreads.get(u.id) ?? 0) * CE_PER_SIGMA)} m, ` +
+            (seen >= g.turn - 1 ? "in sight" : `last seen turn ${seen}: it may have moved`),
+        };
+      }),
+      // Smoke once the company is moving: a screen on a mark blinds it while the squads close.
+      ...(company.released !== undefined
+        ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs no mission)` }))
+        : []),
       { id: "hold", label: "hold fire this turn" },
     ],
   });
   if (a === "hold") return;
+  if (a.startsWith("smoke:")) {
+    const screened = marks.find((u) => `smoke:${u.id}` === a)!;
+    g.deploySmoke(MORTAR, side, screened.position);
+    return;
+  }
   const target = marks.find((u) => u.id === a)!;
   g.callForFire(side, MORTAR, target.position, { method: "effect" });
   result.missions[side]++;

@@ -1,4 +1,5 @@
 import { sideView } from "../app/hotseat.js";
+import { MORALE_RULES } from "../engine/index.js";
 import { CE_PER_SIGMA, distance, groundHeight, type Game, type Point, type Side } from "../engine/index.js";
 
 /**
@@ -61,18 +62,32 @@ const round = (p: Point) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
 export function viewOf(
   game: Game,
   side: Side,
-  plan: { objective: Point; mortarLeft: number | null; brief?: string; startLine?: Point },
+  plan: { objective: Point; mortarLeft: number | null; brief?: string; startLine?: Point; reports?: readonly string[] },
 ): string {
   const view = sideView(game, side);
   const lines: string[] = [];
-  lines.push(`Turn ${game.turn}. You command ${side}'s company, attacking. Map metres; y grows southward.`);
-  if (plan.brief) lines.push(`Tasking: ${plan.brief}`);
+  lines.push(`Turn ${game.turn} (a turn is one minute). You command ${side}'s company, attacking. Map metres; y grows southward.`);
+  if (plan.brief) lines.push(`Tasking (Hebrew, as the players read it): ${plan.brief}`);
+  lines.push("In short: you attack; the enemy holds the ground your plan puts it on.");
+  const men = game.units.filter((u) => u.side === side).flatMap((u) => u.soldiers ?? []);
+  const down = men.filter((m) => m.neutralized || m.morale?.state === "broken").length;
+  if (game.attackers.includes(side)) {
+    lines.push(
+      `The attack is called off when about ${Math.round(MORALE_RULES.SIDE_BREAK_BY_POSTURE.attacking * 100)}% of your men are down, broken or fled ` +
+        `(now ${Math.round((100 * down) / Math.max(1, men.length))}%, ${down} of ${men.length}). ` +
+        `A defence gives up at about ${Math.round(MORALE_RULES.SIDE_BREAK_BY_POSTURE.defending * 100)}% of its men.`,
+    );
+  }
   const h = (p: Point) => Math.round(groundHeight(game.terrain, p));
   lines.push(
     `Your plan puts the enemy position about ${round(plan.objective)}, ground ${h(plan.objective)} m` +
       (plan.startLine ? `; your start line is about ${round(plan.startLine)}, ground ${h(plan.startLine)} m.` : "."),
   );
   if (plan.mortarLeft !== null) lines.push(`Mortar missions left: ${plan.mortarLeft}.`);
+  if (plan.reports?.length) {
+    lines.push("Your fire last turn, as your forces saw it:");
+    for (const r of plan.reports) lines.push(`  ${r}`);
+  }
   lines.push("Your forces:");
   for (const u of view.units.filter((u) => u.side === side)) {
     const men = u.soldiers ?? [];
@@ -97,4 +112,16 @@ export function viewOf(
     }
   }
   return lines.join("\n");
+}
+
+/**
+ * What a side's forces saw its fire do to an enemy force, in words, never a
+ * count (rules decision 13: a player is never shown a count of enemy
+ * losses) — the English of `casualtyReport`.
+ */
+export function casualtiesSeen(casualties: number): string {
+  if (casualties === 0) return "no casualties seen";
+  if (casualties <= 2) return "a few casualties";
+  if (casualties <= 5) return "several casualties";
+  return "heavy casualties";
 }

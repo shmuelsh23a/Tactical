@@ -25,6 +25,14 @@ export interface CompanyOrders {
   hold: boolean;
   /** Where each holding force waits; a force not named waits where it stands. */
   waitAt: ReadonlyMap<string, Point>;
+  /**
+   * The axis: once let go, the rest go by this point before the objective —
+   * coming in from a flank, say, by a scout's observation point. Absent:
+   * straight at it.
+   */
+  attackVia?: Point;
+  /** Once the rest go, the scouts open fire from their posts in support (a base of fire). */
+  scoutsFire?: boolean;
 }
 
 /** What the scripted company commander was told to do about finding the enemy. */
@@ -89,6 +97,8 @@ export class ScriptedCompany {
   private readonly scouts = new Map<string, Point | null>();
   private readonly waitAt = new Map<string, Point>();
   private lookedTurns = 0;
+  private via: Point | undefined;
+  private support = false;
   /** The turn the rest were let go; undefined while they hold. */
   released: number | undefined;
 
@@ -170,7 +180,29 @@ export class ScriptedCompany {
       scoutsLieUp: holding || this.released !== undefined,
       hold: this.released === undefined,
       waitAt: this.waitAt,
+      ...(this.via ? { attackVia: this.via } : {}),
+      ...(this.support ? { scoutsFire: true } : {}),
     };
+  }
+
+  /** The scouts' observation points, by force (null: toward the objective). */
+  get posts(): ReadonlyMap<string, Point | null> {
+    return this.scouts;
+  }
+
+  /** Send a scout to another point, or lie it up where it stands (its own position). */
+  setPost(id: string, at: Point | null): void {
+    if (this.scouts.has(id)) this.scouts.set(id, at ? { ...at } : null);
+  }
+
+  /** The axis the rest go by once let go (decided at "go"). */
+  setAxis(via: Point | undefined): void {
+    this.via = via ? { ...via } : undefined;
+  }
+
+  /** Whether the scouts give the attack a base of fire once it goes. */
+  setScoutsFire(on: boolean): void {
+    this.support = on;
   }
 
   /** The scouts still in the fight. */

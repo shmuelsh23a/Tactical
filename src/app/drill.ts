@@ -185,6 +185,8 @@ export class DrillState {
   readonly watched = new Map<string, number>();
   /** The turn each scout reached its observation point. */
   readonly arrivedOn = new Map<string, number>();
+  /** Forces that have passed their company's axis point and go on to the objective. */
+  readonly passedVia = new Set<string>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -358,7 +360,13 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       game.setStandingOrder(u.id, { gait: "normal" });
       return;
     }
-    const aim = nearest ? nearest.position : task.objective;
+    // By the company's axis, if it gave one, until the force has passed it.
+    const via = company?.attackVia;
+    if (via && !state.passedVia.has(u.id) && distance(u.position, via) <= 60) state.passedVia.add(u.id);
+    const byVia = !!via && !state.passedVia.has(u.id);
+    const goal = byVia ? via : task.objective;
+    // On the way to the axis point it keeps to the axis, unless the enemy is close.
+    const aim = nearest && (!byVia || distance(u.position, nearest.position) < 250) ? nearest.position : goal;
     game.setStandingOrder(u.id, {
       gait: inContact ? drill.bound.gait : "normal",
       destination: toward(u.position, aim, inContact ? drill.bound.metres : 100),
@@ -399,8 +407,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill): voi
   const enemies = knownEnemies(game, side);
   const reach = task.attacking ? drill.attackFireRange : drill.openFireRange;
   for (const u of game.units.filter((x) => x.side === side && inPlay(x))) {
-    // A scout watches and reports; it does not give itself away (decision 52).
-    if (task.company?.scouts.has(u.id)) continue;
+    // A scout watches and reports; it does not give itself away (decision 52)
+    // — unless the company has gone in and told it to give a base of fire.
+    if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
     const target = pickTarget(u, enemies, axisOf(u, task), drill, reach);
     if (!target) {
       if (!task.attacking && drill.coverWhenIdle && !u.covering && !u.firedThisTurn && u.kind !== "vehicle") {

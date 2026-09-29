@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
-import { NeedAnswer, fromAnswers, type Question } from "./companyQuestions.js";
+import { NeedAnswer, casualtiesSeen, fromAnswers, type Question } from "./companyQuestions.js";
 
 /**
  * The company commander's decisions as typed questions — what Jev will be
@@ -62,5 +62,45 @@ describe("the company's questions", () => {
 
   it("refuse an answer that is not one of the options", () => {
     expect(() => play(["3"])).toThrow(/not an option/);
+  });
+
+  it("state when the attack is called off, and the losses so far", () => {
+    const q = nextQuestion([]);
+    expect(q.view).toMatch(/called off when about 30% of your men are down, broken or fled \(now 0%/);
+  });
+
+  it("name what each observation point sees", () => {
+    const q = nextQuestion(["1"]);
+    const post = q.options.find((o) => o.id === "p1");
+    expect(post?.label).toMatch(/sees .*the plan's centre|sees .*its (west|east|far side|near side)/);
+  });
+
+  it("report the enemy's losses in words, never as a count (rules decision 13)", () => {
+    expect([0, 1, 2, 3, 5, 6, 12].map(casualtiesSeen)).toEqual([
+      "no casualties seen",
+      "a few casualties",
+      "a few casualties",
+      "several casualties",
+      "several casualties",
+      "heavy casualties",
+      "heavy casualties",
+    ]);
+  });
+
+  it("after 'go', ask which way the company goes and whether the scouts give a base of fire", () => {
+    // Two scouts to the first observation point, the company in dead ground,
+    // then go at the first chance: the next two questions are the axis and support.
+    const answers = ["2", "p1", "p1", "deadGround"];
+    for (let i = 0; i < 80; i++) {
+      const q = nextQuestion(answers);
+      if (q.id.startsWith("go.axis")) {
+        expect(q.options[0]!.id).toBe("straight");
+        answers.push(q.options[1]!.id);
+        expect(nextQuestion(answers).id).toMatch(/^go\.support\./);
+        return;
+      }
+      answers.push(q.id.startsWith("go.") ? "yes" : q.id.startsWith("scout.") ? "on" : "hold");
+    }
+    throw new Error("never asked which way to go");
   });
 });

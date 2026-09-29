@@ -260,3 +260,35 @@ describe("a scout on its way to its observation point", () => {
     expect(scout.position).toEqual(post);
   });
 });
+
+describe("the company's axis and base of fire", () => {
+  it("goes by the axis point before the objective", () => {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const squad = g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 0, y: 0 }, 9));
+    g.beginTurn();
+    const via = { x: -300, y: 0 };
+    const task: DrillTask = { ...attack, company: { scouts: new Map(), scoutsLieUp: false, hold: false, waitAt: new Map(), attackVia: via } };
+    const state = new DrillState();
+    g.advanceToPhase("movement");
+    drillMovement(g, task, PLAIN_SCRIPT, state);
+    // Heading west, to the axis point, not north to the objective at (0, 600).
+    expect(squad.position.x).toBeLessThan(0);
+    expect(squad.position.y).toBe(0);
+  });
+
+  it("lets its scouts fire once the company has gone, when told to give a base of fire", () => {
+    const setUp = (scoutsFire: boolean, hold: boolean) => {
+      const g = new Game({ seed: 3, enforceC2: false });
+      const scout = g.addUnit(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 0 }, 9));
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 9));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      const company = { scouts: new Map([["B1", null]]), scoutsLieUp: true, hold, waitAt: new Map(), scoutsFire };
+      drillCombat(g, { ...attack, company }, PLAIN_SCRIPT);
+      return scout.firedThisTurn;
+    };
+    expect(setUp(true, false)).toBe(true);
+    expect(setUp(false, false)).toBe(false);
+    expect(setUp(true, true)).toBe(false); // not while the company still holds
+  });
+});
