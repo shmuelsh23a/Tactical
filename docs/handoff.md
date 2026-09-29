@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-29, after rules decisions 51–52 (branch `claude/attack-accuracy-unknown-positions-ln9i7x`): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -131,7 +131,25 @@ has no defender's bonus, so numbers win (measured: 72–88% at ~2:1, 80–100% a
 last hours; the scenarios are test beds. Measured with the smart attacker:
 3:1 on a prepared platoon wins 7 of 8, 2:1 wins 3 of 8 (2 draws).
 
+**Then decisions 51–52 (2026-09-28/29)**, from the author's question
+"in an attack neither side knows exactly where the other is — did you take
+that into account?" Only in the engine: the harness and the smart attacker
+planned fires on the defence's true centre. Now a sighting reports an
+observer's estimate (`GameOptions.locationError`, on in every scenario), and
+the test players plan on an estimate (`--planning-error`, `PLANNING_ERROR`).
+The calibrated 3:1 company attack falls from 95% to 20%; the smart attacker
+from 8 of 8 to 2 of 8. Reconnaissance (decision 52: `--recon 1` with
+`--fires calibrated-wait`, `RECON=1`) brings the harness's 3:1 back to 59%
+when the defender opens fire at 400 m — and does nothing against a defender
+with fire discipline, because a still force is found only inside 20 m.
+balance.md, *Fourteenth* and *Fifteenth round*.
+
 **Start the next session here** — open, in rough order:
+0. **Waiting on the author (decisions 51–52):** what should let an attacker
+   find a still, dug-in defender before the assault — a longer detection
+   band for a force that stops and watches, binoculars (backlog 4), UAVs,
+   or none (recon only by drawing fire)? And whether 3:1 should still win
+   against a prepared platoon once intelligence is realistic.
 1. **Fire support by odds.** Both sides of the test scenarios have the same
    mortar section, and the mortars decide the battle before the infantry
    closes (8–10 minutes; infantry advances 14–25 m a minute uphill under

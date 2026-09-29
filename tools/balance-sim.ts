@@ -18,6 +18,7 @@
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *   npm run balance -- --fires calibrated --defender-fires calibrated   # the fire decision 43 was calibrated on
  *   npm run balance -- --lethality document          # the document's blast tables (rules decision 41; default research)
+ *   npm run balance -- --recon 1 --fires calibrated-wait   # scouts go ahead; the guns wait for what they find (rules decision 52)
  *   npm run balance -- --planning-error --location-error   # fires planned on an estimate (0.2 of range; --planning-error 0.1 for less); sightings off by the eye's error (rules decision 51)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -92,6 +93,7 @@ const fires: FirePlan | undefined = (() => {
   if (!firesArg) return undefined;
   if (firesArg === "plan") return FIRE_PLAN;
   if (firesArg === "calibrated") return CALIBRATED_FIRE_PLAN;
+  if (firesArg === "calibrated-wait") return { ...CALIBRATED_FIRE_PLAN, waitForContact: true };
   const plan: FirePlan = { missions: [], liftAt: FIRE_PLAN.liftAt };
   for (const part of firesArg.split(",")) {
     const [key = "", v = ""] = part.split("=");
@@ -100,6 +102,7 @@ const fires: FirePlan | undefined = (() => {
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
     else if (key === "registered" && (v === "on" || v === "off")) plan.registered = v === "on";
     else if (key === "method" && (v === "adjust" || v === "effect")) plan.method = v;
+    else if (key === "wait" && (v === "on" || v === "off")) plan.waitForContact = v === "on";
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;
@@ -143,6 +146,10 @@ const defenderPlan =
   args.includes("--defender-ops") || alternateArg
     ? { observationPosts: args.includes("--defender-ops"), ...(alternateArg ? { alternateAt: Number(alternateArg) } : {}) }
     : undefined;
+// --recon 2 — the attacker's scouts (rules decision 52): that many squads go
+// ahead scouting while the rest wait for what they find
+const reconArg = value("--recon");
+if (reconArg) drill.recon = { forces: Number(reconArg) };
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 

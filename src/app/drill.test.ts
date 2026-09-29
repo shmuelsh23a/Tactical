@@ -143,3 +143,55 @@ describe("a squad's grenadiers (rules decision 45)", () => {
     expect(WESTERN_DRILL.grenadiers).toBe(SQUAD_GRENADIERS);
   });
 });
+
+/**
+ * Reconnaissance (rules decision 52): the squad nearest the objective goes
+ * ahead scouting on hold-fire; the rest wait until it has found something.
+ */
+describe("the drill's reconnaissance", () => {
+  function company() {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const lead = g.addUnit(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 40 }, 9));
+    const rest = g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 80, y: 0 }, 9));
+    g.beginTurn();
+    return { g, lead, rest };
+  }
+  const drill = { ...PLAIN_SCRIPT, recon: { forces: 1 } };
+
+  it("sends the squad nearest the objective ahead, scouting and holding its fire, and holds the rest", () => {
+    const { g, lead, rest } = company();
+    const state = new DrillState();
+    g.advanceToPhase("movement");
+    drillMovement(g, attack, drill, state);
+    expect(lead.scouting).toBe(true);
+    expect(lead.position.y).toBeGreaterThan(40);
+    expect(g.standingOrderFor(lead.id)?.holdFire).toBe(true);
+    expect(rest.position).toEqual({ x: 80, y: 0 });
+    expect(rest.scouting).toBeFalsy();
+  });
+
+  it("lets the attack go once the side has found the enemy, and the scout lies up and watches", () => {
+    const { g, lead, rest } = company();
+    const state = new DrillState();
+    g.advanceToPhase("movement");
+    drillMovement(g, attack, drill, state);
+    // A contact reported: the enemy fired on the scout.
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 300 }, 9));
+    g.advanceToPhase("combat");
+    g.fire(red.id, lead.id, { weapon: "smallArms" });
+    expect(g.knows("BLUE", red.id)).toBe(true);
+    drillCombat(g, attack, drill, state);
+    expect(lead.firedThisTurn).toBe(false); // the scout does not give itself away
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    const scoutAt = { ...lead.position };
+    drillMovement(g, attack, drill, state);
+    expect(state.reconDone.has("BLUE")).toBe(true);
+    // Half the attack bounds each turn under overwatch: give it two.
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    drillMovement(g, attack, drill, state);
+    expect(lead.position).toEqual(scoutAt);
+    expect(rest.position).not.toEqual({ x: 80, y: 0 });
+  });
+});

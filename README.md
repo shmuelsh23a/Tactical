@@ -1806,6 +1806,42 @@ on the stated reasoning, still awaiting the author's word.
       attacker (decision 38 gave them only to the defender in the harness),
       UAVs (backlog 4), or more fire. The 20% itself is also open: a
       position that has been reconnoitred is known better.
+52. ⚠️ **Reconnaissance before the attack** (author, 2026-09-29: "let's see
+    how sending recon affects this — the use of recon is a lesson worth
+    teaching"). Nothing new in the rules: a player already has scouting
+    (decision 12), hold fire (decision 6) and standing orders. What is new is
+    that the test players use them, so the lesson can be measured:
+    - **The drill** (`SquadDrill.recon`, `--recon N` in the harness): the N
+      squads nearest the objective go ahead scouting, on hold-fire, while the
+      rest of the attack waits at its start line. It is released when the
+      side has found something, when the scouts reach the objective, or when
+      none of them is left. The scouts then lie up and watch without firing,
+      so what they found stays on the map and the guns have eyes.
+    - **The fire plan waits for them** (`--fires calibrated-wait`, or
+      `wait=on`): the attacker's mortars fire only on what the side has
+      seen, never on the planned estimate. The fires lift on the main body's
+      approach, not a scout's.
+    - **The smart attacker** does the same through the UI (`RECON=1`).
+    - **What it moved** (balance.md, *Fifteenth round*; fires planned on an
+      estimate, location error on): against the plain drill's defender,
+      which opens fire at 400 m, one scout squad with the guns waiting takes
+      the 3:1 attack from **20% to 59%**. Two scouts give 33%, three 12%:
+      more men out in front is more men under the defender's fire, and they
+      count toward the attacker's breakpoint. Waiting while firing on the
+      estimate anyway gives 37%. The 2:1 attack stays lost (0–6%).
+    - **Against a defender with fire discipline it does not work** (the
+      Western drill, which holds fire to 200 m): 7% without recon, 1% with.
+      The scout walks to 250 m and never sees the dug-in position, because
+      a force holding still is found only inside the document's 20 m band.
+      The defender's mortars see the scout and destroy it without giving
+      anything away, and the main body then goes in blind.
+    - **Open for the author:** recon here works only by drawing fire. A
+      real patrol finds a position by watching it, with optics, from
+      hundreds of metres. The 20 m band is the document's (the movement
+      table's hidden-enemy row), and binoculars are backlog 4. Should a
+      force that stops and watches, or has binoculars, find a still force
+      further out than 20 m? That is the rule that decides whether ground
+      reconnaissance can be taught.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

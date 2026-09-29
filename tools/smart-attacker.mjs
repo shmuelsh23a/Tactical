@@ -16,6 +16,12 @@
  *   - fires the mortars on the fire plan until a squad is within 150 m of it,
  *     then lays mortar smoke on the objective from 400 m;
  *   - runs in and assaults inside 80 m / 25 m.
+ * With RECON=1 it reconnoitres first (rules decision 52): the squad nearest
+ * the objective goes out scouting, holding its fire, while the rest of the
+ * company waits at its start line; the mortars fire only on what the scout
+ * has found, and the attack goes in once it has found something (or the
+ * scout is lost, or reaches the objective). The scout then lies up and
+ * watches.
  * The defender fights by the app's own drill and standing orders.
  *
  * Usage — start the dev server first (`npx vite --port 5199`), then:
@@ -26,7 +32,8 @@
  * Env: SEED (plays on other dice, via `?seed=`), NOFIRE (no fire plan),
  * PLANNING_ERROR (the share of range the fire plan's centre is off by,
  * default 0.2; 0 plans on the truth, as every run before 2026-09-28),
- * NOSMOKE (no smoke), SHOT (a screenshot of the last screen, to this path),
+ * NOSMOKE (no smoke), RECON (send a scout ahead first), SHOT (a screenshot of the last screen, to this path;
+ * with SHOT_TURN, of the attacker's map at its fire phase on that turn),
  * BASE_URL (default http://localhost:5199),
  * PLAYWRIGHT_DIR (where `playwright` resolves; default the global
  * node_modules of this container), CHROMIUM (the browser binary).
@@ -108,6 +115,8 @@ const setup = await p.evaluate(async ({ scenario, seed, share }) => {
     truth,
     estimate: { x: truth.x + along * ux - across * uy, y: truth.y + along * uy + across * ux },
     units: game.units.map((u) => ({ id: u.id, name: u.name, side: u.side, kind: u.kind })),
+    // The attacker's own squad nearest the defence: its scout, if it sends one.
+    scout: a.slice().sort((p, q) => Math.hypot(p.position.x - truth.x, p.position.y - truth.y) - Math.hypot(q.position.x - truth.x, q.position.y - truth.y))[0]?.name,
   };
 }, { scenario, seed: process.env.SEED ? Number(process.env.SEED) : undefined, share: Number(process.env.PLANNING_ERROR ?? 0.2) });
 const byName = Object.fromEntries(setup.units.map((u) => [u.name, u]));
@@ -116,7 +125,10 @@ console.log(`PLAN centre off the defence by ${Math.round(Math.hypot(objective.x 
 // Realistic intelligence: the tasking names the area, not where each squad lies.
 // The registered targets are the objective's centre and two points 90 m to either side.
 setup.targets = [objective, { x: objective.x - 90, y: objective.y }, { x: objective.x + 90, y: objective.y }];
-const stats = { assaults: 0, bounds: 0, holds: 0, hqMoves: 0, fireCalls: 0, smoke: 0, registered: 0, lifted: null };
+const stats = { assaults: 0, bounds: 0, holds: 0, hqMoves: 0, fireCalls: 0, smoke: 0, registered: 0, lifted: null, released: null };
+// Reconnaissance (RECON): the scout's name, and whether the main body has been let go.
+const scout = process.env.RECON ? setup.scout : null;
+let released = !scout;
 const known = {}; // last known own positions by name
 const missed = {}; // squads that could not be ordered last time
 let turnNo = 0;
@@ -149,15 +161,18 @@ async function targeting(side) {
     for (const f of foes) for (const u of own) { const d = dist(f, u.at); if (d < bd) { bd = d; best = f; } }
     await clickBtn(/^פגז$/); await clickBtn(/^מרגמה$/); await clickBtn(/אש לאפקט מייד/); await clickWorld(best); return;
   }
-  const own = Object.values(await ownPositions(side)).filter((u) => u.kind === "infantry");
+  // The scout is out there on purpose: it neither lifts the fires nor counts as the lead.
+  const own = Object.values(await ownPositions(side)).filter((u) => u.kind === "infantry" && u.name !== scout);
   if (!own.length) return;
   const nearestOwn = (pt) => Math.min(...own.map((u) => dist(u.at, pt)));
   // Fire plan: the registered positions, while no squad of ours is within 150 m of one (danger close).
-  const safe = setup.targets.filter((t) => nearestOwn(t) > 150);
+  // With a scout out, only what it has found — the enemy it has seen, nearest the objective.
+  const seen = foes.slice().sort((p, q) => dist(p, objective) - dist(q, objective));
+  const safe = scout ? seen.filter((t) => nearestOwn(t) > 150) : setup.targets.filter((t) => nearestOwn(t) > 150);
   if (!process.env.NOFIRE && safe.length && await p.getByRole("button", { name: /^פגז$/ }).count()) {
     const t = safe[stats.fireCalls % safe.length];
     await clickBtn(/^פגז$/); await clickBtn(/^מרגמה$/); await clickBtn(/אש לאפקט מייד/); await clickWorld(t); stats.fireCalls++;
-  } else if (!safe.length && stats.lifted == null) stats.lifted = turnNo;
+  } else if (!safe.length && (!scout || seen.length) && stats.lifted == null) stats.lifted = turnNo;
   // Smoke for the last stretch: once the lead squad is within 400 m of the
   // objective, screen it — the nearest enemy seen, else the target areas in
   // turn (a mortar screen is 50 m across and lasts 2 turns). Not at assault range.
@@ -176,7 +191,21 @@ async function movement(side) {
   if (side !== setup.attacker) return;
   const pos = await ownPositions(side);
   const foes = await enemies();
-  const squads = Object.values(pos).filter((u) => u.kind === "infantry").sort((a, b) => a.id.localeCompare(b.id));
+  if (scout) {
+    const s = pos[scout];
+    if (!released && (foes.length || !s || dist(s.at, objective) <= 50)) { released = true; stats.released = turnNo; }
+    if (s) {
+      await select(scout);
+      if (!stats.scouting) { await clickBtn(/^צא לסיור$/); stats.scouting = true; }
+      await clickBtn(/^אחזקת אש$/);
+      // Walk on until something is found; then lie up and watch.
+      if (released) await clickBtn(/^החזק מקום ואל תירה$/);
+      else await clickWorld(toward(s.at, objective, 50));
+      await tick(100);
+    }
+    if (!released) return; // the rest wait at the start line for the scout's report
+  }
+  const squads = Object.values(pos).filter((u) => u.kind === "infantry" && u.name !== scout).sort((a, b) => a.id.localeCompare(b.id));
   // Command groups first, so their squads stay in the every-turn band of C2.
   for (const hq of Object.values(pos).filter((u) => u.kind === "command")) {
     const prefix = hq.id.replace(/-HQ$/, "-").replace(/-COY$/, "-");
@@ -215,7 +244,7 @@ async function combat(side) {
   for (const entry of await rosterEntries()) {
     const name = entry.split(" — ")[0]; const u = byName[name];
     if (!u || u.side !== side || !alive(entry)) continue;
-    if (side === setup.attacker && u.kind === "command") continue;
+    if (side === setup.attacker && (u.kind === "command" || name === scout)) continue;
     await select(name); const at = await selectedAt(); if (!at) continue;
     const foes = await enemies(); if (!foes.length) return;
     let near = null, nd = Infinity;
@@ -242,13 +271,17 @@ while (!over && steps < maxTurns * 30) {
     const side = /\((RED|BLUE)\)/.exec(end)?.[1];
     if (/תנועה/.test(end)) await movement(side);
     else if (/סימון מטרות/.test(end)) await targeting(side);
-    else if (/ירי/.test(end)) await combat(side);
+    else if (/ירי/.test(end)) {
+      // SHOT_TURN: the attacker's own map at its fire phase that turn — enemies where it judges them.
+      if (process.env.SHOT && Number(process.env.SHOT_TURN) === turn && side === setup.attacker) await p.screenshot({ path: process.env.SHOT });
+      await combat(side);
+    }
     await clickBtn(/^סיים שלב/); continue;
   }
   console.log("stuck with buttons", JSON.stringify(bs)); break;
 }
 const calls = { made: stats.fireCalls };
-if (process.env.SHOT) await p.screenshot({ path: process.env.SHOT });
+if (process.env.SHOT && !process.env.SHOT_TURN) await p.screenshot({ path: process.env.SHOT });
 // The umpire's account: save the recording in-page and replay it.
 const umpire = await p.evaluate(async () => {
   let blob; const orig = URL.createObjectURL; URL.createObjectURL = (b) => { blob = b; return "blob:x"; };

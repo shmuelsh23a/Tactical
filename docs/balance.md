@@ -1702,6 +1702,68 @@ estimate an observer a turn (300 a cell, same seeds):
 Nothing that matters moved. Location error alone now costs the attacker
 nothing at 3:1 (95%, was 93%).
 
+## Fifteenth round: reconnaissance before the attack, 2026-09-29
+
+The author: "let's see how sending recon affects this — the use of recon is
+a lesson worth teaching." Rules decision 52 gives the drill a reconnaissance
+(`--recon N`): the N squads nearest the objective go ahead scouting on
+hold-fire, and the rest wait until the side has found something. The fire
+plan can wait for the scouts too (`wait=on`, or `--fires calibrated-wait`).
+
+Company, morale on, 300 battles a cell. Fires planned on an estimate (0.2),
+location error on, and the defender has the calibrated mortar section.
+
+**Plain drill** (the defender opens fire at 400 m):
+
+| Attacker | 3:1 win | 3:1 turns | 3:1 attacker down | 2:1 win |
+|---|---|---|---|---|
+| no recon, fires on the estimate | 20% | 12 | 25% | 0% |
+| 1 scout, fires on the estimate | 37% | 23 | 30% | 6% |
+| **1 scout, fires wait for it** | **59%** | 22 | 32% | 0% |
+| 2 scouts, fires wait | 33% | 22 | 29% | 0% |
+| 3 scouts, fires wait | 12% | 21 | 26% | 0% |
+| 1 scout, fires wait, adjusting | 15% | 23 | 28% | 0% |
+| *1 scout, fires wait, on the truth (no planning error)* | *71%* | 20 | 33% | 0% |
+| *no recon, on the truth (the old harness)* | *95%* | 10 | 38% | 7% |
+
+**Western drill** (the defender holds its fire to 200 m):
+
+| Attacker | 3:1 win | 2:1 win |
+|---|---|---|
+| no recon, fires on the estimate | 7% | 0% |
+| 1 scout, fires wait for it | 1% | 0% |
+
+The 3:1 turns and losses are the loser's median for the row where the
+attacker mostly loses, and the attacker's own where it mostly wins.
+
+### What it says
+
+- **One scout is worth most of what perfect intelligence was.** Against a
+  defender that opens up at 400 m, one squad sent ahead finds the position by
+  drawing its fire. The guns fire on its report, about 300 m out and 60 m
+  off, and the attack triples its chance, 20% to 59%. In a traced battle the
+  scout lost 8 of 9 men, and the main body went in untouched and won.
+- **The guns have to wait for it.** Firing the plan anyway while the scout
+  goes forward gives 37%, since half the missions are spent on the
+  estimate.
+- **Send one.** Two scouts give 33% and three give 12%. More squads out in
+  front means more men under the defender's small arms and mortars, and
+  those men count toward the attacker's breakpoint.
+- **Adjusting is still worse than firing for effect** (15%): the scout sees
+  the rounds land, but adjusting takes minutes the scout does not have.
+- **It takes twice as long**: 20–25 turns instead of 10–12. That is the
+  price of reconnaissance, and the game should show it.
+- **Against fire discipline the scout finds nothing.** Under the Western
+  drill the scout reaches 250 m and never sees the dug-in position. A force
+  holding still is found only inside 20 m (the document's hidden-enemy band),
+  and this defender does not fire at a single squad. Its mortars see the
+  scout (a mover, in the 300 m band) and destroy it, and indirect fire gives
+  nothing away. With the scout gone the main body is released blind. So
+  **reconnaissance here works only by drawing fire**. Finding a still
+  position by watching it, which is what a real patrol does with optics from
+  hundreds of metres, cannot happen under the 20 m band. That is a question
+  for the author (README, decision 52).
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

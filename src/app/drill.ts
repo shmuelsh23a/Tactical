@@ -84,6 +84,19 @@ export interface SquadDrill {
    * registered. Absent: it stays in its hole.
    */
   displace?: { metres: number; contactWithin: number };
+  /**
+   * Reconnaissance before the attack (⚠️ ours, rules decision 52): the
+   * `forces` squads nearest the objective go ahead **scouting** — walking,
+   * looking harder — while the rest of the attack waits at its start line
+   * until the side has found something, or the scouts have reached the
+   * objective, or none of them is left. Once they have found the enemy the
+   * scouts go to ground and watch: they hold their fire, so what they see
+   * stays on the side's map and its guns have eyes. A hidden defender is
+   * found only close in (the document's 20 m band) or when it opens fire,
+   * so a scout's real job is to be the one it opens fire on. Absent: the
+   * whole attack advances at once, and finds the enemy with its main body.
+   */
+  recon?: { forces: number };
 }
 
 /**
@@ -158,6 +171,10 @@ export class DrillState {
   private readonly strength = new Map<string, number>();
   readonly fellBack = new Set<string>();
   readonly displaced = new Set<string>();
+  /** The forces sent ahead to find the enemy, by side, chosen on the drill's first turn. */
+  readonly recon = new Map<Side, Set<string>>();
+  /** Sides whose main body has been released: its scouts found something, or are done. */
+  readonly reconDone = new Set<Side>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -207,6 +224,27 @@ function axisOf(u: Unit, task: DrillTask): number {
   return bearingDegrees(u.position, task.objective);
 }
 
+/**
+ * The attacker's scouts (rules decision 52): chosen once, the drill's `forces`
+ * fighting forces nearest the objective, and sent out scouting.
+ */
+function scoutsOf(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState): Set<string> {
+  let scouts = state.recon.get(task.side);
+  if (scouts) return scouts;
+  const forces = game.units
+    .filter((u) => u.side === task.side && u.kind === "infantry" && inPlay(u))
+    .sort((a, b) => distance(a.position, task.objective) - distance(b.position, task.objective) || (a.id < b.id ? -1 : 1));
+  scouts = new Set(forces.slice(0, drill.recon?.forces ?? 0).map((u) => u.id));
+  state.recon.set(task.side, scouts);
+  for (const id of scouts) game.setScouting(id, true);
+  return scouts;
+}
+
+/** Whether a force is one of its side's scouts. */
+export function isScout(state: DrillState, u: Unit): boolean {
+  return state.recon.get(u.side)?.has(u.id) ?? false;
+}
+
 function readyShare(u: Unit, state: DrillState): number {
   const start = state.startingStrength(u);
   if (start === 0) return 1;
@@ -223,6 +261,14 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const enemies = knownEnemies(game, side);
   const inContact = enemies.length > 0;
   const forces = game.units.filter((u) => u.side === side && u.kind !== "command");
+  // Reconnaissance: the scouts go ahead, the rest wait for what they find.
+  const scouts = task.attacking && drill.recon ? scoutsOf(game, task, drill, state) : new Set<string>();
+  if (scouts.size && !state.reconDone.has(side)) {
+    const live = forces.filter((u) => scouts.has(u.id) && inPlay(u));
+    const there = live.some((u) => distance(u.position, task.objective) <= 50);
+    if (inContact || live.length === 0 || there) state.reconDone.add(side);
+  }
+  const waiting = scouts.size > 0 && !state.reconDone.has(side);
 
   forces.forEach((u, i) => {
     if (!inPlay(u)) return;
@@ -271,6 +317,21 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       return;
     }
 
+    if (scouts.has(u.id)) {
+      // Out ahead: walk on until something is found, then go to ground and watch.
+      game.setStandingOrder(
+        u.id,
+        inContact || state.reconDone.has(side)
+          ? { gait: "normal", holdFire: true }
+          : { gait: "normal", destination: toward(u.position, task.objective, 50), holdFire: true },
+      );
+      return;
+    }
+    if (waiting) {
+      // The main body holds at its start line until the scouts report.
+      game.setStandingOrder(u.id, { gait: "normal" });
+      return;
+    }
     if (nearest && distance(u.position, nearest.position) <= drill.assault.range + 5) {
       game.setStandingOrder(u.id, { gait: "normal" }); // close enough: hold, and assault in the fire phase
       return;
@@ -316,11 +377,13 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
 }
 
 /** The fire phase: shoot into the sector, assault what is close, cover when idle. */
-export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill): void {
+export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState): void {
   const { side } = task;
   const enemies = knownEnemies(game, side);
   const reach = task.attacking ? drill.attackFireRange : drill.openFireRange;
   for (const u of game.units.filter((x) => x.side === side && inPlay(x))) {
+    // A scout watches and reports; it does not give itself away (decision 52).
+    if (state && isScout(state, u)) continue;
     const target = pickTarget(u, enemies, axisOf(u, task), drill, reach);
     if (!target) {
       if (!task.attacking && drill.coverWhenIdle && !u.covering && !u.firedThisTurn && u.kind !== "vehicle") {

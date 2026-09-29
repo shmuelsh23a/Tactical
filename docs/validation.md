@@ -625,6 +625,18 @@ objective from 400 m; the defender played by the drill). Seeds 11–18 on
   (a wrong button label): its attack crept forward at 14 m a bound. The
   earlier "3:1 wins by turn 3–4" and the first run of these seeds (1 of 8,
   2 of 4) were with that script.
+- **That fire plan was built on the truth.** Until 2026-09-28 the script
+  centred its fire plan on the defence's true centre. Rules decisions 51–52,
+  the same seeds 11–18, and location error on in every run:
+
+| Scenario | Plan on the truth | Plan on an estimate (0.2 of range) | Estimate, with a scout first (`RECON=1`) |
+|---|---|---|---|
+| `telAzekaAssault` (3:1) | 8 wins | **2 wins**, 6 losses | (being measured) |
+| `telAzekaAssault2` (2:1) | 6 wins, 2 draws | **2 wins**, 6 losses | (being measured) |
+
+  The estimates were off by 6–162 m (the same draw for both scenarios on a
+  seed). The attacks won on the estimate were the seeds where it was off by
+  6, 19 and 49 m.
 
 ## Where the enemy is (rules decision 51)
 

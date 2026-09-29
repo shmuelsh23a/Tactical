@@ -257,6 +257,11 @@ export interface FirePlan {
   fuze?: Fuze;
   /** Adjust fire (default) or fire for effect at once (rules decision 39). */
   method?: FireMethod;
+  /**
+   * Fire only on what the side has seen, never on the plan (rules decision
+   * 52): the guns wait for the scouts to find the enemy.
+   */
+  waitForContact?: boolean;
 }
 
 /**
@@ -497,7 +502,9 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     if (opts.fires && kind !== "meeting") {
       const goal = objective[attackerSide];
       const lifted = g.units
-        .filter((u) => u.side === attackerSide && u.kind !== "command" && !u.neutralized)
+        // The main body's nearness lifts the fires, not a scout's (decision 52):
+        // the scouts are there to call them in.
+        .filter((u) => u.side === attackerSide && u.kind !== "command" && !u.neutralized && !u.scouting)
         .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
       if (lifted && !liftedFires) {
         // The fires lift: whatever is still to come is checked.
@@ -513,6 +520,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
             .filter((c) => !c.lastKnownNeutralized)
             .sort((p, q) => distance(p.lastKnownPosition, goal) - distance(q.lastKnownPosition, goal))[0];
           if (seen) return seen.lastKnownPosition;
+          if (opts.fires!.waitForContact) return undefined;
           const called = g.fireMissions.filter((m) => m.side === attackerSide).length;
           return plannedTargets[called % plannedTargets.length]!;
         }, opts.fires.fuze, opts.fires.method);
@@ -546,7 +554,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     note(g.advanceToPhase("movement").morale);
     for (const side of order) drillMovement(g, tasks[side], drill, drillState);
     g.advanceToPhase("combat");
-    for (const side of order) drillCombat(g, tasks[side], drill);
+    for (const side of order) drillCombat(g, tasks[side], drill, drillState);
     for (const u of g.units) {
       if (u.kind === "command") continue;
       const s = u.suppression ?? 0;
