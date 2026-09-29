@@ -37,6 +37,8 @@ export function buildTelAzekaAssault2Scenario(seed = 1967): Scenario {
     morale: true,
     locationError: true,
     stillDetection: true,
+    binoculars: true,
+    keepEyesOn: true,
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {

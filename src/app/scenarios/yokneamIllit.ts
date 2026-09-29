@@ -53,6 +53,8 @@ export function buildYokneamIllitScenario(seed = 2026): Scenario {
     morale: true,
     locationError: true,
     stillDetection: true,
+    binoculars: true,
+    keepEyesOn: true,
     attackers: ["BLUE"],
     terrain: buildYokneamIllitTerrain(),
   });

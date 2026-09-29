@@ -46,6 +46,8 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
     morale: true,
     locationError: true,
     stillDetection: true,
+    binoculars: true,
+    keepEyesOn: true,
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {

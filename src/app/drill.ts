@@ -100,8 +100,13 @@ export interface SquadDrill {
    * and watch this many turns before the next. A force that has stopped is
    * one that looks (rules decision 53); one that walks on finds a still
    * enemy only as it passes within 20 m. 0 or absent: they walk on.
+   *
+   * `lookTurns`: find, fix, then assault — once the scouts have found the
+   * enemy the main body waits this many more turns while they watch, so
+   * the report sharpens and the guns fire on it (rules decision 54). 0 or
+   * absent: it goes as soon as anything is found.
    */
-  recon?: { forces: number; watchTurns?: number };
+  recon?: { forces: number; watchTurns?: number; lookTurns?: number };
 }
 
 /**
@@ -182,6 +187,8 @@ export class DrillState {
   readonly reconDone = new Set<Side>();
   /** Turns each scout has halted to watch since its last bound. */
   readonly watched = new Map<string, number>();
+  /** The turn each side's scouts first found the enemy. */
+  readonly foundOnTurn = new Map<Side, number>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -273,7 +280,10 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   if (scouts.size && !state.reconDone.has(side)) {
     const live = forces.filter((u) => scouts.has(u.id) && inPlay(u));
     const there = live.some((u) => distance(u.position, task.objective) <= 50);
-    if (inContact || live.length === 0 || there) state.reconDone.add(side);
+    if (inContact && !state.foundOnTurn.has(side)) state.foundOnTurn.set(side, game.turn);
+    const found = state.foundOnTurn.get(side);
+    const looked = found !== undefined && game.turn - found >= (drill.recon?.lookTurns ?? 0);
+    if (looked || live.length === 0 || there) state.reconDone.add(side);
   }
   const waiting = scouts.size > 0 && !state.reconDone.has(side);
 
@@ -327,7 +337,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     if (scouts.has(u.id)) {
       // Out ahead: bound and look until something is found, then go to ground and watch.
       const watched = state.watched.get(u.id) ?? 0;
-      const halt = inContact || state.reconDone.has(side) || watched < (drill.recon?.watchTurns ?? 0);
+      const halt =
+        inContact || state.foundOnTurn.has(side) || state.reconDone.has(side) || watched < (drill.recon?.watchTurns ?? 0);
       state.watched.set(u.id, halt ? watched + 1 : 0);
       game.setStandingOrder(
         u.id,

@@ -53,7 +53,10 @@ import {
   canObserve,
   detectByMovement,
   detectByUav,
+  isHidden,
+  lookingThroughBinoculars,
   observeFromPosition,
+  stillReach,
   type DetectionResult,
   type Observation,
 } from "./combat/detection.js";
@@ -407,6 +410,20 @@ export interface GameOptions {
    * rolls for more pairs of forces, so it changes what the rng is asked.
    */
   stillDetection?: boolean;
+  /**
+   * Scouts carry binoculars (rules decision 54, ⚠️ ours): a scouting force
+   * that has halted watches as an observation post does — a still enemy to
+   * 600 m, a moving one to 1,000 m, and half the eye's range error. Off by
+   * default; needs `trackIntel`.
+   */
+  binoculars?: boolean;
+  /**
+   * A longer look sharpens a report (rules decision 54, ⚠️ ours): a force in
+   * position keeps its eyes on a still enemy its side has fresh and it can
+   * see within its reach, without rolling to find it again, and each turn's
+   * look adds an estimate. Off by default; needs `trackIntel`.
+   */
+  keepEyesOn?: boolean;
 }
 
 /**
@@ -438,6 +455,10 @@ export class Game {
   readonly locationError: boolean;
   /** Whether a force in position finds a still enemy beyond 20 m (rules decision 53). */
   readonly stillDetection: boolean;
+  /** Whether scouts carry binoculars (rules decision 54). */
+  readonly binoculars: boolean;
+  /** Whether a force in position keeps its eyes on a still enemy it has found (rules decision 54). */
+  readonly keepEyesOn: boolean;
   /**
    * Where the location error is drawn from: its own stream (see `unitSeed`),
    * so turning it on moves no other roll in the game.
@@ -557,9 +578,13 @@ export class Game {
     this.attackers = [...(opts.attackers ?? [])];
     this.locationError = opts.locationError ?? false;
     this.stillDetection = opts.stillDetection ?? false;
+    this.binoculars = opts.binoculars ?? false;
+    this.keepEyesOn = opts.keepEyesOn ?? false;
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
+    if (this.binoculars && !this.trackIntel) throw new Error("binoculars needs trackIntel");
+    if (this.keepEyesOn && !this.trackIntel) throw new Error("keepEyesOn needs trackIntel");
     this.locationRng = new Rng(unitSeed(opts.seed, LOCATION_ERROR_STREAM));
     if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
     if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
@@ -656,6 +681,8 @@ export class Game {
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
+      ...(this.binoculars ? { binoculars: true } : {}),
+      ...(this.keepEyesOn ? { keepEyesOn: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -1528,7 +1555,9 @@ export class Game {
     } else {
       const eye = from ?? observer.position;
       const range = distance(eye, at);
-      const s = locationSigma(range, observer.observationPost ? LOCATION_ERROR.observationPost : LOCATION_ERROR.eye);
+      // An observation post, or a scout at its binoculars (rules decision 54), has the better eye.
+      const post = observer.observationPost || lookingThroughBinoculars(observer, this.binoculars);
+      const s = locationSigma(range, post ? LOCATION_ERROR.observationPost : LOCATION_ERROR.eye);
       const along = normal() * s.along;
       const across = normal() * s.across;
       const ux = range > 0 ? (at.x - eye.x) / range : 1;
@@ -1574,17 +1603,46 @@ export class Game {
    */
   private observeFromPositions(): Observation[] {
     if (!this.trackIntel) return [];
+    this.keepEyesOnWhatWasFound();
     const seen = observeFromPosition(
       this.rng,
       this.units,
       (observer, target) => this.hasLineOfSight(observer, target),
       this.stillDetection,
+      this.binoculars,
     );
     for (const { observerId, targetId } of seen) {
       const observer = this.getUnit(observerId);
       this.observe(observer.side, targetId, "movement", observer);
     }
     return seen;
+  }
+
+  /**
+   * A longer look (rules decision 54): every force in position keeps its
+   * eyes on a still enemy its side holds fresh — seen this turn or last —
+   * within its reach and sight, without rolling to find it again. Each look
+   * is a new estimate, so a force watched for longer is placed better (the
+   * ledger combines them, one an observer a turn). Not reported as a new
+   * sighting: it is the same one, kept.
+   */
+  private keepEyesOnWhatWasFound(): void {
+    if (!this.keepEyesOn) return;
+    for (const observer of this.units) {
+      if (observer.movedThisTurn > 0 || !canObserve(observer)) continue;
+      const reach = this.stillDetection
+        ? stillReach(observer, this.binoculars)
+        : MOVEMENT_PROFILES.normal.hiddenDetectRange;
+      for (const target of this.units) {
+        if (target.side === observer.side || !isHidden(target)) continue;
+        if (target.kind === "vehicle" && target.vehicle?.destroyed) continue;
+        const held = this.intel.contactFor(observer.side, target.id);
+        if (!held || held.lastSeenTurn < this.turn - 1) continue;
+        if (distance(observer.position, target.position) > reach) continue;
+        if (!this.hasLineOfSight(observer, target)) continue;
+        this.observe(observer.side, target.id, "movement", observer);
+      }
+    }
   }
 
   /**

@@ -32,6 +32,12 @@ The spec, in full — everything not marked optional is required:
       "stillDetection": true,               optional (default true): a force in
                                             position finds a still enemy beyond
                                             20 m (decision 53)
+      "binoculars": true,                   optional (default true): scouts carry
+                                            binoculars (decision 54)
+      "keepEyesOn": true,                   optional (default true): a force in
+                                            position keeps its eyes on what it
+                                            found, and a longer look sharpens
+                                            the report (decision 54)
       "commandEchelon": {"BLUE": "company"}, optional: what each side's player
                                             commands (decision 37); undeclared,
                                             the engine reads it off the forces
@@ -148,7 +154,7 @@ MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
-    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "about", "window", "forces", "charges",
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
@@ -250,11 +256,12 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
     require_bool(spec, "locationError", "spec")
-    require_bool(spec, "stillDetection", "spec")
-    require(
-        not (spec.get("stillDetection") and spec.get("trackIntel") is False),
-        "spec: stillDetection needs trackIntel (nothing is reported without it)",
-    )
+    for key in ("stillDetection", "binoculars", "keepEyesOn"):
+        require_bool(spec, key, "spec")
+        require(
+            not (spec.get(key) and spec.get("trackIntel") is False),
+            f"spec: {key} needs trackIntel (nothing is reported without it)",
+        )
     require(
         not (spec.get("locationError") and spec.get("trackIntel") is False),
         "spec: locationError needs trackIntel (nothing is reported without it)",
@@ -459,8 +466,9 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         lines.append("    morale: true,")
     if spec.get("locationError", spec.get("trackIntel", True)):
         lines.append("    locationError: true,")
-    if spec.get("stillDetection", spec.get("trackIntel", True)):
-        lines.append("    stillDetection: true,")
+    for key in ("stillDetection", "binoculars", "keepEyesOn"):
+        if spec.get(key, spec.get("trackIntel", True)):
+            lines.append(f"    {key}: true,")
     if spec.get("attackers"):
         lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")
     if spec.get("commandEchelon"):

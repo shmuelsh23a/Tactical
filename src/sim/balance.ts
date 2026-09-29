@@ -206,6 +206,10 @@ export interface BattleOptions {
   locationError?: boolean;
   /** A force in position finds a still enemy beyond 20 m (rules decision 53, `GameOptions.stillDetection`). */
   stillDetection?: boolean;
+  /** Scouts carry binoculars (rules decision 54, `GameOptions.binoculars`). */
+  binoculars?: boolean;
+  /** A force in position keeps its eyes on what it found (rules decision 54, `GameOptions.keepEyesOn`). */
+  keepEyesOn?: boolean;
 }
 
 /** A standard normal draw (Box–Muller). */
@@ -264,6 +268,11 @@ export interface FirePlan {
    * 52): the guns wait for the scouts to find the enemy.
    */
   waitForContact?: boolean;
+  /**
+   * Fire only on a report this good, in metres of spread (rules decision
+   * 54): the guns wait while the scouts' look sharpens it. Absent: any report.
+   */
+  aimSpread?: number;
 }
 
 /**
@@ -395,6 +404,8 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     trackIntel: true,
     ...(opts.locationError ? { locationError: true } : {}),
     ...(opts.stillDetection ? { stillDetection: true } : {}),
+    ...(opts.binoculars ? { binoculars: true } : {}),
+    ...(opts.keepEyesOn ? { keepEyesOn: true } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),
@@ -518,9 +529,11 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         // What it has seen of the defender, nearest the objective; until then
         // the objective itself, a point along its frontage for each mission.
         callMissions(attackerSide, () => {
+          const sharpEnough = (unitId: string) =>
+            opts.fires!.aimSpread == null || (g.reportSpread(attackerSide, unitId) ?? 0) <= opts.fires!.aimSpread;
           const seen = g
             .contactsFor(attackerSide)
-            .filter((c) => !c.lastKnownNeutralized)
+            .filter((c) => !c.lastKnownNeutralized && sharpEnough(c.unitId))
             .sort((p, q) => distance(p.lastKnownPosition, goal) - distance(q.lastKnownPosition, goal))[0];
           if (seen) return seen.lastKnownPosition;
           if (opts.fires!.waitForContact) return undefined;

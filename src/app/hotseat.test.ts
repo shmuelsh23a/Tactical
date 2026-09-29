@@ -167,4 +167,14 @@ describe("what a side is shown of an enemy it can see", () => {
     const { red, drawn } = seen(false);
     expect(drawn.position).toEqual(red.position);
   });
+
+  it("tells the side how sure it is of each mark, and nothing when sightings are exact", () => {
+    const on = seen(true);
+    expect(sideView(on.g, "BLUE").spreads.get(on.red.id)).toBe(on.g.reportSpread("BLUE", on.red.id));
+    expect(sideView(on.g, "BLUE").spreads.get(on.red.id)).toBeGreaterThan(0);
+    // Its own forces carry none: the spread is of what it knows of the enemy.
+    expect(sideView(on.g, "BLUE").spreads.has("BLUE-1")).toBe(false);
+    const off = seen(false);
+    expect(sideView(off.g, "BLUE").spreads.size).toBe(0);
+  });
 });

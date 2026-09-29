@@ -71,6 +71,12 @@ interface MapViewProps {
    * saw them, not where they are. Empty in the umpire's (debrief) view.
    */
   staleContactIds: Set<string>;
+  /**
+   * How far each enemy mark may be off (rules decisions 51 and 54), one
+   * standard deviation in metres: drawn as the circle the enemy is inside
+   * half the time. Absent or empty: no rings.
+   */
+  reportSpreads?: ReadonlyMap<string, number>;
   /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
   awaitingOrderIds: Set<string>;
   /** Assault reach (metres) to ring the selected force with, when assaulting. */
@@ -313,6 +319,19 @@ export function MapView(props: MapViewProps) {
         </g>
       ))}
 
+      {/* How sure the side is of each enemy mark: the circle it is inside half
+          the time (1.18 standard deviations). It narrows as the side watches. */}
+      {units.map((u) => {
+        const spread = props.reportSpreads?.get(u.id);
+        if (spread === undefined || u.side === viewingSide) return null;
+        const r = Math.round(spread * CIRCLE_OF_HALF);
+        return (
+          <circle key={`spread-${u.id}`} cx={u.position.x} cy={u.position.y} r={r} className="report-spread">
+            <title>{`דיוק הדיווח: ±${r}מ'`}</title>
+          </circle>
+        );
+      })}
+
       {units.map((u) => (
         <Token
           key={u.id}
@@ -335,6 +354,9 @@ export function MapView(props: MapViewProps) {
     </svg>
   );
 }
+
+/** A circular normal's radius holding half of it, in standard deviations: √(2 ln 2). */
+const CIRCLE_OF_HALF = Math.sqrt(2 * Math.log(2));
 
 /** A marked aim point awaiting impact, with the turn it lands. */
 function AimPoint({

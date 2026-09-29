@@ -58,11 +58,29 @@ export function watchingAsPost(unit: Unit): boolean {
   return !!unit.observationPost && unit.movedThisTurn === 0 && !unit.firedThisTurn;
 }
 
-/** The chance and the range at which `observer` may pick `target` up this turn. */
+/**
+ * Whether `unit` is looking through binoculars right now (rules decision 54):
+ * a scout that has halted — not moved, not fired this turn — in a game that
+ * gives scouts them. It sees as an observation post does.
+ */
+export function lookingThroughBinoculars(unit: Unit, binoculars: boolean): boolean {
+  return binoculars && !!unit.scouting && unit.movedThisTurn === 0 && !unit.firedThisTurn;
+}
+
+/** Whether `unit` watches with an observation post's eyes: an OP in place, or a scout at its binoculars. */
+export function watchesAsPost(unit: Unit, binoculars: boolean): boolean {
+  return watchingAsPost(unit) || lookingThroughBinoculars(unit, binoculars);
+}
+
+/**
+ * The chance and the range at which `observer` may pick `target` up this turn.
+ * `binoculars`: the game gives scouts them (rules decision 54).
+ */
 export function detectionChance(
   observer: Unit,
   target: Unit,
   observerGait?: MovementMode,
+  binoculars = false,
 ): { chance: number; range: number } {
   // The observer's own figures: its gait if it is on the move, otherwise the
   // walking figures plus the bonus for watching rather than moving.
@@ -82,7 +100,7 @@ export function detectionChance(
   const range = hidden
     ? profile.hiddenDetectRange
     : // …and stops being one the moment it moves or fires, not at the turn's end.
-      watchingAsPost(observer) && !observerGait
+      watchesAsPost(observer, binoculars) && !observerGait
       ? Math.max(profile.visibleDetectRange, OBSERVATION_POST_RANGE_M)
       : profile.visibleDetectRange;
 
@@ -204,6 +222,15 @@ export function detectByMovement(
   return { spottedUnitIds, foundMineIds };
 }
 
+/**
+ * How far a force in position finds a still enemy (rules decisions 53–54):
+ * an observation post's reach for an OP or a scout at its binoculars, else
+ * the eye's.
+ */
+export function stillReach(observer: Unit, binoculars: boolean): number {
+  return watchesAsPost(observer, binoculars) ? STILL_DETECTION.postRangeM : STILL_DETECTION.rangeM;
+}
+
 /** One force picking another up while watching its sector. */
 export interface Observation {
   observerId: string;
@@ -224,6 +251,7 @@ export function observeFromPosition(
   units: Unit[],
   hasLineOfSight: (observer: Unit, target: Unit) => boolean = () => true,
   stillDetection = false,
+  binoculars = false,
 ): Observation[] {
   const observations: Observation[] = [];
   for (const observer of units) {
@@ -231,12 +259,12 @@ export function observeFromPosition(
     if (!canObserve(observer)) continue;
     for (const target of units) {
       if (target.side === observer.side || !isFindable(target)) continue;
-      let { chance, range } = detectionChance(observer, target);
+      let { chance, range } = detectionChance(observer, target, undefined, binoculars);
       const d = distance(observer.position, target.position);
       // Watching finds a still force further out than walking past it does
       // (rules decision 53): the same chance, falling off to the edge of sight.
       if (stillDetection && isHidden(target)) {
-        range = watchingAsPost(observer) ? STILL_DETECTION.postRangeM : STILL_DETECTION.rangeM;
+        range = stillReach(observer, binoculars);
         chance *= stillDetectionFalloff(d, range);
       }
       if (d > range) continue;

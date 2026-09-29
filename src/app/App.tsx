@@ -301,7 +301,7 @@ export function App({ scenario, onLeave }: AppProps) {
 
   // Everything the player sees comes from here: their own forces, plus the
   // enemy they have actually detected, each drawn where it was last seen.
-  const { units: visibleUnits, staleIds } = sideView(game, viewingSide);
+  const { units: visibleUnits, staleIds, spreads } = sideView(game, viewingSide);
   const selected = visibleUnits.find((u) => u.id === selectedId) ?? null;
   const selectedOwn = selected && selected.side === viewingSide ? selected : null;
 
@@ -1318,6 +1318,7 @@ export function App({ scenario, onLeave }: AppProps) {
               phase={stage === "planning" ? "planning" : enginePhase}
               moveCap={moveCap}
               staleContactIds={staleIds}
+              reportSpreads={spreads}
               awaitingOrderIds={awaitingOrders}
               assaultReach={
                 enginePhase === "combat" && combatAction === "assault" && selectedOwn

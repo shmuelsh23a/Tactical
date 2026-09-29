@@ -184,6 +184,7 @@ export function Debrief({
             phase="other"
             moveCap={null}
             staleContactIds={staleIds}
+            reportSpreads={view?.spreads}
             awaitingOrderIds={new Set()}
             assaultReach={null}
             smoke={game.smoke}

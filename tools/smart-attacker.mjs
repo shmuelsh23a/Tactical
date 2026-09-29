@@ -33,7 +33,9 @@
  * PLANNING_ERROR (the share of range the fire plan's centre is off by,
  * default 0.2; 0 plans on the truth, as every run before 2026-09-28),
  * NOSMOKE (no smoke), RECON (send a scout ahead first), WATCH (the scout halts
- * this many turns to watch after each bound), SHOT (a screenshot of the last screen, to this path;
+ * this many turns to watch after each bound), AIM (with RECON, fire only on a
+ * mark whose ring on the map is within this many metres), LOOK (with RECON,
+ * the company waits this many turns after the scout's first contact), SHOT (a screenshot of the last screen, to this path;
  * with SHOT_TURN, of the attacker's map at its fire phase on that turn),
  * BASE_URL (default http://localhost:5199),
  * PLAYWRIGHT_DIR (where `playwright` resolves; default the global
@@ -133,6 +135,9 @@ let released = !scout;
 // WATCH=n: the scout bounds and observes — halts n turns to watch after each bound (rules decision 53).
 const watchTurns = Number(process.env.WATCH ?? 0);
 let scoutWatched = 0;
+// LOOK=n: find, fix, then assault — the company waits n turns after the scout's first contact.
+const lookTurns = Number(process.env.LOOK ?? 0);
+let foundOn = null;
 const known = {}; // last known own positions by name
 const missed = {}; // squads that could not be ordered last time
 let turnNo = 0;
@@ -171,7 +176,12 @@ async function targeting(side) {
   const nearestOwn = (pt) => Math.min(...own.map((u) => dist(u.at, pt)));
   // Fire plan: the registered positions, while no squad of ours is within 150 m of one (danger close).
   // With a scout out, only what it has found — the enemy it has seen, nearest the objective.
-  const seen = foes.slice().sort((p, q) => dist(p, objective) - dist(q, objective));
+  // AIM=n: only a mark the side is sure of to within n metres — the ring the
+  // map draws round it (rules decision 54), which narrows as the scout watches.
+  const aimWithin = process.env.AIM ? Number(process.env.AIM) : null;
+  const rings = aimWithin == null ? [] : await p.evaluate(() => [...document.querySelectorAll("circle.report-spread")].map((c) => ({ x: +c.getAttribute("cx"), y: +c.getAttribute("cy"), r: +c.getAttribute("r") })));
+  const sureOf = (f) => aimWithin == null || rings.some((g) => Math.hypot(g.x - f.x, g.y - f.y) < 5 && g.r <= aimWithin);
+  const seen = foes.filter(sureOf).sort((p, q) => dist(p, objective) - dist(q, objective));
   const safe = scout ? seen.filter((t) => nearestOwn(t) > 150) : setup.targets.filter((t) => nearestOwn(t) > 150);
   if (!process.env.NOFIRE && safe.length && await p.getByRole("button", { name: /^פגז$/ }).count()) {
     const t = safe[stats.fireCalls % safe.length];
@@ -197,13 +207,15 @@ async function movement(side) {
   const foes = await enemies();
   if (scout) {
     const s = pos[scout];
-    if (!released && (foes.length || !s || dist(s.at, objective) <= 50)) { released = true; stats.released = turnNo; }
+    if (foes.length && foundOn == null) foundOn = turnNo;
+    const looked = foundOn != null && turnNo - foundOn >= lookTurns;
+    if (!released && (looked || !s || dist(s.at, objective) <= 50)) { released = true; stats.released = turnNo; }
     if (s) {
       await select(scout);
       if (!stats.scouting) { await clickBtn(/^צא לסיור$/); stats.scouting = true; }
       await clickBtn(/^אחזקת אש$/);
       // Walk on until something is found; then lie up and watch.
-      const halt = released || scoutWatched < watchTurns;
+      const halt = released || foundOn != null || scoutWatched < watchTurns;
       scoutWatched = halt ? scoutWatched + 1 : 0;
       if (halt) await clickBtn(/^החזק מקום ואל תירה$/);
       else await clickWorld(toward(s.at, objective, 50));

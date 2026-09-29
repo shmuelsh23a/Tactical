@@ -144,6 +144,13 @@ export interface SideView {
   units: Unit[];
   /** Contacts whose last report is older than this turn: marks, not sightings. */
   staleIds: Set<string>;
+  /**
+   * How far each enemy's report may be off, in metres (one standard
+   * deviation), when sightings carry location error (rules decision 51).
+   * The side's own knowledge of its own estimate: it narrows as the side
+   * keeps watching (decision 54). Empty without location error.
+   */
+  spreads: Map<string, number>;
 }
 
 /**
@@ -167,15 +174,19 @@ export function sideView(game: Game, side: Side): SideView {
           .map((u) => outsideView(u, true)),
       ],
       staleIds,
+      spreads: new Map(),
     };
   }
 
   const enemies: Unit[] = [];
+  const spreads = new Map<string, number>();
   for (const contact of game.contactsFor(side)) {
     const truth = game.units.find((u) => u.id === contact.unitId);
     if (!truth || isGone(truth)) continue;
     const seenNow = contact.lastSeenTurn >= game.turn;
     if (!seenNow) staleIds.add(truth.id);
+    const spread = game.reportSpread(side, truth.id);
+    if (spread !== undefined) spreads.set(truth.id, spread);
     // With location error (rules decision 51) even a force in sight this turn
     // is drawn where its observers judged it to be, not where it stands.
     const placed = game.locationError ? { ...truth, position: { ...contact.lastKnownPosition } } : truth;
@@ -195,7 +206,7 @@ export function sideView(game: Game, side: Side): SideView {
       ),
     );
   }
-  return { units: [...own, ...enemies], staleIds };
+  return { units: [...own, ...enemies], staleIds, spreads };
 }
 
 /**
