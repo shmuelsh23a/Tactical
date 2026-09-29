@@ -178,6 +178,47 @@ export const SCOUTING = {
   maxGait: "normal",
 } as const;
 
+/**
+ * Finding a still force by watching for it (rules decision 53, author
+ * 2026-09-29: "let observers find a still enemy further than 20 m"; the
+ * figures ⚠️ ours). Played when `GameOptions.stillDetection` is on.
+ *
+ * The document's 20 m band for a hidden enemy is in the **movement** table:
+ * it is what a force on the move turns up on its way. A force that stops and
+ * watches is doing something the document does not rule on, and in the field
+ * it finds a still soldier much further out: the US Army's camouflage trials
+ * (Natick, 2009, 913 observers) put the range at which half the observers
+ * pick out a camouflaged soldier at a few hundred metres, and the uniforms
+ * differ by about 100 m of it.
+ *
+ * So a force **in position** (not moved this turn) may find a still enemy
+ * out to `rangeM` — `postRangeM` for an observation post watching as one —
+ * at the chance it has inside 20 m (cover, camouflage, scouting and sector
+ * all counted as before), falling off in a straight line from full at
+ * `fullChanceWithinM` to nothing at the edge. A force on the move keeps the
+ * document's 20 m.
+ */
+export const STILL_DETECTION = {
+  /** Out to here a force in position may find a still enemy: the movement table's visible band. */
+  rangeM: 300, // ours
+  /** …and an observation post watching as one (rules decision 38): its sector is measured, its eyes rested. */
+  postRangeM: 600, // ours
+  /** Inside this the chance is the full one: the document's own hidden band. */
+  fullChanceWithinM: 20, // the document
+} as const;
+
+/**
+ * How much of its chance a force in position keeps against a still enemy at
+ * `range` metres out to `reach` (rules decision 53): all of it inside 20 m,
+ * none at the edge, a straight line between.
+ */
+export function stillDetectionFalloff(range: number, reach: number): number {
+  const near = STILL_DETECTION.fullChanceWithinM;
+  if (range <= near) return 1;
+  if (range >= reach) return 0;
+  return (reach - range) / (reach - near);
+}
+
 /** Turns of work behind a fully camouflaged position, for a prepared defence. */
 export const CAMOUFLAGE_TURNS_AT_MAX =
   (CAMOUFLAGE.max / CAMOUFLAGE.perStep) * CAMOUFLAGE.turnsPerStep;

@@ -144,6 +144,13 @@ export interface SideView {
   units: Unit[];
   /** Contacts whose last report is older than this turn: marks, not sightings. */
   staleIds: Set<string>;
+  /**
+   * How far each enemy's report may be off, in metres (one standard
+   * deviation), when sightings carry location error (rules decision 51).
+   * The side's own knowledge of its own estimate: it narrows as the side
+   * keeps watching (decision 54). Empty without location error.
+   */
+  spreads: Map<string, number>;
 }
 
 /**
@@ -167,22 +174,29 @@ export function sideView(game: Game, side: Side): SideView {
           .map((u) => outsideView(u, true)),
       ],
       staleIds,
+      spreads: new Map(),
     };
   }
 
   const enemies: Unit[] = [];
+  const spreads = new Map<string, number>();
   for (const contact of game.contactsFor(side)) {
     const truth = game.units.find((u) => u.id === contact.unitId);
     if (!truth || isGone(truth)) continue;
     const seenNow = contact.lastSeenTurn >= game.turn;
     if (!seenNow) staleIds.add(truth.id);
+    const spread = game.reportSpread(side, truth.id);
+    if (spread !== undefined) spreads.set(truth.id, spread);
+    // With location error (rules decision 51) even a force in sight this turn
+    // is drawn where its observers judged it to be, not where it stands.
+    const placed = game.locationError ? { ...truth, position: { ...contact.lastKnownPosition } } : truth;
     // A copy of the *report*, not of the force: an old contact carries where it
     // was and how it looked when it was last seen, so a player cannot read a
     // force's current position — or its collapse — off a stale mark.
     enemies.push(
       outsideView(
         seenNow
-          ? truth
+          ? placed
           : {
               ...truth,
               position: { ...contact.lastKnownPosition },
@@ -192,7 +206,7 @@ export function sideView(game: Game, side: Side): SideView {
       ),
     );
   }
-  return { units: [...own, ...enemies], staleIds };
+  return { units: [...own, ...enemies], staleIds, spreads };
 }
 
 /**
@@ -240,4 +254,16 @@ export function sideDefeated(game: Game, side: Side): boolean {
   const fighting = units.filter((u) => u.kind !== "command");
   const judged = fighting.length > 0 ? fighting : units;
   return units.length > 0 && (judged.every((u) => u.neutralized || isGone(u)) || game.sideBroken(side));
+}
+
+/**
+ * The attacking side whose time has run out (rules decision 58): the mission
+ * gave it until the end of turn `timeLimit` to win, that turn has closed, and
+ * it has not. Null with no deadline, no attacker, or time still left. Called
+ * once a turn is closed, after the side-defeated check: a win on the last turn
+ * stands.
+ */
+export function outOfTime(game: Game): Side | null {
+  if (game.timeLimit === undefined || game.turn <= game.timeLimit) return null;
+  return game.attackers[0] ?? null;
 }

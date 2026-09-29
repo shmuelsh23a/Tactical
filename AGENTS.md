@@ -33,6 +33,8 @@ npm run typecheck    # strict tsc alone
 npm run lint         # the architectural rules alone
 npm run balance      # headless battles -> the table on docs/balance.md (not part of check)
 npm run validate     # the game's numbers against the sources -> docs/validation.md (not part of check)
+npm run scenario-sim # the generated scenarios on their real ground, headless: a scripted company commander (not part of check)
+npm run jev-sim -- --seed 11 --answers a.json  # play the company commander by typed questions, one at a time (an agent standing in for Jev)
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
 ```
 
@@ -137,6 +139,17 @@ one it is in your reply, too.
   consequence worth remembering: a hotseat battle journals *orders*, not moves,
   so anything that reads a recording (extent, narration, digests) has to work
   from the order.
+- **Squads are scripted; companies decide.** In the real game only squads
+  and platoons are scripted, and company and up is Jev's (README, backlog
+  15). So a company-level choice (which squads scout, from where, where the
+  rest wait, when they go) is a `CompanyOrders` from
+  [`company.ts`](src/app/company.ts), issued by `ScriptedCompany` in the
+  harness and the headless runner and by Jev in the game. The squad drill
+  ([`drill.ts`](src/app/drill.ts)) only carries orders out. Don't put a
+  company decision in `SquadDrill`. Tools that compute options for a
+  commander (dead ground, observation points) live in
+  [`deadGround.ts`](src/app/deadGround.ts) and read the ground with the
+  engine's own sight test.
 - **Posture drives both being seen and being hit.** `stationaryTurns`, `cover`
   and `camouflageTurns` on a `Unit` are maintained by `endTurnUnitUpkeep` and
   read by `detectionChance` and by fire resolution — a force is hidden because
@@ -192,7 +205,14 @@ one it is in your reply, too.
   from `game.contactsFor(side)`, so an enemy shows up where it was last seen
   rather than where it is. When adding anything the player looks at, ask which
   of the two it should read; when adding anything that *resolves*, use the
-  truth (firing at a stale mark is meant to miss).
+  truth (firing at a stale mark is meant to miss). With
+  `GameOptions.locationError` (rules decision 51, on in every scenario) a
+  contact is an *estimate* even when it is fresh: `sideView` draws every
+  enemy at its report, never at `unit.position`. The same goes for a test
+  player's plan: the smart attacker plans fires on an estimate
+  (`PLANNING_ERROR`, default 0.2). The harness plans on the layout's truth
+  unless given `--planning-error`, only so its older tables reproduce, and a
+  new measurement should pass it.
 - **The debrief must not teach what a side never saw.** Anything added to the
   review goes through [`debriefView.ts`](src/app/debriefView.ts) — which action
   a side may see, and what it may be told the action produced (rules decision

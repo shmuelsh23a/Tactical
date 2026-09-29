@@ -1750,6 +1750,278 @@ on the stated reasoning, still awaiting the author's word.
       against a hasty defence and 8% against a prepared one (both were 8%);
       with a mortar section, a hasty defender is lost (100%). Prepared
       defences and `npm run validate` did not move (validation.md).
+51. ⚠️ **Neither side knows exactly where the other is** (author,
+    2026-09-28: "the blue and red won't know exactly where the other side
+    is and the pre-planned fires won't be accurate"). Two halves:
+    - **A sighting carries location error** (`GameOptions.locationError`,
+      [`data/locationError.ts`](src/engine/data/locationError.ts)). A contact
+      is where its observer judged the force to be: off along the sight line
+      by **20% of the range** and across it by **10 mils** (standard
+      deviations), never under 5 m. An observation post's range card halves
+      the range error, and a UAV is off by 15 m whatever the range. A force
+      that stays put and is seen again is placed better, the estimates
+      weighted by how good each is — each observer adding to it at most once
+      a turn, since the same eye seconds later makes the same mistake. One
+      that has made a bound since is placed afresh, even back where it stood.
+      The debrief tells an enemy's bound without where it went. The
+      side's map draws every enemy at its report, even one in sight this
+      turn. Fire still resolves on the truth, so a mission called on a report
+      lands around where the force was judged to be. The error is drawn
+      from its own seeded stream, so it moves no other roll. It is on in
+      every scenario (the spec's `locationError`, default on), off in a
+      game that does not ask for it, and read as off in a recording made
+      before it.
+    - **The test players plan their fires on an estimate.** The harness's
+      attacker used to register its fires on the exact centre of each
+      defending position, and the smart attacker built its fire plan
+      around it. Now both use where the attacker's start line would judge
+      the position to be, by the same figures (`--planning-error`,
+      `PLANNING_ERROR`). The harness's defender registers its approach
+      points off the line the attacker really takes, by the same share of
+      the distance.
+    - **Why the figures:** troops' range estimates by eye err by 20% or
+      more (Armored Medical Research Laboratory, 1945), and a compass by
+      10–17 mils. Doctrine's target location error categories put an
+      observer with map and compass at CAT IV–V (31–305 m). The 5 m floor,
+      the post's halving and the UAV's 15 m are ours. The fusion of
+      repeated sightings is ours too, and optimistic: one observer's
+      errors are not independent from minute to minute. Sources in
+      [docs/validation.md](docs/validation.md), *Where the enemy is*.
+    - **What it moved** (calibrated company battles, 300 a cell,
+      [balance.md](docs/balance.md), *Fourteenth round*): the 3:1 attack
+      falls from **95% to 20%**, and the 2:1 from 7% to 0%. It is almost all
+      the fire plan: location error alone moves neither attack more than
+      2 points. An attacker firing on a plan off by 5% of the range already
+      wins only 66%. Adjusting fire does not bring it back, because an
+      adjusted mission walks its rounds onto the point it was given, and
+      the dug-in defender is not seen in time to give it a better one.
+    - ⚠️ **What still gives the true range away:** fire resolves on the
+      truth, so a firer's hit chance (in its log line) and an "out of range"
+      refusal read off the true range band, not the estimate. Accepted for
+      now — the shooter's own sight picture is not what this rule is about.
+    - **Open for the author:** with this, 3:1 no longer wins against a
+      prepared platoon under the plain drill, which breaks the design
+      principle. What should give the attacker the defender's location
+      before the assault? Reconnaissance, observation posts for the
+      attacker (decision 38 gave them only to the defender in the harness),
+      UAVs (backlog 4), or more fire. The 20% itself is also open: a
+      position that has been reconnoitred is known better.
+52. ⚠️ **Reconnaissance before the attack** (author, 2026-09-29: "let's see
+    how sending recon affects this — the use of recon is a lesson worth
+    teaching"). Nothing new in the rules: a player already has scouting
+    (decision 12), hold fire (decision 6) and standing orders. What is new is
+    that the test players use them, so the lesson can be measured:
+    - **The drill** (`SquadDrill.recon`, `--recon N` in the harness): the N
+      squads nearest the objective go ahead scouting, on hold-fire, while the
+      rest of the attack waits at its start line. It is released when the
+      side has found something, when the scouts reach the objective, or when
+      none of them is left. The scouts then lie up and watch without firing,
+      so what they found stays on the map and the guns have eyes.
+    - **The fire plan waits for them** (`--fires calibrated-wait`, or
+      `wait=on`): the attacker's mortars fire only on what the side has
+      seen, never on the planned estimate. The fires lift on the main body's
+      approach, not a scout's.
+    - **The smart attacker** does the same through the UI (`RECON=1`).
+    - **What it moved** (balance.md, *Fifteenth round*; fires planned on an
+      estimate, location error on): against the plain drill's defender,
+      which opens fire at 400 m, one scout squad with the guns waiting takes
+      the 3:1 attack from **20% to 59%**. Two scouts give 33%, three 12%:
+      more men out in front is more men under the defender's fire, and they
+      count toward the attacker's breakpoint. Waiting while firing on the
+      estimate anyway gives 37%. The 2:1 attack stays lost (0–6%).
+    - **In the browser it did not pay** (validation.md): the smart attacker
+      with `RECON=1` won the 3:1 scenario 1 of 8 (2 of 8 without), and the
+      2:1 1 of 8 (2 of 8). Its scout found the defence every time and lost
+      6–8 of its 8 men doing it, but the mortars firing on its reports hurt
+      the dug-in defence no more than fire on the estimate had. Why the
+      harness and the browser differ is not yet traced.
+    - **Against a defender with fire discipline it does not work** (the
+      Western drill, which holds fire to 200 m): 7% without recon, 1% with.
+      The scout walks to 250 m and never sees the dug-in position, because
+      a force holding still is found only inside the document's 20 m band.
+      The defender's mortars see the scout and destroy it without giving
+      anything away, and the main body then goes in blind.
+    - **Open for the author:** recon here works only by drawing fire. A
+      real patrol finds a position by watching it, with optics, from
+      hundreds of metres. The 20 m band is the document's (the movement
+      table's hidden-enemy row), and binoculars are backlog 4. Should a
+      force that stops and watches, or has binoculars, find a still force
+      further out than 20 m? That is the rule that decides whether ground
+      reconnaissance can be taught.
+53. ⚠️ **A force in position finds a still enemy beyond 20 m** (author,
+    2026-09-29: "let observers find a still enemy further than 20 m";
+    `GameOptions.stillDetection`, `STILL_DETECTION` in
+    [`data/concealment.ts`](src/engine/data/concealment.ts)). The
+    document's 20 m band is in its **movement** table: what a force turns up
+    as it goes. A force that has not moved this turn now finds a still enemy
+    out to **300 m** (the table's visible band), **600 m** from an
+    observation post. Its chance is the one it has inside 20 m (cover,
+    camouflage, scouting and sector as before), falling off in a straight
+    line to nothing at the edge. A force on the move keeps the 20 m.
+    - **Why these figures:** the US Army's camouflage trials (Natick, 2009,
+      913 observers) put the range at which half the observers pick out a
+      camouflaged soldier at a few hundred metres. The 300 m, the 600 m and
+      the straight line are ours.
+    - It rolls for more pairs of forces, so it is a recorded option: on in
+      every scenario (the spec's `stillDetection`, default on),
+      `--still-detection` in the harness, and read as off in a recording
+      made before it.
+    - The drill's scouts can now **bound and observe**: halt `watchTurns`
+      turns after each 50 m bound (`--watch N`, `WATCH` in the smart
+      attacker).
+    - **What it moved: almost nothing** (balance.md, *Sixteenth round*).
+      The rule is symmetric, and the defender has more eyes and the mortars.
+      A scout halted 300 m out is seen by five defending forces as easily as
+      it sees them, and is shelled before it finds anything. Against the
+      Western drill the 3:1 attack stays at 1%.
+    - **What would move it: optics.** As an experiment only (not in the
+      code), a halted scout that sees as far as an observation post (600 m)
+      takes that 3:1 attack from **1% to 42%**. Against the plain drill,
+      which gives itself away at 400 m anyway, the same change lowers it
+      (64% → 35%): the scout finds the position sooner but from twice as far,
+      so its report is twice as far off. So the lesson "recon observes
+      before it is observed" needs the scout to out-see the defender:
+      binoculars (backlog 4). **Open for the author**: should a scout (or any
+      force told to scout) carry binoculars that give it an observation
+      post's 600 m against a still force, and should that come with a longer
+      look (more turns halted) to sharpen the report?
+54. ⚠️ **Scouts carry binoculars, and a longer look sharpens a report**
+    (author, 2026-09-29: "yes, give scouts binoculars and let a longer look
+    sharpen it"). Two recorded options, on in every scenario:
+    - **`GameOptions.binoculars`**: a scouting force that has halted (not
+      moved, not fired this turn) watches as an observation post does: a
+      still enemy to 600 m, a moving one to 1,000 m, and half the eye's
+      range error (`lookingThroughBinoculars`).
+    - **`GameOptions.keepEyesOn`**: a force in position keeps its eyes on a
+      still enemy its side holds fresh (seen this turn or last), within its
+      reach and sight, without rolling to find it again. Each turn's look
+      is one more estimate, one per observer per turn (decision 51), so a
+      report watched for n turns is √n times sharper. A force that moves
+      is placed afresh.
+    - **The map rings each enemy mark** with the circle it is inside half
+      the time (1.18 standard deviations), in play and in the side's
+      debrief. The player sees the look sharpen.
+    - **The drill** (decision 52) now finds, fixes, then assaults. The
+      scouts bound and observe, look for the position at the objective (an
+      enemy within 250 m of it), halt while they hold it in sight, and the
+      main body waits `lookTurns` consecutive turns of that (`--look N`,
+      `LOOK`). A contact lost starts the count again. The guns can wait for
+      a sharp report (`aim=N` in `--fires`, `AIM`).
+    - **What it moved** (balance.md, *Seventeenth round*; company, fires
+      planned on an estimate, location error on, one scout, guns waiting
+      for its report): with binoculars and a 4-turn look the 3:1 attack
+      wins **86%** against a defender with fire discipline (was 1%) and
+      **95%** against one that opens up at 400 m (was 66%). That is what
+      perfect intelligence gave before decision 51. The 2:1 attack stays
+      lost (1%), and an 8-turn look lifts it to 21%. Binoculars without
+      the look do worse (21–26%): the scout finds the enemy at 600 m, the
+      company goes at once, and the guns fire on a rough report.
+    - The 600 m and 1,000 m are the observation post's (decision 38), the
+      halving its range card's (decision 51). All ⚠️ ours.
+    - **A look sharpens a report only down to CAT IV's best, 31 m** (author,
+      2026-09-29: "95% is a bit high; 85% should be the higher bound";
+      `BEST_VISUAL_FIX_CE_M`). Doctrine grades an observer without a laser
+      rangefinder CAT IV at best (31–91 m circular error), so looking longer
+      stops paying there: the map, compass and eye have errors of their own
+      that averaging does not remove. A single close look better than that
+      stands. With it the 3:1 attack wins **82–83%** against the Western
+      drill (was 85–86%) and 91–92% against the plain script (was 92–95%),
+      and the 2:1 attack 0–2% (the 8-turn look's 21% was the unlimited
+      sharpening). The plain script's defender opens fire at 400 m and so
+      gives itself away; against the Western drill's fire discipline the
+      3:1 attack is inside the author's 85%.
+    - **Research behind the 85%:** in the Dupuy Institute's 752 division-level
+      engagements (1904–1991) attackers at 2.5–2.99:1 won 83%. In 42 French
+      engagements of 1944, every attack at 2.71:1 or better advanced. Read
+      through search results.
+    - **In the browser it has not paid yet** (validation.md): the smart
+      attacker's company waits at its start line in the open, below the
+      defender's observation posts on the tel, and is shelled while its
+      scout looks (1 win in 32). The company has to wait out of sight. That
+      is a decision for the company commander, which in the game is Jev's
+      (backlog 15), and a dead-ground finder for it is the next thing to
+      build.
+
+55. ⚠️ **Losing a command group has effect** (author, 2026-09-29:
+    "destroying the command group should have effect";
+    `GameOptions.commandSuccession`, `SUCCESSION_TURNS` in
+    [`data/c2.ts`](src/engine/data/c2.ts)). Before, a command group out of
+    action still passed orders (the order interval was measured from it
+    wherever it lay) and the side still called its guns; only morale felt
+    it.
+    - When a command group goes out of action (its men down, routing or
+      surrendered), the forces it commanded (lower echelons within its
+      command reach, the morale rules' 300 m for a platoon, 500 m for a
+      company) take **no new orders for 2 turns** while someone takes
+      over. Their standing orders go on.
+    - When it is the side's senior command group, command passes to the
+      next in line after the same 2 turns, and meanwhile **the side calls
+      no fire**. With none left, it gives no new orders and calls no fire
+      at all.
+    - Doctrine prescribes a succession of command at every level; no time
+      for it was found. The 2 turns are ours.
+    - On in every scenario (the spec's `commandSuccession`),
+      `--command-succession` in the harness, recorded, and read as off in
+      an older recording.
+    - **What it moved**: little for an attacker firing on a dug-in
+      defender (balance.md, *Nineteenth round*). A defender holds its
+      ground on standing orders and hardly needs new ones, and its senior
+      command post, which calls its mortars, sits behind the summit where
+      it is rarely seen. The scripted commander firing command groups first
+      wins the tel's 3:1 attack 25%, squads first 59%.
+
+56. ✅ **Smoke from the tubes costs a fire mission** (author, 2026-09-29:
+    "yes, smoke should cost a mission"; `GameOptions.smokeCostsMission`).
+    Before, mortar and artillery smoke was free and unlimited once a side
+    could call the weapon. Now a screen is drawn from the side's allotment
+    (decision 34) like a mission of HE, and is refused when none are left.
+    A grenade's smoke is the squad's own and stays free. On by default; a
+    recording made before it reads it as off and replays with free smoke.
+    The live UI says "no missions left" for smoke as it does for HE.
+57. ✅ **A mark stays where the enemy was last seen, drawn as stale**
+    (author, 2026-09-29: "keep marks on last seen, mark them with broken
+    lines so the player knows they are stale"; `GameOptions.keepStaleMarks`).
+    Before, a contact nobody had seen for `contactExpiryTurns` turns was
+    dropped from the side's picture, so a force that went to ground simply
+    vanished off the map. Now the mark stays at its last-seen position until
+    the side sees it again or learns it is gone, and a mark not in sight this
+    turn or last is drawn with a broken frame (APP-6 status "anticipated",
+    the dashed outline) so the player reads it as where the enemy *was*.
+    On by default; a recording made before it reads it as off and replays
+    with marks that expire.
+58. ✅ **A mission has a deadline, stated in its briefing** (author,
+    2026-09-29: "mission will have time limit in briefing (must achieve
+    objectives by turn x)"; `GameOptions.timeLimit`). An attack that has not
+    won by the end of turn X has failed and the defender wins; a win on the
+    last turn stands. The briefing gains "יש להשלים את המשימה עד תור X." (the
+    generator writes it from the spec's `timeLimit`), and the turn line reads
+    "תור T / X". ⚠️ The deadlines are ours: 45 turns for the Tel Azeka
+    battles, 40 for Yokneam. A company attack that scouts first wins in a
+    median 32–34 turns (p90 37–45) on the headless runner, so 45 leaves room
+    for a patient attack and cuts off one that waits too long; it costs the
+    scripted company about 5 points at 3:1 and 2 at 2:1 (docs/balance.md,
+    twentieth round). No deadline unless the scenario sets one; a recording
+    made before it has none.
+59. ⚠️ **The company commander controls the assault by platoon** (author,
+    2026-09-29: "do 1 and 2", item 2 from the agent round, which lost 10–14
+    men in a turn to an uncontrolled piecemeal assault). Once the company
+    goes, each platoon is given a task: assault, base of fire (close to
+    small-arms reach and fire from there), or reserve; later it can be
+    halted (to ground), pulled back to the start line, or committed. The
+    assaulting platoons can bound in turn, one moving while the others halt
+    and fire. The assault can wait for the fires to lift: squads stop 200 m
+    from the enemy (outside the mortar's 150 m danger close) until the
+    commander lifts the fires, which then shift to depth (nothing within
+    300 m of the company's squads); with no missions left the fires have
+    lifted by themselves. The commander's picture says which of its forces
+    is under fire and from what: the firer's mark if the side holds one,
+    otherwise only the direction ("an enemy it cannot see, to its east"),
+    and "shelled". A platoon is read from the force's name (`BLUE-2-1` is
+    the second platoon's first squad). All of it is ours: the 200 m and 300 m
+    figures, what a squad can tell of who is firing at it, and the tasks
+    offered. These are the company's orders (`CompanyOrders`), not rules
+    of the engine; the drill carries them out, and a scripted company gives
+    none, so the harness and headless figures are unchanged.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

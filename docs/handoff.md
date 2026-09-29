@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-28, after rules decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-29, after rules decisions 51–54 (branch `claude/attack-accuracy-unknown-positions-ln9i7x`): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 647 tests, 33 files
+npm run check       lint + typecheck clean, 752 tests, 43 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -131,7 +131,114 @@ has no defender's bonus, so numbers win (measured: 72–88% at ~2:1, 80–100% a
 last hours; the scenarios are test beds. Measured with the smart attacker:
 3:1 on a prepared platoon wins 7 of 8, 2:1 wins 3 of 8 (2 draws).
 
+**Then decisions 51–52 (2026-09-28/29)**, from the author's question
+"in an attack neither side knows exactly where the other is — did you take
+that into account?" Only in the engine: the harness and the smart attacker
+planned fires on the defence's true centre. Now a sighting reports an
+observer's estimate (`GameOptions.locationError`, on in every scenario), and
+the test players plan on an estimate (`--planning-error`, `PLANNING_ERROR`).
+The calibrated 3:1 company attack falls from 95% to 20%; the smart attacker
+from 8 of 8 to 2 of 8. Reconnaissance (decision 52: `--recon 1` with
+`--fires calibrated-wait`, `RECON=1`) brings the harness's 3:1 back to 59%
+when the defender opens fire at 400 m — and does nothing against a defender
+with fire discipline, because a still force is found only inside 20 m.
+In the browser the smart attacker's scout did not pay (1 of 8 at 3:1, 2 of
+8 without it): the reports did not make the mortars hurt the dug-in defence
+more, and the scout's losses counted toward the breakpoint. Why the harness
+and the browser differ is the next thing to trace.
+balance.md, *Fourteenth* and *Fifteenth round*.
+
 **Start the next session here** — open, in rough order:
+0. **Where the day ended (2026-09-29): the mortar thread, and what is open.**
+   The day began with the author's question whether pre-planned fires
+   account for neither side knowing where the other is. They did not: with
+   fires planned from an estimate (decision 51) the calibrated 3:1 fell from
+   95% to about 20%. Recon (decisions 52–54) brings the guns to a median 22 m
+   off. On the tel, headless, the scripted 3:1 wins 41–59% by target order
+   (squads first best, command first worst, 25%); 2:1 30–39%; on the truth
+   68–76%. So 3:1 sits well under the author's 85% ceiling (decision
+   rulings), and a company using platoon control (decision 59) does better
+   than the script. **Open, in the order proposed to the author:**
+   1. **Waiting on the author:** which target the company's guns take
+      first. Squads first measures best; decision 55 found a dug-in
+      defender's command group is low value.
+   2. Mortar lethality against men dug in, checked against the research
+      figures (the author asked whether the research has numbers; not done).
+   3. Why the tel stays low with good aim: no spot on the attacker's side
+      sees all three of RED's squads, so some fire goes on stale marks.
+   4. Another agent round as Jev on the new questions (decisions 58–59 and
+      the item 1 fixes), each agent in its own folder.
+0. **Then (author: "do 1 and 2, keep marks on last seen, mark them with
+   broken lines; mission will have time limit in briefing"):** decision 57
+   (a mark stays where last seen, drawn with a dashed frame) and 58 (each
+   mission's deadline, 45 turns on the tel, in the brief and the turn line;
+   costs the scripted 3:1 about 5 points, balance.md *Twentieth round*),
+   both driven in the browser. Item 1, the agents' bugs in the questions:
+   a scout at its point seeing nothing is now asked about (with a decider
+   it no longer walks on by itself), "on" there sends it toward the
+   objective, the scout questions offer observation points on marks found
+   away from the plan, jev-sim counts HE and smoke separately and exits 2
+   with one line on an answer that is not an option, and the go question
+   says what was found near the objective instead of "not found yet".
+   Item 2 (decision 59): the commander tasks each platoon at "go"
+   (assault, base of fire, reserve), can bound by platoon, hold the
+   assault short until it lifts the fires, and is asked when a platoon
+   takes casualties, with what it is under fire from. A fixed policy using
+   it wins the 3:1 16 of 30 instead of 12 (balance.md, *Twenty-first
+   round*). **Next: another agent round on the new questions, in separate
+   folders.**
+0. **Then (author: "can you spin up an agent that takes Jev's role", then
+   "destroying the command group should have effect; do 1-3"):**
+   `npm run jev-sim` puts the company commander's decisions as typed
+   questions; two Claude agents played them (3:1: 3 of 4; 2:1: 0 of 4) and
+   found a scout bug, fixed. Rules decision 55 (command succession), more
+   information and control in the questions. The scripted commander now
+   wins the tel's 3:1 59% firing on squads first (balance.md, *Nineteenth
+   round*). A second agent run on the fixed questions is recorded there.
+0. **Then (author: "do both"):** traced why the tel stays low, and moved the
+   company choices out of `SquadDrill` into `app/company.ts`
+   (`CompanyOrders`, `ScriptedCompany`). No spot in reach sees all three
+   of RED's squads, so the commander now sends two scouts to two
+   observation points. On the tel that gives 3:1 28–37% and 2:1 23–25%. The
+   guns aim well (median 22 m) but half their missions go at command groups
+   in the open. **Waiting on the author:** which target the company's guns
+   take when several are found (balance.md, *Why the tel stays low*).
+0. **Built 2026-09-29 (author: "go ahead with the headless runner and
+   dead-ground finder"):** `npm run scenario-sim` plays the scenarios on
+   their real ground headless with a scripted company commander; dead
+   ground and a vantage point for it are in `src/app/deadGround.ts`. It
+   agrees with the browser: on the tel, recon lifts 3:1 only from about 20%
+   to 28% (balance.md, *Eighteenth round*); flat ground gave 82%. Tracing
+   why is the next step. Moving the company choices out of `SquadDrill`
+   (item a below) is still to do.
+0. **Proposed to the author (2026-09-29):** only squad and platoon
+   are scripted in the real game; company and up is Jev plus an LLM call.
+   So: (a) move the company-level choices (recon, the look, fires waiting)
+   out of `SquadDrill` into a company plan that a scripted commander plays
+   in the harness and Jev will play in the game; (b) a dead-ground finder
+   (where a force is out of sight of known and likely enemy observers),
+   used by both; (c) a headless runner that plays the scripted commander on
+   the scenarios' real ground, so balance is measured on a hill with
+   observation posts, not only on flat ground. The browser stays for
+   end-to-end checks.
+0. **Decision 54 (2026-09-29), built and measured:** scouts carry
+   binoculars and a longer look sharpens a report. With a 4-turn look the
+   harness's 3:1 company attack on realistic intelligence wins 86–95%
+   (balance.md, *Seventeenth round*). Browser results in validation.md.
+   What is left for the author: whether 3:1 at 86–95% and 2:1 at 1–21% is
+   the balance wanted, and the 600 m / 1,000 m / halving, all ours.
+0. **Waiting on the author (decision 53, 2026-09-29):** a force in
+   position now finds a still enemy out to 300 m (600 m from an OP), and the
+   scouts can bound and observe, but it moves nothing: the defender sees
+   the halted scout as easily and shells it. An experiment giving a halted
+   scout an OP's 600 m (binoculars) takes the Western-drill 3:1 attack from
+   1% to 42%. Should scouts carry binoculars (backlog 4), and should a
+   longer look sharpen the report? balance.md, *Sixteenth round*.
+0. **Waiting on the author (decisions 51–52):** what should let an attacker
+   find a still, dug-in defender before the assault — a longer detection
+   band for a force that stops and watches, binoculars (backlog 4), UAVs,
+   or none (recon only by drawing fire)? And whether 3:1 should still win
+   against a prepared platoon once intelligence is realistic.
 1. **Fire support by odds.** Both sides of the test scenarios have the same
    mortar section, and the mortars decide the battle before the infantry
    closes (8–10 minutes; infantry advances 14–25 m a minute uphill under

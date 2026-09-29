@@ -109,7 +109,7 @@ export function Debrief({
     const lens = lensAt(i);
     const full = describeOutcome(step.outcome, names, UMPIRE_LENS, action);
     const row = (hidden: boolean, outcome: string) => ({
-      text: describeAction(action, names),
+      text: describeAction(action, names, lens),
       outcome,
       truth: full && full !== outcome ? full : "",
       hidden,
@@ -184,6 +184,7 @@ export function Debrief({
             phase="other"
             moveCap={null}
             staleContactIds={staleIds}
+            reportSpreads={view?.spreads}
             awaitingOrderIds={new Set()}
             assaultReach={null}
             smoke={game.smoke}

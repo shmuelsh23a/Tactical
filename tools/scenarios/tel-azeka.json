@@ -4,6 +4,7 @@
   "brief": "כחול: תופס את תל עזקה מדרום. אדום: מחזיק בתל. אין בשטח מבנים — כל מחסה הוא מחסה של הקרקע.",
   "attackers": ["BLUE"],
   "seed": 1948,
+  "timeLimit": 45,
   "trackIntel": true,
   "enforceC2": true,
   "morale": true,

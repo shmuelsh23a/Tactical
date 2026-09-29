@@ -26,6 +26,24 @@ The spec, in full — everything not marked optional is required:
       "trackIntel": true,                   optional (default true)
       "enforceC2": true,                    optional (default true)
       "morale": true,                       optional (default false; decision 19)
+      "locationError": true,                optional (default true): a sighting
+                                            reports where its observer judged
+                                            the force to be (decision 51)
+      "stillDetection": true,               optional (default true): a force in
+                                            position finds a still enemy beyond
+                                            20 m (decision 53)
+      "binoculars": true,                   optional (default true): scouts carry
+                                            binoculars (decision 54)
+      "keepEyesOn": true,                   optional (default true): a force in
+                                            position keeps its eyes on what it
+                                            found, and a longer look sharpens
+                                            the report (decision 54)
+      "commandSuccession": true,            optional (default true): losing a
+                                            command group has effect (decision 55)
+      "timeLimit": 45,                      optional: the turn the attackers must
+                                            win by, or the attack fails (decision
+                                            58); needs "attackers", and the brief
+                                            gains a sentence stating it
       "commandEchelon": {"BLUE": "company"}, optional: what each side's player
                                             commands (decision 37); undeclared,
                                             the engine reads it off the forces
@@ -142,7 +160,7 @@ MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
-    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "about", "window", "forces", "charges",
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
@@ -166,6 +184,14 @@ SIDES = {"RED", "BLUE"}
 ECHELONS = {"squad", "platoon", "company", "battalion", "brigade"}
 COVER = {"none", "partial", "full"}
 CHARGE_TYPES = {"antiPersonnel", "antiTank"}
+
+
+def brief_with_deadline(spec: dict[str, Any]) -> str:
+    """The brief, and the mission's deadline when it has one (decision 58)."""
+    brief = spec["brief"].rstrip()
+    if "timeLimit" not in spec:
+        return brief
+    return brief + " יש להשלים את המשימה עד תור " + str(spec["timeLimit"]) + "."
 
 
 class SpecError(Exception):
@@ -243,6 +269,23 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "trackIntel", "spec")
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
+    require_bool(spec, "locationError", "spec")
+    require_bool(spec, "commandSuccession", "spec")
+    require_int(spec, "timeLimit", "spec", 1, 1000)
+    require(
+        "timeLimit" not in spec or bool(spec.get("attackers")),
+        "spec: timeLimit needs attackers (the deadline is the attack's)",
+    )
+    for key in ("stillDetection", "binoculars", "keepEyesOn"):
+        require_bool(spec, key, "spec")
+        require(
+            not (spec.get(key) and spec.get("trackIntel") is False),
+            f"spec: {key} needs trackIntel (nothing is reported without it)",
+        )
+    require(
+        not (spec.get("locationError") and spec.get("trackIntel") is False),
+        "spec: locationError needs trackIntel (nothing is reported without it)",
+    )
     for key in ("commandEchelon", "fireSupport"):
         require(isinstance(spec.get(key, {}), dict), f"spec: {key} must be an object keyed by side")
     attackers = spec.get("attackers", [])
@@ -441,6 +484,15 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     ]
     if spec.get("morale"):
         lines.append("    morale: true,")
+    if spec.get("locationError", spec.get("trackIntel", True)):
+        lines.append("    locationError: true,")
+    for key in ("stillDetection", "binoculars", "keepEyesOn"):
+        if spec.get(key, spec.get("trackIntel", True)):
+            lines.append(f"    {key}: true,")
+    if spec.get("commandSuccession", True):
+        lines.append("    commandSuccession: true,")
+    if "timeLimit" in spec:
+        lines.append("    timeLimit: " + str(spec["timeLimit"]) + ",")
     if spec.get("attackers"):
         lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")
     if spec.get("commandEchelon"):
@@ -532,7 +584,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         "export const " + listing + ": ScenarioListing = {",
         "  id: " + ts(spec["slug"]) + ",",
         "  title: " + ts(spec["title"]) + ",",
-        "  brief: " + ts(spec["brief"]) + ",",
+        "  brief: " + ts(brief_with_deadline(spec)) + ",",
         "  mapWidth: " + num(window["width"]) + ",",
         "  mapHeight: " + num(window["height"]) + ",",
         "  build: build" + name + "Scenario,",

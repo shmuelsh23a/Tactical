@@ -192,6 +192,14 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
+  if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
+  if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
+  if (r.binoculars !== undefined && typeof r.binoculars !== "boolean") throw malformed("binoculars");
+  if (r.keepEyesOn !== undefined && typeof r.keepEyesOn !== "boolean") throw malformed("keepEyesOn");
+  if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
+  if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
+  if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
+  if (r.timeLimit !== undefined && !(Number.isInteger(r.timeLimit) && (r.timeLimit as number) > 0)) throw malformed("timeLimit");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -317,6 +325,33 @@ export interface GameRecording {
   lethality?: Lethality;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
+  /**
+   * Whether a sighting carried location error (rules decision 51). Read as
+   * **off** when absent: a battle recorded before it was played with exact
+   * sightings.
+   */
+  locationError?: boolean;
+  /**
+   * Whether a force in position found a still enemy beyond 20 m (rules
+   * decision 53). Read as **off** when absent: a battle recorded before it
+   * made none of those rolls.
+   */
+  stillDetection?: boolean;
+  /** Whether scouts carried binoculars (rules decision 54). Read as **off** when absent. */
+  binoculars?: boolean;
+  /** Whether a force in position kept its eyes on what it found (rules decision 54). Read as **off** when absent. */
+  keepEyesOn?: boolean;
+  /** Whether losing a command group had effect (rules decision 55). Read as **off** when absent. */
+  commandSuccession?: boolean;
+  /**
+   * Whether tube smoke cost a fire mission (rules decision 56). Read as
+   * **off** when absent: a battle recorded before it laid smoke for free.
+   */
+  smokeCostsMission?: boolean;
+  /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
+  keepStaleMarks?: boolean;
+  /** The mission's deadline, a turn (rules decision 58). Absent: none, as every battle before it. */
+  timeLimit?: number;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -473,6 +508,14 @@ export function replayWithOutcomes(
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     lethality: recording.lethality ?? "document",
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
+    ...(recording.locationError ? { locationError: true } : {}),
+    ...(recording.stillDetection ? { stillDetection: true } : {}),
+    ...(recording.binoculars ? { binoculars: true } : {}),
+    ...(recording.keepEyesOn ? { keepEyesOn: true } : {}),
+    ...(recording.commandSuccession ? { commandSuccession: true } : {}),
+    smokeCostsMission: recording.smokeCostsMission ?? false,
+    keepStaleMarks: recording.keepStaleMarks ?? false,
+    ...(recording.timeLimit !== undefined ? { timeLimit: recording.timeLimit } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

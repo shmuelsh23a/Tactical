@@ -5,7 +5,10 @@
  *
  * It plays the attacking side of a scenario (`GameOptions.attackers`):
  *   - plans a fire plan on the objective area — its centre and 90 m to either
- *     side, not where each defending squad lies — and registers it;
+ *     side, not where each defending squad lies — and registers it. The
+ *     centre is where its start line would judge the defence to be, off by a
+ *     fifth of the range along the line of sight (rules decision 51's eye),
+ *     not where the umpire has it;
  *   - bounds by halves, 50 m at a walk, the other half holding and firing; a
  *     squad the command group could not reach last turn bounds on the next;
  *   - moves its command groups behind their squads, to keep them in the
@@ -13,6 +16,12 @@
  *   - fires the mortars on the fire plan until a squad is within 150 m of it,
  *     then lays mortar smoke on the objective from 400 m;
  *   - runs in and assaults inside 80 m / 25 m.
+ * With RECON=1 it reconnoitres first (rules decision 52): the squad nearest
+ * the objective goes out scouting, holding its fire, while the rest of the
+ * company waits at its start line; the mortars fire only on what the scout
+ * has found, and the attack goes in once it has found something (or the
+ * scout is lost, or reaches the objective). The scout then lies up and
+ * watches.
  * The defender fights by the app's own drill and standing orders.
  *
  * Usage — start the dev server first (`npx vite --port 5199`), then:
@@ -21,7 +30,14 @@
  *   SEED=12 node tools/smart-attacker.mjs telAzekaAssault2 30
  *
  * Env: SEED (plays on other dice, via `?seed=`), NOFIRE (no fire plan),
- * NOSMOKE (no smoke), BASE_URL (default http://localhost:5199),
+ * PLANNING_ERROR (the share of range the fire plan's centre is off by,
+ * default 0.2; 0 plans on the truth, as every run before 2026-09-28),
+ * NOSMOKE (no smoke), RECON (send a scout ahead first), WATCH (the scout halts
+ * this many turns to watch after each bound), AIM (with RECON, fire only on a
+ * mark whose ring on the map is within this many metres), LOOK (with RECON,
+ * the company waits this many turns after the scout's first contact), SHOT (a screenshot of the last screen, to this path;
+ * with SHOT_TURN, of the attacker's map at its fire phase on that turn),
+ * BASE_URL (default http://localhost:5199),
  * PLAYWRIGHT_DIR (where `playwright` resolves; default the global
  * node_modules of this container), CHROMIUM (the browser binary).
  *
@@ -78,25 +94,50 @@ const toward = (a, b, d) => { const r = dist(a, b); return r <= d ? { ...b } : {
 const rosterEntries = () => p.evaluate(() => [...document.querySelectorAll(".roster li")].map((li) => li.innerText.trim().replace(/\s+/g, " ")));
 const alive = (entry) => !/0\/|נוטרל|נשבר|נכנע|בורח/.test(entry);
 
-const setup = await p.evaluate(async ({ scenario, seed }) => {
+const setup = await p.evaluate(async ({ scenario, seed, share }) => {
   const mod = await import(`/src/app/scenarios/${scenario}.ts`);
+  const { Rng, unitSeed, distance, locationSigma, LOCATION_ERROR } = await import("/src/engine/index.ts");
   const build = Object.values(mod).find((f) => typeof f === "function" && /Scenario$/.test(f.name));
   const { game } = build(seed);
   const att = game.attackers[0] ?? "BLUE"; const def = att === "BLUE" ? "RED" : "BLUE";
   const d = game.units.filter((u) => u.side === def && u.kind !== "command");
+  const a = game.units.filter((u) => u.side === att && u.kind !== "command");
+  const mean = (us) => ({ x: us.reduce((t, u) => t + u.position.x, 0) / us.length, y: us.reduce((t, u) => t + u.position.y, 0) / us.length });
+  // Where the defence truly is, and where the attacker's start line judges it
+  // to be: the umpire's centre, off along the sight line by `share` of the
+  // range and across it by the compass (rules decision 51's figures).
+  const truth = mean(d), from = mean(a);
+  const range = distance(from, truth);
+  const s = locationSigma(range, { ...LOCATION_ERROR.eye, rangeShare: share });
+  const rng = new Rng(unitSeed(game.seed, "#planning-error"));
+  const normal = () => Math.sqrt(-2 * Math.log(1 - rng.next())) * Math.cos(2 * Math.PI * rng.next());
+  const along = share > 0 ? normal() * s.along : 0, across = share > 0 ? normal() * s.across : 0;
+  const ux = (truth.x - from.x) / range, uy = (truth.y - from.y) / range;
   return {
     attacker: att,
-    // The positions the attacker's tasking names: where the defender is thought to be.
-    targets: d.map((u) => ({ x: u.position.x, y: u.position.y })),
+    truth,
+    estimate: { x: truth.x + along * ux - across * uy, y: truth.y + along * uy + across * ux },
     units: game.units.map((u) => ({ id: u.id, name: u.name, side: u.side, kind: u.kind })),
+    // The attacker's own squad nearest the defence: its scout, if it sends one.
+    scout: a.slice().sort((p, q) => Math.hypot(p.position.x - truth.x, p.position.y - truth.y) - Math.hypot(q.position.x - truth.x, q.position.y - truth.y))[0]?.name,
   };
-}, { scenario, seed: process.env.SEED ? Number(process.env.SEED) : undefined });
+}, { scenario, seed: process.env.SEED ? Number(process.env.SEED) : undefined, share: Number(process.env.PLANNING_ERROR ?? 0.2) });
 const byName = Object.fromEntries(setup.units.map((u) => [u.name, u]));
-const objective = { x: setup.targets.reduce((s, t) => s + t.x, 0) / setup.targets.length, y: setup.targets.reduce((s, t) => s + t.y, 0) / setup.targets.length };
+const objective = setup.estimate;
+console.log(`PLAN centre off the defence by ${Math.round(Math.hypot(objective.x - setup.truth.x, objective.y - setup.truth.y))} m`);
 // Realistic intelligence: the tasking names the area, not where each squad lies.
 // The registered targets are the objective's centre and two points 90 m to either side.
 setup.targets = [objective, { x: objective.x - 90, y: objective.y }, { x: objective.x + 90, y: objective.y }];
-const stats = { assaults: 0, bounds: 0, holds: 0, hqMoves: 0, fireCalls: 0, smoke: 0, registered: 0, lifted: null };
+const stats = { assaults: 0, bounds: 0, holds: 0, hqMoves: 0, fireCalls: 0, smoke: 0, registered: 0, lifted: null, released: null };
+// Reconnaissance (RECON): the scout's name, and whether the main body has been let go.
+const scout = process.env.RECON ? setup.scout : null;
+let released = !scout;
+// WATCH=n: the scout bounds and observes — halts n turns to watch after each bound (rules decision 53).
+const watchTurns = Number(process.env.WATCH ?? 0);
+let scoutWatched = 0;
+// LOOK=n: find, fix, then assault — the company waits n turns after the scout's first contact.
+const lookTurns = Number(process.env.LOOK ?? 0);
+let lookedTurns = 0;
 const known = {}; // last known own positions by name
 const missed = {}; // squads that could not be ordered last time
 let turnNo = 0;
@@ -129,15 +170,23 @@ async function targeting(side) {
     for (const f of foes) for (const u of own) { const d = dist(f, u.at); if (d < bd) { bd = d; best = f; } }
     await clickBtn(/^פגז$/); await clickBtn(/^מרגמה$/); await clickBtn(/אש לאפקט מייד/); await clickWorld(best); return;
   }
-  const own = Object.values(await ownPositions(side)).filter((u) => u.kind === "infantry");
+  // The scout is out there on purpose: it neither lifts the fires nor counts as the lead.
+  const own = Object.values(await ownPositions(side)).filter((u) => u.kind === "infantry" && u.name !== scout);
   if (!own.length) return;
   const nearestOwn = (pt) => Math.min(...own.map((u) => dist(u.at, pt)));
   // Fire plan: the registered positions, while no squad of ours is within 150 m of one (danger close).
-  const safe = setup.targets.filter((t) => nearestOwn(t) > 150);
+  // With a scout out, only what it has found — the enemy it has seen, nearest the objective.
+  // AIM=n: only a mark the side is sure of to within n metres — the ring the
+  // map draws round it (rules decision 54), which narrows as the scout watches.
+  const aimWithin = process.env.AIM ? Number(process.env.AIM) : null;
+  const rings = aimWithin == null ? [] : await p.evaluate(() => [...document.querySelectorAll("circle.report-spread")].map((c) => ({ x: +c.getAttribute("cx"), y: +c.getAttribute("cy"), r: +c.getAttribute("r") })));
+  const sureOf = (f) => aimWithin == null || rings.some((g) => Math.hypot(g.x - f.x, g.y - f.y) < 5 && g.r <= aimWithin);
+  const seen = foes.filter(sureOf).sort((p, q) => dist(p, objective) - dist(q, objective));
+  const safe = scout ? seen.filter((t) => nearestOwn(t) > 150) : setup.targets.filter((t) => nearestOwn(t) > 150);
   if (!process.env.NOFIRE && safe.length && await p.getByRole("button", { name: /^פגז$/ }).count()) {
     const t = safe[stats.fireCalls % safe.length];
     await clickBtn(/^פגז$/); await clickBtn(/^מרגמה$/); await clickBtn(/אש לאפקט מייד/); await clickWorld(t); stats.fireCalls++;
-  } else if (!safe.length && stats.lifted == null) stats.lifted = turnNo;
+  } else if (!safe.length && (!scout || seen.length) && stats.lifted == null) stats.lifted = turnNo;
   // Smoke for the last stretch: once the lead squad is within 400 m of the
   // objective, screen it — the nearest enemy seen, else the target areas in
   // turn (a mortar screen is 50 m across and lasts 2 turns). Not at assault range.
@@ -156,7 +205,29 @@ async function movement(side) {
   if (side !== setup.attacker) return;
   const pos = await ownPositions(side);
   const foes = await enemies();
-  const squads = Object.values(pos).filter((u) => u.kind === "infantry").sort((a, b) => a.id.localeCompare(b.id));
+  if (scout) {
+    const s = pos[scout];
+    // What the scout was sent to find is the position at the objective, not any enemy anywhere,
+    // and held in sight — a fresh mark, not a stale one. Lose it, and the count starts again.
+    const fresh = await p.evaluate(() => [...document.querySelectorAll("g.token-enemy:not(.token-stale):not(.token-neutralised) image")].length);
+    const holding = fresh > 0 && foes.some((f) => dist(f, objective) <= 250);
+    lookedTurns = holding ? lookedTurns + 1 : 0;
+    const looked = lookedTurns > lookTurns;
+    if (!released && (looked || !s || dist(s.at, objective) <= 50)) { released = true; stats.released = turnNo; }
+    if (s) {
+      await select(scout);
+      if (!stats.scouting) { await clickBtn(/^צא לסיור$/); stats.scouting = true; }
+      await clickBtn(/^אחזקת אש$/);
+      // Walk on until something is found; then lie up and watch.
+      const halt = released || lookedTurns > 0 || scoutWatched < watchTurns;
+      scoutWatched = halt ? scoutWatched + 1 : 0;
+      if (halt) await clickBtn(/^החזק מקום ואל תירה$/);
+      else await clickWorld(toward(s.at, objective, 50));
+      await tick(100);
+    }
+    if (!released) return; // the rest wait at the start line for the scout's report
+  }
+  const squads = Object.values(pos).filter((u) => u.kind === "infantry" && u.name !== scout).sort((a, b) => a.id.localeCompare(b.id));
   // Command groups first, so their squads stay in the every-turn band of C2.
   for (const hq of Object.values(pos).filter((u) => u.kind === "command")) {
     const prefix = hq.id.replace(/-HQ$/, "-").replace(/-COY$/, "-");
@@ -195,7 +266,7 @@ async function combat(side) {
   for (const entry of await rosterEntries()) {
     const name = entry.split(" — ")[0]; const u = byName[name];
     if (!u || u.side !== side || !alive(entry)) continue;
-    if (side === setup.attacker && u.kind === "command") continue;
+    if (side === setup.attacker && (u.kind === "command" || name === scout)) continue;
     await select(name); const at = await selectedAt(); if (!at) continue;
     const foes = await enemies(); if (!foes.length) return;
     let near = null, nd = Infinity;
@@ -222,12 +293,17 @@ while (!over && steps < maxTurns * 30) {
     const side = /\((RED|BLUE)\)/.exec(end)?.[1];
     if (/תנועה/.test(end)) await movement(side);
     else if (/סימון מטרות/.test(end)) await targeting(side);
-    else if (/ירי/.test(end)) await combat(side);
+    else if (/ירי/.test(end)) {
+      // SHOT_TURN: the attacker's own map at its fire phase that turn — enemies where it judges them.
+      if (process.env.SHOT && Number(process.env.SHOT_TURN) === turn && side === setup.attacker) await p.screenshot({ path: process.env.SHOT });
+      await combat(side);
+    }
     await clickBtn(/^סיים שלב/); continue;
   }
   console.log("stuck with buttons", JSON.stringify(bs)); break;
 }
 const calls = { made: stats.fireCalls };
+if (process.env.SHOT && !process.env.SHOT_TURN) await p.screenshot({ path: process.env.SHOT });
 // The umpire's account: save the recording in-page and replay it.
 const umpire = await p.evaluate(async () => {
   let blob; const orig = URL.createObjectURL; URL.createObjectURL = (b) => { blob = b; return "blob:x"; };
@@ -249,10 +325,19 @@ const umpire = await p.evaluate(async () => {
   const fires = steps.filter((s) => s.outcome?.kind === "fire" || s.outcome?.kind === "fireExplosive").map((s) => {
     const r = s.outcome.result; return `${s.action.kind}:${s.action.attackerId}->${s.action.targetId} ${r.fired ? (r.hits ?? (r.hit ? 1 : 0)) + "h/" + (r.newCasualties ?? (r.blast?.targets ?? []).reduce((n, t) => n + t.newCasualties, 0)) + "c" : "no:" + r.reason}`;
   });
-  return { lethality: rec.lethality, attackers: rec.attackers, turn: game.turn, sides, kinds, outBy: { he, sa }, fires: fires.slice(0, 40) };
+  // How far each side's picture was from the truth at the end (rules decision 51).
+  const off = {};
+  for (const s of ["BLUE", "RED"]) {
+    off[s] = game.contactsFor(s).map((c) => {
+      const u = game.units.find((x) => x.id === c.unitId);
+      return Math.round(Math.hypot(c.lastKnownPosition.x - u.position.x, c.lastKnownPosition.y - u.position.y));
+    });
+  }
+  return { lethality: rec.lethality, locationError: rec.locationError ?? false, contactsOff: off, attackers: rec.attackers, turn: game.turn, sides, kinds, outBy: { he, sa }, fires: fires.slice(0, 40) };
 });
 const side = (x) => `${x.down} down ${x.broken} broken of ${x.men}`;
 console.log("SMART " + JSON.stringify(stats)); console.log(`RESULT ${scenario} [${style}] turn ${umpire.turn}: BLUE ${side(umpire.sides.BLUE)} | RED ${side(umpire.sides.RED)} | out by HE ${umpire.outBy.he}, small arms ${umpire.outBy.sa} | actions ${JSON.stringify(umpire.kinds)} | player ${JSON.stringify(stats)} fire calls ${calls.made}`);
+console.log(`CONTACTS locationError ${umpire.locationError}, each side's reports off the truth by (m): ${JSON.stringify(umpire.contactsOff)}`);
 console.log("FORCES " + JSON.stringify(Object.fromEntries(Object.entries(umpire.sides).map(([k, v]) => [k, v.forces]))));
 const result = await p.evaluate(() => ({
   log: [...document.querySelectorAll(".log li, .log div")].map((x) => x.innerText.trim().replace(/\s+/g, " ")).filter(Boolean),

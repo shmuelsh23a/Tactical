@@ -47,13 +47,16 @@ import {
   SMOKE_RADIUS_M,
   type SmokeSource,
 } from "./data/smoke.js";
-import { orderInterval } from "./data/c2.js";
+import { SUCCESSION_TURNS, orderInterval } from "./data/c2.js";
 import { CHARGE_LAYING } from "./data/engineering.js";
 import {
   canObserve,
   detectByMovement,
   detectByUav,
+  isHidden,
+  lookingThroughBinoculars,
   observeFromPosition,
+  stillReach,
   type DetectionResult,
   type Observation,
 } from "./combat/detection.js";
@@ -116,11 +119,21 @@ import {
   type ForceMorale,
   type MoraleReport,
   type SoldierSnapshot,
+  unitSeed,
 } from "./morale.js";
+import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
 import { SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
+import { LEADER_REACH_M, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
+
+/** A command group still in command: not down, routing or surrendered (rules decision 55). */
+function commandsStill(u: Unit): boolean {
+  return !u.neutralized && !u.routing && !u.surrendered;
+}
+
+/** The location error's stream, named as no force could be (rules decision 51). */
+const LOCATION_ERROR_STREAM = "#location-error";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -388,6 +401,71 @@ export interface GameOptions {
    * engagement both attack.
    */
   attackers?: Side[];
+  /**
+   * Whether a sighting reports where an observer judged the force to be,
+   * rather than where it is (rules decision 51, ⚠️ ours): off by default,
+   * and needs `trackIntel`. The error is drawn from its own seeded stream, so
+   * it changes what a side knows and never what the game's rng is asked.
+   */
+  locationError?: boolean;
+  /**
+   * Whether a force in position may find a still enemy beyond the
+   * document's 20 m (rules decision 53, ⚠️ ours): out to 300 m, 600 m for an
+   * observation post, its chance falling off with range. Off by default; it
+   * rolls for more pairs of forces, so it changes what the rng is asked.
+   */
+  stillDetection?: boolean;
+  /**
+   * Scouts carry binoculars (rules decision 54, ⚠️ ours): a scouting force
+   * that has halted watches as an observation post does — a still enemy to
+   * 600 m, a moving one to 1,000 m, and half the eye's range error. Off by
+   * default; needs `trackIntel`.
+   */
+  binoculars?: boolean;
+  /**
+   * A longer look sharpens a report (rules decision 54, ⚠️ ours): a force in
+   * position keeps its eyes on a still enemy its side has fresh and it can
+   * see within its reach, without rolling to find it again, and each turn's
+   * look adds an estimate. Off by default; needs `trackIntel`.
+   */
+  keepEyesOn?: boolean;
+  /**
+   * Losing a command group has effect (rules decision 55, ⚠️ ours): command
+   * passes to the next in line after {@link SUCCESSION_TURNS} turns without
+   * new orders or calls for fire, and a side with none left gives neither.
+   * Off by default.
+   */
+  commandSuccession?: boolean;
+  /**
+   * A smoke screen from the tubes costs a fire mission (rules decision 56,
+   * author 2026-09-29): mortar or artillery smoke is drawn from the side's
+   * allotment like a mission of HE. A grenade's smoke is the squad's own. On
+   * by default; a recording made before it reads it as off.
+   */
+  smokeCostsMission?: boolean;
+  /**
+   * An enemy mark stays on the side's map where it was last seen, however long
+   * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
+   * Before, a report nobody refreshed for three turns was dropped (decision
+   * 12). On by default; a recording made before it reads it as off.
+   */
+  keepStaleMarks?: boolean;
+  /**
+   * The mission's deadline (rules decision 58, author 2026-09-29: "mission
+   * will have time limit in briefing"): the attackers must take their
+   * objective by the end of this turn, or the attack has failed. Absent: no
+   * deadline. The briefing states it; the app ends the battle on it.
+   */
+  timeLimit?: number;
+}
+
+/** One burst, shell or blow a force received (see `Game.fireReceived`). */
+export interface ReceivedFire {
+  turn: number;
+  targetId: string;
+  kind: FireNote["kind"];
+  /** Who fired; absent for shells from off the map and for charges. */
+  firerId?: string;
 }
 
 /**
@@ -415,6 +493,42 @@ export class Game {
   readonly lethality: Lethality;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
+  /** Whether a sighting carries location error (rules decision 51). */
+  readonly locationError: boolean;
+  /** Whether a force in position finds a still enemy beyond 20 m (rules decision 53). */
+  readonly stillDetection: boolean;
+  /** Whether scouts carry binoculars (rules decision 54). */
+  readonly binoculars: boolean;
+  /** Whether a force in position keeps its eyes on a still enemy it has found (rules decision 54). */
+  readonly keepEyesOn: boolean;
+  /** Whether losing a command group has effect (rules decision 55). */
+  readonly commandSuccession: boolean;
+  /** Whether tube smoke costs a fire mission (rules decision 56). */
+  readonly smokeCostsMission: boolean;
+  /** Whether a mark stays where it was last seen (rules decision 57). */
+  readonly keepStaleMarks: boolean;
+  /** The last turn the attackers have to win in (rules decision 58); undefined: none. */
+  readonly timeLimit: number | undefined;
+  /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
+  private readonly smokeMissions: { side: Side; weapon: string }[] = [];
+  /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
+  private readonly inCommand = new Map<Side, string | null>();
+  /** The turn each side's successor is in command from (rules decision 55). */
+  private readonly successionUntil = new Map<Side, number>();
+  /** Command groups still in command at the last turn's start, by id (rules decision 55). */
+  private readonly groupsInCommand = new Set<string>();
+  /**
+   * A command group lost, and until when the forces it commanded — lower
+   * echelons within its reach — take no new orders (rules decision 55).
+   */
+  private readonly handovers: { side: Side; echelon: Echelon; at: Point; until: number }[] = [];
+  /**
+   * Where the location error is drawn from: its own stream (see `unitSeed`),
+   * so turning it on moves no other roll in the game.
+   */
+  private readonly locationRng: Rng;
+  /** Bounds each force has made — which stand a report was of (rules decision 51). */
+  private readonly bounds = new Map<string, number>();
   /**
    * How many of {@link registeredTargets} came with the options rather than
    * from mission planning — the recording's header carries those, its journal
@@ -491,6 +605,12 @@ export class Game {
    * the outermost one.
    */
   private readonly actions: RecordedAction[] = [];
+  /**
+   * Fire each force has received, turn by turn: derived as fire resolves (a
+   * replay rebuilds it), never recorded. The umpire's: who fired is truth,
+   * and {@link fireReceived}'s caller decides what a side may be told.
+   */
+  private readonly fireLog: ReceivedFire[] = [];
   private journalDepth = 0;
 
   private journal(action: RecordedAction): void {
@@ -525,6 +645,23 @@ export class Game {
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     this.lethality = opts.lethality ?? "research";
     this.attackers = [...(opts.attackers ?? [])];
+    this.locationError = opts.locationError ?? false;
+    this.stillDetection = opts.stillDetection ?? false;
+    this.binoculars = opts.binoculars ?? false;
+    this.keepEyesOn = opts.keepEyesOn ?? false;
+    this.commandSuccession = opts.commandSuccession ?? false;
+    this.smokeCostsMission = opts.smokeCostsMission ?? true;
+    this.keepStaleMarks = opts.keepStaleMarks ?? true;
+    this.timeLimit = opts.timeLimit;
+    if (this.timeLimit !== undefined && !(Number.isInteger(this.timeLimit) && this.timeLimit > 0)) {
+      throw new Error(`timeLimit: cannot read ${JSON.stringify(opts.timeLimit)}`);
+    }
+    // Without the knowledge model nothing is reported, so nothing could be off.
+    if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
+    if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
+    if (this.binoculars && !this.trackIntel) throw new Error("binoculars needs trackIntel");
+    if (this.keepEyesOn && !this.trackIntel) throw new Error("keepEyesOn needs trackIntel");
+    this.locationRng = new Rng(unitSeed(opts.seed, LOCATION_ERROR_STREAM));
     if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
     if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
     for (const t of opts.registeredTargets ?? []) {
@@ -586,12 +723,17 @@ export class Game {
    * floor — a grenade's smoke — anybody may use.
    */
   mayCall(side: Side, weapon: string): boolean {
+    // Somebody has to call it (rules decision 55): not while command changes hands.
+    if (FIRE_SUPPORT_MIN_ECHELON[weapon] && !this.hasFireControl(side)) return false;
     if (!this.fireSupportByEchelon) return true;
     const floor = FIRE_SUPPORT_MIN_ECHELON[weapon];
     return !floor || ECHELON_RANK[this.commandEchelonOf(side)] >= ECHELON_RANK[floor];
   }
 
   private requireMayCall(side: Side, weapon: string): void {
+    if (FIRE_SUPPORT_MIN_ECHELON[weapon] && !this.hasFireControl(side)) {
+      throw new Error(`${side} has no commander in command to call ${weapon} (rules decision 55)`);
+    }
     if (!this.mayCall(side, weapon)) {
       throw new Error(
         `${side} commands a ${this.commandEchelonOf(side)}: ${weapon} is called from ${FIRE_SUPPORT_MIN_ECHELON[weapon]} and above`,
@@ -618,6 +760,14 @@ export class Game {
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       lethality: this.lethality,
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
+      ...(this.locationError ? { locationError: true } : {}),
+      ...(this.stillDetection ? { stillDetection: true } : {}),
+      ...(this.binoculars ? { binoculars: true } : {}),
+      ...(this.keepEyesOn ? { keepEyesOn: true } : {}),
+      ...(this.commandSuccession ? { commandSuccession: true } : {}),
+      ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
+      ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
+      ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -696,6 +846,7 @@ export class Game {
   beginTurn(): { turn: number; initiativeOrder: Side[] } {
     this.checkFirePlans();
     this.turn += 1;
+    this.noteSuccession();
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
     if (this.morale) {
@@ -833,7 +984,7 @@ export class Game {
     this.requirePhase("intel");
     const enemies = this.units.filter((u) => u.side !== viewer);
     const result = detectByUav(this.rng, uavKey, footprintCenter, enemies, this.mines);
-    for (const id of result.spottedUnitIds) this.observe(viewer, id, "uav");
+    for (const id of result.spottedUnitIds) this.observe(viewer, id, "uav", undefined);
     this.journal({ kind: "uavSweep", uavKey, footprintCenter, viewer });
     return result;
   }
@@ -941,7 +1092,9 @@ export class Game {
     if (!list) return undefined;
     const allotted = list.filter((a) => a.weapon === weapon).reduce((n, a) => n + a.missions, 0);
     const called = this.missions.filter((m) => m.side === side && m.weapon === weapon).length;
-    return allotted - called;
+    // A screen from the tubes is a mission too (rules decision 56).
+    const smoke = this.smokeMissions.filter((m) => m.side === side && m.weapon === weapon).length;
+    return allotted - called - smoke;
   }
 
   /**
@@ -1396,6 +1549,7 @@ export class Game {
 
     const from = unit.position;
     unit.position = { ...to };
+    this.bounds.set(unit.id, (this.bounds.get(unit.id) ?? 0) + 1);
     unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
 
@@ -1413,7 +1567,7 @@ export class Game {
     const detection = detectByMovement(this.rng, unit, from, gait, enemies, this.mines, sight);
     // What the mover found. What found the mover is rolled once for the whole
     // turn, by every force in position — see observeFromPosition.
-    for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement");
+    for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement", unit);
 
     // Charges are tested against the whole path walked, so a bound cannot vault
     // a minefield. Any that fired are spent.
@@ -1449,11 +1603,64 @@ export class Game {
    * Note that `side` has observed `unitId` where it now stands. Silently does
    * nothing when the knowledge model is off, so callers need no guard.
    */
-  private observe(side: Side, unitId: string, source: ContactSource): void {
+  private observe(side: Side, unitId: string, source: ContactSource, observer: Unit | undefined, from?: Point): void {
     if (!this.trackIntel) return;
     const unit = this.units.find((u) => u.id === unitId);
     if (!unit || unit.side === side) return;
-    this.intel.record(side, unitId, unit.position, this.turn, source, unit.neutralized);
+    this.report(side, unit, unit.position, source, observer, from);
+  }
+
+  /**
+   * Put what `side` saw of `unit` at `at` in its ledger — where it is, or,
+   * with location error (rules decision 51), where `observer` judged it to
+   * be: off along the sight line by the eye's range estimate and across it by
+   * the compass, looking from `from` (where it stands unless told). No
+   * observer is a UAV's look straight down.
+   */
+  private report(
+    side: Side,
+    unit: Unit,
+    at: Point,
+    source: ContactSource,
+    observer: Unit | undefined,
+    from: Point | undefined = observer?.position,
+  ): void {
+    if (!this.locationError) {
+      this.intel.record(side, unit.id, at, this.turn, source, unit.neutralized);
+      return;
+    }
+    const normal = () => {
+      // Box–Muller, from the location stream alone.
+      const u = 1 - this.locationRng.next();
+      const v = this.locationRng.next();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    };
+    let reported: Point;
+    let sigma: number;
+    if (!observer) {
+      reported = { x: at.x + normal() * UAV_LOCATION_ERROR_M, y: at.y + normal() * UAV_LOCATION_ERROR_M };
+      sigma = UAV_LOCATION_ERROR_M;
+    } else {
+      const eye = from ?? observer.position;
+      const range = distance(eye, at);
+      // An observation post, or a scout at its binoculars (rules decision 54), has the better eye.
+      const post = observer.observationPost || lookingThroughBinoculars(observer, this.binoculars);
+      const s = locationSigma(range, post ? LOCATION_ERROR.observationPost : LOCATION_ERROR.eye);
+      const along = normal() * s.along;
+      const across = normal() * s.across;
+      const ux = range > 0 ? (at.x - eye.x) / range : 1;
+      const uy = range > 0 ? (at.y - eye.y) / range : 0;
+      reported = { x: at.x + along * ux - across * uy, y: at.y + along * uy + across * ux };
+      sigma = Math.sqrt((s.along ** 2 + s.across ** 2) / 2);
+    }
+    this.intel.record(side, unit.id, reported, this.turn, source, unit.neutralized, {
+      stand: this.bounds.get(unit.id) ?? 0,
+      sigma,
+      observer: observer?.id ?? "#uav",
+      // Only once a longer look is in play (rules decision 54): no amount of
+      // watching beats an eye, map and compass.
+      ...(this.keepEyesOn && observer ? { floor: BEST_VISUAL_FIX_SIGMA_M } : {}),
+    });
   }
 
   /**
@@ -1461,10 +1668,10 @@ export class Game {
    * engaged mid-bound (rules decision 18). Everything else observes a force
    * where it is, which is why {@link observe} reads the position itself.
    */
-  private intelRecordAt(side: Side, unit: Unit, at: Point): void {
+  private intelRecordAt(side: Side, unit: Unit, at: Point, observer: Unit): void {
     if (!this.trackIntel) return;
     if (unit.side === side) return;
-    this.intel.record(side, unit.id, at, this.turn, "fire", unit.neutralized);
+    this.report(side, unit, at, "fire", observer);
   }
 
   /**
@@ -1474,8 +1681,8 @@ export class Game {
    * map and gives nothing away (⚠️ rules decision 12).
    */
   private exchangeContact(attacker: Unit, target: Unit): void {
-    this.observe(target.side, attacker.id, "fire");
-    this.observe(attacker.side, target.id, "fire");
+    this.observe(target.side, attacker.id, "fire", target);
+    this.observe(attacker.side, target.id, "fire", attacker);
   }
 
   /**
@@ -1487,13 +1694,46 @@ export class Game {
    */
   private observeFromPositions(): Observation[] {
     if (!this.trackIntel) return [];
-    const seen = observeFromPosition(this.rng, this.units, (observer, target) =>
-      this.hasLineOfSight(observer, target),
+    this.keepEyesOnWhatWasFound();
+    const seen = observeFromPosition(
+      this.rng,
+      this.units,
+      (observer, target) => this.hasLineOfSight(observer, target),
+      this.stillDetection,
+      this.binoculars,
     );
     for (const { observerId, targetId } of seen) {
-      this.observe(this.getUnit(observerId).side, targetId, "movement");
+      const observer = this.getUnit(observerId);
+      this.observe(observer.side, targetId, "movement", observer);
     }
     return seen;
+  }
+
+  /**
+   * A longer look (rules decision 54): every force in position keeps its
+   * eyes on a still enemy its side holds fresh — seen this turn or last —
+   * within its reach and sight, without rolling to find it again. Each look
+   * is a new estimate, so a force watched for longer is placed better (the
+   * ledger combines them, one an observer a turn). Not reported as a new
+   * sighting: it is the same one, kept.
+   */
+  private keepEyesOnWhatWasFound(): void {
+    if (!this.keepEyesOn) return;
+    for (const observer of this.units) {
+      if (observer.movedThisTurn > 0 || !canObserve(observer)) continue;
+      const reach = this.stillDetection
+        ? stillReach(observer, this.binoculars)
+        : MOVEMENT_PROFILES.normal.hiddenDetectRange;
+      for (const target of this.units) {
+        if (target.side === observer.side || !isHidden(target)) continue;
+        if (target.kind === "vehicle" && target.vehicle?.destroyed) continue;
+        const held = this.intel.contactFor(observer.side, target.id);
+        if (!held || held.lastSeenTurn < this.turn - 1) continue;
+        if (distance(observer.position, target.position) > reach) continue;
+        if (!this.hasLineOfSight(observer, target)) continue;
+        this.observe(observer.side, target.id, "movement", observer);
+      }
+    }
   }
 
   /**
@@ -1722,13 +1962,14 @@ export class Game {
         if (!result.fired) continue;
         delete coverer.covering;
         // Where it was caught, not where the bound ended (flanking reads it).
-        this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at);
+        this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at, coverer.id);
         this.stress.credit(coverer, result.newCasualties, result.targetNeutralized && !wasNeutralized);
         // The contact is where the shot was taken, not where the bound ended:
         // the coverer saw the force it engaged, and by construction may not be
         // able to see where it went afterwards.
-        this.observe(actor.side, coverer.id, "fire");
-        this.intelRecordAt(coverer.side, actor, at);
+        // The mover saw the shot from where it was caught, not from the end of its bound.
+        this.observe(actor.side, coverer.id, "fire", actor, at);
+        this.intelRecordAt(coverer.side, actor, at, coverer);
         taken.push({
           coveringId: coverer.id,
           targetId: actor.id,
@@ -1849,6 +2090,15 @@ export class Game {
     return this.intel.contactsFor(side);
   }
 
+  /**
+   * How far `side`'s report of `unitId` may be off, in metres — one standard
+   * deviation — when sightings carry location error (rules decision 51).
+   * Undefined without it, or for a force the side does not hold.
+   */
+  reportSpread(side: Side, unitId: string): number | undefined {
+    return this.intel.spreadOf(side, unitId);
+  }
+
   /** What `side` last knows of one enemy force, if anything. */
   contactFor(side: Side, unitId: string): Contact | undefined {
     return this.intel.contactFor(side, unitId);
@@ -1956,7 +2206,7 @@ export class Game {
     if (fireResult.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
-      this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position);
+      this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position, undefined, attacker.id);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fire", attackerId, targetId, opts });
@@ -2012,10 +2262,12 @@ export class Game {
         "explosive",
         SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0),
         attacker.position,
+        undefined,
+        attacker.id,
       );
       for (const t of caught) {
         if (t.unitId !== target.id) {
-          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position);
+          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position, undefined, attacker.id);
         }
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
@@ -2074,9 +2326,9 @@ export class Game {
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
-      this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position);
+      this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position, undefined, attacker.id);
       if (result.reply) {
-        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position);
+        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position, undefined, defender.id);
         this.stress.credit(defender, result.reply.casualties, attacker.neutralized);
       }
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
@@ -2104,6 +2356,12 @@ export class Game {
       throw new PhaseError(`Smoke can only be deployed in targeting or combat phases`);
     }
     this.requireMayCall(side, source);
+    // From the tubes, it is drawn from the side's missions (rules decision 56).
+    const costs = this.smokeCostsMission && source !== "grenade" && this.fireMissionsLeft(side, source) !== undefined;
+    if (costs && this.fireMissionsLeft(side, source)! <= 0) {
+      throw new Error(`${side} has no ${source} missions left for smoke (rules decision 56)`);
+    }
+    if (costs) this.smokeMissions.push({ side, weapon: source });
     const delay = EXPLOSIVES[source]?.impactDelayTurns ?? 0;
     const durationTurns = SMOKE_DURATION_TURNS[source];
     const common = { source, radius, durationTurns, arrivesOnTurn: this.turn + delay };
@@ -2349,9 +2607,70 @@ export class Game {
 
   // ---- command & control ----
 
-  /** The side's command group (חפ"ק) — the C2 reference for its subordinates. */
+  /**
+   * The side's command group (חפ"ק) — the C2 reference for its subordinates.
+   * With command succession (rules decision 55), the first still in command:
+   * not down, routing or surrendered.
+   */
   commandGroupFor(side: Side): Unit | undefined {
-    return this.units.find((u) => u.side === side && u.kind === "command");
+    return this.units.find(
+      (u) => u.side === side && u.kind === "command" && (!this.commandSuccession || commandsStill(u)),
+    );
+  }
+
+  /**
+   * At the turn's start: has command changed hands since the last one (rules
+   * decision 55)? A side whose command group went out passes command to the
+   * next in line, which takes {@link SUCCESSION_TURNS} turns.
+   */
+  private noteSuccession(): void {
+    if (!this.commandSuccession) return;
+    // Every command group that went out since the last turn leaves the forces
+    // it commanded without orders while someone takes over.
+    for (const u of this.units) {
+      if (u.kind !== "command") continue;
+      const now = commandsStill(u);
+      if (this.turn > 1 && this.groupsInCommand.has(u.id) && !now) {
+        this.handovers.push({ side: u.side, echelon: u.echelon, at: { ...u.position }, until: this.turn + SUCCESSION_TURNS });
+      }
+      if (now) this.groupsInCommand.add(u.id);
+      else this.groupsInCommand.delete(u.id);
+    }
+    for (const side of this.sides) {
+      const now = this.commandGroupFor(side)?.id ?? null;
+      const before = this.inCommand.get(side);
+      if (before !== undefined && before !== null && before !== now) this.successionUntil.set(side, this.turn + SUCCESSION_TURNS);
+      if (before === undefined || before !== null) this.inCommand.set(side, now);
+    }
+  }
+
+  /** Whether `side` has a commander in command, not handing over (rules decision 55). */
+  inCommandOf(side: Side): boolean {
+    if (!this.commandSuccession || !this.inCommand.has(side)) return true;
+    const held = this.inCommand.get(side);
+    if (held === null) return !this.hadCommand(side);
+    return this.turn >= (this.successionUntil.get(side) ?? 0);
+  }
+
+  /** Whether `unit` was commanded by a command group lost this turn or the last few (rules decision 55). */
+  private underHandover(unit: Unit): boolean {
+    return this.handovers.some(
+      (h) =>
+        h.side === unit.side &&
+        this.turn < h.until &&
+        ECHELON_RANK[h.echelon] > ECHELON_RANK[unit.echelon] &&
+        distance(h.at, unit.position) <= (LEADER_REACH_M[h.echelon] ?? 0),
+    );
+  }
+
+  /** Whether `side` began the battle with a command group at all. */
+  private hadCommand(side: Side): boolean {
+    return this.units.some((u) => u.side === side && u.kind === "command");
+  }
+
+  /** Whether `side` may call its guns: a commander in command (rules decision 55). */
+  hasFireControl(side: Side): boolean {
+    return this.inCommandOf(side);
   }
 
   /**
@@ -2375,6 +2694,11 @@ export class Game {
   canReceiveOrders(unitId: string, commanderPosition?: Point): boolean {
     const unit = this.getUnit(unitId);
     if (unit.kind === "command") return true;
+    // Command changing hands, or gone (rules decision 55): no new orders —
+    // for the whole side when its senior command group is, and for the
+    // forces a lost command group commanded while its successor takes over.
+    if (!this.inCommandOf(unit.side)) return false;
+    if (this.underHandover(unit)) return false;
     const from = this.commanderPositionFor(unit, commanderPosition);
     if (!from) return true; // no command group → unconstrained
     const interval = orderInterval(unit.echelon, distance(unit.position, from));
@@ -2425,8 +2749,9 @@ export class Game {
   // ---- upkeep ----
 
   private endOfTurnUpkeep(): { chargeWork: ChargeWorkReport[]; morale: MoraleReport[] } {
-    // A report nobody has refreshed for three turns is no longer a contact.
-    this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
+    // A report nobody has refreshed for three turns is no longer a contact —
+    // unless marks stay where last seen (rules decision 57).
+    if (!this.keepStaleMarks) this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
     applyBleeding(this.rng, this.units, this.turn);
     this.smoke = decaySmoke(this.smoke);
     // Before the per-turn flags are cleared: the work is judged on what the
@@ -2537,7 +2862,8 @@ export class Game {
    * where the target stood when the shot was taken, if not where it stands
    * now — the bearing is fixed here, so flanking is judged on the shot.
    */
-  private noteFire(target: Unit, kind: FireNote["kind"], suppression: number, from?: Point, at?: Point): void {
+  private noteFire(target: Unit, kind: FireNote["kind"], suppression: number, from?: Point, at?: Point, firerId?: string): void {
+    this.fireLog.push({ turn: this.turn, targetId: target.id, kind, ...(firerId ? { firerId } : {}) });
     if (!this.morale) return;
     const note: FireNote = from ? { kind, bearing: bearingDegrees(at ?? target.position, from) } : { kind };
     this.stress.firedOn(target, note);
@@ -2548,6 +2874,14 @@ export class Game {
   private directSuppression(weapon: WeaponClass, hits: number): number {
     const burst = SUPPRESSION.directFire + SUPPRESSION.perHit * hits;
     return weapon === "sustainedMg" ? burst * SUPPRESSION.sustainedMgFactor : burst;
+  }
+
+  /**
+   * The fire a force received from `sinceTurn` on — the umpire's record. A
+   * side's view names a firer only if the side holds a mark on it.
+   */
+  fireReceived(unitId: string, sinceTurn: number): ReceivedFire[] {
+    return this.fireLog.filter((f) => f.targetId === unitId && f.turn >= sinceTurn);
   }
 
   /**

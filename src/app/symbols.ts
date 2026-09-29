@@ -25,12 +25,15 @@ function echelonCode(echelon: Echelon): string {
  * **own side** so factions keep a consistent colour no matter who is viewing:
  * BLUE always renders as a friend (blue), RED always as hostile (red).
  */
-export function buildSidc(unit: Unit): string {
+export function buildSidc(unit: Unit, stale = false): string {
   const affiliation = unit.side === "BLUE" ? "F" : "H";
   const fn = unit.kind === "vehicle" ? "UCA" : "UCI"; // armour vs infantry
   const ech = echelonCode(unit.echelon);
-  // S | affiliation | G(ground) P(present) | function(3) | --- | echelon | ----
-  return `S${affiliation}GP${fn}---${ech}----`;
+  // A mark last seen on an earlier turn (rules decision 57) is drawn as APP-6
+  // draws a unit that is anticipated rather than present: a broken frame.
+  const status = stale ? "A" : "P";
+  // S | affiliation | G(ground) | status | function(3) | --- | echelon | ----
+  return `S${affiliation}G${status}${fn}---${ech}----`;
 }
 
 export interface RenderedSymbol {
@@ -84,8 +87,8 @@ export const SYMBOL_CACHE_MAX = 256;
 const cache = new Map<string, RenderedSymbol>();
 
 /** Render a unit to a vector (SVG) NATO symbol as a data URL. */
-export function renderUnitSymbol(unit: Unit, size = 30): RenderedSymbol {
-  const sidc = buildSidc(unit);
+export function renderUnitSymbol(unit: Unit, size = 30, stale = false): RenderedSymbol {
+  const sidc = buildSidc(unit, stale);
   const info = additionalInformation(unit);
   const key = `${size}\u0000${sidc}\u0000${unit.name ?? ""}\u0000${info}`;
 

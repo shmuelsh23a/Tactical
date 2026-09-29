@@ -1,7 +1,12 @@
 import { sideDefeated } from "../app/hotseat.js";
 import { DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import {
   ECHELON_RANK,
+  LOCATION_ERROR,
+  Rng,
+  locationSigma,
+  unitSeed,
   FIRE_SUPPORT_MIN_ECHELON,
   Game,
   distance,
@@ -187,6 +192,54 @@ export interface BattleOptions {
   defenderPlan?: { observationPosts?: boolean; alternateAt?: number };
   /** Whose blast and tank-gun figures (rules decision 41). The game's default, `research`, unless given. */
   lethality?: Lethality;
+  /**
+   * The attacking company commander's plan (`app/company.ts`): scouts, where
+   * they watch from, where the rest wait (rules decisions 52–54). Absent: the
+   * whole attack goes at once, as every table before 2026-09-29.
+   */
+  company?: CompanyPlan;
+  /**
+   * Neither side plans its fires on where the other truly is (rules decision
+   * 51's harness half). The attacker's planned targets are each position's
+   * centre as an observer at its start line would judge it
+   * ({@link estimateFrom}); the defender's points on the approach are off
+   * the line the attacker really comes by, by the same share of their
+   * distance. The number is that share of the range, one standard deviation:
+   * 0.2 is an eye's ({@link LOCATION_ERROR}), less a position reconnoitred.
+   * Absent or 0, both plan on the truth, as every table before 2026-09-28.
+   */
+  planningError?: number;
+  /** Sightings carry location error in the game (rules decision 51, `GameOptions.locationError`). */
+  locationError?: boolean;
+  /** A force in position finds a still enemy beyond 20 m (rules decision 53, `GameOptions.stillDetection`). */
+  stillDetection?: boolean;
+  /** Scouts carry binoculars (rules decision 54, `GameOptions.binoculars`). */
+  binoculars?: boolean;
+  /** A force in position keeps its eyes on what it found (rules decision 54, `GameOptions.keepEyesOn`). */
+  keepEyesOn?: boolean;
+  /** Losing a command group has effect (rules decision 55, `GameOptions.commandSuccession`). */
+  commandSuccession?: boolean;
+}
+
+/** A standard normal draw (Box–Muller). */
+function normal(rng: Rng): number {
+  return Math.sqrt(-2 * Math.log(1 - rng.next())) * Math.cos(2 * Math.PI * rng.next());
+}
+
+/**
+ * Where an observer at `from` would put a force at `truth` (rules decision
+ * 51's figures, an eye's): off along the sight line by a fifth of the range
+ * and across it by the compass. The harness's pre-battle intelligence, drawn
+ * from its own stream so the game's rolls do not move.
+ */
+export function estimateFrom(rng: Rng, from: Point, truth: Point, rangeShare: number = LOCATION_ERROR.eye.rangeShare): Point {
+  const range = distance(from, truth);
+  const s = locationSigma(range, { ...LOCATION_ERROR.eye, rangeShare });
+  const along = normal(rng) * s.along;
+  const across = normal(rng) * s.across;
+  const ux = range > 0 ? (truth.x - from.x) / range : 1;
+  const uy = range > 0 ? (truth.y - from.y) / range : 0;
+  return { x: truth.x + along * ux - across * uy, y: truth.y + along * uy + across * ux };
 }
 
 /**
@@ -219,6 +272,16 @@ export interface FirePlan {
   fuze?: Fuze;
   /** Adjust fire (default) or fire for effect at once (rules decision 39). */
   method?: FireMethod;
+  /**
+   * Fire only on what the side has seen, never on the plan (rules decision
+   * 52): the guns wait for the scouts to find the enemy.
+   */
+  waitForContact?: boolean;
+  /**
+   * Fire only on a report this good, in metres of spread (rules decision
+   * 54): the guns wait while the scouts' look sharpens it. Absent: any report.
+   */
+  aimSpread?: number;
 }
 
 /**
@@ -300,28 +363,35 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
   // defender stands where `laid.red` does whichever side it is.
   const defenderSide: Side = opts.swap ? "BLUE" : "RED";
   // The attacker's planned targets: the centre of each position it is
-  // attacking, as its intelligence has them — one a defending platoon.
+  // attacking, as its intelligence has them — one a defending platoon. With
+  // `planningError`, as its start line judged them, not where they are.
+  const intelRng = new Rng(unitSeed(seed, "#planning-error"));
+  const attackerStart = (() => {
+    const inf = laid.blue.filter((f) => f.kind === "infantry");
+    return { x: inf.reduce((t, f) => t + f.at.x, 0) / inf.length, y: inf.reduce((t, f) => t + f.at.y, 0) / inf.length };
+  })();
   const plannedTargets: Point[] = (() => {
     const byPosition = new Map<string, Point[]>();
     for (const f of laid.red.filter((f) => f.kind === "infantry")) {
       const key = f.id.split("-")[0]!;
       byPosition.set(key, [...(byPosition.get(key) ?? []), f.at]);
     }
-    return [...byPosition.values()].map((ps) => ({
-      x: ps.reduce((t, p) => t + p.x, 0) / ps.length,
-      y: ps.reduce((t, p) => t + p.y, 0) / ps.length,
-    }));
+    return [...byPosition.values()].map((ps) => {
+      const centre = { x: ps.reduce((t, p) => t + p.x, 0) / ps.length, y: ps.reduce((t, p) => t + p.y, 0) / ps.length };
+      return opts.planningError ? estimateFrom(intelRng, attackerStart, centre, opts.planningError) : centre;
+    });
   })();
   const attackerSide = other(defenderSide);
   const registeredTargets = (() => {
     if (kind === "meeting") return [];
     const y0 = laid.red.find((f) => f.kind === "infantry")!.at.y;
     const toward = Math.sign(laid.blue.find((f) => f.kind === "infantry")!.at.y - y0);
-    const defender = (callable("mortar") ? opts.defenderFires?.registeredAt ?? [] : []).map((m) => ({
-      side: defenderSide,
-      weapon: "mortar",
-      at: { x: X, y: y0 + toward * m },
-    }));
+    // The defender guesses the approach: with `planningError` it is off the
+    // line the attacker really takes by that share of the point's distance.
+    const defender = (callable("mortar") ? opts.defenderFires?.registeredAt ?? [] : []).map((m) => {
+      const across = opts.planningError ? normal(intelRng) * m * opts.planningError : 0;
+      return { side: defenderSide, weapon: "mortar", at: { x: X + across, y: y0 + toward * m } };
+    });
     const attacker = !opts.fires?.registered
       ? []
       : opts.fires.missions.filter((a) => callable(a.weapon)).flatMap((a) => plannedTargets.map((at) => ({ side: attackerSide, weapon: a.weapon, at })));
@@ -341,6 +411,11 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     seed,
     morale: opts.morale,
     trackIntel: true,
+    ...(opts.locationError ? { locationError: true } : {}),
+    ...(opts.stillDetection ? { stillDetection: true } : {}),
+    ...(opts.binoculars ? { binoculars: true } : {}),
+    ...(opts.keepEyesOn ? { keepEyesOn: true } : {}),
+    ...(opts.commandSuccession ? { commandSuccession: true } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),
@@ -421,6 +496,16 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     BLUE: { side: "BLUE", attacking: attackers.includes("BLUE"), objective: objective.BLUE },
     RED: { side: "RED", attacking: attackers.includes("RED"), objective: objective.RED },
   };
+  // The attacking company commander (rules decisions 52–54), looking for the
+  // enemy where its plan puts it. The harness's ground is flat and open.
+  const commander =
+    opts.company && kind !== "meeting"
+      ? new ScriptedCompany(g, attackerSide, objective[attackerSide], plannedTargets, opts.company, {
+          terrain: g.terrain,
+          width: 2 * X,
+          height: NORTH + 1100,
+        })
+      : undefined;
   g.beginTurn();
   let liftedFires = false;
   for (let turn = 1; turn <= MAX_TURNS; turn++) {
@@ -451,7 +536,9 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     if (opts.fires && kind !== "meeting") {
       const goal = objective[attackerSide];
       const lifted = g.units
-        .filter((u) => u.side === attackerSide && u.kind !== "command" && !u.neutralized)
+        // The main body's nearness lifts the fires, not a scout's (decision 52):
+        // the scouts are there to call them in.
+        .filter((u) => u.side === attackerSide && u.kind !== "command" && !u.neutralized && !u.scouting)
         .some((u) => distance(u.position, goal) <= opts.fires!.liftAt);
       if (lifted && !liftedFires) {
         // The fires lift: whatever is still to come is checked.
@@ -462,11 +549,14 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
         // What it has seen of the defender, nearest the objective; until then
         // the objective itself, a point along its frontage for each mission.
         callMissions(attackerSide, () => {
+          const sharpEnough = (unitId: string) =>
+            opts.fires!.aimSpread == null || (g.reportSpread(attackerSide, unitId) ?? 0) <= opts.fires!.aimSpread;
           const seen = g
             .contactsFor(attackerSide)
-            .filter((c) => !c.lastKnownNeutralized)
+            .filter((c) => !c.lastKnownNeutralized && sharpEnough(c.unitId))
             .sort((p, q) => distance(p.lastKnownPosition, goal) - distance(q.lastKnownPosition, goal))[0];
           if (seen) return seen.lastKnownPosition;
+          if (opts.fires!.waitForContact) return undefined;
           const called = g.fireMissions.filter((m) => m.side === attackerSide).length;
           return plannedTargets[called % plannedTargets.length]!;
         }, opts.fires.fuze, opts.fires.method);
@@ -498,6 +588,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // executor, working from the same fog-bound view, that will carry out a
     // simulated subordinate's orders.
     note(g.advanceToPhase("movement").morale);
+    if (commander) tasks[attackerSide].company = commander.orders(g);
     for (const side of order) drillMovement(g, tasks[side], drill, drillState);
     g.advanceToPhase("combat");
     for (const side of order) drillCombat(g, tasks[side], drill);

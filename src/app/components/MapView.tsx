@@ -12,7 +12,7 @@ import type {
   Terrain,
   Unit,
 } from "../../engine/index.js";
-import { ADJUSTMENT_RADIUS_M, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 import { Relief, Roads, TerrainObjects } from "./Relief.js";
@@ -71,6 +71,12 @@ interface MapViewProps {
    * saw them, not where they are. Empty in the umpire's (debrief) view.
    */
   staleContactIds: Set<string>;
+  /**
+   * How far each enemy mark may be off (rules decisions 51 and 54), one
+   * standard deviation in metres: drawn as the circle the enemy is inside
+   * half the time. Absent or empty: no rings.
+   */
+  reportSpreads?: ReadonlyMap<string, number>;
   /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
   awaitingOrderIds: Set<string>;
   /** Assault reach (metres) to ring the selected force with, when assaulting. */
@@ -313,6 +319,19 @@ export function MapView(props: MapViewProps) {
         </g>
       ))}
 
+      {/* How sure the side is of each enemy mark: the circle it is inside half
+          the time (1.18 standard deviations). It narrows as the side watches. */}
+      {units.map((u) => {
+        const spread = props.reportSpreads?.get(u.id);
+        if (spread === undefined || u.side === viewingSide) return null;
+        const r = Math.round(spread * CE_PER_SIGMA);
+        return (
+          <circle key={`spread-${u.id}`} cx={u.position.x} cy={u.position.y} r={r} className="report-spread">
+            <title>{`דיוק הדיווח: ±${r}מ'`}</title>
+          </circle>
+        );
+      })}
+
       {units.map((u) => (
         <Token
           key={u.id}
@@ -383,7 +402,8 @@ function Token({
   onSelectUnit,
   onFireAt,
 }: TokenProps) {
-  const sym = renderUnitSymbol(unit, 30);
+  // A stale mark is drawn with a broken frame: the enemy may no longer be there (rules decision 57).
+  const sym = renderUnitSymbol(unit, 30, stale);
   const friendly = unit.side === viewingSide;
 
   function handleClick(e: React.MouseEvent) {

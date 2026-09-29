@@ -4,6 +4,7 @@
   "brief": "כחול: תוקף מהשטח הנמוך בצפון. אדום: מחזיק עמדה בשולי יקנעם עילית, על הגבעה בדרום.",
   "attackers": ["BLUE"],
   "seed": 2026,
+  "timeLimit": 40,
   "trackIntel": true,
   "enforceC2": true,
   "morale": true,

@@ -18,6 +18,13 @@
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *   npm run balance -- --fires calibrated --defender-fires calibrated   # the fire decision 43 was calibrated on
  *   npm run balance -- --lethality document          # the document's blast tables (rules decision 41; default research)
+ *   npm run balance -- --still-detection               # a force in position finds a still enemy out to 300 m (rules decision 53)
+ *   npm run balance -- --recon 1 --fires calibrated-wait   # scouts go ahead; the guns wait for what they find (rules decision 52)
+ *   npm run balance -- --recon 1 --watch 2 --still-detection   # …bounding, then halting 2 turns to watch (decision 53)
+ *   npm run balance -- --recon 1 --watch 1 --still-detection --binoculars --keep-eyes-on --fires mortar=12,lift=400,method=effect,wait=on,aim=40
+ *                                                    # scouts with binoculars; the guns wait for a report within 40 m (decision 54)
+ *   npm run balance -- … --look 4                    # the main body waits 4 turns after the first contact: find, fix, then assault
+ *   npm run balance -- --planning-error --location-error   # fires planned on an estimate (0.2 of range; --planning-error 0.1 for less); sightings off by the eye's error (rules decision 51)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
  * on purpose: tools/ is outside the typecheck and the suite, so everything
@@ -43,6 +50,7 @@ import {
 } from "../src/sim/balance.js";
 import { LETHALITIES, type FireAllotment, type Lethality, type RuleVariants } from "../src/engine/index.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
+import type { CompanyPlan } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -91,6 +99,7 @@ const fires: FirePlan | undefined = (() => {
   if (!firesArg) return undefined;
   if (firesArg === "plan") return FIRE_PLAN;
   if (firesArg === "calibrated") return CALIBRATED_FIRE_PLAN;
+  if (firesArg === "calibrated-wait") return { ...CALIBRATED_FIRE_PLAN, waitForContact: true };
   const plan: FirePlan = { missions: [], liftAt: FIRE_PLAN.liftAt };
   for (const part of firesArg.split(",")) {
     const [key = "", v = ""] = part.split("=");
@@ -99,6 +108,8 @@ const fires: FirePlan | undefined = (() => {
     else if (key === "fuze" && (v === "impact" || v === "airburst")) plan.fuze = v;
     else if (key === "registered" && (v === "on" || v === "off")) plan.registered = v === "on";
     else if (key === "method" && (v === "adjust" || v === "effect")) plan.method = v;
+    else if (key === "wait" && (v === "on" || v === "off")) plan.waitForContact = v === "on";
+    else if (key === "aim" && /^\d+$/.test(v)) plan.aimSpread = Number(v);
     else throw new Error(`--fires: cannot read "${part}"`);
   }
   return plan;
@@ -124,6 +135,15 @@ const defenderFires: DefenderFires | undefined = (() => {
 // echelon may not call is struck from the fire plans, and said so here.
 const anyEchelon = args.includes("--any-echelon");
 const lethality = value("--lethality") as Lethality | undefined;
+// --planning-error [share]: 0.2 (an eye's range error) unless a share is given
+const planningError = args.includes("--planning-error")
+  ? /^\d*\.?\d+$/.test(value("--planning-error") ?? "") ? Number(value("--planning-error")) : 0.2
+  : 0;
+const locationError = args.includes("--location-error");
+const stillDetection = args.includes("--still-detection");
+const binoculars = args.includes("--binoculars");
+const keepEyesOn = args.includes("--keep-eyes-on");
+const commandSuccession = args.includes("--command-succession");
 if (lethality && !LETHALITIES.includes(lethality)) throw new Error(`--lethality: "${lethality}" is not one of ${LETHALITIES.join(", ")}`);
 if (!anyEchelon) {
   const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
@@ -137,6 +157,18 @@ const defenderPlan =
   args.includes("--defender-ops") || alternateArg
     ? { observationPosts: args.includes("--defender-ops"), ...(alternateArg ? { alternateAt: Number(alternateArg) } : {}) }
     : undefined;
+// --recon 2 — the attacker's scouts (rules decision 52): that many squads go
+// ahead scouting while the rest wait for what they find
+const reconArg = value("--recon");
+// --watch 2 — the scouts bound and observe: halt this many turns after each bound
+const watchArg = value("--watch");
+// --look 4 — find, fix, then assault: the main body waits this many turns after the first contact
+const lookArg = value("--look");
+// The scouts are the company's (app/company.ts); how a scout bounds and looks is the drill's.
+const company: CompanyPlan | undefined = reconArg
+  ? { recon: { scouts: Number(reconArg), ...(lookArg ? { lookTurns: Number(lookArg) } : {}) } }
+  : undefined;
+if (watchArg) drill.scouting = { watchTurns: Number(watchArg) };
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
@@ -159,12 +191,13 @@ if (args.includes("--sweep")) {
   }
 } else {
   const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
-  console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${trial}\n`);
+  const intel = [planningError > 0 && `fires planned on an estimate (${planningError} of range)`, locationError && "sightings with location error", stillDetection && "still forces found beyond 20 m", binoculars && "scouts with binoculars", keepEyesOn && "eyes kept on what was found"].filter(Boolean).join(", ");
+  console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${intel ? ", " + intel : ""}${trial}\n`);
   console.log(MARKDOWN_HEADER);
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn, commandSuccession, ...(company ? { company } : {}) })));
       }
     }
   }

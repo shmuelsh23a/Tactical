@@ -178,3 +178,28 @@ describe("planning and fire refusals, in the player's language (decisions 37–3
     }
   });
 });
+
+/**
+ * Rules decision 51: a side's map holds an estimate of where an enemy is, so
+ * the debrief must not print where the enemy really went.
+ */
+describe("an enemy's move, read by the other side", () => {
+  const enemyLens = { isOwn: (id: string) => id === "BLUE-1", mayKnow: () => true, side: "BLUE" as const };
+  const bound = {
+    unitId: "RED-1",
+    moved: { to: { x: 412, y: 873 }, arrived: false },
+  } as unknown as Parameters<typeof describeExecution>[0];
+
+  it("tells the bound without where it went", () => {
+    const text = describeExecution(bound, nameOf, "firer", false);
+    expect(text).not.toContain("412");
+    expect(describeExecution(bound, nameOf, "umpire", true)).toContain("412");
+  });
+
+  it("tells a hand-driven move without where it went", () => {
+    const names = new Map([["RED-1", "אויב"]]);
+    const move = { kind: "moveUnit", unitId: "RED-1", to: { x: 412, y: 873 }, mode: "normal" } as const;
+    expect(describeAction(move, names, enemyLens)).not.toContain("412");
+    expect(describeAction(move, names)).toContain("412");
+  });
+});

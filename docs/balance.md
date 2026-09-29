@@ -1588,6 +1588,530 @@ Defender 4 mortar missions registered 200 m and 400 m out.
   fire for effect. The harness's own default stays `adjust`, so every earlier
   row reproduces.
 
+## Fourteenth round: nobody knows exactly where the enemy is, 2026-09-28
+
+The author's question: in an attack neither side knows exactly where the
+other is, so a pre-planned fire cannot be accurate. Was that accounted for?
+Only in the engine. The harness's attacker planned its fires on the **exact
+centre** of each defending position, taken from the layout. The smart
+attacker built its fire plan around the same exact centre. Rules decision 51
+adds the two halves, both off by default in the harness so every earlier row
+reproduces:
+
+- `--planning-error [share]`: the attacker's planned targets are where its
+  start line would judge each position to be. They are off along the sight
+  line by `share` of the range (0.2 unless given) and across it by 10 mils.
+  The defender's registered approach points are off the attacker's real
+  line by the same share of their distance.
+- `--location-error`: every sighting in the game carries the error
+  (`GameOptions.locationError`).
+
+The tables below were measured before a review tightened how repeated
+sightings combine (at most once an observer a turn). They were rerun on the
+final code; see *Rerun* at the end of the round.
+
+Company, plain drill, full cover, morale on, 300 battles a cell, seeds from
+1000. Both sides have the calibrated mortar section (decision 43: 12
+missions, fire for effect).
+
+| Planning error | Location error | 3:1 win | 3:1 out by HE | 2:1 win | 2:1 out by HE |
+|---|---|---|---|---|---|
+| none | off | **95%** | 75% | 7% | 69% |
+| none | on | 93% | 76% | 5% | 69% |
+| 0.2 | off | 21% | 67% | 0% | 57% |
+| **0.2** | **on** | **20%** | 69% | **0%** | 57% |
+
+How big the planning error has to be (location error on):
+
+| Planning error (share of range) | Off by at ~700 m (1 SD) | 3:1 win | 2:1 win |
+|---|---|---|---|
+| 0 | 0 | 93% | 5% |
+| 0.05 | 35 m | 66% | 1% |
+| 0.1 | 70 m | 41% | 0% |
+| 0.15 | 105 m | 29% | 1% |
+| 0.2 | 140 m | 20% | 0% |
+| 0.3 | 210 m | 13% | 0% |
+
+The attacker's method, planning error 0.2 and location error on (none, off
+in brackets):
+
+| Attacker's fires | 3:1 win | 2:1 win |
+|---|---|---|
+| fire for effect on the plan (calibrated) | 20% (95%) | 0% (7%) |
+| adjust, not registered | 5% (25%) | 0% (0%) |
+| fire for effect, registered on the plan | 22% (95%) | 0% (17%) |
+| adjust, registered on the plan | 22% (95%) | 0% (17%) |
+
+The last two rows are identical by construction, not a harness bug: a
+registered target goes straight to effect whatever the method (decision 39).
+
+The thirteenth round's best configuration (Western drill; attacker 4
+missions registered, fire for effect; defender 4 missions registered at 200
+and 400 m, observation posts, fire for effect), 200 a cell:
+
+| Planning error | Location error | 3:1 win | 2:1 win |
+|---|---|---|---|
+| none | off | 51% | 36% |
+| 0.2 | off | 15% | 5% |
+| 0.2 | on | 21% | 3% |
+
+### What it says
+
+- **The attack's success was the fire plan's perfect intelligence.** With
+  the plan off by an eye's error the calibrated 3:1 attack wins 20%, not
+  95%, and explosives fall from 75% of losses to 69%. The attacker's bombs
+  fall around where it thought the platoon was, and the platoon, dug in with
+  overhead cover and a lethal area of a few tens of metres, is not there.
+- **Even a small error costs most of it.** At 5% of the range, 35 m, the
+  3:1 attack already falls to 66%. A mortar bomb's lethal area on the
+  research figures is a disc of about 12 m radius, and a squad in overhead
+  cover is hurt only by a near-direct hit. That is why the answer is so
+  sensitive.
+- **Location error alone changes little** in the calibrated battles (2
+  points either way; 6 in the Western-drill 3:1 row, 200 battles a cell, which
+  is inside its noise). By the
+  time a side sees an enemy, it is inside 300–400 m. At that range the
+  error is 60–80 m along the line, and repeated sightings of a force
+  holding still bring it down. The defender's calls on a moving attacker
+  were never precise anyway (first-round CEP 100 m).
+- **Adjusting fire cannot rescue a wrong plan.** An adjusted mission walks
+  its rounds onto the point it was given, not onto the enemy. The attacker
+  sees the dug-in defender too late to give it a better point. Adjusting
+  also spends minutes, which is why it does worse than firing for effect.
+- **So under realistic intelligence, 3:1 does not win against a prepared
+  platoon in the harness.** That breaks the design principle, so it is an
+  open question for the author (README, decision 51). What gives an attacker
+  the defender's location in reality is reconnaissance: observers,
+  patrols, a UAV, contact with the forward edge. The harness's attacker has
+  none of these. The defender's side has observation posts (decision 38),
+  and the attacker's side needs its equivalent before the fire plan can be
+  judged.
+
+### Rerun on the final code
+
+The first table, rerun after repeated sightings were limited to one
+estimate an observer a turn (300 a cell, same seeds):
+
+| Planning error | Location error | 3:1 win | 3:1 out by HE | 2:1 win | 2:1 out by HE |
+|---|---|---|---|---|---|
+| none | off | 95% | 75% | 7% | 69% |
+| none | on | 95% | 75% | 6% | 69% |
+| 0.2 | off | 21% | 67% | 0% | 57% |
+| 0.2 | on | 20% | 67% | 0% | 57% |
+
+Nothing that matters moved. Location error alone now costs the attacker
+nothing at 3:1 (95%, was 93%).
+
+## Fifteenth round: reconnaissance before the attack, 2026-09-29
+
+The author: "let's see how sending recon affects this — the use of recon is
+a lesson worth teaching." Rules decision 52 gives the drill a reconnaissance
+(`--recon N`): the N squads nearest the objective go ahead scouting on
+hold-fire, and the rest wait until the side has found something. The fire
+plan can wait for the scouts too (`wait=on`, or `--fires calibrated-wait`).
+
+Company, morale on, 300 battles a cell. Fires planned on an estimate (0.2),
+location error on, and the defender has the calibrated mortar section.
+
+**Plain drill** (the defender opens fire at 400 m):
+
+| Attacker | 3:1 win | 3:1 turns | 3:1 attacker down | 2:1 win |
+|---|---|---|---|---|
+| no recon, fires on the estimate | 20% | 12 | 25% | 0% |
+| 1 scout, fires on the estimate | 37% | 23 | 30% | 6% |
+| **1 scout, fires wait for it** | **59%** | 22 | 32% | 0% |
+| 2 scouts, fires wait | 33% | 22 | 29% | 0% |
+| 3 scouts, fires wait | 12% | 21 | 26% | 0% |
+| 1 scout, fires wait, adjusting | 15% | 23 | 28% | 0% |
+| *1 scout, fires wait, on the truth (no planning error)* | *71%* | 20 | 33% | 0% |
+| *no recon, on the truth (the old harness)* | *95%* | 10 | 38% | 7% |
+
+**Western drill** (the defender holds its fire to 200 m):
+
+| Attacker | 3:1 win | 2:1 win |
+|---|---|---|
+| no recon, fires on the estimate | 7% | 0% |
+| 1 scout, fires wait for it | 1% | 0% |
+
+The 3:1 turns and losses are the loser's median for the row where the
+attacker mostly loses, and the attacker's own where it mostly wins.
+
+### What it says
+
+- **One scout is worth most of what perfect intelligence was.** Against a
+  defender that opens up at 400 m, one squad sent ahead finds the position by
+  drawing its fire. The guns fire on its report, about 300 m out and 60 m
+  off, and the attack triples its chance, 20% to 59%. In a traced battle the
+  scout lost 8 of 9 men, and the main body went in untouched and won.
+- **The guns have to wait for it.** Firing the plan anyway while the scout
+  goes forward gives 37%, since half the missions are spent on the
+  estimate.
+- **Send one.** Two scouts give 33% and three give 12%. More squads out in
+  front means more men under the defender's small arms and mortars, and
+  those men count toward the attacker's breakpoint.
+- **Adjusting is still worse than firing for effect** (15%): the scout sees
+  the rounds land, but adjusting takes minutes the scout does not have.
+- **It takes twice as long**: 20–25 turns instead of 10–12. That is the
+  price of reconnaissance, and the game should show it.
+- **Against fire discipline the scout finds nothing.** Under the Western
+  drill the scout reaches 250 m and never sees the dug-in position. A force
+  holding still is found only inside 20 m (the document's hidden-enemy band),
+  and this defender does not fire at a single squad. Its mortars see the
+  scout (a mover, in the 300 m band) and destroy it, and indirect fire gives
+  nothing away. With the scout gone the main body is released blind. So
+  **reconnaissance here works only by drawing fire**. Finding a still
+  position by watching it, which is what a real patrol does with optics from
+  hundreds of metres, cannot happen under the 20 m band. That is a question
+  for the author (README, decision 52).
+
+## Sixteenth round: watching finds a still enemy, 2026-09-29
+
+The author: "let observers find a still enemy further than 20 m." Rules
+decision 53 (`--still-detection`): a force in position finds a still enemy
+out to 300 m (600 m from an observation post), at its chance inside 20 m
+falling off in a straight line to the edge. The scouts can bound and
+observe (`--watch N`: halt N turns after each 50 m bound).
+
+Company, morale on, fires planned on an estimate (0.2), location error on,
+the defender's calibrated mortars, the attacker's fires waiting for contact
+(`--fires calibrated-wait`), one scout (`--recon 1`). 300 battles a cell
+(200 for the experiment).
+
+| Scout | Still detection | Plain 3:1 | Plain 2:1 | Western 3:1 | Western 2:1 |
+|---|---|---|---|---|---|
+| walks on | off | 59% | 0% | 1% | 0% |
+| walks on | on | 60% | 0% | 1% | 0% |
+| halts 1 turn a bound | off | 66% | 0% | 1% | 0% |
+| halts 1 turn a bound | on | 64% | 0% | 1% | — |
+| halts 2 turns a bound | off | 60% | 0% | — | — |
+| halts 2 turns a bound | on | 57% | 0% | — | — |
+| halts 4 turns a bound | either | draw (60 turns) | draw | — | — |
+| *experiment: halted scout sees 600 m* | on, halts 1 | *35%* | *1%* | *42%* | *5%* |
+| *experiment: halted scout sees 600 m* | on, halts 2 | *32%* | *0%* | *38%* | *1%* |
+
+Without the scout, still detection moves nothing either (plain 20% → 20%,
+Western 7% → 6%).
+
+### What it says
+
+- **The rule is symmetric, and the defender wins the exchange.** A traced
+  battle (Western drill, halting 2 turns): the scout halted 400 m, 350 m,
+  then 300 m out, found nothing (still detection reaches 300 m, and its
+  chance is nil at the edge), and at 300 m was shelled by the defender's
+  mortars. Five defending forces had been watching it at the same 300 m.
+  (The halts come every 6 turns rather than every 3 because out ahead the
+  scout is outside its command group's every-turn order band.)
+- **Watching longer only costs time.** Halting 4 turns a bound, the attack
+  never arrives within the harness's 60 turns.
+- **Optics would make the lesson.** The experiment, a halted scout that
+  sees a still force as far as an observation post (600 m), is not in the
+  code. Against fire discipline it takes the 3:1 attack from 1% to 42%.
+  Against the plain drill it lowers it, 64% to 35%: the scout finds the
+  position sooner but from twice as far, and a report from 600 m is off
+  by twice as much (120 m along the line, rules decision 51). So what the
+  scout needs is to see further than it is seen, and then to get close
+  enough, or look long enough, to fix the position. That is a question for
+  the author (README, decision 53).
+
+## Seventeenth round: binoculars, and a longer look, 2026-09-29
+
+The author: "give scouts binoculars and let a longer look sharpen it."
+Rules decision 54: a halted scout watches as an observation post does
+(`--binoculars`), and a force in position keeps its eyes on a still enemy
+it has found, each turn's look sharpening the report (`--keep-eyes-on`).
+The drill finds, fixes, then assaults (`--look N`: the main body waits N
+consecutive turns of the scouts holding the enemy at the objective), and the
+guns can wait for a sharp report (`aim=N`).
+
+Company, morale on, 200 battles a cell. Fires planned on an estimate (0.2),
+location error on, still detection on, the defender's calibrated mortars,
+one scout bounding and halting one turn a bound, and the attacker's mortars
+firing for effect only on what the side has seen.
+
+| Scout | Look | Guns wait for | Western 3:1 | Western 2:1 | Plain 3:1 | Plain 2:1 |
+|---|---|---|---|---|---|---|
+| eyes | — | any report | 1% | 0% | 66% | 0% |
+| eyes | 4 turns | ≤40 m | 1% | 0% | 70% | 0% |
+| binoculars | — | any report | 21% | 1% | 26% | 0% |
+| **binoculars** | **4 turns** | any report | **86%** | 1% | **95%** | 1% |
+| binoculars | 4 turns | ≤40 m | 82% | 3% | 90% | 2% |
+| binoculars | 8 turns | ≤40 m | 85% | **21%** | 92% | **21%** |
+
+The Western drill's defender holds its fire to 200 m; the plain drill's
+opens up at 400 m.
+
+### What it says
+
+- **Find, fix, then assault.** With binoculars and a 4-turn look the 3:1
+  attack wins 86–95%, where it won 1–66%. That is what perfect intelligence
+  gave before decision 51 (95%), now earned by a scout.
+- **Binoculars alone make it worse** (21–26%): the scout finds the position
+  at 600 m, the company goes at once, and the guns fire on a report 60 m
+  off. The look is the half that pays.
+- **The look is what sharpens it.** In a traced battle (Western drill, seed
+  1002) the scout bounded and halted forward and found a squad at 550 m on
+  turn 8, 39 m off. Held in sight, the report narrowed to 28, 23, 20, 18 and
+  14 m. The guns landed 0–12 m from the squads, the defence broke on turn 18
+  with 13 men down, and the attacker lost nobody.
+- **Waiting for a 40 m report adds nothing** once there is a look: by the
+  time the company goes, the report is sharper than that anyway.
+- **A longer look buys 2:1** (21% at 8 turns) at the cost of time: battles
+  run 38–47 turns.
+- **Without binoculars the look buys nothing**: the scout sees nothing it
+  can hold at 300 m before the defender's mortars find it.
+- The scouts no longer stop for a command group glimpsed away from the
+  objective: in an earlier version the scout's binoculars picked up the
+  defender's moving command group from the start line, the scout stopped
+  there, and the company went in blind.
+
+### With a floor on the look, 2026-09-29
+
+The author: 85% is the upper bound for 3:1. The look had no limit: a report
+watched long enough became as good as a laser fix. Now it sharpens only to
+CAT IV's best (31 m circular error, `BEST_VISUAL_FIX_CE_M`). The same
+configuration, binoculars, the guns waiting for any report, 300 a cell:
+
+| Drill | Look | 3:1 before | 3:1 with the floor | 2:1 before | 2:1 with the floor |
+|---|---|---|---|---|---|
+| Western | 4 turns | 86% | **82%** | 1% | 0% |
+| Western | 8 turns | 85% | **83%** | 21% | 2% |
+| plain | 4 turns | 95% | 92% | 1% | 2% |
+| plain | 8 turns | 92% | 91% | 21% | 1% |
+
+(The "before" 8-turn rows also waited for a report within 40 m.) Against the
+Western drill, whose defender keeps its fire discipline, the 3:1 attack sits
+inside the author's 85%. The plain script's defender opens fire at 400 m and
+gives its position away, and there it is still above. The 2:1 attack's 21%
+at an 8-turn look came from the unlimited sharpening.
+
+## Eighteenth round: the scenarios on their own ground, headless, 2026-09-29
+
+The harness is flat and empty; the scenarios are on the tel. The browser tool
+plays them at two minutes a battle and disagreed with the harness (the scout
+did not pay there). `npm run scenario-sim` (`src/sim/scenarioBattle.ts`)
+plays a generated scenario headless, about 150 battles a minute:
+- the **squads on both sides fight by the drill**, the executor the real
+  game uses (only squad and platoon are scripted in the game);
+- the **attacking company commander is scripted**, a stand-in for Jev
+  (backlog 15). `CompanyPlan` holds its choices: where it thinks the enemy
+  is (the tasking, spoilt by an eye's error, drawn as the browser tool draws
+  it), whether it registers its plan, whether its guns wait for the scouts,
+  where the company waits (`--wait-in dead-ground`), and where the scouts
+  watch from (`--scout-from vantage`);
+- the **defender** holds by the drill and calls its mortars, for effect, on
+  the nearest attacker it knows of, as the browser tool's defender does.
+
+Two tools for the commander, in `src/app/deadGround.ts`, both reading the
+ground with the engine's own sight test: **dead ground** (the nearest spot
+out of sight of where the enemy is or is thought to be) and a **vantage
+point** (the spot 350–550 m from where the plan puts the enemy that sees
+most of it, on the attacker's side: beyond a still force's 300 m, inside
+binoculars' 600 m). The drill waits where the order says (`DrillTask.waitAt`)
+and sends its scouts to the observation point (`DrillTask.scoutTo`).
+
+Company, morale on, 200 battles a row, seeds from 1000, the scenarios' own
+fire (12 mortar missions a side), decisions 51–54 on as the scenarios have
+them. The plan is on an estimate unless the row says so. Recon: one scout
+bounding and halting a turn a bound, a 4-turn look, the guns waiting for it.
+
+| Company | Drill | 3:1 (`telAzekaAssault`) | 2:1 (`telAzekaAssault2`) |
+|---|---|---|---|
+| plan on the truth | plain | 68% | 32% |
+| plan on the truth | Western | 76% | 40% |
+| plan on an estimate | plain | 20% | 9% |
+| plan on an estimate | Western | 23% | 11% |
+| + a scout, straight at the objective | plain | 21% | 7% |
+| + a scout, straight at the objective | Western | 18% | 7% |
+| + the company in dead ground | plain | 24% | 7% |
+| + the company in dead ground | Western | 16% | 7% |
+| + the scout to an observation point | plain | **28%** | **16%** |
+| + the scout to an observation point | Western | **18%** | **15%** |
+
+### What it says
+
+- **The runner agrees with the browser, not the harness.** Seeds 11–18
+  without recon: 1 of 8 and 0 of 8 (the browser 2 of 8 each). With a scout
+  the attack does not come near the harness's 82–92%.
+- **On the tel, the plan on the truth wins 68–76% at 3:1**, inside the
+  author's 85%. The loss to an estimated plan (to 20–23%) is as on flat
+  ground.
+- **Dead ground changes nothing here**: the start line is already out of
+  sight of where the plan puts the enemy, and the company lost nothing while
+  it waited (a median 0–5 men, the scout's).
+- **A scout straight at the objective finds the position at about 260 m**,
+  the slope hiding it until then. That is inside the defenders' own 300 m,
+  and they see it back and shell it.
+- **A scout sent to an observation point** sees from outside that reach and
+  lives (the company's losses while waiting fall to 0). The 3:1 attack gains
+  a little (plain 20% → 28%), the 2:1 more (9% → 16%). In a traced battle
+  the scout found one squad on its way, the guns neutralised it in four
+  missions landing 16–19 m off, and the rest of the platoon stayed out of
+  its sight.
+- **Found on the way: a lockstep** between bound-and-observe and command.
+  Out of the every-turn order band a scout that was refused its bound still
+  counted it as made, so each turn it could be ordered it wanted to halt,
+  and it never moved again. Fixed in the drill: a bound counts only if the
+  order got through.
+- **Open.** Why the tel stays near 20–30% where flat ground gives 82%: the
+  observation point is chosen by what it sees of the plan's points, which
+  may be the wrong ones (the plan is off by up to 150 m); one scout sees one
+  squad at a time; and the company's assault up the slope. The next traces
+  should compare where the scout watches from with where the squads are.
+
+### Why the tel stays low, traced, 2026-09-29
+
+**Where the scout watches from, against where the squads are.** On seed
+1000–1005 the observation point the commander chose saw two of RED's three
+squads at most, and so did the best spot chosen on the true positions:
+squad A-2, on the east of the shoulder, is hidden from every spot 350–550 m
+out on the attacker's side. It can be seen only from the east, from the
+valley below the tel's east face, and **no spot in reach sees all three**.
+One scout can never fix the whole position. Two smaller faults went with
+it: the ring was measured from the plan's centre, so on two seeds the point
+was 250–320 m from a squad, inside its reach; and the walk to it was
+130–400 m.
+
+So the commander now chooses **several observation points**
+(`bestVantages`), each for what the others cannot see, each at least 350 m
+from every point the plan suspects, and gives one to each scout. On
+Tel Azeka with the true positions it sends one scout south-west and one
+east.
+
+**The company level moved out of the drill** (the author's item from the
+architecture proposal). `SquadDrill.recon` is gone. `app/company.ts` holds
+the company's decisions: `CompanyOrders` (which forces scout and from
+where, whether the rest hold and where, whether the scouts lie up) and
+`ScriptedCompany`, the rule-based commander that issues them. Jev will
+issue the same orders. The drill keeps what a squad does:
+`SquadDrill.scouting.watchTurns` (bound and observe), holding its fire,
+lying up at its point, waiting where told. The harness and the headless
+runner both use the same commander (`--recon N`, `--look N`, `--watch N`
+as before, `--scout-from vantage`). The flat harness reproduces the
+seventeenth round (Western drill, binoculars, 4-turn look: 83% at 3:1, 1%
+at 2:1).
+
+On the tel, 200 battles a row, a 4-turn look, the guns waiting for the
+scouts, the company in dead ground:
+
+| Scouts | Guns wait for | Drill | 3:1 | 2:1 |
+|---|---|---|---|---|
+| one, one observation point | any report | plain | 31% | 17% |
+| one, one observation point | any report | Western | 24% | 14% |
+| two, two points | any report | plain | 32% | 23% |
+| two, two points | any report | Western | 25% | 24% |
+| two, two points | ≤40 m | plain | **37%** | **23%** |
+| two, two points | ≤40 m | Western | **28%** | **25%** |
+
+**Where the guns aim.** Over 40 battles (two scouts, ≤40 m, plain), 416
+missions: median 22 m from the nearest live defender, 10% within 5 m, 37%
+within 15 m. The aim is good. But **half the missions went at forces in the
+open, the command groups**, and the other half at squads under overhead
+cover, where a mortar mission does little (decision 48). The defence loses
+16–20% of its men. The commander fires on the enemy nearest the objective,
+and a platoon's command group near its squads is that as often as a squad
+is. Killing it does not break a defence, whose breakpoint counts men.
+
+**Open for the author:** which target the company's guns should take when
+the scouts have found several. The squads (what holds the position) or the
+command group (what directs it)? In the game that is the company
+commander's call, so Jev's.
+
+## Nineteenth round: an agent as Jev, and what it found, 2026-09-29
+
+**An agent in Jev's place.** `npm run jev-sim` puts the attacking company
+commander's decisions to whoever answers them as typed questions
+(`src/sim/companyQuestions.ts`): how many scouts and from which observation
+point, where the company waits, send it in now, which way, whether the
+scouts give a base of fire, which mark the mortars fire on (or smoke), and
+what a scout in trouble does. A battle is its seed and the answers so far,
+replayed each run to the next question, so an agent never touches the
+game's state, and the picture it is given is drawn only from its side's
+view. Two Claude agents played seeds 11–14 of each assault.
+
+| Seeds 11–14 | Agent | Scripted, best then | Scripted, no recon |
+|---|---|---|---|
+| 3:1 | 3 wins, 1 loss | 2 wins, 2 losses | 1 win, 1 draw, 2 losses |
+| 2:1 | 1 draw, 3 losses | 4 losses | 1 draw, 3 losses |
+
+Both agents found on their own that three or four missions on one squad
+before the company moved took it out, where missions spread about did
+little, and that firing on the command group did almost nothing.
+
+**What they found wrong, and what changed:**
+- **A bug: scouts froze short of their points.** The commander told every
+  scout to lie up as soon as the side had any enemy near the objective in
+  sight; the first glimpse of a command group froze them wherever they
+  were, in five of the eight battles. Now a scout on its way goes on, and
+  lies up at its point; at its point it does not give up while the enemy
+  is in sight.
+- **Losing a command group did nothing to orders or fire.** Rules decision
+  55.
+- **The questions lacked what a commander has** (item 2): when the attack
+  is called off, a damage report after a mission (in words, as the side
+  saw it), firing on last-seen marks, what each observation point sees,
+  and the danger-close lift. Added.
+- **No control after "go"** (item 3): now the axis (straight, or by a
+  scout's observation point), a base of fire from the scouts, mortar smoke
+  once the company is moving, and a scout under fire or slow can be told to
+  go on, lie up or pull back. Smoke costs no mission in the engine: nothing
+  rations it.
+
+**The scripted commander again**, with the scout fix and decision 55 in,
+200 battles a row on the tel (two scouts at two points, a 4-turn look, the
+company in dead ground, the guns waiting for a mark within 40 m):
+
+| Guns take first | Drill | 3:1 | 2:1 |
+|---|---|---|---|
+| nearest the objective | plain | 46% | 32% |
+| **squads** | plain | **59%** | **39%** |
+| command groups | plain | 25% | 23% |
+| squads | Western | 39% | 35% |
+| command groups | Western | 25% | 25% |
+
+(Before the scout fix: 28–37% and 23–25%.) Squads first is the best rule
+the scripted commander has. Command groups first is the worst even with
+decision 55: a defender holds on standing orders, and the one that calls
+its mortars is behind the summit.
+
+## Twentieth round: the mission's deadline, 2026-09-29
+
+Rules decision 58 gives each attack a deadline; the Tel Azeka battles have 45
+turns. Without one, a company that scouts first (two scouts, each from an
+observation point, a four-turn look, the rest in dead ground, fires held for
+contact, aim 40 m) won its attacks in a median 32 turns at 3:1 and 34 at 2:1,
+p90 37 and 45, longest 44 and 57 (60 seeds each). With the deadline, 200 battles
+each from seed 1000:
+
+    npm run scenario-sim -- --n 200 --recon 2 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground
+
+| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 41% (46% before) | 58% (6%) | 2% | 32 |
+| telAzekaAssault2 (2:1) | 30% (32% before) | 67% (3%) | 4% | 30 |
+
+The clock takes the slowest attacks: a scripted company that keeps looking
+while its scouts lose and regain the enemy. That is the lesson it is there to
+teach: recon has a price in time as well as men.
+
+## Twenty-first round: platoon control of the assault, 2026-09-29
+
+Rules decision 59 lets the company commander task its platoons once it goes.
+Two fixed answer policies through the question tool, 30 seeds each from 1000
+(two scouts to the first observation point, the company in dead ground, go
+after four turns holding the enemy in sight or at turn 25, mortars on marks in
+sight, the scouts firing in support):
+
+| Policy | 3:1 wins | 3:1 attacker down | 2:1 wins | 2:1 attacker down |
+|---|---|---|---|---|
+| Every platoon assaults at once | 12/30 | 17% | 3/30 | 22% |
+| First platoon a base of fire, the rest bound by platoon and hold short until the fires lift | 16/30 (7 lost out of time) | 15% | 8/30 (5 lost out of time) | 18% |
+
+Control wins more and loses fewer men, and costs time: half its 14 losses at
+3:1, and 5 of its 22 at 2:1, were to the deadline (decision 58); the attack
+that goes in all at once never ran out of time. The
+policy lifts the fires the first turn it is asked; a commander who times the
+lift to the last rounds is not measured here.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

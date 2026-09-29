@@ -167,6 +167,10 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .stale-ring {
   fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4;
 }
+/* How sure a side is of an enemy mark (rules decisions 51, 54): narrows as it watches. */
+.report-spread {
+  fill: rgba(224, 108, 108, 0.08); stroke: #e06c6c; stroke-width: 1; stroke-dasharray: 5 4;
+}
 .hq-staff { stroke: #c7d0da; stroke-width: 1.5; }
 
 .tag {
