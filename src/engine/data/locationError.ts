@@ -48,6 +48,23 @@ export const LOCATION_ERROR = {
 export const UAV_LOCATION_ERROR_M = 15;
 
 /**
+ * The best a report can be made by looking (rules decision 54, author
+ * 2026-09-29: the 3:1 attack at 95% was too high; 85% is the upper bound).
+ * Doctrine grades an observer fixing a target without a laser rangefinder
+ * CAT IV at best — a circular error of 31 m or worse (target location error
+ * categories, ATP 3-09.30). So a longer look sharpens a report down to
+ * that, and no further: the observer's map, compass and eye have errors of
+ * their own that watching does not average away.
+ */
+export const BEST_VISUAL_FIX_CE_M = 31;
+
+/** A circular normal's radius holding half of it, in standard deviations: √(2 ln 2). */
+export const CE_PER_SIGMA = Math.sqrt(2 * Math.log(2));
+
+/** {@link BEST_VISUAL_FIX_CE_M} as a standard deviation a side, the ledger's measure. */
+export const BEST_VISUAL_FIX_SIGMA_M = BEST_VISUAL_FIX_CE_M / CE_PER_SIGMA;
+
+/**
  * The standard deviations, along and across the sight line, of a sighting
  * made at `range` metres with `figures`.
  */

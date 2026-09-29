@@ -56,6 +56,11 @@ export interface LocationFix {
   sigma: number;
   /** Who made it: one observer's second look in the same minute is not a new estimate. */
   observer: string;
+  /**
+   * The best that looking can make the report (rules decision 54): once it
+   * is this good, a further look keeps it rather than sharpening it.
+   */
+  floor?: number;
 }
 
 /** The spread behind a report, and who has already added to it this turn. */
@@ -112,8 +117,9 @@ export class IntelLedger {
       const known = contacts.get(unitId);
       if (before && known && before.stand === fix.stand) {
         const observers = before.turn === turn ? before.observers : new Set<string>();
-        if (observers.has(fix.observer)) {
-          // Seen again by the same eye this minute: the report stands.
+        if (observers.has(fix.observer) || (fix.floor !== undefined && before.sigma <= fix.floor)) {
+          // Seen again by the same eye this minute, or already as good as
+          // looking can make it: the report stands.
           at = { ...known.lastKnownPosition };
         } else {
           const w0 = 1 / before.sigma ** 2;
@@ -123,7 +129,7 @@ export class IntelLedger {
             y: (known.lastKnownPosition.y * w0 + position.y * w1) / (w0 + w1),
           };
           observers.add(fix.observer);
-          fixes.set(unitId, { stand: fix.stand, sigma: 1 / Math.sqrt(w0 + w1), turn, observers });
+          fixes.set(unitId, { stand: fix.stand, sigma: Math.max(fix.floor ?? 0, 1 / Math.sqrt(w0 + w1)), turn, observers });
         }
       } else {
         fixes.set(unitId, { stand: fix.stand, sigma: fix.sigma, turn, observers: new Set([fix.observer]) });

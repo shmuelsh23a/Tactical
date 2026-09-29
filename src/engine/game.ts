@@ -121,7 +121,7 @@ import {
   type SoldierSnapshot,
   unitSeed,
 } from "./morale.js";
-import { LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
+import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
 import { SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
 import { PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
@@ -1569,6 +1569,9 @@ export class Game {
       stand: this.bounds.get(unit.id) ?? 0,
       sigma,
       observer: observer?.id ?? "#uav",
+      // Only once a longer look is in play (rules decision 54): no amount of
+      // watching beats an eye, map and compass.
+      ...(this.keepEyesOn && observer ? { floor: BEST_VISUAL_FIX_SIGMA_M } : {}),
     });
   }
 

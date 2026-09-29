@@ -110,6 +110,8 @@ export {
   type Lethality,
 } from "./data/lethality.js";
 export {
+  BEST_VISUAL_FIX_CE_M,
+  CE_PER_SIGMA,
   LOCATION_ERROR,
   UAV_LOCATION_ERROR_M,
   locationSigma,

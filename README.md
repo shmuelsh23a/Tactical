@@ -1918,6 +1918,29 @@ on the stated reasoning, still awaiting the author's word.
       company goes at once, and the guns fire on a rough report.
     - The 600 m and 1,000 m are the observation post's (decision 38), the
       halving its range card's (decision 51). All ⚠️ ours.
+    - **A look sharpens a report only down to CAT IV's best, 31 m** (author,
+      2026-09-29: "95% is a bit high; 85% should be the higher bound";
+      `BEST_VISUAL_FIX_CE_M`). Doctrine grades an observer without a laser
+      rangefinder CAT IV at best (31–91 m circular error), so looking longer
+      stops paying there: the map, compass and eye have errors of their own
+      that averaging does not remove. A single close look better than that
+      stands. With it the 3:1 attack wins **82–83%** against the Western
+      drill (was 85–86%) and 91–92% against the plain script (was 92–95%),
+      and the 2:1 attack 0–2% (the 8-turn look's 21% was the unlimited
+      sharpening). The plain script's defender opens fire at 400 m and so
+      gives itself away; against the Western drill's fire discipline the
+      3:1 attack is inside the author's 85%.
+    - **Research behind the 85%:** in the Dupuy Institute's 752 division-level
+      engagements (1904–1991) attackers at 2.5–2.99:1 won 83%. In 42 French
+      engagements of 1944, every attack at 2.71:1 or better advanced. Read
+      through search results.
+    - **In the browser it has not paid yet** (validation.md): the smart
+      attacker's company waits at its start line in the open, below the
+      defender's observation posts on the tel, and is shelled while its
+      scout looks (1 win in 32). The company has to wait out of sight. That
+      is a decision for the company commander, which in the game is Jev's
+      (backlog 15), and a dead-ground finder for it is the next thing to
+      build.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

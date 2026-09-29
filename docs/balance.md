@@ -1864,6 +1864,26 @@ opens up at 400 m.
   defender's moving command group from the start line, the scout stopped
   there, and the company went in blind.
 
+### With a floor on the look, 2026-09-29
+
+The author: 85% is the upper bound for 3:1. The look had no limit: a report
+watched long enough became as good as a laser fix. Now it sharpens only to
+CAT IV's best (31 m circular error, `BEST_VISUAL_FIX_CE_M`). The same
+configuration, binoculars, the guns waiting for any report, 300 a cell:
+
+| Drill | Look | 3:1 before | 3:1 with the floor | 2:1 before | 2:1 with the floor |
+|---|---|---|---|---|---|
+| Western | 4 turns | 86% | **82%** | 1% | 0% |
+| Western | 8 turns | 85% | **83%** | 21% | 2% |
+| plain | 4 turns | 95% | 92% | 1% | 2% |
+| plain | 8 turns | 92% | 91% | 21% | 1% |
+
+(The "before" 8-turn rows also waited for a report within 40 m.) Against the
+Western drill, whose defender keeps its fire discipline, the 3:1 attack sits
+inside the author's 85%. The plain script's defender opens fire at 400 m and
+gives its position away, and there it is still above. The 2:1 attack's 21%
+at an 8-turn look came from the unlimited sharpening.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

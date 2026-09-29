@@ -649,6 +649,17 @@ objective from 400 m; the defender played by the drill). Seeds 11–18 on
   with overhead cover (decision 48), so a report 60 m off is still not
   close enough for a mortar to hurt them, while the harness's flat ground
   rewards it more. Worth a trace before any ruling.
+- **Binoculars and a look did not pay in the browser either** (decisions
+  53–54, seeds 11–18, the scout halting a turn each bound, `RECON=1
+  WATCH=1`). With a 4-turn look and the guns waiting for a mark within 40 m
+  (`LOOK=4 AIM=40`) the attacker won 0 of 16 (one draw). Without the look it
+  won 1 of 16. The company waited 20–30 turns at its start line, in the open
+  below the defender's observation posts on the tel. Decisions 53–54 let
+  those posts see a still company and keep their eyes on it, and the
+  defender's mortars took 20 of its men while its own guns fired 3–5
+  missions. In the harness the ground is flat and the defender has no posts.
+  So the company must wait out of sight, which is the company commander's
+  call (Jev's, in the game) and needs a dead-ground finder.
 
 ## Where the enemy is (rules decision 51)
 

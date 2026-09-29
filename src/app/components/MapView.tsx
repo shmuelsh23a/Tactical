@@ -12,7 +12,7 @@ import type {
   Terrain,
   Unit,
 } from "../../engine/index.js";
-import { ADJUSTMENT_RADIUS_M, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
 import { Relief, Roads, TerrainObjects } from "./Relief.js";
@@ -324,7 +324,7 @@ export function MapView(props: MapViewProps) {
       {units.map((u) => {
         const spread = props.reportSpreads?.get(u.id);
         if (spread === undefined || u.side === viewingSide) return null;
-        const r = Math.round(spread * CIRCLE_OF_HALF);
+        const r = Math.round(spread * CE_PER_SIGMA);
         return (
           <circle key={`spread-${u.id}`} cx={u.position.x} cy={u.position.y} r={r} className="report-spread">
             <title>{`דיוק הדיווח: ±${r}מ'`}</title>
@@ -354,9 +354,6 @@ export function MapView(props: MapViewProps) {
     </svg>
   );
 }
-
-/** A circular normal's radius holding half of it, in standard deviations: √(2 ln 2). */
-const CIRCLE_OF_HALF = Math.sqrt(2 * Math.log(2));
 
 /** A marked aim point awaiting impact, with the turn it lands. */
 function AimPoint({

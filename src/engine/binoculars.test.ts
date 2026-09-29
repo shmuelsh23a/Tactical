@@ -6,6 +6,7 @@ import { replayGame } from "./recording.js";
 import { detectionChance, lookingThroughBinoculars, observeFromPosition, stillReach } from "./combat/detection.js";
 import { STILL_DETECTION } from "./data/concealment.js";
 import { OBSERVATION_POST_RANGE_M } from "./data/planning.js";
+import { BEST_VISUAL_FIX_SIGMA_M } from "./data/locationError.js";
 
 /**
  * Rules decision 54: scouts carry binoculars — a halted scout watches as an
@@ -81,15 +82,25 @@ describe("a report from binoculars", () => {
 });
 
 describe("a longer look", () => {
-  it("keeps a still enemy on the map and sharpens it every turn it is watched", () => {
-    const { spreads } = watch({ binoculars: true, keepEyesOn: true });
+  it("keeps a still enemy on the map and sharpens it, down to what an eye, map and compass can do", () => {
+    // 500 m through binoculars: a first look of 35 m, sharper than CAT IV's best only by looking.
+    const { spreads } = watch({ binoculars: true, keepEyesOn: true }, 500, 30);
     const from = spreads.findIndex((x) => x !== undefined);
     expect(from).toBeGreaterThanOrEqual(0);
     const kept = spreads.slice(from) as number[];
     expect(kept.every((x) => x !== undefined)).toBe(true);
-    for (let i = 1; i < kept.length; i++) expect(kept[i]!).toBeLessThan(kept[i - 1]!);
-    // Four looks halve it.
-    expect(kept[3]!).toBeCloseTo(kept[0]! / 2, 5);
+    expect(kept[0]!).toBeGreaterThan(BEST_VISUAL_FIX_SIGMA_M);
+    expect(kept[1]!).toBeLessThan(kept[0]!);
+    // …and no further than the floor, however long it is watched.
+    expect(kept.at(-1)!).toBeCloseTo(BEST_VISUAL_FIX_SIGMA_M, 5);
+    expect(Math.min(...kept)).toBeCloseTo(BEST_VISUAL_FIX_SIGMA_M, 5);
+  });
+
+  it("does not coarsen a close look: a report already better than the floor stands", () => {
+    const { spreads } = watch({ binoculars: true, keepEyesOn: true }, 150, 30);
+    const kept = spreads.filter((x): x is number => x !== undefined);
+    expect(kept[0]!).toBeLessThan(BEST_VISUAL_FIX_SIGMA_M);
+    expect(kept.every((x) => x === kept[0])).toBe(true);
   });
 
   it("without it, a still enemy is found again only by luck, and lost after three turns without", () => {
@@ -100,12 +111,12 @@ describe("a longer look", () => {
   });
 
   it("starts afresh when the enemy moves", () => {
-    const { g } = watch({ binoculars: true, keepEyesOn: true });
+    const { g } = watch({ binoculars: true, keepEyesOn: true }, 500, 30);
     const sharp = g.reportSpread("BLUE", "R")!;
     g.advanceToPhase("movement");
-    g.moveUnit("R", { x: 0, y: 240 }, "normal");
+    g.moveUnit("R", { x: 0, y: 490 }, "normal");
     g.advanceToPhase("combat");
-    // Seed 21: the scout picks the mover up again this turn (a mover inside 300 m is 80% a look).
+    // Seed 21: the scout picks the mover up again this turn (through binoculars it sees movers to 1,000 m).
     expect(g.contactFor("BLUE", "R")!.lastSeenTurn).toBe(g.turn);
     // A fresh report, not combined with the old fix.
     expect(g.reportSpread("BLUE", "R")!).toBeGreaterThan(sharp);

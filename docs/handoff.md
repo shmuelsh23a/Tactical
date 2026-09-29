@@ -149,6 +149,16 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Next, proposed to the author (2026-09-29), not yet approved:** only squad and platoon
+   are scripted in the real game; company and up is Jev plus an LLM call.
+   So: (a) move the company-level choices (recon, the look, fires waiting)
+   out of `SquadDrill` into a company plan that a scripted commander plays
+   in the harness and Jev will play in the game; (b) a dead-ground finder
+   (where a force is out of sight of known and likely enemy observers),
+   used by both; (c) a headless runner that plays the scripted commander on
+   the scenarios' real ground, so balance is measured on a hill with
+   observation posts, not only on flat ground. The browser stays for
+   end-to-end checks.
 0. **Decision 54 (2026-09-29), built and measured:** scouts carry
    binoculars and a longer look sharpens a report. With a 4-turn look the
    harness's 3:1 company attack on realistic intelligence wins 86–95%
