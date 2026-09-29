@@ -45,6 +45,12 @@ export interface ReconPlan {
    * where the plan puts the enemy, each where the others cannot see.
    */
   scoutFrom?: "straight" | "vantage";
+  /**
+   * Where each scout watches from, chosen by someone else (Jev, or an agent
+   * standing in for it): one entry a scout, null for straight at the
+   * objective. Overrides `scoutFrom`.
+   */
+  posts?: readonly (Point | null)[];
 }
 
 export interface CompanyPlan {
@@ -103,8 +109,9 @@ export class ScriptedCompany {
     const chosen = byNearness.slice(0, recon.scouts);
     // Where each watches from: one observation point a scout, each where the
     // others cannot see, given to the scout nearest it.
-    const points =
-      recon.scoutFrom === "vantage" && chosen.length
+    const points = recon.posts
+      ? recon.posts.filter((p): p is Point => p !== null)
+      : recon.scoutFrom === "vantage" && chosen.length
         ? bestVantages(
             { terrain: ground.terrain, targets: suspected, minRange: VANTAGE_RING_M.min, maxRange: VANTAGE_RING_M.max },
             chosen[0]!.position,
@@ -145,15 +152,18 @@ export class ScriptedCompany {
    * the enemy at the objective in sight, and whether that has gone on long
    * enough — or they are lost, or there — to let the rest go.
    */
-  orders(game: Game): CompanyOrders {
+  orders(game: Game, decided?: { go: boolean }): CompanyOrders {
     const holding = this.holdingInSight(game);
     if (this.released === undefined) {
       this.lookedTurns = holding ? this.lookedTurns + 1 : 0;
-      const live = [...this.scouts.keys()]
-        .map((id) => game.units.find((u) => u.id === id))
-        .filter((u): u is Unit => !!u && !u.neutralized && !u.routing && !u.surrendered);
-      const there = live.some((u) => distance(u.position, this.objective) <= 50);
-      if (this.lookedTurns > (this.plan.recon?.lookTurns ?? 0) || live.length === 0 || there) this.released = game.turn;
+      if (decided) {
+        // Someone else decides when the company goes (Jev, or its stand-in).
+        if (decided.go) this.released = game.turn;
+      } else {
+        const live = this.liveScouts(game);
+        const there = live.some((u) => distance(u.position, this.objective) <= 50);
+        if (this.lookedTurns > (this.plan.recon?.lookTurns ?? 0) || live.length === 0 || there) this.released = game.turn;
+      }
     }
     return {
       scouts: this.scouts,
@@ -163,8 +173,20 @@ export class ScriptedCompany {
     };
   }
 
+  /** The scouts still in the fight. */
+  liveScouts(game: Game): Unit[] {
+    return [...this.scouts.keys()]
+      .map((id) => game.units.find((u) => u.id === id))
+      .filter((u): u is Unit => !!u && !u.neutralized && !u.routing && !u.surrendered);
+  }
+
+  /** Turns in a row the scouts have held the enemy at the objective in sight. */
+  get turnsHeldInSight(): number {
+    return this.lookedTurns;
+  }
+
   /** A fresh report (this turn or last) of an enemy at the objective: held in sight, not merely once found. */
-  private holdingInSight(game: Game): boolean {
+  holdingInSight(game: Game): boolean {
     const within = this.plan.recon?.findWithin ?? FIND_WITHIN_M;
     return sideView(game, this.side).units.some(
       (e) =>
