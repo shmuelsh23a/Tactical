@@ -40,6 +40,7 @@ export function buildTelAzekaAssaultScenario(seed = 1967): Scenario {
     binoculars: true,
     keepEyesOn: true,
     commandSuccession: true,
+    timeLimit: 45,
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {
@@ -92,7 +93,7 @@ export function buildTelAzekaAssaultScenario(seed = 1967): Scenario {
 export const telAzekaAssaultListing: ScenarioListing = {
   id: "telAzekaAssault",
   title: "עמק האלה — פלוגה מסתערת על מחלקה",
-  brief: "כחול: פלוגה תוקפת את כתף תל עזקה מדרום. אדום: מחלקה מחזיקה בכתף, בעמדות שהוכנו מראש. לפני הקרב כל צד מתכנן את משימתו.",
+  brief: "כחול: פלוגה תוקפת את כתף תל עזקה מדרום. אדום: מחלקה מחזיקה בכתף, בעמדות שהוכנו מראש. לפני הקרב כל צד מתכנן את משימתו. יש להשלים את המשימה עד תור 45.",
   mapWidth: 1200,
   mapHeight: 1000,
   build: buildTelAzekaAssaultScenario,

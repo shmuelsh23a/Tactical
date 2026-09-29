@@ -67,6 +67,7 @@ import {
   disclose,
   hasEyesOn,
   isGone,
+  outOfTime,
   sideDefeated,
   sideView,
   SIDES,
@@ -1166,9 +1167,20 @@ export function App({ scenario, onLeave }: AppProps) {
     }
   }
 
-  function checkVictory() {
+  /** Ends the battle if a side is out of it or the attack is out of time; true if it ended. */
+  function checkVictory(): boolean {
     const beaten = SIDES.filter((side) => sideDefeated(game, side));
-    if (beaten.length === 0) return;
+    if (beaten.length === 0) {
+      // The mission's deadline (rules decision 58): the attack that has not
+      // won by the end of its last turn has failed.
+      const late = outOfTime(game);
+      if (!late) return false;
+      const win = late === "RED" ? "BLUE" : "RED";
+      setStage("gameover");
+      setWinner(win);
+      pushLog(`תם הזמן: ${late} לא השלים את המשימה עד תור ${game.timeLimit} — ניצחון ל${win}`, "info", TABLE);
+      return true;
+    }
     // A side that broke still has forces on the map; it has stopped fighting,
     // which is a different thing to say (rules decision 19).
     const how = (side: Side) => (game.sideBroken(side) ? "נשבר" : "נוטרל");
@@ -1178,12 +1190,13 @@ export function App({ scenario, onLeave }: AppProps) {
       // ⚠️ A draw is ours: the document has no victory conditions (backlog 18).
       setWinner(null);
       pushLog(`שני הצדדים יצאו מהקרב (${SIDES.map((s) => `${s} ${how(s)}`).join(", ")}) — תיקו`, "info", TABLE);
-      return;
+      return true;
     }
     const side = beaten[0]!;
     const win = side === "RED" ? "BLUE" : "RED";
     setWinner(win);
     pushLog(`צד ${side} ${how(side)} — ניצחון ל${win}`, "info", TABLE);
+    return true;
   }
 
   function handleEndActivation() {
@@ -1227,7 +1240,8 @@ export function App({ scenario, onLeave }: AppProps) {
       logChargeWork(closed.chargeWork);
       logMorale(closed.morale);
       // Morale can end a battle with no shot fired this step: a side breaks.
-      checkVictory();
+      // So can the clock (rules decision 58).
+      if (checkVictory()) return;
       const order = game.initiativeOrder;
       setActivations(buildActivations(order));
       setActIndex(0);
@@ -1252,7 +1266,10 @@ export function App({ scenario, onLeave }: AppProps) {
             <span>תכנון משימה</span>
           ) : (
             <>
-              <span>תור {game.turn}</span>
+              <span>
+                תור {game.turn}
+                {game.timeLimit !== undefined ? ` / ${game.timeLimit}` : ""}
+              </span>
               <span className="sep">·</span>
               <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>
             </>

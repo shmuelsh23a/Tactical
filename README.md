@@ -1989,6 +1989,19 @@ on the stated reasoning, still awaiting the author's word.
     the dashed outline) so the player reads it as where the enemy *was*.
     On by default; a recording made before it reads it as off and replays
     with marks that expire.
+58. ✅ **A mission has a deadline, stated in its briefing** (author,
+    2026-09-29: "mission will have time limit in briefing (must achieve
+    objectives by turn x)"; `GameOptions.timeLimit`). An attack that has not
+    won by the end of turn X has failed and the defender wins; a win on the
+    last turn stands. The briefing gains "יש להשלים את המשימה עד תור X." (the
+    generator writes it from the spec's `timeLimit`), and the turn line reads
+    "תור T / X". ⚠️ The deadlines are ours: 45 turns for the Tel Azeka
+    battles, 40 for Yokneam. A company attack that scouts first wins in a
+    median 32–34 turns (p90 37–45) on the headless runner, so 45 leaves room
+    for a patient attack and cuts off one that waits too long; it costs the
+    scripted company about 5 points at 3:1 and 2 at 2:1 (docs/balance.md,
+    twentieth round). No deadline unless the scenario sets one; a recording
+    made before it has none.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -8,6 +8,7 @@ import {
   drillCombat,
   drillMovement,
   fireGrenadiers,
+  SCOUT_GIVE_UP_TURNS,
   type DrillTask,
 } from "./drill.js";
 import type { CompanyOrders } from "./company.js";
@@ -210,6 +211,22 @@ describe("the drill carrying out its company's orders", () => {
       g.advanceToPhase("initiative");
     }
     expect(lead.position).toEqual(post);
+  });
+
+  it("at its point seeing nothing, goes on by itself, unless its commander decides that (scoutsStay)", () => {
+    const run = (scoutsStay: boolean) => {
+      const { g, lead } = field();
+      const state = new DrillState();
+      const post = { x: 0, y: 90 };
+      for (let t = 0; t < SCOUT_GIVE_UP_TURNS + 6; t++) {
+        g.advanceToPhase("movement");
+        drillMovement(g, orders({ scouts: new Map([["B1", post]]), ...(scoutsStay ? { scoutsStay } : {}) }), PLAIN_SCRIPT, state);
+        g.advanceToPhase("initiative");
+      }
+      return lead.position.y;
+    };
+    expect(run(false)).toBeGreaterThan(90);
+    expect(run(true)).toBe(90);
   });
 
   it("lies up and watches when told, and never fires: what it sees stays on the map", () => {

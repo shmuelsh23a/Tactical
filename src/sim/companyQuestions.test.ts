@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
-import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
+import { DEFAULT_FIRE_CHOICES, notInSight, runScenarioBattle } from "./scenarioBattle.js";
+import { Game, makeInfantry } from "../engine/index.js";
+import { ScriptedCompany } from "../app/company.js";
 import { NeedAnswer, casualtiesSeen, fromAnswers, type Question } from "./companyQuestions.js";
 
 /**
@@ -69,6 +71,12 @@ describe("the company's questions", () => {
     expect(q.view).toMatch(/called off when about 30% of your men are down, broken or fled \(now 0%/);
   });
 
+  it("state the mission's deadline (rules decision 58)", () => {
+    const q = nextQuestion([]);
+    expect(q.view).toMatch(/Deadline: take the objective by the end of turn 45 \(45 turns left/);
+    expect(q.view).toContain("יש להשלים את המשימה עד תור 45.");
+  });
+
   it("name what each observation point sees", () => {
     const q = nextQuestion(["1"]);
     const post = q.options.find((o) => o.id === "p1");
@@ -102,5 +110,47 @@ describe("the company's questions", () => {
       answers.push(q.id.startsWith("go.") ? "yes" : q.id.startsWith("scout.") ? "on" : "hold");
     }
     throw new Error("never asked which way to go");
+  });
+
+  it("ask about a scout that sits at its point seeing nothing, and send it on when told (item 1)", () => {
+    // Before, the drill walked it on toward the objective by itself after six turns.
+    const answers = ["2", "p1", "p1", "deadGround"];
+    const where = (q: Question, id: string) => q.view.split("\n").find((l) => l.trim().startsWith(id + " "))!;
+    for (let i = 0; i < 60; i++) {
+      const q = nextQuestion(answers);
+      if (/watched from its observation point/.test(q.ask)) {
+        const id = q.id.split(".")[1]!;
+        expect(q.options.find((o) => o.id === "on")?.label).toMatch(/toward the plan's centre/);
+        const before = where(q, id);
+        answers.push("on");
+        // Keep holding the company; the scout leaves its point.
+        let later = nextQuestion(answers);
+        for (let k = 0; k < 10 && later.turn <= q.turn + 1; k++) {
+          answers.push(later.id.startsWith("go.") ? "no" : later.options[0]!.id);
+          later = nextQuestion(answers);
+        }
+        expect(where(later, id)).not.toEqual(before);
+        return;
+      }
+      answers.push(q.id.startsWith("go.") ? "no" : q.id.startsWith("scout.") ? "here" : q.options[0]!.id);
+    }
+    throw new Error("never asked about a scout at its point");
+  });
+
+  it("say what was found near the objective when none of it is in sight, not 'not found yet'", () => {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const scout = g.addUnit(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 200 }, 9));
+    g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 80, y: 0 }, 9));
+    const objective = { x: 0, y: 600 };
+    const flat = { objects: [] };
+    const company = new ScriptedCompany(g, "BLUE", objective, [objective], { recon: { scouts: 1 } }, { terrain: flat, width: 1000, height: 1000 });
+    g.beginTurn();
+    expect(notInSight(g, company)).toMatch(/have not found the enemy near the objective yet/);
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 400 }, 9)); // in small-arms reach of the scout
+    g.advanceToPhase("combat");
+    g.fire(red.id, scout.id, { weapon: "smallArms" });
+    expect(g.knows("BLUE", red.id)).toBe(true);
+    red.neutralized = true;
+    expect(notInSight(g, company)).toMatch(/found 1 enemy force near the objective \(1 out of action\)/);
   });
 });

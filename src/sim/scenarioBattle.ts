@@ -1,5 +1,5 @@
-import { sideDefeated, sideView } from "../app/hotseat.js";
-import { DrillState, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
+import { DrillState, SCOUT_GIVE_UP_TURNS, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
@@ -18,7 +18,7 @@ import {
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
 import { bestVantages } from "../app/deadGround.js";
-import { VANTAGE_RING_M } from "../app/company.js";
+import { FIND_WITHIN_M, VANTAGE_RING_M } from "../app/company.js";
 import { casualtiesSeen, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
 import type { IndirectFireResult } from "../engine/index.js";
@@ -92,6 +92,7 @@ export interface ScenarioBattleOptions {
   company?: CompanyPlan;
   /** Its fire and its picture of the enemy. */
   fire: FirePlanChoices;
+  /** Stop here. The mission's deadline (`timeLimit`, decision 58) unless given; 60 turns with none. */
   maxTurns?: number;
   /**
    * Someone else commands the attacking company (Jev, or an agent standing in
@@ -113,8 +114,12 @@ export interface ScenarioBattleResult {
   released?: number;
   /** The attacker's men down before its main body was let go: the price of waiting. */
   downWhileWaiting: number;
-  /** Fire missions each side called. */
+  /** Fire missions of HE each side called. */
   missions: Record<Side, number>;
+  /** Smoke missions each side laid from its tubes (each costs a mission too, decision 56). */
+  smoke: Record<Side, number>;
+  /** The attack ran past the mission's deadline and failed (decision 58). */
+  outOfTime?: boolean;
 }
 
 const other = (s: Side): Side => (s === "RED" ? "BLUE" : "RED");
@@ -133,7 +138,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const { game: g, mapWidth, mapHeight } = listing.build(seed);
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
-  const maxTurns = opts.maxTurns ?? 60;
+  const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
   const drill = opts.drill;
   const defenderDrill = opts.defenderDrill ?? drill;
 
@@ -187,6 +192,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     });
   const companyPlan = ask ? askPlan(g, attacker, objective, suspected, mapWidth, mapHeight, question) : opts.company ?? {};
   const scoutFit = new Map<string, number>();
+  /** The turn each scout was last asked about, sitting at its point seeing nothing. */
+  const scoutAsked = new Map<string, number>();
   const company = new ScriptedCompany(g, attacker, objective, suspected, companyPlan, {
     terrain: g.terrain,
     width: mapWidth,
@@ -209,6 +216,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     outBy: { smallArms: 0, explosive: 0 },
     downWhileWaiting: 0,
     missions: { RED: 0, BLUE: 0 },
+    smoke: { RED: 0, BLUE: 0 },
   };
   const downOf = (side: Side) =>
     g.units.filter((u) => u.side === side).reduce((t, u) => t + (u.soldiers ?? []).filter((m) => m.neutralized).length, 0);
@@ -233,7 +241,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     const moving = g.advanceToPhase("movement");
     heard(moving.resolved);
     ignore(moving.morale);
-    if (ask) askScouts(g, company, state, startLine, scoutFit, question);
+    if (ask) askScouts(g, company, state, startLine, objective, { width: mapWidth, height: mapHeight }, scoutFit, scoutAsked, question);
     tasks[attacker].company = company.orders(g, ask ? { go: askGo(g, company, turn, question) } : undefined);
     for (const side of g.initiativeOrder) drillMovement(g, tasks[side], side === attacker ? drill : defenderDrill, state);
     if (result.released === undefined && company.released !== undefined) {
@@ -249,6 +257,11 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     if (settle()) break;
   }
   if (result.released === undefined) result.downWhileWaiting = downOf(attacker);
+  // The clock ran out on the attack (decision 58): the defender held.
+  if (result.winner === "draw" && !sideDefeated(g, attacker) && !sideDefeated(g, defender) && outOfTime(g) === attacker) {
+    result.winner = defender;
+    result.outOfTime = true;
+  }
 
   for (const u of g.units) {
     for (const s of u.soldiers ?? []) {
@@ -333,6 +346,26 @@ function askPlan(
 }
 
 /**
+ * What the side has of the enemy near the objective when none is in sight:
+ * nothing found yet, or found and lost — some of it out of action — or found
+ * only away from where the plan put it.
+ */
+export function notInSight(g: Game, company: ScriptedCompany): string {
+  const side = company.side;
+  const objective = company.objectivePoint;
+  const marks = sideView(g, side).units.filter((e) => e.side !== side);
+  const near = marks.filter((e) => distance(e.position, objective) <= FIND_WITHIN_M);
+  const out = near.filter((e) => e.neutralized || e.surrendered).length;
+  const away = marks.filter((e) => distance(e.position, objective) > FIND_WITHIN_M && !e.neutralized && !e.surrendered).length;
+  const elsewhere = away ? ` It also has ${away} mark${away === 1 ? "" : "s"} away from the objective.` : "";
+  if (!near.length) return `Your scouts have not found the enemy near the objective yet.${elsewhere}`;
+  const found = `Your side has found ${near.length} enemy force${near.length === 1 ? "" : "s"} near the objective` + (out ? ` (${out} out of action)` : "");
+  return out === near.length
+    ? `${found}; nothing else there is in sight now.${elsewhere}`
+    : `${found}, but none is in sight now: the marks are where it was last seen.${elsewhere}`;
+}
+
+/**
  * While the company holds: send it in now? Asked when the scouts hold the
  * enemy in sight, when they are all lost, and every fifth turn otherwise —
  * a commander can always choose to go without them.
@@ -348,7 +381,7 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
       ? company.turnsHeldInSight === 0
         ? "Your side has just found the enemy near the objective."
         : `Your side has held the enemy near the objective in sight ${company.turnsHeldInSight + 1} turns in a row.`
-      : "Your scouts have not found the enemy near the objective yet.";
+      : notInSight(g, company);
   const go =
     question({
       id: `go.${turn}`,
@@ -395,38 +428,87 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
 }
 
 /**
- * A scout in trouble, or slow: asked when it has lost men since the last
- * turn, or has not reached its observation point ten turns in. Go on, lie
- * up where it is, or pull back to the company.
+ * A scout's commander is asked about it when it is hit, when it is slow to
+ * reach its observation point, and when it has sat at its point for
+ * {@link SCOUT_GIVE_UP_TURNS} turns seeing nothing (with a decider the drill
+ * no longer walks it on by itself: that is the commander's to say). When the
+ * side has marks away from where the plan put the enemy, the scout may also
+ * be sent to an observation point on those marks (`bestVantages`).
  */
 function askScouts(
   g: Game,
   company: ScriptedCompany,
   state: DrillState,
   startLine: Point,
+  objective: Point,
+  ground: { width: number; height: number },
   fitBefore: Map<string, number>,
+  asked: Map<string, number>,
   question: (q: Omit<Question, "turn" | "view">) => string,
 ): void {
   if (company.released !== undefined) return;
+  const side = company.side;
+  const holding = company.holdingInSight(g);
+  const marks = sideView(g, side).units.filter((e) => e.side !== side && !e.neutralized && !e.surrendered);
+  const astray = marks.filter((e) => distance(e.position, objective) > FIND_WITHIN_M);
   for (const u of company.liveScouts(g)) {
     const fit = (u.soldiers ?? []).filter((m) => !m.neutralized).length;
     const hit = fit < (fitBefore.get(u.id) ?? fit);
     fitBefore.set(u.id, fit);
     const post = company.posts.get(u.id);
-    const slow = post !== null && post !== undefined && !state.arrivedOn.has(u.id) && g.turn > 1 && g.turn % 10 === 0;
-    if (!hit && !slow) continue;
+    const arrived = state.arrivedOn.get(u.id);
+    const slow = post !== null && post !== undefined && arrived === undefined && g.turn > 1 && g.turn % 10 === 0;
+    const idle =
+      post !== null && post !== undefined && arrived !== undefined && !holding &&
+      g.turn - Math.max(arrived, asked.get(u.id) ?? arrived) >= SCOUT_GIVE_UP_TURNS;
+    if (!hit && !slow && !idle) continue;
+    asked.set(u.id, g.turn);
+    // Observation points on where the enemy turned up, when it is not where the plan put it.
+    const points = astray.length
+      ? bestVantages(
+          { terrain: g.terrain, targets: astray.map((e) => e.position), minRange: VANTAGE_RING_M.min, maxRange: VANTAGE_RING_M.max },
+          u.position,
+          2,
+          { width: ground.width, height: ground.height, step: 20 },
+        )
+      : [];
+    const sees = (p: Point) =>
+      astray
+        .filter((e) => distance(p, e.position) <= VANTAGE_RING_M.max && !terrainBlocksSight(g.terrain, p, EYE_HEIGHT.infantry, e.position, EYE_HEIGHT.fullCover))
+        .map((e) => e.id);
+    const why = hit
+      ? `is under fire: ${fit}/${u.soldiers?.length ?? 0} fit`
+      : idle
+        ? `has watched from its observation point for ${g.turn - (arrived ?? g.turn)} turns and your side holds no enemy near the objective in sight`
+        : "has not reached its observation point yet";
     const a = question({
       id: `scout.${u.id}.${g.turn}`,
       kind: "choice",
-      ask: `${u.id} ${hit ? `is under fire: ${fit}/${u.soldiers?.length ?? 0} fit` : "has not reached its observation point yet"}, at (${Math.round(u.position.x)}, ${Math.round(u.position.y)}). What now?`,
+      ask: `${u.id} ${why}, at (${Math.round(u.position.x)}, ${Math.round(u.position.y)}). What now?`,
       options: [
-        { id: "on", label: post ? `go on to its observation point (${Math.round(post.x)}, ${Math.round(post.y)})` : "go on as ordered" },
-        { id: "here", label: "lie up where it is and watch" },
+        idle
+          ? { id: "on", label: "go on toward the plan's centre, bounding and looking" }
+          : { id: "on", label: post ? `go on to its observation point (${Math.round(post.x)}, ${Math.round(post.y)})` : "go on as ordered" },
+        { id: "here", label: idle ? "stay at its point and keep watching" : "lie up where it is and watch" },
         { id: "back", label: "pull back to the company" },
+        ...points.map((p, k) => ({
+          id: `v${k + 1}`,
+          label:
+            `move to an observation point on the enemy found away from the plan (${Math.round(p.x)}, ${Math.round(p.y)}), ` +
+            `ground ${Math.round(groundHeight(g.terrain, p))} m: sees ${sees(p).join(", ") || "none of the marks clearly"}; ` +
+            `${Math.round(distance(p, u.position))} m walk`,
+        })),
       ],
     });
-    if (a === "here") company.setPost(u.id, u.position);
-    if (a === "back") company.setPost(u.id, startLine);
+    const moveTo = (at: Point | null) => {
+      company.setPost(u.id, at);
+      // A new point is a new arrival: the old one's clock does not carry over.
+      state.arrivedOn.delete(u.id);
+    };
+    if (a === "on" && idle) moveTo(null);
+    if (a === "here" && !idle) moveTo(u.position);
+    if (a === "back") moveTo(startLine);
+    if (a.startsWith("v")) moveTo(points[Number(a.slice(1)) - 1]!);
   }
 }
 
@@ -480,6 +562,7 @@ function askAttackerFire(
   if (a.startsWith("smoke:")) {
     const screened = marks.find((u) => `smoke:${u.id}` === a)!;
     g.deploySmoke(MORTAR, side, screened.position);
+    result.smoke[side]++;
     return;
   }
   const target = marks.find((u) => u.id === a)!;
@@ -569,6 +652,8 @@ export interface ScenarioSummary {
   explosivePct: number;
   /** Median men the attacker lost before its main body went. */
   medianDownWhileWaiting: number;
+  /** Of the defender's wins, those where the attack ran out of time (decision 58). */
+  outOfTime: number;
 }
 
 export function runScenario(
@@ -590,6 +675,7 @@ export function runScenario(
     attackerWins: rs.filter((r) => r.winner === attacker).length,
     defenderWins: rs.filter((r) => r.winner === defender).length,
     draws: rs.filter((r) => r.winner === "draw").length,
+    outOfTime: rs.filter((r) => r.outOfTime).length,
     medianTurns: median(rs.map((r) => r.turns)),
     attackerDownPct: (100 * sum((r) => r.down[attacker])) / Math.max(1, sum((r) => r.men[attacker])),
     defenderDownPct: (100 * sum((r) => r.down[defender])) / Math.max(1, sum((r) => r.men[defender])),

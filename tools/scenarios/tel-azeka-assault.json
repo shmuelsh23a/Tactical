@@ -6,6 +6,7 @@
     "BLUE"
   ],
   "seed": 1967,
+  "timeLimit": 45,
   "trackIntel": true,
   "enforceC2": true,
   "morale": true,

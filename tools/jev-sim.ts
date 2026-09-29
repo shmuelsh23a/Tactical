@@ -12,7 +12,8 @@
  *   npm run jev-sim -- --scenario telAzekaAssault --seed 11 --answers answers.json
  *   npm run jev-sim -- --seed 11 --answers answers.json --json    # the question as JSON
  *
- * Exit status: 0 the battle ended (RESULT printed), 3 a question is waiting.
+ * Exit status: 0 the battle ended (RESULT printed), 3 a question is waiting,
+ * 2 an answer in the file is not one of its question's options.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { SCENARIOS } from "../src/app/scenario.js";
@@ -38,14 +39,21 @@ try {
   const r = runScenarioBattle(listing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, decide });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   console.log(
-    `RESULT ${id} seed ${seed}: ${r.winner === attacker ? "the attack won" : r.winner === "draw" ? "a draw" : "the defence held"} ` +
+    `RESULT ${id} seed ${seed}: ${r.winner === attacker ? "the attack won" : r.winner === "draw" ? "a draw" : (r.outOfTime ? "the defence held: the attack ran out of time" : "the defence held")} ` +
       `on turn ${r.turns}. Men down: attacker ${r.down[attacker]}/${r.men[attacker]}, defender ` +
       `${r.down[attacker === "BLUE" ? "RED" : "BLUE"]}/${r.men[attacker === "BLUE" ? "RED" : "BLUE"]}. ` +
-      `Company went in on turn ${r.released ?? "-"}; missions fired ${r.missions[attacker]}. Answers used: ${decide.asked.length}.`,
+      `Company went in on turn ${r.released ?? "-"}; missions fired ${r.missions[attacker]} HE and ${r.smoke[attacker]} smoke. Answers used: ${decide.asked.length}.`,
   );
   process.exit(0);
 } catch (e) {
-  if (!(e instanceof NeedAnswer)) throw e;
+  if (!(e instanceof NeedAnswer)) {
+    // A wrong answer is the answerer's mistake, not the tool's: say so plainly.
+    if (e instanceof Error && /is not an option of/.test(e.message)) {
+      console.error(`ERROR ${e.message}`);
+      process.exit(2);
+    }
+    throw e;
+  }
   const q = e.question;
   if (args.includes("--json")) console.log(JSON.stringify({ answered: answers.length, ...q }));
   else {

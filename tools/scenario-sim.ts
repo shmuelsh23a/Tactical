@@ -62,7 +62,7 @@ const fire: FirePlanChoices = {
 };
 
 console.log(`${n} battles a scenario from seed ${first}, ${drill.name}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}\n`);
-console.log("| Scenario | Attacker wins | Defender wins | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) |");
+console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|");
 for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
@@ -71,5 +71,5 @@ for (const id of ids) {
   const s = runScenario(listing, seeds, { drill, company, fire });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
-  console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} |`);
+  console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} |`);
 }

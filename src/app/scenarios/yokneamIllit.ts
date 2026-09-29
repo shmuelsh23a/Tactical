@@ -56,6 +56,7 @@ export function buildYokneamIllitScenario(seed = 2026): Scenario {
     binoculars: true,
     keepEyesOn: true,
     commandSuccession: true,
+    timeLimit: 40,
     attackers: ["BLUE"],
     terrain: buildYokneamIllitTerrain(),
   });
@@ -93,7 +94,7 @@ export function buildYokneamIllitScenario(seed = 2026): Scenario {
 export const yokneamIllitListing: ScenarioListing = {
   id: "yokneamIllit",
   title: "תרגיל הדגמה — מגע ראשון",
-  brief: "כחול: תוקף מהשטח הנמוך בצפון. אדום: מחזיק עמדה בשולי יקנעם עילית, על הגבעה בדרום.",
+  brief: "כחול: תוקף מהשטח הנמוך בצפון. אדום: מחזיק עמדה בשולי יקנעם עילית, על הגבעה בדרום. יש להשלים את המשימה עד תור 40.",
   mapWidth: 900,
   mapHeight: 800,
   build: buildYokneamIllitScenario,

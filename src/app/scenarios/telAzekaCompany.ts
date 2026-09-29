@@ -49,6 +49,7 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
     binoculars: true,
     keepEyesOn: true,
     commandSuccession: true,
+    timeLimit: 45,
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {
@@ -108,7 +109,7 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
 export const telAzekaCompanyListing: ScenarioListing = {
   id: "telAzekaCompany",
   title: "עמק האלה — פלוגה על תל עזקה",
-  brief: "כחול: פלוגה תופסת את תל עזקה מדרום. אדום: פלוגה מחזיקה בתל. לפני הקרב כל צד מתכנן את משימתו: מטרות רשומות, תצפיות ועמדות חלופיות.",
+  brief: "כחול: פלוגה תופסת את תל עזקה מדרום. אדום: פלוגה מחזיקה בתל. לפני הקרב כל צד מתכנן את משימתו: מטרות רשומות, תצפיות ועמדות חלופיות. יש להשלים את המשימה עד תור 45.",
   mapWidth: 1200,
   mapHeight: 1000,
   build: buildTelAzekaCompanyScenario,

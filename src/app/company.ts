@@ -33,6 +33,12 @@ export interface CompanyOrders {
   attackVia?: Point;
   /** Once the rest go, the scouts open fire from their posts in support (a base of fire). */
   scoutsFire?: boolean;
+  /**
+   * Someone else commands the company (Jev, or its stand-in): a scout at its
+   * point stays there until told otherwise, instead of going on by itself
+   * after `SCOUT_GIVE_UP_TURNS` of seeing nothing — its commander is asked.
+   */
+  scoutsStay?: boolean;
 }
 
 /** What the scripted company commander was told to do about finding the enemy. */
@@ -75,7 +81,7 @@ export interface CompanyPlan {
 export const VANTAGE_RING_M = { min: 350, max: 550 } as const;
 
 /** What counts as found, unless the plan says (ours). */
-const FIND_WITHIN_M = 250;
+export const FIND_WITHIN_M = 250;
 
 /** The map a commander plans on: its ground and extent. */
 export interface CompanyGround {
@@ -182,7 +188,13 @@ export class ScriptedCompany {
       waitAt: this.waitAt,
       ...(this.via ? { attackVia: this.via } : {}),
       ...(this.support ? { scoutsFire: true } : {}),
+      ...(decided ? { scoutsStay: true } : {}),
     };
+  }
+
+  /** Where the plan puts the enemy position. */
+  get objectivePoint(): Point {
+    return this.objective;
   }
 
   /** The scouts' observation points, by force (null: toward the objective). */

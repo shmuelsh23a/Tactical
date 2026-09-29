@@ -255,3 +255,15 @@ export function sideDefeated(game: Game, side: Side): boolean {
   const judged = fighting.length > 0 ? fighting : units;
   return units.length > 0 && (judged.every((u) => u.neutralized || isGone(u)) || game.sideBroken(side));
 }
+
+/**
+ * The attacking side whose time has run out (rules decision 58): the mission
+ * gave it until the end of turn `timeLimit` to win, that turn has closed, and
+ * it has not. Null with no deadline, no attacker, or time still left. Called
+ * once a turn is closed, after the side-defeated check: a win on the last turn
+ * stands.
+ */
+export function outOfTime(game: Game): Side | null {
+  if (game.timeLimit === undefined || game.turn <= game.timeLimit) return null;
+  return game.attackers[0] ?? null;
+}

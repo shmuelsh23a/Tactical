@@ -163,8 +163,8 @@ export interface DrillTask {
    * The company's orders for the turn (`company.ts`): which forces scout and
    * from where, and whether the rest hold. A scout bounds and observes to its
    * observation point and lies up there; if it sees nothing from it for
-   * {@link SCOUT_GIVE_UP_TURNS} turns it goes on toward the objective.
-   * Absent: every force fights by the drill alone.
+   * {@link SCOUT_GIVE_UP_TURNS} turns it goes on toward the objective,
+   * unless its commander decides that (`scoutsStay`). Absent: every force fights by the drill alone.
    */
   company?: CompanyOrders;
 }
@@ -318,7 +318,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         const since = state.arrivedOn.get(u.id);
         onPost = since !== undefined;
         if (since === undefined) goal = post;
-        else if (game.turn - since < SCOUT_GIVE_UP_TURNS) goal = u.position; // lie up and watch
+        else if (company!.scoutsStay || game.turn - since < SCOUT_GIVE_UP_TURNS) goal = u.position; // lie up and watch
       }
       const watched = state.watched.get(u.id) ?? 0;
       // A scout still on its way to its point goes on when the company has

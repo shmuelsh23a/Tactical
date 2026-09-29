@@ -450,6 +450,13 @@ export interface GameOptions {
    * 12). On by default; a recording made before it reads it as off.
    */
   keepStaleMarks?: boolean;
+  /**
+   * The mission's deadline (rules decision 58, author 2026-09-29: "mission
+   * will have time limit in briefing"): the attackers must take their
+   * objective by the end of this turn, or the attack has failed. Absent: no
+   * deadline. The briefing states it; the app ends the battle on it.
+   */
+  timeLimit?: number;
 }
 
 /**
@@ -491,6 +498,8 @@ export class Game {
   readonly smokeCostsMission: boolean;
   /** Whether a mark stays where it was last seen (rules decision 57). */
   readonly keepStaleMarks: boolean;
+  /** The last turn the attackers have to win in (rules decision 58); undefined: none. */
+  readonly timeLimit: number | undefined;
   /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
   private readonly smokeMissions: { side: Side; weapon: string }[] = [];
   /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
@@ -628,6 +637,10 @@ export class Game {
     this.commandSuccession = opts.commandSuccession ?? false;
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
+    this.timeLimit = opts.timeLimit;
+    if (this.timeLimit !== undefined && !(Number.isInteger(this.timeLimit) && this.timeLimit > 0)) {
+      throw new Error(`timeLimit: cannot read ${JSON.stringify(opts.timeLimit)}`);
+    }
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
@@ -739,6 +752,7 @@ export class Game {
       ...(this.commandSuccession ? { commandSuccession: true } : {}),
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
+      ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),

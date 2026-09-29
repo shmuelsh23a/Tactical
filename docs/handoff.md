@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 647 tests, 33 files
+npm run check       lint + typecheck clean, 744 tests, 43 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -149,6 +149,19 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Then (author: "do 1 and 2, keep marks on last seen, mark them with
+   broken lines; mission will have time limit in briefing"):** decision 57
+   (a mark stays where last seen, drawn with a dashed frame) and 58 (each
+   mission's deadline, 45 turns on the tel, in the brief and the turn line;
+   costs the scripted 3:1 about 5 points, balance.md *Twentieth round*),
+   both driven in the browser. Item 1, the agents' bugs in the questions:
+   a scout at its point seeing nothing is now asked about (with a decider
+   it no longer walks on by itself), "on" there sends it toward the
+   objective, the scout questions offer observation points on marks found
+   away from the plan, jev-sim counts HE and smoke separately and exits 2
+   with one line on an answer that is not an option, and the go question
+   says what was found near the objective instead of "not found yet".
+   **Item 2, platoon-level control of the assault, is next.**
 0. **Then (author: "can you spin up an agent that takes Jev's role", then
    "destroying the command group should have effect; do 1-3"):**
    `npm run jev-sim` puts the company commander's decisions as typed

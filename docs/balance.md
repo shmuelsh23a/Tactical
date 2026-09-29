@@ -2073,6 +2073,26 @@ the scripted commander has. Command groups first is the worst even with
 decision 55: a defender holds on standing orders, and the one that calls
 its mortars is behind the summit.
 
+## Twentieth round: the mission's deadline, 2026-09-29
+
+Rules decision 58 gives each attack a deadline; the Tel Azeka battles have 45
+turns. Without one, a company that scouts first (two scouts, each from an
+observation point, a four-turn look, the rest in dead ground, fires held for
+contact, aim 40 m) won its attacks in a median 32 turns at 3:1 and 34 at 2:1,
+p90 37 and 45, longest 44 and 57 (60 seeds each). With the deadline, 200 battles
+each from seed 1000:
+
+    npm run scenario-sim -- --n 200 --recon 2 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground
+
+| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 41% (46% before) | 58% (6%) | 2% | 32 |
+| telAzekaAssault2 (2:1) | 30% (32% before) | 67% (3%) | 4% | 30 |
+
+The clock takes the slowest attacks: a scripted company that keeps looking
+while its scouts lose and regain the enemy. That is the lesson it is there to
+teach: recon has a price in time as well as men.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

@@ -54,6 +54,7 @@ export function buildTelAzekaScenario(seed = 1948): Scenario {
     binoculars: true,
     keepEyesOn: true,
     commandSuccession: true,
+    timeLimit: 45,
     attackers: ["BLUE"],
     terrain: buildTelAzekaTerrain(),
   });
@@ -89,7 +90,7 @@ export function buildTelAzekaScenario(seed = 1948): Scenario {
 export const telAzekaListing: ScenarioListing = {
   id: "telAzeka",
   title: "עמק האלה — תפיסת תל עזקה",
-  brief: "כחול: תופס את תל עזקה מדרום. אדום: מחזיק בתל. אין בשטח מבנים — כל מחסה הוא מחסה של הקרקע.",
+  brief: "כחול: תופס את תל עזקה מדרום. אדום: מחזיק בתל. אין בשטח מבנים — כל מחסה הוא מחסה של הקרקע. יש להשלים את המשימה עד תור 45.",
   mapWidth: 1200,
   mapHeight: 1000,
   build: buildTelAzekaScenario,
