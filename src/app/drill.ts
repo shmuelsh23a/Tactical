@@ -95,8 +95,13 @@ export interface SquadDrill {
    * found only close in (the document's 20 m band) or when it opens fire,
    * so a scout's real job is to be the one it opens fire on. Absent: the
    * whole attack advances at once, and finds the enemy with its main body.
+   *
+   * `watchTurns`: bound and observe — after each 50 m bound the scouts halt
+   * and watch this many turns before the next. A force that has stopped is
+   * one that looks (rules decision 53); one that walks on finds a still
+   * enemy only as it passes within 20 m. 0 or absent: they walk on.
    */
-  recon?: { forces: number };
+  recon?: { forces: number; watchTurns?: number };
 }
 
 /**
@@ -175,6 +180,8 @@ export class DrillState {
   readonly recon = new Map<Side, Set<string>>();
   /** Sides whose main body has been released: its scouts found something, or are done. */
   readonly reconDone = new Set<Side>();
+  /** Turns each scout has halted to watch since its last bound. */
+  readonly watched = new Map<string, number>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -318,10 +325,13 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
 
     if (scouts.has(u.id)) {
-      // Out ahead: walk on until something is found, then go to ground and watch.
+      // Out ahead: bound and look until something is found, then go to ground and watch.
+      const watched = state.watched.get(u.id) ?? 0;
+      const halt = inContact || state.reconDone.has(side) || watched < (drill.recon?.watchTurns ?? 0);
+      state.watched.set(u.id, halt ? watched + 1 : 0);
       game.setStandingOrder(
         u.id,
-        inContact || state.reconDone.has(side)
+        halt
           ? { gait: "normal", holdFire: true }
           : { gait: "normal", destination: toward(u.position, task.objective, 50), holdFire: true },
       );

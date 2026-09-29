@@ -400,6 +400,13 @@ export interface GameOptions {
    * it changes what a side knows and never what the game's rng is asked.
    */
   locationError?: boolean;
+  /**
+   * Whether a force in position may find a still enemy beyond the
+   * document's 20 m (rules decision 53, ⚠️ ours): out to 300 m, 600 m for an
+   * observation post, its chance falling off with range. Off by default; it
+   * rolls for more pairs of forces, so it changes what the rng is asked.
+   */
+  stillDetection?: boolean;
 }
 
 /**
@@ -429,6 +436,8 @@ export class Game {
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
   readonly locationError: boolean;
+  /** Whether a force in position finds a still enemy beyond 20 m (rules decision 53). */
+  readonly stillDetection: boolean;
   /**
    * Where the location error is drawn from: its own stream (see `unitSeed`),
    * so turning it on moves no other roll in the game.
@@ -547,8 +556,10 @@ export class Game {
     this.lethality = opts.lethality ?? "research";
     this.attackers = [...(opts.attackers ?? [])];
     this.locationError = opts.locationError ?? false;
+    this.stillDetection = opts.stillDetection ?? false;
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
+    if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
     this.locationRng = new Rng(unitSeed(opts.seed, LOCATION_ERROR_STREAM));
     if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
     if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
@@ -644,6 +655,7 @@ export class Game {
       lethality: this.lethality,
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
+      ...(this.stillDetection ? { stillDetection: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -1562,8 +1574,11 @@ export class Game {
    */
   private observeFromPositions(): Observation[] {
     if (!this.trackIntel) return [];
-    const seen = observeFromPosition(this.rng, this.units, (observer, target) =>
-      this.hasLineOfSight(observer, target),
+    const seen = observeFromPosition(
+      this.rng,
+      this.units,
+      (observer, target) => this.hasLineOfSight(observer, target),
+      this.stillDetection,
     );
     for (const { observerId, targetId } of seen) {
       const observer = this.getUnit(observerId);

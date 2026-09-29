@@ -8,7 +8,9 @@ import {
   OBSERVATION,
   OBSERVATION_SECTOR,
   SCOUTING,
+  STILL_DETECTION,
   sectorBonus,
+  stillDetectionFalloff,
 } from "../data/concealment.js";
 import { UAV_PROFILES } from "../data/uav.js";
 import { OBSERVATION_POST_RANGE_M } from "../data/planning.js";
@@ -221,6 +223,7 @@ export function observeFromPosition(
   rng: Rng,
   units: Unit[],
   hasLineOfSight: (observer: Unit, target: Unit) => boolean = () => true,
+  stillDetection = false,
 ): Observation[] {
   const observations: Observation[] = [];
   for (const observer of units) {
@@ -228,8 +231,15 @@ export function observeFromPosition(
     if (!canObserve(observer)) continue;
     for (const target of units) {
       if (target.side === observer.side || !isFindable(target)) continue;
-      const { chance, range } = detectionChance(observer, target);
-      if (distance(observer.position, target.position) > range) continue;
+      let { chance, range } = detectionChance(observer, target);
+      const d = distance(observer.position, target.position);
+      // Watching finds a still force further out than walking past it does
+      // (rules decision 53): the same chance, falling off to the edge of sight.
+      if (stillDetection && isHidden(target)) {
+        range = watchingAsPost(observer) ? STILL_DETECTION.postRangeM : STILL_DETECTION.rangeM;
+        chance *= stillDetectionFalloff(d, range);
+      }
+      if (d > range) continue;
       if (!hasLineOfSight(observer, target)) continue;
       if (rng.chance(chance)) {
         observations.push({ observerId: observer.id, targetId: target.id });

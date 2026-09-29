@@ -193,6 +193,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
+  if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -324,6 +325,12 @@ export interface GameRecording {
    * sightings.
    */
   locationError?: boolean;
+  /**
+   * Whether a force in position found a still enemy beyond 20 m (rules
+   * decision 53). Read as **off** when absent: a battle recorded before it
+   * made none of those rolls.
+   */
+  stillDetection?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -481,6 +488,7 @@ export function replayWithOutcomes(
     lethality: recording.lethality ?? "document",
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
+    ...(recording.stillDetection ? { stillDetection: true } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

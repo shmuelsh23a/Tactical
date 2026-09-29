@@ -170,6 +170,21 @@ describe("the drill's reconnaissance", () => {
     expect(rest.scouting).toBeFalsy();
   });
 
+  it("bounds and observes: after each bound the scout halts to watch", () => {
+    const { g, lead } = company();
+    const state = new DrillState();
+    const looking = { ...PLAIN_SCRIPT, recon: { forces: 1, watchTurns: 2 } };
+    const ys: number[] = [];
+    for (let t = 0; t < 6; t++) {
+      g.advanceToPhase("movement");
+      drillMovement(g, attack, looking, state);
+      ys.push(Math.round(lead.position.y));
+      g.advanceToPhase("initiative");
+    }
+    // Two turns watching, one bound, two watching, one bound.
+    expect(ys).toEqual([40, 40, 90, 90, 90, 140]);
+  });
+
   it("lets the attack go once the side has found the enemy, and the scout lies up and watches", () => {
     const { g, lead, rest } = company();
     const state = new DrillState();

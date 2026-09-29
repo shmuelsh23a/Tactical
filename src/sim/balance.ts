@@ -204,6 +204,8 @@ export interface BattleOptions {
   planningError?: number;
   /** Sightings carry location error in the game (rules decision 51, `GameOptions.locationError`). */
   locationError?: boolean;
+  /** A force in position finds a still enemy beyond 20 m (rules decision 53, `GameOptions.stillDetection`). */
+  stillDetection?: boolean;
 }
 
 /** A standard normal draw (Box–Muller). */
@@ -392,6 +394,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     morale: opts.morale,
     trackIntel: true,
     ...(opts.locationError ? { locationError: true } : {}),
+    ...(opts.stillDetection ? { stillDetection: true } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),

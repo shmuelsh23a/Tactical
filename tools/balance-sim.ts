@@ -18,7 +18,9 @@
  *   npm run balance -- --morale on                   # only with morale (or: off)
  *   npm run balance -- --fires calibrated --defender-fires calibrated   # the fire decision 43 was calibrated on
  *   npm run balance -- --lethality document          # the document's blast tables (rules decision 41; default research)
+ *   npm run balance -- --still-detection               # a force in position finds a still enemy out to 300 m (rules decision 53)
  *   npm run balance -- --recon 1 --fires calibrated-wait   # scouts go ahead; the guns wait for what they find (rules decision 52)
+ *   npm run balance -- --recon 1 --watch 2 --still-detection   # …bounding, then halting 2 turns to watch (decision 53)
  *   npm run balance -- --planning-error --location-error   # fires planned on an estimate (0.2 of range; --planning-error 0.1 for less); sightings off by the eye's error (rules decision 51)
  *
  * The figures recorded on docs/balance.md came from the default run. Kept thin
@@ -133,6 +135,7 @@ const planningError = args.includes("--planning-error")
   ? /^\d*\.?\d+$/.test(value("--planning-error") ?? "") ? Number(value("--planning-error")) : 0.2
   : 0;
 const locationError = args.includes("--location-error");
+const stillDetection = args.includes("--still-detection");
 if (lethality && !LETHALITIES.includes(lethality)) throw new Error(`--lethality: "${lethality}" is not one of ${LETHALITIES.join(", ")}`);
 if (!anyEchelon) {
   const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
@@ -149,7 +152,9 @@ const defenderPlan =
 // --recon 2 — the attacker's scouts (rules decision 52): that many squads go
 // ahead scouting while the rest wait for what they find
 const reconArg = value("--recon");
-if (reconArg) drill.recon = { forces: Number(reconArg) };
+// --watch 2 — the scouts bound and observe: halt this many turns after each bound
+const watchArg = value("--watch");
+if (reconArg) drill.recon = { forces: Number(reconArg), ...(watchArg ? { watchTurns: Number(watchArg) } : {}) };
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
 
@@ -172,13 +177,13 @@ if (args.includes("--sweep")) {
   }
 } else {
   const trial = Object.keys(variants).length ? `, variants ${JSON.stringify(variants)}` : "";
-  const intel = [planningError > 0 && `fires planned on an estimate (${planningError} of range)`, locationError && "sightings with location error"].filter(Boolean).join(", ");
+  const intel = [planningError > 0 && `fires planned on an estimate (${planningError} of range)`, locationError && "sightings with location error", stillDetection && "still forces found beyond 20 m"].filter(Boolean).join(", ");
   console.log(`${battles} battles a cell from seed ${firstSeed}, ${drill.name}${swap ? ", sides swapped" : ""}${fires ? ", fire plan" : ""}${intel ? ", " + intel : ""}${trial}\n`);
   console.log(MARKDOWN_HEADER);
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection })));
       }
     }
   }

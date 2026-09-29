@@ -32,7 +32,8 @@
  * Env: SEED (plays on other dice, via `?seed=`), NOFIRE (no fire plan),
  * PLANNING_ERROR (the share of range the fire plan's centre is off by,
  * default 0.2; 0 plans on the truth, as every run before 2026-09-28),
- * NOSMOKE (no smoke), RECON (send a scout ahead first), SHOT (a screenshot of the last screen, to this path;
+ * NOSMOKE (no smoke), RECON (send a scout ahead first), WATCH (the scout halts
+ * this many turns to watch after each bound), SHOT (a screenshot of the last screen, to this path;
  * with SHOT_TURN, of the attacker's map at its fire phase on that turn),
  * BASE_URL (default http://localhost:5199),
  * PLAYWRIGHT_DIR (where `playwright` resolves; default the global
@@ -129,6 +130,9 @@ const stats = { assaults: 0, bounds: 0, holds: 0, hqMoves: 0, fireCalls: 0, smok
 // Reconnaissance (RECON): the scout's name, and whether the main body has been let go.
 const scout = process.env.RECON ? setup.scout : null;
 let released = !scout;
+// WATCH=n: the scout bounds and observes — halts n turns to watch after each bound (rules decision 53).
+const watchTurns = Number(process.env.WATCH ?? 0);
+let scoutWatched = 0;
 const known = {}; // last known own positions by name
 const missed = {}; // squads that could not be ordered last time
 let turnNo = 0;
@@ -199,7 +203,9 @@ async function movement(side) {
       if (!stats.scouting) { await clickBtn(/^צא לסיור$/); stats.scouting = true; }
       await clickBtn(/^אחזקת אש$/);
       // Walk on until something is found; then lie up and watch.
-      if (released) await clickBtn(/^החזק מקום ואל תירה$/);
+      const halt = released || scoutWatched < watchTurns;
+      scoutWatched = halt ? scoutWatched + 1 : 0;
+      if (halt) await clickBtn(/^החזק מקום ואל תירה$/);
       else await clickWorld(toward(s.at, objective, 50));
       await tick(100);
     }
