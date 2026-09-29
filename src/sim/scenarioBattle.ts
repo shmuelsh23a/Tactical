@@ -65,6 +65,13 @@ export interface FirePlanChoices {
    */
   waitForContact: boolean;
   aimWithin?: number;
+  /**
+   * Which mark the guns take first when the scouts have found several: the
+   * squads that hold the position, the command groups that direct it (rules
+   * decision 55 gives losing one its effect), or whichever is nearest the
+   * objective (the default, and every table before 2026-09-29).
+   */
+  targetFirst?: "squads" | "command" | "nearest";
 }
 
 export const DEFAULT_FIRE_CHOICES: FirePlanChoices = {
@@ -391,11 +398,11 @@ function callAttackerFire(
     // looking is done (on the way into the fire phase), so last turn's report
     // is the newest there is — the drill's own test for holding a contact.
     const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
+    const rank = (u: Unit) =>
+      plan.targetFirst === "squads" ? (u.kind === "command" ? 1 : 0) : plan.targetFirst === "command" ? (u.kind === "command" ? 0 : 1) : 0;
     aim = view.units
-      .filter((u) => u.side !== side && !u.neutralized && fresh(u.id) && sure(u.id))
-      .map((u) => u.position)
-      .filter(safe)
-      .sort((a, b) => distance(a, objective) - distance(b, objective))[0];
+      .filter((u) => u.side !== side && !u.neutralized && fresh(u.id) && sure(u.id) && safe(u.position))
+      .sort((a, b) => rank(a) - rank(b) || distance(a.position, objective) - distance(b.position, objective))[0]?.position;
   } else {
     const open = planned.filter(safe);
     aim = open[result.missions[side] % Math.max(1, open.length)];

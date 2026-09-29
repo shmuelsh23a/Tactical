@@ -75,7 +75,7 @@ export {
 export { UAV_PROFILES, FIXED_WING_MISS_REDUCTION, type UavProfile } from "./data/uav.js";
 export { ARMOR_TABLE, MOBILITY_THRESHOLDS, HE_VS_ARMOR, type ArmorRow } from "./data/armor.js";
 export { ADJUSTMENT_RADIUS_M, ARTILLERY_DISPERSION, DEFAULT_ROUNDS_FOR_EFFECT, FIRE_SUPPORT_MIN_ECHELON, defaultRoundsForEffect } from "./data/artillery.js";
-export { C2_TABLE, ECHELON_RANK, orderInterval } from "./data/c2.js";
+export { C2_TABLE, ECHELON_RANK, SUCCESSION_TURNS, orderInterval } from "./data/c2.js";
 export {
   MAX_ALTERNATE_POSITIONS_PER_FORCE,
   MAX_REGISTERED_TARGETS_PER_WEAPON,

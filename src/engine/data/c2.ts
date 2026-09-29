@@ -48,3 +48,16 @@ export function orderInterval(force: Echelon, distance: number): number | null {
 
 /** Echelons in order of command, squad lowest. */
 export const ECHELON_RANK: Readonly<Record<Echelon, number>> = { squad: 0, platoon: 1, company: 2, battalion: 3, brigade: 4 };
+
+/**
+ * Command succession (rules decision 55, ⚠️ ours: author 2026-09-29,
+ * "destroying the command group should have effect"). When a side's command
+ * group goes out of action — its men down, routing or surrendered — command
+ * passes to the next command group in line, and for this many turns while
+ * the successor takes over its forces take no new orders (their standing
+ * orders go on) and its guns cannot be called. A side with no command group
+ * left takes no new orders and calls no fire at all. Doctrine prescribes a
+ * succession of command at every level but gives no time for it; the 2
+ * minutes are ours.
+ */
+export const SUCCESSION_TURNS = 2;

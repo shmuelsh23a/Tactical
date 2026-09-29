@@ -53,6 +53,7 @@ export function buildTelAzekaScenario(seed = 1948): Scenario {
     stillDetection: true,
     binoculars: true,
     keepEyesOn: true,
+    commandSuccession: true,
     attackers: ["BLUE"],
     terrain: buildTelAzekaTerrain(),
   });

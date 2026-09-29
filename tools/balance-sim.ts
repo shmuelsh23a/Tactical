@@ -143,6 +143,7 @@ const locationError = args.includes("--location-error");
 const stillDetection = args.includes("--still-detection");
 const binoculars = args.includes("--binoculars");
 const keepEyesOn = args.includes("--keep-eyes-on");
+const commandSuccession = args.includes("--command-succession");
 if (lethality && !LETHALITIES.includes(lethality)) throw new Error(`--lethality: "${lethality}" is not one of ${LETHALITIES.join(", ")}`);
 if (!anyEchelon) {
   const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
@@ -196,7 +197,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn, ...(company ? { company } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn, commandSuccession, ...(company ? { company } : {}) })));
       }
     }
   }

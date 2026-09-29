@@ -9,6 +9,7 @@
  *   npm run scenario-sim -- --recon 2 --watch 1 --look 4 --wait-for-contact --scout-from vantage   # two scouts, each from an observation point
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --wait-in dead-ground   # the company waits out of sight
  *   npm run scenario-sim -- … --scout-from vantage  # the scouts watch from the spot that sees the objective from 350-550 m
+ *   npm run scenario-sim -- … --target-first squads # the guns take squads before command groups (or: command)
  *   npm run scenario-sim -- --planning-error 0      # the plan on the truth, as before decision 51
  *   npm run scenario-sim -- --seed 11               # seeds from 11 (the browser runs used 11-18)
  *
@@ -55,6 +56,9 @@ const fire: FirePlanChoices = {
   ...(args.includes("--no-register") ? { register: false } : {}),
   ...(args.includes("--wait-for-contact") ? { waitForContact: true } : {}),
   ...(value("--aim") ? { aimWithin: Number(value("--aim")) } : {}),
+  ...(value("--target-first") === "squads" || value("--target-first") === "command"
+    ? { targetFirst: value("--target-first") as "squads" | "command" }
+    : {}),
 };
 
 console.log(`${n} battles a scenario from seed ${first}, ${drill.name}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}\n`);

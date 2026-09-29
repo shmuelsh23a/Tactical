@@ -217,6 +217,8 @@ export interface BattleOptions {
   binoculars?: boolean;
   /** A force in position keeps its eyes on what it found (rules decision 54, `GameOptions.keepEyesOn`). */
   keepEyesOn?: boolean;
+  /** Losing a command group has effect (rules decision 55, `GameOptions.commandSuccession`). */
+  commandSuccession?: boolean;
 }
 
 /** A standard normal draw (Box–Muller). */
@@ -413,6 +415,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     ...(opts.stillDetection ? { stillDetection: true } : {}),
     ...(opts.binoculars ? { binoculars: true } : {}),
     ...(opts.keepEyesOn ? { keepEyesOn: true } : {}),
+    ...(opts.commandSuccession ? { commandSuccession: true } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),

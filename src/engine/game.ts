@@ -47,7 +47,7 @@ import {
   SMOKE_RADIUS_M,
   type SmokeSource,
 } from "./data/smoke.js";
-import { orderInterval } from "./data/c2.js";
+import { SUCCESSION_TURNS, orderInterval } from "./data/c2.js";
 import { CHARGE_LAYING } from "./data/engineering.js";
 import {
   canObserve,
@@ -124,8 +124,13 @@ import {
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
 import { SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
+import { LEADER_REACH_M, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
+
+/** A command group still in command: not down, routing or surrendered (rules decision 55). */
+function commandsStill(u: Unit): boolean {
+  return !u.neutralized && !u.routing && !u.surrendered;
+}
 
 /** The location error's stream, named as no force could be (rules decision 51). */
 const LOCATION_ERROR_STREAM = "#location-error";
@@ -424,6 +429,13 @@ export interface GameOptions {
    * look adds an estimate. Off by default; needs `trackIntel`.
    */
   keepEyesOn?: boolean;
+  /**
+   * Losing a command group has effect (rules decision 55, ⚠️ ours): command
+   * passes to the next in line after {@link SUCCESSION_TURNS} turns without
+   * new orders or calls for fire, and a side with none left gives neither.
+   * Off by default.
+   */
+  commandSuccession?: boolean;
 }
 
 /**
@@ -459,6 +471,19 @@ export class Game {
   readonly binoculars: boolean;
   /** Whether a force in position keeps its eyes on a still enemy it has found (rules decision 54). */
   readonly keepEyesOn: boolean;
+  /** Whether losing a command group has effect (rules decision 55). */
+  readonly commandSuccession: boolean;
+  /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
+  private readonly inCommand = new Map<Side, string | null>();
+  /** The turn each side's successor is in command from (rules decision 55). */
+  private readonly successionUntil = new Map<Side, number>();
+  /** Command groups still in command at the last turn's start, by id (rules decision 55). */
+  private readonly groupsInCommand = new Set<string>();
+  /**
+   * A command group lost, and until when the forces it commanded — lower
+   * echelons within its reach — take no new orders (rules decision 55).
+   */
+  private readonly handovers: { side: Side; echelon: Echelon; at: Point; until: number }[] = [];
   /**
    * Where the location error is drawn from: its own stream (see `unitSeed`),
    * so turning it on moves no other roll in the game.
@@ -580,6 +605,7 @@ export class Game {
     this.stillDetection = opts.stillDetection ?? false;
     this.binoculars = opts.binoculars ?? false;
     this.keepEyesOn = opts.keepEyesOn ?? false;
+    this.commandSuccession = opts.commandSuccession ?? false;
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
@@ -647,12 +673,17 @@ export class Game {
    * floor — a grenade's smoke — anybody may use.
    */
   mayCall(side: Side, weapon: string): boolean {
+    // Somebody has to call it (rules decision 55): not while command changes hands.
+    if (FIRE_SUPPORT_MIN_ECHELON[weapon] && !this.hasFireControl(side)) return false;
     if (!this.fireSupportByEchelon) return true;
     const floor = FIRE_SUPPORT_MIN_ECHELON[weapon];
     return !floor || ECHELON_RANK[this.commandEchelonOf(side)] >= ECHELON_RANK[floor];
   }
 
   private requireMayCall(side: Side, weapon: string): void {
+    if (FIRE_SUPPORT_MIN_ECHELON[weapon] && !this.hasFireControl(side)) {
+      throw new Error(`${side} has no commander in command to call ${weapon} (rules decision 55)`);
+    }
     if (!this.mayCall(side, weapon)) {
       throw new Error(
         `${side} commands a ${this.commandEchelonOf(side)}: ${weapon} is called from ${FIRE_SUPPORT_MIN_ECHELON[weapon]} and above`,
@@ -683,6 +714,7 @@ export class Game {
       ...(this.stillDetection ? { stillDetection: true } : {}),
       ...(this.binoculars ? { binoculars: true } : {}),
       ...(this.keepEyesOn ? { keepEyesOn: true } : {}),
+      ...(this.commandSuccession ? { commandSuccession: true } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
@@ -761,6 +793,7 @@ export class Game {
   beginTurn(): { turn: number; initiativeOrder: Side[] } {
     this.checkFirePlans();
     this.turn += 1;
+    this.noteSuccession();
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
     if (this.morale) {
@@ -2511,9 +2544,70 @@ export class Game {
 
   // ---- command & control ----
 
-  /** The side's command group (חפ"ק) — the C2 reference for its subordinates. */
+  /**
+   * The side's command group (חפ"ק) — the C2 reference for its subordinates.
+   * With command succession (rules decision 55), the first still in command:
+   * not down, routing or surrendered.
+   */
   commandGroupFor(side: Side): Unit | undefined {
-    return this.units.find((u) => u.side === side && u.kind === "command");
+    return this.units.find(
+      (u) => u.side === side && u.kind === "command" && (!this.commandSuccession || commandsStill(u)),
+    );
+  }
+
+  /**
+   * At the turn's start: has command changed hands since the last one (rules
+   * decision 55)? A side whose command group went out passes command to the
+   * next in line, which takes {@link SUCCESSION_TURNS} turns.
+   */
+  private noteSuccession(): void {
+    if (!this.commandSuccession) return;
+    // Every command group that went out since the last turn leaves the forces
+    // it commanded without orders while someone takes over.
+    for (const u of this.units) {
+      if (u.kind !== "command") continue;
+      const now = commandsStill(u);
+      if (this.turn > 1 && this.groupsInCommand.has(u.id) && !now) {
+        this.handovers.push({ side: u.side, echelon: u.echelon, at: { ...u.position }, until: this.turn + SUCCESSION_TURNS });
+      }
+      if (now) this.groupsInCommand.add(u.id);
+      else this.groupsInCommand.delete(u.id);
+    }
+    for (const side of this.sides) {
+      const now = this.commandGroupFor(side)?.id ?? null;
+      const before = this.inCommand.get(side);
+      if (before !== undefined && before !== null && before !== now) this.successionUntil.set(side, this.turn + SUCCESSION_TURNS);
+      if (before === undefined || before !== null) this.inCommand.set(side, now);
+    }
+  }
+
+  /** Whether `side` has a commander in command, not handing over (rules decision 55). */
+  inCommandOf(side: Side): boolean {
+    if (!this.commandSuccession || !this.inCommand.has(side)) return true;
+    const held = this.inCommand.get(side);
+    if (held === null) return !this.hadCommand(side);
+    return this.turn >= (this.successionUntil.get(side) ?? 0);
+  }
+
+  /** Whether `unit` was commanded by a command group lost this turn or the last few (rules decision 55). */
+  private underHandover(unit: Unit): boolean {
+    return this.handovers.some(
+      (h) =>
+        h.side === unit.side &&
+        this.turn < h.until &&
+        ECHELON_RANK[h.echelon] > ECHELON_RANK[unit.echelon] &&
+        distance(h.at, unit.position) <= (LEADER_REACH_M[h.echelon] ?? 0),
+    );
+  }
+
+  /** Whether `side` began the battle with a command group at all. */
+  private hadCommand(side: Side): boolean {
+    return this.units.some((u) => u.side === side && u.kind === "command");
+  }
+
+  /** Whether `side` may call its guns: a commander in command (rules decision 55). */
+  hasFireControl(side: Side): boolean {
+    return this.inCommandOf(side);
   }
 
   /**
@@ -2537,6 +2631,11 @@ export class Game {
   canReceiveOrders(unitId: string, commanderPosition?: Point): boolean {
     const unit = this.getUnit(unitId);
     if (unit.kind === "command") return true;
+    // Command changing hands, or gone (rules decision 55): no new orders —
+    // for the whole side when its senior command group is, and for the
+    // forces a lost command group commanded while its successor takes over.
+    if (!this.inCommandOf(unit.side)) return false;
+    if (this.underHandover(unit)) return false;
     const from = this.commanderPositionFor(unit, commanderPosition);
     if (!from) return true; // no command group → unconstrained
     const interval = orderInterval(unit.echelon, distance(unit.position, from));

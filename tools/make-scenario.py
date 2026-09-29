@@ -38,6 +38,8 @@ The spec, in full — everything not marked optional is required:
                                             position keeps its eyes on what it
                                             found, and a longer look sharpens
                                             the report (decision 54)
+      "commandSuccession": true,            optional (default true): losing a
+                                            command group has effect (decision 55)
       "commandEchelon": {"BLUE": "company"}, optional: what each side's player
                                             commands (decision 37); undeclared,
                                             the engine reads it off the forces
@@ -154,7 +156,7 @@ MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
-    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "about", "window", "forces", "charges",
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
@@ -256,6 +258,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
     require_bool(spec, "locationError", "spec")
+    require_bool(spec, "commandSuccession", "spec")
     for key in ("stillDetection", "binoculars", "keepEyesOn"):
         require_bool(spec, key, "spec")
         require(
@@ -469,6 +472,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     for key in ("stillDetection", "binoculars", "keepEyesOn"):
         if spec.get(key, spec.get("trackIntel", True)):
             lines.append(f"    {key}: true,")
+    if spec.get("commandSuccession", True):
+        lines.append("    commandSuccession: true,")
     if spec.get("attackers"):
         lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")
     if spec.get("commandEchelon"):

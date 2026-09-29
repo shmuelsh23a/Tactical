@@ -196,6 +196,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
   if (r.binoculars !== undefined && typeof r.binoculars !== "boolean") throw malformed("binoculars");
   if (r.keepEyesOn !== undefined && typeof r.keepEyesOn !== "boolean") throw malformed("keepEyesOn");
+  if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -337,6 +338,8 @@ export interface GameRecording {
   binoculars?: boolean;
   /** Whether a force in position kept its eyes on what it found (rules decision 54). Read as **off** when absent. */
   keepEyesOn?: boolean;
+  /** Whether losing a command group had effect (rules decision 55). Read as **off** when absent. */
+  commandSuccession?: boolean;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -497,6 +500,7 @@ export function replayWithOutcomes(
     ...(recording.stillDetection ? { stillDetection: true } : {}),
     ...(recording.binoculars ? { binoculars: true } : {}),
     ...(recording.keepEyesOn ? { keepEyesOn: true } : {}),
+    ...(recording.commandSuccession ? { commandSuccession: true } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

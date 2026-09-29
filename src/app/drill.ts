@@ -307,15 +307,24 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       // one — until the company says lie up, then go to ground and watch.
       let goal = task.objective;
       const post = scouts.get(u.id);
+      let onPost = !post;
       if (post) {
         if (!state.arrivedOn.has(u.id) && distance(u.position, post) <= 10) state.arrivedOn.set(u.id, game.turn);
+        // At its point with the enemy in sight, it stays: the give-up clock
+        // runs only while it sees nothing.
+        if (state.arrivedOn.has(u.id) && company!.scoutsLieUp) state.arrivedOn.set(u.id, game.turn);
         const since = state.arrivedOn.get(u.id);
+        onPost = since !== undefined;
         if (since === undefined) goal = post;
         else if (game.turn - since < SCOUT_GIVE_UP_TURNS) goal = u.position; // lie up and watch
       }
       const watched = state.watched.get(u.id) ?? 0;
+      // A scout still on its way to its point goes on when the company has
+      // the enemy in sight — somebody else found it — and lies up when the
+      // company goes in. One at its point, or sent straight, lies up.
+      const lieUp = company!.scoutsLieUp && (onPost || !company!.hold);
       const halt =
-        company!.scoutsLieUp ||
+        lieUp ||
         watched < (drill.scouting?.watchTurns ?? 0) ||
         distance(u.position, goal) < 1;
       const ordered = game.setStandingOrder(

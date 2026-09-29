@@ -238,3 +238,25 @@ describe("the drill carrying out its company's orders", () => {
     expect(rest.position).not.toEqual({ x: 80, y: 0 });
   });
 });
+
+describe("a scout on its way to its observation point", () => {
+  it("goes on to it when the company has the enemy in sight, and lies up once there", () => {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const scout = g.addUnit(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 40 }, 9));
+    g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 80, y: 0 }, 9));
+    g.beginTurn();
+    g.setScouting(scout.id, true);
+    const post = { x: 0, y: 190 };
+    const task: DrillTask = {
+      ...attack,
+      company: { scouts: new Map([["B1", post]]), scoutsLieUp: true, hold: true, waitAt: new Map() },
+    };
+    const state = new DrillState();
+    for (let t = 0; t < 8; t++) {
+      g.advanceToPhase("movement");
+      drillMovement(g, task, PLAIN_SCRIPT, state);
+      g.advanceToPhase("initiative");
+    }
+    expect(scout.position).toEqual(post);
+  });
+});
