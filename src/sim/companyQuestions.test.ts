@@ -4,7 +4,7 @@ import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, notInSight, runScenarioBattle } from "./scenarioBattle.js";
 import { Game, makeInfantry } from "../engine/index.js";
 import { ScriptedCompany } from "../app/company.js";
-import { NeedAnswer, casualtiesSeen, fromAnswers, type Question } from "./companyQuestions.js";
+import { NeedAnswer, casualtiesSeen, fromAnswers, underFire, viewOf, type Question } from "./companyQuestions.js";
 
 /**
  * The company commander's decisions as typed questions — what Jev will be
@@ -152,5 +152,43 @@ describe("the company's questions", () => {
     expect(g.knows("BLUE", red.id)).toBe(true);
     red.neutralized = true;
     expect(notInSight(g, company)).toMatch(/found 1 enemy force near the objective \(1 out of action\)/);
+  });
+
+  it("after 'go', ask each platoon's task, whether to bound by platoon, and whether to wait for the fires to lift (item 2)", () => {
+    const answers = ["2", "p1", "p1", "deadGround"];
+    const asked: string[] = [];
+    for (let i = 0; i < 120; i++) {
+      const q = nextQuestion(answers);
+      if (q.id.startsWith("go.")) asked.push(q.id.replace(/\.\d+$/, ""));
+      if (q.id.startsWith("go.lift")) {
+        expect(asked).toEqual(
+          expect.arrayContaining(["go.axis", "go.support", "go.platoon.BLUE-1", "go.platoon.BLUE-2", "go.platoon.BLUE-3", "go.bound"]),
+        );
+        return;
+      }
+      if (q.id.startsWith("go.platoon")) expect(q.options.map((o) => o.id)).toEqual(["assault", "support", "reserve"]);
+      answers.push(/^go\.\d+$/.test(q.id) ? "yes" : q.id.startsWith("go.") ? q.options[0]!.id : q.id.startsWith("scout.") ? "on" : q.options[0]!.id);
+    }
+    throw new Error("never asked about the fires lifting");
+  });
+
+  it("tell the commander which of its forces is under fire, and from what its side knows (item 2)", () => {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const b = g.addUnit(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 0 }, 9));
+    const seen = g.addUnit(makeInfantry("R1", "RED", "squad", { x: 0, y: 200 }, 9));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire(seen.id, b.id, { weapon: "smallArms" });
+    expect(g.knows("BLUE", seen.id)).toBe(true);
+    expect(underFire(g, "BLUE", b)).toBe("B1 under fire from R1");
+    // A firer its side holds no mark on is only a direction.
+    const hidden = g.addUnit(makeInfantry("R2", "RED", "squad", { x: 200, y: 0 }, 9));
+    const notes = g.fireReceived(b.id, 0).length;
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("combat");
+    g.fire(hidden.id, b.id, { weapon: "smallArms" });
+    expect(g.fireReceived(b.id, 0).length).toBe(notes + 1);
+    if (!g.knows("BLUE", hidden.id)) expect(underFire(g, "BLUE", b)).toMatch(/an enemy it cannot see, to its east/);
+    expect(viewOf(g, "BLUE", { objective: { x: 0, y: 300 }, mortarLeft: null })).toMatch(/B1 \(infantry, squad\).*under fire from R1/);
   });
 });

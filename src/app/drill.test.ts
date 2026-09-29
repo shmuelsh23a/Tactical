@@ -11,7 +11,7 @@ import {
   SCOUT_GIVE_UP_TURNS,
   type DrillTask,
 } from "./drill.js";
-import type { CompanyOrders } from "./company.js";
+import { HOLD_SHORT_M, type CompanyOrders } from "./company.js";
 
 /**
  * The squad drill (backlog 15 and 20): data a simulated subordinate carries
@@ -307,5 +307,88 @@ describe("the company's axis and base of fire", () => {
     expect(setUp(true, false)).toBe(true);
     expect(setUp(false, false)).toBe(false);
     expect(setUp(true, true)).toBe(false); // not while the company still holds
+  });
+});
+
+/**
+ * Platoon control once the company goes (item 2): each platoon's task, bounding
+ * by platoon, and holding short until the fires lift. The company commander
+ * gives them (`company.ts`); the squads carry them out.
+ */
+describe("the drill carrying out its platoons' tasks", () => {
+  function field() {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const a = g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 200 }, 9));
+    const b = g.addUnit(makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 60, y: 200 }, 9));
+    const r = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 500 }, 9));
+    g.beginTurn();
+    // Found by its fire: the mark stays where it was seen.
+    g.advanceToPhase("combat");
+    g.fire(r.id, a.id, { weapon: "smallArms" });
+    g.fire(r.id, b.id, { weapon: "smallArms" });
+    g.advanceToPhase("initiative");
+    // Then the squads start from out of small-arms reach.
+    a.position = { x: 0, y: 0 };
+    b.position = { x: 60, y: 0 };
+    return { g, a, b };
+  }
+  const platoonOf = new Map([
+    ["BLUE-1-1", "BLUE-1"],
+    ["BLUE-2-1", "BLUE-2"],
+  ]);
+  const orders = (o: Partial<CompanyOrders> = {}): DrillTask => ({
+    ...attack,
+    objective: { x: 0, y: 500 },
+    company: { scouts: new Map(), scoutsLieUp: false, hold: false, waitAt: new Map(), platoonOf, fallBackTo: { x: 30, y: -100 }, ...o },
+  });
+  const turn = (g: Game, task: DrillTask, state = new DrillState()) => {
+    g.advanceToPhase("movement");
+    drillMovement(g, task, PLAIN_SCRIPT, state);
+    g.advanceToPhase("initiative");
+  };
+
+  it("halts a platoon told to halt, and moves the one told to assault", () => {
+    const { g, a, b } = field();
+    const state = new DrillState();
+    for (let t = 0; t < 3; t++) turn(g, orders({ platoonTasks: new Map([["BLUE-1", "halt"]]) }), state);
+    expect(a.position).toEqual({ x: 0, y: 0 });
+    expect(b.position.y).toBeGreaterThan(0);
+  });
+
+  it("holds the reserve where it waited, and pulls a platoon back to the start line", () => {
+    const { g, a, b } = field();
+    const tasks = new Map([
+      ["BLUE-1", "reserve" as const],
+      ["BLUE-2", "withdraw" as const],
+    ]);
+    for (let t = 0; t < 4; t++) turn(g, orders({ platoonTasks: tasks }));
+    expect(a.position).toEqual({ x: 0, y: 0 });
+    expect(b.position.y).toBeLessThan(0);
+  });
+
+  it("gives a base of fire: closes to small-arms reach, then halts", () => {
+    const { g, a } = field();
+    const state = new DrillState();
+    for (let t = 0; t < 8; t++) turn(g, orders({ platoonTasks: new Map([["BLUE-1", "support"]]) }), state);
+    const d = 500 - a.position.y;
+    expect(d).toBeLessThanOrEqual(PLAIN_SCRIPT.attackFireRange);
+    expect(d).toBeGreaterThan(PLAIN_SCRIPT.attackFireRange - 120);
+  });
+
+  it("holds the assault short of the enemy until the fires lift", () => {
+    const { g, a } = field();
+    const state = new DrillState();
+    for (let t = 0; t < 12; t++) turn(g, orders({ holdShort: true }), state);
+    expect(500 - a.position.y).toBeGreaterThan(HOLD_SHORT_M - 60);
+    expect(500 - a.position.y).toBeLessThanOrEqual(HOLD_SHORT_M + 60);
+  });
+
+  it("bounds by platoon: one moves while the other halts", () => {
+    const { g, a, b } = field();
+    g.advanceToPhase("movement");
+    const [ay, by] = [a.position.y, b.position.y];
+    drillMovement(g, orders({ boundByPlatoon: true }), PLAIN_SCRIPT, new DrillState());
+    const moved = [a.position.y > ay, b.position.y > by];
+    expect(moved.filter(Boolean)).toHaveLength(1);
   });
 });

@@ -12,7 +12,7 @@ import {
   type WithCoveringFire,
 } from "../engine/index.js";
 import { sideView } from "./hotseat.js";
-import type { CompanyOrders } from "./company.js";
+import { HOLD_SHORT_M, type CompanyOrders } from "./company.js";
 
 /**
  * The squad drill (backlog 15 and 20): how a simulated subordinate carries out
@@ -350,6 +350,46 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         at && distance(u.position, at) > 5 ? { gait: "normal", destination: { ...at } } : { gait: "normal" },
       );
       return;
+    }
+    // The platoon's task once the company has gone (company.ts, PlatoonTask).
+    const platoon = company?.platoonOf?.get(u.id);
+    const job = (platoon && company?.platoonTasks?.get(platoon)) ?? "assault";
+    const stay = () => game.setStandingOrder(u.id, { gait: "normal" });
+    if (company && job === "withdraw") {
+      const home = company.fallBackTo;
+      if (home && distance(u.position, home) > 20) {
+        const going = game.standingOrderFor(u.id);
+        if (!going?.withdraw) game.setStandingOrder(u.id, { gait: "normal", destination: { ...home }, withdraw: true });
+      } else stay();
+      return;
+    }
+    if (company && (job === "halt" || job === "reserve")) {
+      // Halt: go to ground where it is. Reserve: hold where it waited, out of the fight until committed.
+      const at = job === "reserve" ? company.waitAt.get(u.id) : undefined;
+      if (at && distance(u.position, at) > 5) game.setStandingOrder(u.id, { gait: "normal", destination: { ...at } });
+      else stay();
+      return;
+    }
+    if (company && job === "support" && nearest && distance(u.position, nearest.position) <= drill.attackFireRange) {
+      stay(); // in reach: a base of fire, halted, firing in the fire phase
+      return;
+    }
+    if (company && job === "assault") {
+      // Waiting for the fires to lift: stop short of the enemy until they do.
+      if (company.holdShort && nearest && distance(u.position, nearest.position) <= HOLD_SHORT_M) {
+        stay();
+        return;
+      }
+      // Bounding by platoon: one assaulting platoon moves while the others halt and fire.
+      if (company.boundByPlatoon && platoon && inContact) {
+        const assaulting = [...new Set([...(company.platoonOf?.entries() ?? [])].map(([, k]) => k))]
+          .filter((k) => (company.platoonTasks?.get(k) ?? "assault") === "assault")
+          .sort();
+        if (assaulting.length > 1 && assaulting[game.turn % assaulting.length] !== platoon) {
+          stay();
+          return;
+        }
+      }
     }
     if (nearest && distance(u.position, nearest.position) <= drill.assault.range + 5) {
       game.setStandingOrder(u.id, { gait: "normal" }); // close enough: hold, and assault in the fire phase

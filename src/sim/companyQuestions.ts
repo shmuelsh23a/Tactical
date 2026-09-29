@@ -1,6 +1,6 @@
 import { sideView } from "../app/hotseat.js";
 import { MORALE_RULES } from "../engine/index.js";
-import { CE_PER_SIGMA, distance, groundHeight, type Game, type Point, type Side } from "../engine/index.js";
+import { CE_PER_SIGMA, bearingDegrees, distance, groundHeight, type Game, type Point, type Side, type Unit } from "../engine/index.js";
 
 /**
  * The company commander's decisions as typed questions (README, backlog 15):
@@ -97,7 +97,11 @@ export function viewOf(
     const men = u.soldiers ?? [];
     const fit = men.filter((m) => !m.neutralized).length;
     const state = u.neutralized ? "out of action" : u.routing ? "routing" : u.surrendered ? "surrendered" : u.scouting ? "scouting" : "";
-    lines.push(`  ${u.id} (${u.kind}${u.kind === "command" ? "" : ", " + u.echelon}) at ${round(u.position)}, ${fit}/${men.length} fit${state ? ", " + state : ""}`);
+    const fire = u.neutralized ? undefined : underFire(game, side, u);
+    lines.push(
+      `  ${u.id} (${u.kind}${u.kind === "command" ? "" : ", " + u.echelon}) at ${round(u.position)}, ${fit}/${men.length} fit${state ? ", " + state : ""}` +
+        (fire ? `; ${fire.slice(u.id.length + 1)}` : ""),
+    );
   }
   const marks = view.units.filter((u) => u.side !== side);
   if (!marks.length) lines.push("Enemy: nothing found yet.");
@@ -128,4 +132,34 @@ export function casualtiesSeen(casualties: number): string {
   if (casualties <= 2) return "a few casualties";
   if (casualties <= 5) return "several casualties";
   return "heavy casualties";
+}
+
+const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+
+/**
+ * What a force can tell of the fire it took this turn and last: the firer's
+ * mark if its side holds one, otherwise only which way the fire came from —
+ * a squad under fire hears that much — and whether it was shelled.
+ */
+export function underFire(g: Game, side: Side, u: Unit): string | undefined {
+  const notes = g.fireReceived(u.id, g.turn - 1);
+  if (!notes.length) return undefined;
+  const from: string[] = [];
+  const also: string[] = [];
+  for (const n of notes) {
+    if (!n.firerId) {
+      also.push(n.kind === "mine" ? "hit a mine" : "shelled");
+      continue;
+    }
+    if (g.knows(side, n.firerId)) {
+      from.push(n.firerId);
+      continue;
+    }
+    const firer = g.units.find((x) => x.id === n.firerId);
+    if (!firer) continue;
+    const b = Math.round(bearingDegrees(u.position, firer.position) / 45) % 8;
+    from.push(`an enemy it cannot see, to its ${COMPASS[b]}`);
+  }
+  const parts = [...(from.length ? [`under fire from ${[...new Set(from)].join(", ")}`] : []), ...new Set(also)];
+  return parts.length ? `${u.id} ${parts.join(", and ")}` : undefined;
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Game, makeInfantry, type Terrain } from "../engine/index.js";
-import { ScriptedCompany, type CompanyPlan } from "./company.js";
+import { ScriptedCompany, platoonKey, type CompanyPlan } from "./company.js";
 import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
 
 /**
@@ -97,5 +97,19 @@ describe("the scripted company commander", () => {
     expect(posts).toHaveLength(2);
     expect(posts.every((p) => p !== null)).toBe(true);
     expect(o.waitAt.size).toBeGreaterThan(0);
+  });
+
+  it("reads each squad's platoon from its name, and keeps scouts out of the platoons it tasks", () => {
+    expect(platoonKey("BLUE-2-1")).toBe("BLUE-2");
+    expect(platoonKey("B1")).toBe("B1");
+    const { game: g, mapWidth, mapHeight } = telAzekaAssaultListing.build(1000);
+    const company = new ScriptedCompany(g, "BLUE", { x: 560, y: 450 }, [{ x: 560, y: 450 }], { recon: { scouts: 1 } }, { terrain: g.terrain, width: mapWidth, height: mapHeight });
+    const platoons = company.platoons(g);
+    expect([...platoons.keys()].sort()).toEqual(["BLUE-1", "BLUE-2", "BLUE-3"]);
+    const all = [...platoons.values()].flat();
+    expect(all.some((u) => company.isScout(u))).toBe(false);
+    expect(company.platoonTask("BLUE-1")).toBe("assault");
+    company.setPlatoonTask("BLUE-1", "support");
+    expect(company.orders(g).platoonTasks?.get("BLUE-1")).toBe("support");
   });
 });

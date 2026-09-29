@@ -271,6 +271,7 @@ export {
   PhaseError,
   type Phase,
   type GameOptions,
+  type ReceivedFire,
   type FireAllotment,
   type FireMethod,
   type FireMission,

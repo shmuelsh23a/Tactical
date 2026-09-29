@@ -2093,6 +2093,25 @@ The clock takes the slowest attacks: a scripted company that keeps looking
 while its scouts lose and regain the enemy. That is the lesson it is there to
 teach: recon has a price in time as well as men.
 
+## Twenty-first round: platoon control of the assault, 2026-09-29
+
+Rules decision 59 lets the company commander task its platoons once it goes.
+Two fixed answer policies through the question tool, 30 seeds each from 1000
+(two scouts to the first observation point, the company in dead ground, go
+after four turns holding the enemy in sight or at turn 25, mortars on marks in
+sight, the scouts firing in support):
+
+| Policy | 3:1 wins | 3:1 attacker down | 2:1 wins | 2:1 attacker down |
+|---|---|---|---|---|
+| Every platoon assaults at once | 12/30 | 17% | 3/30 | 22% |
+| First platoon a base of fire, the rest bound by platoon and hold short until the fires lift | 16/30 (7 lost out of time) | 15% | 8/30 (5 lost out of time) | 18% |
+
+Control wins more and loses fewer men, and costs time: half its 14 losses at
+3:1, and 5 of its 22 at 2:1, were to the deadline (decision 58); the attack
+that goes in all at once never ran out of time. The
+policy lifts the fires the first turn it is asked; a commander who times the
+lift to the last rounds is not measured here.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

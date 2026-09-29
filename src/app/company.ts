@@ -39,6 +39,49 @@ export interface CompanyOrders {
    * after `SCOUT_GIVE_UP_TURNS` of seeing nothing — its commander is asked.
    */
   scoutsStay?: boolean;
+  /**
+   * Once let go, what each platoon does (item 2, the author's "more control
+   * after go"): the squads carry it out by the drill. A platoon not named
+   * assaults. Keyed by {@link platoonOf}.
+   */
+  platoonTasks?: ReadonlyMap<string, PlatoonTask>;
+  /** Which platoon each squad belongs to. */
+  platoonOf?: ReadonlyMap<string, string>;
+  /** The assaulting platoons bound in turn: one moves while the others halt and fire. */
+  boundByPlatoon?: boolean;
+  /**
+   * The assault waits for the fires to lift: squads that close to
+   * {@link HOLD_SHORT_M} of the enemy stop there until the commander lifts
+   * the fires, then go in on the heels of the last rounds.
+   */
+  holdShort?: boolean;
+  /** Where a platoon pulled back goes: the company's start line. */
+  fallBackTo?: Point;
+}
+
+/**
+ * A platoon's task once the company goes: assault the position; give it a
+ * base of fire (close to small-arms reach of the enemy and fire from there);
+ * stay back in reserve; halt and go to ground where it is; or pull back to
+ * the start line.
+ */
+export type PlatoonTask = "assault" | "support" | "reserve" | "halt" | "withdraw";
+
+/**
+ * How close an assault waiting for the fires to lift comes before it stops,
+ * metres from the nearest enemy: outside the mortar's danger close (150 m) with
+ * a margin. Ours.
+ */
+export const HOLD_SHORT_M = 200;
+
+/**
+ * The platoon a force belongs to, read from its id as the scenarios name
+ * them: `BLUE-2-1` is the first squad of BLUE's second platoon. A force named
+ * otherwise is a platoon of its own.
+ */
+export function platoonKey(id: string): string {
+  const parts = id.split("-");
+  return parts.length >= 3 ? parts.slice(0, -1).join("-") : id;
 }
 
 /** What the scripted company commander was told to do about finding the enemy. */
@@ -105,6 +148,13 @@ export class ScriptedCompany {
   private lookedTurns = 0;
   private via: Point | undefined;
   private support = false;
+  private readonly tasks = new Map<string, PlatoonTask>();
+  private readonly platoonOfSquad = new Map<string, string>();
+  private readonly home: Point;
+  private bounding = false;
+  private holdingShort = false;
+  /** The commander has lifted the company's fires for the assault: no more missions near it. */
+  firesLifted = false;
   /** The turn the rest were let go; undefined while they hold. */
   released: number | undefined;
 
@@ -113,6 +163,10 @@ export class ScriptedCompany {
     this.objective = { ...objective };
     this.plan = plan;
     const own = game.units.filter((u) => u.side === side && u.kind === "infantry");
+    for (const u of own) this.platoonOfSquad.set(u.id, platoonKey(u.id));
+    this.home = own.length
+      ? { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length }
+      : { ...objective };
     const recon = plan.recon;
     if (!recon || recon.scouts <= 0) {
       this.released = 0;
@@ -189,6 +243,11 @@ export class ScriptedCompany {
       ...(this.via ? { attackVia: this.via } : {}),
       ...(this.support ? { scoutsFire: true } : {}),
       ...(decided ? { scoutsStay: true } : {}),
+      platoonOf: this.platoonOfSquad,
+      ...(this.tasks.size ? { platoonTasks: this.tasks } : {}),
+      ...(this.bounding ? { boundByPlatoon: true } : {}),
+      ...(this.holdingShort ? { holdShort: true } : {}),
+      fallBackTo: this.home,
     };
   }
 
@@ -215,6 +274,46 @@ export class ScriptedCompany {
   /** Whether the scouts give the attack a base of fire once it goes. */
   setScoutsFire(on: boolean): void {
     this.support = on;
+  }
+
+  /** The company's platoons, each with its squads that are not out scouting. */
+  platoons(game: Game): Map<string, Unit[]> {
+    const out = new Map<string, Unit[]>();
+    for (const u of game.units) {
+      const key = this.platoonOfSquad.get(u.id);
+      if (!key || this.scouts.has(u.id)) continue;
+      out.set(key, [...(out.get(key) ?? []), u]);
+    }
+    return out;
+  }
+
+  /** A platoon's task once the company goes. */
+  platoonTask(key: string): PlatoonTask {
+    return this.tasks.get(key) ?? "assault";
+  }
+
+  setPlatoonTask(key: string, task: PlatoonTask): void {
+    this.tasks.set(key, task);
+  }
+
+  /** The assaulting platoons bound in turn, one moving while the others fire. */
+  setBoundByPlatoon(on: boolean): void {
+    this.bounding = on;
+  }
+
+  /** The assault stops short of the enemy until the fires lift. */
+  setHoldShort(on: boolean): void {
+    this.holdingShort = on;
+  }
+
+  get holdsShort(): boolean {
+    return this.holdingShort;
+  }
+
+  /** Lift the fires: the mortars stop, and an assault held short goes in. */
+  liftFires(): void {
+    this.firesLifted = true;
+    this.holdingShort = false;
   }
 
   /** The scouts still in the fight. */

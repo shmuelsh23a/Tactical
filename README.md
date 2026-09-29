@@ -2002,6 +2002,26 @@ on the stated reasoning, still awaiting the author's word.
     scripted company about 5 points at 3:1 and 2 at 2:1 (docs/balance.md,
     twentieth round). No deadline unless the scenario sets one; a recording
     made before it has none.
+59. ⚠️ **The company commander controls the assault by platoon** (author,
+    2026-09-29: "do 1 and 2", item 2 from the agent round, which lost 10–14
+    men in a turn to an uncontrolled piecemeal assault). Once the company
+    goes, each platoon is given a task: assault, base of fire (close to
+    small-arms reach and fire from there), or reserve; later it can be
+    halted (to ground), pulled back to the start line, or committed. The
+    assaulting platoons can bound in turn, one moving while the others halt
+    and fire. The assault can wait for the fires to lift: squads stop 200 m
+    from the enemy (outside the mortar's 150 m danger close) until the
+    commander lifts the fires, which then shift to depth (nothing within
+    300 m of the company's squads); with no missions left the fires have
+    lifted by themselves. The commander's picture says which of its forces
+    is under fire and from what: the firer's mark if the side holds one,
+    otherwise only the direction ("an enemy it cannot see, to its east"),
+    and "shelled". A platoon is read from the force's name (`BLUE-2-1` is
+    the second platoon's first squad). All of it is ours: the 200 m and 300 m
+    figures, what a squad can tell of who is firing at it, and the tasks
+    offered. These are the company's orders (`CompanyOrders`), not rules
+    of the engine; the drill carries them out, and a scripted company gives
+    none, so the harness and headless figures are unchanged.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -459,6 +459,15 @@ export interface GameOptions {
   timeLimit?: number;
 }
 
+/** One burst, shell or blow a force received (see `Game.fireReceived`). */
+export interface ReceivedFire {
+  turn: number;
+  targetId: string;
+  kind: FireNote["kind"];
+  /** Who fired; absent for shells from off the map and for charges. */
+  firerId?: string;
+}
+
 /**
  * The hotseat game engine: owns the full (umpire's) game state and drives the
  * turn/phase loop. Player actions are validated against the current phase.
@@ -596,6 +605,12 @@ export class Game {
    * the outermost one.
    */
   private readonly actions: RecordedAction[] = [];
+  /**
+   * Fire each force has received, turn by turn: derived as fire resolves (a
+   * replay rebuilds it), never recorded. The umpire's: who fired is truth,
+   * and {@link fireReceived}'s caller decides what a side may be told.
+   */
+  private readonly fireLog: ReceivedFire[] = [];
   private journalDepth = 0;
 
   private journal(action: RecordedAction): void {
@@ -1947,7 +1962,7 @@ export class Game {
         if (!result.fired) continue;
         delete coverer.covering;
         // Where it was caught, not where the bound ended (flanking reads it).
-        this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at);
+        this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at, coverer.id);
         this.stress.credit(coverer, result.newCasualties, result.targetNeutralized && !wasNeutralized);
         // The contact is where the shot was taken, not where the bound ended:
         // the coverer saw the force it engaged, and by construction may not be
@@ -2191,7 +2206,7 @@ export class Game {
     if (fireResult.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
-      this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position);
+      this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position, undefined, attacker.id);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fire", attackerId, targetId, opts });
@@ -2247,10 +2262,12 @@ export class Game {
         "explosive",
         SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0),
         attacker.position,
+        undefined,
+        attacker.id,
       );
       for (const t of caught) {
         if (t.unitId !== target.id) {
-          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position);
+          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position, undefined, attacker.id);
         }
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
@@ -2309,9 +2326,9 @@ export class Game {
     });
     if (result.fired) {
       this.exchangeContact(attacker, defender);
-      this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position);
+      this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position, undefined, attacker.id);
       if (result.reply) {
-        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position);
+        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position, undefined, defender.id);
         this.stress.credit(defender, result.reply.casualties, attacker.neutralized);
       }
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
@@ -2845,7 +2862,8 @@ export class Game {
    * where the target stood when the shot was taken, if not where it stands
    * now — the bearing is fixed here, so flanking is judged on the shot.
    */
-  private noteFire(target: Unit, kind: FireNote["kind"], suppression: number, from?: Point, at?: Point): void {
+  private noteFire(target: Unit, kind: FireNote["kind"], suppression: number, from?: Point, at?: Point, firerId?: string): void {
+    this.fireLog.push({ turn: this.turn, targetId: target.id, kind, ...(firerId ? { firerId } : {}) });
     if (!this.morale) return;
     const note: FireNote = from ? { kind, bearing: bearingDegrees(at ?? target.position, from) } : { kind };
     this.stress.firedOn(target, note);
@@ -2856,6 +2874,14 @@ export class Game {
   private directSuppression(weapon: WeaponClass, hits: number): number {
     const burst = SUPPRESSION.directFire + SUPPRESSION.perHit * hits;
     return weapon === "sustainedMg" ? burst * SUPPRESSION.sustainedMgFactor : burst;
+  }
+
+  /**
+   * The fire a force received from `sinceTurn` on — the umpire's record. A
+   * side's view names a firer only if the side holds a mark on it.
+   */
+  fireReceived(unitId: string, sinceTurn: number): ReceivedFire[] {
+    return this.fireLog.filter((f) => f.targetId === unitId && f.turn >= sinceTurn);
   }
 
   /**

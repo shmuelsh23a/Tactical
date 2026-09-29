@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 744 tests, 43 files
+npm run check       lint + typecheck clean, 752 tests, 43 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -161,7 +161,13 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    away from the plan, jev-sim counts HE and smoke separately and exits 2
    with one line on an answer that is not an option, and the go question
    says what was found near the objective instead of "not found yet".
-   **Item 2, platoon-level control of the assault, is next.**
+   Item 2 (decision 59): the commander tasks each platoon at "go"
+   (assault, base of fire, reserve), can bound by platoon, hold the
+   assault short until it lifts the fires, and is asked when a platoon
+   takes casualties, with what it is under fire from. A fixed policy using
+   it wins the 3:1 16 of 30 instead of 12 (balance.md, *Twenty-first
+   round*). **Next: another agent round on the new questions, in separate
+   folders.**
 0. **Then (author: "can you spin up an agent that takes Jev's role", then
    "destroying the command group should have effect; do 1-3"):**
    `npm run jev-sim` puts the company commander's decisions as typed

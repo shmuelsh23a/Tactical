@@ -18,8 +18,8 @@ import {
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
 import { bestVantages } from "../app/deadGround.js";
-import { FIND_WITHIN_M, VANTAGE_RING_M } from "../app/company.js";
-import { casualtiesSeen, viewOf, type Decider, type Question } from "./companyQuestions.js";
+import { FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
+import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
 import type { IndirectFireResult } from "../engine/index.js";
 
@@ -130,6 +130,8 @@ const mean = (us: readonly Unit[]): Point => ({
 const MORTAR = "mortar";
 /** Nothing called within this of a friendly squad: danger close (the browser tool's 150 m). */
 const DANGER_CLOSE_M = 150;
+/** Fires lifted for the assault shift beyond this of the company's squads (ours). */
+const LIFTED_CLEAR_M = 300;
 /** The plan's frontage: its centre and this far to either side (the browser tool's). */
 const PLAN_SPREAD_M = 90;
 
@@ -194,6 +196,9 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const scoutFit = new Map<string, number>();
   /** The turn each scout was last asked about, sitting at its point seeing nothing. */
   const scoutAsked = new Map<string, number>();
+  /** Each squad's fit men at the last platoon question, and when each platoon was last asked about. */
+  const platoonFit = new Map<string, number>();
+  const platoonAsked = new Map<string, number>();
   const company = new ScriptedCompany(g, attacker, objective, suspected, companyPlan, {
     terrain: g.terrain,
     width: mapWidth,
@@ -242,6 +247,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     heard(moving.resolved);
     ignore(moving.morale);
     if (ask) askScouts(g, company, state, startLine, objective, { width: mapWidth, height: mapHeight }, scoutFit, scoutAsked, question);
+    if (ask) askPlatoons(g, company, platoonFit, platoonAsked, question);
     tasks[attacker].company = company.orders(g, ask ? { go: askGo(g, company, turn, question) } : undefined);
     for (const side of g.initiativeOrder) drillMovement(g, tasks[side], side === attacker ? drill : defenderDrill, state);
     if (result.released === undefined && company.released !== undefined) {
@@ -424,8 +430,149 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
       }) === "yes",
     );
   }
+  // Each platoon's task (item 2): who assaults, who gives a base of fire, who stays back.
+  const platoons = [...company.platoons(g)].filter(([, us]) => us.some(fighting));
+  let assaulting = 0;
+  if (platoons.length > 1) {
+    for (const [key, us] of platoons) {
+      const task = question({
+        id: `go.platoon.${key}.${turn}`,
+        kind: "choice",
+        ask: `What does platoon ${key} (${describePlatoon(us)}) do as the company goes in?`,
+        options: PLATOON_GO_OPTIONS,
+      }) as PlatoonTask;
+      company.setPlatoonTask(key, task);
+      if (task === "assault") assaulting++;
+    }
+  } else assaulting = platoons.length;
+  if (assaulting > 1) {
+    company.setBoundByPlatoon(
+      question({
+        id: `go.bound.${turn}`,
+        kind: "noul",
+        ask: "Do the assaulting platoons bound in turn once in contact, one moving while the others halt and fire?",
+        options: [
+          { id: "yes", label: "yes: bound by platoon, each covered by the others' fire" },
+          { id: "no", label: "no: they all go together" },
+        ],
+      }) === "yes",
+    );
+  }
+  if ((g.fireMissionsLeft(company.side, MORTAR) ?? 0) > 0) {
+    company.setHoldShort(
+      question({
+        id: `go.lift.${turn}`,
+        kind: "noul",
+        ask:
+          `Does the assault wait for your fires to lift? Squads that close to ${HOLD_SHORT_M} m of the enemy stop there, ` +
+          "under your mortars, until you lift the fires; then they go in on the heels of the last rounds.",
+        options: [
+          { id: "yes", label: "yes: hold short, and I will say when to lift the fires" },
+          { id: "no", label: "no: they go straight in, and the fires lift as they close" },
+        ],
+      }) === "yes",
+    );
+  }
   return true;
 }
+
+const PLATOON_GO_OPTIONS = [
+  { id: "assault", label: "assault the position" },
+  { id: "support", label: "base of fire: close to small-arms reach of the enemy and fire from there" },
+  { id: "reserve", label: "reserve: stay back where it waited, ready to be committed" },
+];
+const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered;
+const describePlatoon = (us: readonly Unit[]) =>
+  us
+    .map((u) => `${u.id} ${(u.soldiers ?? []).filter((m) => !m.neutralized).length}/${u.soldiers?.length ?? 0} at (${Math.round(u.position.x)}, ${Math.round(u.position.y)})${fighting(u) ? "" : u.routing ? " routing" : " out of action"}`)
+    .join(", ");
+
+/**
+ * Once the company has gone, the commander controls it by platoon (item 2):
+ * asked when a platoon comes under fire (and from what, as far as the side
+ * knows), when a halted platoon has lain up three turns, every fifth turn for
+ * the reserve, and — when the assault waits for the fires to lift — when it
+ * reaches its hold-short line.
+ */
+function askPlatoons(
+  g: Game,
+  company: ScriptedCompany,
+  fitBefore: Map<string, number>,
+  asked: Map<string, number>,
+  question: (q: Omit<Question, "turn" | "view">) => string,
+): void {
+  if (company.released === undefined || g.turn <= company.released) return;
+  const side = company.side;
+  const marks = sideView(g, side).units.filter((e) => e.side !== side && !e.neutralized && !e.surrendered);
+  for (const [key, us] of company.platoons(g)) {
+    const live = us.filter(fighting);
+    let hit = false;
+    for (const u of us) {
+      const fit = (u.soldiers ?? []).filter((m) => !m.neutralized).length;
+      if (fit < (fitBefore.get(u.id) ?? fit)) hit = true;
+      fitBefore.set(u.id, fit);
+    }
+    if (!live.length) continue;
+    const task = company.platoonTask(key);
+    const since = g.turn - (asked.get(key) ?? company.released);
+    const idle = (task === "halt" && since >= 3) || (task === "reserve" && since >= 5);
+    if (!hit && !idle) continue;
+    asked.set(key, g.turn);
+    const fire = live.map((u) => underFire(g, side, u)).filter((x): x is string => !!x);
+    const why = hit
+      ? `is taking casualties${fire.length ? ": " + fire.join("; ") : ""}`
+      : task === "halt"
+        ? "has been halted, gone to ground, three turns"
+        : "is still in reserve";
+    const options = [
+      { id: "on", label: `carry on (${PLATOON_TASK_WORDS[task]})` },
+      ...(task !== "assault" ? [{ id: "assault", label: "assault the position" }] : []),
+      ...(task !== "support" ? [{ id: "support", label: "base of fire: close to small-arms reach and fire from there" }] : []),
+      ...(task !== "halt" ? [{ id: "halt", label: "halt and go to ground where it is" }] : []),
+      { id: "withdraw", label: "pull back to the start line" },
+    ];
+    const a = question({
+      id: `platoon.${key}.${g.turn}`,
+      kind: "choice",
+      ask: `Platoon ${key} ${why}. It is ${PLATOON_TASK_WORDS[task]}: ${describePlatoon(us)}. What now?`,
+      options,
+    });
+    if (a !== "on") company.setPlatoonTask(key, a as PlatoonTask);
+  }
+  // The fires are spent: there is nothing left to lift, and the assault goes in.
+  if (company.holdsShort && (g.fireMissionsLeft(side, MORTAR) ?? 0) === 0) company.liftFires();
+  // The assault held short, under the fires: lift them now?
+  if (company.holdsShort) {
+    const at = [...company.platoons(g)]
+      .filter(([key]) => company.platoonTask(key) === "assault")
+      .flatMap(([, us]) => us.filter(fighting))
+      .filter((u) => marks.some((e) => distance(u.position, e.position) <= HOLD_SHORT_M + 10));
+    if (at.length) {
+      const lift = question({
+        id: `lift.${g.turn}`,
+        kind: "noul",
+        ask:
+          `${at.map((u) => u.id).join(", ")} ${at.length === 1 ? "is" : "are"} at the hold-short line, ${HOLD_SHORT_M} m from the enemy, waiting for the fires to lift. ` +
+          `Lift the fires and go in now? (Mortar missions left: ${g.fireMissionsLeft(side, MORTAR)}.)`,
+        options: [
+          { id: "yes", label: "yes: lift the fires, the assault goes in" },
+          { id: "no", label: "no: keep the fires on and hold short" },
+        ],
+      });
+      if (lift === "yes") company.liftFires();
+    }
+  }
+}
+
+const PLATOON_TASK_WORDS: Record<PlatoonTask, string> = {
+  assault: "assaulting",
+  support: "giving a base of fire",
+  reserve: "in reserve",
+  halt: "halted, gone to ground",
+  withdraw: "pulling back",
+};
+
+
 
 /**
  * A scout's commander is asked about it when it is hit, when it is slow to
@@ -530,8 +677,11 @@ function askAttackerFire(
   // Every mark the side holds — in sight or last seen — that is not danger
   // close to its own squads. Firing on a last-seen mark is firing on where
   // the enemy was.
+  // Once the commander lifts the fires for the assault, they shift to depth:
+  // nothing within LIFTED_CLEAR_M of the company's squads.
+  const clear = company.firesLifted ? LIFTED_CLEAR_M : DANGER_CLOSE_M;
   const marks = view.units.filter(
-    (u) => u.side !== side && !u.neutralized && squads.every((s) => distance(s.position, u.position) > DANGER_CLOSE_M),
+    (u) => u.side !== side && !u.neutralized && squads.every((s) => distance(s.position, u.position) > clear),
   );
   if (!marks.length) return;
   const a = question({
