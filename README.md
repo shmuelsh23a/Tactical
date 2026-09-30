@@ -2065,6 +2065,17 @@ on the stated reasoning, still awaiting the author's word.
     reach fan the map draws uses the game's. A recording made before it
     replays at 8. Descent stays free. What it moves is on docs/balance.md,
     *Twenty-third round*.
+62. ✅ **Full cover against a shell, by the sources** (author, 2026-09-30:
+    "adopt the factors"). Decision 31's hole was several times too
+    dangerous and its roof no safer than a hole. From FM 7-90 (men in open
+    holes take "only 10 percent" of an air burst's effect; under overhead
+    cover "few, if any" casualties) and the WWII British trench figures
+    (1/15–1/100 of a standing man's risk): impact, open hole **0.03**, roof
+    **0.02**; air burst, open hole **0.13**, roof **0.005** (`SHELL_VS_MEN`;
+    were 0.125 / 0.125 / 0.625 / 0.125). Posture in the open is unchanged.
+    `GameOptions.shellCover`; a recording made before it replays on decision
+    31's (`SHELL_VS_MEN_BEFORE_62`). docs/validation.md, *Mortars against
+    men dug in*; what it moves, docs/balance.md, *Twenty-fourth round*.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

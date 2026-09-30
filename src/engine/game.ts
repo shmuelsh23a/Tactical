@@ -26,7 +26,7 @@ import {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
+import { EXPLOSIVES, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover } from "./data/explosives.js";
 import { FIRE_UNIT_TUBES, LETHALITIES, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
@@ -401,6 +401,13 @@ export interface GameOptions {
    */
   climbCostPerMetre?: number;
   /**
+   * What full cover does against a shell or a bomb (rules decision 62):
+   * `sources`, the default, from FM 7-90 and the WWII figures — a hole or a
+   * roof several times safer than before; `before62`, decision 31's. A
+   * recording made before the decision reads it as `before62`.
+   */
+  shellCover?: ShellCover;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -498,6 +505,7 @@ export class Game {
   /** Whose blast and tank-gun figures this game plays (rules decision 41). */
   readonly lethality: Lethality;
   readonly climbCostPerMetre: number;
+  readonly shellCover: ShellCover;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -652,6 +660,7 @@ export class Game {
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     this.lethality = opts.lethality ?? "research";
     this.climbCostPerMetre = opts.climbCostPerMetre ?? SLOPE.climbCostPerMetre;
+    this.shellCover = opts.shellCover ?? "sources";
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
     }
@@ -771,6 +780,7 @@ export class Game {
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       lethality: this.lethality,
       climbCostPerMetre: this.climbCostPerMetre,
+      shellCover: this.shellCover,
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -1454,6 +1464,7 @@ export class Game {
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           cepM,
           lethality: this.lethality,
+          shellVsMen: shellVsMen(this.shellCover),
         }),
       );
       // What the side saw of it teaches the next round; a round seen on the

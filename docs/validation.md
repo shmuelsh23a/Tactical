@@ -771,7 +771,7 @@ instead of 8. The second is not made: on flat ground the drill's pace in
 contact (half the squads bounding 100 m) nets about 50 m a minute, more
 than twice the sources' 20, if no one is suppressed.
 
-## Mortars against men dug in (2026-09-30) — researched, not changed
+## Mortars against men dug in (2026-09-30) — the factors changed (rules decision 62)
 
 The question, from the pace research: on the tel fire decides the battle
 6–9 minutes after the company goes. Is the mortar too lethal against men
@@ -811,7 +811,9 @@ against the sources' 0.10), 2–6× on impact (0.125 against 0.02, or
 safer than an open hole. The sources' factors would be about: impact, open
 hole **0.03**, overhead cover **0.02**; air burst, open hole **0.13**,
 overhead cover **0.005**. Posture in the open (standing 1, lying 0.36)
-agrees with Evans's ⅓.
+agrees with Evans's ⅓. **Adopted** (author, 2026-09-30, decision 62); in
+the game (200 battles, balance.md *Twenty-fourth round*) the 3:1 wins
+44–47% and the 2:1 17–19%.
 
 **A trial with the sources' factors** (scratch, not in the game; 100
 battles, the same company):
@@ -856,11 +858,10 @@ For the author, in rough order of what they move:
    cost went from 8 m a metre to 5 (decision 61); the drill's flat-ground
    pace in contact (about 50 m a minute unsuppressed) is left as it is. See
    *Infantry pace under fire*.
-7. **Mortars against men dug in** (2026-09-30): the sources make the game's
-   mortar several times too lethal against holes and overhead cover (see
-   *Mortars against men dug in*). Not changed: the author's call, and what
-   the sources say decides the fight — suppression the assault arrives
-   under — is not in the game.
+7. **Mortars against men dug in** (2026-09-30): the full-cover factors are
+   the sources' since decision 62. What the sources say decides the fight —
+   suppression the assault arrives under — is not in the game yet: see
+   docs/suppression-design.md.
 8. **Not researched yet**: the charges (a 100–200 m reach at 50%
    activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review

@@ -223,10 +223,35 @@ export type Fuze = "impact" | "airburst";
  * Partial cover under an air burst is taken as no cover: a wall does not
  * cover from above. Rules decisions 29–31; the numbers are ours, from those
  * sources.
+ *
+ * **Full cover since rules decision 62** (author, 2026-09-30, "adopt the
+ * factors"; docs/validation.md, *Mortars against men dug in*). Decision 31's
+ * holes were several times too dangerous, and a roof no safer than an open
+ * hole. FM 7-90: men in open holes take "only 10 percent" of an air burst's
+ * effect in the open, and an impact fuze a fifth of that; WWII British
+ * figures put a man in an open trench at 1/15–1/100 of a standing man's
+ * risk; under overhead cover an air burst causes "few, if any" casualties
+ * and an impact fuze "some blast". So: impact, open hole **0.03**, roof
+ * **0.02**; air burst, open hole **0.13** (0.10 of its 1.28 in the open),
+ * roof **0.005**. Posture in the open is unchanged: lying ≈ ⅓ of standing
+ * agrees with the same British figures. A game plays `GameOptions.shellCover`;
+ * a recording made before decision 62 replays on {@link SHELL_VS_MEN_BEFORE_62}.
  */
-export const SHELL_VS_MEN: Readonly<
+export type ShellVsMen = Readonly<
   Record<Fuze, { standing: number; down: number; partial: number; openHole: number; roof: number }>
-> = {
+>;
+export const SHELL_VS_MEN: ShellVsMen = {
+  impact: { standing: 1, down: 0.36, partial: 0.5, openHole: 0.03, roof: 0.02 },
+  airburst: { standing: 1.28, down: 0.97, partial: 1.28, openHole: 0.13, roof: 0.005 },
+};
+
+/** Decisions 29–31's full-cover figures: what a recording made before decision 62 replays on. */
+export const SHELL_VS_MEN_BEFORE_62: ShellVsMen = {
   impact: { standing: 1, down: 0.36, partial: 0.5, openHole: 0.125, roof: 0.125 },
   airburst: { standing: 1.28, down: 0.97, partial: 1.28, openHole: 0.625, roof: 0.125 },
 };
+
+/** Which full-cover figures a battle plays against a shell (rules decision 62). */
+export type ShellCover = "sources" | "before62";
+export const SHELL_COVERS: readonly ShellCover[] = ["sources", "before62"];
+export const shellVsMen = (cover: ShellCover): ShellVsMen => (cover === "sources" ? SHELL_VS_MEN : SHELL_VS_MEN_BEFORE_62);

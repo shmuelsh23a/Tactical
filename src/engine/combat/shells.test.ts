@@ -6,7 +6,7 @@ import { distance } from "../geometry.js";
 import { resolveCepDispersion } from "./artillery.js";
 import { resolveBlast } from "./explosives.js";
 import { shellFactor } from "./indirectFire.js";
-import { SHELL_VS_MEN } from "../data/explosives.js";
+import { SHELL_VS_MEN, SHELL_VS_MEN_BEFORE_62 } from "../data/explosives.js";
 import { DEFAULT_ROUNDS_FOR_EFFECT, INDIRECT_ACCURACY, MAX_ADJUSTING_ROUNDS, cepAfter } from "../data/artillery.js";
 import type { GameOptions } from "../game.js";
 import { replayGame, sealRecording, verifyRecording } from "../recording.js";
@@ -37,9 +37,27 @@ describe("a shell against men (decisions 29–31)", () => {
   });
 
   it("full cover is a roof or a hole, and an air burst finds the hole", () => {
-    expect(shellFactor(squad("full"), "impact", false)).toBe(0.125);
+    // The sources' figures (rules decision 62): FM 7-90 and the WWII trench figures.
+    expect(shellFactor(squad("full"), "impact", false)).toBe(0.03);
+    expect(shellFactor(squad("full"), "impact", true)).toBe(0.02);
     expect(shellFactor(squad("full"), "airburst", false)).toBe(SHELL_VS_MEN.airburst.openHole);
-    expect(shellFactor(squad("full"), "airburst", true)).toBe(0.125);
+    expect(shellFactor(squad("full"), "airburst", true)).toBe(0.005);
+    // An air burst finds an open hole; a roof is the safest place of all.
+    expect(SHELL_VS_MEN.airburst.openHole).toBeCloseTo(0.1 * SHELL_VS_MEN.airburst.standing, 2);
+    for (const f of [SHELL_VS_MEN.impact, SHELL_VS_MEN.airburst]) expect(f.roof).toBeLessThan(f.openHole);
+    // Decision 31's, which a recording made before decision 62 replays on.
+    expect(shellFactor(squad("full"), "impact", true, SHELL_VS_MEN_BEFORE_62)).toBe(0.125);
+    expect(shellFactor(squad("full"), "airburst", false, SHELL_VS_MEN_BEFORE_62)).toBe(0.625);
+  });
+
+  it("plays the sources' cover in a new game, and decision 31's in a recording made before 62", () => {
+    const g = new Game({ seed: 1 });
+    expect(g.shellCover).toBe("sources");
+    const recording = g.toRecording();
+    expect(recording.shellCover).toBe("sources");
+    expect(replayGame(recording).shellCover).toBe("sources");
+    delete (recording as { shellCover?: string }).shellCover;
+    expect(replayGame(recording).shellCover).toBe("before62");
   });
 
   it("an air burst's chance is capped at certainty", () => {

@@ -1,4 +1,4 @@
-import type { Fuze } from "./data/explosives.js";
+import { SHELL_COVERS, type Fuze, type ShellCover } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type {
   Echelon,
@@ -197,6 +197,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   ) {
     throw malformed("climbCostPerMetre");
   }
+  if (r.shellCover !== undefined && !SHELL_COVERS.includes(r.shellCover as ShellCover)) throw malformed("shellCover");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
@@ -334,6 +335,12 @@ export interface GameRecording {
    * **8** when absent: a battle recorded before it climbed at Naismith's.
    */
   climbCostPerMetre?: number;
+  /**
+   * What full cover did against a shell (rules decision 62). Read as
+   * **`before62`** when absent: a battle recorded before it played decision
+   * 31's holes and roofs.
+   */
+  shellCover?: ShellCover;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
   /**
@@ -519,6 +526,7 @@ export function replayWithOutcomes(
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     lethality: recording.lethality ?? "document",
     climbCostPerMetre: recording.climbCostPerMetre ?? SLOPE.climbCostBeforeDecision61,
+    shellCover: recording.shellCover ?? "before62",
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.stillDetection ? { stillDetection: true } : {}),

@@ -2195,6 +2195,31 @@ prepared position needs 3:1. It is a consequence of fire, not of closing —
 the mortar research under way (how long a dug-in platoon holds under a
 mortar section) is the place to look before touching anything else.
 
+## Twenty-fourth round: full cover by the sources, 2026-09-30
+
+Rules decision 62 sets full cover against a shell from FM 7-90 and the WWII
+figures (impact: hole 0.03, roof 0.02; air burst: hole 0.13, roof 0.005;
+were 0.125, 0.125, 0.625, 0.125). Same company and seeds, 200 battles a row:
+
+| Guns take first | 3:1 at 61 | 3:1 at 62 | 2:1 at 61 | 2:1 at 62 |
+|---|---|---|---|---|
+| squads | 77% | **47%** | 58% | **18%** |
+| nearest the objective | 70% | 46% | 49% | 19% |
+| command groups | 67% | 44% | 41% | 17% |
+
+The prepared position has its superiority back, as the design principle
+wants: 2:1 fails, 3:1 is an even fight (the author's ceiling for it is
+85%). What the guns take first hardly matters now. Explosives' share falls
+to 70–74%. When the defender loses (29 of 60 traced), it gives up with 28%
+of its men down (64% of them by the mortars) and **35% broken but unhurt**:
+morale, not the body count, now breaks it. Still no attack closes (the
+nearest squad ends a median 183 m out). Suppression, sampled at each
+movement phase over 40 battles: with the attacker 150–300 m off a defending
+squad is neither suppressed nor pinned half the time; inside 150 m there
+were 11 squad-turns in 40 battles; the attacker's own squads within 250 m
+are pinned a fifth of the time. docs/suppression-design.md takes it from
+there.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

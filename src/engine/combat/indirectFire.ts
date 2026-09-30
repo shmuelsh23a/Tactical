@@ -1,7 +1,7 @@
 import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
-import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "../data/explosives.js";
+import { EXPLOSIVES, SHELL_VS_MEN, type Fuze, type ShellVsMen } from "../data/explosives.js";
 import type { Lethality } from "../data/lethality.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
@@ -43,6 +43,8 @@ export function resolveIndirectFire(
     cepM?: number;
     /** Whose blast figures (rules decision 41). The document's unless given. */
     lethality?: Lethality;
+    /** What full cover does against it (rules decision 62). The sources' unless given. */
+    shellVsMen?: ShellVsMen;
   } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];
@@ -59,7 +61,7 @@ export function resolveIndirectFire(
   const fuze = opts.fuze ?? "impact";
   const underRoof = opts.underRoof ?? (() => false);
   const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
-    factorFor: (u) => shellFactor(u, fuze, underRoof(u)),
+    factorFor: (u) => shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
     airburst: fuze === "airburst",
   }, opts.lethality ?? "document");
   return { weapon: weaponKey, aim, dispersion, blast };
@@ -71,8 +73,8 @@ export function resolveIndirectFire(
  * its own worth and the men's posture — on their feet for the first rounds,
  * down once shelled.
  */
-export function shellFactor(unit: Unit, fuze: Fuze, underRoof: boolean): number {
-  const f = SHELL_VS_MEN[fuze];
+export function shellFactor(unit: Unit, fuze: Fuze, underRoof: boolean, table: ShellVsMen = SHELL_VS_MEN): number {
+  const f = table[fuze];
   const cover = effectiveCover(unit);
   if (cover === "full") return underRoof ? f.roof : f.openHole;
   const posture = unit.downUnderShelling ? f.down : f.standing;
