@@ -240,11 +240,13 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     seenHits.clear();
     return out;
   };
+  /** Where the company stands, once there is a company: a commander knows what it has ordered. */
+  let stage: () => string | undefined = () => undefined;
   const question = (q: Omit<Question, "turn" | "view">): string =>
     ask!({
       ...q,
       turn: g.turn,
-      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine, reports: reports() }),
+      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine, reports: reports(), stage: stage() }),
     });
   const companyPlan = ask ? askPlan(g, attacker, objective, suspected, mapWidth, mapHeight, question) : opts.company ?? {};
   const scoutFit = new Map<string, number>();
@@ -258,6 +260,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     width: mapWidth,
     height: mapHeight,
   });
+  stage = () => companyStage(g, company);
 
   const tasks: Record<Side, DrillTask> = {
     [attacker]: { side: attacker, attacking: true, objective },
@@ -458,7 +461,7 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
       ask: `${why} Send the company in now?`,
       options: [
         { id: "yes", label: "yes: the company advances to the attack" },
-        { id: "no", label: "no: keep holding while the scouts look" },
+        { id: "no", label: lost ? "no: the company stays where it is, with no scouts left to find the enemy" : "no: keep holding while the scouts look" },
       ],
     }) === "yes";
   if (!go) return false;
@@ -639,6 +642,19 @@ const PLATOON_TASK_CARRY_ON: Record<PlatoonTask, string> = {
   withdraw: "keep pulling back",
 };
 
+/** The company's stage in the commander's picture: not gone in yet, or gone in and what each platoon was ordered. */
+function companyStage(g: Game, company: ScriptedCompany): string {
+  if (company.released === undefined) return "Your company has not gone in to the attack yet.";
+  const tasks = [...company.platoons(g)]
+    .filter(([, us]) => us.some(fighting))
+    .map(([key]) => `${key} ${PLATOON_TASK_WORDS[company.platoonTask(key)]}`);
+  return (
+    `Your company went in to the attack on turn ${company.released}` +
+    (tasks.length ? `: ${tasks.join(", ")}` : "") +
+    (company.holdsShort ? `. The assault stops ${HOLD_SHORT_M} m short of the enemy until you lift your fires.` : ".")
+  );
+}
+
 const PLATOON_TASK_WORDS: Record<PlatoonTask, string> = {
   assault: "assaulting",
   support: "giving a base of fire",
@@ -784,7 +800,9 @@ function askAttackerFire(
       ...(company.released !== undefined
         ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs one of your missions)` }))
         : []),
-      { id: "hold", label: "hold fire this turn" },
+      // Before the company goes, holding says what it saves the mission for: offered bare, Jev fired
+      // every mission it had before the company moved (docs/balance.md, thirty-fourth round).
+      { id: "hold", label: company.released === undefined ? "hold fire: save the mission for when your assault is closing on the enemy" : "hold fire this turn" },
     ],
   });
   if (a === "hold") return;

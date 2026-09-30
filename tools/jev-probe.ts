@@ -57,7 +57,17 @@ function recover(file: string): { q: Question; given: string }[] {
 
 const kindOf = (q: Question) =>
   q.id.replace(/\.\d+$/, "").replace(/BLUE-\d/, "BLUE-n").replace(/^go\.\d+$/, "go") +
-  (/^platoon\./.test(q.id) ? (/still in reserve/.test(q.ask) ? " (in reserve)" : / halted/.test(q.ask) ? " (halted)" : " (hit)") : "");
+  (/^platoon\./.test(q.id) ? (/still in reserve/.test(q.ask) ? " (in reserve)" : / halted/.test(q.ask) ? " (halted)" : " (hit)") : "") +
+  (/^go\.\d/.test(q.id)
+    ? / all out of action/.test(q.ask)
+      ? " (scouts lost)"
+      : /in sight \d+ turns/.test(q.ask)
+        ? " (enemy held in sight)"
+        : /just found/.test(q.ask)
+          ? " (enemy just found)"
+          : " (enemy not in sight)"
+    : "") +
+  (/^fire\./.test(q.id) ? (/has not gone in/.test(q.view) ? " (company not gone in)" : " (company gone in)") : "");
 const byKind = new Map<string, { q: Question; given: string }[]>();
 for (const f of readdirSync(dir).filter((f) => f.endsWith(".log.json")).sort()) {
   for (const r of recover(f)) {

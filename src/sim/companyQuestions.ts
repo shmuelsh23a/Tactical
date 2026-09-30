@@ -70,7 +70,7 @@ const round = (p: Point) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
 export function viewOf(
   game: Game,
   side: Side,
-  plan: { objective: Point; mortarLeft: number | null; brief?: string; startLine?: Point; reports?: readonly string[] },
+  plan: { objective: Point; mortarLeft: number | null; brief?: string; startLine?: Point; reports?: readonly string[]; stage?: string },
 ): string {
   const view = sideView(game, side);
   const lines: string[] = [];
@@ -95,6 +95,7 @@ export function viewOf(
     `Your plan puts the enemy position about ${round(plan.objective)}, ground ${h(plan.objective)} m` +
       (plan.startLine ? `; your start line is about ${round(plan.startLine)}, ground ${h(plan.startLine)} m.` : "."),
   );
+  if (plan.stage) lines.push(plan.stage);
   if (plan.mortarLeft !== null) lines.push(`Mortar missions left: ${plan.mortarLeft}.`);
   if (plan.reports?.length) {
     lines.push("Your fire last turn, as your forces saw it:");

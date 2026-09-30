@@ -73,13 +73,14 @@ const ROLE = "You are the company commander of the attacking side. You decide fo
  * infantry doctrine, not the game's rules and not a script for this battle.
  * **It names no option.** Jev leans to an option whose words the state
  * repeats: the same principles saying "a reserve exists to be committed" made
- * it choose "reserve" more often, not less.
+ * it choose "reserve" more often, not less, and "keep the company out of
+ * sight while it waits" made it wait.
  */
 export const MISSION: readonly string[] = [
   "The mission is to take the objective before the deadline. An attack that has not taken it by then has failed, however few men it lost.",
   "Mass at the decisive point: bring as much of the company as possible onto the objective together. Platoons held back take nothing.",
   "Fire and movement: fire keeps the enemy's heads down so that the attack can close. It is wasted unless the attack moves while it lasts.",
-  "Keep the company out of the enemy's sight while it waits or moves; ground that hides it is worth a detour.",
+  "Use the ground: move by ground that hides the company from the enemy, even when it is a detour.",
   "Losses are the price of the attack. Break it off only when it can no longer succeed.",
 ];
 
