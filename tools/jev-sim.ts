@@ -39,8 +39,8 @@
  *
  * **A Claude model in Jev's place** (`--claude <model>`, `src/sim/claude.ts`):
  * the same questions, answered by the Anthropic API. Needs
- * `ANTHROPIC_API_KEY` and `api.anthropic.com` reachable; `--effort` sets how
- * hard it thinks where the model takes it.
+ * `JEV_ANTHROPIC_API_KEY` (or `ANTHROPIC_API_KEY`) and `api.anthropic.com`
+ * reachable; `--effort` sets how hard it thinks where the model takes it.
  *
  *   npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20
  *   npm run jev-sim -- --claude claude-sonnet-5-5 --effort low --seed 1000 --n 20
@@ -75,12 +75,16 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   if (args.includes("--claude")) {
     const model = value("--claude");
     if (!model || model.startsWith("--")) throw new Error("--claude: name a model, e.g. claude-haiku-4-5");
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.error("ERROR no Claude client: set ANTHROPIC_API_KEY in the environment (a new session picks it up).");
+    // The cloud sessions keep ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL for
+    // Claude Code itself, so the key is read under its own name first and the
+    // API is named outright rather than taken from ANTHROPIC_BASE_URL.
+    const apiKey = process.env.JEV_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error("ERROR no Claude client: set JEV_ANTHROPIC_API_KEY in the environment (a new session picks it up).");
       process.exit(2);
     }
     const effort = value("--effort") as ClaudeAskerOptions["effort"];
-    jev = claudeAsker(new Anthropic(), { model, ...(effort ? { effort } : {}) });
+    jev = claudeAsker(new Anthropic({ apiKey, baseURL: "https://api.anthropic.com" }), { model, ...(effort ? { effort } : {}) });
     framing = `claude:${model}${effort ? `@${effort}` : ""}`;
   } else if (args.includes("--rule")) {
     const extra = value("--rule")?.startsWith("--") === false ? value("--rule")!.split(",") : [];
