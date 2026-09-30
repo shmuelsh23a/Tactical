@@ -739,18 +739,22 @@ export const CONFIGURATIONS: readonly Configuration[] = ([undefined, 0.3, 0.5, 0
  * a prepared position:
  *
  * - at 1:1 the defender should hold: the attacker wins **at most 30%**;
- * - at about 2:1 it should be a real fight: the attacker wins **30–70%**;
- * - at 3–4:1 the attack should succeed: the attacker wins **at least 70%**;
+ * - at about 2:1 the attacker wins **30–45%** — the defence usually holds;
+ * - at 3–4:1 the attack should succeed: the attacker wins **55–70%**;
  * - and a winning attacker at 3–4:1 should pay for it: **10–30%** of his men
  *   down, where "as it stands" pays 0–8%.
+ *
+ * The 2:1 and 3:1 bands are the author's since rules decision 66
+ * (2026-09-30), from the research in docs/validation.md, *What an attack at
+ * 3:1 should win*; before, they were ours: 30–70% and at least 70%.
  *
  * Each echelon is judged on its own; a configuration's score is how many of
  * the twelve targets (four at each of three echelons) it meets.
  */
 export const TARGETS = {
   attack1MaxWin: 30,
-  attack2Win: [30, 70] as const,
-  attack3MinWin: 70,
+  attack2Win: [30, 45] as const,
+  attack3Win: [55, 70] as const,
   attack3AttackerDown: [10, 30] as const,
 } as const;
 
@@ -793,7 +797,7 @@ export function judge(
   const met =
     Number(v.attack1Win <= TARGETS.attack1MaxWin) +
     Number(v.attack2Win >= TARGETS.attack2Win[0] && v.attack2Win <= TARGETS.attack2Win[1]) +
-    Number(v.attack3Win >= TARGETS.attack3MinWin) +
+    Number(v.attack3Win >= TARGETS.attack3Win[0] && v.attack3Win <= TARGETS.attack3Win[1]) +
     Number(attack3AttackerDown >= TARGETS.attack3AttackerDown[0] && attack3AttackerDown <= TARGETS.attack3AttackerDown[1]);
   return { ...v, met };
 }

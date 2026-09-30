@@ -162,8 +162,14 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    the scripted company sending three scouts, **3:1 wins 58% and 2:1 38%**
    (balance.md, *Thirty-first round*, which also gives the standard
    `scenario-sim` command); the reserve counterattacks in about one battle
-   in seven. **Next, in rough order:** rerun the balance harness's
-   flat-ground tables on today's rules (they predate 62–66); drive the new
+   in seven. The flat-ground harness was rerun on today's rules
+   (balance.md, *Thirty-second round*): the company 3:1 with the full rules
+   wins 58%, inside the target, but the harness's defaults have fallen
+   behind the game (decisions 51–55 off, recon that does not scale with the
+   echelon), so its squad and platoon cells no longer judge anything; its
+   `TARGETS` carry decision 66's bands. **Next, in rough order:** bring the
+   harness's defaults up to the game and scale its recon (a scout a
+   platoon), then rerun; drive the new
    rules in the browser as a player (suppression, heads down, danger close
    and a counterattack have only been played by scripts); the layouts
    without a reserve (the platoon battle, the company battle's platoon B,

@@ -175,7 +175,7 @@ if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 
 if (args.includes("--sweep")) {
   const configurations = CONFIGURATIONS;
   console.log(`Sweep: ${battles} battles a cell, morale on, ${drill.name}${fires ? ", fire plan" : ""}. Targets: attack at 1:1 wins <= ${TARGETS.attack1MaxWin}%, ` +
-    `at ~2:1 wins ${TARGETS.attack2Win.join("-")}%, at 3-4:1 wins >= ${TARGETS.attack3MinWin}% ` +
+    `at ~2:1 wins ${TARGETS.attack2Win.join("-")}%, at 3-4:1 wins ${TARGETS.attack3Win.join("-")}% ` +
     `losing ${TARGETS.attack3AttackerDown.join("-")}% of his men.\n`);
   console.log("| Configuration | Echelon | 1:1 win | ~2:1 win | 3–4:1 win | 3–4:1 attacker down | Out by HE | Targets met |");
   console.log("|---|---|---|---|---|---|---|---|");

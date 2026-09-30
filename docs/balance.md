@@ -2486,6 +2486,67 @@ Explosives cause 73–77% of losses, the 75% the author set (decision 43).
 The balance harness's flat-ground tables above predate decisions 62–66 and
 the command-post fix, and have not been rerun.
 
+## Thirty-second round: the flat-ground harness rerun on today's rules, 2026-09-30
+
+The balance harness (`npm run balance`, flat open ground) rerun after
+decisions 61–66 and the command-post fix, beside the same runs at the code
+before decision 62. Its targets (`TARGETS` in `src/sim/balance.ts`) now carry
+decision 66's bands: 1:1 at most 30%, 2:1 30–45%, 3–4:1 55–70% with the
+winner losing 10–30%. 200 battles a cell, morale on; the attacker's wins,
+before → now (share of losses to explosives in brackets):
+
+**A — the default run** (no fire support below company, which decision 37
+gives none; decisions 51–55 off, as the harness has them unless named):
+
+| Battle | Target | Squad | Platoon | Company |
+|---|---|---|---|---|
+| 1:1 | ≤30% | 19% → 23% | 5% → 10% | 0% → 0% |
+| 2:1 | 30–45% | 57% → 67% | 69% → **87%** | 7% → 2% |
+| 3–4:1 | 55–70% | 76% → 81% | 99% → 99% | 97% → 96% |
+
+**B — calibrated fire** (decision 43's mortar section on both sides; only
+company may call it):
+
+| Battle | Target | Company |
+|---|---|---|
+| 1:1 | ≤30% | 0% → 0% (HE 64% → 56%) |
+| 2:1 | 30–45% | 6% → 0% (HE 69% → 59%) |
+| 3–4:1 | 55–70% | 95% → **7%** (HE 75% → 73%) |
+
+**C — the full rules** (decisions 51–55 on, three scouts, a four-turn look,
+the guns waiting for what the scouts find, calibrated fire):
+
+| Battle | Target | Company |
+|---|---|---|
+| 1:1 | ≤30% | 0% → 0% |
+| 2:1 | 30–45% | 1% → **1%** |
+| 3–4:1 | 55–70% | 65% → **58%** (HE 84% → 70%) |
+
+Meeting engagements are about even at every echelon, before and now. C's
+squad and platoon cells read 0% and are not recorded: three scouts from a
+single squad or a platoon of three leaves no one to attack with.
+
+**The sweep** (`--sweep`, the harness's defaults, assault reply 0–70%)
+meets **3 of 12** targets under every configuration — the 1:1 ones.
+
+- **The company 3:1 with the full rules lands inside the target (58%)**, as
+  on the tel. Without the scouts and the rest (B) it collapses to 7%: the
+  defender's mortars now work, and an attacker that does not find the
+  defence first loses — the same thing the tel showed.
+- **2:1 at company is far under target (1%, where 30–45%)** on flat ground,
+  where the tel's 2:1 wins 38%: the tel's dead ground lets the attacker wait
+  and close unseen; the flat harness has none.
+- **Platoon and squad attacks are too easy (2:1 67–87%, 3:1 81–99%)**: no
+  indirect fire below company, perfect intelligence by default, and nothing
+  on open ground for a defender but its hole.
+- **The harness has fallen behind the game.** Its defaults leave decisions
+  51–55 off, its recon does not scale with the echelon, and its sweep still
+  tries the assault-reply rates of 2026-09-23, which measure as irrelevant.
+  The tel's headless runner (`scenario-sim`) is now the measure the balance
+  is judged by; the flat harness would need its defaults brought up to the
+  game and its recon scaled (a scout a platoon) to judge squads and platoons
+  again.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
