@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-30, after the Claude comparison (balance.md, thirty-fifth round) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after the Claude comparison (balance.md, thirty-fifth and thirty-sixth rounds) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 794 tests, 46 files
+npm run check       lint + typecheck clean, 797 tests, 46 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -69,7 +69,7 @@ here from AGENTS.md alone.
 **Jev and three Claude models have played** (2026-09-30, branch
 `claude/jev-api-key-check-zsfa16`, not merged yet): `TYPESAFE_API_KEY` is set
 and `api.typesafe.ai` allowed in the cloud environment. Read balance.md,
-*Thirty-fourth round* (Jev) and *Thirty-fifth round* (Claude) before anything
+*Thirty-fourth round* (Jev) and the *thirty-fifth* and *thirty-sixth* (Claude) before anything
 else about them. In short:
 
 - **Working with Jev**: it is steady, judges rather than plans, and leans to
@@ -100,15 +100,23 @@ else about them. In short:
   mortars for an approach they never reach. All three send one scout and
   bound by platoon; Haiku and Opus hold short (Opus then won't lift the
   fires until the company has massed).
-- **Next with Claude: an order and a plan.** Every call stands alone: no
-  model sees its earlier answers, and none gets more than the one-line
-  tasking and the principles, so none can hold to a plan. Measure an OPORD
-  from higher headquarters (enemy strength and posture, fire support, time
-  and movement rates, intent; no drill choices), a plan the model writes at
-  turn 0, and each call carrying the plan and its decisions so far. The OPORD
-  is the author's to check before it is used, and giving it to Jev too keeps
-  that comparison fair. Cheaper first: a `--rule blind` (go at turn 5 whatever
-  the scouts see) says what going in blind costs on its own.
+- **An order, a plan and a memory** (balance.md, *Thirty-sixth round*):
+  `--order` gives the OPORD from battalion (`src/sim/opord.ts`, ours: the
+  author's to check), `--plan` a plan the model writes before the first
+  question, `--memory` its decisions so far. **No commander wins more**
+  (0–15% everywhere). Told how long closing under fire takes, Opus and Sonnet
+  stop bounding and Jev stops holding short, so those two textbook costs
+  were not what held the wins down. The costly choice is going in blind:
+  `--rule blind` (the rule sent in at turn 5) wins **18% / 4%** against 63% /
+  34%. The order's time line pushes every commander to go sooner, and the
+  plans they write (move up under cover to an assault position, find and
+  shell the enemy, then go) **cannot be played**: "send the company in"
+  commits it to the attack, and there is no step to move up and hold.
+- **Next: a move to an assault position.** A go option that moves the company
+  up to dead ground or a named point short of the enemy and holds it there
+  until a second question sends it in. A question-set and drill change (bump
+  `QUESTION_SET_VERSION`); then measure the rule, Jev and Opus again, 20
+  seeds each.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):

@@ -2811,6 +2811,114 @@ What the logged reasons say, choice by choice:
   far, is the next thing to measure. It would change the comparison with Jev,
   which cannot carry a plan the same way.
 
+## Thirty-sixth round: an order, a plan and a memory, 2026-09-30
+
+The thirty-fifth round's commanders answered every question afresh, from a
+one-line tasking. This round gives them what a company commander has: an
+**order from battalion** (`src/sim/opord.ts`, `--order`; for Jev `--framing
+order`) in five paragraphs — the enemy (a platoon dug in with overhead cover,
+a squad held back to retake a position, mines, registered mortars), the
+ground, the company and its 12 missions, the mission and intent, and time
+and movement (50 m a turn walking, half under fire, 5 m per metre climbed:
+about 11 turns to the shoulder unopposed, about twice that under fire). It
+names no option (tested). With a Claude model, `--plan` has it write its own
+plan before the first question and carry it in every call, and `--memory`
+carries the battle's decisions so far with their reasons. And, without the
+API, `--rule blind` measures the choice that cost the reasoners most: the
+rule's commander, but sent in at the first chance (turn 5), the enemy found or
+not.
+
+⚠️ The order is ours (the intelligence picture and the intent are written for
+the test beds); it is the author's to check.
+
+### What going in blind costs
+
+| Commander (100 seeds a scenario from 1000) | 3:1 | 2:1 |
+|---|---|---|
+| Rule through the questions | 63% | 34% |
+| … sent in at turn 5, found or not (`--rule blind`) | **18%** | **4%** |
+
+That one choice costs 45 and 30 points: most of the distance from the rule to
+Sonnet and Opus (thirty-fifth round). Nothing else the rule does changes.
+
+### The battles
+
+20 seeds a scenario from 1000, the attack's wins (±9–11 points):
+
+| Commander | Given | 3:1 | 2:1 | Went in blind | Bound | Held short |
+|---|---|---|---|---|---|---|
+| Jev | mission (35th round) | 10% | 15% | — | 40/40 | 29/40 |
+| Jev | + order | 10% | 5% | 31/40 | 40/40 | **0/40** |
+| Haiku | mission (35th round) | 20% | 0% | 0/40 | 26/26 | 36/36 |
+| Haiku | + order, plan, memory | 5% | 15% | 15/40 | 21/27 | 36/40 |
+| Sonnet | mission (35th round) | 5% | 0% | 40/40 | 37/40 | 2/40 |
+| Sonnet | + order, plan, memory | 0% | 0% | 28/40 | **8/39** | 10/40 |
+| Opus | mission (35th round) | 5% | 5% | 40/40 | 40/40 | 40/40 |
+| Opus | + order | 0% | 0% | 40/40 | **3/40** | 21/40 |
+| Opus | + order, plan, memory | 5% | 0% | 36/40 | **1/40** | **7/40** |
+
+(Tokens for the round's Claude runs: about 11.3 M in, 5.0 M more read from
+the cache, 1.04 M out. Haiku's calls are still not cached.)
+
+**None wins more.** Every commander stays at 0–15%, within the noise of
+where it was. But the choices moved, and the reasons say why.
+
+### What the order and the plan changed
+
+- **Bounding and holding short went, on the time line alone.** Nothing in the
+  order names either; Opus, told how long closing under fire takes, stopped
+  bounding: "bounding by platoon would roughly double the ~22 turns needed
+  under fire and split the mass we must put on the objective together by turn
+  45". Jev stopped holding short (0 of 40, from 29). So the thirty-fourth
+  round's two textbook costs are not fixed choices: a commander told the time
+  drops them. They were not what kept the wins down.
+- **Going in blind got worse, and the order is why.** The same time line —
+  "about twice that under fire" — reads as 22 turns of 41, and every
+  commander counts back from it: "with 41 turns left and roughly 22 needed to
+  close under fire, waiting on the scouts wastes the time the attack needs"
+  (Opus, order only, 40 of 40 blind). Jev, which went in when the enemy was
+  found, now goes blind in 31 of 40. The only one that waits more is Haiku,
+  which had waited already.
+- **The plans are sound, and cannot be played.** Opus's plan (seed 1000,
+  3:1): "the company moves by bounds into the dead ground about 250-300 m
+  short of the shoulder … once the positions are fixed and 2 and 3 Platoons
+  are at the assault position, I call 'AZEKA'. Mortars fire, 1 Platoon opens
+  fire, and all platoons assault … No later than T30 we go in regardless."
+  Sonnet's: "Turns 0-12: advance to the last cover, about 150-200 m from the
+  shoulder, and locate the positions". With the memory, they follow their
+  plans: "the plan had the company closing into the dead ground by T12 …
+  advancing now" (Opus, go.10). But **the questions have no step for it**.
+  The company waits where it is (`plan.wait`) or goes in: "yes" to "send the
+  company in" commits it to the attack, with no halt at an assault position
+  to find and shell the enemy first. The plan every reasoner writes — move
+  up under cover, fix, fire, then go — is played as going in blind, which
+  costs 45 points.
+- **Mortars are still hoarded.** The plans budget them ("2 missions to pin
+  identified positions while we close, 6 for the assault, keep 4 for the
+  counterattack"), and the fire question's own words — "the assault has to
+  arrive before you lift" — keep them for a close that a blind attack rarely
+  reaches: Sonnet and Opus fire a median 3–6 missions of 12.
+
+### What it says
+
+1. **The gap to the rule is a missing move, not missing judgement.** The rule
+   wins by waiting where it is while the scouts find the enemy and the mortars
+   shell it, then going. A reasoner's plan does the same from nearer, and the
+   game offers it only "wait at the start line" or "attack now". Next: a go
+   option that moves the company up to an assault position (dead ground or a
+   named point short of the enemy) and holds it there until a second
+   question sends it in — then measure the rule, Jev and the models again.
+   That is a question-set change (`QUESTION_SET_VERSION`), and a drill one.
+2. **Our order pushes time too hard.** "About twice that under fire" and "will
+   not extend the deadline" are both true and both read as "go now". A
+   version that also says when an attack typically has to leave its assault
+   position is advice, not fact, and is not written; the question in 1 is the
+   better fix.
+3. **For the author**: the thirty-fourth round's question (should bounding and
+   holding short cost this much?) matters less than it seemed — commanders
+   drop both once told the time, and still lose. The costly choice is when the
+   company goes, and the game gives no way to go part of the way.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
