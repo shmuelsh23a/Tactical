@@ -219,6 +219,12 @@ export interface BattleOptions {
   keepEyesOn?: boolean;
   /** Losing a command group has effect (rules decision 55, `GameOptions.commandSuccession`). */
   commandSuccession?: boolean;
+  /**
+   * Play suppression as decision 19 had it, before rules decision 63: a
+   * shell suppresses only as far as it kills, a roof takes it all, and a
+   * pinned force still watches and shoots. To measure what 63 moved.
+   */
+  suppressionBefore63?: boolean;
 }
 
 /** A standard normal draw (Box–Muller). */
@@ -416,6 +422,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     ...(opts.binoculars ? { binoculars: true } : {}),
     ...(opts.keepEyesOn ? { keepEyesOn: true } : {}),
     ...(opts.commandSuccession ? { commandSuccession: true } : {}),
+    ...(opts.suppressionBefore63 ? { suppressionReach: false, roofsDampSuppression: false, headsDown: false } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),

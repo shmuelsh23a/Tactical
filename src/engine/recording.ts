@@ -200,6 +200,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.shellCover !== undefined && !SHELL_COVERS.includes(r.shellCover as ShellCover)) throw malformed("shellCover");
   if (r.suppressionReach !== undefined && typeof r.suppressionReach !== "boolean") throw malformed("suppressionReach");
   if (r.roofsDampSuppression !== undefined && typeof r.roofsDampSuppression !== "boolean") throw malformed("roofsDampSuppression");
+  if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
@@ -347,6 +348,8 @@ export interface GameRecording {
   suppressionReach?: boolean;
   /** Whether a roof halved a shell's suppression (rules decision 63, S3). Read as **off** when absent. */
   roofsDampSuppression?: boolean;
+  /** Whether a pinned force kept its head down (rules decision 63, S2). Read as **off** when absent. */
+  headsDown?: boolean;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
   /**
@@ -535,6 +538,7 @@ export function replayWithOutcomes(
     shellCover: recording.shellCover ?? "before62",
     suppressionReach: recording.suppressionReach ?? false,
     roofsDampSuppression: recording.roofsDampSuppression ?? false,
+    headsDown: recording.headsDown ?? false,
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.stillDetection ? { stillDetection: true } : {}),

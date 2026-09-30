@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Game } from "./game.js";
 import { makeInfantry } from "./units.js";
 import { roundSuppression } from "./morale.js";
-import { ROOF_SUPPRESSION_FACTOR, SUPPRESSION, SUPPRESSION_REACH_81MM } from "./data/morale.js";
+import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION, SUPPRESSION_REACH_81MM } from "./data/morale.js";
 import { FORCE_FOOTPRINT_RADIUS_M } from "./data/lethality.js";
 import { replayGame } from "./recording.js";
 import type { GameOptions } from "./game.js";
@@ -72,5 +72,41 @@ describe("how far a round suppresses (decision 63, S1)", () => {
     delete (r as { roofsDampSuppression?: boolean }).roofsDampSuppression;
     const old = replayGame(r);
     expect([old.suppressionReach, old.roofsDampSuppression]).toEqual([false, false]);
+  });
+});
+
+describe("pinned means heads down (decision 63, S2)", () => {
+  const field = (enemyAt: number, opts: Partial<GameOptions> = {}) => {
+    const g = new Game({ seed: 3, morale: true, trackIntel: true, enforceC2: false, ...opts });
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: enemyAt }, 8));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    red.suppression = SUPPRESSION.pinned; // pinned
+    return { g, red, blue };
+  };
+
+  it("fires at nothing beyond 100 m, and at what is closer", () => {
+    const far = field(HEADS_DOWN.fireWithinM + 50);
+    expect(far.g.fire("R", "B", { weapon: "smallArms" })).toMatchObject({ fired: false, reason: "heads down" });
+    const near = field(HEADS_DOWN.fireWithinM - 20);
+    expect(near.g.fire("R", "B", { weapon: "smallArms" }).fired).toBe(true);
+    // Before the decision a pinned force still shot, at half its aim.
+    const before = field(HEADS_DOWN.fireWithinM + 50, { headsDown: false });
+    expect(before.g.fire("R", "B", { weapon: "smallArms" }).fired).toBe(true);
+  });
+
+  it("learns nothing beyond 50 m, even of the force shooting at it", () => {
+    const far = field(200);
+    far.g.fire("B", "R", { weapon: "smallArms" });
+    expect(far.g.contactFor("RED", "B")).toBeUndefined();
+    // The firer still finds its target: its own head is up.
+    expect(far.g.contactFor("BLUE", "R")).toBeDefined();
+    const close = field(HEADS_DOWN.sightWithinM - 10);
+    close.g.fire("B", "R", { weapon: "smallArms" });
+    expect(close.g.contactFor("RED", "B")).toBeDefined();
+    const before = field(200, { headsDown: false });
+    before.g.fire("B", "R", { weapon: "smallArms" });
+    expect(before.g.contactFor("RED", "B")).toBeDefined();
   });
 });

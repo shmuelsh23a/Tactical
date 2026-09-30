@@ -296,6 +296,17 @@ export const SUPPRESSION_REACH_81MM = { full: 30, half: 75 } as const;
  */
 export const ROOF_SUPPRESSION_FACTOR = 0.5;
 
+/**
+ * Heads down (rules decision 63, S2; author, 2026-09-30). A pinned soldier
+ * keeps his head down: he neither observes nor fires to effect (FM 7-90,
+ * FM 6-30). A **pinned** force makes and keeps no sighting beyond
+ * `sightWithinM`, so it tells its side nothing further off and cannot be
+ * the eyes a fire mission is adjusted by; and it fires at nothing beyond
+ * `fireWithinM`. A **suppressed** force keeps each sighting at
+ * `suppressedSightChance`. All three numbers are ours.
+ */
+export const HEADS_DOWN = { sightWithinM: 50, fireWithinM: 100, suppressedSightChance: 0.5 } as const;
+
 /** What a suppressed or pinned force does to its own shooting, and to its men's nerve. */
 export const SUPPRESSION_EFFECT = {
   suppressed: { accuracy: 0.75, morale: 5 },

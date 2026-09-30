@@ -123,7 +123,7 @@ import {
   unitSeed,
 } from "./morale.js";
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
-import { ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
+import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
 import { LEADER_REACH_M, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
@@ -269,6 +269,8 @@ export const MORALE_REFUSAL = {
   withdrawing: "withdrawing",
   /** Pinned by fire: it moves only to withdraw. */
   pinned: "pinned",
+  /** Pinned by fire, heads down: it shoots only at an enemy close in (rules decision 63, S2). */
+  headsDown: "heads down",
 } as const;
 
 /** What a move turned up: what the force saw, and what it set off. */
@@ -422,6 +424,14 @@ export interface GameOptions {
    */
   roofsDampSuppression?: boolean;
   /**
+   * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
+   * force makes no sighting beyond 50 m, is no observer for a fire mission,
+   * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
+   * at an even chance. On by default; a recording made before it reads it as
+   * off.
+   */
+  headsDown?: boolean;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -522,6 +532,7 @@ export class Game {
   readonly shellCover: ShellCover;
   readonly suppressionReach: boolean;
   readonly roofsDampSuppression: boolean;
+  readonly headsDown: boolean;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -679,6 +690,7 @@ export class Game {
     this.shellCover = opts.shellCover ?? "sources";
     this.suppressionReach = opts.suppressionReach ?? true;
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
+    this.headsDown = opts.headsDown ?? true;
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
     }
@@ -801,6 +813,7 @@ export class Game {
       shellCover: this.shellCover,
       ...(this.suppressionReach ? { suppressionReach: true } : {}),
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
+      ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -1458,6 +1471,8 @@ export class Game {
         canObserve(u) &&
         !u.surrendered &&
         !u.routing &&
+        // Heads down (decision 63, S2): a pinned force watches no fall of shot.
+        !(this.headsDown && suppressionLevel(u) === "pinned") &&
         distance(u.position, impact) <= OBSERVE_RANGE_M &&
         !(SMOKE_BLOCKS_FIRE && this.smoke.some((sm) => segmentIntersectsCircle(u.position, impact, sm.center, sm.radius))) &&
         !terrainBlocksSight(this.terrain, u.position, eyeHeight(u), impact, BURST_HEIGHT_M),
@@ -1663,6 +1678,13 @@ export class Game {
     if (!this.trackIntel) return;
     const unit = this.units.find((u) => u.id === unitId);
     if (!unit || unit.side === side) return;
+    // Heads down (decision 63, S2): a pinned observer sees only what is close;
+    // a suppressed one keeps each sighting at even odds.
+    if (observer && this.headsDown) {
+      const level = suppressionLevel(observer);
+      if (level === "pinned" && distance(observer.position, unit.position) > HEADS_DOWN.sightWithinM) return;
+      if (level === "suppressed" && !this.rng.chance(HEADS_DOWN.suppressedSightChance)) return;
+    }
     this.report(side, unit, unit.position, source, observer, from);
   }
 
@@ -1957,7 +1979,7 @@ export class Game {
         if (!posture) continue;
         if (coverer.side === actor.side) continue;
         if (coverer.neutralized) continue;
-        if (this.moraleRefusal(coverer)) continue;
+        if (this.moraleRefusal(coverer) || this.headsDownRefusal(coverer, actor)) continue;
         // A force the ground or another coverer has already put down is not
         // the target that set out: nobody spends a posture finishing it.
         if (actor.neutralized) break;
@@ -2221,7 +2243,7 @@ export class Game {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    const moraleRefusal = this.moraleRefusal(attacker);
+    const moraleRefusal = this.moraleRefusal(attacker) ?? this.headsDownRefusal(attacker, target);
     if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       // A shot never taken draws no answer.
       return {
@@ -2288,7 +2310,7 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    const moraleRefusal = this.moraleRefusal(attacker);
+    const moraleRefusal = this.moraleRefusal(attacker) ?? this.headsDownRefusal(attacker, target);
     if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
@@ -2944,6 +2966,15 @@ export class Game {
    * Why a force's morale keeps it from acting, if it does: it is routing, it
    * surrendered, or it is falling back under a withdrawal order.
    */
+  /**
+   * Heads down (rules decision 63, S2): a pinned force shoots at nothing
+   * beyond `HEADS_DOWN.fireWithinM`. Undefined when it may shoot.
+   */
+  private headsDownRefusal(unit: Unit, target: Unit): string | undefined {
+    if (!this.headsDown || suppressionLevel(unit) !== "pinned") return undefined;
+    return distance(unit.position, target.position) > HEADS_DOWN.fireWithinM ? MORALE_REFUSAL.headsDown : undefined;
+  }
+
   moraleRefusal(unit: Unit): string | undefined {
     if (unit.surrendered) return MORALE_REFUSAL.surrendered;
     if (unit.routing) return MORALE_REFUSAL.routing;

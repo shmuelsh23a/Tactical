@@ -96,12 +96,14 @@ describe("the defender's mission plan (decision 38)", () => {
 
 describe("the squad's grenadiers", () => {
   it("fire rifle grenades alongside the rifles, and are the platoon's explosives", () => {
-    const seeds = [1000, 1001, 1002, 1003];
+    const seeds = Array.from({ length: 20 }, (_, i) => 1000 + i); // fewer are too noisy for the claim
     const withThem = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true }));
     const without = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY }));
-    // Without them the only explosives are the assault's hand grenades.
+    // Without them the only explosives are the assault's hand grenades. Over
+    // 20 seeds they nearly double them (33 to 18); a pinned squad keeps its
+    // head down (decision 63), so fewer are fired than before (50 to 22).
     const he = (rs: typeof withThem) => rs.reduce((n, r) => n + r.outBy.explosive, 0);
-    expect(he(withThem)).toBeGreaterThan(2 * he(without));
+    expect(he(withThem)).toBeGreaterThan(1.5 * he(without));
     expect(PLAIN_SCRIPT.grenadiers).toEqual({ menPerLauncher: 4 });
   });
 });
