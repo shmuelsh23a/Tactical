@@ -134,8 +134,20 @@ const mean = (us: readonly Unit[]): Point => ({
   y: us.reduce((t, u) => t + u.position.y, 0) / us.length,
 });
 const MORTAR = "mortar";
-/** Nothing called within this of a friendly squad: danger close (the browser tool's 150 m). */
+/**
+ * Danger close: a mark within this of the caller's own squads puts them in
+ * the bombs' reach too (the browser tool's 150 m). Since rules decision 63
+ * (S4, author 2026-09-30: "danger close as risk") it is a risk the caller is
+ * told of and takes, not a mark he is refused.
+ */
 const DANGER_CLOSE_M = 150;
+/**
+ * The scripted company keeps its guns on a mark until its own squads are
+ * this close to it, then lifts them (decision 63, S4; ours). A pinned
+ * defender is free three turns after the fire stops, so the fire has to
+ * stay on until the assault is nearly there.
+ */
+const LIFT_AT_M = 100;
 /** Fires lifted for the assault shift beyond this of the company's squads (ours). */
 const LIFTED_CLEAR_M = 300;
 /** The plan's frontage: its centre and this far to either side (the browser tool's). */
@@ -687,14 +699,14 @@ function askAttackerFire(
   if (!mortarFree(g, side)) return;
   const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   const view = sideView(g, side);
-  // Every mark the side holds — in sight or last seen — that is not danger
-  // close to its own squads. Firing on a last-seen mark is firing on where
-  // the enemy was.
-  // Once the commander lifts the fires for the assault, they shift to depth:
+  // Every mark the side holds — in sight or last seen. Firing on a
+  // last-seen mark is firing on where the enemy was. One close to its own
+  // squads is offered as danger close, a risk the commander takes (decision
+  // 63, S4). Once he lifts the fires for the assault they shift to depth:
   // nothing within LIFTED_CLEAR_M of the company's squads.
-  const clear = company.firesLifted ? LIFTED_CLEAR_M : DANGER_CLOSE_M;
+  const nearestOwn = (p: Point) => Math.min(...squads.map((s) => distance(s.position, p)));
   const marks = view.units.filter(
-    (u) => u.side !== side && !u.neutralized && squads.every((s) => distance(s.position, u.position) > clear),
+    (u) => u.side !== side && !u.neutralized && (!company.firesLifted || nearestOwn(u.position) > LIFTED_CLEAR_M),
   );
   if (!marks.length) return;
   const a = question({
@@ -702,7 +714,8 @@ function askAttackerFire(
     kind: "choice",
     ask:
       "Your mortar section is free. Fire a mission (12 bombs, for effect at once; a bomb kills within about 12 m, less against men dug in with overhead cover) on which mark? " +
-      `Marks within ${DANGER_CLOSE_M} m of your own squads are not offered (danger close): your fires lift as your squads close.`,
+      `A mark within ${DANGER_CLOSE_M} m of your own squads is DANGER CLOSE: the bombs can hit and pin your own men too. ` +
+      "A position stays pinned only while the fire lasts and a turn or two after, so the assault has to arrive before you lift.",
     options: [
       ...marks.map((u) => {
         const seen = g.contactFor(side, u.id)?.lastSeenTurn ?? 0;
@@ -711,7 +724,10 @@ function askAttackerFire(
           label:
             `${u.id} (${u.kind === "command" ? "command group" : "infantry"}) at (${Math.round(u.position.x)}, ${Math.round(u.position.y)}), ` +
             `sure to ±${Math.round((view.spreads.get(u.id) ?? 0) * CE_PER_SIGMA)} m, ` +
-            (seen >= g.turn - 1 ? "in sight" : `last seen turn ${seen}: it may have moved`),
+            (seen >= g.turn - 1 ? "in sight" : `last seen turn ${seen}: it may have moved`) +
+            (squads.length && nearestOwn(u.position) <= DANGER_CLOSE_M
+              ? ` — DANGER CLOSE: your nearest squad is ${Math.round(nearestOwn(u.position))} m from it`
+              : ""),
         };
       }),
       // Smoke once the company is moving: a screen on a mark blinds it while the squads close.
@@ -758,7 +774,9 @@ function callAttackerFire(
   if (!mortarFree(g, side)) return;
   const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   if (!squads.length) return;
-  const safe = (p: Point) => squads.every((u) => distance(u.position, p) > DANGER_CLOSE_M);
+  // Danger close is a risk it takes (decision 63, S4): its fire stays on
+  // until its squads are LIFT_AT_M from the mark.
+  const safe = (p: Point) => squads.every((u) => distance(u.position, p) > LIFT_AT_M);
   let aim: Point | undefined;
   if (plan.waitForContact) {
     const view = sideView(g, side);

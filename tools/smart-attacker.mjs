@@ -174,7 +174,8 @@ async function targeting(side) {
   const own = Object.values(await ownPositions(side)).filter((u) => u.kind === "infantry" && u.name !== scout);
   if (!own.length) return;
   const nearestOwn = (pt) => Math.min(...own.map((u) => dist(u.at, pt)));
-  // Fire plan: the registered positions, while no squad of ours is within 150 m of one (danger close).
+  // Fire plan: the registered positions, while no squad of ours is within 100 m of one. Danger close
+  // (150 m) is a risk it takes since rules decision 63 (S4): the fire stays on until the assault is near.
   // With a scout out, only what it has found — the enemy it has seen, nearest the objective.
   // AIM=n: only a mark the side is sure of to within n metres — the ring the
   // map draws round it (rules decision 54), which narrows as the scout watches.
@@ -182,7 +183,7 @@ async function targeting(side) {
   const rings = aimWithin == null ? [] : await p.evaluate(() => [...document.querySelectorAll("circle.report-spread")].map((c) => ({ x: +c.getAttribute("cx"), y: +c.getAttribute("cy"), r: +c.getAttribute("r") })));
   const sureOf = (f) => aimWithin == null || rings.some((g) => Math.hypot(g.x - f.x, g.y - f.y) < 5 && g.r <= aimWithin);
   const seen = foes.filter(sureOf).sort((p, q) => dist(p, objective) - dist(q, objective));
-  const safe = scout ? seen.filter((t) => nearestOwn(t) > 150) : setup.targets.filter((t) => nearestOwn(t) > 150);
+  const safe = scout ? seen.filter((t) => nearestOwn(t) > 100) : setup.targets.filter((t) => nearestOwn(t) > 100);
   if (!process.env.NOFIRE && safe.length && await p.getByRole("button", { name: /^פגז$/ }).count()) {
     const t = safe[stats.fireCalls % safe.length];
     await clickBtn(/^פגז$/); await clickBtn(/^מרגמה$/); await clickBtn(/אש לאפקט מייד/); await clickWorld(t); stats.fireCalls++;
