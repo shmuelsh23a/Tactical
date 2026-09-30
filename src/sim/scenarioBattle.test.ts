@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, planDefenderFires, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import type { Question } from "./companyQuestions.js";
 import { isDeadGround } from "../app/deadGround.js";
 import { EYE_HEIGHT, distance } from "../engine/index.js";
 
@@ -80,4 +81,27 @@ describe("the defending company's fire plan", () => {
     const without = runScenarioBattle(telAzekaAssaultListing, 11, { ...opts, defenderFirePlan: false });
     expect(without.defenderPlanned).toBe(0);
   });
+});
+
+describe("moving up to an assault position", () => {
+  it("is offered while the company holds, moves it nearer the enemy, and the picture says so", () => {
+    const asked: Question[] = [];
+    const decide = (q: Question): string => {
+      asked.push(q);
+      if (q.id === "plan.scouts") return "3";
+      if (q.id === "plan.wait") return "deadGround";
+      if (/^go\.\d/.test(q.id)) return q.options.some((o) => o.id === "up") ? "up" : q.turn >= 15 ? "yes" : "no";
+      return q.options[0]!.id;
+    };
+    const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES, decide };
+    const r = runScenarioBattle(telAzekaAssaultListing, 1000, opts);
+    const gos = asked.filter((q) => /^go\.\d/.test(q.id));
+    // The first is a choice of three; once moved up, a yes or no.
+    expect(gos[0]!.kind).toBe("choice");
+    expect(gos[0]!.options.map((o) => o.id)).toEqual(["yes", "up", "no"]);
+    expect(gos[1]!.kind).toBe("noul");
+    expect(gos[1]!.options.map((o) => o.id)).toEqual(["yes", "no"]);
+    expect(gos[1]!.view).toContain("moved up to its assault position");
+    expect(r.released).toBeGreaterThanOrEqual(15);
+  }, 60_000);
 });

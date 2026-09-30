@@ -75,6 +75,15 @@ export type PlatoonTask = "assault" | "support" | "reserve" | "halt" | "withdraw
 export const HOLD_SHORT_M = 200;
 
 /**
+ * An assault position: the last covered ground before the objective, where
+ * the company forms up out of sight before it goes in (doctrine; the distance
+ * is ours). Sought within {@link ASSAULT_POSITION_SEARCH_M} of the point this
+ * far short of where the plan puts the enemy.
+ */
+export const ASSAULT_POSITION_M = 250;
+export const ASSAULT_POSITION_SEARCH_M = 150;
+
+/**
  * The platoon a force belongs to, read from its id as the scenarios name
  * them: `BLUE-2-1` is the first squad of BLUE's second platoon. A force named
  * otherwise is a platoon of its own.
@@ -157,11 +166,17 @@ export class ScriptedCompany {
   firesLifted = false;
   /** The turn the rest were let go; undefined while they hold. */
   released: number | undefined;
+  /** The rest have moved up to an assault position and hold there (`moveUp`). */
+  movedUp = false;
+  private readonly ground: CompanyGround;
+  private readonly suspected: readonly Point[];
 
   constructor(game: Game, side: Side, objective: Point, suspected: readonly Point[], plan: CompanyPlan, ground: CompanyGround) {
     this.side = side;
     this.objective = { ...objective };
     this.plan = plan;
+    this.ground = ground;
+    this.suspected = suspected;
     const own = game.units.filter((u) => u.side === side && u.kind === "infantry");
     for (const u of own) this.platoonOfSquad.set(u.id, platoonKey(u.id));
     this.home = own.length
@@ -210,6 +225,38 @@ export class ScriptedCompany {
         if (at) this.waitAt.set(u.id, at);
       }
     }
+  }
+
+  /**
+   * Move the rest up to an assault position and hold them there: each squad
+   * to the dead ground nearest a point {@link ASSAULT_POSITION_M} short of
+   * where the plan puts the enemy, on its own line to it — the last cover
+   * before the objective. A squad with no dead ground there keeps where it
+   * waited. Returns whether any squad has somewhere to go.
+   */
+  moveUp(game: Game): boolean {
+    if (this.released !== undefined || this.movedUp) return false;
+    let any = false;
+    for (const u of game.units) {
+      if (u.side !== this.side || u.kind !== "infantry" || this.scouts.has(u.id) || u.neutralized) continue;
+      const from = this.waitAt.get(u.id) ?? u.position;
+      const range = distance(from, this.objective);
+      if (range <= ASSAULT_POSITION_M) continue;
+      const k = ASSAULT_POSITION_M / range;
+      const aim = { x: this.objective.x + (from.x - this.objective.x) * k, y: this.objective.y + (from.y - this.objective.y) * k };
+      const at = nearestDeadGround({ terrain: this.ground.terrain, watchers: this.suspected }, aim, {
+        width: this.ground.width,
+        height: this.ground.height,
+        radius: ASSAULT_POSITION_SEARCH_M,
+        step: 20,
+      });
+      if (at && distance(at, this.objective) < range) {
+        this.waitAt.set(u.id, at);
+        any = true;
+      }
+    }
+    this.movedUp = any;
+    return any;
   }
 
   /** Whether a force is one of this company's scouts. */

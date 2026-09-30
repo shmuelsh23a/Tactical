@@ -19,7 +19,7 @@ import {
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
 import { bestVantages, isDeadGround } from "../app/deadGround.js";
-import { FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
+import { ASSAULT_POSITION_M, FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
 import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
 import type { IndirectFireResult } from "../engine/index.js";
@@ -455,17 +455,27 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
         ? "Your side has just found the enemy near the objective."
         : `Your side has held the enemy near the objective in sight ${company.turnsHeldInSight + 1} turns in a row.`
       : notInSight(g, company);
+  // A choice of three while the company can still move up; a yes or no after.
   const go =
     question({
       id: `go.${turn}`,
-      kind: "noul",
+      kind: company.movedUp ? "noul" : "choice",
       ask: `${why} Send the company in now?`,
       options: [
         { id: "yes", label: "yes: the company advances to the attack" },
+        ...(company.movedUp
+          ? []
+          : [
+              {
+                id: "up",
+                label: `move up: the company moves to the last covered ground about ${ASSAULT_POSITION_M} m short of where your plan puts the enemy, and holds there until you send it in`,
+              },
+            ]),
         { id: "no", label: lost ? "no: the company stays where it is, with no scouts left to find the enemy" : "no: keep holding while the scouts look" },
       ],
-    }) === "yes";
-  if (!go) return false;
+    });
+  if (go === "up") company.moveUp(g);
+  if (go !== "yes") return false;
   // Which way it goes: straight, or by one of the scouts' observation points,
   // coming in from that side.
   const posts = [...company.posts].filter((e): e is [string, Point] => e[1] !== null);
@@ -645,7 +655,10 @@ const PLATOON_TASK_CARRY_ON: Record<PlatoonTask, string> = {
 
 /** The company's stage in the commander's picture: not gone in yet, or gone in and what each platoon was ordered. */
 function companyStage(g: Game, company: ScriptedCompany): string {
-  if (company.released === undefined) return "Your company has not gone in to the attack yet.";
+  if (company.released === undefined)
+    return company.movedUp
+      ? `Your company has not gone in to the attack yet: it has moved up to its assault position, about ${ASSAULT_POSITION_M} m short of where your plan puts the enemy, and holds there.`
+      : "Your company has not gone in to the attack yet.";
   const tasks = [...company.platoons(g)]
     .filter(([, us]) => us.some(fighting))
     .map(([key]) => `${key} ${PLATOON_TASK_WORDS[company.platoonTask(key)]}`);

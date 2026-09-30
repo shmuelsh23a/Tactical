@@ -230,13 +230,17 @@ try {
  * found, as Jev does, instead of shelling it for four turns first; "onescout"
  * sends one scout, as Jev does, not three; "blind" sends it in at the first
  * chance (turn 5), the enemy found or not, as Sonnet and Opus do; "basefire"
- * gives the first platoon a base of fire and sends the rest in.
+ * gives the first platoon a base of fire and sends the rest in; "moveup"
+ * moves the company up to its assault position at the first chance and goes
+ * from there; "flank" goes in by the first scout's observation point, not
+ * straight; "prep" goes only once most missions are fired on the enemy in
+ * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once.
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
     const has = (id: string) => q.options.some((o) => o.id === id);
     const pick = (): string => {
-      if (q.id === "plan.scouts") return extra.has("onescout") ? "1" : Math.max(...q.options.map((o) => Number(o.id))).toString();
+      if (q.id === "plan.scouts") return extra.has("noscout") ? "0" : extra.has("onescout") ? "1" : Math.max(...q.options.map((o) => Number(o.id))).toString();
       if (q.id.startsWith("plan.post.")) {
         const i = Number(q.id.slice("plan.post.".length));
         return has(`p${i}`) ? `p${i}` : "p1";
@@ -244,10 +248,16 @@ function ruleAsker(extra: Set<string>): Asker {
       if (q.id === "plan.wait") return "deadGround";
       if (/^go\.\d/.test(q.id)) {
         if (extra.has("blind")) return "yes";
+        if (extra.has("moveup") && has("up")) return "up";
+        if (extra.has("prep")) {
+          // Fire first: go once most missions are fired on the enemy in sight, or by turn 30 whatever.
+          const left = Number(/Mortar missions left: (\d+)/.exec(q.view)?.[1] ?? 0);
+          return q.turn >= 30 || / all out of action/.test(q.ask) || (/in sight ([4-9]|\d\d) turns/.test(q.ask) && left <= 4) ? "yes" : "no";
+        }
         if (extra.has("rush") && /just found|in sight \d+ turns/.test(q.ask)) return "yes";
         return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
       }
-      if (q.id.startsWith("go.axis")) return "straight";
+      if (q.id.startsWith("go.axis")) return extra.has("flank") ? (q.options.find((o) => o.id.startsWith("via:"))?.id ?? "straight") : "straight";
       if (q.id.startsWith("go.support")) return "no";
       // "basefire": the first platoon asked gives a base of fire, the rest assault.
       if (q.id.startsWith("go.platoon")) return extra.has("basefire") && q.id.startsWith("go.platoon.BLUE-1.") ? "support" : "assault";
