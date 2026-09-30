@@ -110,3 +110,53 @@ describe("pinned means heads down (decision 63, S2)", () => {
     expect(before.g.contactFor("RED", "B")).toBeDefined();
   });
 });
+
+describe("assaulted while pinned (decision 63, S5)", () => {
+  // BLUE's squad 20 m from RED's, in the fire phase, RED's men shaken.
+  const assaulted = (seed: number, suppression: number, opts: Partial<GameOptions> = {}) => {
+    const g = new Game({ seed, morale: true, enforceC2: false, ...opts });
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 20 }, 8));
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    for (const s of red.soldiers!) s.morale!.will = 25;
+    red.suppression = suppression;
+    return { g, red, result: g.assault("B", "R", 1) };
+  };
+
+  it("tests a pinned defender first, and a broken one gives itself up or runs, on a roll", () => {
+    const outcomes = { held: 0, surrendered: 0, routed: 0 };
+    for (let seed = 1; seed <= 40; seed++) {
+      const { g, red, result } = assaulted(seed, SUPPRESSION.pinned);
+      expect(result.fired).toBe(true);
+      const outcome = result.nerve?.outcome ?? "held";
+      outcomes[outcome]++;
+      if (outcome === "surrendered") {
+        expect(red.surrendered).toBe(true);
+        expect(result.defenderCasualties).toBe(0); // taken, not shot
+      }
+      if (outcome === "routed") {
+        expect(red.routing).toBe(true);
+        expect(g.standingOrderFor(red.id)).toMatchObject({ withdraw: true, gait: "run" });
+      }
+    }
+    expect(outcomes.surrendered).toBeGreaterThan(0);
+    expect(outcomes.routed).toBeGreaterThan(0);
+  });
+
+  it("does not test a defender neither pinned nor suppressed, nor any before the decision", () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      expect(assaulted(seed, 0).result.nerve).toBeUndefined();
+      const before = assaulted(seed, SUPPRESSION.pinned, { assaultNerve: false });
+      expect(before.result.nerve).toBeUndefined();
+      expect(before.red.surrendered).toBeFalsy();
+    }
+  });
+
+  it("is on in a new game, recorded, and off in a recording made before it", () => {
+    const r = new Game({ seed: 1 }).toRecording();
+    expect(r.assaultNerve).toBe(true);
+    delete (r as { assaultNerve?: boolean }).assaultNerve;
+    expect(replayGame(r).assaultNerve).toBe(false);
+  });
+});

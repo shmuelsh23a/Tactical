@@ -30,6 +30,7 @@ import {
   SUPPRESSION,
   SUPPRESSION_EFFECT,
   SUPPRESSION_REACH_81MM,
+  ASSAULT_NERVE,
   TEST,
   THRESHOLDS,
   TOP_LEADER_ECHELON,
@@ -585,6 +586,60 @@ export interface MoraleStepResult {
   recovered: string[];
   /** Forces that gave themselves up. */
   surrendered: string[];
+}
+
+/** What an assault did to a pinned or suppressed defender's nerve before it went in (rules decision 63, S5). */
+export interface AssaultNerve {
+  outcome: "held" | "surrendered" | "routed";
+  /** Men the tests broke. */
+  broke: number;
+  /** Where a routing force runs to. */
+  to?: Point;
+}
+
+/**
+ * Assaulted while pinned or suppressed (rules decision 63, S5): every man of
+ * the defender who is neither down nor broken tests his nerve as the morale
+ * step does ({@link TEST}, his wisdom, the force's experience, the prepared
+ * bonus), less {@link ASSAULT_NERVE}'s penalty for the force's suppression.
+ * If that breaks the force, it rolls: it gives itself up at
+ * `ASSAULT_NERVE.surrenderChance`, else it routs. A force neither pinned nor
+ * suppressed is not tested, and nothing is rolled for it.
+ */
+export function nerveUnderAssault(
+  rng: Rng,
+  units: readonly Unit[],
+  unit: Unit,
+  turn: number,
+  prepared: { testBonus: number } = PREPARED,
+): AssaultNerve {
+  const level = suppressionLevel(unit);
+  const penalty = level === "pinned" ? ASSAULT_NERVE.pinned : level === "suppressed" ? ASSAULT_NERVE.suppressed : 0;
+  if (!penalty || unit.surrendered || unit.neutralized) return { outcome: "held", broke: 0 };
+  const exp = EXPERIENCE[unit.experience ?? "regular"];
+  let broke = 0;
+  for (const s of soldiersWithPools(unit)) {
+    const m = s.morale!;
+    if (m.state === "broken" || m.state === "heroic") continue;
+    const target =
+      effectiveMorale(units, unit, s) + TEST.base + TEST.perWisdom * (s.traits?.wisdom ?? 5) + exp.test +
+      (inPosition(unit) ? prepared.testBonus : 0) - penalty;
+    m.lastTestTurn = turn;
+    if (rng.int(1, 100) <= target) continue;
+    m.state = "broken";
+    broke += 1;
+  }
+  if (!forceBroken(units, unit)) return { outcome: "held", broke };
+  if (rng.chance(ASSAULT_NERVE.surrenderChance)) {
+    unit.surrendered = true;
+    unit.routing = false;
+    unit.neutralized = true;
+    unit.canOnlyRetreat = false;
+    return { outcome: "surrendered", broke };
+  }
+  unit.routing = true;
+  for (const s of soldiersWithPools(unit)) drain(s.morale!, LOSS.rout);
+  return { outcome: "routed", broke, to: routDestination(units, unit) };
 }
 
 function soldiersWithPools(unit: Unit): Soldier[] {

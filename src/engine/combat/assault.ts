@@ -33,6 +33,11 @@ export interface AssaultResult {
    * when the game plays the document's one-sided assault.
    */
   reply?: { chance: number; shooters: number; hits: number; damage: number; casualties: number };
+  /**
+   * What the assault did to a pinned or suppressed defender's nerve before it
+   * went in (rules decision 63, S5). Absent when the defender was not tested.
+   */
+  nerve?: { outcome: "held" | "surrendered" | "routed"; broke: number };
 }
 
 /**

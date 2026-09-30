@@ -116,6 +116,8 @@ import {
   snapshotSoldiers,
   suppressionLevel,
   roundSuppression,
+  hasMorale,
+  nerveUnderAssault,
   type FireNote,
   type ForceMorale,
   type MoraleReport,
@@ -432,6 +434,13 @@ export interface GameOptions {
    */
   headsDown?: boolean;
   /**
+   * A pinned or suppressed defender tests its nerve before an assault on it
+   * is resolved, and a force that breaks surrenders or runs on a roll (rules
+   * decision 63, S5: `ASSAULT_NERVE`). On by default; a recording made
+   * before it reads it as off.
+   */
+  assaultNerve?: boolean;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -533,6 +542,7 @@ export class Game {
   readonly suppressionReach: boolean;
   readonly roofsDampSuppression: boolean;
   readonly headsDown: boolean;
+  readonly assaultNerve: boolean;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -691,6 +701,7 @@ export class Game {
     this.suppressionReach = opts.suppressionReach ?? true;
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
     this.headsDown = opts.headsDown ?? true;
+    this.assaultNerve = opts.assaultNerve ?? true;
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
     }
@@ -814,6 +825,7 @@ export class Game {
       ...(this.suppressionReach ? { suppressionReach: true } : {}),
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
+      ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -2394,6 +2406,47 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const defender = this.getUnit(defenderId);
     const defenderWasNeutralized = defender.neutralized;
+    // Decision 63, S5: a pinned or suppressed defender's nerve is tested as
+    // the assault comes in. One that gives itself up is taken; one that runs
+    // is assaulted as it goes.
+    const nerve =
+      this.assaultNerve && this.morale && hasMorale(defender) && !defender.neutralized
+        ? nerveUnderAssault(this.rng, this.units, defender, this.turn, {
+            testBonus: this.variants.preparedTestBonus ?? PREPARED.testBonus,
+          })
+        : undefined;
+    if (nerve?.outcome === "surrendered") {
+      this.abandonWork(defender);
+      this.standingOrders.delete(defender.id);
+    } else if (nerve?.outcome === "routed") {
+      this.abandonWork(defender);
+      this.standingOrders.set(defender.id, {
+        issuedTurn: this.turn,
+        gait: "run",
+        destination: this.onTheMap(nerve.to!),
+        withdraw: true,
+      });
+    }
+    const nerveNote = nerve && (nerve.broke > 0 || nerve.outcome !== "held") ? { nerve: { outcome: nerve.outcome, broke: nerve.broke } } : {};
+    if (nerve?.outcome === "surrendered") {
+      this.exchangeContact(attacker, defender);
+      this.journal({ kind: "assault", attackerId, defenderId, grenades });
+      return {
+        fired: true,
+        attackerId,
+        defenderId,
+        range: distance(attacker.position, defender.position),
+        fireHits: 0,
+        fireDamage: 0,
+        grenadeHits: 0,
+        grenadeDamage: 0,
+        selfCasualties: 0,
+        defenderCasualties: 0,
+        defenderNeutralized: true,
+        ...nerveNote,
+        coveringFire,
+      };
+    }
     const reply = this.variants.assaultReplyChance;
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
@@ -2412,7 +2465,7 @@ export class Game {
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
     }
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
-    return { ...result, coveringFire };
+    return { ...result, ...nerveNote, coveringFire };
   }
 
   /**

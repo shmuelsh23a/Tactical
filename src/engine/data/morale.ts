@@ -307,6 +307,18 @@ export const ROOF_SUPPRESSION_FACTOR = 0.5;
  */
 export const HEADS_DOWN = { sightWithinM: 50, fireWithinM: 100, suppressedSightChance: 0.5 } as const;
 
+/**
+ * Assaulted while pinned or suppressed (rules decision 63, S5; author,
+ * 2026-09-30: "roll between surrender and rout"). Before an assault is
+ * resolved, each man of a defender that is pinned or suppressed tests his
+ * nerve as decision 19 tests it, less `pinned` or `suppressed`. A force the
+ * tests break gives itself up at `surrenderChance`, else runs. In Operation
+ * Veritable (1945) about 20 Germans surrendered for each casualty, the
+ * assault arriving as the fire lifted (Swann, reanalysed by Rooney). All
+ * three numbers are ours.
+ */
+export const ASSAULT_NERVE = { pinned: 20, suppressed: 10, surrenderChance: 0.5 } as const;
+
 /** What a suppressed or pinned force does to its own shooting, and to its men's nerve. */
 export const SUPPRESSION_EFFECT = {
   suppressed: { accuracy: 0.75, morale: 5 },

@@ -1123,6 +1123,18 @@ export function App({ scenario, onLeave }: AppProps) {
               (grenades > 0 ? (perManGrenades ? ` עם ${grenades} רימונים ללוחם` : ` עם ${grenades} רימונים`) : "") +
               `, ${casualtyReport(r.defenderCasualties, false)}`,
         );
+        // A pinned or suppressed defender's nerve went as the assault came in
+        // (rules decision 63, S5). Giving up or running is behaviour, and the
+        // assaulting force is on top of it: both sides see it.
+        if (r.nerve && r.nerve.outcome !== "held") {
+          pushLog(
+            r.nerve.outcome === "surrendered"
+              ? `${target.name} נכנע כשההסתערות הגיעה אליו`
+              : `${target.name} נשבר ונמלט מפני ההסתערות`,
+            "fire",
+            sharedBy(attacker.side),
+          );
+        }
         if (r.selfCasualties > 0) {
           // What a force did to itself with its own grenades is its own to know.
           pushLog(
