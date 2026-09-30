@@ -169,8 +169,9 @@ balance.md, *Fourteenth* and *Fifteenth round*.
      change in the tables (3:1 up 6–11 points) is the layout alone.
    - **Without mortars it goes in half the time and helps the attacker**
      (3:1 57% → 72%), because it goes as the platoon reaches its breakpoint.
-   **Waiting on the author:** when the drill counterattacks (at once; only
-   above some strength or against no more than a squad; only behind fire).
+   **Settled the same day:** it counterattacks **at once, before the
+   attacker consolidates** — no strength or odds check, no waiting for
+   fire — which is what was built.
    **Not done:** the reserve in the balance harness's flat-ground layouts;
    the platoon battle, the company battle's platoon B and Yokneam, whose
    layouts each teach a lesson and have no reserve — which squad each

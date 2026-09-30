@@ -2160,11 +2160,12 @@ shows why: it goes when both forward squads are out, and by then the
 platoon is at its breakpoint (16 of 32 men down, on turn 31, in the one
 traced). It leaves its hole, takes losses and breaks in the open, and the
 side gives up sooner; defenders that would have held to the deadline lose
-instead. The rule as built does not ask whether a counterattack can
-succeed. **Open for the author:** when the drill should counterattack: at
-once, before the attacker consolidates; only while the platoon is above
-some strength, or only against no more than a squad on the position; or
-only behind fire (the company's mortars on the lost position first).
+instead. The rule does not ask whether a counterattack can succeed. Asked
+whether it should go at once, only above some strength or against no more
+than a squad, or only behind fire, the author ruled **at once, before the
+attacker consolidates** (2026-09-30), which is what was built. Whether it
+pays is left to attacks that reach the position; on the tel today none
+does.
 
 ## How the engine scales, 2026-09-23
 

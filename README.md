@@ -2032,15 +2032,17 @@ on the stated reasoning, still awaiting the author's word.
     retakes it without an order: it goes at a run for the nearest enemy
     known on the position, assaults it by the drill's assault rule, and once
     no enemy is known there it takes the position and holds it
-    (`SquadDrill.counterattack`, `DrillTask.reserves`). It is the platoon's
+    (`SquadDrill.counterattack`, `DrillTask.reserves`). It goes **at once,
+    before the attacker consolidates** (author, 2026-09-30): committed in
+    the first movement phase after the position is lost, without weighing
+    the odds or waiting for fire on the position. It is the platoon's
     drill, so it is scripted, as squads and platoons are; which squad is
     the reserve, and where it stands, are the scenario's. ⚠️ Ours: a
     position counts as lost when its squad is out of the fight or more than
     25 m from it (a squad that moved to its alternate position on purpose
     does not count) and an enemy seen this turn or last is within 50 m of
     it — an older mark, which may be where the enemy no longer is, does not
-    start or aim a counterattack; the reserve does not weigh the odds
-    before it goes; and the Tel Azeka layout, where
+    start or aim a counterattack; and the Tel Azeka layout, where
     RED-A-1 (whose post saw no ground the other two did not) is pulled back
     to 100–112 m behind the other two, beside the platoon command group.
     The live game plays no drill for a player's side, so there the reserve
@@ -2050,7 +2052,9 @@ on the stated reasoning, still awaiting the author's word.
     mortars no attacker ever comes within about 150 m of a forward position,
     so no counterattack ever goes in; without them, the reserve goes in half
     the battles, usually once the platoon is already at its breakpoint, and
-    helps the attacker.
+    helps the attacker. The author kept it at once all the same: when it
+    goes is the drill's, and whether a counterattack pays is for play and
+    for attacks that reach the position to show.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
