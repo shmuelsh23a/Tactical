@@ -11,6 +11,298 @@ and why" — is what belongs below.
 
 ---
 
+## 2026-09-28 to 2026-09-30 — the validation pass, unknown positions, and the day that fixed the balance
+
+Moved here from handoff.md at the end of 2026-09-30, as it stood. Its
+superseded "Waiting on the author" items were answered in rules decisions
+51–66 (README).
+
+### Start here: the validation pass (2026-09-28)
+
+The author asked how valid the numbers are, and ruled (decisions 40–41):
+**a turn is 60 s**, and **the tables follow the research**. Built:
+`data/lethality.ts` derives each explosive's blast bands from its published
+lethal area, the tank gun hits to 2 km, and `GameOptions.lethality` keeps the
+document's tables a per-game option (a recording from before replays on them).
+`npm run validate` measures the result. Everything is on
+[validation.md](validation.md), with sources.
+
+**Rates of fire and the 75% calibration** followed the same day (decisions
+42–43). A weapon's rate is a range, drawn each turn: the lowest figure
+(tank 1, mortar 3 a tube) is the likeliest, the highest published one the
+outlier, and a crew tires over 10 turns of firing. To bring explosives to 75%
+of losses, on the research figures small arms hit a third as often and a
+mortar mission fires 24 bombs for effect. With a mortar section on call all
+battle (`--fires calibrated --defender-fires calibrated`) the company attacks
+come out at 82% and 77%, and the 2:1 attacker wins 63%.
+
+**Then the breakpoints and grenadiers** (decision 44). On the research
+figures a side gives up at 30% of its men down, broken or fled when
+attacking, 60% when defending (`GameOptions.attackers`, set in every spec):
+attackers now quit at a median 16–25% casualties, defenders at 42–50%, and
+the calibrated 2:1 attack still wins 61%. The drill fires one 40 mm launcher
+per four men inside 100 m; platoon battles are 22–36% explosives, company
+battles with mortars 78–83%.
+
+**Then a playtest** of all three battles through the UI (a scripted player
+on both sides, the recordings read back as umpire) found two things, fixed
+in decision 45: a single squad's rout ended an attack at 12% casualties,
+because a routed force counted whole — on the research figures it now
+counts its men down or broken — and a player's squads had no grenadiers;
+they fire them now, by the drill's rule. The demo now goes to turn 7 and
+ends at 33% really lost; the company battle with mortars called ends on
+turn 8, 61% of its casualties by explosives.
+
+**Then hand grenades** (decision 46): every man going in throws his, up to
+the two he carries, each a blast of the M67's lethal area; a grenade wounds
+its own side 1.5% of the time (decision 47), not the document's 5%. Platoon
+battles are now 30–40% explosives; the calibrated company battles did not
+move.
+
+**Then a smarter attacker and a 3:1 scenario** (`telAzekaAssault`: a
+company against a platoon, 12 missions a side; `telAzekaAssault2`, two
+platoons, for 2:1). The scripted player (`tools/smart-attacker.mjs`) bounds
+by halves behind a fire plan and lays smoke; with its position-reading bug
+fixed it wins the 3:1 attack 7 of 8 and the 2:1 attack 3 of 8
+(validation.md, *The design principles, measured*). `?seed=N` plays a
+scenario on other dice.
+
+**Then decision 48**: prepared positions start in full (overhead) cover,
+and on the research figures a squad the attrition rule neutralised counts
+by its casualties. The calibrated 3:1 attack wins 87%, 75% by explosives;
+the 2:1 wins 2% (was 56%) — mostly the overhead cover. A sweep of mortar
+missions × rounds found that more than about 8 missions a side are never
+fired, and that rounds a mission matter more (validation.md).
+
+**Then decisions 49–50**: a defender gives up at 50%, and on the research
+figures digging takes minutes — partial cover after 30, full after 90 (FM
+5-15, 1944), never overhead cover. A 2:1 company attack without mortars
+wins 59% against a hasty defence and 8% against a prepared one.
+
+**The author's design principles** (README, 2026-09-28), which every
+balance change should be measured against: a prepared position gives the
+defender its superiority and makes an attack need 3:1; a meeting engagement
+has no defender's bonus, so numbers win (measured: 72–88% at ~2:1, 80–100% at
+3:1); fortifying during battle belongs to the higher echelons, whose battles
+last hours; the scenarios are test beds. Measured with the smart attacker:
+3:1 on a prepared platoon wins 7 of 8, 2:1 wins 3 of 8 (2 draws).
+
+**Then decisions 51–52 (2026-09-28/29)**, from the author's question
+"in an attack neither side knows exactly where the other is — did you take
+that into account?" Only in the engine: the harness and the smart attacker
+planned fires on the defence's true centre. Now a sighting reports an
+observer's estimate (`GameOptions.locationError`, on in every scenario), and
+the test players plan on an estimate (`--planning-error`, `PLANNING_ERROR`).
+The calibrated 3:1 company attack falls from 95% to 20%; the smart attacker
+from 8 of 8 to 2 of 8. Reconnaissance (decision 52: `--recon 1` with
+`--fires calibrated-wait`, `RECON=1`) brings the harness's 3:1 back to 59%
+when the defender opens fire at 400 m — and does nothing against a defender
+with fire discipline, because a still force is found only inside 20 m.
+In the browser the smart attacker's scout did not pay (1 of 8 at 3:1, 2 of
+8 without it): the reports did not make the mortars hurt the dug-in defence
+more, and the scout's losses counted toward the breakpoint. Why the harness
+and the browser differ is the next thing to trace.
+balance.md, *Fourteenth* and *Fifteenth round*.
+
+**Start the next session here** — open, in rough order:
+0. **Where 2026-09-30 ended: the balance inside the author's targets.**
+   The day ran: the reserve and counterattack (60), pace researched, climb
+   8 → 5 (61), the sources' cover against shells (62), suppression in five
+   parts (63, [suppression-design.md](suppression-design.md)), nerve by
+   cover (64), a pinned force firing to 400 m at a penalty (65), the
+   scripted defender's fire plan and a defending command post that stays
+   put (harness), a smarter scripted attacker (smoke and plan fires,
+   options, off: they did not help), and **decision 66**: the targets
+   **55–70% at 3:1 and 30–45% at 2:1** against a prepared position (from
+   research), nerve in the open ×1, an attacker's breakpoint at 40%. With
+   the scripted company sending three scouts, **3:1 wins 58% and 2:1 38%**
+   (balance.md, *Thirty-first round*, which also gives the standard
+   `scenario-sim` command); the reserve counterattacks in about one battle
+   in seven. The flat-ground harness was rerun on today's rules
+   (balance.md, *Thirty-second round*): the company 3:1 with the full rules
+   wins 58%, inside the target, but the harness's defaults have fallen
+   behind the game (decisions 51–55 off, recon that does not scale with the
+   echelon), so its squad and platoon cells no longer judge anything; its
+   `TARGETS` carry decision 66's bands. Then the harness was brought up to
+   the game (*Thirty-third round*): decisions 51–55 on by default, an eye's
+   planning error, a scout from each attacking platoon (`--classic` for the
+   old harness). Squad 3:1 69%, company 3:1 59% (69% with calibrated
+   fire); the sweep meets 7–8 of 12. Still off target on flat ground:
+   platoon 3:1 94%, company 2:1 1–10%. `npm run validate` now plays the
+   game's rules too (validation.md, *The breakpoints and explosives' share,
+   on the game's rules*): attackers give up at 16–28% casualties, defenders
+   at 25–31%, battles take twice as long, and **explosives' share with
+   calibrated fire is 51% on flat ground** where decision 43 set 75% — the
+   author ruled that **75% is for real ground**, which the tel meets
+   (73–77%). **Jev:** the author has a TypeSafe API key; the SDK is
+   `@typesafe-ai/sdk` (0.6.0, reads `TYPESAFE_API_KEY`, talks to
+   `api.typesafe.ai`), and this environment's network denied that host on
+   2026-09-30. **The Jev decider is built** (`src/sim/jev.ts`, `npm run
+   jev-sim -- --jev --seed 1000 --n 10`), tested against a stand-in; once the
+   key is set as an environment variable and the host allowed, run it and
+   measure Jev's company against the scripted one (3:1 58%, balance.md
+   *Thirty-first round*).
+   **Next, in rough order:**
+   drive the new
+   rules in the browser as a player (suppression, heads down, danger close
+   and a counterattack have only been played by scripts); the layouts
+   without a reserve (the platoon battle, the company battle's platoon B,
+   Yokneam) are the author's to lay out.
+0. **Where the day ended (2026-09-30): the defender's reserve.** Two
+   rulings from the author. **Which target the company's guns take is a
+   command decision** — Jev's, or the player's; there is to be no scripted
+   rule for it. `jev-sim` already asks it. The scripted company in the
+   headless runner still has to choose to measure balance; we proposed it
+   plays a competent commander (squads first, 3:1 56–62%) with the other
+   orders kept as the range a choice spans (23–62%) — not confirmed.
+   Then, asked whether the defender ever counterattacked or used a reserve
+   (it never had either): **"a squad in reserve; platoon counterattacks by
+   drill"** — rules decision 60, built: `SquadDrill.counterattack`,
+   `DrillTask.reserves`, `"reserve": true` in a spec, `Scenario.reserves`,
+   RED-A-1 pulled back on the three Tel Azeka layouts that share platoon A,
+   `--no-counterattack` on `scenario-sim`. What it found (balance.md,
+   *Twenty-second round*):
+   - **No attack on the tel ever closes.** Over 40 traced battles no
+     attacker came within 148 m of a forward position; every one ended at
+     a breakpoint after fire. So the counterattack never goes in, and the
+     change in the tables (3:1 up 6–11 points) is the layout alone.
+   - **Without mortars it goes in half the time and helps the attacker**
+     (3:1 57% → 72%), because it goes as the platoon reaches its breakpoint.
+   **Settled the same day:** it counterattacks **at once, before the
+   attacker consolidates** — no strength or odds check, no waiting for
+   fire — which is what was built.
+   **Not done:** the reserve in the balance harness's flat-ground layouts;
+   the platoon battle, the company battle's platoon B and Yokneam, whose
+   layouts each teach a lesson and have no reserve — which squad each
+   holds back is a layout question for the author. The first thing worth
+   doing is item 2 below: a counterattack only matters in an attack that
+   reaches the position — and the pace research found fire, not pace, is
+   what stops it.
+0. **Where the day ended (2026-09-29): the mortar thread, and what is open.**
+   The day began with the author's question whether pre-planned fires
+   account for neither side knowing where the other is. They did not: with
+   fires planned from an estimate (decision 51) the calibrated 3:1 fell from
+   95% to about 20%. Recon (decisions 52–54) brings the guns to a median 22 m
+   off. On the tel, headless, the scripted 3:1 wins 41–59% by target order
+   (squads first best, command first worst, 25%); 2:1 30–39%; on the truth
+   68–76%. So 3:1 sits well under the author's 85% ceiling (decision
+   rulings), and a company using platoon control (decision 59) does better
+   than the script. **Open, in the order proposed to the author:**
+   1. **Waiting on the author:** which target the company's guns take
+      first. Squads first measures best; decision 55 found a dug-in
+      defender's command group is low value.
+   2. Mortar lethality against men dug in, checked against the research
+      figures (the author asked whether the research has numbers; not done).
+   3. Why the tel stays low with good aim: no spot on the attacker's side
+      sees all three of RED's squads, so some fire goes on stale marks.
+   4. Another agent round as Jev on the new questions (decisions 58–59 and
+      the item 1 fixes), each agent in its own folder.
+0. **Then (author: "do 1 and 2, keep marks on last seen, mark them with
+   broken lines; mission will have time limit in briefing"):** decision 57
+   (a mark stays where last seen, drawn with a dashed frame) and 58 (each
+   mission's deadline, 45 turns on the tel, in the brief and the turn line;
+   costs the scripted 3:1 about 5 points, balance.md *Twentieth round*),
+   both driven in the browser. Item 1, the agents' bugs in the questions:
+   a scout at its point seeing nothing is now asked about (with a decider
+   it no longer walks on by itself), "on" there sends it toward the
+   objective, the scout questions offer observation points on marks found
+   away from the plan, jev-sim counts HE and smoke separately and exits 2
+   with one line on an answer that is not an option, and the go question
+   says what was found near the objective instead of "not found yet".
+   Item 2 (decision 59): the commander tasks each platoon at "go"
+   (assault, base of fire, reserve), can bound by platoon, hold the
+   assault short until it lifts the fires, and is asked when a platoon
+   takes casualties, with what it is under fire from. A fixed policy using
+   it wins the 3:1 16 of 30 instead of 12 (balance.md, *Twenty-first
+   round*). **Next: another agent round on the new questions, in separate
+   folders.**
+0. **Then (author: "can you spin up an agent that takes Jev's role", then
+   "destroying the command group should have effect; do 1-3"):**
+   `npm run jev-sim` puts the company commander's decisions as typed
+   questions; two Claude agents played them (3:1: 3 of 4; 2:1: 0 of 4) and
+   found a scout bug, fixed. Rules decision 55 (command succession), more
+   information and control in the questions. The scripted commander now
+   wins the tel's 3:1 59% firing on squads first (balance.md, *Nineteenth
+   round*). A second agent run on the fixed questions is recorded there.
+0. **Then (author: "do both"):** traced why the tel stays low, and moved the
+   company choices out of `SquadDrill` into `app/company.ts`
+   (`CompanyOrders`, `ScriptedCompany`). No spot in reach sees all three
+   of RED's squads, so the commander now sends two scouts to two
+   observation points. On the tel that gives 3:1 28–37% and 2:1 23–25%. The
+   guns aim well (median 22 m) but half their missions go at command groups
+   in the open. **Waiting on the author:** which target the company's guns
+   take when several are found (balance.md, *Why the tel stays low*).
+0. **Built 2026-09-29 (author: "go ahead with the headless runner and
+   dead-ground finder"):** `npm run scenario-sim` plays the scenarios on
+   their real ground headless with a scripted company commander; dead
+   ground and a vantage point for it are in `src/app/deadGround.ts`. It
+   agrees with the browser: on the tel, recon lifts 3:1 only from about 20%
+   to 28% (balance.md, *Eighteenth round*); flat ground gave 82%. Tracing
+   why is the next step. Moving the company choices out of `SquadDrill`
+   (item a below) is still to do.
+0. **Proposed to the author (2026-09-29):** only squad and platoon
+   are scripted in the real game; company and up is Jev plus an LLM call.
+   So: (a) move the company-level choices (recon, the look, fires waiting)
+   out of `SquadDrill` into a company plan that a scripted commander plays
+   in the harness and Jev will play in the game; (b) a dead-ground finder
+   (where a force is out of sight of known and likely enemy observers),
+   used by both; (c) a headless runner that plays the scripted commander on
+   the scenarios' real ground, so balance is measured on a hill with
+   observation posts, not only on flat ground. The browser stays for
+   end-to-end checks.
+0. **Decision 54 (2026-09-29), built and measured:** scouts carry
+   binoculars and a longer look sharpens a report. With a 4-turn look the
+   harness's 3:1 company attack on realistic intelligence wins 86–95%
+   (balance.md, *Seventeenth round*). Browser results in validation.md.
+   What is left for the author: whether 3:1 at 86–95% and 2:1 at 1–21% is
+   the balance wanted, and the 600 m / 1,000 m / halving, all ours.
+0. **Waiting on the author (decision 53, 2026-09-29):** a force in
+   position now finds a still enemy out to 300 m (600 m from an OP), and the
+   scouts can bound and observe, but it moves nothing: the defender sees
+   the halted scout as easily and shells it. An experiment giving a halted
+   scout an OP's 600 m (binoculars) takes the Western-drill 3:1 attack from
+   1% to 42%. Should scouts carry binoculars (backlog 4), and should a
+   longer look sharpen the report? balance.md, *Sixteenth round*.
+0. **Waiting on the author (decisions 51–52):** what should let an attacker
+   find a still, dug-in defender before the assault — a longer detection
+   band for a force that stops and watches, binoculars (backlog 4), UAVs,
+   or none (recon only by drawing fire)? And whether 3:1 should still win
+   against a prepared platoon once intelligence is realistic.
+1. **Fire support by odds.** Both sides of the test scenarios have the same
+   mortar section, and the mortars decide the battle before the infantry
+   closes (8–10 minutes; infantry advances 14–25 m a minute uphill under
+   fire). So the odds act through what a side can lose, not through its
+   fire. An attacker at 3:1 usually brings more fire than the defender:
+   asked the author whether the real scenarios should; no answer yet.
+2. **Infantry pace under fire — researched 2026-09-30, nothing changed**
+   (validation.md, *Infantry pace under fire*). The sources put an advance
+   under fire at 15–30 m a minute net (rush and drop); the tel's attack
+   already nets about 20. Pace is not why it never closes: fire decides
+   the battle 6–9 minutes after the company goes, where 350 m takes 15–20.
+   **The climb cost is 5 m a metre since decision 61** (author, the same
+   day; balance.md, *Twenty-third round*): the tel's 3:1 wins 67–77%,
+   the 2:1 41–58% — the 2:1 now sits badly with the design principle
+   that a prepared position needs 3:1. Still no attack closes. Left as
+   it is: the drill's pace in contact on flat ground (about 50 m a minute
+   when nobody is suppressed). **Next: how long a dug-in platoon holds under a
+   mortar section**, against the sources — the morning's item 2.
+3. **The plain drill against the smart attacker.** The harness's drill wins
+   the 3:1 attack 95% and the 2:1 8%; the smart attacker 7/8 and 3/8. The
+   drill is what balance numbers are measured with; how far it is from a
+   good player is itself a finding.
+4. **Overhead cover for the higher echelons** (decision 50 leaves it out: it
+   takes hours). When battalion battles come (backlog 3), it needs a step on
+   the digging clock (6–8 h for a two-soldier position, 2–4 more for
+   overhead cover — secondary sources; FM 5-103's table is an image).
+5. **Ammunition** (backlog 12): nothing runs out by the bomb; the mission
+   allotment is the only limit, and past ~8 missions a side they go unfired.
+
+Not yet played by a person on the new figures; the scripted players are the
+only ones who have.
+
+
+---
+
 ## 2026-09-22/23 — morale, the balance harness, and five rounds of rulings
 
 Morale was built (decision 19, merged as PR #2). Then the author asked for
