@@ -176,9 +176,14 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    game's rules too (validation.md, *The breakpoints and explosives' share,
    on the game's rules*): attackers give up at 16–28% casualties, defenders
    at 25–31%, battles take twice as long, and **explosives' share with
-   calibrated fire is 51% on flat ground** where decision 43 set 75% (the
-   tel meets it, 73–77%) — **waiting on the author:** whether 75% holds on
-   open ground or is a figure for real ground. **Next, in rough order:**
+   calibrated fire is 51% on flat ground** where decision 43 set 75% — the
+   author ruled that **75% is for real ground**, which the tel meets
+   (73–77%). **Jev:** the author has a TypeSafe API key; the SDK is
+   `@typesafe-ai/sdk` (0.6.0, reads `TYPESAFE_API_KEY`, talks to
+   `api.typesafe.ai`), and this environment's network denied that host on
+   2026-09-30. With the key set as an environment variable and the host
+   allowed, the first use is a Jev decider for `jev-sim`'s typed questions.
+   **Next, in rough order:**
    drive the new
    rules in the browser as a player (suppression, heads down, danger close
    and a counterattack have only been played by scripts); the layouts

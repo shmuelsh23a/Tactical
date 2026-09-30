@@ -896,8 +896,8 @@ the classic harness → the game's rules:
   75% the author set** (decision 43, which was calibrated on the classic
   harness). On the tel it is 73–77% (balance.md, *Thirty-first round*). On
   open ground the scouted attack closes to rifle range, and small arms do
-  more of the work. **For the author:** whether 75% is to hold on open ground
-  too, or is a figure for battles on real ground, where the tel meets it.
+  more of the work. **The author ruled (2026-09-30): 75% is for real
+  ground, and the tel meets it.** The flat harness's 51% is not a miss.
 
 ## Open
 

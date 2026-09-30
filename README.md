@@ -1610,7 +1610,10 @@ on the stated reasoning, still awaiting the author's word.
     - Nothing counts ammunition (backlog 12).
 43. ✅ **Calibrated to 75% of losses by explosives** (author, 2026-09-28: "I
     want the numbers to reflect 75% HE casualties"; the sources give 72–78%,
-    docs/validation.md). Measured, not argued: with the rates of decision 42
+    docs/validation.md). **The 75% is for battles on real ground** (author,
+    2026-09-30): the tel meets it (73–77%); the flat harness, where a scouted
+    attack closes to rifle range in the open, gives about 51% and is not held
+    to it. Measured, not argued: with the rates of decision 42
     the share of explosives stayed at 13–31%, and the fire's **volume** and
     the rifle's **deadliness** were what moved it. Under
     `lethality: "research"`:
