@@ -2651,8 +2651,20 @@ The attack's wins, 3:1 (`telAzekaAssault`), same 20 seeds (±11 points):
 | … in as soon as the enemy is found (no four turns of shelling first) | 55% |
 | … Jev's choices together: one scout, in at once, bound, hold short | 30–40% |
 
+And over 100 seeds a scenario from 1000 (±5 points):
+
+| Commander | 3:1 wins | 2:1 wins |
+|---|---|---|
+| Rule through the questions | **63%** | **34%** |
+| Rule with Jev's four choices (one scout, in at once, bound, hold short) | **23%** | **14%** |
+| Jev itself (20 seeds, below) | 10% | 15% |
+
+The rule lands inside the targets (55–70%, 30–45%) as the scripted
+commander does; with Jev's four plan choices it falls to where Jev is.
+
 So the questions are not the gap: answered as the scripted commander
-decides, they win what it wins. What costs are **choices**, and the
+decides, they win what it wins. What costs are **choices** — four of them
+account for most of the distance to Jev, and the
 largest are ones a trained commander makes on purpose: bounding by platoon
 and holding the assault short under its own fires are textbook, and in
 this game they cost the attack as much as leaving two platoons in reserve

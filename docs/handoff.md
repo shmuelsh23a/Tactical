@@ -81,7 +81,8 @@ and `api.typesafe.ai` allowed in the cloud environment. Read balance.md,
 - **Balance with Jev**: 3:1 **10%**, 2:1 **15%** (20 seeds each) against the
   scripted commander's 65% and 25% on the same seeds. The questions are not
   the gap — `jev-sim --rule` answers them as the scripted commander decides
-  and wins 70% — Jev's choices are: it bounds by platoon and holds short
+  and wins 63% and 34% over 100 seeds; given Jev's four plan choices, 23% and
+  14% — Jev's choices are: it bounds by platoon and holds short
   under its fires, textbook both, and each costs the attack about as much as
   a platoon never committed. **Waiting on the author**: should they (drill
   mechanics, ours), and are the targets meant to hold for Jev too?
