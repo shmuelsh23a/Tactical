@@ -168,9 +168,19 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    11 of 12 missions) and smoke makes it worse (a screen blinds both sides;
    each is an HE mission lost) — both kept as options, off. Trials: 24
    missions 18%, lifting at 200 m 25%, nerve ×1 in the open 28%, a 40%
-   breakpoint 34% — **no single lever brings 3:1 near 85%**; 2:1 stays under
-   20% throughout. **Waiting on the author:** what should let a 3:1 attack
-   on a prepared platoon arrive. The balance harness's tables on balance.md
+   breakpoint 34% — no single lever brings 3:1 near 85%. Then all three of
+   the author's asks together (balance.md, *Thirtieth round*;
+   validation.md, *What an attack at 3:1 should win*): the evidence puts a
+   3:1 attack on a prepared position at about **55–70%** (85% only with
+   surprise or strong suppression) and 2:1 at **30–45%**; hurrying the
+   scripted attack loses it, three scouts is the best single change (43%);
+   **three scouts with nerve ×1 in the open and a 40% attacker breakpoint
+   gives 3:1 58%, 2:1 38%** — inside both ranges. **Waiting on the
+   author:** (a) the target — 55–70% at 3:1 in place of the 85% ceiling;
+   (b) the two rule changes: decision 64's open factor 2 → 1 (still about
+   seven times a roof), decision 44's attacker breakpoint 30% → 40%; the
+   three scouts are the scripted company's, ours, to make the measuring
+   standard (`--recon 3`). The balance harness's tables on balance.md
    predate 62–65 and the command-post fix.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a

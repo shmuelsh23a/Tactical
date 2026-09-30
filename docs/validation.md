@@ -832,6 +832,36 @@ in mostly **suppresses**, the suppression lasts about as long as the fire,
 and the assault succeeds by arriving while it does (Veritable). Fire that
 only kills cannot give that.
 
+## What an attack at 3:1 should win (2026-09-30)
+
+The design principle (README) has a prepared position make an attack need
+3:1, with 85% as the author's upper bound for a 3:1 attack on a prepared
+platoon (decision 54, resting on the Dupuy Institute's 83% at 2.5–2.99:1).
+A research pass read the evidence more widely:
+
+| Ratio, condition | Attacker success | Source |
+|---|---|---|
+| 2.0–2.49:1, division level 1904–91, postures mixed | 71% (80% without probing attacks) | TDI 752-case database ([TDI](https://dupuyinstitute.org/2019/10/31/tests-using-the-752-case-division-level-data-base/)) |
+| 2.5–2.99:1, same | 83% | same |
+| 3.0–3.49:1, same | 69–70% | same |
+| 3.5–3.98:1, same | 76–77% | same |
+| 3:1 or more, battles 1600–1973 | 74% | Helmbold & Khan 1986, through [TDI](https://dupuyinstitute.org/2016/07/11/trevor-dupuy-and-the-3-1-rule/) |
+| Small-unit WWII attacks without surprise, 1:1 / 3:1 | 40% / 54% | Rowland, *The Stress of Battle*, through [a review](https://www.themself.org/2013/12/stress-of-battle-5-ww2-heroism-surprise/) |
+| The same with surprise, 1:1 / 3:1 | 70% / 76% | same |
+| Prepared positions | defender ×1.65 | Rowland, through [a review](https://www.themself.org/2013/12/book-review-the-stress-of-battle-by-david-rowlands-part-1/) |
+| Doctrine's origin: a defender has "approximately a 50-50 probability" against three times his strength | — | CGSC ST 100-9 (1991), through [TDI](https://dupuyinstitute.org/2019/11/14/the-source-of-the-u-s-army-three-to-one-rule/) |
+
+**Read together:** none of the sources splits win rates by the defender's
+preparation, and the aggregate tables mix postures (high ratios are massed
+against the strongest positions, which is why 3–6:1 sometimes wins less
+than 2.5–3:1). Small-unit attacks without surprise do markedly worse than
+the division-level tables. With a prepared defender worth about 1.65 times
+its numbers, 3:1 is about 1.8:1 in effect. **A defensible target: 3:1
+against a prepared platoon about 55–70%, with 75–85% for an attack with
+surprise or strong suppression; 2:1 about 30–45%** — "usually fails" holds.
+85% fits as a ceiling, not as the typical result. Mearsheimer's 1989 paper,
+Helmbold 1969 and the Kress & Talmor model were read as abstracts only.
+
 ## Open
 
 For the author, in rough order of what they move:

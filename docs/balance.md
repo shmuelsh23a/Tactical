@@ -2417,6 +2417,47 @@ The attack loses because it crosses the open under working defensive mortars
 and gives up before it arrives; what would let a 3:1 attack arrive is the
 question for the author.
 
+## Thirtieth round: combined levers, how the attacker closes, and the target, 2026-09-30
+
+Three strands, asked together by the author. All trials, not built: a
+scratch script changing the figures at run time (`LIFT_AT_M` by a
+temporary edit, restored). 200 battles a row, squads first; "rules" is
+nerve in the open ×1 (decision 64 has ×2) and the attacker's breakpoint at
+40% (decision 44 has 30%).
+
+| Trial | 3:1 wins | 2:1 wins |
+|---|---|---|
+| As in the twenty-eighth round (2 scouts, a 4-turn look) | 23% | 16% |
+| Rules | 38% | 23% |
+| Lift at 200 m | 27% | 17% |
+| Lift at 200 m + rules | 39% | 20% |
+| Lift at 200 m + rules + an 8-turn look | 41% | 25% |
+| **How it closes** — no overwatch (every squad bounds) | 20% | 11% |
+| … a 2-turn look | 19% | 11% |
+| … go on the first sighting | 10% | 7% |
+| … no overwatch and go on the first sighting | 1% | 1% |
+| … one scout | 17% | 18% |
+| … an 8-turn look | 27% | 20% |
+| … three scouts | **43%** | 18% |
+| … four scouts | 37% | 14% |
+| … an 8-turn look and three scouts | 35% | 21% |
+| Three scouts + nerve ×1 in the open | 49% | 27% |
+| Three scouts + a 40% breakpoint | 50% | 23% |
+| **Three scouts + rules** | **58%** | **38%** |
+| Three scouts + lift at 200 m | 38% | 23% |
+| Three scouts + lift at 200 m + rules | 60% | 35% |
+
+- **Hurrying loses.** Going as soon as the scouts find anything, or with
+  every squad moving at once, throws the attack away (1–10%). Patience and
+  eyes win it: three scouts, each finding its part of the defence for the
+  guns, is the best single change (43%); a fourth scout is one squad too
+  many out of the assault.
+- **The lift distance hardly matters** once the scouts are there.
+- **With three scouts and both rule levers the attack lands inside the
+  research's range** (validation.md, *What an attack at 3:1 should win*):
+  3:1 58% (55–70%), 2:1 38% (30–45%). Either lever alone leaves both a few
+  points short.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
