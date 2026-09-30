@@ -2713,6 +2713,104 @@ most attacks it should win.
    holding short by rewording would hide the question above, so it has not
    been done.
 
+## Thirty-fifth round: Claude models in Jev's place, 2026-09-30
+
+Three Claude models answered the attacking company commander's questions
+(`npm run jev-sim -- --claude <model>`, `src/sim/claude.ts`, question set
+`2026-09-30.3`, default effort), on the tel, 20 seeds a scenario from 1000,
+four battles at once. Each model gets the same picture and mission Jev does,
+answers with an option id held by a JSON schema, and logs a one-sentence
+reason. Every call stands alone: a model does not see its own earlier
+answers or reasons, and it gets no order beyond the one-line tasking and the
+principles (`MISSION`) — as Jev.
+
+| Commander | 3:1 | 2:1 | Attacker down | Defence down | s a call |
+|---|---|---|---|---|---|
+| Rule through the questions (100 seeds) | **63%** | **34%** | | | |
+| Jev (`jev-1.13.0`) | 10% | 15% | 22–23% | 12–16% | 0.15 |
+| `claude-haiku-4-5` | **20%** | 0% | 17% / 24% | 14% / 11% | 1.8 |
+| `claude-sonnet-5-5` | 5% | 0% | 26% / 29% | 8% / 4% | 4.5–5.1 |
+| `claude-opus-5-5` | 5% | 5% | 27% / 28% | 10% / 5% | 5.2–6.1 |
+
+(±9–11 points at 20 seeds. Explosives cause 80–83% of losses throughout.
+Tokens over the six runs: about 4.5 M in, 1.3 M more read from the cache, and 0.76 M
+out. Haiku's calls are not cached: the system prompt is shorter than its
+cache minimum.)
+
+**A model that reasons does not beat one that judges, and a small one does
+best.** None comes near the rule; Sonnet and Opus sit under Jev. Most of
+their battles end on turns 10–22 with the attack at its breakpoint (40%) and
+the defence barely touched (0–6 men down).
+
+### The choices, beside Jev's
+
+| Choice | Rule | Jev | Haiku | Sonnet | Opus |
+|---|---|---|---|---|---|
+| Scouts | 3 | 1 | 1 (39 of 40) | 1 (40/40) | 1 (40/40) |
+| When it goes in | 4 turns with the enemy in sight | as soon as found (turn 16–18) | when found, or a few turns after (median turn 20–22) | **turn 5, enemy not found** (40/40) | **turn 5, enemy not found** (40/40) |
+| Platoon tasks | all assault | all assault | 68 assault, 28 base of fire | all assault | all assault |
+| Bound by platoon | no | yes (40/40) | yes (26 of 26 asked) | yes (37 of 40) | yes (40/40) |
+| Hold short under the fires | no | 29 of 40 | yes (36 of 36 asked) | **no** (38 of 40) | yes (40/40), then won't lift (34 of 37) |
+| Mortars | sure marks in sight, before going | all twelve, as fast as allowed | about 10 missions, first on turn 17–18 | median 4–7 of 12; held 233 times | median 3–8 of 12; held 206 times; 87 smoke |
+
+What the logged reasons say, choice by choice:
+
+- **Scouts.** All three send one, for the reason Jev's choice suggests: "one
+  scouting squad finds the enemy without splitting the mass" (Sonnet);
+  "keeping the other eight squads massed" (Opus). The principle *mass at the
+  decisive point* is read against scouting.
+- **When it goes in: the largest difference.** Sonnet and Opus go at the
+  first chance (turn 5) in every battle, the enemy not yet found, and on the
+  deadline: "with 41 turns left and the objective about 400 m away, waiting
+  wastes time" (Sonnet); "the briefing already places the enemy on the
+  shoulder, so more scouting adds little, while starting now keeps the full 41
+  turns" (Opus). Haiku waits: "committing to attack before locating the enemy
+  risks walking into prepared defenses", and goes once the enemy is found
+  ("enemy is pinned and visible with 29 turns remaining"). Its four 3:1 wins
+  all went in on turns 22–29. Waiting is the one thing Haiku does as the rule
+  does, and it is the one model above Jev.
+- **Platoon tasks.** Sonnet and Opus assault with every platoon, as Jev now
+  does. Haiku gives one platoon a base of fire in a third of its battles:
+  "commit platoons 1 and 2 to the assault while platoon 3 provides covering
+  fire from the flank".
+- **Bounding.** All three bound, as Jev does, and give the textbook reason:
+  "one platoon's fire keeps the defenders' heads down while the other
+  closes" (Sonnet).
+- **Holding short.** Opus and Haiku hold short, as Jev does ("holding at
+  200 m lets the squads gather under the mortars and go in together").
+  Opus then declines to lift the fires 34 times in 37: "BLUE-1-2 would go in
+  alone against a prepared platoon while the rest of the company is still
+  130–300 m back" — it waits to mass, and the squads at the line wait under
+  the defender's fire. Sonnet alone goes straight in: "holding at 200 m under
+  mortars gives the enemy time to recover and burns turns".
+- **Mortar fire.** Where Jev fires everything at once, Sonnet and Opus hoard:
+  "my squads are still 400+ m from the enemy, so bombs now would lift before
+  the assault closes; I'll save the missions for the final approach"
+  (Sonnet). That is the principle *fire … is wasted unless the attack moves
+  while it lasts*, read literally. Because they went in blind, the fire
+  questions come with stale or unsure marks, and much of the ammunition is
+  never fired. Opus also fires smoke (87 missions), which the scripted
+  attacker found hurts (twenty-ninth round).
+
+### What it says
+
+- **Going in blind is the costliest choice, and it is the reasoners' own.**
+  It comes from the deadline line (the first principle, and the picture's
+  "or the attack has failed") with no word on how long an approach takes:
+  a model that reasons about time decides it has none to spare. The
+  scripted commander goes on about turn 20 and wins.
+- **Every commander so far chooses bounding and holding short** (Jev and
+  three of three Claude models; Sonnet alone does not hold short). The
+  thirty-fourth round's question to the author (should they cost this much?)
+  now has four commanders behind it, not one.
+- **The comparison is of stateless answerers.** No model sees its earlier
+  answers, so none can hold to a plan: Opus holds short, then refuses the
+  lift that the hold-short plan needs; it saves missions for an approach no
+  later call knows about. An order (OPORD) from higher headquarters, a
+  plan written at turn 0, and each call carrying the plan and the decisions so
+  far, is the next thing to measure. It would change the comparison with Jev,
+  which cannot carry a plan the same way.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
