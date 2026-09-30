@@ -800,9 +800,10 @@ function askAttackerFire(
       ...(company.released !== undefined
         ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs one of your missions)` }))
         : []),
-      // Before the company goes, holding says what it saves the mission for: offered bare, Jev fired
-      // every mission it had before the company moved (docs/balance.md, thirty-fourth round).
-      { id: "hold", label: company.released === undefined ? "hold fire: save the mission for when your assault is closing on the enemy" : "hold fire this turn" },
+      // Bare, on purpose: worded "save the mission for when your assault is closing", Jev held every
+      // mission until the company went, and fire held that long costs the attack about 30 points
+      // (docs/balance.md, thirty-fourth round).
+      { id: "hold", label: "hold fire this turn" },
     ],
   });
   if (a === "hold") return;

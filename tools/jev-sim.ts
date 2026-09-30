@@ -26,6 +26,16 @@
  *   npm run jev-sim -- --jev --seed 1000 --n 10
  *   npm run jev-sim -- --jev --model jev-latest --out /tmp/jev
  *   npm run jev-sim -- --jev --framing plain          # how the questions are framed (src/sim/jev.ts; default mission)
+ *
+ * **A rule in Jev's place** (`--rule`): the scripted commander's choices given
+ * as answers — three scouts, wait in dead ground, go after four turns with the
+ * enemy in sight, every platoon assaulting, fire on what the scouts hold in
+ * sight and sure to 40 m, squads first. It says what the questions can reach without Jev,
+ * so Jev's results can be read against it; `--rule bound,holdshort` also
+ * bounds by platoon and holds short under the fires, as Jev chooses to, and
+ * `holdfire` holds the mortars until the company goes.
+ *
+ *   npm run jev-sim -- --rule --seed 1000 --n 20
  */
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
@@ -49,18 +59,27 @@ const answers: string[] = file && existsSync(file) ? JSON.parse(readFileSync(fil
 const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIPT), scouting: { watchTurns: 1 } };
 const decide = fromAnswers(answers);
 
-if (args.includes("--jev")) {
-  let client: TypeSafeClient;
-  try {
-    client = new TypeSafeClient({ logLevel: "error" });
-  } catch (e) {
-    console.error(`ERROR no Jev client: ${(e as Error).message.replace(/\.+$/, "")}. Set TYPESAFE_API_KEY in the environment.`);
-    process.exit(2);
+if (args.includes("--jev") || args.includes("--rule")) {
+  let jev: Asker;
+  let framing = "rule";
+  if (args.includes("--rule")) {
+    const extra = value("--rule")?.startsWith("--") === false ? value("--rule")!.split(",") : [];
+    jev = ruleAsker(new Set(extra));
+    framing = ["rule", ...extra].join("+");
+  } else {
+    let client: TypeSafeClient;
+    try {
+      client = new TypeSafeClient({ logLevel: "error" });
+    } catch (e) {
+      console.error(`ERROR no Jev client: ${(e as Error).message.replace(/\.+$/, "")}. Set TYPESAFE_API_KEY in the environment.`);
+      process.exit(2);
+    }
+    const model = value("--model");
+    const f = (value("--framing") ?? "mission") as JevFraming;
+    if (!(f in JEV_FRAMINGS)) throw new Error(`--framing: "${f}" is not one of ${Object.keys(JEV_FRAMINGS).join(", ")}`);
+    framing = f;
+    jev = jevAsker(client, model, f);
   }
-  const model = value("--model");
-  const framing = (value("--framing") ?? "mission") as JevFraming;
-  if (!(framing in JEV_FRAMINGS)) throw new Error(`--framing: "${framing}" is not one of ${Object.keys(JEV_FRAMINGS).join(", ")}`);
-  const jev = jevAsker(client, model, framing);
   // Timed here: nothing in src reads a clock.
   const timed: Asker = async (q) => {
     const started = Date.now();
@@ -68,7 +87,7 @@ if (args.includes("--jev")) {
     return { ...a, ms: Date.now() - started };
   };
   const n = Number(value("--n") ?? 1);
-  const out = value("--out") ?? "jev-runs";
+  const out = value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : "jev-runs");
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
@@ -128,4 +147,45 @@ try {
     console.log("\n" + q.view);
   }
   process.exit(3);
+}
+
+/**
+ * The scripted commander's choices as answers (`--rule`): the standard
+ * measurement's company (docs/balance.md, thirty-first round) put through the
+ * questions. `extra` adds "bound" (bound by platoon), "holdshort" (hold
+ * short under the fires, lifted at once on reaching the line) and "holdfire"
+ * (no mission before the company goes); "anyfire" fires on the first mark
+ * offered, sure or not.
+ */
+function ruleAsker(extra: Set<string>): Asker {
+  let scouts = 0;
+  return async (q) => {
+    const has = (id: string) => q.options.some((o) => o.id === id);
+    const pick = (): string => {
+      if (q.id === "plan.scouts") return (scouts = Math.max(...q.options.map((o) => Number(o.id)))).toString();
+      if (q.id.startsWith("plan.post.")) {
+        const i = Number(q.id.slice("plan.post.".length));
+        return has(`p${i}`) ? `p${i}` : "p1";
+      }
+      if (q.id === "plan.wait") return "deadGround";
+      if (/^go\.\d/.test(q.id)) return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
+      if (q.id.startsWith("go.axis")) return "straight";
+      if (q.id.startsWith("go.support")) return "no";
+      if (q.id.startsWith("go.platoon")) return "assault";
+      if (q.id.startsWith("go.bound")) return extra.has("bound") ? "yes" : "no";
+      if (q.id.startsWith("go.lift")) return extra.has("holdshort") ? "yes" : "no";
+      if (q.id.startsWith("lift")) return "yes";
+      if (q.id.startsWith("fire.")) {
+        if (extra.has("holdfire") && /has not gone in/.test(q.view)) return "hold";
+        // "anyfire": the first mark offered, whatever it is.
+        if (extra.has("anyfire")) return q.options.find((o) => o.id !== "hold" && !o.id.startsWith("smoke:"))?.id ?? "hold";
+        // Squads first, then anything, each sure to 40 m and in sight.
+        const fit = q.options.filter((o) => /in sight/.test(o.label) && Number(/±(\d+) m/.exec(o.label)?.[1] ?? 999) <= 40 && !o.id.startsWith("smoke:"));
+        return (fit.find((o) => /infantry/.test(o.label)) ?? fit[0])?.id ?? "hold";
+      }
+      return has("on") ? "on" : q.options[0]!.id;
+    };
+    void scouts;
+    return { answer: pick(), confidence: 1, model: "rule" };
+  };
 }
