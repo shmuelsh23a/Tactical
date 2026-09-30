@@ -83,6 +83,9 @@ import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
 
+/** An aim point this close to the caller's own forces is danger close: said in the log, not refused (rules decision 63, S4). */
+const DANGER_CLOSE_M = 150;
+
 type Gait = "normal" | "run";
 type SmallArm = "smallArms" | "sustainedMg";
 type Stage = "planning" | "initiative" | "activation" | "gameover";
@@ -445,19 +448,28 @@ export function App({ scenario, onLeave }: AppProps) {
         }
         // Asked before the call: once it lands, the guns are on the mark anyway.
         const onMark = game.isOnTheMark(viewingSide, tube, { x, y });
+        // Danger close is the caller's risk to take (rules decision 63, S4):
+        // said, not refused. Only its own forces are measured.
+        const nearestOwn = Math.min(
+          ...game.units
+            .filter((u) => u.side === viewingSide && u.kind !== "command" && !u.neutralized)
+            .map((u) => Math.hypot(u.position.x - x, u.position.y - y)),
+        );
+        const dangerClose = nearestOwn <= DANGER_CLOSE_M ? ` · סכנה קרובה: כוחותינו במרחק ${Math.round(nearestOwn)} מ'` : "";
         const m = game.callForFire(viewingSide, tube, { x, y }, {
           ...(fuze === "impact" ? {} : { fuze }),
           ...(method === "effect" ? { method } : {}),
         });
         pushLog(
-          m.status !== "done"
+          (m.status !== "done"
             ? `בקשת אש — ${tubeHe[tube]}: פגז תיקון, ואחריו ${m.roundsForEffect} פגזים לאפקט`
             : method === "effect" && !onMark
               ? `בקשת אש — ${tubeHe[tube]}: אש לאפקט מייד (${m.roundsForEffect} פגזים)`
               : onMark
               ? `בקשת אש — ${tubeHe[tube]}: על מטרה רשומה, אש לאפקט (${m.roundsForEffect} פגזים)`
               : // Nobody of the side can see the aim point to adjust (decision 33).
-                `בקשת אש — ${tubeHe[tube]}: אין תצפית על המטרה, אש לאפקט ללא תיקון (${m.roundsForEffect} פגזים)`,
+                `בקשת אש — ${tubeHe[tube]}: אין תצפית על המטרה, אש לאפקט ללא תיקון (${m.roundsForEffect} פגזים)`) +
+            dangerClose,
           "fire",
           onlyFor(viewingSide),
         );
@@ -1111,6 +1123,18 @@ export function App({ scenario, onLeave }: AppProps) {
               (grenades > 0 ? (perManGrenades ? ` עם ${grenades} רימונים ללוחם` : ` עם ${grenades} רימונים`) : "") +
               `, ${casualtyReport(r.defenderCasualties, false)}`,
         );
+        // A pinned or suppressed defender's nerve went as the assault came in
+        // (rules decision 63, S5). Giving up or running is behaviour, and the
+        // assaulting force is on top of it: both sides see it.
+        if (r.nerve && r.nerve.outcome !== "held") {
+          pushLog(
+            r.nerve.outcome === "surrendered"
+              ? `${target.name} נכנע כשההסתערות הגיעה אליו`
+              : `${target.name} נשבר ונמלט מפני ההסתערות`,
+            "fire",
+            sharedBy(attacker.side),
+          );
+        }
         if (r.selfCasualties > 0) {
           // What a force did to itself with its own grenades is its own to know.
           pushLog(
@@ -1334,6 +1358,7 @@ export function App({ scenario, onLeave }: AppProps) {
               width={scn.mapWidth}
               height={scn.mapHeight}
               terrain={game.terrain}
+              climbCostPerMetre={game.climbCostPerMetre}
               units={visibleUnits}
               viewingSide={viewingSide}
               selectedId={selectedId}

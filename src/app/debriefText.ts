@@ -132,6 +132,8 @@ export function reasonHe(reason?: string): string {
       return "הכוח בנסיגה — אינו פותח באש";
     case "pinned":
       return "מרותק תחת אש — יכול רק לסגת";
+    case "heads down":
+      return "מרותק תחת אש — ראשים למטה, המטרה רחוקה מדי";
     default:
       return reason ?? "לא ניתן לבצע";
   }

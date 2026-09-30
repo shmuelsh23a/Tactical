@@ -81,6 +81,12 @@ A force may also carry, all optional:
     "baseCover": "partial"|"full" protection it holds without digging
     "scouting": true              out scouting from the start
     "canLayCharges": true         an insurgent or special force (decision 16)
+    "reserve": true               held back as its platoon's reserve: it holds
+                                  its position until one of the platoon's
+                                  forward positions is lost, then retakes it
+                                  by the drill (decision 60); a defending
+                                  squad only, with a forward squad of its
+                                  platoon (read off the id: RED-A-1 is RED-A's)
     "motivation": "normal"        poor|low|normal|high|fanatic - the floor of its
                                   men's starting morale (decision 19)
     "experience": "regular"       green|regular|veteran|elite (decision 19)
@@ -153,7 +159,7 @@ def load_tool(filename: str):
 WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield", "objects", "constant"}
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing",
-    "camouflaged", "baseCover", "scouting", "canLayCharges", "note",
+    "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
     "motivation", "experience",
 }
 MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
@@ -174,7 +180,7 @@ KINDS = {"infantry", "vehicle", "command"}
 # command group would otherwise leave a 3-man HQ where 9 men were asked for,
 # which is the same silent failure the unknown-key check exists to stop.
 KIND_KEYS = {
-    "infantry": {"echelon", "soldiers"},
+    "infantry": {"echelon", "soldiers", "reserve"},
     "command": {"echelon", "personnel"},
     "vehicle": {"facing"},
 }
@@ -338,6 +344,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         require_int(force, "facing", where, 0, 359)
         require_bool(force, "scouting", where)
         require_bool(force, "canLayCharges", where)
+        require_bool(force, "reserve", where)
         if force.get("camouflaged") is not True:
             require_int(force, "camouflaged", where, 0, 100)
         if "baseCover" in force:
@@ -359,6 +366,29 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
 
     for side in sorted(SIDES):
         require(any(f["side"] == side for f in forces), f"spec: {side} has no forces")
+
+    # A reserve that could never counterattack (decision 60) compiles and does
+    # nothing, so it is refused like any other silent mistake. Its platoon is
+    # read off the id as the drill reads it (`platoonKey` in company.ts):
+    # RED-A-1 belongs to RED-A.
+    def platoon_key(force_id: str) -> str:
+        parts = force_id.split("-")
+        return "-".join(parts[:-1]) if len(parts) >= 3 else force_id
+
+    for f in forces:
+        if not f.get("reserve"):
+            continue
+        where = f"force {f['id']}"
+        require(f["side"] not in spec.get("attackers", []), f"{where}: an attacking side has no reserve to hold back")
+        require(f.get("echelon", DEFAULT_ECHELON["infantry"]) == "squad", f"{where}: a reserve is a squad of its platoon")
+        require(
+            any(
+                g is not f and g["side"] == f["side"] and g["kind"] == "infantry" and not g.get("reserve")
+                and platoon_key(g["id"]) == platoon_key(f["id"])
+                for g in forces
+            ),
+            f"{where}: no forward squad of its platoon ({platoon_key(f['id'])}-…) for it to counterattack for",
+        )
 
     charges: list[dict[str, Any]] = []
     for i, charge in enumerate(spec.get("charges", [])):
@@ -575,9 +605,11 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             )
         lines.append("")
 
+    reserves = [f["id"] for f in forces if f.get("reserve")]
+    held_back = ", reserves: [" + ", ".join(ts(r) for r in reserves) + "]" if reserves else ""
     lines += [
         "  return { game, mapWidth: " + num(window["width"]) + ", mapHeight: "
-        + num(window["height"]) + ", title: " + ts(spec["title"]) + " };",
+        + num(window["height"]) + ", title: " + ts(spec["title"]) + held_back + " };",
         "}",
         "",
         "/** How the scenario picker offers this battle, before anything is built. */",

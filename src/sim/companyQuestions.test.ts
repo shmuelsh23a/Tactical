@@ -11,11 +11,11 @@ import { NeedAnswer, casualtiesSeen, fromAnswers, underFire, viewOf, type Questi
  * asked, and what an agent standing in for it answers (`tools/jev-sim.ts`).
  */
 const drill = { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } };
-const play = (answers: string[]) =>
-  runScenarioBattle(telAzekaAssaultListing, 11, { drill, fire: DEFAULT_FIRE_CHOICES, decide: fromAnswers(answers) });
-const nextQuestion = (answers: string[]): Question => {
+const play = (answers: string[], seed = 11) =>
+  runScenarioBattle(telAzekaAssaultListing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, decide: fromAnswers(answers) });
+const nextQuestion = (answers: string[], seed = 11): Question => {
   try {
-    play(answers);
+    play(answers, seed);
   } catch (e) {
     if (e instanceof NeedAnswer) return e.question;
     throw e;
@@ -68,7 +68,7 @@ describe("the company's questions", () => {
 
   it("state when the attack is called off, and the losses so far", () => {
     const q = nextQuestion([]);
-    expect(q.view).toMatch(/called off when about 30% of your men are down, broken or fled \(now 0%/);
+    expect(q.view).toMatch(/called off when about 40% of your men are down, broken or fled \(now 0%/);
   });
 
   it("state the mission's deadline (rules decision 58)", () => {
@@ -114,20 +114,23 @@ describe("the company's questions", () => {
 
   it("ask about a scout that sits at its point seeing nothing, and send it on when told (item 1)", () => {
     // Before, the drill walked it on toward the objective by itself after six turns.
+    // Seed 12: since decision 63 the holding company on seed 11 is shelled
+    // out of the fight before a scout has sat long enough to be asked.
+    const seed = 12;
     const answers = ["2", "p1", "p1", "deadGround"];
     const where = (q: Question, id: string) => q.view.split("\n").find((l) => l.trim().startsWith(id + " "))!;
     for (let i = 0; i < 60; i++) {
-      const q = nextQuestion(answers);
+      const q = nextQuestion(answers, seed);
       if (/watched from its observation point/.test(q.ask)) {
         const id = q.id.split(".")[1]!;
         expect(q.options.find((o) => o.id === "on")?.label).toMatch(/toward the plan's centre/);
         const before = where(q, id);
         answers.push("on");
         // Keep holding the company; the scout leaves its point.
-        let later = nextQuestion(answers);
+        let later = nextQuestion(answers, seed);
         for (let k = 0; k < 10 && later.turn <= q.turn + 1; k++) {
           answers.push(later.id.startsWith("go.") ? "no" : later.options[0]!.id);
-          later = nextQuestion(answers);
+          later = nextQuestion(answers, seed);
         }
         expect(where(later, id)).not.toEqual(before);
         return;

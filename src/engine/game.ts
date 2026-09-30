@@ -26,7 +26,7 @@ import {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES, SHELL_VS_MEN, type Fuze } from "./data/explosives.js";
+import { EXPLOSIVES, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover } from "./data/explosives.js";
 import { FIRE_UNIT_TUBES, LETHALITIES, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
@@ -115,6 +115,9 @@ import {
   sideBroken,
   snapshotSoldiers,
   suppressionLevel,
+  roundSuppression,
+  hasMorale,
+  nerveUnderAssault,
   type FireNote,
   type ForceMorale,
   type MoraleReport,
@@ -122,9 +125,9 @@ import {
   unitSeed,
 } from "./morale.js";
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
-import { SUPPRESSION } from "./data/morale.js";
+import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { LEADER_REACH_M, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
+import { LEADER_REACH_M, NERVE_BY_COVER, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
 
 /** A command group still in command: not down, routing or surrendered (rules decision 55). */
@@ -268,6 +271,8 @@ export const MORALE_REFUSAL = {
   withdrawing: "withdrawing",
   /** Pinned by fire: it moves only to withdraw. */
   pinned: "pinned",
+  /** Pinned by fire, heads down: it shoots only at an enemy close in (rules decision 63, S2). */
+  headsDown: "heads down",
 } as const;
 
 /** What a move turned up: what the force saw, and what it set off. */
@@ -395,6 +400,74 @@ export interface GameOptions {
    */
   lethality?: Lethality;
   /**
+   * Metres of a bound's budget each metre climbed costs (rules decisions 15
+   * and 61): 5 for a new game, {@link SLOPE.climbCostPerMetre}. A recording
+   * made before decision 61 replays at 8, Naismith's figure.
+   */
+  climbCostPerMetre?: number;
+  /**
+   * What full cover does against a shell or a bomb (rules decision 62):
+   * `sources`, the default, from FM 7-90 and the WWII figures — a hole or a
+   * roof several times safer than before; `before62`, decision 31's. A
+   * recording made before the decision reads it as `before62`.
+   */
+  shellCover?: ShellCover;
+  /**
+   * Suppression reaches further than death (rules decision 63, S1): a shell
+   * or a bomb suppresses every force whose nearest man is within its
+   * suppression reach (`SUPPRESSION_REACH_81MM`), not only those its lethal
+   * blast reaches. On by default; a recording made before it reads it as off.
+   */
+  suppressionReach?: boolean;
+  /**
+   * A roof halves the suppression a shell or a bomb puts on a force (rules
+   * decision 63, S3: `ROOF_SUPPRESSION_FACTOR`). On by default; a recording
+   * made before it reads it as off.
+   */
+  roofsDampSuppression?: boolean;
+  /**
+   * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
+   * force makes no sighting beyond 50 m, is no observer for a fire mission,
+   * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
+   * at an even chance. On by default; a recording made before it reads it as
+   * off.
+   */
+  headsDown?: boolean;
+  /**
+   * A pinned or suppressed defender tests its nerve before an assault on it
+   * is resolved, and a force that breaks surrenders or runs on a roll (rules
+   * decision 63, S5: `ASSAULT_NERVE`). On by default; a recording made
+   * before it reads it as off.
+   */
+  assaultNerve?: boolean;
+  /**
+   * A pinned force still fires within rifle range, at a penalty beyond 100 m
+   * (rules decision 65: `HEADS_DOWN`). Needs `headsDown`; without it a pinned
+   * force fires at nothing beyond 100 m, as decision 63 built it. On by
+   * default; a recording made before it reads it as off.
+   */
+  pinnedFiresAtRange?: boolean;
+  /**
+   * Nerve lost to fire by cover (rules decision 64, `NERVE_BY_COVER`): the
+   * nerve the enemy's fire costs a man each turn is doubled in the open and
+   * cut to 0.3 in a hole, 0.15 under a roof. On by default; a recording made
+   * before it reads it as off.
+   */
+  nerveByCover?: boolean;
+  /**
+   * The nerve factor in the open (rules decisions 64 and 66): 1 for a new
+   * game, `NERVE_BY_COVER.none`. A recording made before decision 66 replays
+   * at 2.
+   */
+  nerveInOpen?: number;
+  /**
+   * The share of an attacking side's men down, broken or fled at which it
+   * gives up, on the research figures (rules decisions 44 and 66): 0.4 for a
+   * new game. A recording made before decision 66 replays at decision 44's
+   * 0.3.
+   */
+  attackerBreakpoint?: number;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -491,6 +564,16 @@ export class Game {
   readonly fireSupportByEchelon: boolean;
   /** Whose blast and tank-gun figures this game plays (rules decision 41). */
   readonly lethality: Lethality;
+  readonly climbCostPerMetre: number;
+  readonly shellCover: ShellCover;
+  readonly suppressionReach: boolean;
+  readonly roofsDampSuppression: boolean;
+  readonly headsDown: boolean;
+  readonly assaultNerve: boolean;
+  readonly pinnedFiresAtRange: boolean;
+  readonly nerveByCover: boolean;
+  readonly nerveInOpen: number;
+  readonly attackerBreakpoint: number;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -644,6 +727,22 @@ export class Game {
     }
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     this.lethality = opts.lethality ?? "research";
+    this.climbCostPerMetre = opts.climbCostPerMetre ?? SLOPE.climbCostPerMetre;
+    this.shellCover = opts.shellCover ?? "sources";
+    this.suppressionReach = opts.suppressionReach ?? true;
+    this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
+    this.headsDown = opts.headsDown ?? true;
+    this.assaultNerve = opts.assaultNerve ?? true;
+    this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
+    this.nerveByCover = opts.nerveByCover ?? true;
+    this.nerveInOpen = opts.nerveInOpen ?? NERVE_BY_COVER.none;
+    this.attackerBreakpoint = opts.attackerBreakpoint ?? SIDE_BREAK_BY_POSTURE.attacking;
+    for (const [key, v] of [["nerveInOpen", this.nerveInOpen], ["attackerBreakpoint", this.attackerBreakpoint]] as const) {
+      if (!(Number.isFinite(v) && v >= 0)) throw new Error(`${key}: cannot read ${v}`);
+    }
+    if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
+      throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
+    }
     this.attackers = [...(opts.attackers ?? [])];
     this.locationError = opts.locationError ?? false;
     this.stillDetection = opts.stillDetection ?? false;
@@ -759,6 +858,16 @@ export class Game {
       ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       lethality: this.lethality,
+      climbCostPerMetre: this.climbCostPerMetre,
+      shellCover: this.shellCover,
+      ...(this.suppressionReach ? { suppressionReach: true } : {}),
+      ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
+      ...(this.headsDown ? { headsDown: true } : {}),
+      ...(this.assaultNerve ? { assaultNerve: true } : {}),
+      ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
+      ...(this.nerveByCover ? { nerveByCover: true } : {}),
+      nerveInOpen: this.nerveInOpen,
+      attackerBreakpoint: this.attackerBreakpoint,
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -1416,6 +1525,8 @@ export class Game {
         canObserve(u) &&
         !u.surrendered &&
         !u.routing &&
+        // Heads down (decision 63, S2): a pinned force watches no fall of shot.
+        !(this.headsDown && suppressionLevel(u) === "pinned") &&
         distance(u.position, impact) <= OBSERVE_RANGE_M &&
         !(SMOKE_BLOCKS_FIRE && this.smoke.some((sm) => segmentIntersectsCircle(u.position, impact, sm.center, sm.radius))) &&
         !terrainBlocksSight(this.terrain, u.position, eyeHeight(u), impact, BURST_HEIGHT_M),
@@ -1442,6 +1553,7 @@ export class Game {
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           cepM,
           lethality: this.lethality,
+          shellVsMen: shellVsMen(this.shellCover),
         }),
       );
       // What the side saw of it teaches the next round; a round seen on the
@@ -1454,11 +1566,24 @@ export class Game {
         }
       }
       // Everyone the rounds came down on was shelled, caught or not.
+      const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
       for (const round of fired) {
+        const reached = new Set(round.blast.targets.map((t) => t.unitId));
         for (const hit of round.blast.targets) {
           const unit = this.getUnit(hit.unitId);
-          this.noteFire(unit, "indirect", SUPPRESSION.indirect);
           if (unit.kind === "infantry") shelled.add(unit);
+        }
+        // Who it suppresses: those its blast reached, and since decision 63
+        // everyone within its suppression reach (S1); a roof takes half (S3).
+        const suppressed = this.suppressionReach
+          ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact)) > 0))
+          : this.units.filter((u) => reached.has(u.id));
+        for (const unit of suppressed) {
+          let amount = reached.has(unit.id)
+            ? SUPPRESSION.indirect
+            : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact));
+          if (this.roofsDampSuppression && roofed(unit)) amount *= ROOF_SUPPRESSION_FACTOR;
+          this.noteFire(unit, "indirect", amount);
         }
       }
       // Who called it, so a report can say how far it fell from the aim point
@@ -1526,7 +1651,7 @@ export class Game {
     // extra (Naismith, rules decision 15): the budget is spent in metres of
     // flat going, and on flat ground that is the distance exactly.
     const climb = climbAlong(this.terrain, unit.position, to);
-    const cost = boundCost(this.terrain, unit.position, to);
+    const cost = boundCost(this.terrain, unit.position, to, this.climbCostPerMetre);
     if (unit.movedThisTurn + cost > cap + 1e-6) {
       const remaining = Math.max(0, cap - unit.movedThisTurn);
       const climbing = climb > 0 ? ` (${climb.toFixed(1)} m climbed, costing ${cost.toFixed(1)} m)` : "";
@@ -1607,6 +1732,13 @@ export class Game {
     if (!this.trackIntel) return;
     const unit = this.units.find((u) => u.id === unitId);
     if (!unit || unit.side === side) return;
+    // Heads down (decision 63, S2): a pinned observer sees only what is close;
+    // a suppressed one keeps each sighting at even odds.
+    if (observer && this.headsDown) {
+      const level = suppressionLevel(observer);
+      if (level === "pinned" && distance(observer.position, unit.position) > HEADS_DOWN.sightWithinM) return;
+      if (level === "suppressed" && !this.rng.chance(HEADS_DOWN.suppressedSightChance)) return;
+    }
     this.report(side, unit, unit.position, source, observer, from);
   }
 
@@ -1901,7 +2033,7 @@ export class Game {
         if (!posture) continue;
         if (coverer.side === actor.side) continue;
         if (coverer.neutralized) continue;
-        if (this.moraleRefusal(coverer)) continue;
+        if (this.moraleRefusal(coverer) || this.headsDownRefusal(coverer, actor)) continue;
         // A force the ground or another coverer has already put down is not
         // the target that set out: nobody spends a posture finishing it.
         if (actor.neutralized) break;
@@ -1954,6 +2086,7 @@ export class Game {
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
           ...(from ? this.movementTerms(actor, true) : {}),
+          ...this.headsDownAim(coverer, actor),
               hasLineOfSight: true,
         });
         actor.cover = wasCover;
@@ -2165,7 +2298,7 @@ export class Game {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    const moraleRefusal = this.moraleRefusal(attacker);
+    const moraleRefusal = this.moraleRefusal(attacker) ?? this.headsDownRefusal(attacker, target);
     if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       // A shot never taken draws no answer.
       return {
@@ -2197,6 +2330,8 @@ export class Game {
       ...this.movementTerms(target, target.movedThisTurn > 0),
       ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
+      // Heads down beyond close range (decision 65): the engine's, not the caller's.
+      ...this.headsDownAim(attacker, target),
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
@@ -2232,7 +2367,7 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    const moraleRefusal = this.moraleRefusal(attacker);
+    const moraleRefusal = this.moraleRefusal(attacker) ?? this.headsDownRefusal(attacker, target);
     if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
@@ -2316,6 +2451,47 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const defender = this.getUnit(defenderId);
     const defenderWasNeutralized = defender.neutralized;
+    // Decision 63, S5: a pinned or suppressed defender's nerve is tested as
+    // the assault comes in. One that gives itself up is taken; one that runs
+    // is assaulted as it goes.
+    const nerve =
+      this.assaultNerve && this.morale && hasMorale(defender) && !defender.neutralized
+        ? nerveUnderAssault(this.rng, this.units, defender, this.turn, {
+            testBonus: this.variants.preparedTestBonus ?? PREPARED.testBonus,
+          })
+        : undefined;
+    if (nerve?.outcome === "surrendered") {
+      this.abandonWork(defender);
+      this.standingOrders.delete(defender.id);
+    } else if (nerve?.outcome === "routed") {
+      this.abandonWork(defender);
+      this.standingOrders.set(defender.id, {
+        issuedTurn: this.turn,
+        gait: "run",
+        destination: this.onTheMap(nerve.to!),
+        withdraw: true,
+      });
+    }
+    const nerveNote = nerve && (nerve.broke > 0 || nerve.outcome !== "held") ? { nerve: { outcome: nerve.outcome, broke: nerve.broke } } : {};
+    if (nerve?.outcome === "surrendered") {
+      this.exchangeContact(attacker, defender);
+      this.journal({ kind: "assault", attackerId, defenderId, grenades });
+      return {
+        fired: true,
+        attackerId,
+        defenderId,
+        range: distance(attacker.position, defender.position),
+        fireHits: 0,
+        fireDamage: 0,
+        grenadeHits: 0,
+        grenadeDamage: 0,
+        selfCasualties: 0,
+        defenderCasualties: 0,
+        defenderNeutralized: true,
+        ...nerveNote,
+        coveringFire,
+      };
+    }
     const reply = this.variants.assaultReplyChance;
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
@@ -2334,7 +2510,7 @@ export class Game {
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
     }
     this.journal({ kind: "assault", attackerId, defenderId, grenades });
-    return { ...result, coveringFire };
+    return { ...result, ...nerveNote, coveringFire };
   }
 
   /**
@@ -2492,7 +2668,7 @@ export class Game {
 
     // As far along the line as the budget reaches — less than the flat
     // distance where the line climbs (rules decision 15).
-    const to = reachAlong(this.terrain, unit.position, order.destination, cap);
+    const to = reachAlong(this.terrain, unit.position, order.destination, cap, this.climbCostPerMetre);
     if (
       unit.kind === "vehicle" &&
       steepestGradeAlong(this.terrain, unit.position, to) > SLOPE.vehicleMaxGradeDeg
@@ -2793,6 +2969,8 @@ export class Game {
         testBonus: this.variants.preparedTestBonus ?? PREPARED.testBonus,
         lossFactor: this.variants.preparedLossFactor ?? PREPARED.lossFactor,
       },
+      nerveByCover: this.nerveByCover,
+      nerveInOpen: this.nerveInOpen,
       // Watching *now*: a contact refreshed this turn. Without the knowledge
       // model there is no fog to respect, and a line of sight from any of its
       // forces is what watching means.
@@ -2888,6 +3066,27 @@ export class Game {
    * Why a force's morale keeps it from acting, if it does: it is routing, it
    * surrendered, or it is falling back under a withdrawal order.
    */
+  /**
+   * Heads down (rules decision 63, S2): a pinned force shoots at nothing
+   * beyond `HEADS_DOWN.fireWithinM`. Undefined when it may shoot.
+   */
+  private headsDownRefusal(unit: Unit, target: Unit): string | undefined {
+    if (!this.headsDown || suppressionLevel(unit) !== "pinned") return undefined;
+    // Out to rifle range since decision 65; decision 63 stopped it at 100 m.
+    const reach = this.pinnedFiresAtRange ? HEADS_DOWN.fireWithinM : HEADS_DOWN.aimedWithinM;
+    return distance(unit.position, target.position) > reach ? MORALE_REFUSAL.headsDown : undefined;
+  }
+
+  /**
+   * How well a pinned force aims at `target` (rules decision 65): beyond
+   * close range it fires over the parapet, at `HEADS_DOWN.beyondAimFactor`.
+   * Absent when the shot is taken as any other.
+   */
+  private headsDownAim(unit: Unit, target: Unit): { aimFactor?: number } {
+    if (!this.headsDown || !this.pinnedFiresAtRange || suppressionLevel(unit) !== "pinned") return {};
+    return distance(unit.position, target.position) > HEADS_DOWN.aimedWithinM ? { aimFactor: HEADS_DOWN.beyondAimFactor } : {};
+  }
+
   moraleRefusal(unit: Unit): string | undefined {
     if (unit.surrendered) return MORALE_REFUSAL.surrendered;
     if (unit.routing) return MORALE_REFUSAL.routing;
@@ -2918,7 +3117,7 @@ export class Game {
     // or neutralised force counts only its men down or broken (decisions 45
     // and 48); two thirds, and such a force counted whole, on the document's.
     if (this.lethality !== "research") return sideBroken(this.units, side);
-    const share = SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"];
+    const share = this.attackers.includes(side) ? this.attackerBreakpoint : SIDE_BREAK_BY_POSTURE.defending;
     return sideBroken(this.units, side, share, false);
   }
 

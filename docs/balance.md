@@ -117,7 +117,7 @@ tweak later when we get to balancing — write it down". So: written down.
 
 | Figure | Value | Whose | What it does |
 |---|---|---|---|
-| `SLOPE.climbCostPerMetre` | **8 m** of the bound per metre climbed (Naismith); descent free | author (tentative) | Makes the high ground cost what it is worth. A 10% slope costs 1.8 m of budget per metre, so a walking bound uphill is ~28 m, not 50. |
+| `SLOPE.climbCostPerMetre` | **5 m** of the bound per metre climbed (decision 61, 2026-09-30; **8**, Naismith, before — an older recording replays at 8); descent free | author | Makes the high ground cost what it is worth. A 10% slope costs 1.5 m of budget per metre, so a walking bound uphill is ~33 m, not 50 (28 m at 8). Tobler gives 4–6 for a bound (validation.md). |
 | `SLOPE.vehicleMaxGradeDeg` | **30°**, up or down | author (tentative) | A vehicle refuses a steeper bound, descending as well as climbing; a standing order across such a patch reports `grade too steep` every turn until replaced, since an order stands until it is. Infantry takes anything. On the demo map about one 50 m bound in 500 exceeds it. |
 | Height and hit chance | **none, for now** | author | The sight lines already reward height; the alternative kept on file is +10% additive for a shooter ≥ 10 m above its target. Revisit at balance. |
 
@@ -2111,6 +2111,483 @@ Control wins more and loses fewer men, and costs time: half its 14 losses at
 that goes in all at once never ran out of time. The
 policy lifts the fires the first turn it is asked; a commander who times the
 lift to the last rounds is not measured here.
+
+## Twenty-second round: a reserve and the counterattack, 2026-09-30
+
+Every battle before this one was an attack on a defender that never left
+its holes: all three of the platoon's squads forward, no reserve, and no
+drill that moved a defender forward. The author ruled (decision 60): a squad
+in reserve, and the platoon counterattacks by drill. On the tel, RED-A-1
+goes back to (570, 460), dug in beside the platoon command group, 100–112 m
+from each forward position. It is the squad whose post saw none of the
+approach that the other two did not (from full cover, over a grid of the
+southern approach: A-2 sees 192 points, 138 of them only it; A-3 156, 86
+only it; A-1 91, none only it). No spot within 170 m of both forward
+positions is out of sight of the whole approach; the tel's south face is a
+forward slope.
+
+200 battles a row from seed 1000, the nineteenth round's company (two
+scouts to two observation points, a four-turn look, the company in dead
+ground, the guns waiting for a mark within 40 m), with the plain drill:
+
+| Guns take first | 3:1 before | 3:1 with a reserve | 2:1 before | 2:1 with a reserve |
+|---|---|---|---|---|
+| squads | 56% | 62% | 36% | 32% |
+| nearest the objective | 41% | 52% | 30% | 28% |
+| command groups | 23% | 32% | 23% | 21% |
+
+**Almost no counterattack went in**: none in the squads-first and nearest
+rows, 1% of battles in the 3:1 command-groups row, and none of those held
+the position. Switching it off (`--no-counterattack`) gives the same
+squads-first row to the battle. Tracing 40
+battles, the nearest any attacker came to a forward position was 148 m, and
+usually 210–250 m: every battle ended at a breakpoint after fire,
+before an assault. So the change in the table is the layout alone: two
+squads forward instead of three helps the attacker at 3:1 by 6–11 points
+and does little at 2:1 (−2 to −4, inside the noise of about ±3 points at
+this count).
+
+**With the mortars taken off both sides**, so the infantry has to close
+(a scratch variant, 60 battles from seed 1000, squads first):
+
+| | 3:1 wins | defender down | counterattacked (held at end) | 2:1 wins | counterattacked (held at end) |
+|---|---|---|---|---|---|
+| counterattack | 72% (7 lost out of time) | 35% | 30 (3) | 40% (8) | 25 (5) |
+| reserve holds | 57% (11) | 34% | — | 35% (12) | — |
+
+The reserve goes in half the battles, and it **helps the attacker**. A trace
+shows why: it goes when both forward squads are out, and by then the
+platoon is at its breakpoint (16 of 32 men down, on turn 31, in the one
+traced). It leaves its hole, takes losses and breaks in the open, and the
+side gives up sooner; defenders that would have held to the deadline lose
+instead. The rule does not ask whether a counterattack can succeed. Asked
+whether it should go at once, only above some strength or against no more
+than a squad, or only behind fire, the author ruled **at once, before the
+attacker consolidates** (2026-09-30), which is what was built. Whether it
+pays is left to attacks that reach the position; on the tel today none
+does.
+
+## Twenty-third round: a metre climbed costs five, 2026-09-30
+
+Rules decision 61 (author, from the pace research, validation.md
+*Infantry pace under fire*): a metre climbed costs 5 m of a bound, not 8.
+Same company and seeds as the twenty-second round, 200 battles a row:
+
+| Guns take first | 3:1 at 8 | 3:1 at 5 | 2:1 at 8 | 2:1 at 5 |
+|---|---|---|---|---|
+| squads | 62% | **77%** | 32% | **58%** |
+| nearest the objective | 52% | 70% | 28% | 49% |
+| command groups | 32% | 67% | 21% | 41% |
+
+Still no attack closes: the nearest squad ends a median 211 m from a live
+defender (255 m at 8). What moved (40 battles of the 3:1, squads first):
+the scouts reach their observation points sooner and the main body goes
+at a median turn 18 (20); once it goes a moving squad covers 64 m a turn
+(52) and the company nets about 25 m a minute (20), still inside the
+sources' 15–30; explosives' share falls from 82% to 78% as small arms come
+into reach more. The battle ends at a median turn 23 (26).
+
+The spread between a good target order and a poor one narrows (3:1: 67–77%,
+was 32–62%): with the mortars on marks earlier, whichever they take first
+matters less. **For the author:** at 2:1 the attack now wins 41–58% against
+a prepared platoon, which sits badly with the design principle that a
+prepared position needs 3:1. It is a consequence of fire, not of closing —
+the mortar research under way (how long a dug-in platoon holds under a
+mortar section) is the place to look before touching anything else.
+
+## Twenty-fourth round: full cover by the sources, 2026-09-30
+
+Rules decision 62 sets full cover against a shell from FM 7-90 and the WWII
+figures (impact: hole 0.03, roof 0.02; air burst: hole 0.13, roof 0.005;
+were 0.125, 0.125, 0.625, 0.125). Same company and seeds, 200 battles a row:
+
+| Guns take first | 3:1 at 61 | 3:1 at 62 | 2:1 at 61 | 2:1 at 62 |
+|---|---|---|---|---|
+| squads | 77% | **47%** | 58% | **18%** |
+| nearest the objective | 70% | 46% | 49% | 19% |
+| command groups | 67% | 44% | 41% | 17% |
+
+The prepared position has its superiority back, as the design principle
+wants: 2:1 fails, 3:1 is an even fight (the author's ceiling for it is
+85%). What the guns take first hardly matters now. Explosives' share falls
+to 70–74%. When the defender loses (29 of 60 traced), it gives up with 28%
+of its men down (64% of them by the mortars) and **35% broken but unhurt**:
+morale, not the body count, now breaks it. Still no attack closes (the
+nearest squad ends a median 183 m out). Suppression, sampled at each
+movement phase over 40 battles: with the attacker 150–300 m off a defending
+squad is neither suppressed nor pinned half the time; inside 150 m there
+were 11 squad-turns in 40 battles; the attacker's own squads within 250 m
+are pinned a fifth of the time. docs/suppression-design.md takes it from
+there.
+
+## Twenty-fifth round: suppression, step by step, 2026-09-30
+
+Rules decision 63 (docs/suppression-design.md), built and measured one part
+at a time: 200 battles a row, the twenty-fourth round's company, squads
+first; suppression sampled at each movement phase over 40 battles.
+
+| Step | 3:1 wins | 2:1 wins | Defender pinned, attacker 150–300 m off | Squad-turns inside 150 m (40 battles) | Nearest attacker at the end |
+|---|---|---|---|---|---|
+| Decision 62 (before) | 47% | 18% | 28% | 11 | 183 m |
+| + S1 reach, S3 roofs | 62% | 34% | 58% | 3 | 258 m |
+| + S2 heads down | 81% | 55% | 64% | 18 | 210 m |
+| + S4 danger close a risk | 80% | 55% | 64% | 18 | 210 m |
+| + S5 assaulted while pinned | 80% | 55% | 64% | 18 | 210 m |
+
+- **S1–S3 made the fire decide sooner, not the assault arrive.** The
+  defender is pinned two turns in three while the attacker closes, and,
+  blinded (S2), its mortars fire less and worse: the attacker's losses
+  fall from 18% to 10%. But it breaks **at range, by nerve**: in the 52 of
+  60 traced battles it lost, 729 of its men were broken and 279 down.
+- **Why:** as built, every force within a round's suppression reach also
+  counts as *bombarded*, and decision 19 takes 5 of every man's nerve a
+  turn for that (3.75 in position). S1 widened the reach of that loss with
+  the reach of the suppression.
+- **S4 and S5 moved nothing on the tel** because no assault arrives: the
+  battle is over before the fires would lift. Without mortars (the scratch
+  variant, 60 battles) S5 is at work: the 3:1 wins 63% with the
+  counterattack and 55% without (72% and 57% before S5).
+- **A trial, not built:** suppression from beyond the lethal blast without
+  decision 19's bombarded loss gives 3:1 **70%**, 2:1 **49%**; battles last
+  to a median turn 30 (26), the nearest attacker ends 166 m out (210 m),
+  55 squad-turns inside 150 m (18), and the first counterattacks go in
+  (3%). The defender still breaks more by nerve (522 broken, 368 down).
+
+**For the author:** 2:1 winning about half against a prepared platoon sits
+badly with the design principle. Whether the wider suppression should carry
+decision 19's bombarded loss is the first lever (the trial above); the loss
+itself (5 a turn, ours) the second.
+
+## Twenty-sixth round: nerve by cover, 2026-09-30
+
+Rules decision 64: the nerve fire costs is ×2 in the open, ×1 behind
+partial cover, ×0.3 in a hole, ×0.15 under a roof. Same company and seeds,
+200 battles a row, squads first:
+
+| | 3:1 wins | 2:1 wins | Attacker down | Nearest attacker at the end | Squad-turns inside 150 m (40 battles) | Counterattacked |
+|---|---|---|---|---|---|---|
+| Decision 63 | 80% | 55% | 10–13% | 210 m | 18 | 0–1% |
+| + decision 64 | 70% | **60%** | 7–9% | **125 m** | **94** | **8–13%** |
+
+- **The dug-in defender stops breaking at range.** In the 36 of 60 traced
+  battles it lost, 328 of its men were down (54% by small arms, the rest
+  the mortars) and 435 broken — against 279 and 729 before. It now loses
+  to the attack, not to the shelling.
+- **The attack closes**, for the first time on the tel: the nearest squad
+  ends a median 125 m out, five times as many squad-turns inside 150 m, and
+  the reserve counterattacks in 8–13% of battles (decision 60), not yet
+  holding the position at the end in any.
+- **But 2:1 wins more (60%), and the odds matter little (3:1 70%).** The
+  attacker in the open is rarely under fire: the defender's squads are
+  pinned 62% of the time with the attacker 150–300 m off, and a pinned
+  force fires at nothing beyond 100 m (decision 63, S2) and guides no
+  mortars. So the doubled loss in the open seldom applies (the attacker
+  loses 7–9% of its men). **For the author:** S2's reach — the question he
+  did not answer — is the lever the numbers point at: a pinned force that
+  still fires, at a penalty, within small-arms range would make crossing
+  the open cost what decision 64 says it should.
+
+## Twenty-seventh round: pinned fire at range, and the defender's mortars, 2026-09-30
+
+Rules decision 65: a pinned force fires out to 400 m, at half its chance
+beyond 100 m. 200 battles a row, squads first:
+
+| | 3:1 wins | 2:1 wins | Attacker down |
+|---|---|---|---|
+| Decision 64 | 70% | 60% | 7–9% |
+| + decision 65 | 66% | 62% | 8–10% |
+| trial: no aim penalty beyond 100 m | 67% | 58% | 8–11% |
+| trial: a pinned force sees to 300 m | 67% | 58% | 8–10% |
+| trial: both | 66% | 55% | 9–11% |
+
+The trials were run by changing `HEADS_DOWN` in a scratch script, not in the
+game. None of them moves it: the pinned defender's rifles are not what keeps
+the attacker safe. **The defender's mortars are.** Per battle of the 3:1
+(60 traced at each commit):
+
+| Code at | Defender's HE missions fired (of 12) | Attacker down (of 86) | …by the mortars and grenades |
+|---|---|---|---|
+| Decision 62 | 4.3 | 15.0 | 11.5 |
+| + S1 reach, S3 roofs | 4.4 | 13.6 | 11.3 |
+| + S2 heads down | 3.8 | 8.1 | 6.6 |
+| + decisions 64, 65 | 2.5 | 7.7 | 5.0 |
+
+The scripted defender fired a third of its missions even before
+suppression, and since S2 each does half as much: its squads are pinned,
+so no one observes the fall of shot to adjust it, and its marks go stale.
+It also plans nothing — it registers no targets on the approach, which
+the planning stage allows (decision 38), and fires only on an attacker in
+sight. **So the imbalance is mostly in the scripted defender's fire, the
+stand-in for Jev, not in a rule**: a defending company that registered the
+approaches and fired on them as the attacker crossed would fire its
+missions on the mark without needing an observer. That is the next thing
+to build and measure (ours, a harness policy, like the scripted
+attacker's).
+
+## Twenty-eighth round: the defender's fire plan, and its command post, 2026-09-30
+
+Two changes to the scripted defence, neither a rule:
+
+- **A fire plan** (`planDefenderFires` in `src/sim/scenarioBattle.ts`, a
+  harness policy, ours). In planning the defending company registers its six
+  mortar targets (decision 38) on the dead ground 100–400 m in front of its
+  positions, toward the attack, nearest first, 120 m apart; in the battle it
+  fires on an attacker seen this turn or last within 100 m of one — on the
+  mark, needing no observer — before anything else. `--no-defender-plan`
+  turns it off.
+- **A defending command post stays put** (`drill.ts`). The drill brought
+  every command group to 80 m behind its side's squads, defenders' too, so
+  RED's company command group walked from behind the summit (600, 200) to
+  (549, 418), in the open, into the attacker's shelling. With decision 64
+  doubling the nerve fire costs in the open, it broke — in every one of the
+  141 turns in 20 traced battles where RED **could not call its mortars at
+  all** (decision 55: no one in command). A defender's command group now
+  holds where it was set up; an attacker's still follows its squads.
+
+200 battles a row, squads first unless said:
+
+| | 3:1 wins | 2:1 wins | Defender's HE missions | Attacker down | Defender down |
+|---|---|---|---|---|---|
+| Decision 65 | 66% | 62% | 2.5 | 8–10% | 20–22% |
+| + the fire plan | 71% | 61% | 2.4 | 8–10% | 20–24% |
+| + the command post holds (squads first) | **23%** | **16%** | **4.5** | 14–17% | 12–16% |
+| … nearest the objective first | 21% | 13% | | | |
+| … command groups first | 22% | 13% | | | |
+| … without the fire plan | 19% | 15% | | | |
+
+The command post was the fault; the fire plan adds about four points at 3:1.
+The defender never loses fire control now (0 of 532 turns traced), and its
+mortars account for most of the attacker's losses (10.6 of 12.6 men down a
+battle). The attacker's own company command group never broke in the traces,
+and its fire control held. **The attacker now gives up** at its breakpoint
+(30% down, broken or fled) with about a quarter of its men down or broken,
+crossing the open under decision 64's doubled nerve loss.
+
+**Against the design principle:** 2:1 fails (13–16%), as it should; 3:1
+wins only about one battle in five, where the author's ceiling is 85% and a
+3:1 attack on a prepared platoon is meant to succeed. The levers, none
+touched: decision 64's ×2 in the open (ours), the attacker's 30% breakpoint
+(decision 44, from the sources), and the scripted attacker itself — it
+lays no smoke from its mortars and no fire plan of its own beyond firing on
+marks.
+
+## Twenty-ninth round: a smarter scripted attacker, and what does not move 3:1, 2026-09-30
+
+The scripted company gained two options (harness policies, ours;
+`FirePlanChoices` in `src/sim/scenarioBattle.ts`, `--smoke N`,
+`--prep-fires`): **smoke** — once it goes and its lead squads are 450 m to
+100 m from the objective, it keeps a mortar screen on the enemy marks
+nearest its squads (else its plan's points), up to N smoke missions, each
+one of its twelve (decision 56); and **fires on the plan** — once it goes,
+with no mark it is sure of, it fires on its registered points in turn, on
+the mark. 200 battles a row, squads first:
+
+| Attacker | 3:1 wins | 2:1 wins |
+|---|---|---|
+| As in the twenty-eighth round | 23% | 16% |
+| + fires on the plan | 23% | 16% |
+| + 4 smoke missions | 7% | 2% |
+| + 4 smoke, fires on the plan | 6% | 3% |
+| + 6 smoke, fires on the plan | 3% | 2% |
+
+**Neither helps; smoke hurts.** The attacker already fires about 11 of its 12
+missions on marks it has found, so the plan has nothing left to fire, and
+every smoke mission is a mission of HE lost; smoke blocks sight both ways, so
+a screen on the defence blinds the attacker's own observers and squads as
+much as the defender's. Both options stay off by default.
+
+Trials, not built (a scratch script changing the figure at run time), each
+with fires on the plan:
+
+| Trial | 3:1 wins | 2:1 wins |
+|---|---|---|
+| The attacker with 24 missions, not 12 | 18% | 10% |
+| … and 4 smoke | 6% | 3% |
+| The attacker lifts its fires at 200 m, not 100 m (12 missions) | 25% | 15% |
+| … with 24 missions | 26% | 17% |
+| Nerve lost in the open ×1, not ×2 (decision 64) | 28% | 19% |
+| The attacker gives up at 40%, not 30% (decision 44) | 34% | 17% |
+
+**No single lever brings 3:1 near the author's 85%.** 2:1 stays under 20%
+under all of them, as the principle wants. More fire does not help the
+attacker; its own fire lifted later helps a little (its bombs, reaching 100 m
+since decision 63, suppress its own closing squads); the rule levers — the
+doubled nerve in the open and the 30% breakpoint — each give 5–11 points.
+The attack loses because it crosses the open under working defensive mortars
+and gives up before it arrives; what would let a 3:1 attack arrive is the
+question for the author.
+
+## Thirtieth round: combined levers, how the attacker closes, and the target, 2026-09-30
+
+Three strands, asked together by the author. All trials, not built: a
+scratch script changing the figures at run time (`LIFT_AT_M` by a
+temporary edit, restored). 200 battles a row, squads first; "rules" is
+nerve in the open ×1 (decision 64 has ×2) and the attacker's breakpoint at
+40% (decision 44 has 30%).
+
+| Trial | 3:1 wins | 2:1 wins |
+|---|---|---|
+| As in the twenty-eighth round (2 scouts, a 4-turn look) | 23% | 16% |
+| Rules | 38% | 23% |
+| Lift at 200 m | 27% | 17% |
+| Lift at 200 m + rules | 39% | 20% |
+| Lift at 200 m + rules + an 8-turn look | 41% | 25% |
+| **How it closes** — no overwatch (every squad bounds) | 20% | 11% |
+| … a 2-turn look | 19% | 11% |
+| … go on the first sighting | 10% | 7% |
+| … no overwatch and go on the first sighting | 1% | 1% |
+| … one scout | 17% | 18% |
+| … an 8-turn look | 27% | 20% |
+| … three scouts | **43%** | 18% |
+| … four scouts | 37% | 14% |
+| … an 8-turn look and three scouts | 35% | 21% |
+| Three scouts + nerve ×1 in the open | 49% | 27% |
+| Three scouts + a 40% breakpoint | 50% | 23% |
+| **Three scouts + rules** | **58%** | **38%** |
+| Three scouts + lift at 200 m | 38% | 23% |
+| Three scouts + lift at 200 m + rules | 60% | 35% |
+
+- **Hurrying loses.** Going as soon as the scouts find anything, or with
+  every squad moving at once, throws the attack away (1–10%). Patience and
+  eyes win it: three scouts, each finding its part of the defence for the
+  guns, is the best single change (43%); a fourth scout is one squad too
+  many out of the assault.
+- **The lift distance hardly matters** once the scouts are there.
+- **With three scouts and both rule levers the attack lands inside the
+  research's range** (validation.md, *What an attack at 3:1 should win*):
+  3:1 58% (55–70%), 2:1 38% (30–45%). Either lever alone leaves both a few
+  points short.
+
+## Thirty-first round: decision 66 adopted, the standard measurement, 2026-09-30
+
+Rules decision 66 (the author): the targets 55–70% at 3:1 and 30–45% at 2:1
+against a prepared position, nerve in the open ×1, an attacker giving up at
+40%. The scripted company now sends three scouts. **The standard
+measurement** from here:
+
+```bash
+npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 \
+  --scout-from vantage --wait-in dead-ground --n 200 --target-first squads
+```
+
+200 battles a row:
+
+| Guns take first | 3:1 wins | 2:1 wins | Attacker down | Defender down | Counterattacked (held at end) |
+|---|---|---|---|---|---|
+| **squads** | **58%** | **38%** | 16–21% | 19–25% | 13–17% (0–1%) |
+| nearest the objective | 52% | 35% | 17–22% | 18–23% | 14–17% (1–2%) |
+| command groups | 45% | 29% | 19–23% | 17–21% | 11–14% (1–3%) |
+
+With a competent commander (squads first) both land inside the targets;
+poorer target choices fall a few points under them, which is what a
+commander's decision should cost. The reserve counterattacks in about one
+battle in seven and now and then holds the position at the end.
+Explosives cause 73–77% of losses, the 75% the author set (decision 43).
+The balance harness's flat-ground tables above predate decisions 62–66 and
+the command-post fix, and have not been rerun.
+
+## Thirty-second round: the flat-ground harness rerun on today's rules, 2026-09-30
+
+The balance harness (`npm run balance`, flat open ground) rerun after
+decisions 61–66 and the command-post fix, beside the same runs at the code
+before decision 62. Its targets (`TARGETS` in `src/sim/balance.ts`) now carry
+decision 66's bands: 1:1 at most 30%, 2:1 30–45%, 3–4:1 55–70% with the
+winner losing 10–30%. 200 battles a cell, morale on; the attacker's wins,
+before → now (share of losses to explosives in brackets):
+
+**A — the default run** (no fire support below company, which decision 37
+gives none; decisions 51–55 off, as the harness has them unless named):
+
+| Battle | Target | Squad | Platoon | Company |
+|---|---|---|---|---|
+| 1:1 | ≤30% | 19% → 23% | 5% → 10% | 0% → 0% |
+| 2:1 | 30–45% | 57% → 67% | 69% → **87%** | 7% → 2% |
+| 3–4:1 | 55–70% | 76% → 81% | 99% → 99% | 97% → 96% |
+
+**B — calibrated fire** (decision 43's mortar section on both sides; only
+company may call it):
+
+| Battle | Target | Company |
+|---|---|---|
+| 1:1 | ≤30% | 0% → 0% (HE 64% → 56%) |
+| 2:1 | 30–45% | 6% → 0% (HE 69% → 59%) |
+| 3–4:1 | 55–70% | 95% → **7%** (HE 75% → 73%) |
+
+**C — the full rules** (decisions 51–55 on, three scouts, a four-turn look,
+the guns waiting for what the scouts find, calibrated fire):
+
+| Battle | Target | Company |
+|---|---|---|
+| 1:1 | ≤30% | 0% → 0% |
+| 2:1 | 30–45% | 1% → **1%** |
+| 3–4:1 | 55–70% | 65% → **58%** (HE 84% → 70%) |
+
+Meeting engagements are about even at every echelon, before and now. C's
+squad and platoon cells read 0% and are not recorded: three scouts from a
+single squad or a platoon of three leaves no one to attack with.
+
+**The sweep** (`--sweep`, the harness's defaults, assault reply 0–70%)
+meets **3 of 12** targets under every configuration — the 1:1 ones.
+
+- **The company 3:1 with the full rules lands inside the target (58%)**, as
+  on the tel. Without the scouts and the rest (B) it collapses to 7%: the
+  defender's mortars now work, and an attacker that does not find the
+  defence first loses — the same thing the tel showed.
+- **2:1 at company is far under target (1%, where 30–45%)** on flat ground,
+  where the tel's 2:1 wins 38%: the tel's dead ground lets the attacker wait
+  and close unseen; the flat harness has none.
+- **Platoon and squad attacks are too easy (2:1 67–87%, 3:1 81–99%)**: no
+  indirect fire below company, perfect intelligence by default, and nothing
+  on open ground for a defender but its hole.
+- **The harness has fallen behind the game.** Its defaults leave decisions
+  51–55 off, its recon does not scale with the echelon, and its sweep still
+  tries the assault-reply rates of 2026-09-23, which measure as irrelevant.
+  The tel's headless runner (`scenario-sim`) is now the measure the balance
+  is judged by; the flat harness would need its defaults brought up to the
+  game and its recon scaled (a scout a platoon) to judge squads and platoons
+  again.
+
+## Thirty-third round: the harness on the game's rules, 2026-09-30
+
+The harness now plays the game's rules by default (`runBattle`): decisions
+51–55 on, fires planned on an eye's estimate, and in an attack a scout from
+each attacking platoon (none for a lone squad, one for a platoon, three for
+a company), each bounding and watching a turn, the rest waiting four turns
+of what they find — the scenario runner's standard, scaled by echelon.
+`--classic` plays it as before (the thirty-second round's figures). 200
+battles a cell, morale on, the attacker's wins, classic → the game's rules:
+
+**The default run:**
+
+| Battle | Target | Squad | Platoon | Company |
+|---|---|---|---|---|
+| 1:1 | ≤30% | 23% → 15% | 10% → 1% | 0% → 0% |
+| 2:1 | 30–45% | 67% → 48% | 87% → 47% | 2% → 1% |
+| 3–4:1 | 55–70% | 81% → **69%** | 99% → 94% | 96% → **59%** |
+
+Meeting engagements stay about even (squad 54/41, platoon 41/45, company
+43/41).
+
+**Calibrated fire at company** (decision 43's mortar section on both sides):
+1:1 1%, 2:1 10%, 3:1 **69%** (was 0%, 0%, 7%); explosives 48–51% of losses.
+With the guns waiting for the scouts' reports as well: 0%, 1%, 95%.
+
+**The sweep** now meets **7–8 of 12** targets (was 3 of 12): every 1:1
+target and most attacker-loss targets; the assault reply rate still makes no
+difference.
+
+- **Squad and company land on or near the targets**: the squad's 3:1 69%
+  and 2:1 48%, the company's 3:1 59% (69% with calibrated fire).
+- **Platoon 3:1 is still too easy (94%)** on flat open ground: a platoon
+  attacking three squads to one with no indirect fire on either side
+  (decision 37 gives none below company), where only the defender's hole
+  and its rifles stand against it.
+- **Company 2:1 is still far under (1–10%)**: on flat ground there is no
+  dead ground to wait and close in, where the tel's 2:1 wins 38%.
+- The harness is again a measure of the game, not of the rules as they
+  stood before 51–55. `npm run validate` still plays the classic harness
+  (`validation.ts`), so validation.md's figures stay comparable until it is
+  rerun.
 
 ## How the engine scales, 2026-09-23
 

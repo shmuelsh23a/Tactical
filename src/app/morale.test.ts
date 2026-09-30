@@ -98,7 +98,7 @@ describe("morale in words", () => {
   });
 
   it("words the engine's morale refusals", () => {
-    for (const reason of ["routing", "surrendered", "withdrawing", "pinned"]) {
+    for (const reason of ["routing", "surrendered", "withdrawing", "pinned", "heads down"]) {
       expect(reasonHe(reason)).not.toBe(reason);
     }
   });

@@ -43,7 +43,9 @@
     "The company battle's ground at the odds an attack is planned at: a BLUE",
     "company against one RED platoon, three to one (author, 2026-09-28: play a",
     "3:1 battle). RED's first platoon holds the shoulder above the ridge in the",
-    "positions it prepared before the battle, as in the company battle; its",
+    "positions it prepared before the battle, as in the company battle — two",
+    "squads forward and one in reserve behind them, which retakes a lost",
+    "position by the drill (rules decision 60, author 2026-09-30); its",
     "company command group is behind the summit and calls the company's",
     "mortars for it. BLUE comes up from the south with three platoons abreast.",
     "Both sides have the company mortar section on call all battle — twelve",
@@ -194,11 +196,12 @@
       "echelon": "squad",
       "soldiers": 8,
       "at": [
-        560,
-        560
+        570,
+        460
       ],
       "baseCover": "full",
-      "note": "The platoon battle's shoulder position, covering the southern approach."
+      "note": "The platoon's reserve (decision 60): dug in behind the shoulder, 100-112 m from each forward position.",
+      "reserve": true
     },
     {
       "id": "RED-A-2",

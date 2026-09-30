@@ -241,7 +241,16 @@ export const SIDE_BREAK_SHARE = 2 / 3;
  * explosives. Which side is attacking is `GameOptions.attackers`; a side not
  * named defends.
  */
-export const SIDE_BREAK_BY_POSTURE = { attacking: 0.3, defending: 0.5 } as const;
+export const SIDE_BREAK_BY_POSTURE = { attacking: 0.4, defending: 0.5 } as const;
+
+/**
+ * **The attacker gives up at 40% since rules decision 66** (author,
+ * 2026-09-30, "adopt all three"): at 30% no scripted attack on a prepared
+ * platoon reached the research's 55–70% at 3:1 (docs/balance.md, thirtieth
+ * round). A game plays `GameOptions.attackerBreakpoint`; a recording made
+ * before the decision replays at this, decision 44's 30%.
+ */
+export const ATTACKER_BREAK_BEFORE_66 = 0.3;
 
 /**
  * Suppression (דיכוי): a force-level count of how hard it is being shot at,
@@ -272,6 +281,85 @@ export const SUPPRESSION = {
   /** At or above: pinned — moves only to withdraw, half accuracy. */
   pinned: 40,
 } as const;
+
+/**
+ * How far a shell or a bomb suppresses (rules decision 63, S1; author,
+ * 2026-09-30). Suppression reaches further than death: FM 7-90 (App. B-7)
+ * puts an 81 mm bomb's suppression as probable within **30 m** of the burst
+ * and an even chance at **75 m**, little beyond 125 m. A force whose nearest
+ * man is within `full` of a burst takes the whole of
+ * {@link SUPPRESSION.indirect}, within `half` half of it (the half is ours),
+ * beyond that nothing. The nearest man is the force's point less
+ * `FORCE_FOOTPRINT_RADIUS_M`. Measured for the 81 mm; another weapon's reach
+ * scales by the square root of its lethal area against the mortar's (ours).
+ * Before the decision a round suppressed only the forces its lethal blast
+ * reached, about 37 m from a force's point for the 81 mm.
+ */
+export const SUPPRESSION_REACH_81MM = { full: 30, half: 75 } as const;
+
+/**
+ * A force under a roof — a building, or a position prepared before the
+ * battle — takes this share of the suppression a shell or a bomb puts on it
+ * (rules decision 63, S3). FM 7-90: men under overhead cover are harder to
+ * suppress. The half is ours.
+ */
+export const ROOF_SUPPRESSION_FACTOR = 0.5;
+
+/**
+ * Heads down (rules decision 63, S2; author, 2026-09-30). A pinned soldier
+ * keeps his head down: he neither observes nor fires to effect (FM 7-90,
+ * FM 6-30). A **pinned** force makes and keeps no sighting beyond
+ * `sightWithinM`, so it tells its side nothing further off and cannot be
+ * the eyes a fire mission is adjusted by. A **suppressed** force keeps each
+ * sighting at `suppressedSightChance`.
+ *
+ * Its fire: as decision 63 built it, nothing beyond `aimedWithinM`. Since
+ * rules decision 65 (author, 2026-09-30: "try pinned firing within rifle
+ * range at a penalty") it fires out to `fireWithinM`, the small-arms table's
+ * last band, and beyond `aimedWithinM` at `beyondAimFactor` of its chance —
+ * over the parapet, with little aim — on top of a pinned force's half
+ * accuracy (decision 19). All the numbers but the table's 400 m are ours.
+ */
+export const HEADS_DOWN = {
+  sightWithinM: 50,
+  aimedWithinM: 100,
+  fireWithinM: 400,
+  beyondAimFactor: 0.5,
+  suppressedSightChance: 0.5,
+} as const;
+
+/**
+ * Nerve lost to fire, by cover (rules decision 64; author, 2026-09-30: "nerve
+ * lost for a force in the open should be far more severe than for a dug in
+ * force"). The two losses the enemy's fire itself costs a man each turn —
+ * {@link LOSS}'s `firedOn` and `bombarded` — are multiplied by his force's
+ * cover: in the open, behind partial cover, in a hole (full cover), or under
+ * a roof (a position prepared before the battle). Losses to casualties,
+ * leaders and the rest are not. The prepared defender's `lossFactor` still
+ * applies on top. The four numbers are ours: the open about thirteen times
+ * a prepared position, which the WWII figures for the danger itself put at
+ * fifteen to a hundred (docs/validation.md, *Mortars against men dug in*).
+ */
+export const NERVE_BY_COVER = { none: 1, partial: 1, full: 0.3, roof: 0.15 } as const;
+
+/**
+ * **The open is ×1 since rules decision 66** (author, 2026-09-30: "open ×1"),
+ * still about seven times a prepared position; decision 64 had ×2. A game
+ * plays `GameOptions.nerveInOpen`; a recording made before replays at this.
+ */
+export const NERVE_IN_OPEN_BEFORE_66 = 2;
+
+/**
+ * Assaulted while pinned or suppressed (rules decision 63, S5; author,
+ * 2026-09-30: "roll between surrender and rout"). Before an assault is
+ * resolved, each man of a defender that is pinned or suppressed tests his
+ * nerve as decision 19 tests it, less `pinned` or `suppressed`. A force the
+ * tests break gives itself up at `surrenderChance`, else runs. In Operation
+ * Veritable (1945) about 20 Germans surrendered for each casualty, the
+ * assault arriving as the fire lifted (Swann, reanalysed by Rooney). All
+ * three numbers are ours.
+ */
+export const ASSAULT_NERVE = { pinned: 20, suppressed: 10, surrenderChance: 0.5 } as const;
 
 /** What a suppressed or pinned force does to its own shooting, and to its men's nerve. */
 export const SUPPRESSION_EFFECT = {

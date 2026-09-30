@@ -241,11 +241,12 @@ export function steepestGradeAlong(terrain: Terrain, from: Point, to: Point): nu
 
 /**
  * What a bound from `from` to `to` costs against a gait's budget, in metres
- * of flat going: the distance, plus {@link SLOPE.climbCostPerMetre} for every
- * metre climbed (Naismith). On flat ground it is the distance, exactly.
+ * of flat going: the distance, plus `perMetre` for every metre climbed (the
+ * game's `climbCostPerMetre`; {@link SLOPE.climbCostPerMetre} unless given).
+ * On flat ground it is the distance, exactly.
  */
-export function boundCost(terrain: Terrain, from: Point, to: Point): number {
-  return distance(from, to) + climbAlong(terrain, from, to) * SLOPE.climbCostPerMetre;
+export function boundCost(terrain: Terrain, from: Point, to: Point, perMetre: number = SLOPE.climbCostPerMetre): number {
+  return distance(from, to) + climbAlong(terrain, from, to) * perMetre;
 }
 
 /**
@@ -262,16 +263,22 @@ export function boundCost(terrain: Terrain, from: Point, to: Point): number {
  * over. The first cut tested the long line, and on the real map one order in
  * 260 threw out of the execution loop for a rise of a few millimetres.
  */
-export function reachAlong(terrain: Terrain, from: Point, towards: Point, budget: number): Point {
+export function reachAlong(
+  terrain: Terrain,
+  from: Point,
+  towards: Point,
+  budget: number,
+  perMetre: number = SLOPE.climbCostPerMetre,
+): Point {
   if (budget <= 0) return { ...from };
   const step = stepTowards(from, towards, budget);
   if (climbAlong(terrain, from, step) === 0) return step;
-  if (boundCost(terrain, from, towards) <= budget) return { ...towards };
+  if (boundCost(terrain, from, towards, perMetre) <= budget) return { ...towards };
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 30; i++) {
     const mid = (lo + hi) / 2;
-    if (boundCost(terrain, from, lerpPoint(from, towards, mid)) <= budget) lo = mid;
+    if (boundCost(terrain, from, lerpPoint(from, towards, mid), perMetre) <= budget) lo = mid;
     else hi = mid;
   }
   return lerpPoint(from, towards, lo);
@@ -291,14 +298,14 @@ export function reachFan(
   terrain: Terrain,
   from: Point,
   budget: number,
-  opts: { vehicle?: boolean; bearings?: number } = {},
+  opts: { vehicle?: boolean; bearings?: number; climbCostPerMetre?: number } = {},
 ): Point[] {
   const n = opts.bearings ?? 72;
   const fan: Point[] = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * 2 * Math.PI;
     const towards = { x: from.x + budget * Math.cos(a), y: from.y + budget * Math.sin(a) };
-    let p = reachAlong(terrain, from, towards, budget);
+    let p = reachAlong(terrain, from, towards, budget, opts.climbCostPerMetre);
     if (opts.vehicle && steepestGradeAlong(terrain, from, p) > SLOPE.vehicleMaxGradeDeg) {
       // Back off to the furthest point along the bound the grade allows.
       let lo = 0;

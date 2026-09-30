@@ -29,6 +29,14 @@ export interface Question {
 /** Answers a question with one of its options' ids. */
 export type Decider = (q: Question) => string;
 
+/**
+ * The version of this question set, carried in every logged Jev call
+ * (README, backlog 15: a recording of an AI game carries the model id and the
+ * question-set version). Change it when a question's wording, options or
+ * picture change in a way that could change an answer.
+ */
+export const QUESTION_SET_VERSION = "2026-09-30";
+
 /** Thrown by a decider with no answer yet: the battle stops at this question. */
 export class NeedAnswer extends Error {
   constructor(readonly question: Question) {
@@ -77,7 +85,7 @@ export function viewOf(
   const down = men.filter((m) => m.neutralized || m.morale?.state === "broken").length;
   if (game.attackers.includes(side)) {
     lines.push(
-      `The attack is called off when about ${Math.round(MORALE_RULES.SIDE_BREAK_BY_POSTURE.attacking * 100)}% of your men are down, broken or fled ` +
+      `The attack is called off when about ${Math.round(game.attackerBreakpoint * 100)}% of your men are down, broken or fled ` +
         `(now ${Math.round((100 * down) / Math.max(1, men.length))}%, ${down} of ${men.length}). ` +
         `A defence gives up at about ${Math.round(MORALE_RULES.SIDE_BREAK_BY_POSTURE.defending * 100)}% of its men.`,
     );

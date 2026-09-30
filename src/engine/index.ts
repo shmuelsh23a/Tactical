@@ -65,7 +65,18 @@ export {
   FIRING_FROM_COVER_MODIFIER,
   type CoverState,
 } from "./data/directFire.js";
-export { EXPLOSIVES, SHELL_VS_MEN, type ExplosiveWeapon, type DeliveryMethod, type Fuze } from "./data/explosives.js";
+export {
+  EXPLOSIVES,
+  SHELL_VS_MEN,
+  SHELL_VS_MEN_BEFORE_62,
+  SHELL_COVERS,
+  shellVsMen,
+  type ExplosiveWeapon,
+  type DeliveryMethod,
+  type Fuze,
+  type ShellCover,
+  type ShellVsMen,
+} from "./data/explosives.js";
 export {
   SMOKE_DURATION_TURNS,
   SMOKE_RADIUS_M,

@@ -1610,7 +1610,10 @@ on the stated reasoning, still awaiting the author's word.
     - Nothing counts ammunition (backlog 12).
 43. ✅ **Calibrated to 75% of losses by explosives** (author, 2026-09-28: "I
     want the numbers to reflect 75% HE casualties"; the sources give 72–78%,
-    docs/validation.md). Measured, not argued: with the rates of decision 42
+    docs/validation.md). **The 75% is for battles on real ground** (author,
+    2026-09-30): the tel meets it (73–77%); the flat harness, where a scouted
+    attack closes to rifle range in the open, gives about 51% and is not held
+    to it. Measured, not argued: with the rates of decision 42
     the share of explosives stayed at 13–31%, and the fire's **volume** and
     the rifle's **deadliness** were what moved it. Under
     `lethality: "research"`:
@@ -1640,7 +1643,7 @@ on the stated reasoning, still awaiting the author's word.
     Dupuy Institute; US doctrine calls a unit destroyed at 30%); ours broke at
     44–78%. On the research figures a side breaks when this share of its men
     are down, broken, or in a force that fled (`SIDE_BREAK_BY_POSTURE`):
-    **30% attacking, 60% defending** (50% since decision 49), where decision 19 gave two thirds to
+    **30% attacking, 60% defending** (40% and 50% since decisions 66 and 49), where decision 19 gave two thirds to
     both. The shares sit above the losses they stand for because broken and
     fled men count too; measured, an attacker gives up at a median **16–25%
     casualties** and a defender at **42–50%**, and the 2:1 company attack
@@ -2022,6 +2025,136 @@ on the stated reasoning, still awaiting the author's word.
     offered. These are the company's orders (`CompanyOrders`), not rules
     of the engine; the drill carries them out, and a scripted company gives
     none, so the harness and headless figures are unchanged.
+60. ✅ **A defending platoon holds a squad in reserve, and counterattacks
+    by drill** (author, 2026-09-30: "a squad in reserve; platoon
+    counterattacks by drill", after we found every attack so far had been
+    against a defender that never left its holes). The reserve is one of
+    the platoon's own squads, held back behind its forward positions
+    (`"reserve": true` in a scenario spec, `Scenario.reserves`). It holds
+    its position until one of the platoon's forward positions is lost, then
+    retakes it without an order: it goes at a run for the nearest enemy
+    known on the position, assaults it by the drill's assault rule, and once
+    no enemy is known there it takes the position and holds it
+    (`SquadDrill.counterattack`, `DrillTask.reserves`). It goes **at once,
+    before the attacker consolidates** (author, 2026-09-30): committed in
+    the first movement phase after the position is lost, without weighing
+    the odds or waiting for fire on the position. It is the platoon's
+    drill, so it is scripted, as squads and platoons are; which squad is
+    the reserve, and where it stands, are the scenario's. ⚠️ Ours: a
+    position counts as lost when its squad is out of the fight or more than
+    25 m from it (a squad that moved to its alternate position on purpose
+    does not count) and an enemy seen this turn or last is within 50 m of
+    it — an older mark, which may be where the enemy no longer is, does not
+    start or aim a counterattack; and the Tel Azeka layout, where
+    RED-A-1 (whose post saw no ground the other two did not) is pulled back
+    to 100–112 m behind the other two, beside the platoon command group.
+    The live game plays no drill for a player's side, so there the reserve
+    is the defending player's to commit. The balance harness's flat-ground
+    battles have no reserve yet, so their tables are unchanged.
+    Measured (docs/balance.md, *Twenty-second round*): on the tel with the
+    mortars no attacker ever comes within about 150 m of a forward position,
+    so no counterattack ever goes in; without them, the reserve goes in half
+    the battles, usually once the platoon is already at its breakpoint, and
+    helps the attacker. The author kept it at once all the same: when it
+    goes is the drill's, and whether a counterattack pays is for play and
+    for attacks that reach the position to show.
+61. ✅ **A metre climbed costs five metres of a bound, not eight** (author,
+    2026-09-30: "set climb cost to 5"). Decision 15 took Naismith's eight,
+    the figure for a long hill walk. For a one-minute bound on the 10–25%
+    grades of the maps the sources give less: Tobler's hiking function 4–6,
+    running studies 3–4; no source has a figure for loaded soldiers
+    (docs/validation.md, *Infantry pace under fire*). `SLOPE.climbCostPerMetre`
+    is 5 and a game carries its own (`GameOptions.climbCostPerMetre`); the
+    reach fan the map draws uses the game's. A recording made before it
+    replays at 8. Descent stays free. What it moves is on docs/balance.md,
+    *Twenty-third round*.
+62. ✅ **Full cover against a shell, by the sources** (author, 2026-09-30:
+    "adopt the factors"). Decision 31's hole was several times too
+    dangerous and its roof no safer than a hole. From FM 7-90 (men in open
+    holes take "only 10 percent" of an air burst's effect; under overhead
+    cover "few, if any" casualties) and the WWII British trench figures
+    (1/15–1/100 of a standing man's risk): impact, open hole **0.03**, roof
+    **0.02**; air burst, open hole **0.13**, roof **0.005** (`SHELL_VS_MEN`;
+    were 0.125 / 0.125 / 0.625 / 0.125). Posture in the open is unchanged.
+    `GameOptions.shellCover`; a recording made before it replays on decision
+    31's (`SHELL_VS_MEN_BEFORE_62`). docs/validation.md, *Mortars against
+    men dug in*; what it moves, docs/balance.md, *Twenty-fourth round*.
+63. ✅ **Suppression: fire that pins, and an assault that arrives in time**
+    (author, 2026-09-30: "shape approved; danger close as risk, roll between
+    surrender and rout"). The design and its sources are in
+    docs/suppression-design.md; it extends decision 19's layer. Five parts,
+    each a `GameOptions` switch, on for a new game and off for a recording
+    made before:
+    - **S1, reach** (`suppressionReach`): a shell or a bomb suppresses every
+      force whose nearest man is within its suppression reach — for the 81 mm
+      the whole 25 inside 30 m, half out to 75 m (FM 7-90, B-7) — other
+      weapons by the square root of their lethal areas. Before, only the
+      forces its lethal blast reached (about 37 m from a force's point).
+    - **S2, heads down** (`headsDown`): a pinned force makes and keeps no
+      sighting beyond 50 m, is no observer for a fire mission, and fires at
+      nothing beyond 100 m; a suppressed force keeps each sighting at even
+      odds.
+    - **S3, roofs** (`roofsDampSuppression`): a force under a roof takes half
+      a shell's suppression (FM 7-90: "harder to suppress").
+    - **S4, danger close is a risk**: the engine already rolls every bomb
+      against everyone in reach; the 150 m refusal in the headless runner and
+      the browser tool is gone. Jev is offered a mark within 150 m of his
+      squads flagged DANGER CLOSE; the scripted company keeps its fire on
+      until its squads are 100 m from the mark; the live log says "סכנה
+      קרובה".
+    - **S5, assaulted while pinned** (`assaultNerve`): before an assault is
+      resolved each man of a pinned (−20) or suppressed (−10) defender tests
+      his nerve; a force that breaks surrenders or runs on an even roll.
+    ⚠️ Ours: the half at 75 m, the scaling by lethal area, the roof's half,
+    50 m and 100 m for heads down, the even odds for a suppressed look, 100 m
+    for the lift, −20 / −10 and the even roll. **As built, a force within a
+    round's suppression reach also counts as bombarded**, and loses decision
+    19's nerve for it (5 a turn) — which widens that loss with the reach;
+    the author has not ruled on it (docs/balance.md, *Twenty-fifth round*).
+    He answered with decision 64.
+64. ✅ **Nerve lost to fire depends on cover** (author, 2026-09-30: "nerve
+    lost for a force in the open should be far more severe than for a dug
+    in force"). The nerve the enemy's fire itself costs a man each turn —
+    decision 19's `firedOn` (1) and `bombarded` (5) — is multiplied by his
+    force's cover: **×2 in the open, ×1 behind partial cover, ×0.3 in a
+    hole, ×0.15 under a roof** (a position prepared before the battle); the
+    prepared defender's 0.75 still applies on top. ⚠️ The four factors are
+    ours — the open about thirteen times a prepared position. Losses to
+    casualties, leaders and the rest are unchanged. `GameOptions.nerveByCover`
+    (`NERVE_BY_COVER`, `fireNerveFactor`); a recording made before it reads
+    it as off. What it moved: docs/balance.md, *Twenty-sixth round*.
+    **The open is ×1 since decision 66.**
+65. ✅ **A pinned force still fires within rifle range, at a penalty**
+    (author, 2026-09-30: "try pinned firing within rifle range at a
+    penalty"; it replaces decision 63's 100 m limit on a pinned force's
+    fire). A pinned force fires out to the small-arms table's last band
+    (400 m) and, beyond 100 m, at half its chance again — over the parapet,
+    with little aim — on top of the pinned half accuracy (`HEADS_DOWN`,
+    `aimFactor` on direct fire). ⚠️ The 100 m and the half are ours. Its
+    sight is unchanged (nothing beyond 50 m). `GameOptions.pinnedFiresAtRange`;
+    a recording made before it plays decision 63's 100 m. What it moved:
+    docs/balance.md, *Twenty-seventh round* — little.
+66. ✅ **The balance targets, the open at ×1, an attacker's breakpoint at
+    40%** (author, 2026-09-30: "adopt all three: 55–70% target, open ×1, 40%
+    breakpoint"). After the command-post fix a 3:1 attack on the tel won
+    about 22%, and no single lever brought it near the 85% ceiling
+    (docs/balance.md, twenty-eighth to thirtieth rounds). Research put what
+    an attack at 3:1 on a prepared position should win at about 55–70%
+    (docs/validation.md, *What an attack at 3:1 should win*). Three parts:
+    - **The targets** (the design principles, below): 3:1 on a prepared
+      position 55–70%, 75–85% only with surprise or strong suppression; 2:1
+      30–45%.
+    - **Nerve in the open ×1** (decision 64 had ×2): still about seven times
+      a prepared position. `GameOptions.nerveInOpen`; a recording made before
+      replays at 2 (`NERVE_IN_OPEN_BEFORE_66`).
+    - **An attacking side gives up at 40%** of its men down, broken or fled
+      (decision 44 had 30%, from the historical breakpoints; this departs from
+      that source to meet the target). `GameOptions.attackerBreakpoint`; a
+      recording made before replays at 0.3 (`ATTACKER_BREAK_BEFORE_66`). A
+      defence still gives up at 50%.
+    The scripted company the balance is measured with now sends **three
+    scouts** (ours, `--recon 3`). What it gives: docs/balance.md,
+    *Thirty-first round*.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
@@ -2074,7 +2207,11 @@ Still modelled by reasonable assumption (flag if you want them changed):
   by playing:
   - **A prepared position is what gives the defender its superiority**, and
     what makes an attack need **3:1**. Attacked below it, a prepared defender
-    should hold; at 3:1 the attack should succeed.
+    should hold; at 3:1 the attack should succeed. **The targets** (author,
+    2026-09-30, rules decision 66, from the research in validation.md, *What
+    an attack at 3:1 should win*): a 3:1 attack on a prepared position wins
+    **55–70%** — 75–85% only with surprise or strong suppression, the 85%
+    of decision 54 now a ceiling — and a 2:1 attack **30–45%**.
   - **In a meeting engagement nobody has prepared anything**, so nobody has a
     defender's bonus: the larger force should win. What the ground offers —
     a building, a crest — still favours whoever reaches it first.
@@ -2430,6 +2567,20 @@ Each is intended to be an independent, toggleable module:
     **A simulated echelon's calls for fire are Jev's to decide** (author,
     2026-09-23): whether to adjust or fire for effect at once (decision 39),
     and so the rest of a call. The player decides for their own echelon.
+
+    **The first Jev decider is built** (2026-09-30, `src/sim/jev.ts`): Jev
+    answers the attacking company commander's typed questions in the
+    headless runner (`npm run jev-sim -- --jev`), through
+    `@typesafe-ai/sdk`. Each question becomes one `systemOne` call — the
+    commander's picture (drawn from `sideView` only) as the state, the
+    question as a `noul` or a `choice` over its options. A battle is replayed
+    to each question and driven on by the answer, so the answers are all Jev
+    contributes and a replay never calls it (tested). Every call is logged
+    with its answer, confidence, model and `QUESTION_SET_VERSION`. Tested
+    against a stand-in for the service; not yet run against Jev itself — it
+    needs `TYPESAFE_API_KEY` in the environment and `api.typesafe.ai`
+    allowed, which the session's network denied on 2026-09-30. The live game
+    does not call it.
 
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next

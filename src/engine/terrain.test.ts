@@ -40,6 +40,8 @@ function ridge(crest: number): Heightfield {
 }
 
 const ridged: Terrain = { heightfield: ridge(20), objects: [] };
+/** Going up the ridge's 10% grade, what each metre of bound costs: 1.5 at five metres a metre climbed. */
+const UPHILL = 1 + SLOPE.climbCostPerMetre * 0.1;
 
 describe("ground height", () => {
   it("is flat at zero with no heightfield", () => {
@@ -245,7 +247,8 @@ describe("the cost of the ground (Naismith)", () => {
     expect(climbAlong(FLAT_GROUND, foot, far)).toBe(0);
   });
 
-  it("charges eight metres of going per metre climbed, and nothing on the flat", () => {
+  it("charges five metres of going per metre climbed (decision 61), and nothing on the flat", () => {
+    expect(SLOPE.climbCostPerMetre).toBe(5);
     expect(boundCost(ridged, foot, crest)).toBeCloseTo(200 + 20 * SLOPE.climbCostPerMetre, 6);
     expect(boundCost(ridged, crest, far)).toBeCloseTo(200, 6);
     expect(boundCost(FLAT_GROUND, foot, far)).toBeCloseTo(400, 6);
@@ -259,9 +262,9 @@ describe("the cost of the ground (Naismith)", () => {
   });
 
   it("a bound uphill stops where the budget runs out, downhill goes the distance", () => {
-    // Uphill every metre costs 1 + 8 × 0.1 = 1.8, so 50 m of budget is 27.8 m.
+    // Uphill every metre costs 1 + 5 × 0.1 = 1.5, so 50 m of budget is 33.3 m.
     const up = reachAlong(ridged, foot, crest, 50);
-    expect(up.x).toBeCloseTo(50 / 1.8, 1);
+    expect(up.x).toBeCloseTo(50 / UPHILL, 1);
     expect(boundCost(ridged, foot, up)).toBeLessThanOrEqual(50 + 1e-6);
     const down = reachAlong(ridged, crest, far, 50);
     expect(down.x).toBeCloseTo(250, 6);
@@ -279,11 +282,11 @@ describe("the fan of reachable ground", () => {
   });
 
   it("falls short uphill and reaches full length along the contour", () => {
-    // From the foot of the ridge: east climbs (27.8 m), north and south run
+    // From the foot of the ridge: east climbs (33.3 m), north and south run
     // along the level, west is off the grid and level too.
     const fan = reachFan(ridged, { x: 0, y: 200 }, 50, { bearings: 4 });
     expect(fan).toHaveLength(4);
-    expect(fan[0]!.x).toBeCloseTo(50 / 1.8, 1); // east
+    expect(fan[0]!.x).toBeCloseTo(50 / UPHILL, 1); // east
     expect(fan[1]!.y).toBeCloseTo(250, 6); // south (y grows south)
     expect(fan[2]!.x).toBeCloseTo(-50, 6); // west
     expect(fan[3]!.y).toBeCloseTo(150, 6); // north
@@ -364,11 +367,31 @@ describe("the game on real ground", () => {
     const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 200 }, 8));
     g.beginTurn();
     g.advanceToPhase("movement");
-    // 50 m on the flat; uphill it costs 90 m.
+    // 50 m on the flat; uphill it costs 75 m.
     expect(() => g.moveUnit(squad.id, { x: 50, y: 200 })).toThrow(/climbed/);
     g.moveUnit(squad.id, { x: 25, y: 200 });
     expect(squad.movedThisTurn).toBeCloseTo(25 + 2.5 * SLOPE.climbCostPerMetre, 6);
-    expect(() => g.moveUnit(squad.id, { x: 30, y: 200 })).toThrow(/exceeds/);
+    expect(() => g.moveUnit(squad.id, { x: 35, y: 200 })).toThrow(/exceeds/);
+  });
+
+  it("climbs at the game's own cost, and replays a recording made before decision 61 at eight", () => {
+    const at = (opts: { climbCostPerMetre?: number }) => {
+      const g = new Game({ seed: 1, terrain: ridged, ...opts });
+      const squad = g.addUnit(makeInfantry("S", "BLUE", "squad", { x: 0, y: 200 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("movement");
+      g.moveUnit(squad.id, { x: 20, y: 200 });
+      return { g, cost: squad.movedThisTurn };
+    };
+    expect(at({}).cost).toBeCloseTo(20 + 2 * 5, 6);
+    expect(at({ climbCostPerMetre: 8 }).cost).toBeCloseTo(20 + 2 * 8, 6);
+    const { g } = at({});
+    const recording = g.toRecording();
+    expect(recording.climbCostPerMetre).toBe(5);
+    expect(replayGame(recording).climbCostPerMetre).toBe(5);
+    delete (recording as { climbCostPerMetre?: number }).climbCostPerMetre;
+    expect(replayGame(recording).climbCostPerMetre).toBe(SLOPE.climbCostBeforeDecision61);
+    expect(() => new Game({ seed: 1, climbCostPerMetre: -1 })).toThrow(/climbCostPerMetre/);
   });
 
   it("a standing order climbs as far as the budget reaches, then carries on", () => {
@@ -378,7 +401,7 @@ describe("the game on real ground", () => {
     g.advanceToPhase("movement");
     g.setStandingOrder(squad.id, { gait: "normal", destination: { x: 200, y: 200 } });
     const [first] = g.executeStandingOrders("BLUE");
-    expect(first?.moved?.to.x).toBeCloseTo(50 / 1.8, 1);
+    expect(first?.moved?.to.x).toBeCloseTo(50 / UPHILL, 1);
     expect(first?.moved?.arrived).toBe(false);
     // Bound by bound up the slope, the order reaches the crest.
     for (let turn = 0; turn < 7; turn++) {

@@ -700,6 +700,205 @@ attacker's fire plan is made on an eye's estimate rather than on the
 truth. Location error in the fight itself moves it 2 points. The fire plan
 was the whole of it.
 
+## Infantry pace under fire (2026-09-30) — the climb cost changed (rules decision 61)
+
+The question: on the tel no attack closes (balance.md, *Twenty-second
+round*). Is the infantry too slow? The game's figures are the document's —
+**50 m a turn walking, 100 running, half under fire or suppressed** — plus
+**8 m of a move for every metre climbed** (decision 15, Naismith) and, in the
+drill, bounding overwatch: in contact half the squads hold each turn.
+
+**What the sources say** (1 turn = 60 s, so m/min = m a turn). Two research
+passes, 2026-09-30; papers read as abstracts, the US field manuals only
+through search results and a blog quoting them (the sites were blocked):
+
+| Figure | m/min | Source |
+|---|---|---|
+| Cross-country march rate, day / night; road, night | 40 / 27; 53 | FM 21-18, through search results and [MTI](https://mtntactical.com/research/yet-calculating-movement-uneven-terrain/) |
+| Hiking off path (Tobler's function × 0.6) | 50 | [Tobler's hiking function](https://en.wikipedia.org/wiki/Tobler%27s_hiking_function) |
+| Self-paced loaded march, 22 kg | 66 | Arya 2022 (abstract) |
+| Fastest loaded walk, 22–66% of body mass | 112–89 | Looney 2021 (abstract) |
+| 30 m sprint in a 21.6 kg fighting load | 220 (8.2 s) | Billing 2011 (abstract) |
+| A rush: 3–5 s, kept short so a gunner cannot track it | — | [FM 21-75, ch. 3](https://www.globalsecurity.org/military/library/policy/army/fm/21-75/Ch3.htm) |
+| Fire and movement drill: 6 m bounds, one every 20 s | **18 net** | Billing 2015; McGuire 2025 (abstracts) |
+| Mock section assaults over 100–150 m: 7 m bounds every 22 s, 6.5 min on average | **15–23 net** | Silk 2013, *Mil Med* (abstract) |
+| Low (leopard) crawl, 18 m with 24 kg | 41–45 | McGuire 2025; Myers 2016 (abstracts) |
+| Creeping barrages infantry kept up with: Vimy 1917, Passchendaele 1917, Hitler Line 1944, Veritable 1945 | **30, 23, 18–30, 23** | [Barrage (artillery)](https://en.wikipedia.org/wiki/Barrage_(artillery)), citing Griffith, Steel & Hart, Hogg |
+| A barrage infantry could *not* keep up with: the Somme, XV Corps, 1 July 1916 | 46 planned | same |
+| Urban advance, unopposed; opposition slowed it about sevenfold | 13; about 2 | Rowland, *The Stress of Battle*, through [a review](https://www.themself.org/2013/12/stress-of-battle-part-2-op-research-on-urban-battles/) |
+| Metres of flat a metre of climb is worth: Naismith and fell racing; Tobler at 9–27% grades; running on a treadmill or road | 8; 4–6; 3–4.4 | Scarf 2007; Norman 2004 (abstracts); Tobler (arithmetic) |
+
+**Read together:**
+
+- **Under fire a squad does not walk at half speed; it rushes and drops.**
+  A rush is very fast (5–7 m/s) and short (6–30 m), followed by 15–20 s on
+  the ground. Three independent drill studies and the barrages infantry kept
+  pace with agree on about **15–30 m a minute net**, 20 the middle. Where the
+  defender was not suppressed it fell to almost nothing.
+- **Walking at 50 m a minute is right** for a cross-country move (40–53).
+  **Running at 100 m a minute** is a fast loaded walk as a sustained minute —
+  defensible as a minute that includes going to ground and getting up, low as
+  a top speed. No measured 60-second loaded run was found.
+- **8 m a metre climbed is probably heavy for a tactical move.** It is the
+  figure for a long hill walk; for the 10–25% grades of the tel Tobler gives
+  4–6, and one study found the slope penalty grows with fatigue over minutes,
+  which a one-minute bound has not got. No source gives a figure for loaded
+  soldiers. Downhill (gentle) is slightly faster than flat in Tobler; the
+  game gives it nothing, which is close.
+
+**What the game does, measured on the tel** (20 battles of the 3:1, the
+twenty-second round's company, from the minute the main body is let go):
+a squad moves in 39% of its turns (42% held by the drill's overwatch, 16%
+scouts lying up, 2% blocked) and covers 52 m when it does — a 100 m bound
+at a run, of which the climb takes about 42 m (5.3 m climbed a bound). It
+is suppressed in only 5% of its turns, so the halving barely applies. **Net,
+about 20 m a minute** — in the middle of the sources' range. The ridge rises
+only 24 m over the last 440 m on the centre line (28 m of climb summed), 51
+m on the eastern approach.
+
+**So pace is not why the attack does not close.** The main body is let go at
+a median turn 20, about 350 m from the nearest defender, and the battle ends
+at a median turn 26–29, about 260 m out: fire decides it in 6–9 minutes,
+where 350 m at a realistic 20 m a minute takes 15–20. Nothing here says the
+infantry should be faster; it says the fire breaks a side sooner than the
+last few hundred metres can be crossed. That is the next question —
+how long a dug-in platoon holds under a mortar section, against the sources
+(handoff, *mortar lethality against men dug in*).
+
+Two changes the sources would support. **The author took the first**
+(2026-09-30, decision 61): the climb cost is **5 m a metre** for a bound
+instead of 8. The second is not made: on flat ground the drill's pace in
+contact (half the squads bounding 100 m) nets about 50 m a minute, more
+than twice the sources' 20, if no one is suppressed.
+
+## Mortars against men dug in (2026-09-30) — the factors changed (rules decision 62)
+
+The question, from the pace research: on the tel fire decides the battle
+6–9 minutes after the company goes. Is the mortar too lethal against men
+dug in? The game's figures (`SHELL_VS_MEN`, decisions 29–31, 48): an 81 mm
+bomb reaches 476 m² of standing men; in a hole dug in the battle that is ×
+0.125 (impact) or × 0.625 (air burst); under overhead cover — a position
+prepared before the battle — × 0.125 either way.
+
+**What the sources say** (a research pass, 2026-09-30; FM 7-90, FM 6-30
+and FM 100-61 read in full, FM 5-103 not reached, the rest secondary):
+
+| Figure | Value | Source |
+|---|---|---|
+| Men in open holes, proximity fuze | "only 10 percent as effective" as in the open; proximity about 5× impact | FM 7-90, App. B-5c ([GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/7-90/Appb.htm)) |
+| Under overhead cover | proximity: "few, if any" casualties; impact: "some blast and suppressive effect"; light and medium mortars "little effect" | FM 7-90, B-3d, B-5d |
+| Warned platoon | 2 rounds unwarned took 10–15 once it had gone to ground | FM 7-90, B-5a |
+| 81 mm suppression | likely within 30 m, 50% at 75 m, little beyond 125 m; strongest when fire first falls | FM 7-90, B-7 |
+| Relative risk (WWII British), to a standing man | lying ⅓; firing from an open trench 1/15–1/50; crouched in it 1/25–1/100 | Evans, through [balagan.info](https://balagan.info/artillery-and-mortar-tactics-of-ww2) |
+| Neutralization; destruction | 10% casualties; 30% "during a short time span" — destroying dug-in targets by fire "is not economical"; suppression "usually lasts only as long as the fires are continued" | FM 6-30, App. E ([GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/6-30/f630_14.htm)) |
+| Rounds to neutralize (30% of targets, unobserved) a hectare | troops in the open: 35 of 82 mm; a hasty dug-in position: 300 of 82 mm; a prepared strongpoint: no 82 mm norm (120 mm: 200) | FM 100-61, ch. 9 ([GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/100-61/Ch9.htm)), the US Army's OPFOR norms |
+| Operation Veritable, 1945 | casualties under 5% on both sides, about 20 prisoners a German casualty; success came from assaulting as the fire lifted | Swann (No. 2 ORS), reanalysed by Rooney ([Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/)) |
+| Suppression after the fire stops | "some brief, indeterminate period" | Dupuy ([TDI](https://dupuyinstitute.org/2018/10/11/human-factors-in-warfare-suppression/)) |
+
+**What the game does, measured** (60 battles of the tel's 3:1, the
+twenty-third round's company, squads first). In the 47 the defender lost,
+every one ended at its breakpoint: 32% of its men down, 82% of them by the
+mortars, and another 25% broken but unhurt. The attacker fired about 10 HE
+missions a battle — some 245 bombs for about 8.5 men of a dug-in platoon, a
+man for every 29 bombs. On the OPFOR norm a *hasty* dug-in platoon position
+of 2–6 ha takes 600–1,800 bombs for 30%; for positions under overhead cover
+the sources give no norm and "few, if any" casualties.
+
+**Read together:** against men dug in, the game's mortar is several times
+too lethal — about 5× in an open hole under an air burst (0.49 of standing
+against the sources' 0.10), 2–6× on impact (0.125 against 0.02, or
+1/15–1/100), and most of all under overhead cover, which the game makes no
+safer than an open hole. The sources' factors would be about: impact, open
+hole **0.03**, overhead cover **0.02**; air burst, open hole **0.13**,
+overhead cover **0.005**. Posture in the open (standing 1, lying 0.36)
+agrees with Evans's ⅓. **Adopted** (author, 2026-09-30, decision 62); in
+the game (200 battles, balance.md *Twenty-fourth round*) the 3:1 wins
+44–47% and the 2:1 17–19%.
+
+**A trial with the sources' factors** (scratch, not in the game; 100
+battles, the same company):
+
+| | 3:1 wins | 2:1 wins | defender down (3:1) | explosives' share |
+|---|---|---|---|---|
+| The game's factors | 76% | 59% | 30% | 79–81% |
+| The sources' factors | **47%** | **18%** | 19% | 73% |
+
+The prepared position gets its superiority back — 2:1 fails, 3:1 is an even
+fight — which is the author's design principle. But the battle still ends
+at about turn 25 with no attack closed: now it is the **attacker** that
+reaches its breakpoint, in the open under the defender's mortars. What the
+sources say decides such a fight is missing from the game: fire on men dug
+in mostly **suppresses**, the suppression lasts about as long as the fire,
+and the assault succeeds by arriving while it does (Veritable). Fire that
+only kills cannot give that.
+
+## What an attack at 3:1 should win (2026-09-30)
+
+The design principle (README) has a prepared position make an attack need
+3:1, with 85% as the author's upper bound for a 3:1 attack on a prepared
+platoon (decision 54, resting on the Dupuy Institute's 83% at 2.5–2.99:1).
+A research pass read the evidence more widely:
+
+| Ratio, condition | Attacker success | Source |
+|---|---|---|
+| 2.0–2.49:1, division level 1904–91, postures mixed | 71% (80% without probing attacks) | TDI 752-case database ([TDI](https://dupuyinstitute.org/2019/10/31/tests-using-the-752-case-division-level-data-base/)) |
+| 2.5–2.99:1, same | 83% | same |
+| 3.0–3.49:1, same | 69–70% | same |
+| 3.5–3.98:1, same | 76–77% | same |
+| 3:1 or more, battles 1600–1973 | 74% | Helmbold & Khan 1986, through [TDI](https://dupuyinstitute.org/2016/07/11/trevor-dupuy-and-the-3-1-rule/) |
+| Small-unit WWII attacks without surprise, 1:1 / 3:1 | 40% / 54% | Rowland, *The Stress of Battle*, through [a review](https://www.themself.org/2013/12/stress-of-battle-5-ww2-heroism-surprise/) |
+| The same with surprise, 1:1 / 3:1 | 70% / 76% | same |
+| Prepared positions | defender ×1.65 | Rowland, through [a review](https://www.themself.org/2013/12/book-review-the-stress-of-battle-by-david-rowlands-part-1/) |
+| Doctrine's origin: a defender has "approximately a 50-50 probability" against three times his strength | — | CGSC ST 100-9 (1991), through [TDI](https://dupuyinstitute.org/2019/11/14/the-source-of-the-u-s-army-three-to-one-rule/) |
+
+**Read together:** none of the sources splits win rates by the defender's
+preparation, and the aggregate tables mix postures (high ratios are massed
+against the strongest positions, which is why 3–6:1 sometimes wins less
+than 2.5–3:1). Small-unit attacks without surprise do markedly worse than
+the division-level tables. With a prepared defender worth about 1.65 times
+its numbers, 3:1 is about 1.8:1 in effect. **A defensible target: 3:1
+against a prepared platoon about 55–70%, with 75–85% for an attack with
+surprise or strong suppression; 2:1 about 30–45%** — "usually fails" holds.
+85% fits as a ceiling, not as the typical result. Mearsheimer's 1989 paper,
+Helmbold 1969 and the Kress & Talmor model were read as abstracts only.
+
+## The breakpoints and explosives' share, on the game's rules (2026-09-30)
+
+`npm run validate` now plays the harness on the game's rules (balance.md,
+*Thirty-third round*: decisions 51–55 on, an eye's planning error, a scout
+from each attacking platoon), on today's engine (decisions 61–66, the
+command post that stays put). Its single-weapon measurements — a round's
+casualties, a launcher's minute, rifle fire — do not play battles and did
+not move. Where a side gives up, research figures, 100 battles a cell,
+the classic harness → the game's rules:
+
+| Battle | Fire | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives | Minutes, median |
+|---|---|---|---|---|---|---|
+| Platoon meeting | — | 48% → 40% | 42% → 39% | — | 34% → 33% | 8 → 8 |
+| Platoon 3:1 attack | — | 99% → 95% | — → 25% | 67% → 67% | 27% → 16% | 13 → 34 |
+| Platoon 2:1 attack | — | 87% → 46% | 31% → 28% | 56% → 50% | 41% → 21% | 14 → 34 |
+| Company 3:1 attack | a bomb a turn | 97% → 61% | — → 16% | 42% → 31% | 33% → 33% | 14 → 29 |
+| Company 2:1 attack | a bomb a turn | 1% → 0% | 20% → 20% | — | 28% → 20% | 15 → 29 |
+| Company 3:1 attack | calibrated | 7% → **68%** | 23% → 23% | 33% → 28% | 73% → **51%** | 13 → 27 |
+| Company 2:1 attack | calibrated | 0% → 9% | 25% → 26% | — → 25% | 56% → 50% | 12 → 28 |
+
+(The document's lethality, recorded by the tool alongside, moves the same way.)
+
+- **Attackers give up at 16–28% casualties**, around the rule of thumb's
+  20–25% (decision 44) even with the breakpoint at 40% (decision 66):
+  broken and fled men count toward it too.
+- **Defenders give up at 25–31% casualties at company**, under the rule of
+  thumb's 40%: since decisions 63–64 more of a dug-in defender's men break
+  before they fall. A one-squad defender still loses whole men (67%).
+- **Battles take twice as long** (27–34 minutes against 13–15): the attack
+  finds the defence before it goes.
+- **Explosives' share with calibrated fire is 51% on flat ground, not the
+  75% the author set** (decision 43, which was calibrated on the classic
+  harness). On the tel it is 73–77% (balance.md, *Thirty-first round*). On
+  open ground the scouted attack closes to rifle range, and small arms do
+  more of the work. **The author ruled (2026-09-30): 75% is for real
+  ground, and the tel meets it.** The flat harness's 51% is not a miss.
+
 ## Open
 
 For the author, in rough order of what they move:
@@ -721,7 +920,16 @@ For the author, in rough order of what they move:
 5. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.
-6. **Not researched yet**: the charges (a 100–200 m reach at 50%
+6. **Infantry pace** (2026-09-30): the sources put an advance under fire at
+   15–30 m a minute and the tel's attack already nets about 20. The climb
+   cost went from 8 m a metre to 5 (decision 61); the drill's flat-ground
+   pace in contact (about 50 m a minute unsuppressed) is left as it is. See
+   *Infantry pace under fire*.
+7. **Mortars against men dug in** (2026-09-30): the full-cover factors are
+   the sources' since decision 62. What the sources say decides the fight —
+   suppression the assault arrives under — is not in the game yet: see
+   docs/suppression-design.md.
+8. **Not researched yet**: the charges (a 100–200 m reach at 50%
    activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review
    (agenda item 4) covers the last.
@@ -754,3 +962,21 @@ These were not peer-reviewed and were read through search results.
   (Armored Medical Research Laboratory, Fort Knox, 1945), and its "20% or
   more" as cited in *Tactical Display for Soldiers* (National Research
   Council, 1997); read through search results.
+- Infantry pace (2026-09-30): [FM 21-75, ch. 3 — GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/21-75/Ch3.htm);
+  [Barrage (artillery)](https://en.wikipedia.org/wiki/Barrage_(artillery));
+  [Tobler's hiking function](https://en.wikipedia.org/wiki/Tobler%27s_hiking_function);
+  [Naismith's rule](https://en.wikipedia.org/wiki/Naismith%27s_rule);
+  [MTI on movement over uneven terrain](https://mtntactical.com/research/yet-calculating-movement-uneven-terrain/)
+  (quoting FM 21-18's march rates);
+  [a review of Rowland's *Stress of Battle*](https://www.themself.org/2013/12/stress-of-battle-part-2-op-research-on-urban-battles/);
+  [Advance rates in combat — The Dupuy Institute](https://dupuyinstitute.org/2023/04/26/advance-rates-in-combat/).
+  Papers read as abstracts through Consensus: Silk et al. 2013 (*Military
+  Medicine*, section assaults); Billing et al. 2011 and 2015; McGuire et al.
+  2025; Myers et al. 2016; Hunt et al. 2016; Looney et al. 2021; Arya et al.
+  2022; Scarf 2007; Norman 2004; Goodwin et al. 2024.
+- Mortars against men dug in (2026-09-30): FM 7-90 App. B, FM 6-30 App. E
+  and FM 100-61 ch. 9 (GlobalSecurity, read in full); [the psychology of
+  artillery effectiveness — Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/);
+  [artillery and mortar tactics of WW2 — balagan.info](https://balagan.info/artillery-and-mortar-tactics-of-ww2)
+  (quoting Evans and Ellis); [human factors in warfare: suppression — The
+  Dupuy Institute](https://dupuyinstitute.org/2018/10/11/human-factors-in-warfare-suppression/).

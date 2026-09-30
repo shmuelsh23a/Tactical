@@ -34,16 +34,16 @@ describe("the Elah valley scenario on Tel Azeka", () => {
     expect(seenBy(700, 350)).toEqual(["RED-3"]);
   });
 
-  it("charges the climber eight metres of bound for every metre of height", () => {
-    // Naismith (rules decision 15). 100 m of the face costs a squad far more
-    // than a walking bound (50 m) — several turns per hundred metres.
+  it("charges the climber five metres of bound for every metre of height", () => {
+    // Rules decisions 15 and 61. 100 m of the face costs a squad far more
+    // than a walking bound (50 m) — four turns or more per hundred metres.
     const faceLegs: [number, number][] = [
       [900, 800],
       [800, 700],
     ];
     for (const [from, to] of faceLegs) {
       const cost = boundCost(terrain, { x: from, y: 350 }, { x: to, y: 350 });
-      expect(cost, `east face ${from}->${to}`).toBeGreaterThan(250);
+      expect(cost, `east face ${from}->${to}`).toBeGreaterThan(200);
     }
     // The ridge, by contrast, costs about what it measures.
     const ridge = boundCost(terrain, { x: 520, y: 750 }, { x: 560, y: 650 });

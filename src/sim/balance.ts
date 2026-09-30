@@ -219,6 +219,39 @@ export interface BattleOptions {
   keepEyesOn?: boolean;
   /** Losing a command group has effect (rules decision 55, `GameOptions.commandSuccession`). */
   commandSuccession?: boolean;
+  /**
+   * Play suppression and nerve as decision 19 had them, before rules
+   * decisions 63 and 64: a shell suppresses only as far as it kills, a roof
+   * takes it all, a pinned force still watches and shoots, an assault tests
+   * nobody first, and fire costs the same nerve whatever the cover. To
+   * measure what 63 and 64 moved.
+   */
+  suppressionBefore63?: boolean;
+  /**
+   * The harness as it played before it followed the game (2026-09-30,
+   * thirty-third round): decisions 51–55 off unless named, fires planned on
+   * the truth, and no scouts unless a company plan is given. Otherwise the
+   * harness plays the game's rules — each of `locationError`,
+   * `stillDetection`, `binoculars`, `keepEyesOn` and `commandSuccession` on
+   * unless set false, `planningError` an eye's 0.2 unless given, and, in an
+   * attack with no `company` given, a scout from each attacking platoon
+   * ({@link scaledRecon}).
+   */
+  classicHarness?: boolean;
+}
+
+/** Turns the scouts must hold the enemy in sight before the company goes: the scenario runner's standard. */
+const STANDARD_LOOK_TURNS = 4;
+
+/**
+ * The attacking company commander the harness plays by default (2026-09-30):
+ * a scout from each attacking platoon, the rest waiting for four turns of
+ * what they find — the scenario runner's standard, scaled by echelon. A lone
+ * squad has no one to send ahead.
+ */
+export function scaledRecon(echelon: Echelon): CompanyPlan | undefined {
+  const scouts = echelon === "company" ? 3 : echelon === "platoon" ? 1 : 0;
+  return scouts ? { recon: { scouts, lookTurns: STANDARD_LOOK_TURNS } } : undefined;
 }
 
 /** A standard normal draw (Box–Muller). */
@@ -355,7 +388,19 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 }
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
-export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
+export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, given: BattleOptions): BattleResult {
+  // The game's rules unless the classic harness is asked for.
+  const game = !given.classicHarness;
+  const opts: BattleOptions = {
+    ...given,
+    locationError: given.locationError ?? game,
+    stillDetection: given.stillDetection ?? game,
+    binoculars: given.binoculars ?? game,
+    keepEyesOn: given.keepEyesOn ?? game,
+    commandSuccession: given.commandSuccession ?? game,
+    planningError: given.planningError ?? (game ? LOCATION_ERROR.eye.rangeShare : 0),
+    ...(given.company === undefined && game && kind !== "meeting" ? { company: scaledRecon(echelon) } : {}),
+  };
   const laid = layout(echelon, kind, opts.meetingOdds);
   const callable = (weapon: string) => opts.anyEchelon || callableAt(echelon, weapon);
   // The defender's registered targets: on the line from its position toward
@@ -416,6 +461,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     ...(opts.binoculars ? { binoculars: true } : {}),
     ...(opts.keepEyesOn ? { keepEyesOn: true } : {}),
     ...(opts.commandSuccession ? { commandSuccession: true } : {}),
+    ...(opts.suppressionBefore63 ? { suppressionReach: false, roofsDampSuppression: false, headsDown: false, assaultNerve: false, nerveByCover: false } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),
@@ -490,7 +536,10 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     return true;
   };
 
-  const drill = opts.drill ?? PLAIN_SCRIPT;
+  // A scout bounds and observes, halting a turn after each bound, when it has
+  // a company to scout for and its drill says nothing (the runner's standard).
+  const baseDrill = opts.drill ?? PLAIN_SCRIPT;
+  const drill = opts.company?.recon && !baseDrill.scouting ? { ...baseDrill, scouting: { watchTurns: 1 } } : baseDrill;
   const drillState = new DrillState();
   const tasks: Record<Side, DrillTask> = {
     BLUE: { side: "BLUE", attacking: attackers.includes("BLUE"), objective: objective.BLUE },
@@ -518,6 +567,8 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // A side with missions assigned calls the next when its weapon is free.
     const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze, method?: FireMethod) => {
       for (const a of fireSupport[side] ?? []) {
+        // Nobody calls while command changes hands (rules decision 55).
+        if (!g.mayCall(side, a.weapon)) continue;
         if ((g.fireMissionsLeft(side, a.weapon) ?? 0) <= 0) continue;
         if (g.fireMissions.some((m) => m.side === side && m.weapon === a.weapon && m.status === "adjusting")) continue;
         const aim = aimAt();
@@ -573,7 +624,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // nearest enemy it knows of, as the harness always has.
     if (echelon === "company") {
       for (const side of order) {
-        if (fireSupport[side]) continue;
+        if (fireSupport[side] || !g.mayCall(side, "mortar")) continue;
         const hq = g.units.find((u) => u.side === side && u.kind === "command" && !u.neutralized);
         const target = hq && nearestKnown(g, hq);
         if (!hq || !target) continue;
@@ -591,7 +642,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     if (commander) tasks[attackerSide].company = commander.orders(g);
     for (const side of order) drillMovement(g, tasks[side], drill, drillState);
     g.advanceToPhase("combat");
-    for (const side of order) drillCombat(g, tasks[side], drill);
+    for (const side of order) drillCombat(g, tasks[side], drill, drillState);
     for (const u of g.units) {
       if (u.kind === "command") continue;
       const s = u.suppression ?? 0;
@@ -730,18 +781,22 @@ export const CONFIGURATIONS: readonly Configuration[] = ([undefined, 0.3, 0.5, 0
  * a prepared position:
  *
  * - at 1:1 the defender should hold: the attacker wins **at most 30%**;
- * - at about 2:1 it should be a real fight: the attacker wins **30–70%**;
- * - at 3–4:1 the attack should succeed: the attacker wins **at least 70%**;
+ * - at about 2:1 the attacker wins **30–45%** — the defence usually holds;
+ * - at 3–4:1 the attack should succeed: the attacker wins **55–70%**;
  * - and a winning attacker at 3–4:1 should pay for it: **10–30%** of his men
  *   down, where "as it stands" pays 0–8%.
+ *
+ * The 2:1 and 3:1 bands are the author's since rules decision 66
+ * (2026-09-30), from the research in docs/validation.md, *What an attack at
+ * 3:1 should win*; before, they were ours: 30–70% and at least 70%.
  *
  * Each echelon is judged on its own; a configuration's score is how many of
  * the twelve targets (four at each of three echelons) it meets.
  */
 export const TARGETS = {
   attack1MaxWin: 30,
-  attack2Win: [30, 70] as const,
-  attack3MinWin: 70,
+  attack2Win: [30, 45] as const,
+  attack3Win: [55, 70] as const,
   attack3AttackerDown: [10, 30] as const,
 } as const;
 
@@ -767,9 +822,12 @@ export function judge(
   defenderFires?: DefenderFires,
   anyEchelon = false,
   defenderPlan?: BattleOptions["defenderPlan"],
+  /** Anything else the battles take: the classic harness, a company plan, the game's rules one by one. */
+  more: Partial<BattleOptions> = {},
 ): Verdict {
   const cell = (kind: BattleKind) =>
     runCell(echelon, kind, {
+      ...more,
       morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
       ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}),
       ...(defenderPlan ? { defenderPlan } : {}),
@@ -784,7 +842,7 @@ export function judge(
   const met =
     Number(v.attack1Win <= TARGETS.attack1MaxWin) +
     Number(v.attack2Win >= TARGETS.attack2Win[0] && v.attack2Win <= TARGETS.attack2Win[1]) +
-    Number(v.attack3Win >= TARGETS.attack3MinWin) +
+    Number(v.attack3Win >= TARGETS.attack3Win[0] && v.attack3Win <= TARGETS.attack3Win[1]) +
     Number(attack3AttackerDown >= TARGETS.attack3AttackerDown[0] && attack3AttackerDown <= TARGETS.attack3AttackerDown[1]);
   return { ...v, met };
 }

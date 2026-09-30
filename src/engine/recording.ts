@@ -1,4 +1,4 @@
-import type { Fuze } from "./data/explosives.js";
+import { SHELL_COVERS, type Fuze, type ShellCover } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type {
   Echelon,
@@ -37,7 +37,8 @@ import type { MoraleReport } from "./morale.js";
 import type { RuleVariants } from "./data/variants.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { MapLineKind, Terrain } from "./terrain.js";
-import { OBJECT_HEIGHT_M } from "./data/terrain.js";
+import { OBJECT_HEIGHT_M, SLOPE } from "./data/terrain.js";
+import { ATTACKER_BREAK_BEFORE_66, NERVE_IN_OPEN_BEFORE_66 } from "./data/morale.js";
 import { LETHALITIES, type Lethality } from "./data/lethality.js";
 
 /**
@@ -191,6 +192,23 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   }
   if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
+  if (
+    r.climbCostPerMetre !== undefined &&
+    !(typeof r.climbCostPerMetre === "number" && Number.isFinite(r.climbCostPerMetre) && r.climbCostPerMetre >= 0)
+  ) {
+    throw malformed("climbCostPerMetre");
+  }
+  if (r.shellCover !== undefined && !SHELL_COVERS.includes(r.shellCover as ShellCover)) throw malformed("shellCover");
+  if (r.suppressionReach !== undefined && typeof r.suppressionReach !== "boolean") throw malformed("suppressionReach");
+  if (r.roofsDampSuppression !== undefined && typeof r.roofsDampSuppression !== "boolean") throw malformed("roofsDampSuppression");
+  if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
+  if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
+  if (r.pinnedFiresAtRange !== undefined && typeof r.pinnedFiresAtRange !== "boolean") throw malformed("pinnedFiresAtRange");
+  if (r.nerveByCover !== undefined && typeof r.nerveByCover !== "boolean") throw malformed("nerveByCover");
+  for (const key of ["nerveInOpen", "attackerBreakpoint"] as const) {
+    const v = r[key];
+    if (v !== undefined && !(typeof v === "number" && Number.isFinite(v) && v >= 0)) throw malformed(key);
+  }
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
@@ -323,6 +341,33 @@ export interface GameRecording {
    * was fought on the document's tables.
    */
   lethality?: Lethality;
+  /**
+   * Metres of a bound each metre climbed cost (rules decision 61). Read as
+   * **8** when absent: a battle recorded before it climbed at Naismith's.
+   */
+  climbCostPerMetre?: number;
+  /**
+   * What full cover did against a shell (rules decision 62). Read as
+   * **`before62`** when absent: a battle recorded before it played decision
+   * 31's holes and roofs.
+   */
+  shellCover?: ShellCover;
+  /** Whether a shell suppressed out to its suppression reach (rules decision 63, S1). Read as **off** when absent. */
+  suppressionReach?: boolean;
+  /** Whether a roof halved a shell's suppression (rules decision 63, S3). Read as **off** when absent. */
+  roofsDampSuppression?: boolean;
+  /** Whether a pinned force kept its head down (rules decision 63, S2). Read as **off** when absent. */
+  headsDown?: boolean;
+  /** Whether an assault tested a pinned defender's nerve first (rules decision 63, S5). Read as **off** when absent. */
+  assaultNerve?: boolean;
+  /** Whether a pinned force fired out to rifle range (rules decision 65). Read as **off** when absent. */
+  pinnedFiresAtRange?: boolean;
+  /** Whether fire cost nerve by cover (rules decision 64). Read as **off** when absent. */
+  nerveByCover?: boolean;
+  /** The nerve factor in the open (rules decision 66). Read as **2**, decision 64's, when absent. */
+  nerveInOpen?: number;
+  /** An attacker's breakpoint (rules decision 66). Read as **0.3**, decision 44's, when absent. */
+  attackerBreakpoint?: number;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
   /**
@@ -507,6 +552,16 @@ export function replayWithOutcomes(
     ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     lethality: recording.lethality ?? "document",
+    climbCostPerMetre: recording.climbCostPerMetre ?? SLOPE.climbCostBeforeDecision61,
+    shellCover: recording.shellCover ?? "before62",
+    suppressionReach: recording.suppressionReach ?? false,
+    roofsDampSuppression: recording.roofsDampSuppression ?? false,
+    headsDown: recording.headsDown ?? false,
+    assaultNerve: recording.assaultNerve ?? false,
+    pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,
+    nerveByCover: recording.nerveByCover ?? false,
+    nerveInOpen: recording.nerveInOpen ?? NERVE_IN_OPEN_BEFORE_66,
+    attackerBreakpoint: recording.attackerBreakpoint ?? ATTACKER_BREAK_BEFORE_66,
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.stillDetection ? { stillDetection: true } : {}),

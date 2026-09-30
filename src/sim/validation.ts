@@ -169,6 +169,8 @@ export function measureBreaks(
   // The fire decision 43 was calibrated on, both sides; a meeting has none.
   const fires = calibratedFires ? { fires: CALIBRATED_FIRE_PLAN, defenderFires: CALIBRATED_DEFENDER_FIRES } : {};
   const results = Array.from({ length: battles }, (_, i) =>
+    // The game's rules (2026-09-30): decisions 51–55 on, an eye's planning
+    // error, a scout from each attacking platoon (balance.ts, runBattle).
     runBattle(firstSeed + i, echelon, kind, { morale: true, lethality, ...fires }),
   );
   const brokeLosses: number[] = [];

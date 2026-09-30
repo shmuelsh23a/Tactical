@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BATTLE_KINDS,
+  scaledRecon,
   CONFIGURATIONS,
   callableAt,
   ECHELONS,
@@ -65,8 +66,11 @@ describe("the sweep over what is still open", () => {
 
 describe("the fire plan, and what put the men out", () => {
   it("brings the attacker's shells down on the objective, and counts who they put out", () => {
-    // Riflemen only: the grenadiers' rounds are explosives too.
-    const quiet = runBattle(1000, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY });
+    // Riflemen only, and no hand grenades in the assault: the grenadiers'
+    // rounds and the grenades are explosives too (decisions 45-46), and since
+    // decision 65 this battle closes to an assault.
+    const noGrenades = { ...RIFLEMEN_ONLY, assault: { ...RIFLEMEN_ONLY.assault, grenades: 0 } };
+    const quiet = runBattle(1000, "platoon", "attack3", { morale: true, drill: noGrenades });
     expect(quiet.outBy.explosive).toBe(0);
     const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "company", "attack3", { morale: true, fires: FIRE_PLAN }));
     expect(shelled.some((r) => r.outBy.explosive > 0)).toBe(true);
@@ -96,12 +100,16 @@ describe("the defender's mission plan (decision 38)", () => {
 
 describe("the squad's grenadiers", () => {
   it("fire rifle grenades alongside the rifles, and are the platoon's explosives", () => {
-    const seeds = [1000, 1001, 1002, 1003];
-    const withThem = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true }));
-    const without = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY }));
-    // Without them the only explosives are the assault's hand grenades.
+    const seeds = Array.from({ length: 20 }, (_, i) => 1000 + i); // fewer are too noisy for the claim
+    // The classic harness, to measure the grenadiers alone: with the game's
+    // rules the platoon scouts first and closes differently each battle.
+    const withThem = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, classicHarness: true }));
+    const without = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY, classicHarness: true }));
+    // Without them the only explosives are the assault's hand grenades. Over
+    // 20 seeds they nearly double them (33 to 18); a pinned squad keeps its
+    // head down (decision 63), so fewer are fired than before (50 to 22).
     const he = (rs: typeof withThem) => rs.reduce((n, r) => n + r.outBy.explosive, 0);
-    expect(he(withThem)).toBeGreaterThan(2 * he(without));
+    expect(he(withThem)).toBeGreaterThan(1.5 * he(without));
     expect(PLAIN_SCRIPT.grenadiers).toEqual({ menPerLauncher: 4 });
   });
 });
@@ -112,5 +120,27 @@ describe("a meeting engagement at odds", () => {
     expect(men(1)).toEqual({ BLUE: 36, RED: 36 });
     expect(men(2)).toEqual({ BLUE: 36, RED: 18 });
     expect(men(3)).toEqual({ BLUE: 36, RED: 9 });
+  });
+});
+
+describe("the harness plays the game's rules unless asked for the classic harness", () => {
+  it("sends a scout from each attacking platoon, and none from a lone squad", () => {
+    expect(scaledRecon("squad")).toBeUndefined();
+    expect(scaledRecon("platoon")?.recon?.scouts).toBe(1);
+    expect(scaledRecon("company")?.recon?.scouts).toBe(3);
+  });
+
+  it("plays a different battle from the classic harness, the same one every time", () => {
+    const game = runBattle(1000, "platoon", "attack3", { morale: true });
+    expect(runBattle(1000, "platoon", "attack3", { morale: true })).toEqual(game);
+    const classic = runBattle(1000, "platoon", "attack3", { morale: true, classicHarness: true });
+    expect(classic).not.toEqual(game);
+    // The classic harness is the game's rules switched off one by one, the truth and no scouts.
+    expect(
+      runBattle(1000, "platoon", "attack3", {
+        morale: true, locationError: false, stillDetection: false, binoculars: false, keepEyesOn: false,
+        commandSuccession: false, planningError: 0, company: {},
+      }),
+    ).toEqual(classic);
   });
 });

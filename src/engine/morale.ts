@@ -29,12 +29,16 @@ import {
   STATE_ACCURACY,
   SUPPRESSION,
   SUPPRESSION_EFFECT,
+  SUPPRESSION_REACH_81MM,
+  ASSAULT_NERVE,
+  NERVE_BY_COVER,
   TEST,
   THRESHOLDS,
   TOP_LEADER_ECHELON,
   TRAIT_DICE,
   WAVERING_TEST_INTERVAL,
 } from "./data/morale.js";
+import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2 } from "./data/lethality.js";
 
 /**
  * Morale (מורל) — rules decision 19.
@@ -147,6 +151,21 @@ export function hasMorale(unit: Unit): boolean {
 /** The men who will still fight: fit, and not broken. Without morale, every fit man. */
 export function readySoldiers(unit: Unit): Soldier[] {
   return (unit.soldiers ?? []).filter((s) => !s.neutralized && s.morale?.state !== "broken");
+}
+
+/**
+ * What one round of `weapon` suppresses a force whose point is `range` metres
+ * from the burst (rules decision 63, S1): the whole of `SUPPRESSION.indirect`
+ * inside the weapon's full reach of the force's nearest man, half inside its
+ * half reach, else nothing. {@link SUPPRESSION_REACH_81MM} scaled by the
+ * square root of the weapon's lethal area against the mortar's.
+ */
+export function roundSuppression(weapon: string, range: number): number {
+  const scale = Math.sqrt((LETHAL_AREA_M2[weapon] ?? LETHAL_AREA_M2.mortar!) / LETHAL_AREA_M2.mortar!);
+  const nearestMan = Math.max(0, range - FORCE_FOOTPRINT_RADIUS_M);
+  if (nearestMan <= SUPPRESSION_REACH_81MM.full * scale) return SUPPRESSION.indirect;
+  if (nearestMan <= SUPPRESSION_REACH_81MM.half * scale) return SUPPRESSION.indirect / 2;
+  return 0;
 }
 
 export type SuppressionLevel = "none" | "suppressed" | "pinned";
@@ -533,6 +552,10 @@ export interface MoraleContext {
    * game is measuring another size (data/variants.ts).
    */
   prepared?: { testBonus: number; lossFactor: number };
+  /** Nerve lost to fire by cover (rules decision 64, {@link NERVE_BY_COVER}). Off unless given. */
+  nerveByCover?: boolean;
+  /** The factor in the open (decision 66): `NERVE_BY_COVER.none` unless given. */
+  nerveInOpen?: number;
 }
 
 /**
@@ -540,6 +563,12 @@ export interface MoraleContext {
  * — the ground, a building, a hole it dug or a position it prepared. Read at
  * the morale step, before the turn's flags are cleared.
  */
+/** What a force's cover makes of the nerve the enemy's fire costs it (rules decision 64). */
+export function fireNerveFactor(unit: Unit, open: number = NERVE_BY_COVER.none): number {
+  if (unit.cover === "full") return unit.baseCover === "full" ? NERVE_BY_COVER.roof : NERVE_BY_COVER.full;
+  return unit.cover === "partial" ? NERVE_BY_COVER.partial : open;
+}
+
 export function inPosition(unit: Unit): boolean {
   return unit.movedThisTurn === 0 && unit.cover !== "none";
 }
@@ -568,6 +597,60 @@ export interface MoraleStepResult {
   recovered: string[];
   /** Forces that gave themselves up. */
   surrendered: string[];
+}
+
+/** What an assault did to a pinned or suppressed defender's nerve before it went in (rules decision 63, S5). */
+export interface AssaultNerve {
+  outcome: "held" | "surrendered" | "routed";
+  /** Men the tests broke. */
+  broke: number;
+  /** Where a routing force runs to. */
+  to?: Point;
+}
+
+/**
+ * Assaulted while pinned or suppressed (rules decision 63, S5): every man of
+ * the defender who is neither down nor broken tests his nerve as the morale
+ * step does ({@link TEST}, his wisdom, the force's experience, the prepared
+ * bonus), less {@link ASSAULT_NERVE}'s penalty for the force's suppression.
+ * If that breaks the force, it rolls: it gives itself up at
+ * `ASSAULT_NERVE.surrenderChance`, else it routs. A force neither pinned nor
+ * suppressed is not tested, and nothing is rolled for it.
+ */
+export function nerveUnderAssault(
+  rng: Rng,
+  units: readonly Unit[],
+  unit: Unit,
+  turn: number,
+  prepared: { testBonus: number } = PREPARED,
+): AssaultNerve {
+  const level = suppressionLevel(unit);
+  const penalty = level === "pinned" ? ASSAULT_NERVE.pinned : level === "suppressed" ? ASSAULT_NERVE.suppressed : 0;
+  if (!penalty || unit.surrendered || unit.neutralized) return { outcome: "held", broke: 0 };
+  const exp = EXPERIENCE[unit.experience ?? "regular"];
+  let broke = 0;
+  for (const s of soldiersWithPools(unit)) {
+    const m = s.morale!;
+    if (m.state === "broken" || m.state === "heroic") continue;
+    const target =
+      effectiveMorale(units, unit, s) + TEST.base + TEST.perWisdom * (s.traits?.wisdom ?? 5) + exp.test +
+      (inPosition(unit) ? prepared.testBonus : 0) - penalty;
+    m.lastTestTurn = turn;
+    if (rng.int(1, 100) <= target) continue;
+    m.state = "broken";
+    broke += 1;
+  }
+  if (!forceBroken(units, unit)) return { outcome: "held", broke };
+  if (rng.chance(ASSAULT_NERVE.surrenderChance)) {
+    unit.surrendered = true;
+    unit.routing = false;
+    unit.neutralized = true;
+    unit.canOnlyRetreat = false;
+    return { outcome: "surrendered", broke };
+  }
+  unit.routing = true;
+  for (const s of soldiersWithPools(unit)) drain(s.morale!, LOSS.rout);
+  return { outcome: "routed", broke, to: routDestination(units, unit) };
 }
 
 function soldiersWithPools(unit: Unit): Soldier[] {
@@ -698,8 +781,10 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
     for (const s of soldiersWithPools(u)) {
       const m = s.morale!;
       let loss = 0;
-      if (firedOn) loss += LOSS.firedOn;
-      if (bombarded) loss += LOSS.bombarded;
+      // What the fire itself costs him, by his cover (decision 64): far more
+      // in the open than dug in.
+      const underFire = (firedOn ? LOSS.firedOn : 0) + (bombarded ? LOSS.bombarded : 0);
+      loss += ctx.nerveByCover ? Math.round(underFire * fireNerveFactor(u, ctx.nerveInOpen)) : underFire;
       if (woundedIds.has(s.id)) loss += LOSS.wounded;
       loss += (ownWounded - (woundedIds.has(s.id) ? 1 : 0)) * LOSS.comradeWounded;
       loss += ownDown * LOSS.comradeDown;

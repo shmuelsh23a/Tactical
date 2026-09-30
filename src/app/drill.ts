@@ -12,7 +12,7 @@ import {
   type WithCoveringFire,
 } from "../engine/index.js";
 import { sideView } from "./hotseat.js";
-import { HOLD_SHORT_M, type CompanyOrders } from "./company.js";
+import { HOLD_SHORT_M, platoonKey, type CompanyOrders } from "./company.js";
 
 /**
  * The squad drill (backlog 15 and 20): how a simulated subordinate carries out
@@ -75,7 +75,7 @@ export interface SquadDrill {
    * breaks, rather than after. Null: it fights until morale decides.
    */
   breakContact: { readyShareBelow: number; fallBack: number } | null;
-  /** Command groups follow this far behind the centre of their forces. */
+  /** An attacker's command groups follow this far behind the centre of their forces; a defender's stay put. */
   commandGroupBehind: number;
   /**
    * Move off a shelled position (author, 2026-09-23): a defending force whose
@@ -85,6 +85,22 @@ export interface SquadDrill {
    * registered. Absent: it stays in its hole.
    */
   displace?: { metres: number; contactWithin: number };
+  /**
+   * Counterattack (rules decision 60, author 2026-09-30: "a squad in reserve;
+   * platoon counterattacks by drill"). A defending platoon's reserve
+   * ({@link DrillTask.reserves}) holds its own position until one of the
+   * platoon's forward positions is lost, and then retakes it without waiting
+   * for an order. A position is lost when the squad that held it is out of
+   * the fight or gone from it (not moved on purpose to its alternate
+   * position) and an enemy seen this turn or last is within `lostWithin`
+   * metres of it. The reserve takes the lost position nearest it, goes at
+   * `gait` for the enemy nearest that position, assaults it by the drill's
+   * assault rule, and once no enemy is seen on the position it takes the
+   * position and holds it. A mark older than that (decision 57) does not
+   * count: the enemy may have gone. Null: the reserve stays where it is and
+   * fights from there.
+   */
+  counterattack: { lostWithin: number; gait: MovementMode } | null;
   /**
    * How a squad scouts, when its company sends it ahead (rules decisions
    * 52–54; which squads, from where and for how long are the company's, in
@@ -124,6 +140,7 @@ export const PLAIN_SCRIPT: SquadDrill = {
   grenadiers: SQUAD_GRENADIERS,
   breakContact: null,
   commandGroupBehind: 80,
+  counterattack: { lostWithin: 50, gait: "run" },
 };
 
 /**
@@ -136,7 +153,10 @@ export const PLAIN_SCRIPT: SquadDrill = {
  * - the defender **holds fire to 200 m** — fire discipline, so the first
  *   volley lands where it is worth most and the position stays hidden until
  *   then;
- * - a force **breaks contact** at half strength rather than waiting to rout.
+ * - a force **breaks contact** at half strength rather than waiting to rout;
+ * - a defending platoon's reserve **counterattacks** a lost position at a run
+ *   (the author's rule, decision 60; the 50 m that makes a position lost is
+ *   ours).
  */
 export const WESTERN_DRILL: SquadDrill = {
   name: "western drill",
@@ -151,6 +171,7 @@ export const WESTERN_DRILL: SquadDrill = {
   grenadiers: SQUAD_GRENADIERS,
   breakContact: { readyShareBelow: 0.5, fallBack: 150 },
   commandGroupBehind: 80,
+  counterattack: { lostWithin: 50, gait: "run" },
 };
 
 /** What one side has been told to do: attack towards a point, or hold facing one. */
@@ -167,6 +188,14 @@ export interface DrillTask {
    * unless its commander decides that (`scoutsStay`). Absent: every force fights by the drill alone.
    */
   company?: CompanyOrders;
+  /**
+   * A defender's reserves (rules decision 60, `Scenario.reserves`): each
+   * holds until a forward position of its own platoon ({@link platoonKey})
+   * is lost, then retakes it by the drill's `counterattack`. Every other
+   * defending squad holds a forward position: the one it stood on when the
+   * drill first saw it.
+   */
+  reserves?: ReadonlySet<string>;
 }
 
 /** Turns scouts watch from their observation point, seeing nothing, before they go on. */
@@ -187,6 +216,10 @@ export class DrillState {
   readonly arrivedOn = new Map<string, number>();
   /** Forces that have passed their company's axis point and go on to the objective. */
   readonly passedVia = new Set<string>();
+  /** Each defending squad's forward position: where it stood when the drill first saw it. */
+  readonly posts = new Map<string, Point>();
+  /** Each reserve committed to a counterattack, and the position it is retaking. */
+  readonly counterattacking = new Map<string, Point>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -243,6 +276,58 @@ function readyShare(u: Unit, state: DrillState): number {
   return ready / start;
 }
 
+/** A squad still holds its post while it is in the fight and within this of it (ours). */
+export const HOLDS_POST_M = 25;
+
+/**
+ * The enemies seen this turn or last: a mark older than that is drawn as
+ * stale (decision 57) and may be where the enemy no longer is, so a
+ * counterattack neither starts nor aims on one. Without the knowledge model
+ * every enemy in the side's picture is in sight.
+ */
+function freshEnemies(game: Game, side: Side, enemies: Unit[]): Unit[] {
+  if (!game.trackIntel) return enemies;
+  const fresh = new Set(game.contactsFor(side).filter((c) => c.lastSeenTurn >= game.turn - 1).map((c) => c.unitId));
+  return enemies.filter((e) => fresh.has(e.id));
+}
+
+/** The enemy known nearest `post`, if one is within `within` metres of it. */
+function enemyOn(post: Point, enemies: Unit[], within: number): Unit | undefined {
+  let best: Unit | undefined;
+  for (const e of enemies) {
+    const d = distance(e.position, post);
+    if (d <= within && (!best || d < distance(best.position, post))) best = e;
+  }
+  return best;
+}
+
+/**
+ * Commit a defender's reserves (rules decision 60): each reserve not yet
+ * committed goes for the nearest forward position of its own platoon that is
+ * lost — its squad out of the fight or gone from it, and an enemy known on
+ * it. Once committed it stays committed.
+ */
+function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState, forces: Unit[], enemies: Unit[]): void {
+  const counter = drill.counterattack;
+  const reserves = task.reserves;
+  if (!counter || !reserves?.size) return;
+  const lost = [...state.posts].filter(([id, post]) => {
+    // A squad that went to its alternate position left its post on purpose.
+    if (state.displaced.has(id)) return false;
+    const holder = game.getUnit(id);
+    const holds = inPlay(holder) && distance(holder.position, post) <= HOLDS_POST_M;
+    return !holds && enemyOn(post, enemies, counter.lostWithin) !== undefined;
+  });
+  if (lost.length === 0) return;
+  for (const r of forces) {
+    if (!reserves.has(r.id) || !inPlay(r) || state.counterattacking.has(r.id)) continue;
+    const mine = lost
+      .filter(([id]) => platoonKey(id) === platoonKey(r.id))
+      .sort(([, a], [, b]) => distance(r.position, a) - distance(r.position, b));
+    if (mine[0]) state.counterattacking.set(r.id, { ...mine[0][1] });
+  }
+}
+
 /**
  * The movement phase: each force's order for the turn, carried out; then the
  * command groups take their place behind their forces.
@@ -256,6 +341,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const company = task.attacking ? task.company : undefined;
   const scouts = company?.scouts ?? new Map<string, Point | null>();
   const waiting = company?.hold ?? false;
+  if (!task.attacking) {
+    for (const u of forces) {
+      if (u.kind === "infantry" && !task.reserves?.has(u.id) && !state.posts.has(u.id)) state.posts.set(u.id, { ...u.position });
+    }
+    commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
+  }
 
   forces.forEach((u, i) => {
     if (!inPlay(u)) return;
@@ -271,6 +362,25 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       const away = awayFrom(u.position, nearest.position, drill.breakContact.fallBack);
       if (game.setStandingOrder(u.id, { gait: "run", destination: away, withdraw: true })) state.fellBack.add(u.id);
       return;
+    }
+    const retaking = task.attacking ? undefined : state.counterattacking.get(u.id);
+    if (retaking && drill.counterattack) {
+      // The counterattack (decision 60): at the enemy on the lost position,
+      // then onto the position itself; there it holds by the drill below.
+      const foe = enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack.lostWithin);
+      if (foe) {
+        game.setStandingOrder(
+          u.id,
+          distance(u.position, foe.position) <= drill.assault.range + 5
+            ? { gait: "normal" } // close enough: hold, and assault in the fire phase
+            : { gait: drill.counterattack.gait, destination: { ...foe.position } },
+        );
+        return;
+      }
+      if (distance(u.position, retaking) > 5) {
+        game.setStandingOrder(u.id, { gait: drill.counterattack.gait, destination: { ...retaking } });
+        return;
+      }
     }
     if (
       !task.attacking &&
@@ -430,6 +540,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange) {
         game.setStandingOrder(hq.id, { gait: "normal", holdFire: true, engagementRange: drill.openFireRange });
       }
+      // A defending command post stays where it was set up (2026-09-30):
+      // following its squads forward walked it out of cover into the
+      // attacker's shelling, and a company command group that broke there
+      // took the side's fire control with it (rules decision 55) — the
+      // defender's mortars fell silent a quarter of the time.
+      continue;
     }
     // An observation post holds its ground: moving would end it (decision 38).
     if (hq.observationPost || distance(hq.position, behind) < 5) continue;
@@ -441,8 +557,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   }
 }
 
-/** The fire phase: shoot into the sector, assault what is close, cover when idle. */
-export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill): void {
+/**
+ * The fire phase: shoot into the sector, assault what is close, cover when
+ * idle. With the drill's `state`, a reserve counterattacking (decision 60)
+ * takes the enemy on the position it is retaking before anything else.
+ */
+export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState): void {
   const { side } = task;
   const enemies = knownEnemies(game, side);
   const reach = task.attacking ? drill.attackFireRange : drill.openFireRange;
@@ -450,7 +570,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill): voi
     // A scout watches and reports; it does not give itself away (decision 52)
     // — unless the company has gone in and told it to give a base of fire.
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
-    const target = pickTarget(u, enemies, axisOf(u, task), drill, reach);
+    const retaking = task.attacking || !drill.counterattack ? undefined : state?.counterattacking.get(u.id);
+    const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
+    const target = foe && distance(u.position, foe.position) <= reach ? foe : pickTarget(u, enemies, axisOf(u, task), drill, reach);
     if (!target) {
       if (!task.attacking && drill.coverWhenIdle && !u.covering && !u.firedThisTurn && u.kind !== "vehicle") {
         try {
