@@ -4,8 +4,9 @@ import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
 import { fromAnswers, type Question } from "./companyQuestions.js";
-import { CLAUDE_SYSTEM, claudeAsker, claudePrompt } from "./claude.js";
-import { MISSION, playWithAsker } from "./jev.js";
+import { CLAUDE_SYSTEM, claudeAsker, claudeCommander, claudePrompt } from "./claude.js";
+import { MISSION, jevRequest, playWithAsker } from "./jev.js";
+import { ORDERS } from "./opord.js";
 
 /**
  * A Claude model answering the company commander's questions, tested with a
@@ -46,7 +47,11 @@ function standIn(answer: (body: Body) => string | "refuse") {
         type: "message",
         role: "assistant",
         model: body.model,
-        content: a === "refuse" ? [] : [{ type: "text", text: JSON.stringify({ answer: a, confidence: 1.4, reason: "because" }) }],
+        // Asked for a plan (its schema has no answer), it writes one.
+        content:
+          a === "refuse"
+            ? []
+            : [{ type: "text", text: JSON.stringify("plan" in (body.output_config.format.schema.properties as object) ? { plan: "find them, then go" } : { answer: a, confidence: 1.4, reason: "because" }) }],
         stop_reason: a === "refuse" ? "refusal" : "end_turn",
         stop_details: a === "refuse" ? { type: "refusal", category: "general_harms", explanation: "" } : null,
         usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 900 },
@@ -103,4 +108,41 @@ describe("a question as a Claude model is asked it", () => {
     expect(log.every((e) => e.model === "claude-haiku-4-5")).toBe(true);
     expect(run(fromAnswers(answers))).toEqual(result);
   }, 60_000);
+
+  it("with an order, a plan and a memory: the order in the system prompt, the plan written once and carried, the decisions so far in the user turn", async () => {
+    const { client, seen } = standIn((body) => body.output_config.format.schema.properties.answer?.enum[0] ?? "");
+    const order = ORDERS.telAzekaAssault!;
+    const c = claudeCommander(client, { model: "claude-opus-5-5", order, plan: true, memory: true });
+    await c.ask(q);
+    await c.ask({ ...q, id: "go.platoon.BLUE-2.20", ask: "What does platoon BLUE-2 do? More words." });
+    // The plan first, then the two questions.
+    expect(seen.length).toBe(3);
+    expect(c.plan()).toBe("find them, then go");
+    for (const { body } of seen) expect(body.system[0]!.text).toContain(order[0]!);
+    expect(seen[0]!.body.system.length).toBe(1);
+    expect(seen[0]!.body.messages[0]!.content).toContain("write your plan");
+    expect(seen[1]!.body.system[1]!.text).toContain("find them, then go");
+    expect(seen[1]!.body.messages[0]!.content).not.toContain("Your decisions so far");
+    const second = seen[2]!.body.messages[0]!.content;
+    expect(second).toContain("Your decisions so far");
+    expect(second).toContain("- Turn 20. What does platoon BLUE-1 do as the company goes in? You chose: assault the position. Why: because");
+  });
+});
+
+describe("the order from battalion", () => {
+  it("is written for both assault scenarios, and names none of the options", () => {
+    for (const id of ["telAzekaAssault", "telAzekaAssault2"]) {
+      const words = ORDERS[id]!.join(" ").toLowerCase();
+      expect(words).toContain("turn 45");
+      // Jev leans to an option whose words the state repeats (docs/balance.md, thirty-fourth round).
+      for (const option of ["reserve", "assault", "base of fire", "halt", "withdraw", "carry on", "bound", "hold short", "lift"]) expect(words).not.toContain(option);
+    }
+    expect(ORDERS.telAzekaAssault!.join(" ")).toContain("three platoons");
+    expect(ORDERS.telAzekaAssault2!.join(" ")).toContain("two platoons");
+  });
+
+  it("goes to Jev beside the mission with the order framing", () => {
+    const { state } = jevRequest(q, "order", ORDERS.telAzekaAssault);
+    expect(state).toMatchObject({ mission: [...MISSION], orders: [...ORDERS.telAzekaAssault!], situation: q.view });
+  });
 });

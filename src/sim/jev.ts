@@ -1,5 +1,6 @@
 import type { JsonValue, TypeSafeClient } from "@typesafe-ai/sdk";
 import { NeedAnswer, QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "./companyQuestions.js";
+import type { Order } from "./opord.js";
 
 /**
  * Jev answers the company commander's questions (README, backlog 15).
@@ -67,8 +68,10 @@ export interface JevLogEntry extends JevAnswer {
  * - `role`: the same, the state saying whose decision it is.
  * - `mission` (the default): the role, and the mission and the principles a
  *   trained company commander decides by, beside the picture.
+ * - `order`: `mission`, and the order from battalion (`opord.ts`) for the
+ *   scenario, where one is written (docs/balance.md, thirty-sixth round).
  */
-export type JevFraming = "plain" | "role" | "mission";
+export type JevFraming = "plain" | "role" | "mission" | "order";
 
 const ROLE = "You are the company commander of the attacking side. You decide for your own company only, from what your side knows.";
 
@@ -88,17 +91,18 @@ export const MISSION: readonly string[] = [
   "Losses are the price of the attack. Break it off only when it can no longer succeed.",
 ];
 
-export const JEV_FRAMINGS: Record<JevFraming, (view: string) => string | Record<string, JsonValue>> = {
+export const JEV_FRAMINGS: Record<JevFraming, (view: string, order?: Order) => string | Record<string, JsonValue>> = {
   plain: (view) => view,
   role: (view) => ({ role: ROLE, situation: view }),
   mission: (view) => ({ role: ROLE, mission: [...MISSION], situation: view }),
+  order: (view, order) => ({ role: ROLE, mission: [...MISSION], ...(order ? { orders: [...order] } : {}), situation: view }),
 };
 
 /** The Jev request for one question: the commander's picture as its state, framed, and one question named `decision`. */
-export function jevRequest(q: Question, framing: JevFraming = "mission") {
+export function jevRequest(q: Question, framing: JevFraming = "mission", order?: Order) {
   const label = (id: string) => q.options.find((o) => o.id === id)?.label ?? id;
   return {
-    state: JEV_FRAMINGS[framing](q.view),
+    state: JEV_FRAMINGS[framing](q.view, order),
     questions: {
       decision:
         q.kind === "noul"
@@ -116,9 +120,9 @@ export function jevRequest(q: Question, framing: JevFraming = "mission") {
  * An asker backed by Jev (`TypeSafeClient.systemOne`). A yes or no is Jev's
  * probability of yes, taken at even odds; a choice is Jev's pick.
  */
-export function jevAsker(client: Pick<TypeSafeClient, "systemOne">, model?: string, framing: JevFraming = "mission"): Asker {
+export function jevAsker(client: Pick<TypeSafeClient, "systemOne">, model?: string, framing: JevFraming = "mission", order?: Order): Asker {
   return async (q) => {
-    const request = jevRequest(q, framing);
+    const request = jevRequest(q, framing, order);
     const { answers, model: used } = await client.systemOne({ ...request, ...(model ? { model } : {}) });
     const a = answers.decision as
       | { type: "noul"; noul: number }

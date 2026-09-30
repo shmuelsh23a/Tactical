@@ -44,6 +44,16 @@
  *
  *   npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20
  *   npm run jev-sim -- --claude claude-sonnet-5-5 --effort low --seed 1000 --n 20
+ *
+ * **An order, a plan and a memory** (docs/balance.md, thirty-sixth round):
+ * `--order` gives the commander the scenario's OPORD from battalion
+ * (`src/sim/opord.ts`; for Jev, `--framing order`); with a Claude model,
+ * `--plan` has it write its own plan before the first question and carry it
+ * in every call, and `--memory` carries the battle's decisions so far with
+ * their reasons. The plan is logged with the battle.
+ *
+ *   npm run jev-sim -- --claude claude-opus-5-5 --order --plan --memory --seed 1000 --n 20
+ *   npm run jev-sim -- --jev --framing order --seed 1000 --n 20
  */
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
@@ -53,7 +63,8 @@ import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
 import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
-import { claudeAsker, type ClaudeAskerOptions } from "../src/sim/claude.js";
+import { claudeCommander, type ClaudeAskerOptions } from "../src/sim/claude.js";
+import { ORDERS } from "../src/sim/opord.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -70,8 +81,10 @@ const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIP
 const decide = fromAnswers(answers);
 
 if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude")) {
-  let jev: Asker;
+  // A commander for each battle: a Claude model with a plan or a memory keeps state between questions.
+  let commander: () => { ask: Asker; plan?: () => string | undefined };
   let framing = "rule";
+  const order = ORDERS[id];
   if (args.includes("--claude")) {
     const model = value("--claude");
     if (!model || model.startsWith("--")) throw new Error("--claude: name a model, e.g. claude-haiku-4-5");
@@ -84,11 +97,22 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
       process.exit(2);
     }
     const effort = value("--effort") as ClaudeAskerOptions["effort"];
-    jev = claudeAsker(new Anthropic({ apiKey, baseURL: "https://api.anthropic.com" }), { model, ...(effort ? { effort } : {}) });
-    framing = `claude:${model}${effort ? `@${effort}` : ""}`;
+    const withOrder = args.includes("--order");
+    if (withOrder && !order) throw new Error(`--order: no order is written for "${id}" (src/sim/opord.ts)`);
+    const client = new Anthropic({ apiKey, baseURL: "https://api.anthropic.com" });
+    const opts: ClaudeAskerOptions = {
+      model,
+      ...(effort ? { effort } : {}),
+      ...(withOrder ? { order } : {}),
+      plan: args.includes("--plan"),
+      memory: args.includes("--memory"),
+    };
+    commander = () => claudeCommander(client, opts);
+    framing = [`claude:${model}${effort ? `@${effort}` : ""}`, ...(["order", "plan", "memory"] as const).filter((f) => args.includes(`--${f}`))].join("+");
   } else if (args.includes("--rule")) {
     const extra = value("--rule")?.startsWith("--") === false ? value("--rule")!.split(",") : [];
-    jev = ruleAsker(new Set(extra));
+    const ask = ruleAsker(new Set(extra));
+    commander = () => ({ ask });
     framing = ["rule", ...extra].join("+");
   } else {
     let client: TypeSafeClient;
@@ -101,13 +125,15 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     const model = value("--model");
     const f = (value("--framing") ?? "mission") as JevFraming;
     if (!(f in JEV_FRAMINGS)) throw new Error(`--framing: "${f}" is not one of ${Object.keys(JEV_FRAMINGS).join(", ")}`);
+    if (f === "order" && !order) throw new Error(`--framing order: no order is written for "${id}" (src/sim/opord.ts)`);
     framing = f;
-    jev = jevAsker(client, model, f);
+    const ask = jevAsker(client, model, f, order);
+    commander = () => ({ ask });
   }
   // Timed here: nothing in src reads a clock.
-  const timed: Asker = async (q) => {
+  const timed = (ask: Asker): Asker => async (q) => {
     const started = Date.now();
-    const a = await jev(q);
+    const a = await ask(q);
     return { ...a, ms: Date.now() - started };
   };
   const n = Number(value("--n") ?? 1);
@@ -124,12 +150,14 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   const parallel = Math.max(1, Number(value("--parallel") ?? 1));
   const play = async (s: number) => {
     try {
+      const c = commander();
       const { result, answers: given, log } = await playWithAsker(
         (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, decide: d }),
-        timed,
+        timed(c.ask),
       );
+      const plan = c.plan?.();
       writeFileSync(`${out}/${id}-${s}.answers.json`, JSON.stringify(given));
-      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, framing, result, log }, null, 1));
+      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, framing, ...(plan ? { plan } : {}), result, log }, null, 1));
       if (result.winner === attacker) wins++;
       calls += log.length;
       ms += log.reduce((t, e) => t + (e.ms ?? 0), 0);
@@ -195,7 +223,8 @@ try {
  * (no mission before the company goes); "anyfire" fires on the first mark
  * offered, sure or not; "rush" sends the company in as soon as the enemy is
  * found, as Jev does, instead of shelling it for four turns first; "onescout"
- * sends one scout, as Jev does, not three.
+ * sends one scout, as Jev does, not three; "blind" sends it in at the first
+ * chance (turn 5), the enemy found or not, as Sonnet and Opus do.
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
@@ -208,6 +237,7 @@ function ruleAsker(extra: Set<string>): Asker {
       }
       if (q.id === "plan.wait") return "deadGround";
       if (/^go\.\d/.test(q.id)) {
+        if (extra.has("blind")) return "yes";
         if (extra.has("rush") && /just found|in sight \d+ turns/.test(q.ask)) return "yes";
         return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
       }
