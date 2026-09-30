@@ -1,9 +1,11 @@
 # Suppression: fire that pins, and an assault that arrives in time — a design
 
-**Status: a proposal for the author, 2026-09-30. Nothing here is built.**
-The author asked for it after the day's research ("adopt the factors, and
-design suppression"). It extends the suppression layer he shaped in rules
-decision 19, and every number in it is ours unless a source is named.
+**Status: approved and built, 2026-09-30 — rules decision 63** (the author:
+"shape approved; danger close as risk, roll between surrender and rout";
+question 2 was not answered, so S2 is built as proposed). What it did is
+on docs/balance.md, *Twenty-fifth round*. The rest of this page is the
+design as it was put to him. It extends the suppression layer he shaped in
+rules decision 19, and every number in it is ours unless a source is named.
 
 ## Why
 

@@ -2220,6 +2220,44 @@ were 11 squad-turns in 40 battles; the attacker's own squads within 250 m
 are pinned a fifth of the time. docs/suppression-design.md takes it from
 there.
 
+## Twenty-fifth round: suppression, step by step, 2026-09-30
+
+Rules decision 63 (docs/suppression-design.md), built and measured one part
+at a time: 200 battles a row, the twenty-fourth round's company, squads
+first; suppression sampled at each movement phase over 40 battles.
+
+| Step | 3:1 wins | 2:1 wins | Defender pinned, attacker 150–300 m off | Squad-turns inside 150 m (40 battles) | Nearest attacker at the end |
+|---|---|---|---|---|---|
+| Decision 62 (before) | 47% | 18% | 28% | 11 | 183 m |
+| + S1 reach, S3 roofs | 62% | 34% | 58% | 3 | 258 m |
+| + S2 heads down | 81% | 55% | 64% | 18 | 210 m |
+| + S4 danger close a risk | 80% | 55% | 64% | 18 | 210 m |
+| + S5 assaulted while pinned | 80% | 55% | 64% | 18 | 210 m |
+
+- **S1–S3 made the fire decide sooner, not the assault arrive.** The
+  defender is pinned two turns in three while the attacker closes, and,
+  blinded (S2), its mortars fire less and worse: the attacker's losses
+  fall from 18% to 10%. But it breaks **at range, by nerve**: in the 52 of
+  60 traced battles it lost, 729 of its men were broken and 279 down.
+- **Why:** as built, every force within a round's suppression reach also
+  counts as *bombarded*, and decision 19 takes 5 of every man's nerve a
+  turn for that (3.75 in position). S1 widened the reach of that loss with
+  the reach of the suppression.
+- **S4 and S5 moved nothing on the tel** because no assault arrives: the
+  battle is over before the fires would lift. Without mortars (the scratch
+  variant, 60 battles) S5 is at work: the 3:1 wins 63% with the
+  counterattack and 55% without (72% and 57% before S5).
+- **A trial, not built:** suppression from beyond the lethal blast without
+  decision 19's bombarded loss gives 3:1 **70%**, 2:1 **49%**; battles last
+  to a median turn 30 (26), the nearest attacker ends 166 m out (210 m),
+  55 squad-turns inside 150 m (18), and the first counterattacks go in
+  (3%). The defender still breaks more by nerve (522 broken, 368 down).
+
+**For the author:** 2:1 winning about half against a prepared platoon sits
+badly with the design principle. Whether the wider suppression should carry
+decision 19's bombarded loss is the first lever (the trial above); the loss
+itself (5 a turn, ours) the second.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

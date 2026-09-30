@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 764 tests, 43 files
+npm run check       lint + typecheck clean, 773 tests, 44 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -149,20 +149,24 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
-0. **Waiting on the author (2026-09-30, end of day): the suppression
-   design** — [suppression-design.md](suppression-design.md), four
-   questions at its foot. The day's research ended here: the mortar was
-   several times too lethal against men dug in, and the author adopted the
-   sources' full-cover factors (decision 62: impact hole 0.03, roof 0.02;
-   air burst hole 0.13, roof 0.005). On the tel the 3:1 now wins 44–47%
-   and the 2:1 17–19% (balance.md, *Twenty-fourth round*) — the design
-   principle back — but no attack closes still. What the sources say
-   decides it, suppression the assault arrives under, is what the design
-   proposes: S1 suppression reaching 30–75 m from a burst; S2 pinned
-   meaning heads down (no sightings beyond 50 m, no observer for a
-   mission); S3 roofs halving suppression from above; S4 danger close as a
-   risk, with the scripted company lifting at 100 m; S5 a pinned force
-   assaulted tests its nerve first. Build nothing of it before he answers.
+0. **Where 2026-09-30 ended: suppression built (decision 63), and a
+   question for the author.** The day ran: the reserve and counterattack
+   (60), pace researched (nothing wrong with it), climb 8 → 5 (61), the
+   mortar against men dug in researched and the sources' cover adopted
+   (62), then suppression designed, approved and built in five parts (63:
+   reach, heads down, roofs, danger close a risk, assaulted while pinned;
+   [suppression-design.md](suppression-design.md)). On the tel (balance.md,
+   *Twenty-fifth round*) the 3:1 wins 80% and the 2:1 55%, but still no
+   assault arrives: the defender, pinned two turns in three, **breaks at
+   range by nerve**. As built, a force within a round's suppression reach
+   also counts as bombarded and loses decision 19's 5 nerve a turn; a
+   trial without that gives 3:1 70%, 2:1 49%, attackers 44 m closer and the
+   first counterattacks. **Waiting on the author:** whether the wider
+   suppression should carry the bombarded loss, and 2:1 at about half
+   against the design principle. Also still open: S2's numbers (50 m, 100
+   m) were built as proposed, the author did not answer that question; the
+   balance harness's tables on balance.md predate decisions 61–63 (its
+   ground is flat, so 61 does not touch it; 62 and 63 do), not rerun.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a
    command decision** — Jev's, or the player's; there is to be no scripted

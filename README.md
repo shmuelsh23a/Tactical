@@ -2076,6 +2076,38 @@ on the stated reasoning, still awaiting the author's word.
     `GameOptions.shellCover`; a recording made before it replays on decision
     31's (`SHELL_VS_MEN_BEFORE_62`). docs/validation.md, *Mortars against
     men dug in*; what it moves, docs/balance.md, *Twenty-fourth round*.
+63. ✅ **Suppression: fire that pins, and an assault that arrives in time**
+    (author, 2026-09-30: "shape approved; danger close as risk, roll between
+    surrender and rout"). The design and its sources are in
+    docs/suppression-design.md; it extends decision 19's layer. Five parts,
+    each a `GameOptions` switch, on for a new game and off for a recording
+    made before:
+    - **S1, reach** (`suppressionReach`): a shell or a bomb suppresses every
+      force whose nearest man is within its suppression reach — for the 81 mm
+      the whole 25 inside 30 m, half out to 75 m (FM 7-90, B-7) — other
+      weapons by the square root of their lethal areas. Before, only the
+      forces its lethal blast reached (about 37 m from a force's point).
+    - **S2, heads down** (`headsDown`): a pinned force makes and keeps no
+      sighting beyond 50 m, is no observer for a fire mission, and fires at
+      nothing beyond 100 m; a suppressed force keeps each sighting at even
+      odds.
+    - **S3, roofs** (`roofsDampSuppression`): a force under a roof takes half
+      a shell's suppression (FM 7-90: "harder to suppress").
+    - **S4, danger close is a risk**: the engine already rolls every bomb
+      against everyone in reach; the 150 m refusal in the headless runner and
+      the browser tool is gone. Jev is offered a mark within 150 m of his
+      squads flagged DANGER CLOSE; the scripted company keeps its fire on
+      until its squads are 100 m from the mark; the live log says "סכנה
+      קרובה".
+    - **S5, assaulted while pinned** (`assaultNerve`): before an assault is
+      resolved each man of a pinned (−20) or suppressed (−10) defender tests
+      his nerve; a force that breaks surrenders or runs on an even roll.
+    ⚠️ Ours: the half at 75 m, the scaling by lethal area, the roof's half,
+    50 m and 100 m for heads down, the even odds for a suppressed look, 100 m
+    for the lift, −20 / −10 and the even roll. **As built, a force within a
+    round's suppression reach also counts as bombarded**, and loses decision
+    19's nerve for it (5 a turn) — which widens that loss with the reach;
+    the author has not ruled on it (docs/balance.md, *Twenty-fifth round*).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
