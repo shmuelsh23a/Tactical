@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
-import { DEFAULT_FIRE_CHOICES, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import { DEFAULT_FIRE_CHOICES, planDefenderFires, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import { isDeadGround } from "../app/deadGround.js";
+import { EYE_HEIGHT, distance } from "../engine/index.js";
 
 /**
  * The headless scenario runner: a generated scenario played on its real
@@ -34,5 +36,40 @@ describe("the headless scenario runner", () => {
     const s = runScenario(telAzekaAssaultListing, [11, 12], plain);
     expect(s.battles).toBe(2);
     expect(s.attackerWins + s.defenderWins + s.draws).toBe(2);
+  });
+});
+
+describe("the defending company's fire plan", () => {
+  const { game, mapWidth, mapHeight } = telAzekaAssaultListing.build();
+  const own = game.units.filter((u) => u.side === "RED" && u.kind === "infantry");
+  const blue = game.units.filter((u) => u.side === "BLUE" && u.kind !== "command");
+  const attackFrom = {
+    x: blue.reduce((t, u) => t + u.position.x, 0) / blue.length,
+    y: blue.reduce((t, u) => t + u.position.y, 0) / blue.length,
+  };
+  const centre = { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length };
+  const plan = planDefenderFires(game, "RED", attackFrom, mapWidth, mapHeight);
+
+  it("registers six targets on the dead ground in front of it, spaced to cover it", () => {
+    expect(plan).toHaveLength(6);
+    const query = { terrain: game.terrain!, watchers: own.map((u) => u.position), watcherEye: EYE_HEIGHT.fullCover, reach: Infinity };
+    for (const p of plan) {
+      expect(isDeadGround(query, p)).toBe(true);
+      expect(distance(p, centre)).toBeGreaterThanOrEqual(100);
+      // Toward the attack: nearer the attacker's start line than the defence is.
+      expect(distance(p, attackFrom)).toBeLessThan(distance(centre, attackFrom));
+      for (const q of plan) if (q !== p) expect(distance(p, q)).toBeGreaterThanOrEqual(120);
+    }
+    // The nearest ground first: the first target is closer than the last.
+    expect(distance(plan[0]!, centre)).toBeLessThan(distance(plan.at(-1)!, centre));
+  });
+
+  it("fires some of its missions on the plan, and none without one", () => {
+    const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES };
+    const withPlan = [11, 12, 13].map((s) => runScenarioBattle(telAzekaAssaultListing, s, opts));
+    expect(withPlan.some((r) => r.defenderPlanned > 0)).toBe(true);
+    for (const r of withPlan) expect(r.defenderPlanned).toBeLessThanOrEqual(r.missions.RED);
+    const without = runScenarioBattle(telAzekaAssaultListing, 11, { ...opts, defenderFirePlan: false });
+    expect(without.defenderPlanned).toBe(0);
   });
 });

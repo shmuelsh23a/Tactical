@@ -3,6 +3,7 @@ import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, drillCombat, drillMoveme
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
+  ADJUSTMENT_RADIUS_M,
   CE_PER_SIGMA,
   EYE_HEIGHT,
   groundHeight,
@@ -17,7 +18,7 @@ import {
   type Unit,
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
-import { bestVantages } from "../app/deadGround.js";
+import { bestVantages, isDeadGround } from "../app/deadGround.js";
 import { FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
 import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
@@ -41,8 +42,11 @@ import type { IndirectFireResult } from "../engine/index.js";
  *   `ScriptedCompany` (`app/company.ts`) decides its scouts, their
  *   observation points and where the rest wait; {@link FirePlanChoices}
  *   holds where it thinks the enemy is and when its guns fire;
- * - **the defender** holds by the drill and calls its mortars on the nearest
- *   attacker it knows of, fire for effect, as the browser tool's defender does;
+ * - **the defender** holds by the drill; in planning its company registers
+ *   its mortar targets on the dead ground in front of it ({@link
+ *   planDefenderFires}), and in the battle fires on an attacker it has seen
+ *   near one of them — on the mark, needing no observer — or else on the
+ *   nearest attacker it knows of, as the browser tool's defender does;
  *   a platoon's reserve (`Scenario.reserves`) retakes a lost position by the
  *   drill's counterattack (rules decision 60).
  *
@@ -97,6 +101,13 @@ export interface ScenarioBattleOptions {
   /** Stop here. The mission's deadline (`timeLimit`, decision 58) unless given; 60 turns with none. */
   maxTurns?: number;
   /**
+   * The defending company's fire plan (`planDefenderFires`): its mortar
+   * targets registered on the dead ground in front of it, fired on as the
+   * attacker crosses them. On unless false; false is every table before
+   * 2026-09-30's twenty-eighth round, where it registered nothing.
+   */
+  defenderFirePlan?: boolean;
+  /**
    * Someone else commands the attacking company (Jev, or an agent standing in
    * for it, `tools/jev-sim.ts`): its scouts, their posts, where the rest wait,
    * when they go, and what its mortars fire on are asked as typed questions
@@ -122,6 +133,8 @@ export interface ScenarioBattleResult {
   smoke: Record<Side, number>;
   /** The attack ran past the mission's deadline and failed (decision 58). */
   outOfTime?: boolean;
+  /** Of the defender's HE missions, those fired on the mark of a registered target. */
+  defenderPlanned: number;
   /** The defender's reserves that went in to retake a lost position (decision 60). */
   counterattacks: number;
   /** Of those, the ones standing on the position they went for at the end, still in the fight. */
@@ -174,10 +187,16 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     : truth;
   const planned = [objective, { x: objective.x - PLAN_SPREAD_M, y: objective.y }, { x: objective.x + PLAN_SPREAD_M, y: objective.y }];
 
-  // Mission planning: the attacker registers its plan.
+  // Mission planning: the attacker registers its plan; the defender its
+  // targets on the dead ground in front of it.
   if (opts.fire.register && g.mayCall(attacker, MORTAR)) {
     for (const t of planned) g.registerTarget(attacker, MORTAR, t);
   }
+  const defenderTargets =
+    opts.defenderFirePlan !== false && g.mayCall(defender, MORTAR)
+      ? planDefenderFires(g, defender, startLine, mapWidth, mapHeight)
+      : [];
+  for (const t of defenderTargets) g.registerTarget(defender, MORTAR, t);
 
   // The company commander: where the plan puts the enemy is what its scouts
   // look for, what its observation points must see and what its waiting
@@ -242,6 +261,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     smoke: { RED: 0, BLUE: 0 },
     counterattacks: 0,
     retaken: 0,
+    defenderPlanned: 0,
   };
   const downOf = (side: Side) =>
     g.units.filter((u) => u.side === side).reduce((t, u) => t + (u.soldiers ?? []).filter((m) => m.neutralized).length, 0);
@@ -261,7 +281,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     heard(g.advanceToPhase("targeting").resolved);
     if (ask) askAttackerFire(g, attacker, company, result, question);
     else callAttackerFire(g, attacker, planned, objective, opts.fire, company, result);
-    callDefenderFire(g, defender, result);
+    callDefenderFire(g, defender, result, defenderTargets);
 
     const moving = g.advanceToPhase("movement");
     heard(moving.resolved);
@@ -799,12 +819,80 @@ function callAttackerFire(
   result.missions[side]++;
 }
 
-/** The defender's fire: for effect on the nearest attacker it knows of, from its own forces. */
-function callDefenderFire(g: Game, side: Side, result: ScenarioBattleResult): void {
+/** Registered targets the defending company plans (decision 38 allows six a weapon). */
+const DEFENDER_TARGETS = 6;
+/** Where it looks for them: this far in front of its positions (ours). */
+const DEFENDER_PLAN_BAND_M = { near: 100, far: 400 } as const;
+/** No two closer than this: each covers its 100 m on-the-mark radius (ours). */
+const DEFENDER_TARGET_SPACING_M = 120;
+
+/**
+ * The defending company's fire plan (a harness policy, ours; rules decision 38
+ * lets it register six targets a weapon in planning). It covers with fire what
+ * its squads cannot see: the dead ground 100–400 m in front of its positions,
+ * toward where the attack comes from, the nearest its positions first — where
+ * an assault forms up and closes; if there is too
+ * little dead ground, points on the line itself fill the plan. It reads its own
+ * positions, the ground and the direction of the attack (the brief's tasking,
+ * taken as the attacker's start line) — never where the attacker is.
+ */
+export function planDefenderFires(g: Game, side: Side, attackFrom: Point, width: number, height: number): Point[] {
+  const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
+  if (!own.length || !g.terrain) return [];
+  const centre = mean(own);
+  const range = distance(centre, attackFrom);
+  if (range === 0) return [];
+  const ux = (attackFrom.x - centre.x) / range;
+  const uy = (attackFrom.y - centre.y) / range;
+  const query = { terrain: g.terrain, watchers: own.map((u) => u.position), watcherEye: EYE_HEIGHT.fullCover, reach: Infinity };
+  const candidates: { at: Point; dead: boolean; along: number; off: number }[] = [];
+  for (let x = 0; x <= width; x += 20) {
+    for (let y = 0; y <= height; y += 20) {
+      const dx = x - centre.x;
+      const dy = y - centre.y;
+      const along = dx * ux + dy * uy;
+      if (along < DEFENDER_PLAN_BAND_M.near || along > DEFENDER_PLAN_BAND_M.far) continue;
+      const off = Math.abs(dx * uy - dy * ux);
+      if (off > along) continue; // within 45° of the line of attack
+      const at = { x, y };
+      candidates.push({ at, dead: isDeadGround(query, at), along, off });
+    }
+  }
+  // Dead ground first, the nearest the positions first — where an assault
+  // forms up and closes; then nearest the line of attack; ties by position.
+  candidates.sort(
+    (a, b) => Number(b.dead) - Number(a.dead) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
+  );
+  const chosen: Point[] = [];
+  for (const c of candidates) {
+    if (chosen.length >= DEFENDER_TARGETS) break;
+    if (chosen.every((p) => distance(p, c.at) >= DEFENDER_TARGET_SPACING_M)) chosen.push(c.at);
+  }
+  return chosen;
+}
+
+/**
+ * The defender's fire: for effect on an attacker it has seen this turn or
+ * last within the on-the-mark radius of one of its registered targets — the
+ * one nearest its own forces — which lands at the weapon's best without an
+ * observer; else on the nearest attacker it knows of, from its own forces.
+ */
+function callDefenderFire(g: Game, side: Side, result: ScenarioBattleResult, registered: readonly Point[] = []): void {
   if (!mortarFree(g, side)) return;
   const view = sideView(g, side);
   const own = view.units.filter((u) => u.side === side && u.kind !== "command" && !u.neutralized);
   const foes = view.units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered);
+  const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
+  const nearestOwn = (p: Point) => Math.min(...own.map((u) => distance(u.position, p)));
+  const onPlan = foes
+    .filter((f) => fresh(f.id) && registered.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M))
+    .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
+  if (onPlan && own.length) {
+    g.callForFire(side, MORTAR, onPlan.position, { method: "effect" });
+    result.missions[side]++;
+    result.defenderPlanned++;
+    return;
+  }
   let best: Point | undefined;
   let bd = Infinity;
   for (const f of foes) {

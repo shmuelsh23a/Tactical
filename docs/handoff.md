@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 777 tests, 44 files
+npm run check       lint + typecheck clean, 780 tests, 44 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -149,21 +149,24 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
-0. **Where 2026-09-30 ended: 2:1 too strong, and why.** The day ran: the
+0. **Where 2026-09-30 ended: 3:1 now too weak.** The day ran: the
    reserve and counterattack (60), pace researched (nothing wrong), climb
    8 → 5 (61), the sources' cover against shells (62), suppression in five
    parts (63, [suppression-design.md](suppression-design.md)), nerve lost
-   to fire by cover (64: ×2 open … ×0.15 roof, ours) and a pinned force
-   firing to 400 m at a penalty (65). On the tel the attack now closes
-   (nearest squad ~120 m at the end) and the reserve counterattacks in
-   7–12% of battles, but **3:1 wins 66% and 2:1 62%** (balance.md,
-   *Twenty-seventh round*). The cause found last: **the scripted defender's
-   mortars** — 2.5 of 12 missions fired a battle, each doing half what it
-   did before S2 (no observer to adjust while its squads are pinned), and
-   it registers no targets on the approach. **Next: a scripted defending
-   company that registers the approaches in planning (decision 38) and
-   fires on them as the attacker crosses** — a harness policy, ours, then
-   measure. The balance harness's tables on balance.md predate 62–65.
+   to fire by cover (64: ×2 open … ×0.15 roof, ours), a pinned force firing
+   to 400 m at a penalty (65). Then two harness fixes (balance.md,
+   *Twenty-eighth round*): the scripted defender registers its mortar
+   targets on the dead ground in front of it and fires on them, and — the
+   one that mattered — **a defending command post stays put**: the drill
+   had walked RED's company command group into the shelling, where it broke
+   and took RED's fire control with it a quarter of the time. Now on the
+   tel **3:1 wins about 22% and 2:1 about 15%**: 2:1 fails as the design
+   principle says, 3:1 is far under the author's 85%. The attacker gives
+   up crossing the open under working defensive mortars, at double nerve
+   loss (64). **For the author:** which lever — 64's ×2 in the open, the
+   attacker's 30% breakpoint (44), or a better scripted attacker (smoke and
+   a fire plan of its own). The balance harness's tables on balance.md
+   predate 62–65 and the command-post fix.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a
    command decision** — Jev's, or the player's; there is to be no scripted

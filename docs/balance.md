@@ -2324,6 +2324,53 @@ missions on the mark without needing an observer. That is the next thing
 to build and measure (ours, a harness policy, like the scripted
 attacker's).
 
+## Twenty-eighth round: the defender's fire plan, and its command post, 2026-09-30
+
+Two changes to the scripted defence, neither a rule:
+
+- **A fire plan** (`planDefenderFires` in `src/sim/scenarioBattle.ts`, a
+  harness policy, ours). In planning the defending company registers its six
+  mortar targets (decision 38) on the dead ground 100–400 m in front of its
+  positions, toward the attack, nearest first, 120 m apart; in the battle it
+  fires on an attacker seen this turn or last within 100 m of one — on the
+  mark, needing no observer — before anything else. `--no-defender-plan`
+  turns it off.
+- **A defending command post stays put** (`drill.ts`). The drill brought
+  every command group to 80 m behind its side's squads, defenders' too, so
+  RED's company command group walked from behind the summit (600, 200) to
+  (549, 418), in the open, into the attacker's shelling. With decision 64
+  doubling the nerve fire costs in the open, it broke — in every one of the
+  141 turns in 20 traced battles where RED **could not call its mortars at
+  all** (decision 55: no one in command). A defender's command group now
+  holds where it was set up; an attacker's still follows its squads.
+
+200 battles a row, squads first unless said:
+
+| | 3:1 wins | 2:1 wins | Defender's HE missions | Attacker down | Defender down |
+|---|---|---|---|---|---|
+| Decision 65 | 66% | 62% | 2.5 | 8–10% | 20–22% |
+| + the fire plan | 71% | 61% | 2.4 | 8–10% | 20–24% |
+| + the command post holds (squads first) | **23%** | **16%** | **4.5** | 14–17% | 12–16% |
+| … nearest the objective first | 21% | 13% | | | |
+| … command groups first | 22% | 13% | | | |
+| … without the fire plan | 19% | 15% | | | |
+
+The command post was the fault; the fire plan adds about four points at 3:1.
+The defender never loses fire control now (0 of 532 turns traced), and its
+mortars account for most of the attacker's losses (10.6 of 12.6 men down a
+battle). The attacker's own company command group never broke in the traces,
+and its fire control held. **The attacker now gives up** at its breakpoint
+(30% down, broken or fled) with about a quarter of its men down or broken,
+crossing the open under decision 64's doubled nerve loss.
+
+**Against the design principle:** 2:1 fails (13–16%), as it should; 3:1
+wins only about one battle in five, where the author's ceiling is 85% and a
+3:1 attack on a prepared platoon is meant to succeed. The levers, none
+touched: decision 64's ×2 in the open (ours), the attacker's 30% breakpoint
+(decision 44, from the sources), and the scripted attacker itself — it
+lays no smoke from its mortars and no fire plan of its own beyond firing on
+marks.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

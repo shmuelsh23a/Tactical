@@ -13,6 +13,7 @@
  *   npm run scenario-sim -- --planning-error 0      # the plan on the truth, as before decision 51
  *   npm run scenario-sim -- --seed 11               # seeds from 11 (the browser runs used 11-18)
  *   npm run scenario-sim -- --no-counterattack      # the defender's reserve holds where it is (decision 60 off)
+ *   npm run scenario-sim -- --no-defender-plan      # the defender registers no targets (every table before the twenty-eighth round)
  *
  * Kept thin on purpose, like tools/balance-sim.ts: what is worth checking
  * lives in src/sim, where the suite runs it.
@@ -65,14 +66,14 @@ const fire: FirePlanChoices = {
     : {}),
 };
 
-console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}\n`);
+console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}\n`);
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
 for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
   const seeds = Array.from({ length: n }, (_, i) => first + i);
-  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire });
+  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}) });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);

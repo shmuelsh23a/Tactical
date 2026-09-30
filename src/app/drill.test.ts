@@ -70,6 +70,20 @@ describe("the squad drill", () => {
     expect(g.standingOrderFor(red.id)).toMatchObject({ holdFire: true, engagementRange: WESTERN_DRILL.openFireRange });
   });
 
+  it("keeps a defending command post where it was set up, and brings an attacker's up behind its squads", () => {
+    const g = new Game({ seed: 3, enforceC2: false });
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));
+    const post = g.addUnit(makeCommandGroup("R-HQ", "RED", "company", { x: 0, y: -300 }));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 900 }, 9));
+    const hq = g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: 1200 }));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    drillMovement(g, { side: "RED", attacking: false, objective: { x: 0, y: 900 } }, WESTERN_DRILL, new DrillState());
+    expect(post.position).toEqual({ x: 0, y: -300 });
+    drillMovement(g, { side: "BLUE", attacking: true, objective: { x: 0, y: 0 } }, WESTERN_DRILL, new DrillState());
+    expect(hq.position.y).toBeLessThan(1200);
+  });
+
   it("moves a shelled defender off its position once, to the rear, when no enemy is close", () => {
     const g = new Game({ seed: 3, enforceC2: false });
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));

@@ -75,7 +75,7 @@ export interface SquadDrill {
    * breaks, rather than after. Null: it fights until morale decides.
    */
   breakContact: { readyShareBelow: number; fallBack: number } | null;
-  /** Command groups follow this far behind the centre of their forces. */
+  /** An attacker's command groups follow this far behind the centre of their forces; a defender's stay put. */
   commandGroupBehind: number;
   /**
    * Move off a shelled position (author, 2026-09-23): a defending force whose
@@ -540,6 +540,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange) {
         game.setStandingOrder(hq.id, { gait: "normal", holdFire: true, engagementRange: drill.openFireRange });
       }
+      // A defending command post stays where it was set up (2026-09-30):
+      // following its squads forward walked it out of cover into the
+      // attacker's shelling, and a company command group that broke there
+      // took the side's fire control with it (rules decision 55) — the
+      // defender's mortars fell silent a quarter of the time.
+      continue;
     }
     // An observation post holds its ground: moving would end it (decision 38).
     if (hq.observationPost || distance(hq.position, behind) < 5) continue;
