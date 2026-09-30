@@ -9,3 +9,6 @@ dist/
 
 # Python bytecode from the tools in tools/.
 __pycache__/
+
+# Jev battles played by tools/jev-sim.ts --jev: answers and call logs
+jev-runs/

@@ -2568,6 +2568,20 @@ Each is intended to be an independent, toggleable module:
     2026-09-23): whether to adjust or fire for effect at once (decision 39),
     and so the rest of a call. The player decides for their own echelon.
 
+    **The first Jev decider is built** (2026-09-30, `src/sim/jev.ts`): Jev
+    answers the attacking company commander's typed questions in the
+    headless runner (`npm run jev-sim -- --jev`), through
+    `@typesafe-ai/sdk`. Each question becomes one `systemOne` call — the
+    commander's picture (drawn from `sideView` only) as the state, the
+    question as a `noul` or a `choice` over its options. A battle is replayed
+    to each question and driven on by the answer, so the answers are all Jev
+    contributes and a replay never calls it (tested). Every call is logged
+    with its answer, confidence, model and `QUESTION_SET_VERSION`. Tested
+    against a stand-in for the service; not yet run against Jev itself — it
+    needs `TYPESAFE_API_KEY` in the environment and `api.typesafe.ai`
+    allowed, which the session's network denied on 2026-09-30. The live game
+    does not call it.
+
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next
     piece of ground, and what happened to it carries over.

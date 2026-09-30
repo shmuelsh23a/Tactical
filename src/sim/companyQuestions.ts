@@ -29,6 +29,14 @@ export interface Question {
 /** Answers a question with one of its options' ids. */
 export type Decider = (q: Question) => string;
 
+/**
+ * The version of this question set, carried in every logged Jev call
+ * (README, backlog 15: a recording of an AI game carries the model id and the
+ * question-set version). Change it when a question's wording, options or
+ * picture change in a way that could change an answer.
+ */
+export const QUESTION_SET_VERSION = "2026-09-30";
+
 /** Thrown by a decider with no answer yet: the battle stops at this question. */
 export class NeedAnswer extends Error {
   constructor(readonly question: Question) {

@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 783 tests, 44 files
+npm run check       lint + typecheck clean, 788 tests, 45 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -181,8 +181,11 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    (73–77%). **Jev:** the author has a TypeSafe API key; the SDK is
    `@typesafe-ai/sdk` (0.6.0, reads `TYPESAFE_API_KEY`, talks to
    `api.typesafe.ai`), and this environment's network denied that host on
-   2026-09-30. With the key set as an environment variable and the host
-   allowed, the first use is a Jev decider for `jev-sim`'s typed questions.
+   2026-09-30. **The Jev decider is built** (`src/sim/jev.ts`, `npm run
+   jev-sim -- --jev --seed 1000 --n 10`), tested against a stand-in; once the
+   key is set as an environment variable and the host allowed, run it and
+   measure Jev's company against the scripted one (3:1 58%, balance.md
+   *Thirty-first round*).
    **Next, in rough order:**
    drive the new
    rules in the browser as a player (suppression, heads down, danger close

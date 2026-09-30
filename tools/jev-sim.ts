@@ -14,12 +14,25 @@
  *
  * Exit status: 0 the battle ended (RESULT printed), 3 a question is waiting,
  * 2 an answer in the file is not one of its question's options.
+ *
+ * **With Jev itself** (`--jev`, backlog 15): Jev answers every question, and
+ * whole battles are played, from `--seed` for `--n` seeds. Needs
+ * `TYPESAFE_API_KEY` in the environment and `api.typesafe.ai` reachable.
+ * Each battle's answers and its log (every question, answer, confidence,
+ * model, question-set version and the call's time) go to `--out` (default
+ * `jev-runs/`, not committed); the answers file replays the battle through
+ * this tool without Jev (`--answers`).
+ *
+ *   npm run jev-sim -- --jev --seed 1000 --n 10
+ *   npm run jev-sim -- --jev --model jev-latest --out /tmp/jev
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
 import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
+import { jevAsker, playWithAsker, type Asker } from "../src/sim/jev.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -34,6 +47,56 @@ const file = value("--answers");
 const answers: string[] = file && existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
 const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIPT), scouting: { watchTurns: 1 } };
 const decide = fromAnswers(answers);
+
+if (args.includes("--jev")) {
+  let client: TypeSafeClient;
+  try {
+    client = new TypeSafeClient({ logLevel: "error" });
+  } catch (e) {
+    console.error(`ERROR no Jev client: ${(e as Error).message.replace(/\.+$/, "")}. Set TYPESAFE_API_KEY in the environment.`);
+    process.exit(2);
+  }
+  const model = value("--model");
+  const jev = jevAsker(client, model);
+  // Timed here: nothing in src reads a clock.
+  const timed: Asker = async (q) => {
+    const started = Date.now();
+    const a = await jev(q);
+    return { ...a, ms: Date.now() - started };
+  };
+  const n = Number(value("--n") ?? 1);
+  const out = value("--out") ?? "jev-runs";
+  mkdirSync(out, { recursive: true });
+  const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
+  let wins = 0;
+  let calls = 0;
+  let ms = 0;
+  let sure = 0;
+  for (let s = seed; s < seed + n; s++) {
+    try {
+      const { result, answers: given, log } = await playWithAsker(
+        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, decide: d }),
+        timed,
+      );
+      writeFileSync(`${out}/${id}-${s}.answers.json`, JSON.stringify(given));
+      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, result, log }, null, 1));
+      if (result.winner === attacker) wins++;
+      calls += log.length;
+      ms += log.reduce((t, e) => t + (e.ms ?? 0), 0);
+      sure += log.reduce((t, e) => t + e.confidence, 0);
+      console.log(`${id} seed ${s}: ${result.winner === attacker ? "the attack won" : result.winner === "draw" ? "a draw" : "the defence held"} on turn ${result.turns}, ${log.length} questions (${log[0]?.model ?? "-"})`);
+    } catch (e) {
+      const why = (e as Error).message;
+      console.error(`ERROR seed ${s}: ${why}${/connect|fetch|ENOTFOUND|403/i.test(why) ? " — is api.typesafe.ai allowed by the environment's network policy?" : ""}`);
+      process.exit(1);
+    }
+  }
+  console.log(
+    `JEV ${id}: the attack won ${wins} of ${n} (${Math.round((100 * wins) / n)}%); ${calls} questions, ` +
+      `${calls ? Math.round(ms / calls) : 0} ms a call, mean confidence ${calls ? (sure / calls).toFixed(2) : "-"}. Answers and logs in ${out}/.`,
+  );
+  process.exit(0);
+}
 
 try {
   const r = runScenarioBattle(listing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, decide });
