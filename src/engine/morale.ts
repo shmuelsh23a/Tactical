@@ -31,6 +31,7 @@ import {
   SUPPRESSION_EFFECT,
   SUPPRESSION_REACH_81MM,
   ASSAULT_NERVE,
+  NERVE_BY_COVER,
   TEST,
   THRESHOLDS,
   TOP_LEADER_ECHELON,
@@ -551,6 +552,8 @@ export interface MoraleContext {
    * game is measuring another size (data/variants.ts).
    */
   prepared?: { testBonus: number; lossFactor: number };
+  /** Nerve lost to fire by cover (rules decision 64, {@link NERVE_BY_COVER}). Off unless given. */
+  nerveByCover?: boolean;
 }
 
 /**
@@ -558,6 +561,12 @@ export interface MoraleContext {
  * — the ground, a building, a hole it dug or a position it prepared. Read at
  * the morale step, before the turn's flags are cleared.
  */
+/** What a force's cover makes of the nerve the enemy's fire costs it (rules decision 64). */
+export function fireNerveFactor(unit: Unit): number {
+  if (unit.cover === "full") return unit.baseCover === "full" ? NERVE_BY_COVER.roof : NERVE_BY_COVER.full;
+  return unit.cover === "partial" ? NERVE_BY_COVER.partial : NERVE_BY_COVER.none;
+}
+
 export function inPosition(unit: Unit): boolean {
   return unit.movedThisTurn === 0 && unit.cover !== "none";
 }
@@ -770,8 +779,10 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
     for (const s of soldiersWithPools(u)) {
       const m = s.morale!;
       let loss = 0;
-      if (firedOn) loss += LOSS.firedOn;
-      if (bombarded) loss += LOSS.bombarded;
+      // What the fire itself costs him, by his cover (decision 64): far more
+      // in the open than dug in.
+      const underFire = (firedOn ? LOSS.firedOn : 0) + (bombarded ? LOSS.bombarded : 0);
+      loss += ctx.nerveByCover ? Math.round(underFire * fireNerveFactor(u)) : underFire;
       if (woundedIds.has(s.id)) loss += LOSS.wounded;
       loss += (ownWounded - (woundedIds.has(s.id) ? 1 : 0)) * LOSS.comradeWounded;
       loss += ownDown * LOSS.comradeDown;

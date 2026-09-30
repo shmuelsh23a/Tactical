@@ -220,9 +220,11 @@ export interface BattleOptions {
   /** Losing a command group has effect (rules decision 55, `GameOptions.commandSuccession`). */
   commandSuccession?: boolean;
   /**
-   * Play suppression as decision 19 had it, before rules decision 63: a
-   * shell suppresses only as far as it kills, a roof takes it all, and a
-   * pinned force still watches and shoots. To measure what 63 moved.
+   * Play suppression and nerve as decision 19 had them, before rules
+   * decisions 63 and 64: a shell suppresses only as far as it kills, a roof
+   * takes it all, a pinned force still watches and shoots, an assault tests
+   * nobody first, and fire costs the same nerve whatever the cover. To
+   * measure what 63 and 64 moved.
    */
   suppressionBefore63?: boolean;
 }
@@ -422,7 +424,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     ...(opts.binoculars ? { binoculars: true } : {}),
     ...(opts.keepEyesOn ? { keepEyesOn: true } : {}),
     ...(opts.commandSuccession ? { commandSuccession: true } : {}),
-    ...(opts.suppressionBefore63 ? { suppressionReach: false, roofsDampSuppression: false, headsDown: false } : {}),
+    ...(opts.suppressionBefore63 ? { suppressionReach: false, roofsDampSuppression: false, headsDown: false, assaultNerve: false, nerveByCover: false } : {}),
     enforceC2: true,
     ...(opts.variants ? { variants: opts.variants } : {}),
     ...(registeredTargets.length ? { registeredTargets } : {}),

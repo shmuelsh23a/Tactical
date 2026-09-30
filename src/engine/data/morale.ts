@@ -308,6 +308,20 @@ export const ROOF_SUPPRESSION_FACTOR = 0.5;
 export const HEADS_DOWN = { sightWithinM: 50, fireWithinM: 100, suppressedSightChance: 0.5 } as const;
 
 /**
+ * Nerve lost to fire, by cover (rules decision 64; author, 2026-09-30: "nerve
+ * lost for a force in the open should be far more severe than for a dug in
+ * force"). The two losses the enemy's fire itself costs a man each turn —
+ * {@link LOSS}'s `firedOn` and `bombarded` — are multiplied by his force's
+ * cover: in the open, behind partial cover, in a hole (full cover), or under
+ * a roof (a position prepared before the battle). Losses to casualties,
+ * leaders and the rest are not. The prepared defender's `lossFactor` still
+ * applies on top. The four numbers are ours: the open about thirteen times
+ * a prepared position, which the WWII figures for the danger itself put at
+ * fifteen to a hundred (docs/validation.md, *Mortars against men dug in*).
+ */
+export const NERVE_BY_COVER = { none: 2, partial: 1, full: 0.3, roof: 0.15 } as const;
+
+/**
  * Assaulted while pinned or suppressed (rules decision 63, S5; author,
  * 2026-09-30: "roll between surrender and rout"). Before an assault is
  * resolved, each man of a defender that is pinned or suppressed tests his

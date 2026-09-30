@@ -441,6 +441,13 @@ export interface GameOptions {
    */
   assaultNerve?: boolean;
   /**
+   * Nerve lost to fire by cover (rules decision 64, `NERVE_BY_COVER`): the
+   * nerve the enemy's fire costs a man each turn is doubled in the open and
+   * cut to 0.3 in a hole, 0.15 under a roof. On by default; a recording made
+   * before it reads it as off.
+   */
+  nerveByCover?: boolean;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -543,6 +550,7 @@ export class Game {
   readonly roofsDampSuppression: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
+  readonly nerveByCover: boolean;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -702,6 +710,7 @@ export class Game {
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
+    this.nerveByCover = opts.nerveByCover ?? true;
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
     }
@@ -826,6 +835,7 @@ export class Game {
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
+      ...(this.nerveByCover ? { nerveByCover: true } : {}),
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -2924,6 +2934,7 @@ export class Game {
         testBonus: this.variants.preparedTestBonus ?? PREPARED.testBonus,
         lossFactor: this.variants.preparedLossFactor ?? PREPARED.lossFactor,
       },
+      nerveByCover: this.nerveByCover,
       // Watching *now*: a contact refreshed this turn. Without the knowledge
       // model there is no fog to respect, and a line of sight from any of its
       // forces is what watching means.

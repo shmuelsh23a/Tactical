@@ -19,7 +19,7 @@ import {
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
-import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
+import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
@@ -656,6 +656,48 @@ describe("a prepared defender is steadier (author, 2026-09-23)", () => {
     ctx.stress.firedOn(u, { kind: "indirect" });
     resolveMorale(ctx);
     expect(u.soldiers![1]!.morale!.will).toBe(45 - 3);
+  });
+});
+
+describe("nerve lost to fire, by cover (rules decision 64)", () => {
+  /** A squad shelled this turn, dressed at will 45, in the given cover. */
+  function shelled(cover: "none" | "partial" | "full", roof = false) {
+    const u = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 2), 45);
+    u.soldiers![0]!.leader = false;
+    for (const s of u.soldiers!) s.traits!.charisma = 1;
+    u.cover = cover;
+    if (roof) u.baseCover = "full";
+    const ctx = context([u], new ScriptedRng(Array(10).fill(1)), { nerveByCover: true });
+    ctx.stress.firedOn(u, { kind: "indirect" }); // 1 + 5 = 6 before the decision
+    resolveMorale(ctx);
+    return 45 - u.soldiers![1]!.morale!.will;
+  }
+
+  it("is far more in the open than dug in, and least under a roof", () => {
+    // In position the prepared defender's lossFactor applies on top, as before.
+    const inPosition = (x: number) => Math.round(x * PREPARED.lossFactor);
+    expect(shelled("none")).toBe(Math.round(6 * NERVE_BY_COVER.none));
+    expect(shelled("partial")).toBe(inPosition(Math.round(6 * NERVE_BY_COVER.partial)));
+    expect(shelled("full")).toBe(inPosition(Math.round(6 * NERVE_BY_COVER.full)));
+    expect(shelled("full", true)).toBe(inPosition(Math.round(6 * NERVE_BY_COVER.roof)));
+    expect(shelled("none")).toBeGreaterThanOrEqual(10 * shelled("full", true));
+  });
+
+  it("is decision 19's flat loss when it is off", () => {
+    const u = dressed(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 2), 45);
+    u.soldiers![0]!.leader = false;
+    for (const s of u.soldiers!) s.traits!.charisma = 1;
+    const ctx = context([u], new ScriptedRng(Array(10).fill(1)));
+    ctx.stress.firedOn(u, { kind: "indirect" });
+    resolveMorale(ctx);
+    expect(u.soldiers![1]!.morale!.will).toBe(45 - 6);
+  });
+
+  it("is on in a new game, recorded, and off in a recording made before it", () => {
+    const r = new Game({ seed: 1 }).toRecording();
+    expect(r.nerveByCover).toBe(true);
+    delete (r as { nerveByCover?: boolean }).nerveByCover;
+    expect(replayGame(r).nerveByCover).toBe(false);
   });
 });
 

@@ -2108,6 +2108,18 @@ on the stated reasoning, still awaiting the author's word.
     round's suppression reach also counts as bombarded**, and loses decision
     19's nerve for it (5 a turn) — which widens that loss with the reach;
     the author has not ruled on it (docs/balance.md, *Twenty-fifth round*).
+    He answered with decision 64.
+64. ✅ **Nerve lost to fire depends on cover** (author, 2026-09-30: "nerve
+    lost for a force in the open should be far more severe than for a dug
+    in force"). The nerve the enemy's fire itself costs a man each turn —
+    decision 19's `firedOn` (1) and `bombarded` (5) — is multiplied by his
+    force's cover: **×2 in the open, ×1 behind partial cover, ×0.3 in a
+    hole, ×0.15 under a roof** (a position prepared before the battle); the
+    prepared defender's 0.75 still applies on top. ⚠️ The four factors are
+    ours — the open about thirteen times a prepared position. Losses to
+    casualties, leaders and the rest are unchanged. `GameOptions.nerveByCover`
+    (`NERVE_BY_COVER`, `fireNerveFactor`); a recording made before it reads
+    it as off. What it moved: docs/balance.md, *Twenty-sixth round*.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

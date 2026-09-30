@@ -2258,6 +2258,35 @@ badly with the design principle. Whether the wider suppression should carry
 decision 19's bombarded loss is the first lever (the trial above); the loss
 itself (5 a turn, ours) the second.
 
+## Twenty-sixth round: nerve by cover, 2026-09-30
+
+Rules decision 64: the nerve fire costs is ×2 in the open, ×1 behind
+partial cover, ×0.3 in a hole, ×0.15 under a roof. Same company and seeds,
+200 battles a row, squads first:
+
+| | 3:1 wins | 2:1 wins | Attacker down | Nearest attacker at the end | Squad-turns inside 150 m (40 battles) | Counterattacked |
+|---|---|---|---|---|---|---|
+| Decision 63 | 80% | 55% | 10–13% | 210 m | 18 | 0–1% |
+| + decision 64 | 70% | **60%** | 7–9% | **125 m** | **94** | **8–13%** |
+
+- **The dug-in defender stops breaking at range.** In the 36 of 60 traced
+  battles it lost, 328 of its men were down (54% by small arms, the rest
+  the mortars) and 435 broken — against 279 and 729 before. It now loses
+  to the attack, not to the shelling.
+- **The attack closes**, for the first time on the tel: the nearest squad
+  ends a median 125 m out, five times as many squad-turns inside 150 m, and
+  the reserve counterattacks in 8–13% of battles (decision 60), not yet
+  holding the position at the end in any.
+- **But 2:1 wins more (60%), and the odds matter little (3:1 70%).** The
+  attacker in the open is rarely under fire: the defender's squads are
+  pinned 62% of the time with the attacker 150–300 m off, and a pinned
+  force fires at nothing beyond 100 m (decision 63, S2) and guides no
+  mortars. So the doubled loss in the open seldom applies (the attacker
+  loses 7–9% of its men). **For the author:** S2's reach — the question he
+  did not answer — is the lever the numbers point at: a pinned force that
+  still fires, at a penalty, within small-arms range would make crossing
+  the open cost what decision 64 says it should.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
