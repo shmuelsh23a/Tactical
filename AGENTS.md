@@ -38,6 +38,7 @@ npm run jev-sim -- --seed 11 --answers a.json  # play the company commander by t
 npm run jev-sim -- --jev --seed 1000 --n 10    # Jev itself plays the company commander (needs TYPESAFE_API_KEY and api.typesafe.ai reachable)
 npm run jev-sim -- --rule --seed 1000 --n 20   # the scripted commander's choices through the same questions (no network)
 npm run jev-probe -- --runs jev-runs            # re-ask Jev's recorded questions in other framings, to tune the question set
+npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20 --parallel 4  # a Claude model in Jev's place (needs ANTHROPIC_API_KEY and api.anthropic.com)
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
 ```
 

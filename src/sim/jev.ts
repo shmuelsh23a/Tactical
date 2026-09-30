@@ -35,6 +35,10 @@ export interface JevAnswer {
   model: string;
   /** How long the call took, in milliseconds, if the asker timed it (the tools do; nothing in src reads a clock). */
   ms?: number;
+  /** Why, where the model says (a Claude model does; Jev does not). */
+  reason?: string;
+  /** Tokens the call used, where the model reports them. */
+  usage?: { input: number; cached: number; output: number };
 }
 
 /** Answers one question, however long it takes. */

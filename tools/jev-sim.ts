@@ -36,14 +36,24 @@
  * `holdfire` holds the mortars until the company goes.
  *
  *   npm run jev-sim -- --rule --seed 1000 --n 20
+ *
+ * **A Claude model in Jev's place** (`--claude <model>`, `src/sim/claude.ts`):
+ * the same questions, answered by the Anthropic API. Needs
+ * `ANTHROPIC_API_KEY` and `api.anthropic.com` reachable; `--effort` sets how
+ * hard it thinks where the model takes it.
+ *
+ *   npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20
+ *   npm run jev-sim -- --claude claude-sonnet-5-5 --effort low --seed 1000 --n 20
  */
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import Anthropic from "@anthropic-ai/sdk";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
 import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
+import { claudeAsker, type ClaudeAskerOptions } from "../src/sim/claude.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -59,10 +69,20 @@ const answers: string[] = file && existsSync(file) ? JSON.parse(readFileSync(fil
 const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIPT), scouting: { watchTurns: 1 } };
 const decide = fromAnswers(answers);
 
-if (args.includes("--jev") || args.includes("--rule")) {
+if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude")) {
   let jev: Asker;
   let framing = "rule";
-  if (args.includes("--rule")) {
+  if (args.includes("--claude")) {
+    const model = value("--claude");
+    if (!model || model.startsWith("--")) throw new Error("--claude: name a model, e.g. claude-haiku-4-5");
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("ERROR no Claude client: set ANTHROPIC_API_KEY in the environment (a new session picks it up).");
+      process.exit(2);
+    }
+    const effort = value("--effort") as ClaudeAskerOptions["effort"];
+    jev = claudeAsker(new Anthropic(), { model, ...(effort ? { effort } : {}) });
+    framing = `claude:${model}${effort ? `@${effort}` : ""}`;
+  } else if (args.includes("--rule")) {
     const extra = value("--rule")?.startsWith("--") === false ? value("--rule")!.split(",") : [];
     jev = ruleAsker(new Set(extra));
     framing = ["rule", ...extra].join("+");
@@ -87,14 +107,18 @@ if (args.includes("--jev") || args.includes("--rule")) {
     return { ...a, ms: Date.now() - started };
   };
   const n = Number(value("--n") ?? 1);
-  const out = value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : "jev-runs");
+  const out =
+    value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
   let calls = 0;
   let ms = 0;
   let sure = 0;
-  for (let s = seed; s < seed + n; s++) {
+  const tokens = { input: 0, cached: 0, output: 0 };
+  // Battles at once (`--parallel`): only the waits on the service overlap, the engine is synchronous.
+  const parallel = Math.max(1, Number(value("--parallel") ?? 1));
+  const play = async (s: number) => {
     try {
       const { result, answers: given, log } = await playWithAsker(
         (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, decide: d }),
@@ -106,16 +130,26 @@ if (args.includes("--jev") || args.includes("--rule")) {
       calls += log.length;
       ms += log.reduce((t, e) => t + (e.ms ?? 0), 0);
       sure += log.reduce((t, e) => t + e.confidence, 0);
+      for (const e of log) {
+        tokens.input += e.usage?.input ?? 0;
+        tokens.cached += e.usage?.cached ?? 0;
+        tokens.output += e.usage?.output ?? 0;
+      }
       console.log(`${id} seed ${s}: ${result.winner === attacker ? "the attack won" : result.winner === "draw" ? "a draw" : "the defence held"} on turn ${result.turns}, ${log.length} questions (${log[0]?.model ?? "-"})`);
     } catch (e) {
       const why = (e as Error).message;
-      console.error(`ERROR seed ${s}: ${why}${/connect|fetch|ENOTFOUND|403/i.test(why) ? " — is api.typesafe.ai allowed by the environment's network policy?" : ""}`);
+      const host = args.includes("--claude") ? "api.anthropic.com" : "api.typesafe.ai";
+      console.error(`ERROR seed ${s}: ${why}${/connect|fetch|ENOTFOUND|403/i.test(why) ? ` — is ${host} allowed by the environment's network policy?` : ""}`);
       process.exit(1);
     }
-  }
+  };
+  const seeds = Array.from({ length: n }, (_, i) => seed + i);
+  for (let i = 0; i < seeds.length; i += parallel) await Promise.all(seeds.slice(i, i + parallel).map(play));
   console.log(
     `JEV ${id} (${framing}): the attack won ${wins} of ${n} (${Math.round((100 * wins) / n)}%); ${calls} questions, ` +
-      `${calls ? Math.round(ms / calls) : 0} ms a call, mean confidence ${calls ? (sure / calls).toFixed(2) : "-"}. Answers and logs in ${out}/.`,
+      `${calls ? Math.round(ms / calls) : 0} ms a call, mean confidence ${calls ? (sure / calls).toFixed(2) : "-"}` +
+      (tokens.input + tokens.output ? `; tokens ${tokens.input} in (+${tokens.cached} cached), ${tokens.output} out` : "") +
+      `. Answers and logs in ${out}/.`,
   );
   process.exit(0);
 }
