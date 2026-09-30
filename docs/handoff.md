@@ -172,9 +172,14 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    planning error, a scout from each attacking platoon (`--classic` for the
    old harness). Squad 3:1 69%, company 3:1 59% (69% with calibrated
    fire); the sweep meets 7–8 of 12. Still off target on flat ground:
-   platoon 3:1 94%, company 2:1 1–10%. **Next, in rough order:** rerun
-   `npm run validate` on the game's rules (it still plays the classic
-   harness); drive the new
+   platoon 3:1 94%, company 2:1 1–10%. `npm run validate` now plays the
+   game's rules too (validation.md, *The breakpoints and explosives' share,
+   on the game's rules*): attackers give up at 16–28% casualties, defenders
+   at 25–31%, battles take twice as long, and **explosives' share with
+   calibrated fire is 51% on flat ground** where decision 43 set 75% (the
+   tel meets it, 73–77%) — **waiting on the author:** whether 75% holds on
+   open ground or is a figure for real ground. **Next, in rough order:**
+   drive the new
    rules in the browser as a player (suppression, heads down, danger close
    and a counterattack have only been played by scripts); the layouts
    without a reserve (the platoon battle, the company battle's platoon B,

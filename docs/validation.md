@@ -862,6 +862,43 @@ surprise or strong suppression; 2:1 about 30–45%** — "usually fails" holds.
 85% fits as a ceiling, not as the typical result. Mearsheimer's 1989 paper,
 Helmbold 1969 and the Kress & Talmor model were read as abstracts only.
 
+## The breakpoints and explosives' share, on the game's rules (2026-09-30)
+
+`npm run validate` now plays the harness on the game's rules (balance.md,
+*Thirty-third round*: decisions 51–55 on, an eye's planning error, a scout
+from each attacking platoon), on today's engine (decisions 61–66, the
+command post that stays put). Its single-weapon measurements — a round's
+casualties, a launcher's minute, rifle fire — do not play battles and did
+not move. Where a side gives up, research figures, 100 battles a cell,
+the classic harness → the game's rules:
+
+| Battle | Fire | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives | Minutes, median |
+|---|---|---|---|---|---|---|
+| Platoon meeting | — | 48% → 40% | 42% → 39% | — | 34% → 33% | 8 → 8 |
+| Platoon 3:1 attack | — | 99% → 95% | — → 25% | 67% → 67% | 27% → 16% | 13 → 34 |
+| Platoon 2:1 attack | — | 87% → 46% | 31% → 28% | 56% → 50% | 41% → 21% | 14 → 34 |
+| Company 3:1 attack | a bomb a turn | 97% → 61% | — → 16% | 42% → 31% | 33% → 33% | 14 → 29 |
+| Company 2:1 attack | a bomb a turn | 1% → 0% | 20% → 20% | — | 28% → 20% | 15 → 29 |
+| Company 3:1 attack | calibrated | 7% → **68%** | 23% → 23% | 33% → 28% | 73% → **51%** | 13 → 27 |
+| Company 2:1 attack | calibrated | 0% → 9% | 25% → 26% | — → 25% | 56% → 50% | 12 → 28 |
+
+(The document's lethality, recorded by the tool alongside, moves the same way.)
+
+- **Attackers give up at 16–28% casualties**, around the rule of thumb's
+  20–25% (decision 44) even with the breakpoint at 40% (decision 66):
+  broken and fled men count toward it too.
+- **Defenders give up at 25–31% casualties at company**, under the rule of
+  thumb's 40%: since decisions 63–64 more of a dug-in defender's men break
+  before they fall. A one-squad defender still loses whole men (67%).
+- **Battles take twice as long** (27–34 minutes against 13–15): the attack
+  finds the defence before it goes.
+- **Explosives' share with calibrated fire is 51% on flat ground, not the
+  75% the author set** (decision 43, which was calibrated on the classic
+  harness). On the tel it is 73–77% (balance.md, *Thirty-first round*). On
+  open ground the scouted attack closes to rifle range, and small arms do
+  more of the work. **For the author:** whether 75% is to hold on open ground
+  too, or is a figure for battles on real ground, where the tel meets it.
+
 ## Open
 
 For the author, in rough order of what they move:
