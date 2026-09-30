@@ -301,11 +301,23 @@ export const ROOF_SUPPRESSION_FACTOR = 0.5;
  * keeps his head down: he neither observes nor fires to effect (FM 7-90,
  * FM 6-30). A **pinned** force makes and keeps no sighting beyond
  * `sightWithinM`, so it tells its side nothing further off and cannot be
- * the eyes a fire mission is adjusted by; and it fires at nothing beyond
- * `fireWithinM`. A **suppressed** force keeps each sighting at
- * `suppressedSightChance`. All three numbers are ours.
+ * the eyes a fire mission is adjusted by. A **suppressed** force keeps each
+ * sighting at `suppressedSightChance`.
+ *
+ * Its fire: as decision 63 built it, nothing beyond `aimedWithinM`. Since
+ * rules decision 65 (author, 2026-09-30: "try pinned firing within rifle
+ * range at a penalty") it fires out to `fireWithinM`, the small-arms table's
+ * last band, and beyond `aimedWithinM` at `beyondAimFactor` of its chance —
+ * over the parapet, with little aim — on top of a pinned force's half
+ * accuracy (decision 19). All the numbers but the table's 400 m are ours.
  */
-export const HEADS_DOWN = { sightWithinM: 50, fireWithinM: 100, suppressedSightChance: 0.5 } as const;
+export const HEADS_DOWN = {
+  sightWithinM: 50,
+  aimedWithinM: 100,
+  fireWithinM: 400,
+  beyondAimFactor: 0.5,
+  suppressedSightChance: 0.5,
+} as const;
 
 /**
  * Nerve lost to fire, by cover (rules decision 64; author, 2026-09-30: "nerve

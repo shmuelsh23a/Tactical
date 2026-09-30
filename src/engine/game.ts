@@ -441,6 +441,13 @@ export interface GameOptions {
    */
   assaultNerve?: boolean;
   /**
+   * A pinned force still fires within rifle range, at a penalty beyond 100 m
+   * (rules decision 65: `HEADS_DOWN`). Needs `headsDown`; without it a pinned
+   * force fires at nothing beyond 100 m, as decision 63 built it. On by
+   * default; a recording made before it reads it as off.
+   */
+  pinnedFiresAtRange?: boolean;
+  /**
    * Nerve lost to fire by cover (rules decision 64, `NERVE_BY_COVER`): the
    * nerve the enemy's fire costs a man each turn is doubled in the open and
    * cut to 0.3 in a hole, 0.15 under a roof. On by default; a recording made
@@ -550,6 +557,7 @@ export class Game {
   readonly roofsDampSuppression: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
+  readonly pinnedFiresAtRange: boolean;
   readonly nerveByCover: boolean;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
@@ -710,6 +718,7 @@ export class Game {
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
+    this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
     this.nerveByCover = opts.nerveByCover ?? true;
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
@@ -835,6 +844,7 @@ export class Game {
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
+      ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
       ...(this.nerveByCover ? { nerveByCover: true } : {}),
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
@@ -2054,6 +2064,7 @@ export class Game {
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
           ...(from ? this.movementTerms(actor, true) : {}),
+          ...this.headsDownAim(coverer, actor),
               hasLineOfSight: true,
         });
         actor.cover = wasCover;
@@ -2297,6 +2308,8 @@ export class Game {
       ...this.movementTerms(target, target.movedThisTurn > 0),
       ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
+      // Heads down beyond close range (decision 65): the engine's, not the caller's.
+      ...this.headsDownAim(attacker, target),
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
@@ -3036,7 +3049,19 @@ export class Game {
    */
   private headsDownRefusal(unit: Unit, target: Unit): string | undefined {
     if (!this.headsDown || suppressionLevel(unit) !== "pinned") return undefined;
-    return distance(unit.position, target.position) > HEADS_DOWN.fireWithinM ? MORALE_REFUSAL.headsDown : undefined;
+    // Out to rifle range since decision 65; decision 63 stopped it at 100 m.
+    const reach = this.pinnedFiresAtRange ? HEADS_DOWN.fireWithinM : HEADS_DOWN.aimedWithinM;
+    return distance(unit.position, target.position) > reach ? MORALE_REFUSAL.headsDown : undefined;
+  }
+
+  /**
+   * How well a pinned force aims at `target` (rules decision 65): beyond
+   * close range it fires over the parapet, at `HEADS_DOWN.beyondAimFactor`.
+   * Absent when the shot is taken as any other.
+   */
+  private headsDownAim(unit: Unit, target: Unit): { aimFactor?: number } {
+    if (!this.headsDown || !this.pinnedFiresAtRange || suppressionLevel(unit) !== "pinned") return {};
+    return distance(unit.position, target.position) > HEADS_DOWN.aimedWithinM ? { aimFactor: HEADS_DOWN.beyondAimFactor } : {};
   }
 
   moraleRefusal(unit: Unit): string | undefined {

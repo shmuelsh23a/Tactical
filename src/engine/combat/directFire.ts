@@ -45,6 +45,11 @@ export interface DirectFireOptions {
   targetMovementFactor?: number;
   /** Set false to forbid the shot (no line of sight, or smoke in the way). */
   hasLineOfSight?: boolean;
+  /**
+   * A factor on the chance, for how the shot is taken: a pinned force firing
+   * heads down beyond close range (rules decision 65). Absent: 1.
+   */
+  aimFactor?: number;
   /** Limit the number of shooters (to model splitting fire); default = all fit. */
   shooters?: number;
   /**
@@ -117,7 +122,7 @@ export function resolveDirectFire(
   // Small arms in a fight, on the research figures (rules decision 43).
   const combat = opts.lethality === "research" && opts.weapon === "smallArms" ? SMALL_ARMS_COMBAT_FACTOR : 1;
   const hitChance = clamp01(
-    band.value * combat * (opts.targetMovementFactor ?? 1) * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])),
+    band.value * combat * (opts.targetMovementFactor ?? 1) * (opts.aimFactor ?? 1) * (1 + (opts.coverModifier ?? COVER_MODIFIERS[cover])),
   );
 
   // The men who will still fight — a broken man keeps his head down — each

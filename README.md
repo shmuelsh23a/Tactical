@@ -2120,6 +2120,16 @@ on the stated reasoning, still awaiting the author's word.
     casualties, leaders and the rest are unchanged. `GameOptions.nerveByCover`
     (`NERVE_BY_COVER`, `fireNerveFactor`); a recording made before it reads
     it as off. What it moved: docs/balance.md, *Twenty-sixth round*.
+65. ✅ **A pinned force still fires within rifle range, at a penalty**
+    (author, 2026-09-30: "try pinned firing within rifle range at a
+    penalty"; it replaces decision 63's 100 m limit on a pinned force's
+    fire). A pinned force fires out to the small-arms table's last band
+    (400 m) and, beyond 100 m, at half its chance again — over the parapet,
+    with little aim — on top of the pinned half accuracy (`HEADS_DOWN`,
+    `aimFactor` on direct fire). ⚠️ The 100 m and the half are ours. Its
+    sight is unchanged (nothing beyond 50 m). `GameOptions.pinnedFiresAtRange`;
+    a recording made before it plays decision 63's 100 m. What it moved:
+    docs/balance.md, *Twenty-seventh round* — little.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

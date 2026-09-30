@@ -133,7 +133,7 @@ export function reasonHe(reason?: string): string {
     case "pinned":
       return "מרותק תחת אש — יכול רק לסגת";
     case "heads down":
-      return "מרותק תחת אש — ראשים למטה, יורה רק על אויב בטווח 100 מ'";
+      return "מרותק תחת אש — ראשים למטה, המטרה רחוקה מדי";
     default:
       return reason ?? "לא ניתן לבצע";
   }

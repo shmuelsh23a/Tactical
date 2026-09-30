@@ -2287,6 +2287,43 @@ partial cover, ×0.3 in a hole, ×0.15 under a roof. Same company and seeds,
   still fires, at a penalty, within small-arms range would make crossing
   the open cost what decision 64 says it should.
 
+## Twenty-seventh round: pinned fire at range, and the defender's mortars, 2026-09-30
+
+Rules decision 65: a pinned force fires out to 400 m, at half its chance
+beyond 100 m. 200 battles a row, squads first:
+
+| | 3:1 wins | 2:1 wins | Attacker down |
+|---|---|---|---|
+| Decision 64 | 70% | 60% | 7–9% |
+| + decision 65 | 66% | 62% | 8–10% |
+| trial: no aim penalty beyond 100 m | 67% | 58% | 8–11% |
+| trial: a pinned force sees to 300 m | 67% | 58% | 8–10% |
+| trial: both | 66% | 55% | 9–11% |
+
+The trials were run by changing `HEADS_DOWN` in a scratch script, not in the
+game. None of them moves it: the pinned defender's rifles are not what keeps
+the attacker safe. **The defender's mortars are.** Per battle of the 3:1
+(60 traced at each commit):
+
+| Code at | Defender's HE missions fired (of 12) | Attacker down (of 86) | …by the mortars and grenades |
+|---|---|---|---|
+| Decision 62 | 4.3 | 15.0 | 11.5 |
+| + S1 reach, S3 roofs | 4.4 | 13.6 | 11.3 |
+| + S2 heads down | 3.8 | 8.1 | 6.6 |
+| + decisions 64, 65 | 2.5 | 7.7 | 5.0 |
+
+The scripted defender fired a third of its missions even before
+suppression, and since S2 each does half as much: its squads are pinned,
+so no one observes the fall of shot to adjust it, and its marks go stale.
+It also plans nothing — it registers no targets on the approach, which
+the planning stage allows (decision 38), and fires only on an attacker in
+sight. **So the imbalance is mostly in the scripted defender's fire, the
+stand-in for Jev, not in a rule**: a defending company that registered the
+approaches and fired on them as the attacker crossed would fire its
+missions on the mark without needing an observer. That is the next thing
+to build and measure (ours, a harness policy, like the scripted
+attacker's).
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

@@ -65,8 +65,11 @@ describe("the sweep over what is still open", () => {
 
 describe("the fire plan, and what put the men out", () => {
   it("brings the attacker's shells down on the objective, and counts who they put out", () => {
-    // Riflemen only: the grenadiers' rounds are explosives too.
-    const quiet = runBattle(1000, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY });
+    // Riflemen only, and no hand grenades in the assault: the grenadiers'
+    // rounds and the grenades are explosives too (decisions 45-46), and since
+    // decision 65 this battle closes to an assault.
+    const noGrenades = { ...RIFLEMEN_ONLY, assault: { ...RIFLEMEN_ONLY.assault, grenades: 0 } };
+    const quiet = runBattle(1000, "platoon", "attack3", { morale: true, drill: noGrenades });
     expect(quiet.outBy.explosive).toBe(0);
     const shelled = [1000, 1001, 1002].map((seed) => runBattle(seed, "company", "attack3", { morale: true, fires: FIRE_PLAN }));
     expect(shelled.some((r) => r.outBy.explosive > 0)).toBe(true);

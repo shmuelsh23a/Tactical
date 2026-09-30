@@ -202,6 +202,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.roofsDampSuppression !== undefined && typeof r.roofsDampSuppression !== "boolean") throw malformed("roofsDampSuppression");
   if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
+  if (r.pinnedFiresAtRange !== undefined && typeof r.pinnedFiresAtRange !== "boolean") throw malformed("pinnedFiresAtRange");
   if (r.nerveByCover !== undefined && typeof r.nerveByCover !== "boolean") throw malformed("nerveByCover");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
@@ -354,6 +355,8 @@ export interface GameRecording {
   headsDown?: boolean;
   /** Whether an assault tested a pinned defender's nerve first (rules decision 63, S5). Read as **off** when absent. */
   assaultNerve?: boolean;
+  /** Whether a pinned force fired out to rifle range (rules decision 65). Read as **off** when absent. */
+  pinnedFiresAtRange?: boolean;
   /** Whether fire cost nerve by cover (rules decision 64). Read as **off** when absent. */
   nerveByCover?: boolean;
   /** The sides attacking (rules decision 44). Absent: none named. */
@@ -546,6 +549,7 @@ export function replayWithOutcomes(
     roofsDampSuppression: recording.roofsDampSuppression ?? false,
     headsDown: recording.headsDown ?? false,
     assaultNerve: recording.assaultNerve ?? false,
+    pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,
     nerveByCover: recording.nerveByCover ?? false,
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),

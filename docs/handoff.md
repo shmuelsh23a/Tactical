@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 776 tests, 44 files
+npm run check       lint + typecheck clean, 777 tests, 44 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -149,23 +149,21 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
-0. **Where 2026-09-30 ended: suppression (63) and nerve by cover (64)
-   built; 2:1 too strong.** The day ran: the reserve and counterattack
-   (60), pace researched (nothing wrong with it), climb 8 → 5 (61), the
-   sources' cover against shells (62), suppression in five parts (63:
-   reach, heads down, roofs, danger close a risk, assaulted while pinned;
-   [suppression-design.md](suppression-design.md)), and the nerve fire
-   costs by cover (64: ×2 open, ×1 partial, ×0.3 hole, ×0.15 roof, ours).
-   On the tel (balance.md, *Twenty-sixth round*) the attack closes for the
-   first time (nearest squad a median 125 m out at the end) and the
-   reserve counterattacks in 8–13% of battles, but **the 3:1 wins 70% and
-   the 2:1 60%** — the design principle broken. The attacker crosses the
-   open nearly unshot: the defender is pinned 62% of the time, and a
-   pinned force fires at nothing beyond 100 m (S2). **Waiting on the
-   author:** S2's numbers (50 m sight, 100 m fire — built as proposed, his
-   question 2 unanswered); the proposal is that a pinned force still fires
-   within small-arms range, at a penalty. The balance harness's tables on
-   balance.md predate 62–64 and have not been rerun.
+0. **Where 2026-09-30 ended: 2:1 too strong, and why.** The day ran: the
+   reserve and counterattack (60), pace researched (nothing wrong), climb
+   8 → 5 (61), the sources' cover against shells (62), suppression in five
+   parts (63, [suppression-design.md](suppression-design.md)), nerve lost
+   to fire by cover (64: ×2 open … ×0.15 roof, ours) and a pinned force
+   firing to 400 m at a penalty (65). On the tel the attack now closes
+   (nearest squad ~120 m at the end) and the reserve counterattacks in
+   7–12% of battles, but **3:1 wins 66% and 2:1 62%** (balance.md,
+   *Twenty-seventh round*). The cause found last: **the scripted defender's
+   mortars** — 2.5 of 12 missions fired a battle, each doing half what it
+   did before S2 (no observer to adjust while its squads are pinned), and
+   it registers no targets on the approach. **Next: a scripted defending
+   company that registers the approaches in planning (decision 38) and
+   fires on them as the attacker crosses** — a harness policy, ours, then
+   measure. The balance harness's tables on balance.md predate 62–65.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a
    command decision** — Jev's, or the player's; there is to be no scripted

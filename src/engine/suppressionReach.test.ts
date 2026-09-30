@@ -86,14 +86,29 @@ describe("pinned means heads down (decision 63, S2)", () => {
     return { g, red, blue };
   };
 
-  it("fires at nothing beyond 100 m, and at what is closer", () => {
+  it("fires out to rifle range (decision 65), and at nothing beyond", () => {
     const far = field(HEADS_DOWN.fireWithinM + 50);
     expect(far.g.fire("R", "B", { weapon: "smallArms" })).toMatchObject({ fired: false, reason: "heads down" });
     const near = field(HEADS_DOWN.fireWithinM - 20);
     expect(near.g.fire("R", "B", { weapon: "smallArms" }).fired).toBe(true);
-    // Before the decision a pinned force still shot, at half its aim.
+    // As decision 63 built it: nothing beyond 100 m.
+    const as63 = field(HEADS_DOWN.aimedWithinM + 50, { pinnedFiresAtRange: false });
+    expect(as63.g.fire("R", "B", { weapon: "smallArms" })).toMatchObject({ fired: false, reason: "heads down" });
+    // Before decision 63 a pinned force shot at any range, at half its aim.
     const before = field(HEADS_DOWN.fireWithinM + 50, { headsDown: false });
-    expect(before.g.fire("R", "B", { weapon: "smallArms" }).fired).toBe(true);
+    expect(before.g.fire("R", "B", { weapon: "smallArms" }).reason).not.toBe("heads down");
+  });
+
+  it("aims worse beyond close range, heads down (decision 65)", () => {
+    const at = (range: number, pinned: boolean) => {
+      const f = field(range);
+      if (!pinned) f.red.suppression = 0;
+      return f.g.fire("R", "B", { weapon: "smallArms" }).hitChance;
+    };
+    const beyond = HEADS_DOWN.aimedWithinM + 100;
+    expect(at(beyond, true)).toBeCloseTo(at(beyond, false) * HEADS_DOWN.beyondAimFactor, 6);
+    const close = HEADS_DOWN.aimedWithinM - 20;
+    expect(at(close, true)).toBeCloseTo(at(close, false), 6);
   });
 
   it("learns nothing beyond 50 m, even of the force shooting at it", () => {
@@ -156,7 +171,10 @@ describe("assaulted while pinned (decision 63, S5)", () => {
   it("is on in a new game, recorded, and off in a recording made before it", () => {
     const r = new Game({ seed: 1 }).toRecording();
     expect(r.assaultNerve).toBe(true);
+    expect(r.pinnedFiresAtRange).toBe(true);
     delete (r as { assaultNerve?: boolean }).assaultNerve;
-    expect(replayGame(r).assaultNerve).toBe(false);
+    delete (r as { pinnedFiresAtRange?: boolean }).pinnedFiresAtRange;
+    const old = replayGame(r);
+    expect([old.assaultNerve, old.pinnedFiresAtRange]).toEqual([false, false]);
   });
 });
