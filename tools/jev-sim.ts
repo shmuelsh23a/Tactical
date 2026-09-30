@@ -155,20 +155,24 @@ try {
  * questions. `extra` adds "bound" (bound by platoon), "holdshort" (hold
  * short under the fires, lifted at once on reaching the line) and "holdfire"
  * (no mission before the company goes); "anyfire" fires on the first mark
- * offered, sure or not.
+ * offered, sure or not; "rush" sends the company in as soon as the enemy is
+ * found, as Jev does, instead of shelling it for four turns first; "onescout"
+ * sends one scout, as Jev does, not three.
  */
 function ruleAsker(extra: Set<string>): Asker {
-  let scouts = 0;
   return async (q) => {
     const has = (id: string) => q.options.some((o) => o.id === id);
     const pick = (): string => {
-      if (q.id === "plan.scouts") return (scouts = Math.max(...q.options.map((o) => Number(o.id)))).toString();
+      if (q.id === "plan.scouts") return extra.has("onescout") ? "1" : Math.max(...q.options.map((o) => Number(o.id))).toString();
       if (q.id.startsWith("plan.post.")) {
         const i = Number(q.id.slice("plan.post.".length));
         return has(`p${i}`) ? `p${i}` : "p1";
       }
       if (q.id === "plan.wait") return "deadGround";
-      if (/^go\.\d/.test(q.id)) return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
+      if (/^go\.\d/.test(q.id)) {
+        if (extra.has("rush") && /just found|in sight \d+ turns/.test(q.ask)) return "yes";
+        return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
+      }
       if (q.id.startsWith("go.axis")) return "straight";
       if (q.id.startsWith("go.support")) return "no";
       if (q.id.startsWith("go.platoon")) return "assault";
@@ -185,7 +189,6 @@ function ruleAsker(extra: Set<string>): Asker {
       }
       return has("on") ? "on" : q.options[0]!.id;
     };
-    void scouts;
     return { answer: pick(), confidence: 1, model: "rule" };
   };
 }

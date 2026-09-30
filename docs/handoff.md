@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-30, after rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider waiting on an API key (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -66,22 +66,25 @@ here from AGENTS.md alone.
 **Everything is merged to `main`** (the 2026-09-30 PR). Rules decisions
 60–66 are built, and the balance is inside the author's targets on the tel.
 
-**First thing in the new session: Jev.** The author has a TypeSafe API key.
-The decider is built and tested against stand-ins (`src/sim/jev.ts`,
-README backlog 15), but has never talked to Jev:
+**Jev is connected and has played** (2026-09-30, branch
+`claude/jev-api-key-check-zsfa16`, not merged yet): `TYPESAFE_API_KEY` is set
+and `api.typesafe.ai` allowed in the cloud environment. Read balance.md,
+*Thirty-fourth round*, before anything else about Jev. In short:
 
-1. The author sets **`TYPESAFE_API_KEY`** as an environment variable in the
-   cloud environment's settings (never pasted into a chat) and allows the
-   host **`api.typesafe.ai`** under Network access. A new session picks both
-   up. Check with `echo ${TYPESAFE_API_KEY:+set}` and
-   `curl -sS -o /dev/null -w "%{http_code}" https://api.typesafe.ai/`
-   (403 "Host not in allowlist" means the host is still blocked).
-2. Run `npm run jev-sim -- --jev --seed 1000 --n 10` (answers and logs go to
-   `jev-runs/`, ignored). Compare Jev's company with the scripted one on the
-   same seeds: the standard measurement (balance.md, *Thirty-first round*)
-   gives the scripted commander 3:1 **58%**, 2:1 **38%**.
-3. Look at the logs: which questions Jev is least sure of (`confidence`),
-   and whether any answer is one a company commander would not give.
+- **Working with Jev**: it is steady, judges rather than plans, and leans to
+  an option whose words the state repeats. The question set now frames each
+  question with the commander's role and mission (`MISSION`, naming no
+  option — tested), words each option by what it does to the attack, and
+  tells it what the company has been ordered. Change a question's wording
+  only after `npm run jev-probe` shows what it does on Jev's own recorded
+  questions, and bump `QUESTION_SET_VERSION` (now `2026-09-30.3`).
+- **Balance with Jev**: 3:1 **10%**, 2:1 **15%** (20 seeds each) against the
+  scripted commander's 65% and 25% on the same seeds. The questions are not
+  the gap — `jev-sim --rule` answers them as the scripted commander decides
+  and wins 70% — Jev's choices are: it bounds by platoon and holds short
+  under its fires, textbook both, and each costs the attack about as much as
+  a platoon never committed. **Waiting on the author**: should they (drill
+  mechanics, ours), and are the targets meant to hold for Jev too?
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):

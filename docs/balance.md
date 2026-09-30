@@ -2589,6 +2589,118 @@ difference.
   (`validation.ts`), so validation.md's figures stay comparable until it is
   rerun.
 
+## Thirty-fourth round: Jev commands the company, 2026-09-30
+
+The first battles with Jev itself (`jev-1.13.0`, TypeSafe) in the attacking
+company commander's chair (`npm run jev-sim -- --jev`), on the tel, seeds
+from 1000. What was learned about working with Jev comes first, because
+the wins depend on it more than on anything in the rules.
+
+### How Jev answers
+
+`npm run jev-probe` re-asks the questions of battles already played
+(recovered by replay, so Jev sees exactly the picture it saw) in other
+framings and prints how the answers move.
+
+- **It is steady.** The same question asked again gets the same answer
+  almost every time (a few in thirty move on a choice near even odds).
+  `jev-preview` answers like `jev-latest`. Calls take about 150 ms.
+- **It judges; it does not plan.** It weighs the state against the options'
+  words. It never weighs a scarce resource (it fired all twelve mortar
+  missions as fast as it was allowed) or a clock it is not told about.
+- **It leans to an option whose words the state repeats.** Principles in
+  the state saying "a reserve exists to be committed" made it pick
+  "reserve" more often, not less; "keep the company out of sight while it
+  waits" made it answer "no" to going in 178 times out of 197 once the enemy
+  was found. The mission text it is given (`MISSION`, `src/sim/jev.ts`)
+  therefore names no option, and a test holds it to that.
+- **Option labels move it most.** "reserve: stay back where it waited,
+  ready to be committed" read as the safe choice: it held two platoons of
+  three back and never committed them (105 of 118 "carry on"). Labels that
+  say what each option does to the attack ("assault the position: close
+  with the enemy and take the objective"; "reserve: … out of the fight until
+  you commit it later") turned that round (assault 27 of 30).
+- **It needs to be told what a commander would know**: the picture now
+  says whether the company has gone in and each platoon's task. And it does
+  what a label says: offered "hold fire: save the mission for when your
+  assault is closing on the enemy" before the company went, it held every
+  mission until then (24 of 25) — which costs the attack 30 points (below),
+  so the hold option is bare again.
+- **A "no" must not say something false.** With its scouts all lost, "no:
+  keep holding while the scouts look" kept the company on the start line
+  (124 of 126); the label now says there are no scouts left to look.
+
+### What the questions can reach without Jev
+
+`npm run jev-sim -- --rule` answers the questions by rule, as the scripted
+commander of the standard measurement (thirty-first round) decides: three
+scouts, wait in dead ground, go after four turns with the enemy in sight,
+every platoon assaulting, mortars on what the scouts hold in sight, sure
+to 40 m, squads first. `--rule a,b` changes one choice at a time to Jev's.
+The attack's wins, 3:1 (`telAzekaAssault`), same 20 seeds (±11 points):
+
+| Commander | 3:1 wins |
+|---|---|
+| Scripted (the standard measurement, no questions) | 65% |
+| Rule through the questions | **70%** |
+| … mortars held until the company goes | 40% |
+| … fire on the first mark offered, sure or not | 65% |
+| … bound by platoon (`go.bound`) | 20% |
+| … hold short under the fires (`go.lift`) | 10% |
+| … one scout, not three | 40% |
+| … in as soon as the enemy is found (no four turns of shelling first) | 55% |
+| … Jev's choices together: one scout, in at once, bound, hold short | 30–40% |
+
+So the questions are not the gap: answered as the scripted commander
+decides, they win what it wins. What costs are **choices**, and the
+largest are ones a trained commander makes on purpose: bounding by platoon
+and holding the assault short under its own fires are textbook, and in
+this game they cost the attack as much as leaving two platoons in reserve
+did. That is a question for the rules and the drill, not for Jev's wording
+(see below).
+
+### Jev's battles
+
+Twenty seeds a scenario from 1000, the attack's wins (the scripted
+commander on the same seeds: 3:1 **65%**, 2:1 **25%**; on the standard 200,
+58% and 38%):
+
+| Question set | What changed | 3:1 | 2:1 |
+|---|---|---|---|
+| 2026-09-30 (10 seeds) | as built | 20% | — |
+| .2 | mission framing, platoon options by what they do, three scouts offered | 10% | 20% |
+| .2 + stage | the picture carries the company's stage; hold "saves the mission"; the mission text does not say "wait" | 5% | 15% |
+| **.3** | hold fire bare again | **10%** | **15%** |
+
+Each fix did what it was for — the reserve is committed (every platoon
+assaults), the company goes in when the enemy is found (turn 16–18, median),
+the company waits in dead ground — and the wins did not come, because the
+choices left are the costly ones: Jev bounds by platoon in 40 battles of 40
+and holds short under its fires in 29 of 40; it sends one scout, not three
+(it is offered three); and it goes in as soon as the enemy is found rather
+than shelling it first. Losses stay in hand (attacker 22–23% down, the
+defence 12–16%), and explosives cause 77–81% of them.
+
+**Jev sits far under the targets** (3:1 55–70%, 2:1 30–45%) where the
+scripted commander sits inside them. Read as a measure of the game, that
+says **the game rewards the scripted commander's plan, not a textbook
+one**: a commander who bounds and holds short, as doctrine teaches, loses
+most attacks it should win.
+
+**For the author** (⚠️ nothing here changes a rule):
+
+1. Should bounding by platoon and holding the assault short under the
+   fires cost that much? Both are drill mechanics (`boundByPlatoon`,
+   `holdShort` in `src/app/drill.ts`), ours, not the document's; if a
+   trained commander's choices are to win, they are where to look.
+2. The balance targets were met with the scripted commander. Is that the
+   commander they are meant for, or should they hold for Jev (the opponent
+   in single-player) too?
+3. The framing is ours to tune, and every change is measured on Jev's own
+   recorded questions first (`jev-probe`). Steering Jev off bounding or
+   holding short by rewording would hide the question above, so it has not
+   been done.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

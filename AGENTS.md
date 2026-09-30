@@ -36,6 +36,8 @@ npm run validate     # the game's numbers against the sources -> docs/validation
 npm run scenario-sim # the generated scenarios on their real ground, headless: a scripted company commander (not part of check)
 npm run jev-sim -- --seed 11 --answers a.json  # play the company commander by typed questions, one at a time (an agent standing in for Jev)
 npm run jev-sim -- --jev --seed 1000 --n 10    # Jev itself plays the company commander (needs TYPESAFE_API_KEY and api.typesafe.ai reachable)
+npm run jev-sim -- --rule --seed 1000 --n 20   # the scripted commander's choices through the same questions (no network)
+npm run jev-probe -- --runs jev-runs            # re-ask Jev's recorded questions in other framings, to tune the question set
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
 ```
 

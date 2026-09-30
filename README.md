@@ -2576,11 +2576,22 @@ Each is intended to be an independent, toggleable module:
     question as a `noul` or a `choice` over its options. A battle is replayed
     to each question and driven on by the answer, so the answers are all Jev
     contributes and a replay never calls it (tested). Every call is logged
-    with its answer, confidence, model and `QUESTION_SET_VERSION`. Tested
-    against a stand-in for the service; not yet run against Jev itself — it
-    needs `TYPESAFE_API_KEY` in the environment and `api.typesafe.ai`
-    allowed, which the session's network denied on 2026-09-30. The live game
-    does not call it.
+    with its answer, confidence, model and `QUESTION_SET_VERSION`. The live
+    game does not call it.
+
+    **First run against Jev** (2026-09-30, docs/balance.md, thirty-fourth
+    round): Jev is steady (the same question gets the same answer), judges
+    rather than plans, and leans to an option whose words the state
+    repeats, so how a question is framed decides much of what it answers.
+    Each question now goes with the commander's role and mission (naming no
+    option), each option says what it does to the attack, and the picture
+    says what the company has been ordered. `npm run jev-probe` measures a
+    framing on Jev's own recorded questions before it is adopted; `jev-sim
+    --rule` puts the scripted commander's choices through the same questions
+    (it wins what the scripted commander wins). Jev wins 10% at 3:1 and 15%
+    at 2:1: it bounds by platoon and holds short under its fires, as
+    doctrine teaches, and both cost the attack heavily in this game — a
+    question for the author.
 
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next
