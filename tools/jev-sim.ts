@@ -25,6 +25,7 @@
  *
  *   npm run jev-sim -- --jev --seed 1000 --n 10
  *   npm run jev-sim -- --jev --model jev-latest --out /tmp/jev
+ *   npm run jev-sim -- --jev --framing plain          # how the questions are framed (src/sim/jev.ts; default mission)
  */
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
@@ -32,7 +33,7 @@ import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
 import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
-import { jevAsker, playWithAsker, type Asker } from "../src/sim/jev.js";
+import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -57,7 +58,9 @@ if (args.includes("--jev")) {
     process.exit(2);
   }
   const model = value("--model");
-  const jev = jevAsker(client, model);
+  const framing = (value("--framing") ?? "mission") as JevFraming;
+  if (!(framing in JEV_FRAMINGS)) throw new Error(`--framing: "${framing}" is not one of ${Object.keys(JEV_FRAMINGS).join(", ")}`);
+  const jev = jevAsker(client, model, framing);
   // Timed here: nothing in src reads a clock.
   const timed: Asker = async (q) => {
     const started = Date.now();
@@ -79,7 +82,7 @@ if (args.includes("--jev")) {
         timed,
       );
       writeFileSync(`${out}/${id}-${s}.answers.json`, JSON.stringify(given));
-      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, result, log }, null, 1));
+      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, framing, result, log }, null, 1));
       if (result.winner === attacker) wins++;
       calls += log.length;
       ms += log.reduce((t, e) => t + (e.ms ?? 0), 0);
@@ -92,7 +95,7 @@ if (args.includes("--jev")) {
     }
   }
   console.log(
-    `JEV ${id}: the attack won ${wins} of ${n} (${Math.round((100 * wins) / n)}%); ${calls} questions, ` +
+    `JEV ${id} (${framing}): the attack won ${wins} of ${n} (${Math.round((100 * wins) / n)}%); ${calls} questions, ` +
       `${calls ? Math.round(ms / calls) : 0} ms a call, mean confidence ${calls ? (sure / calls).toFixed(2) : "-"}. Answers and logs in ${out}/.`,
   );
   process.exit(0);

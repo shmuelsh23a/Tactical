@@ -365,6 +365,7 @@ function askPlan(
         { id: "0", label: "none: the whole company advances at once" },
         { id: "1", label: "one squad" },
         { id: "2", label: "two squads" },
+        { id: "3", label: "three squads" },
       ],
     }),
   );
@@ -538,10 +539,13 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
   return true;
 }
 
+// Each option says what it does to the attack, not only what the platoon does:
+// Jev, asked "assault / base of fire / reserve" bare, kept two platoons of three
+// back and they never fought (docs/balance.md, thirty-fourth round).
 const PLATOON_GO_OPTIONS = [
-  { id: "assault", label: "assault the position" },
-  { id: "support", label: "base of fire: close to small-arms reach of the enemy and fire from there" },
-  { id: "reserve", label: "reserve: stay back where it waited, ready to be committed" },
+  { id: "assault", label: "assault the position: close with the enemy and take the objective" },
+  { id: "support", label: "base of fire: stop at small-arms reach of the enemy and fire, without closing to take the objective" },
+  { id: "reserve", label: "reserve: stay back where it waited, out of the fight until you commit it later" },
 ];
 const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered;
 const describePlatoon = (us: readonly Unit[]) =>
@@ -586,12 +590,13 @@ function askPlatoons(
       : task === "halt"
         ? "has been halted, gone to ground, three turns"
         : "is still in reserve";
+    // "Carry on" last, and every option by what it does to the attack (as PLATOON_GO_OPTIONS).
     const options = [
-      { id: "on", label: `carry on (${PLATOON_TASK_WORDS[task]})` },
-      ...(task !== "assault" ? [{ id: "assault", label: "assault the position" }] : []),
-      ...(task !== "support" ? [{ id: "support", label: "base of fire: close to small-arms reach and fire from there" }] : []),
-      ...(task !== "halt" ? [{ id: "halt", label: "halt and go to ground where it is" }] : []),
-      { id: "withdraw", label: "pull back to the start line" },
+      ...(task !== "assault" ? [{ id: "assault", label: PLATOON_GO_OPTIONS[0]!.label }] : []),
+      ...(task !== "support" ? [{ id: "support", label: PLATOON_GO_OPTIONS[1]!.label }] : []),
+      ...(task !== "halt" ? [{ id: "halt", label: "halt and go to ground where it is: stop moving and stop fighting forward" }] : []),
+      { id: "withdraw", label: "pull back to the start line, out of the attack" },
+      { id: "on", label: `carry on: ${PLATOON_TASK_CARRY_ON[task]}` },
     ];
     const a = question({
       id: `platoon.${key}.${g.turn}`,
@@ -625,6 +630,14 @@ function askPlatoons(
     }
   }
 }
+
+const PLATOON_TASK_CARRY_ON: Record<PlatoonTask, string> = {
+  assault: "keep assaulting",
+  support: "keep giving a base of fire",
+  reserve: "stay in reserve, out of the fight",
+  halt: "stay halted, gone to ground",
+  withdraw: "keep pulling back",
+};
 
 const PLATOON_TASK_WORDS: Record<PlatoonTask, string> = {
   assault: "assaulting",

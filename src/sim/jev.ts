@@ -1,4 +1,4 @@
-import type { TypeSafeClient } from "@typesafe-ai/sdk";
+import type { JsonValue, TypeSafeClient } from "@typesafe-ai/sdk";
 import { NeedAnswer, QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "./companyQuestions.js";
 
 /**
@@ -52,11 +52,48 @@ export interface JevLogEntry extends JevAnswer {
   questionSet: string;
 }
 
-/** The Jev request for one question: the commander's picture as its state, one question named `decision`. */
-export function jevRequest(q: Question) {
+/**
+ * How a question is framed for Jev. Jev is a fast judging model: it weighs the
+ * state against the options' words and does not plan, and what it knows of the
+ * job is what the request tells it — so the framing is part of the question
+ * set. Measured on its own recorded questions by `npm run jev-probe`
+ * (docs/balance.md, thirty-fourth round).
+ *
+ * - `plain`: the commander's picture as the state, the question as asked.
+ * - `role`: the same, the state saying whose decision it is.
+ * - `mission` (the default): the role, and the mission and the principles a
+ *   trained company commander decides by, beside the picture.
+ */
+export type JevFraming = "plain" | "role" | "mission";
+
+const ROLE = "You are the company commander of the attacking side. You decide for your own company only, from what your side knows.";
+
+/**
+ * What a trained company commander brings to every decision: textbook
+ * infantry doctrine, not the game's rules and not a script for this battle.
+ * **It names no option.** Jev leans to an option whose words the state
+ * repeats: the same principles saying "a reserve exists to be committed" made
+ * it choose "reserve" more often, not less.
+ */
+export const MISSION: readonly string[] = [
+  "The mission is to take the objective before the deadline. An attack that has not taken it by then has failed, however few men it lost.",
+  "Mass at the decisive point: bring as much of the company as possible onto the objective together. Platoons held back take nothing.",
+  "Fire and movement: fire keeps the enemy's heads down so that the attack can close. It is wasted unless the attack moves while it lasts.",
+  "Keep the company out of the enemy's sight while it waits or moves; ground that hides it is worth a detour.",
+  "Losses are the price of the attack. Break it off only when it can no longer succeed.",
+];
+
+export const JEV_FRAMINGS: Record<JevFraming, (view: string) => string | Record<string, JsonValue>> = {
+  plain: (view) => view,
+  role: (view) => ({ role: ROLE, situation: view }),
+  mission: (view) => ({ role: ROLE, mission: [...MISSION], situation: view }),
+};
+
+/** The Jev request for one question: the commander's picture as its state, framed, and one question named `decision`. */
+export function jevRequest(q: Question, framing: JevFraming = "mission") {
   const label = (id: string) => q.options.find((o) => o.id === id)?.label ?? id;
   return {
-    state: q.view,
+    state: JEV_FRAMINGS[framing](q.view),
     questions: {
       decision:
         q.kind === "noul"
@@ -74,9 +111,9 @@ export function jevRequest(q: Question) {
  * An asker backed by Jev (`TypeSafeClient.systemOne`). A yes or no is Jev's
  * probability of yes, taken at even odds; a choice is Jev's pick.
  */
-export function jevAsker(client: Pick<TypeSafeClient, "systemOne">, model?: string): Asker {
+export function jevAsker(client: Pick<TypeSafeClient, "systemOne">, model?: string, framing: JevFraming = "mission"): Asker {
   return async (q) => {
-    const request = jevRequest(q);
+    const request = jevRequest(q, framing);
     const { answers, model: used } = await client.systemOne({ ...request, ...(model ? { model } : {}) });
     const a = answers.decision as
       | { type: "noul"; noul: number }

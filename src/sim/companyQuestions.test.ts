@@ -28,7 +28,7 @@ describe("the company's questions", () => {
     const q = nextQuestion([]);
     expect(q.id).toBe("plan.scouts");
     expect(q.kind).toBe("choice");
-    expect(q.options.map((o) => o.id)).toEqual(["0", "1", "2"]);
+    expect(q.options.map((o) => o.id)).toEqual(["0", "1", "2", "3"]);
   });
 
   it("tell the commander nothing of the enemy it has not found", () => {
@@ -63,7 +63,7 @@ describe("the company's questions", () => {
   });
 
   it("refuse an answer that is not one of the options", () => {
-    expect(() => play(["3"])).toThrow(/not an option/);
+    expect(() => play(["4"])).toThrow(/not an option/);
   });
 
   it("state when the attack is called off, and the losses so far", () => {
