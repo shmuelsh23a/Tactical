@@ -2055,6 +2055,16 @@ on the stated reasoning, still awaiting the author's word.
     helps the attacker. The author kept it at once all the same: when it
     goes is the drill's, and whether a counterattack pays is for play and
     for attacks that reach the position to show.
+61. ✅ **A metre climbed costs five metres of a bound, not eight** (author,
+    2026-09-30: "set climb cost to 5"). Decision 15 took Naismith's eight,
+    the figure for a long hill walk. For a one-minute bound on the 10–25%
+    grades of the maps the sources give less: Tobler's hiking function 4–6,
+    running studies 3–4; no source has a figure for loaded soldiers
+    (docs/validation.md, *Infantry pace under fire*). `SLOPE.climbCostPerMetre`
+    is 5 and a game carries its own (`GameOptions.climbCostPerMetre`); the
+    reach fan the map draws uses the game's. A recording made before it
+    replays at 8. Descent stays free. What it moves is on docs/balance.md,
+    *Twenty-third round*.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

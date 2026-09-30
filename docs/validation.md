@@ -700,7 +700,7 @@ attacker's fire plan is made on an eye's estimate rather than on the
 truth. Location error in the fight itself moves it 2 points. The fire plan
 was the whole of it.
 
-## Infantry pace under fire (2026-09-30) — researched, nothing changed yet
+## Infantry pace under fire (2026-09-30) — the climb cost changed (rules decision 61)
 
 The question: on the tel no attack closes (balance.md, *Twenty-second
 round*). Is the infantry too slow? The game's figures are the document's —
@@ -765,11 +765,11 @@ last few hundred metres can be crossed. That is the next question —
 how long a dug-in platoon holds under a mortar section, against the sources
 (handoff, *mortar lethality against men dug in*).
 
-Two small changes the sources would support, not made (the author's call):
-the climb cost at about 5 m a metre for a bound instead of 8; and on flat
-ground the drill's pace in contact (half the squads bounding 100 m) nets
-about 50 m a minute, more than twice the sources' 20, if no one is
-suppressed.
+Two changes the sources would support. **The author took the first**
+(2026-09-30, decision 61): the climb cost is **5 m a metre** for a bound
+instead of 8. The second is not made: on flat ground the drill's pace in
+contact (half the squads bounding 100 m) nets about 50 m a minute, more
+than twice the sources' 20, if no one is suppressed.
 
 ## Open
 
@@ -793,9 +793,10 @@ For the author, in rough order of what they move:
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.
 6. **Infantry pace** (2026-09-30): the sources put an advance under fire at
-   15–30 m a minute and the tel's attack already nets about 20; the climb
-   cost (8 m a metre) is probably heavy for a bound, 4–6 in the sources.
-   Not changed; see *Infantry pace under fire*.
+   15–30 m a minute and the tel's attack already nets about 20. The climb
+   cost went from 8 m a metre to 5 (decision 61); the drill's flat-ground
+   pace in contact (about 50 m a minute unsuppressed) is left as it is. See
+   *Infantry pace under fire*.
 7. **Not researched yet**: the charges (a 100–200 m reach at 50%
    activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review

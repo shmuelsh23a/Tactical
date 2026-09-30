@@ -395,6 +395,12 @@ export interface GameOptions {
    */
   lethality?: Lethality;
   /**
+   * Metres of a bound's budget each metre climbed costs (rules decisions 15
+   * and 61): 5 for a new game, {@link SLOPE.climbCostPerMetre}. A recording
+   * made before decision 61 replays at 8, Naismith's figure.
+   */
+  climbCostPerMetre?: number;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -491,6 +497,7 @@ export class Game {
   readonly fireSupportByEchelon: boolean;
   /** Whose blast and tank-gun figures this game plays (rules decision 41). */
   readonly lethality: Lethality;
+  readonly climbCostPerMetre: number;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -644,6 +651,10 @@ export class Game {
     }
     this.fireSupportByEchelon = opts.fireSupportByEchelon ?? true;
     this.lethality = opts.lethality ?? "research";
+    this.climbCostPerMetre = opts.climbCostPerMetre ?? SLOPE.climbCostPerMetre;
+    if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
+      throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
+    }
     this.attackers = [...(opts.attackers ?? [])];
     this.locationError = opts.locationError ?? false;
     this.stillDetection = opts.stillDetection ?? false;
@@ -759,6 +770,7 @@ export class Game {
       ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       lethality: this.lethality,
+      climbCostPerMetre: this.climbCostPerMetre,
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -1526,7 +1538,7 @@ export class Game {
     // extra (Naismith, rules decision 15): the budget is spent in metres of
     // flat going, and on flat ground that is the distance exactly.
     const climb = climbAlong(this.terrain, unit.position, to);
-    const cost = boundCost(this.terrain, unit.position, to);
+    const cost = boundCost(this.terrain, unit.position, to, this.climbCostPerMetre);
     if (unit.movedThisTurn + cost > cap + 1e-6) {
       const remaining = Math.max(0, cap - unit.movedThisTurn);
       const climbing = climb > 0 ? ` (${climb.toFixed(1)} m climbed, costing ${cost.toFixed(1)} m)` : "";
@@ -2492,7 +2504,7 @@ export class Game {
 
     // As far along the line as the budget reaches — less than the flat
     // distance where the line climbs (rules decision 15).
-    const to = reachAlong(this.terrain, unit.position, order.destination, cap);
+    const to = reachAlong(this.terrain, unit.position, order.destination, cap, this.climbCostPerMetre);
     if (
       unit.kind === "vehicle" &&
       steepestGradeAlong(this.terrain, unit.position, to) > SLOPE.vehicleMaxGradeDeg

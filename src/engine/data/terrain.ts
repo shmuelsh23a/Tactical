@@ -63,7 +63,12 @@ export const OBJECT_HEIGHT_M: Record<MapObjectKind, number> = {
  * What the ground costs to cross (author, 2026-09-06 — "go with Naismith";
  * the figures are ours and tentative pending balance). Naismith's rule: an
  * hour for every 5 km on the flat and another for every 600 m climbed, so a
- * metre of ascent costs about eight metres of going. Descent is free. This is
+ * metre of ascent costs about eight metres of going. **Five since rules
+ * decision 61** (author, 2026-09-30): eight is a long hill walk's figure; for
+ * a one-minute bound on the 10–25% grades of the maps Tobler's function gives
+ * 4–6 and running studies 3–4 (docs/validation.md, *Infantry pace under
+ * fire*). A game plays `GameOptions.climbCostPerMetre`; a recording made
+ * before the decision replays at eight. Descent is free. This is
  * what makes the high ground cost what it is worth: a crest buys sight lines
  * and is paid for in bounds, where before it was free to take.
  *
@@ -71,8 +76,10 @@ export const OBJECT_HEIGHT_M: Record<MapObjectKind, number> = {
  * modifier for now"): the sight lines already reward the high ground.
  */
 export const SLOPE = {
-  /** Metres of a bound's budget spent per metre climbed. */
-  climbCostPerMetre: 8, // author (tentative) — Naismith
+  /** Metres of a bound's budget spent per metre climbed: a new game's. */
+  climbCostPerMetre: 5, // author, 2026-09-30 (decision 61) — Tobler, for a bound
+  /** The same before rules decision 61: what an older recording replays at. */
+  climbCostBeforeDecision61: 8, // author (tentative) — Naismith
   /** The steepest grade a vehicle will take, in degrees. Infantry takes any. */
   vehicleMaxGradeDeg: 30, // author (tentative)
 } as const;

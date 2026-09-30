@@ -117,7 +117,7 @@ tweak later when we get to balancing — write it down". So: written down.
 
 | Figure | Value | Whose | What it does |
 |---|---|---|---|
-| `SLOPE.climbCostPerMetre` | **8 m** of the bound per metre climbed (Naismith); descent free | author (tentative) | Makes the high ground cost what it is worth. A 10% slope costs 1.8 m of budget per metre, so a walking bound uphill is ~28 m, not 50. |
+| `SLOPE.climbCostPerMetre` | **5 m** of the bound per metre climbed (decision 61, 2026-09-30; **8**, Naismith, before — an older recording replays at 8); descent free | author | Makes the high ground cost what it is worth. A 10% slope costs 1.5 m of budget per metre, so a walking bound uphill is ~33 m, not 50 (28 m at 8). Tobler gives 4–6 for a bound (validation.md). |
 | `SLOPE.vehicleMaxGradeDeg` | **30°**, up or down | author (tentative) | A vehicle refuses a steeper bound, descending as well as climbing; a standing order across such a patch reports `grade too steep` every turn until replaced, since an order stands until it is. Infantry takes anything. On the demo map about one 50 m bound in 500 exceeds it. |
 | Height and hit chance | **none, for now** | author | The sight lines already reward height; the alternative kept on file is +10% additive for a shooter ≥ 10 m above its target. Revisit at balance. |
 
@@ -2166,6 +2166,34 @@ than a squad, or only behind fire, the author ruled **at once, before the
 attacker consolidates** (2026-09-30), which is what was built. Whether it
 pays is left to attacks that reach the position; on the tel today none
 does.
+
+## Twenty-third round: a metre climbed costs five, 2026-09-30
+
+Rules decision 61 (author, from the pace research, validation.md
+*Infantry pace under fire*): a metre climbed costs 5 m of a bound, not 8.
+Same company and seeds as the twenty-second round, 200 battles a row:
+
+| Guns take first | 3:1 at 8 | 3:1 at 5 | 2:1 at 8 | 2:1 at 5 |
+|---|---|---|---|---|
+| squads | 62% | **77%** | 32% | **58%** |
+| nearest the objective | 52% | 70% | 28% | 49% |
+| command groups | 32% | 67% | 21% | 41% |
+
+Still no attack closes: the nearest squad ends a median 211 m from a live
+defender (255 m at 8). What moved (40 battles of the 3:1, squads first):
+the scouts reach their observation points sooner and the main body goes
+at a median turn 18 (20); once it goes a moving squad covers 64 m a turn
+(52) and the company nets about 25 m a minute (20), still inside the
+sources' 15–30; explosives' share falls from 82% to 78% as small arms come
+into reach more. The battle ends at a median turn 23 (26).
+
+The spread between a good target order and a poor one narrows (3:1: 67–77%,
+was 32–62%): with the mortars on marks earlier, whichever they take first
+matters less. **For the author:** at 2:1 the attack now wins 41–58% against
+a prepared platoon, which sits badly with the design principle that a
+prepared position needs 3:1. It is a consequence of fire, not of closing —
+the mortar research under way (how long a dug-in platoon holds under a
+mortar section) is the place to look before touching anything else.
 
 ## How the engine scales, 2026-09-23
 

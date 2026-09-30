@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 762 tests, 43 files
+npm run check       lint + typecheck clean, 763 tests, 43 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -280,10 +280,12 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    under fire at 15–30 m a minute net (rush and drop); the tel's attack
    already nets about 20. Pace is not why it never closes: fire decides
    the battle 6–9 minutes after the company goes, where 350 m takes 15–20.
-   Two changes the sources would support are the author's call: the climb
-   cost at about 5 m a metre for a bound (8 is a long hill walk's), and
-   the drill's pace in contact on flat ground (about 50 m a minute when
-   nobody is suppressed). **Next: how long a dug-in platoon holds under a
+   **The climb cost is 5 m a metre since decision 61** (author, the same
+   day; balance.md, *Twenty-third round*): the tel's 3:1 wins 67–77%,
+   the 2:1 41–58% — the 2:1 now sits badly with the design principle
+   that a prepared position needs 3:1. Still no attack closes. Left as
+   it is: the drill's pace in contact on flat ground (about 50 m a minute
+   when nobody is suppressed). **Next: how long a dug-in platoon holds under a
    mortar section**, against the sources — the morning's item 2.
 3. **The plain drill against the smart attacker.** The harness's drill wins
    the 3:1 attack 95% and the 2:1 8%; the smart attacker 7/8 and 3/8. The
@@ -444,7 +446,7 @@ the balance pass, not to the rules list, and live on
 |---|---|---|
 | Decision 9 | smoke radii **25 / 50 / 100 m** | The document sizes no screen. |
 | Decision 13 | casualty bands **0 / 1–2 / 3–5 / 6+** | He confirmed that reports are banded, not where the bands fall. |
-| Decision 15 | eye heights **1.5 / 2.5 / 0.5 m**, object cover, **8 m per metre climbed**, **30°** for vehicles | All his, all "tentative until balance". |
+| Decision 15 | eye heights **1.5 / 2.5 / 0.5 m**, object cover, **5 m per metre climbed** (decision 61, was 8), **30°** for vehicles | All his, all "tentative until balance"; the climb cost set from the sources 2026-09-30. |
 | Decision 16 | laying a charge takes **2 turns** | "Tentatively", 2026-09-16. What the two turns *cost*, and that the charge goes where the force stands, he confirmed the same day. |
 | Decision 19 | **every morale number** — losses, gains, test, rally, suppression, reach, breaking points | The shape is his; not one magnitude is. The whole table is on [balance.md](balance.md), with the one measurement that shaped it. |
 

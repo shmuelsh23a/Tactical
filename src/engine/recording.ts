@@ -37,7 +37,7 @@ import type { MoraleReport } from "./morale.js";
 import type { RuleVariants } from "./data/variants.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { MapLineKind, Terrain } from "./terrain.js";
-import { OBJECT_HEIGHT_M } from "./data/terrain.js";
+import { OBJECT_HEIGHT_M, SLOPE } from "./data/terrain.js";
 import { LETHALITIES, type Lethality } from "./data/lethality.js";
 
 /**
@@ -191,6 +191,12 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   }
   if (r.fireSupportByEchelon !== undefined && typeof r.fireSupportByEchelon !== "boolean") throw malformed("fireSupportByEchelon");
   if (r.lethality !== undefined && !LETHALITIES.includes(r.lethality as Lethality)) throw malformed("lethality");
+  if (
+    r.climbCostPerMetre !== undefined &&
+    !(typeof r.climbCostPerMetre === "number" && Number.isFinite(r.climbCostPerMetre) && r.climbCostPerMetre >= 0)
+  ) {
+    throw malformed("climbCostPerMetre");
+  }
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
@@ -323,6 +329,11 @@ export interface GameRecording {
    * was fought on the document's tables.
    */
   lethality?: Lethality;
+  /**
+   * Metres of a bound each metre climbed cost (rules decision 61). Read as
+   * **8** when absent: a battle recorded before it climbed at Naismith's.
+   */
+  climbCostPerMetre?: number;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
   /**
@@ -507,6 +518,7 @@ export function replayWithOutcomes(
     ...(recording.commandEchelon ? { commandEchelon: { ...recording.commandEchelon } } : {}),
     fireSupportByEchelon: recording.fireSupportByEchelon ?? false,
     lethality: recording.lethality ?? "document",
+    climbCostPerMetre: recording.climbCostPerMetre ?? SLOPE.climbCostBeforeDecision61,
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.stillDetection ? { stillDetection: true } : {}),

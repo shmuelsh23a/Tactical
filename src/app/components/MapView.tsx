@@ -60,6 +60,8 @@ interface MapViewProps {
   height: number;
   /** The ground: real relief and the objects on it — physical, so both sides see it. */
   terrain: Terrain;
+  /** What each metre climbed costs a bound in this game (rules decision 61), for the reach fan. */
+  climbCostPerMetre?: number;
   units: Unit[];
   viewingSide: Side;
   selectedId: string | null;
@@ -159,10 +161,10 @@ export function MapView(props: MapViewProps) {
   const vehicle = selected?.kind === "vehicle";
   const reach = useMemo(() => {
     if (!at || moveCap == null || moveCap <= 0) return null;
-    return reachFan(props.terrain, at, moveCap, { vehicle })
+    return reachFan(props.terrain, at, moveCap, { vehicle, climbCostPerMetre: props.climbCostPerMetre })
       .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
       .join(" ");
-  }, [at, vehicle, moveCap, props.terrain]);
+  }, [at, vehicle, moveCap, props.terrain, props.climbCostPerMetre]);
 
   function handleBackgroundClick(e: React.MouseEvent) {
     const svg = svgRef.current;

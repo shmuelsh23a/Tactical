@@ -1334,6 +1334,7 @@ export function App({ scenario, onLeave }: AppProps) {
               width={scn.mapWidth}
               height={scn.mapHeight}
               terrain={game.terrain}
+              climbCostPerMetre={game.climbCostPerMetre}
               units={visibleUnits}
               viewingSide={viewingSide}
               selectedId={selectedId}
