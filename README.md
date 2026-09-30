@@ -2022,6 +2022,32 @@ on the stated reasoning, still awaiting the author's word.
     offered. These are the company's orders (`CompanyOrders`), not rules
     of the engine; the drill carries them out, and a scripted company gives
     none, so the harness and headless figures are unchanged.
+60. ✅ **A defending platoon holds a squad in reserve, and counterattacks
+    by drill** (author, 2026-09-30: "a squad in reserve; platoon
+    counterattacks by drill", after we found every attack so far had been
+    against a defender that never left its holes). The reserve is one of
+    the platoon's own squads, held back behind its forward positions
+    (`"reserve": true` in a scenario spec, `Scenario.reserves`). It holds
+    its position until one of the platoon's forward positions is lost, then
+    retakes it without an order: it goes at a run for the nearest enemy
+    known on the position, assaults it by the drill's assault rule, and once
+    no enemy is known there it takes the position and holds it
+    (`SquadDrill.counterattack`, `DrillTask.reserves`). It is the platoon's
+    drill, so it is scripted, as squads and platoons are; which squad is
+    the reserve, and where it stands, are the scenario's. ⚠️ Ours: a
+    position counts as lost when its squad is out of the fight or more than
+    25 m from it and an enemy is known within 50 m of it; the reserve does
+    not weigh the odds before it goes; and the Tel Azeka layout, where
+    RED-A-1 (whose post saw no ground the other two did not) is pulled back
+    to 100–110 m behind the other two, beside the platoon command group.
+    The live game plays no drill for a player's side, so there the reserve
+    is the defending player's to commit. The balance harness's flat-ground
+    battles have no reserve yet, so their tables are unchanged.
+    Measured (docs/balance.md, *Twenty-second round*): on the tel with the
+    mortars no attacker ever comes within about 150 m of a forward position,
+    so no counterattack ever goes in; without them, the reserve goes in half
+    the battles, usually once the platoon is already at its breakpoint, and
+    helps the attacker.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

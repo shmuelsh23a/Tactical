@@ -42,7 +42,9 @@ import type { IndirectFireResult } from "../engine/index.js";
  *   observation points and where the rest wait; {@link FirePlanChoices}
  *   holds where it thinks the enemy is and when its guns fire;
  * - **the defender** holds by the drill and calls its mortars on the nearest
- *   attacker it knows of, fire for effect, as the browser tool's defender does.
+ *   attacker it knows of, fire for effect, as the browser tool's defender does;
+ *   a platoon's reserve (`Scenario.reserves`) retakes a lost position by the
+ *   drill's counterattack (rules decision 60).
  *
  * Everything either commander knows comes from its side's picture
  * (`sideView`, `contactsFor`) and its plan, never from `game.units` — except
@@ -120,6 +122,10 @@ export interface ScenarioBattleResult {
   smoke: Record<Side, number>;
   /** The attack ran past the mission's deadline and failed (decision 58). */
   outOfTime?: boolean;
+  /** The defender's reserves that went in to retake a lost position (decision 60). */
+  counterattacks: number;
+  /** Of those, the ones standing on the position they went for at the end, still in the fight. */
+  retaken: number;
 }
 
 const other = (s: Side): Side => (s === "RED" ? "BLUE" : "RED");
@@ -137,7 +143,7 @@ const PLAN_SPREAD_M = 90;
 
 /** One battle of `listing`, on `seed`, to an end or to `maxTurns`. */
 export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: ScenarioBattleOptions): ScenarioBattleResult {
-  const { game: g, mapWidth, mapHeight } = listing.build(seed);
+  const { game: g, mapWidth, mapHeight, reserves } = listing.build(seed);
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
@@ -207,7 +213,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
 
   const tasks: Record<Side, DrillTask> = {
     [attacker]: { side: attacker, attacking: true, objective },
-    [defender]: { side: defender, attacking: false, objective: startLine },
+    [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []) },
   } as Record<Side, DrillTask>;
   const state = new DrillState();
 
@@ -222,6 +228,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     downWhileWaiting: 0,
     missions: { RED: 0, BLUE: 0 },
     smoke: { RED: 0, BLUE: 0 },
+    counterattacks: 0,
+    retaken: 0,
   };
   const downOf = (side: Side) =>
     g.units.filter((u) => u.side === side).reduce((t, u) => t + (u.soldiers ?? []).filter((m) => m.neutralized).length, 0);
@@ -255,7 +263,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       result.downWhileWaiting = downOf(attacker);
     }
     heard(g.advanceToPhase("combat").resolved);
-    for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill);
+    for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill, state);
     if (settle()) break;
     const next = g.advanceToPhase("initiative");
     heard(next.resolved);
@@ -269,6 +277,11 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     result.outOfTime = true;
   }
 
+  for (const [id, post] of state.counterattacking) {
+    result.counterattacks++;
+    const u = g.getUnit(id);
+    if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= 25) result.retaken++;
+  }
   for (const u of g.units) {
     for (const s of u.soldiers ?? []) {
       if (!s.neutralized) continue;
@@ -804,6 +817,9 @@ export interface ScenarioSummary {
   medianDownWhileWaiting: number;
   /** Of the defender's wins, those where the attack ran out of time (decision 58). */
   outOfTime: number;
+  /** Battles in which the defender's reserve counterattacked (decision 60), and in which it held the position at the end. */
+  counterattacked: number;
+  retaken: number;
 }
 
 export function runScenario(
@@ -831,5 +847,7 @@ export function runScenario(
     defenderDownPct: (100 * sum((r) => r.down[defender])) / Math.max(1, sum((r) => r.men[defender])),
     explosivePct: (100 * sum((r) => r.outBy.explosive)) / Math.max(1, out),
     medianDownWhileWaiting: median(rs.map((r) => r.downWhileWaiting)),
+    counterattacked: rs.filter((r) => r.counterattacks > 0).length,
+    retaken: rs.filter((r) => r.retaken > 0).length,
   };
 }

@@ -2112,6 +2112,60 @@ that goes in all at once never ran out of time. The
 policy lifts the fires the first turn it is asked; a commander who times the
 lift to the last rounds is not measured here.
 
+## Twenty-second round: a reserve and the counterattack, 2026-09-30
+
+Every battle before this one was an attack on a defender that never left
+its holes: all three of the platoon's squads forward, no reserve, and no
+drill that moved a defender forward. The author ruled (decision 60): a squad
+in reserve, and the platoon counterattacks by drill. On the tel, RED-A-1
+goes back to (570, 460), dug in beside the platoon command group, 100–110 m
+from each forward position. It is the squad whose post saw none of the
+approach that the other two did not (from full cover, over a grid of the
+southern approach: A-2 sees 192 points, 138 of them only it; A-3 156, 86
+only it; A-1 91, none only it). No spot within 170 m of both forward
+positions is out of sight of the whole approach; the tel's south face is a
+forward slope.
+
+200 battles a row from seed 1000, the nineteenth round's company (two
+scouts to two observation points, a four-turn look, the company in dead
+ground, the guns waiting for a mark within 40 m), with the plain drill:
+
+| Guns take first | 3:1 before | 3:1 with a reserve | 2:1 before | 2:1 with a reserve |
+|---|---|---|---|---|
+| squads | 56% | 62% | 36% | 32% |
+| nearest the objective | 41% | 52% | 30% | 28% |
+| command groups | 23% | 32% | 23% | 21% |
+
+**Almost no counterattack went in**: none in the squads-first and nearest
+rows, 1% of battles in the 3:1 command-groups row, and none of those held
+the position. Switching it off (`--no-counterattack`) gives the same
+squads-first row to the battle. Tracing 40
+battles, the nearest any attacker came to a forward position was 148 m, and
+usually 210–250 m: every battle ended at a breakpoint after fire,
+before an assault. So the change in the table is the layout alone: two
+squads forward instead of three helps the attacker at 3:1 by 6–11 points
+and does little at 2:1 (−2 to −4, inside the noise of about ±3 points at
+this count).
+
+**With the mortars taken off both sides**, so the infantry has to close
+(a scratch variant, 60 battles from seed 1000, squads first):
+
+| | 3:1 wins | defender down | counterattacked (held at end) | 2:1 wins | counterattacked (held at end) |
+|---|---|---|---|---|---|
+| counterattack | 72% (7 lost out of time) | 35% | 30 (3) | 40% (8) | 25 (5) |
+| reserve holds | 57% (11) | 34% | — | 35% (12) | — |
+
+The reserve goes in half the battles, and it **helps the attacker**. A trace
+shows why: it goes when both forward squads are out, and by then the
+platoon is at its breakpoint (16 of 32 men down, on turn 31, in the one
+traced). It leaves its hole, takes losses and breaks in the open, and the
+side gives up sooner; defenders that would have held to the deadline lose
+instead. The rule as built does not ask whether a counterattack can
+succeed. **Open for the author:** when the drill should counterattack: at
+once, before the attacker consolidates; only while the platoon is above
+some strength, or only against no more than a squad on the position; or
+only behind fire (the company's mortars on the lost position first).
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

@@ -15,6 +15,13 @@ export interface Scenario {
   mapWidth: number;
   mapHeight: number;
   title: string;
+  /**
+   * The squads held back as their platoon's reserve (rules decision 60): each
+   * holds its own position until one of its platoon's forward positions is
+   * lost, then retakes it by the drill (`counterattack` in `drill.ts`). Read
+   * by whatever scripts the defence; a player commands his reserve himself.
+   */
+  reserves?: readonly string[];
 }
 
 /**

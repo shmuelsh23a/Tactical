@@ -81,6 +81,10 @@ A force may also carry, all optional:
     "baseCover": "partial"|"full" protection it holds without digging
     "scouting": true              out scouting from the start
     "canLayCharges": true         an insurgent or special force (decision 16)
+    "reserve": true               held back as its platoon's reserve: it holds
+                                  its position until one of the platoon's
+                                  forward positions is lost, then retakes it
+                                  by the drill (decision 60); infantry only
     "motivation": "normal"        poor|low|normal|high|fanatic - the floor of its
                                   men's starting morale (decision 19)
     "experience": "regular"       green|regular|veteran|elite (decision 19)
@@ -153,7 +157,7 @@ def load_tool(filename: str):
 WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield", "objects", "constant"}
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing",
-    "camouflaged", "baseCover", "scouting", "canLayCharges", "note",
+    "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
     "motivation", "experience",
 }
 MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
@@ -174,7 +178,7 @@ KINDS = {"infantry", "vehicle", "command"}
 # command group would otherwise leave a 3-man HQ where 9 men were asked for,
 # which is the same silent failure the unknown-key check exists to stop.
 KIND_KEYS = {
-    "infantry": {"echelon", "soldiers"},
+    "infantry": {"echelon", "soldiers", "reserve"},
     "command": {"echelon", "personnel"},
     "vehicle": {"facing"},
 }
@@ -338,6 +342,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         require_int(force, "facing", where, 0, 359)
         require_bool(force, "scouting", where)
         require_bool(force, "canLayCharges", where)
+        require_bool(force, "reserve", where)
         if force.get("camouflaged") is not True:
             require_int(force, "camouflaged", where, 0, 100)
         if "baseCover" in force:
@@ -575,9 +580,11 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             )
         lines.append("")
 
+    reserves = [f["id"] for f in forces if f.get("reserve")]
+    held_back = ", reserves: [" + ", ".join(ts(r) for r in reserves) + "]" if reserves else ""
     lines += [
         "  return { game, mapWidth: " + num(window["width"]) + ", mapHeight: "
-        + num(window["height"]) + ", title: " + ts(spec["title"]) + " };",
+        + num(window["height"]) + ", title: " + ts(spec["title"]) + held_back + " };",
         "}",
         "",
         "/** How the scenario picker offers this battle, before anything is built. */",

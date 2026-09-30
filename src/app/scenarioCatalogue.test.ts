@@ -31,6 +31,21 @@ describe("the scenario catalogue", () => {
     }
   });
 
+  it("names as a reserve only a defending squad (rules decision 60)", () => {
+    // A reserve the drill cannot find, or one on the attacking side, would
+    // leave the defence without the counterattack the spec asked for.
+    for (const listing of SCENARIOS) {
+      const { game, reserves } = listing.build();
+      for (const id of reserves ?? []) {
+        const u = game.units.find((x) => x.id === id);
+        expect(u?.kind, `${listing.id}: ${id}`).toBe("infantry");
+        expect(game.attackers, `${listing.id}: ${id}`).not.toContain(u!.side);
+      }
+    }
+    // The Tel Azeka assaults hold one squad back (the author's rule, 2026-09-30).
+    expect(findScenario("telAzekaAssault")?.build().reserves).toEqual(["RED-A-1"]);
+  });
+
   it("builds a fresh game each time it is picked", () => {
     const listing = SCENARIOS[0]!;
     const a = listing.build();

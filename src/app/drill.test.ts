@@ -392,3 +392,120 @@ describe("the drill carrying out its platoons' tasks", () => {
     expect(moved.filter(Boolean)).toHaveLength(1);
   });
 });
+
+describe("a defending platoon's reserve (rules decision 60)", () => {
+  // RED holds facing south: a forward squad on its post at the origin, the
+  // platoon's reserve 100 m behind it. Without the knowledge model the side
+  // sees what is in 300 m, so an enemy on the post is known.
+  const defend = (reserves = ["RED-A-1"]): DrillTask => ({
+    side: "RED",
+    attacking: false,
+    objective: { x: 0, y: 600 },
+    reserves: new Set(reserves),
+  });
+  function field(enemyAt = { x: 0, y: 30 }) {
+    const g = new Game({ seed: 3, trackIntel: false, enforceC2: false });
+    const reserve = g.addUnit(makeInfantry("RED-A-1", "RED", "squad", { x: 0, y: -100 }, 8));
+    const forward = g.addUnit(makeInfantry("RED-A-2", "RED", "squad", { x: 0, y: 0 }, 8));
+    const enemy = g.addUnit(makeInfantry("B", "BLUE", "squad", enemyAt, 8));
+    g.beginTurn();
+    return { g, reserve, forward, enemy };
+  }
+  const move = (g: Game, task: DrillTask, state: DrillState, drill = PLAIN_SCRIPT) => {
+    g.advanceToPhase("movement");
+    drillMovement(g, task, drill, state);
+  };
+
+  it("holds the reserve in its position while the forward squad holds its post", () => {
+    const { g, reserve } = field();
+    const state = new DrillState();
+    move(g, defend(), state);
+    expect(state.counterattacking.size).toBe(0);
+    expect(reserve.position).toEqual({ x: 0, y: -100 });
+    expect(g.standingOrderFor(reserve.id)).toMatchObject({ holdFire: true });
+  });
+
+  it("counterattacks a lost post: its squad out of the fight, an enemy known on it", () => {
+    const { g, reserve, forward } = field();
+    const state = new DrillState();
+    move(g, defend(), state); // the drill learns the posts
+    g.advanceToPhase("initiative");
+    forward.neutralized = true;
+    move(g, defend(), state);
+    expect(state.counterattacking.get(reserve.id)).toEqual({ x: 0, y: 0 });
+    expect(g.standingOrderFor(reserve.id)).toMatchObject({ gait: PLAIN_SCRIPT.counterattack!.gait });
+    expect(g.standingOrderFor(reserve.id)?.holdFire).not.toBe(true);
+    expect(reserve.position.y).toBeGreaterThan(-100);
+  });
+
+  it("does not go while no enemy is known on the lost post", () => {
+    const { g, reserve, forward } = field({ x: 0, y: 200 });
+    const state = new DrillState();
+    move(g, defend(), state);
+    g.advanceToPhase("initiative");
+    forward.neutralized = true;
+    move(g, defend(), state);
+    expect(state.counterattacking.size).toBe(0);
+    expect(reserve.position).toEqual({ x: 0, y: -100 });
+  });
+
+  it("stays put under a drill without the counterattack", () => {
+    const { g, reserve, forward } = field();
+    const state = new DrillState();
+    const drill = { ...PLAIN_SCRIPT, counterattack: null };
+    move(g, defend(), state, drill);
+    g.advanceToPhase("initiative");
+    forward.neutralized = true;
+    move(g, defend(), state, drill);
+    expect(state.counterattacking.size).toBe(0);
+    expect(reserve.position).toEqual({ x: 0, y: -100 });
+  });
+
+  it("answers only for its own platoon's posts", () => {
+    const { g, reserve, forward } = field();
+    const other = g.addUnit(makeInfantry("RED-B-1", "RED", "squad", { x: 0, y: -120 }, 8));
+    const state = new DrillState();
+    move(g, defend(["RED-B-1"]), state);
+    g.advanceToPhase("initiative");
+    forward.neutralized = true;
+    move(g, defend(["RED-B-1"]), state);
+    expect(state.counterattacking.has(other.id)).toBe(false);
+    // RED-A-1 is a forward squad here, not a reserve: it holds.
+    expect(state.counterattacking.has(reserve.id)).toBe(false);
+  });
+
+  it("assaults the enemy on the post before a nearer one off it", () => {
+    const { g, reserve, forward, enemy } = field({ x: 0, y: 10 });
+    const state = new DrillState();
+    move(g, defend(), state);
+    g.advanceToPhase("initiative");
+    forward.neutralized = true;
+    move(g, defend(), state);
+    // Close enough to assault the enemy on the post; a second one nearer, off it.
+    reserve.position = { x: 0, y: -10 };
+    g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: -18, y: -12 }, 8));
+    g.advanceToPhase("combat");
+    const assaulted: string[] = [];
+    const assault = g.assault.bind(g);
+    g.assault = (a, t, n) => (assaulted.push(t), assault(a, t, n));
+    drillCombat(g, defend(), PLAIN_SCRIPT, state);
+    expect(assaulted).toEqual([enemy.id]);
+  });
+
+  it("takes the post once no enemy is known on it, and holds it by the drill", () => {
+    const { g, reserve, forward, enemy } = field();
+    const state = new DrillState();
+    move(g, defend(), state);
+    g.advanceToPhase("initiative");
+    forward.neutralized = true;
+    move(g, defend(), state);
+    g.advanceToPhase("initiative");
+    enemy.neutralized = true;
+    for (let t = 0; t < 6; t++) {
+      move(g, defend(), state);
+      g.advanceToPhase("initiative");
+    }
+    expect(reserve.position).toEqual({ x: 0, y: 0 });
+    expect(g.standingOrderFor(reserve.id)).toMatchObject({ holdFire: true, engagementRange: PLAIN_SCRIPT.openFireRange });
+  });
+});

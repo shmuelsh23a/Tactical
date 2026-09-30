@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-29, after rules decisions 51–54 (branch `claude/attack-accuracy-unknown-positions-ln9i7x`): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after rules decision 60 (branch `claude/daily-standup-b2svcu`): a defending platoon holds a squad in reserve and counterattacks a lost position by drill — built, and inert on the tel, because no attack there ever closes (see *Start the next session here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 752 tests, 43 files
+npm run check       lint + typecheck clean, 760 tests, 43 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -149,6 +149,35 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Where the day ended (2026-09-30): the defender's reserve.** Two
+   rulings from the author. **Which target the company's guns take is a
+   command decision** — Jev's, or the player's; there is to be no scripted
+   rule for it. `jev-sim` already asks it. The scripted company in the
+   headless runner still has to choose to measure balance; we proposed it
+   plays a competent commander (squads first, 3:1 56–62%) with the other
+   orders kept as the range a choice spans (23–62%) — not confirmed.
+   Then, asked whether the defender ever counterattacked or used a reserve
+   (it never had either): **"a squad in reserve; platoon counterattacks by
+   drill"** — rules decision 60, built: `SquadDrill.counterattack`,
+   `DrillTask.reserves`, `"reserve": true` in a spec, `Scenario.reserves`,
+   RED-A-1 pulled back on the three Tel Azeka layouts that share platoon A,
+   `--no-counterattack` on `scenario-sim`. What it found (balance.md,
+   *Twenty-second round*):
+   - **No attack on the tel ever closes.** Over 40 traced battles no
+     attacker came within 148 m of a forward position; every one ended at
+     a breakpoint after fire. So the counterattack never goes in, and the
+     change in the tables (3:1 up 6–11 points) is the layout alone.
+   - **Without mortars it goes in half the time and helps the attacker**
+     (3:1 57% → 72%), because it goes as the platoon reaches its breakpoint.
+   **Waiting on the author:** when the drill counterattacks (at once; only
+   above some strength or against no more than a squad; only behind fire).
+   **Not done:** the reserve in the balance harness's flat-ground layouts;
+   the platoon battle, the company battle's platoon B and Yokneam, whose
+   layouts each teach a lesson and have no reserve — which squad each
+   holds back is a layout question for the author. The first thing worth
+   doing, whatever the answer, is item 2 below (infantry pace under
+   fire): a counterattack only matters in an attack that reaches the
+   position.
 0. **Where the day ended (2026-09-29): the mortar thread, and what is open.**
    The day began with the author's question whether pre-planned fires
    account for neither side knowing where the other is. They did not: with

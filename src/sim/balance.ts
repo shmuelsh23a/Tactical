@@ -591,7 +591,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     if (commander) tasks[attackerSide].company = commander.orders(g);
     for (const side of order) drillMovement(g, tasks[side], drill, drillState);
     g.advanceToPhase("combat");
-    for (const side of order) drillCombat(g, tasks[side], drill);
+    for (const side of order) drillCombat(g, tasks[side], drill, drillState);
     for (const u of g.units) {
       if (u.kind === "command") continue;
       const s = u.suppression ?? 0;
