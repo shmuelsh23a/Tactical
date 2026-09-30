@@ -2547,6 +2547,48 @@ meets **3 of 12** targets under every configuration — the 1:1 ones.
   game and its recon scaled (a scout a platoon) to judge squads and platoons
   again.
 
+## Thirty-third round: the harness on the game's rules, 2026-09-30
+
+The harness now plays the game's rules by default (`runBattle`): decisions
+51–55 on, fires planned on an eye's estimate, and in an attack a scout from
+each attacking platoon (none for a lone squad, one for a platoon, three for
+a company), each bounding and watching a turn, the rest waiting four turns
+of what they find — the scenario runner's standard, scaled by echelon.
+`--classic` plays it as before (the thirty-second round's figures). 200
+battles a cell, morale on, the attacker's wins, classic → the game's rules:
+
+**The default run:**
+
+| Battle | Target | Squad | Platoon | Company |
+|---|---|---|---|---|
+| 1:1 | ≤30% | 23% → 15% | 10% → 1% | 0% → 0% |
+| 2:1 | 30–45% | 67% → 48% | 87% → 47% | 2% → 1% |
+| 3–4:1 | 55–70% | 81% → **69%** | 99% → 94% | 96% → **59%** |
+
+Meeting engagements stay about even (squad 54/41, platoon 41/45, company
+43/41).
+
+**Calibrated fire at company** (decision 43's mortar section on both sides):
+1:1 1%, 2:1 10%, 3:1 **69%** (was 0%, 0%, 7%); explosives 48–51% of losses.
+With the guns waiting for the scouts' reports as well: 0%, 1%, 95%.
+
+**The sweep** now meets **7–8 of 12** targets (was 3 of 12): every 1:1
+target and most attacker-loss targets; the assault reply rate still makes no
+difference.
+
+- **Squad and company land on or near the targets**: the squad's 3:1 69%
+  and 2:1 48%, the company's 3:1 59% (69% with calibrated fire).
+- **Platoon 3:1 is still too easy (94%)** on flat open ground: a platoon
+  attacking three squads to one with no indirect fire on either side
+  (decision 37 gives none below company), where only the defender's hole
+  and its rifles stand against it.
+- **Company 2:1 is still far under (1–10%)**: on flat ground there is no
+  dead ground to wait and close in, where the tel's 2:1 wins 38%.
+- The harness is again a measure of the game, not of the rules as they
+  stood before 51–55. `npm run validate` still plays the classic harness
+  (`validation.ts`), so validation.md's figures stay comparable until it is
+  rerun.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

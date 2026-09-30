@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 781 tests, 44 files
+npm run check       lint + typecheck clean, 783 tests, 44 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -167,9 +167,14 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    wins 58%, inside the target, but the harness's defaults have fallen
    behind the game (decisions 51–55 off, recon that does not scale with the
    echelon), so its squad and platoon cells no longer judge anything; its
-   `TARGETS` carry decision 66's bands. **Next, in rough order:** bring the
-   harness's defaults up to the game and scale its recon (a scout a
-   platoon), then rerun; drive the new
+   `TARGETS` carry decision 66's bands. Then the harness was brought up to
+   the game (*Thirty-third round*): decisions 51–55 on by default, an eye's
+   planning error, a scout from each attacking platoon (`--classic` for the
+   old harness). Squad 3:1 69%, company 3:1 59% (69% with calibrated
+   fire); the sweep meets 7–8 of 12. Still off target on flat ground:
+   platoon 3:1 94%, company 2:1 1–10%. **Next, in rough order:** rerun
+   `npm run validate` on the game's rules (it still plays the classic
+   harness); drive the new
    rules in the browser as a player (suppression, heads down, danger close
    and a counterattack have only been played by scripts); the layouts
    without a reserve (the platoon battle, the company battle's platoon B,
