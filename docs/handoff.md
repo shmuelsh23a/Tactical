@@ -89,8 +89,10 @@ and `api.typesafe.ai` allowed in the cloud environment. Read balance.md,
 - **Next: Claude in Jev's place.** `src/sim/claude.ts` answers the same
   questions through the Anthropic API (answer held to the option ids by a JSON
   schema, the same mission in a cached system prompt, its reason and tokens
-  logged); tested against a stand-in, not yet run. The author has set
-  `ANTHROPIC_API_KEY`; a new session picks it up (`echo ${ANTHROPIC_API_KEY:+set}`).
+  logged); tested against a stand-in, not yet run. **The key goes in as
+  `JEV_ANTHROPIC_API_KEY`**: the cloud session keeps `ANTHROPIC_API_KEY` for
+  Claude Code itself, so under that name it never arrives. A new session picks
+  it up (`echo ${JEV_ANTHROPIC_API_KEY:+set}`).
   Run each of `claude-haiku-4-5`, `claude-sonnet-5-5` and `claude-opus-5-5` on
   both scenarios, 20 seeds from 1000 (`npm run jev-sim -- --claude <model>
   --scenario <id> --seed 1000 --n 20 --parallel 4`), and set them beside Jev
