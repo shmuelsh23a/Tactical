@@ -77,7 +77,7 @@ export function viewOf(
   const down = men.filter((m) => m.neutralized || m.morale?.state === "broken").length;
   if (game.attackers.includes(side)) {
     lines.push(
-      `The attack is called off when about ${Math.round(MORALE_RULES.SIDE_BREAK_BY_POSTURE.attacking * 100)}% of your men are down, broken or fled ` +
+      `The attack is called off when about ${Math.round(game.attackerBreakpoint * 100)}% of your men are down, broken or fled ` +
         `(now ${Math.round((100 * down) / Math.max(1, men.length))}%, ${down} of ${men.length}). ` +
         `A defence gives up at about ${Math.round(MORALE_RULES.SIDE_BREAK_BY_POSTURE.defending * 100)}% of its men.`,
     );

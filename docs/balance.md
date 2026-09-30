@@ -2458,6 +2458,34 @@ nerve in the open ×1 (decision 64 has ×2) and the attacker's breakpoint at
   3:1 58% (55–70%), 2:1 38% (30–45%). Either lever alone leaves both a few
   points short.
 
+## Thirty-first round: decision 66 adopted, the standard measurement, 2026-09-30
+
+Rules decision 66 (the author): the targets 55–70% at 3:1 and 30–45% at 2:1
+against a prepared position, nerve in the open ×1, an attacker giving up at
+40%. The scripted company now sends three scouts. **The standard
+measurement** from here:
+
+```bash
+npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 \
+  --scout-from vantage --wait-in dead-ground --n 200 --target-first squads
+```
+
+200 battles a row:
+
+| Guns take first | 3:1 wins | 2:1 wins | Attacker down | Defender down | Counterattacked (held at end) |
+|---|---|---|---|---|---|
+| **squads** | **58%** | **38%** | 16–21% | 19–25% | 13–17% (0–1%) |
+| nearest the objective | 52% | 35% | 17–22% | 18–23% | 14–17% (1–2%) |
+| command groups | 45% | 29% | 19–23% | 17–21% | 11–14% (1–3%) |
+
+With a competent commander (squads first) both land inside the targets;
+poorer target choices fall a few points under them, which is what a
+commander's decision should cost. The reserve counterattacks in about one
+battle in seven and now and then holds the position at the end.
+Explosives cause 73–77% of losses, the 75% the author set (decision 43).
+The balance harness's flat-ground tables above predate decisions 62–66 and
+the command-post fix, and have not been rerun.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

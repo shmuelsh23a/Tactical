@@ -68,7 +68,7 @@ describe("the company's questions", () => {
 
   it("state when the attack is called off, and the losses so far", () => {
     const q = nextQuestion([]);
-    expect(q.view).toMatch(/called off when about 30% of your men are down, broken or fled \(now 0%/);
+    expect(q.view).toMatch(/called off when about 40% of your men are down, broken or fled \(now 0%/);
   });
 
   it("state the mission's deadline (rules decision 58)", () => {

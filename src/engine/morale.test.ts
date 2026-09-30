@@ -19,7 +19,7 @@ import {
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
-import { HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
+import { ATTACKER_BREAK_BEFORE_66, HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, NERVE_IN_OPEN_BEFORE_66, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
@@ -680,7 +680,16 @@ describe("nerve lost to fire, by cover (rules decision 64)", () => {
     expect(shelled("partial")).toBe(inPosition(Math.round(6 * NERVE_BY_COVER.partial)));
     expect(shelled("full")).toBe(inPosition(Math.round(6 * NERVE_BY_COVER.full)));
     expect(shelled("full", true)).toBe(inPosition(Math.round(6 * NERVE_BY_COVER.roof)));
-    expect(shelled("none")).toBeGreaterThanOrEqual(10 * shelled("full", true));
+    // Decision 66: the open ×1 — still about seven times a prepared position.
+    expect(NERVE_BY_COVER.none).toBe(1);
+    expect(shelled("none")).toBeGreaterThanOrEqual(5 * shelled("full", true));
+  });
+
+  it("plays the open at ×2 in a recording made before decision 66", () => {
+    const r = new Game({ seed: 1 }).toRecording();
+    expect(r.nerveInOpen).toBe(1);
+    delete (r as { nerveInOpen?: number }).nerveInOpen;
+    expect(replayGame(r).nerveInOpen).toBe(NERVE_IN_OPEN_BEFORE_66);
   });
 
   it("is decision 19's flat loss when it is off", () => {
@@ -703,7 +712,7 @@ describe("nerve lost to fire, by cover (rules decision 64)", () => {
 
 describe("a side's breakpoint by posture (rules decision 44)", () => {
   // Ten men a side; `down` of BLUE's and RED's put out of the fight.
-  const battle = (opts: { lethality?: "document" | "research"; attackers?: ("RED" | "BLUE")[] }, down: number) => {
+  const battle = (opts: { lethality?: "document" | "research"; attackers?: ("RED" | "BLUE")[]; attackerBreakpoint?: number }, down: number) => {
     const g = new Game({ seed: 1, morale: true, ...opts });
     g.addUnit(makeInfantry("B", "BLUE", "platoon", { x: 0, y: 0 }, 10));
     g.addUnit(makeInfantry("R", "RED", "platoon", { x: 0, y: 1000 }, 10));
@@ -711,15 +720,21 @@ describe("a side's breakpoint by posture (rules decision 44)", () => {
     return g;
   };
 
-  it("gives up an attack at 30% and a defence at 50%, on the research figures (decision 49)", () => {
-    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.3, defending: 0.5 });
-    const at3 = battle({ attackers: ["BLUE"] }, 3);
-    expect(at3.sideBroken("BLUE")).toBe(true);
-    expect(at3.sideBroken("RED")).toBe(false);
-    expect(battle({ attackers: ["BLUE"] }, 4).sideBroken("RED")).toBe(false);
+  it("gives up an attack at 40% (decision 66) and a defence at 50%, on the research figures (decision 49)", () => {
+    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.4, defending: 0.5 });
+    expect(battle({ attackers: ["BLUE"] }, 3).sideBroken("BLUE")).toBe(false);
+    const at4 = battle({ attackers: ["BLUE"] }, 4);
+    expect(at4.sideBroken("BLUE")).toBe(true);
+    expect(at4.sideBroken("RED")).toBe(false);
     expect(battle({ attackers: ["BLUE"] }, 5).sideBroken("RED")).toBe(true);
     // In a meeting engagement both attack.
-    expect(battle({ attackers: ["BLUE", "RED"] }, 3).sideBroken("RED")).toBe(true);
+    expect(battle({ attackers: ["BLUE", "RED"] }, 4).sideBroken("RED")).toBe(true);
+    // Decision 44's 30%, which a recording made before decision 66 replays at.
+    expect(battle({ attackers: ["BLUE"], attackerBreakpoint: ATTACKER_BREAK_BEFORE_66 }, 3).sideBroken("BLUE")).toBe(true);
+    const r = battle({ attackers: ["BLUE"] }, 0).toRecording();
+    expect(r.attackerBreakpoint).toBe(0.4);
+    delete (r as { attackerBreakpoint?: number }).attackerBreakpoint;
+    expect(replayGame(r).attackerBreakpoint).toBe(ATTACKER_BREAK_BEFORE_66);
   });
 
   it("keeps two thirds for both sides on the document's figures", () => {
@@ -754,10 +769,13 @@ describe("a rout counts by its casualties on the research figures (rules decisio
     expect(platoon("research").sideBroken("BLUE")).toBe(false);
   });
 
-  it("still breaks the attack at 30% of its men really down or broken", () => {
+  it("still breaks the attack at 40% of its men really down or broken (decision 66)", () => {
     const g = platoon("research");
     g.getUnit("B2").soldiers!.slice(0, 4).forEach((s) => (s.neutralized = true));
-    // 8 of 24: 33%.
+    // 8 of 24: 33%, under the breakpoint.
+    expect(g.sideBroken("BLUE")).toBe(false);
+    g.getUnit("B2").soldiers!.slice(4, 6).forEach((s) => (s.neutralized = true));
+    // 10 of 24: 42%.
     expect(g.sideBroken("BLUE")).toBe(true);
   });
 

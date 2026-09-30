@@ -1640,7 +1640,7 @@ on the stated reasoning, still awaiting the author's word.
     Dupuy Institute; US doctrine calls a unit destroyed at 30%); ours broke at
     44–78%. On the research figures a side breaks when this share of its men
     are down, broken, or in a force that fled (`SIDE_BREAK_BY_POSTURE`):
-    **30% attacking, 60% defending** (50% since decision 49), where decision 19 gave two thirds to
+    **30% attacking, 60% defending** (40% and 50% since decisions 66 and 49), where decision 19 gave two thirds to
     both. The shares sit above the losses they stand for because broken and
     fled men count too; measured, an attacker gives up at a median **16–25%
     casualties** and a defender at **42–50%**, and the 2:1 company attack
@@ -2120,6 +2120,7 @@ on the stated reasoning, still awaiting the author's word.
     casualties, leaders and the rest are unchanged. `GameOptions.nerveByCover`
     (`NERVE_BY_COVER`, `fireNerveFactor`); a recording made before it reads
     it as off. What it moved: docs/balance.md, *Twenty-sixth round*.
+    **The open is ×1 since decision 66.**
 65. ✅ **A pinned force still fires within rifle range, at a penalty**
     (author, 2026-09-30: "try pinned firing within rifle range at a
     penalty"; it replaces decision 63's 100 m limit on a pinned force's
@@ -2130,6 +2131,27 @@ on the stated reasoning, still awaiting the author's word.
     sight is unchanged (nothing beyond 50 m). `GameOptions.pinnedFiresAtRange`;
     a recording made before it plays decision 63's 100 m. What it moved:
     docs/balance.md, *Twenty-seventh round* — little.
+66. ✅ **The balance targets, the open at ×1, an attacker's breakpoint at
+    40%** (author, 2026-09-30: "adopt all three: 55–70% target, open ×1, 40%
+    breakpoint"). After the command-post fix a 3:1 attack on the tel won
+    about 22%, and no single lever brought it near the 85% ceiling
+    (docs/balance.md, twenty-eighth to thirtieth rounds). Research put what
+    an attack at 3:1 on a prepared position should win at about 55–70%
+    (docs/validation.md, *What an attack at 3:1 should win*). Three parts:
+    - **The targets** (the design principles, below): 3:1 on a prepared
+      position 55–70%, 75–85% only with surprise or strong suppression; 2:1
+      30–45%.
+    - **Nerve in the open ×1** (decision 64 had ×2): still about seven times
+      a prepared position. `GameOptions.nerveInOpen`; a recording made before
+      replays at 2 (`NERVE_IN_OPEN_BEFORE_66`).
+    - **An attacking side gives up at 40%** of its men down, broken or fled
+      (decision 44 had 30%, from the historical breakpoints; this departs from
+      that source to meet the target). `GameOptions.attackerBreakpoint`; a
+      recording made before replays at 0.3 (`ATTACKER_BREAK_BEFORE_66`). A
+      defence still gives up at 50%.
+    The scripted company the balance is measured with now sends **three
+    scouts** (ours, `--recon 3`). What it gives: docs/balance.md,
+    *Thirty-first round*.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
@@ -2182,7 +2204,11 @@ Still modelled by reasonable assumption (flag if you want them changed):
   by playing:
   - **A prepared position is what gives the defender its superiority**, and
     what makes an attack need **3:1**. Attacked below it, a prepared defender
-    should hold; at 3:1 the attack should succeed.
+    should hold; at 3:1 the attack should succeed. **The targets** (author,
+    2026-09-30, rules decision 66, from the research in validation.md, *What
+    an attack at 3:1 should win*): a 3:1 attack on a prepared position wins
+    **55–70%** — 75–85% only with surprise or strong suppression, the 85%
+    of decision 54 now a ceiling — and a 2:1 attack **30–45%**.
   - **In a meeting engagement nobody has prepared anything**, so nobody has a
     defender's bonus: the larger force should win. What the ground offers —
     a building, a crest — still favours whoever reaches it first.

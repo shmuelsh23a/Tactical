@@ -241,7 +241,16 @@ export const SIDE_BREAK_SHARE = 2 / 3;
  * explosives. Which side is attacking is `GameOptions.attackers`; a side not
  * named defends.
  */
-export const SIDE_BREAK_BY_POSTURE = { attacking: 0.3, defending: 0.5 } as const;
+export const SIDE_BREAK_BY_POSTURE = { attacking: 0.4, defending: 0.5 } as const;
+
+/**
+ * **The attacker gives up at 40% since rules decision 66** (author,
+ * 2026-09-30, "adopt all three"): at 30% no scripted attack on a prepared
+ * platoon reached the research's 55–70% at 3:1 (docs/balance.md, thirtieth
+ * round). A game plays `GameOptions.attackerBreakpoint`; a recording made
+ * before the decision replays at this, decision 44's 30%.
+ */
+export const ATTACKER_BREAK_BEFORE_66 = 0.3;
 
 /**
  * Suppression (דיכוי): a force-level count of how hard it is being shot at,
@@ -331,7 +340,14 @@ export const HEADS_DOWN = {
  * a prepared position, which the WWII figures for the danger itself put at
  * fifteen to a hundred (docs/validation.md, *Mortars against men dug in*).
  */
-export const NERVE_BY_COVER = { none: 2, partial: 1, full: 0.3, roof: 0.15 } as const;
+export const NERVE_BY_COVER = { none: 1, partial: 1, full: 0.3, roof: 0.15 } as const;
+
+/**
+ * **The open is ×1 since rules decision 66** (author, 2026-09-30: "open ×1"),
+ * still about seven times a prepared position; decision 64 had ×2. A game
+ * plays `GameOptions.nerveInOpen`; a recording made before replays at this.
+ */
+export const NERVE_IN_OPEN_BEFORE_66 = 2;
 
 /**
  * Assaulted while pinned or suppressed (rules decision 63, S5; author,

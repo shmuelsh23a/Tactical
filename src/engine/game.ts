@@ -127,7 +127,7 @@ import {
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
 import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { LEADER_REACH_M, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
+import { LEADER_REACH_M, NERVE_BY_COVER, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
 
 /** A command group still in command: not down, routing or surrendered (rules decision 55). */
@@ -455,6 +455,19 @@ export interface GameOptions {
    */
   nerveByCover?: boolean;
   /**
+   * The nerve factor in the open (rules decisions 64 and 66): 1 for a new
+   * game, `NERVE_BY_COVER.none`. A recording made before decision 66 replays
+   * at 2.
+   */
+  nerveInOpen?: number;
+  /**
+   * The share of an attacking side's men down, broken or fled at which it
+   * gives up, on the research figures (rules decisions 44 and 66): 0.4 for a
+   * new game. A recording made before decision 66 replays at decision 44's
+   * 0.3.
+   */
+  attackerBreakpoint?: number;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -559,6 +572,8 @@ export class Game {
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
   readonly nerveByCover: boolean;
+  readonly nerveInOpen: number;
+  readonly attackerBreakpoint: number;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -720,6 +735,11 @@ export class Game {
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
     this.nerveByCover = opts.nerveByCover ?? true;
+    this.nerveInOpen = opts.nerveInOpen ?? NERVE_BY_COVER.none;
+    this.attackerBreakpoint = opts.attackerBreakpoint ?? SIDE_BREAK_BY_POSTURE.attacking;
+    for (const [key, v] of [["nerveInOpen", this.nerveInOpen], ["attackerBreakpoint", this.attackerBreakpoint]] as const) {
+      if (!(Number.isFinite(v) && v >= 0)) throw new Error(`${key}: cannot read ${v}`);
+    }
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
     }
@@ -846,6 +866,8 @@ export class Game {
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
       ...(this.nerveByCover ? { nerveByCover: true } : {}),
+      nerveInOpen: this.nerveInOpen,
+      attackerBreakpoint: this.attackerBreakpoint,
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -2948,6 +2970,7 @@ export class Game {
         lossFactor: this.variants.preparedLossFactor ?? PREPARED.lossFactor,
       },
       nerveByCover: this.nerveByCover,
+      nerveInOpen: this.nerveInOpen,
       // Watching *now*: a contact refreshed this turn. Without the knowledge
       // model there is no fog to respect, and a line of sight from any of its
       // forces is what watching means.
@@ -3094,7 +3117,7 @@ export class Game {
     // or neutralised force counts only its men down or broken (decisions 45
     // and 48); two thirds, and such a force counted whole, on the document's.
     if (this.lethality !== "research") return sideBroken(this.units, side);
-    const share = SIDE_BREAK_BY_POSTURE[this.attackers.includes(side) ? "attacking" : "defending"];
+    const share = this.attackers.includes(side) ? this.attackerBreakpoint : SIDE_BREAK_BY_POSTURE.defending;
     return sideBroken(this.units, side, share, false);
   }
 

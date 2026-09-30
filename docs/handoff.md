@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-30, after rules decision 60 (branch `claude/daily-standup-b2svcu`): a defending platoon holds a squad in reserve and counterattacks a lost position by drill — built, and inert on the tel, because no attack there ever closes (see *Start the next session here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after rules decisions 60–66 (branch `claude/daily-standup-b2svcu`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% (see *Start the next session here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 780 tests, 44 files
+npm run check       lint + typecheck clean, 781 tests, 44 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -149,39 +149,25 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
-0. **Where 2026-09-30 ended: 3:1 now too weak.** The day ran: the
-   reserve and counterattack (60), pace researched (nothing wrong), climb
+0. **Where 2026-09-30 ended: the balance inside the author's targets.**
+   The day ran: the reserve and counterattack (60), pace researched, climb
    8 → 5 (61), the sources' cover against shells (62), suppression in five
-   parts (63, [suppression-design.md](suppression-design.md)), nerve lost
-   to fire by cover (64: ×2 open … ×0.15 roof, ours), a pinned force firing
-   to 400 m at a penalty (65). Then two harness fixes (balance.md,
-   *Twenty-eighth round*): the scripted defender registers its mortar
-   targets on the dead ground in front of it and fires on them, and — the
-   one that mattered — **a defending command post stays put**: the drill
-   had walked RED's company command group into the shelling, where it broke
-   and took RED's fire control with it a quarter of the time. Now on the
-   tel **3:1 wins about 22% and 2:1 about 15%**: 2:1 fails as the design
-   principle says, 3:1 is far under the author's 85%. The attacker gives
-   up crossing the open under working defensive mortars, at double nerve
-   loss (64). A smarter scripted attacker was tried next (balance.md,
-   *Twenty-ninth round*): fires on its plan change nothing (it already fires
-   11 of 12 missions) and smoke makes it worse (a screen blinds both sides;
-   each is an HE mission lost) — both kept as options, off. Trials: 24
-   missions 18%, lifting at 200 m 25%, nerve ×1 in the open 28%, a 40%
-   breakpoint 34% — no single lever brings 3:1 near 85%. Then all three of
-   the author's asks together (balance.md, *Thirtieth round*;
-   validation.md, *What an attack at 3:1 should win*): the evidence puts a
-   3:1 attack on a prepared position at about **55–70%** (85% only with
-   surprise or strong suppression) and 2:1 at **30–45%**; hurrying the
-   scripted attack loses it, three scouts is the best single change (43%);
-   **three scouts with nerve ×1 in the open and a 40% attacker breakpoint
-   gives 3:1 58%, 2:1 38%** — inside both ranges. **Waiting on the
-   author:** (a) the target — 55–70% at 3:1 in place of the 85% ceiling;
-   (b) the two rule changes: decision 64's open factor 2 → 1 (still about
-   seven times a roof), decision 44's attacker breakpoint 30% → 40%; the
-   three scouts are the scripted company's, ours, to make the measuring
-   standard (`--recon 3`). The balance harness's tables on balance.md
-   predate 62–65 and the command-post fix.
+   parts (63, [suppression-design.md](suppression-design.md)), nerve by
+   cover (64), a pinned force firing to 400 m at a penalty (65), the
+   scripted defender's fire plan and a defending command post that stays
+   put (harness), a smarter scripted attacker (smoke and plan fires,
+   options, off: they did not help), and **decision 66**: the targets
+   **55–70% at 3:1 and 30–45% at 2:1** against a prepared position (from
+   research), nerve in the open ×1, an attacker's breakpoint at 40%. With
+   the scripted company sending three scouts, **3:1 wins 58% and 2:1 38%**
+   (balance.md, *Thirty-first round*, which also gives the standard
+   `scenario-sim` command); the reserve counterattacks in about one battle
+   in seven. **Next, in rough order:** rerun the balance harness's
+   flat-ground tables on today's rules (they predate 62–66); drive the new
+   rules in the browser as a player (suppression, heads down, danger close
+   and a counterattack have only been played by scripts); the layouts
+   without a reserve (the platoon battle, the company battle's platoon B,
+   Yokneam) are the author's to lay out.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a
    command decision** — Jev's, or the player's; there is to be no scripted

@@ -554,6 +554,8 @@ export interface MoraleContext {
   prepared?: { testBonus: number; lossFactor: number };
   /** Nerve lost to fire by cover (rules decision 64, {@link NERVE_BY_COVER}). Off unless given. */
   nerveByCover?: boolean;
+  /** The factor in the open (decision 66): `NERVE_BY_COVER.none` unless given. */
+  nerveInOpen?: number;
 }
 
 /**
@@ -562,9 +564,9 @@ export interface MoraleContext {
  * the morale step, before the turn's flags are cleared.
  */
 /** What a force's cover makes of the nerve the enemy's fire costs it (rules decision 64). */
-export function fireNerveFactor(unit: Unit): number {
+export function fireNerveFactor(unit: Unit, open: number = NERVE_BY_COVER.none): number {
   if (unit.cover === "full") return unit.baseCover === "full" ? NERVE_BY_COVER.roof : NERVE_BY_COVER.full;
-  return unit.cover === "partial" ? NERVE_BY_COVER.partial : NERVE_BY_COVER.none;
+  return unit.cover === "partial" ? NERVE_BY_COVER.partial : open;
 }
 
 export function inPosition(unit: Unit): boolean {
@@ -782,7 +784,7 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
       // What the fire itself costs him, by his cover (decision 64): far more
       // in the open than dug in.
       const underFire = (firedOn ? LOSS.firedOn : 0) + (bombarded ? LOSS.bombarded : 0);
-      loss += ctx.nerveByCover ? Math.round(underFire * fireNerveFactor(u)) : underFire;
+      loss += ctx.nerveByCover ? Math.round(underFire * fireNerveFactor(u, ctx.nerveInOpen)) : underFire;
       if (woundedIds.has(s.id)) loss += LOSS.wounded;
       loss += (ownWounded - (woundedIds.has(s.id) ? 1 : 0)) * LOSS.comradeWounded;
       loss += ownDown * LOSS.comradeDown;

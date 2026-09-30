@@ -38,6 +38,7 @@ import type { RuleVariants } from "./data/variants.js";
 import type { StandingOrder, StandingOrderExecution } from "./orders.js";
 import type { MapLineKind, Terrain } from "./terrain.js";
 import { OBJECT_HEIGHT_M, SLOPE } from "./data/terrain.js";
+import { ATTACKER_BREAK_BEFORE_66, NERVE_IN_OPEN_BEFORE_66 } from "./data/morale.js";
 import { LETHALITIES, type Lethality } from "./data/lethality.js";
 
 /**
@@ -204,6 +205,10 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
   if (r.pinnedFiresAtRange !== undefined && typeof r.pinnedFiresAtRange !== "boolean") throw malformed("pinnedFiresAtRange");
   if (r.nerveByCover !== undefined && typeof r.nerveByCover !== "boolean") throw malformed("nerveByCover");
+  for (const key of ["nerveInOpen", "attackerBreakpoint"] as const) {
+    const v = r[key];
+    if (v !== undefined && !(typeof v === "number" && Number.isFinite(v) && v >= 0)) throw malformed(key);
+  }
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
@@ -359,6 +364,10 @@ export interface GameRecording {
   pinnedFiresAtRange?: boolean;
   /** Whether fire cost nerve by cover (rules decision 64). Read as **off** when absent. */
   nerveByCover?: boolean;
+  /** The nerve factor in the open (rules decision 66). Read as **2**, decision 64's, when absent. */
+  nerveInOpen?: number;
+  /** An attacker's breakpoint (rules decision 66). Read as **0.3**, decision 44's, when absent. */
+  attackerBreakpoint?: number;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
   /**
@@ -551,6 +560,8 @@ export function replayWithOutcomes(
     assaultNerve: recording.assaultNerve ?? false,
     pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,
     nerveByCover: recording.nerveByCover ?? false,
+    nerveInOpen: recording.nerveInOpen ?? NERVE_IN_OPEN_BEFORE_66,
+    attackerBreakpoint: recording.attackerBreakpoint ?? ATTACKER_BREAK_BEFORE_66,
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.stillDetection ? { stillDetection: true } : {}),
