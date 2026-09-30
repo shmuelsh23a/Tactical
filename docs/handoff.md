@@ -176,9 +176,9 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    the platoon battle, the company battle's platoon B and Yokneam, whose
    layouts each teach a lesson and have no reserve — which squad each
    holds back is a layout question for the author. The first thing worth
-   doing, whatever the answer, is item 2 below (infantry pace under
-   fire): a counterattack only matters in an attack that reaches the
-   position.
+   doing is item 2 below: a counterattack only matters in an attack that
+   reaches the position — and the pace research found fire, not pace, is
+   what stops it.
 0. **Where the day ended (2026-09-29): the mortar thread, and what is open.**
    The day began with the author's question whether pre-planned fires
    account for neither side knowing where the other is. They did not: with
@@ -275,10 +275,16 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    fire). So the odds act through what a side can lose, not through its
    fire. An attacker at 3:1 usually brings more fire than the defender:
    asked the author whether the real scenarios should; no answer yet.
-2. **Infantry pace under fire.** 50 m a turn walking, halved under fire,
-   less uphill: an attack never closes within the time a company battle
-   lasts. Not yet checked against sources — worth a research pass like the
-   dig-in one before a ruling.
+2. **Infantry pace under fire — researched 2026-09-30, nothing changed**
+   (validation.md, *Infantry pace under fire*). The sources put an advance
+   under fire at 15–30 m a minute net (rush and drop); the tel's attack
+   already nets about 20. Pace is not why it never closes: fire decides
+   the battle 6–9 minutes after the company goes, where 350 m takes 15–20.
+   Two changes the sources would support are the author's call: the climb
+   cost at about 5 m a metre for a bound (8 is a long hill walk's), and
+   the drill's pace in contact on flat ground (about 50 m a minute when
+   nobody is suppressed). **Next: how long a dug-in platoon holds under a
+   mortar section**, against the sources — the morning's item 2.
 3. **The plain drill against the smart attacker.** The harness's drill wins
    the 3:1 attack 95% and the 2:1 8%; the smart attacker 7/8 and 3/8. The
    drill is what balance numbers are measured with; how far it is from a

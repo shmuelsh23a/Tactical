@@ -700,6 +700,77 @@ attacker's fire plan is made on an eye's estimate rather than on the
 truth. Location error in the fight itself moves it 2 points. The fire plan
 was the whole of it.
 
+## Infantry pace under fire (2026-09-30) — researched, nothing changed yet
+
+The question: on the tel no attack closes (balance.md, *Twenty-second
+round*). Is the infantry too slow? The game's figures are the document's —
+**50 m a turn walking, 100 running, half under fire or suppressed** — plus
+**8 m of a move for every metre climbed** (decision 15, Naismith) and, in the
+drill, bounding overwatch: in contact half the squads hold each turn.
+
+**What the sources say** (1 turn = 60 s, so m/min = m a turn). Two research
+passes, 2026-09-30; papers read as abstracts, the US field manuals only
+through search results and a blog quoting them (the sites were blocked):
+
+| Figure | m/min | Source |
+|---|---|---|
+| Cross-country march rate, day / night; road, night | 40 / 27; 53 | FM 21-18, through search results and [MTI](https://mtntactical.com/research/yet-calculating-movement-uneven-terrain/) |
+| Hiking off path (Tobler's function × 0.6) | 50 | [Tobler's hiking function](https://en.wikipedia.org/wiki/Tobler%27s_hiking_function) |
+| Self-paced loaded march, 22 kg | 66 | Arya 2022 (abstract) |
+| Fastest loaded walk, 22–66% of body mass | 112–89 | Looney 2021 (abstract) |
+| 30 m sprint in a 21.6 kg fighting load | 220 (8.2 s) | Billing 2011 (abstract) |
+| A rush: 3–5 s, kept short so a gunner cannot track it | — | [FM 21-75, ch. 3](https://www.globalsecurity.org/military/library/policy/army/fm/21-75/Ch3.htm) |
+| Fire and movement drill: 6 m bounds, one every 20 s | **18 net** | Billing 2015; McGuire 2025 (abstracts) |
+| Mock section assaults over 100–150 m: 7 m bounds every 22 s, 6.5 min on average | **15–23 net** | Silk 2013, *Mil Med* (abstract) |
+| Low (leopard) crawl, 18 m with 24 kg | 41–45 | McGuire 2025; Myers 2016 (abstracts) |
+| Creeping barrages infantry kept up with: Vimy 1917, Passchendaele 1917, Hitler Line 1944, Veritable 1945 | **30, 23, 18–30, 23** | [Barrage (artillery)](https://en.wikipedia.org/wiki/Barrage_(artillery)), citing Griffith, Steel & Hart, Hogg |
+| A barrage infantry could *not* keep up with: the Somme, XV Corps, 1 July 1916 | 46 planned | same |
+| Urban advance, unopposed; opposition slowed it about sevenfold | 13; about 2 | Rowland, *The Stress of Battle*, through [a review](https://www.themself.org/2013/12/stress-of-battle-part-2-op-research-on-urban-battles/) |
+| Metres of flat a metre of climb is worth: Naismith and fell racing; Tobler at 9–27% grades; running on a treadmill or road | 8; 4–6; 3–4.4 | Scarf 2007; Norman 2004 (abstracts); Tobler (arithmetic) |
+
+**Read together:**
+
+- **Under fire a squad does not walk at half speed; it rushes and drops.**
+  A rush is very fast (5–7 m/s) and short (6–30 m), followed by 15–20 s on
+  the ground. Three independent drill studies and the barrages infantry kept
+  pace with agree on about **15–30 m a minute net**, 20 the middle. Where the
+  defender was not suppressed it fell to almost nothing.
+- **Walking at 50 m a minute is right** for a cross-country move (40–53).
+  **Running at 100 m a minute** is a fast loaded walk as a sustained minute —
+  defensible as a minute that includes going to ground and getting up, low as
+  a top speed. No measured 60-second loaded run was found.
+- **8 m a metre climbed is probably heavy for a tactical move.** It is the
+  figure for a long hill walk; for the 10–25% grades of the tel Tobler gives
+  4–6, and one study found the slope penalty grows with fatigue over minutes,
+  which a one-minute bound has not got. No source gives a figure for loaded
+  soldiers. Downhill (gentle) is slightly faster than flat in Tobler; the
+  game gives it nothing, which is close.
+
+**What the game does, measured on the tel** (20 battles of the 3:1, the
+twenty-second round's company, from the minute the main body is let go):
+a squad moves in 39% of its turns (42% held by the drill's overwatch, 16%
+scouts lying up, 2% blocked) and covers 52 m when it does — a 100 m bound
+at a run, of which the climb takes about 42 m (5.3 m climbed a bound). It
+is suppressed in only 5% of its turns, so the halving barely applies. **Net,
+about 20 m a minute** — in the middle of the sources' range. The ridge rises
+only 24 m over the last 440 m on the centre line (28 m of climb summed), 51
+m on the eastern approach.
+
+**So pace is not why the attack does not close.** The main body is let go at
+a median turn 20, about 350 m from the nearest defender, and the battle ends
+at a median turn 26–29, about 260 m out: fire decides it in 6–9 minutes,
+where 350 m at a realistic 20 m a minute takes 15–20. Nothing here says the
+infantry should be faster; it says the fire breaks a side sooner than the
+last few hundred metres can be crossed. That is the next question —
+how long a dug-in platoon holds under a mortar section, against the sources
+(handoff, *mortar lethality against men dug in*).
+
+Two small changes the sources would support, not made (the author's call):
+the climb cost at about 5 m a metre for a bound instead of 8; and on flat
+ground the drill's pace in contact (half the squads bounding 100 m) nets
+about 50 m a minute, more than twice the sources' 20, if no one is
+suppressed.
+
 ## Open
 
 For the author, in rough order of what they move:
@@ -721,7 +792,11 @@ For the author, in rough order of what they move:
 5. **The figures that are ours**: one launcher per four men; the tail weights and the 10 turns of
    fatigue; the ⅓ on small arms; the mortar's and tank HE's lethal areas, the
    RPG's against men, and the 25 m footprint.
-6. **Not researched yet**: the charges (a 100–200 m reach at 50%
+6. **Infantry pace** (2026-09-30): the sources put an advance under fire at
+   15–30 m a minute and the tel's attack already nets about 20; the climb
+   cost (8 m a metre) is probably heavy for a bound, 4–6 in the sources.
+   Not changed; see *Infantry pace under fire*.
+7. **Not researched yet**: the charges (a 100–200 m reach at 50%
    activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review
    (agenda item 4) covers the last.
@@ -754,3 +829,15 @@ These were not peer-reviewed and were read through search results.
   (Armored Medical Research Laboratory, Fort Knox, 1945), and its "20% or
   more" as cited in *Tactical Display for Soldiers* (National Research
   Council, 1997); read through search results.
+- Infantry pace (2026-09-30): [FM 21-75, ch. 3 — GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/21-75/Ch3.htm);
+  [Barrage (artillery)](https://en.wikipedia.org/wiki/Barrage_(artillery));
+  [Tobler's hiking function](https://en.wikipedia.org/wiki/Tobler%27s_hiking_function);
+  [Naismith's rule](https://en.wikipedia.org/wiki/Naismith%27s_rule);
+  [MTI on movement over uneven terrain](https://mtntactical.com/research/yet-calculating-movement-uneven-terrain/)
+  (quoting FM 21-18's march rates);
+  [a review of Rowland's *Stress of Battle*](https://www.themself.org/2013/12/stress-of-battle-part-2-op-research-on-urban-battles/);
+  [Advance rates in combat — The Dupuy Institute](https://dupuyinstitute.org/2023/04/26/advance-rates-in-combat/).
+  Papers read as abstracts through Consensus: Silk et al. 2013 (*Military
+  Medicine*, section assaults); Billing et al. 2011 and 2015; McGuire et al.
+  2025; Myers et al. 2016; Hunt et al. 2016; Looney et al. 2021; Arya et al.
+  2022; Scarf 2007; Norman 2004; Goodwin et al. 2024.
