@@ -119,9 +119,10 @@ export interface ScenarioBattleOptions {
    * The defending company's fire plan (`planDefenderFires`): its mortar
    * targets registered on the dead ground in front of it, fired on as the
    * attacker crosses them. On unless false; false is every table before
-   * 2026-09-30's twenty-eighth round, where it registered nothing.
+   * 2026-09-30's twenty-eighth round, where it registered nothing. `"open"`
+   * registers them on the open ground first instead (thirty-seventh round).
    */
-  defenderFirePlan?: boolean;
+  defenderFirePlan?: boolean | "open";
   /**
    * Someone else commands the attacking company (Jev, or an agent standing in
    * for it, `tools/jev-sim.ts`): its scouts, their posts, where the rest wait,
@@ -211,7 +212,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   }
   const defenderTargets =
     opts.defenderFirePlan !== false && g.mayCall(defender, MORTAR)
-      ? planDefenderFires(g, defender, startLine, mapWidth, mapHeight)
+      ? planDefenderFires(g, defender, startLine, mapWidth, mapHeight, opts.defenderFirePlan === "open" ? "open" : "deadGround")
       : [];
   for (const t of defenderTargets) g.registerTarget(defender, MORTAR, t);
 
@@ -910,7 +911,14 @@ const DEFENDER_TARGET_SPACING_M = 120;
  * positions, the ground and the direction of the attack (the brief's tasking,
  * taken as the attacker's start line) — never where the attacker is.
  */
-export function planDefenderFires(g: Game, side: Side, attackFrom: Point, width: number, height: number): Point[] {
+export function planDefenderFires(
+  g: Game,
+  side: Side,
+  attackFrom: Point,
+  width: number,
+  height: number,
+  prefer: "deadGround" | "open" = "deadGround",
+): Point[] {
   const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
   if (!own.length || !g.terrain) return [];
   const centre = mean(own);
@@ -932,10 +940,12 @@ export function planDefenderFires(g: Game, side: Side, attackFrom: Point, width:
       candidates.push({ at, dead: isDeadGround(query, at), along, off });
     }
   }
-  // Dead ground first, the nearest the positions first — where an assault
-  // forms up and closes; then nearest the line of attack; ties by position.
+  // Dead ground first (or open ground, `prefer`), the nearest the positions
+  // first — where an assault forms up and closes; then nearest the line of
+  // attack; ties by position.
+  const first = prefer === "open" ? -1 : 1;
   candidates.sort(
-    (a, b) => Number(b.dead) - Number(a.dead) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
+    (a, b) => first * (Number(b.dead) - Number(a.dead)) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
   );
   const chosen: Point[] = [];
   for (const c of candidates) {

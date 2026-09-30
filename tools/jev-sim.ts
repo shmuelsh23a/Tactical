@@ -79,6 +79,10 @@ const file = value("--answers");
 const answers: string[] = file && existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
 const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIPT), scouting: { watchTurns: 1 } };
 const decide = fromAnswers(answers);
+// Where the scripted defender registers its mortars (`--defender-plan`): dead ground (the default), open ground, or nothing.
+const defenderPlan = value("--defender-plan") ?? "dead";
+if (!["dead", "open", "none"].includes(defenderPlan)) throw new Error(`--defender-plan: "${defenderPlan}" is not one of dead, open, none`);
+const defenderFirePlan = defenderPlan === "none" ? false : defenderPlan === "open" ? ("open" as const) : true;
 
 if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude")) {
   // A commander for each battle: a Claude model with a plan or a memory keeps state between questions.
@@ -139,6 +143,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   const n = Number(value("--n") ?? 1);
   const out =
     value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
+  if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
@@ -152,7 +157,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     try {
       const c = commander();
       const { result, answers: given, log } = await playWithAsker(
-        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, decide: d }),
+        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, defenderFirePlan, decide: d }),
         timed(c.ask),
       );
       const plan = c.plan?.();
@@ -187,7 +192,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
 }
 
 try {
-  const r = runScenarioBattle(listing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, decide });
+  const r = runScenarioBattle(listing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, defenderFirePlan, decide });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   console.log(
     `RESULT ${id} seed ${seed}: ${r.winner === attacker ? "the attack won" : r.winner === "draw" ? "a draw" : (r.outOfTime ? "the defence held: the attack ran out of time" : "the defence held")} ` +
@@ -224,7 +229,8 @@ try {
  * offered, sure or not; "rush" sends the company in as soon as the enemy is
  * found, as Jev does, instead of shelling it for four turns first; "onescout"
  * sends one scout, as Jev does, not three; "blind" sends it in at the first
- * chance (turn 5), the enemy found or not, as Sonnet and Opus do.
+ * chance (turn 5), the enemy found or not, as Sonnet and Opus do; "basefire"
+ * gives the first platoon a base of fire and sends the rest in.
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
@@ -243,7 +249,8 @@ function ruleAsker(extra: Set<string>): Asker {
       }
       if (q.id.startsWith("go.axis")) return "straight";
       if (q.id.startsWith("go.support")) return "no";
-      if (q.id.startsWith("go.platoon")) return "assault";
+      // "basefire": the first platoon asked gives a base of fire, the rest assault.
+      if (q.id.startsWith("go.platoon")) return extra.has("basefire") && q.id.startsWith("go.platoon.BLUE-1.") ? "support" : "assault";
       if (q.id.startsWith("go.bound")) return extra.has("bound") ? "yes" : "no";
       if (q.id.startsWith("go.lift")) return extra.has("holdshort") ? "yes" : "no";
       if (q.id.startsWith("lift")) return "yes";

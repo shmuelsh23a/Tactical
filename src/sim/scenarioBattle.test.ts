@@ -64,6 +64,14 @@ describe("the defending company's fire plan", () => {
     expect(distance(plan[0]!, centre)).toBeLessThan(distance(plan.at(-1)!, centre));
   });
 
+  it("registers on open ground first when told to", () => {
+    const open = planDefenderFires(game, "RED", attackFrom, mapWidth, mapHeight, "open");
+    const query = { terrain: game.terrain!, watchers: own.map((u) => u.position), watcherEye: EYE_HEIGHT.fullCover, reach: Infinity };
+    expect(open).toHaveLength(6);
+    expect(open.filter((p) => !isDeadGround(query, p)).length).toBeGreaterThan(open.filter((p) => isDeadGround(query, p)).length);
+    expect(open).not.toEqual(plan);
+  });
+
   it("fires some of its missions on the plan, and none without one", () => {
     const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES };
     const withPlan = [11, 12, 13].map((s) => runScenarioBattle(telAzekaAssaultListing, s, opts));
