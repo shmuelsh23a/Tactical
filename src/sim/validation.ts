@@ -169,7 +169,9 @@ export function measureBreaks(
   // The fire decision 43 was calibrated on, both sides; a meeting has none.
   const fires = calibratedFires ? { fires: CALIBRATED_FIRE_PLAN, defenderFires: CALIBRATED_DEFENDER_FIRES } : {};
   const results = Array.from({ length: battles }, (_, i) =>
-    runBattle(firstSeed + i, echelon, kind, { morale: true, lethality, ...fires }),
+    // The classic harness until this is rerun on the game's rules: the figures
+    // on validation.md were measured with exact knowledge and no scouts.
+    runBattle(firstSeed + i, echelon, kind, { morale: true, lethality, ...fires, classicHarness: true }),
   );
   const brokeLosses: number[] = [];
   const attackerLosses: number[] = [];

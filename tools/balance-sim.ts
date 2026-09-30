@@ -26,6 +26,11 @@
  *   npm run balance -- … --look 4                    # the main body waits 4 turns after the first contact: find, fix, then assault
  *   npm run balance -- --planning-error --location-error   # fires planned on an estimate (0.2 of range; --planning-error 0.1 for less); sightings off by the eye's error (rules decision 51)
  *
+ *   npm run balance -- --classic                     # the harness as it was before 2026-09-30: decisions 51-55 off, the truth, no scouts
+ *   npm run balance -- --no-recon --no-location-error   # the game's rules, switched off one at a time
+ *
+ * By default the harness plays the game's rules: decisions 51-55 on, fires
+ * planned on an eye's estimate, and a scout from each attacking platoon.
  * The figures recorded on docs/balance.md came from the default run. Kept thin
  * on purpose: tools/ is outside the typecheck and the suite, so everything
  * worth checking lives in src/sim, where it is.
@@ -135,15 +140,21 @@ const defenderFires: DefenderFires | undefined = (() => {
 // echelon may not call is struck from the fire plans, and said so here.
 const anyEchelon = args.includes("--any-echelon");
 const lethality = value("--lethality") as Lethality | undefined;
-// --planning-error [share]: 0.2 (an eye's range error) unless a share is given
+// The harness plays the game's rules unless told otherwise (2026-09-30):
+// --classic for the harness as it was (decisions 51-55 off, the truth, no
+// scouts); --no-location-error etc. to switch one off; the old --flag names
+// still switch one on. --planning-error [share]: 0.2 unless a share is given.
+const classicHarness = args.includes("--classic");
 const planningError = args.includes("--planning-error")
   ? /^\d*\.?\d+$/.test(value("--planning-error") ?? "") ? Number(value("--planning-error")) : 0.2
-  : 0;
-const locationError = args.includes("--location-error");
-const stillDetection = args.includes("--still-detection");
-const binoculars = args.includes("--binoculars");
-const keepEyesOn = args.includes("--keep-eyes-on");
-const commandSuccession = args.includes("--command-succession");
+  : undefined;
+const toggle = (name: string): boolean | undefined =>
+  args.includes(`--no-${name}`) ? false : args.includes(`--${name}`) ? true : undefined;
+const locationError = toggle("location-error");
+const stillDetection = toggle("still-detection");
+const binoculars = toggle("binoculars");
+const keepEyesOn = toggle("keep-eyes-on");
+const commandSuccession = toggle("command-succession");
 if (lethality && !LETHALITIES.includes(lethality)) throw new Error(`--lethality: "${lethality}" is not one of ${LETHALITIES.join(", ")}`);
 if (!anyEchelon) {
   const struck = [...(fires?.missions ?? []), ...(defenderFires?.missions ?? [])]
@@ -165,9 +176,12 @@ const watchArg = value("--watch");
 // --look 4 — find, fix, then assault: the main body waits this many turns after the first contact
 const lookArg = value("--look");
 // The scouts are the company's (app/company.ts); how a scout bounds and looks is the drill's.
-const company: CompanyPlan | undefined = reconArg
-  ? { recon: { scouts: Number(reconArg), ...(lookArg ? { lookTurns: Number(lookArg) } : {}) } }
-  : undefined;
+// No --recon: the harness's default, a scout from each attacking platoon; --no-recon: none.
+const company: CompanyPlan | undefined = args.includes("--no-recon")
+  ? {}
+  : reconArg
+    ? { recon: { scouts: Number(reconArg), ...(lookArg ? { lookTurns: Number(lookArg) } : {}) } }
+    : undefined;
 if (watchArg) drill.scouting = { watchTurns: Number(watchArg) };
 const displaceArg = value("--displace");
 if (displaceArg) drill.displace = { metres: Number(displaceArg), contactWithin: 300 };
@@ -182,7 +196,8 @@ if (args.includes("--sweep")) {
   for (const c of configurations) {
     let total = 0;
     for (const echelon of echelons) {
-      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires, anyEchelon, defenderPlan);
+      const more = { planningError, locationError, stillDetection, binoculars, keepEyesOn, commandSuccession, ...(company ? { company } : {}), ...(classicHarness ? { classicHarness } : {}) };
+      const v = judge(echelon, { ...variants, ...c.variants }, battles, preparedCover, drill, fires, defenderFires, anyEchelon, defenderPlan, more);
       total += v.met;
       const r = (n: number) => `${Math.round(n)}%`;
       console.log(`| ${c.name} | ${echelon} | ${r(v.attack1Win)} | ${r(v.attack2Win)} | ${r(v.attack3Win)} | ${r(v.attack3AttackerDown)} | ${r(v.explosivePct)} | ${v.met}/4 |`);
@@ -197,7 +212,7 @@ if (args.includes("--sweep")) {
   for (const kind of kinds) {
     for (const echelon of echelons) {
       for (const morale of morales) {
-        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn, commandSuccession, ...(company ? { company } : {}) })));
+        console.log(markdownRow(runCell(echelon, kind, { morale, swap, variants, battles, firstSeed, preparedCover, drill, ...(fires ? { fires } : {}), ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}), ...(defenderPlan ? { defenderPlan } : {}), ...(lethality ? { lethality } : {}), planningError, locationError, stillDetection, binoculars, keepEyesOn, commandSuccession, ...(company ? { company } : {}), ...(classicHarness ? { classicHarness } : {}) })));
       }
     }
   }

@@ -227,6 +227,31 @@ export interface BattleOptions {
    * measure what 63 and 64 moved.
    */
   suppressionBefore63?: boolean;
+  /**
+   * The harness as it played before it followed the game (2026-09-30,
+   * thirty-third round): decisions 51–55 off unless named, fires planned on
+   * the truth, and no scouts unless a company plan is given. Otherwise the
+   * harness plays the game's rules — each of `locationError`,
+   * `stillDetection`, `binoculars`, `keepEyesOn` and `commandSuccession` on
+   * unless set false, `planningError` an eye's 0.2 unless given, and, in an
+   * attack with no `company` given, a scout from each attacking platoon
+   * ({@link scaledRecon}).
+   */
+  classicHarness?: boolean;
+}
+
+/** Turns the scouts must hold the enemy in sight before the company goes: the scenario runner's standard. */
+const STANDARD_LOOK_TURNS = 4;
+
+/**
+ * The attacking company commander the harness plays by default (2026-09-30):
+ * a scout from each attacking platoon, the rest waiting for four turns of
+ * what they find — the scenario runner's standard, scaled by echelon. A lone
+ * squad has no one to send ahead.
+ */
+export function scaledRecon(echelon: Echelon): CompanyPlan | undefined {
+  const scouts = echelon === "company" ? 3 : echelon === "platoon" ? 1 : 0;
+  return scouts ? { recon: { scouts, lookTurns: STANDARD_LOOK_TURNS } } : undefined;
 }
 
 /** A standard normal draw (Box–Muller). */
@@ -363,7 +388,19 @@ function nearestKnown(g: Game, u: Unit): string | undefined {
 }
 
 /** One battle, played to an end or to {@link MAX_TURNS}. */
-export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts: BattleOptions): BattleResult {
+export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, given: BattleOptions): BattleResult {
+  // The game's rules unless the classic harness is asked for.
+  const game = !given.classicHarness;
+  const opts: BattleOptions = {
+    ...given,
+    locationError: given.locationError ?? game,
+    stillDetection: given.stillDetection ?? game,
+    binoculars: given.binoculars ?? game,
+    keepEyesOn: given.keepEyesOn ?? game,
+    commandSuccession: given.commandSuccession ?? game,
+    planningError: given.planningError ?? (game ? LOCATION_ERROR.eye.rangeShare : 0),
+    ...(given.company === undefined && game && kind !== "meeting" ? { company: scaledRecon(echelon) } : {}),
+  };
   const laid = layout(echelon, kind, opts.meetingOdds);
   const callable = (weapon: string) => opts.anyEchelon || callableAt(echelon, weapon);
   // The defender's registered targets: on the line from its position toward
@@ -499,7 +536,10 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     return true;
   };
 
-  const drill = opts.drill ?? PLAIN_SCRIPT;
+  // A scout bounds and observes, halting a turn after each bound, when it has
+  // a company to scout for and its drill says nothing (the runner's standard).
+  const baseDrill = opts.drill ?? PLAIN_SCRIPT;
+  const drill = opts.company?.recon && !baseDrill.scouting ? { ...baseDrill, scouting: { watchTurns: 1 } } : baseDrill;
   const drillState = new DrillState();
   const tasks: Record<Side, DrillTask> = {
     BLUE: { side: "BLUE", attacking: attackers.includes("BLUE"), objective: objective.BLUE },
@@ -527,6 +567,8 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // A side with missions assigned calls the next when its weapon is free.
     const callMissions = (side: Side, aimAt: () => Point | undefined, fuze?: Fuze, method?: FireMethod) => {
       for (const a of fireSupport[side] ?? []) {
+        // Nobody calls while command changes hands (rules decision 55).
+        if (!g.mayCall(side, a.weapon)) continue;
         if ((g.fireMissionsLeft(side, a.weapon) ?? 0) <= 0) continue;
         if (g.fireMissions.some((m) => m.side === side && m.weapon === a.weapon && m.status === "adjusting")) continue;
         const aim = aimAt();
@@ -582,7 +624,7 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, opts
     // nearest enemy it knows of, as the harness always has.
     if (echelon === "company") {
       for (const side of order) {
-        if (fireSupport[side]) continue;
+        if (fireSupport[side] || !g.mayCall(side, "mortar")) continue;
         const hq = g.units.find((u) => u.side === side && u.kind === "command" && !u.neutralized);
         const target = hq && nearestKnown(g, hq);
         if (!hq || !target) continue;
@@ -780,9 +822,12 @@ export function judge(
   defenderFires?: DefenderFires,
   anyEchelon = false,
   defenderPlan?: BattleOptions["defenderPlan"],
+  /** Anything else the battles take: the classic harness, a company plan, the game's rules one by one. */
+  more: Partial<BattleOptions> = {},
 ): Verdict {
   const cell = (kind: BattleKind) =>
     runCell(echelon, kind, {
+      ...more,
       morale: true, variants, battles, preparedCover, ...(drill ? { drill } : {}), ...(fires ? { fires } : {}),
       ...(defenderFires ? { defenderFires } : {}), ...(anyEchelon ? { anyEchelon } : {}),
       ...(defenderPlan ? { defenderPlan } : {}),
