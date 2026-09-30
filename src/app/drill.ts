@@ -91,11 +91,14 @@ export interface SquadDrill {
    * ({@link DrillTask.reserves}) holds its own position until one of the
    * platoon's forward positions is lost, and then retakes it without waiting
    * for an order. A position is lost when the squad that held it is out of
-   * the fight or gone from it and an enemy is known within `lostWithin`
-   * metres of it. The reserve goes at `gait` for the nearest such enemy,
-   * assaults it by the drill's assault rule, and once no enemy is known on
-   * the position it takes the position and holds it. Null: the reserve stays
-   * where it is and fights from there.
+   * the fight or gone from it (not moved on purpose to its alternate
+   * position) and an enemy seen this turn or last is within `lostWithin`
+   * metres of it. The reserve takes the lost position nearest it, goes at
+   * `gait` for the enemy nearest that position, assaults it by the drill's
+   * assault rule, and once no enemy is seen on the position it takes the
+   * position and holds it. A mark older than that (decision 57) does not
+   * count: the enemy may have gone. Null: the reserve stays where it is and
+   * fights from there.
    */
   counterattack: { lostWithin: number; gait: MovementMode } | null;
   /**
@@ -274,7 +277,19 @@ function readyShare(u: Unit, state: DrillState): number {
 }
 
 /** A squad still holds its post while it is in the fight and within this of it (ours). */
-const HOLDS_POST_M = 25;
+export const HOLDS_POST_M = 25;
+
+/**
+ * The enemies seen this turn or last: a mark older than that is drawn as
+ * stale (decision 57) and may be where the enemy no longer is, so a
+ * counterattack neither starts nor aims on one. Without the knowledge model
+ * every enemy in the side's picture is in sight.
+ */
+function freshEnemies(game: Game, side: Side, enemies: Unit[]): Unit[] {
+  if (!game.trackIntel) return enemies;
+  const fresh = new Set(game.contactsFor(side).filter((c) => c.lastSeenTurn >= game.turn - 1).map((c) => c.unitId));
+  return enemies.filter((e) => fresh.has(e.id));
+}
 
 /** The enemy known nearest `post`, if one is within `within` metres of it. */
 function enemyOn(post: Point, enemies: Unit[], within: number): Unit | undefined {
@@ -297,6 +312,8 @@ function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: D
   const reserves = task.reserves;
   if (!counter || !reserves?.size) return;
   const lost = [...state.posts].filter(([id, post]) => {
+    // A squad that went to its alternate position left its post on purpose.
+    if (state.displaced.has(id)) return false;
     const holder = game.getUnit(id);
     const holds = inPlay(holder) && distance(holder.position, post) <= HOLDS_POST_M;
     return !holds && enemyOn(post, enemies, counter.lostWithin) !== undefined;
@@ -325,8 +342,10 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const scouts = company?.scouts ?? new Map<string, Point | null>();
   const waiting = company?.hold ?? false;
   if (!task.attacking) {
-    for (const u of forces) if (!task.reserves?.has(u.id) && !state.posts.has(u.id)) state.posts.set(u.id, { ...u.position });
-    commitReserves(game, task, drill, state, forces, enemies);
+    for (const u of forces) {
+      if (u.kind === "infantry" && !task.reserves?.has(u.id) && !state.posts.has(u.id)) state.posts.set(u.id, { ...u.position });
+    }
+    commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
   }
 
   forces.forEach((u, i) => {
@@ -348,7 +367,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     if (retaking && drill.counterattack) {
       // The counterattack (decision 60): at the enemy on the lost position,
       // then onto the position itself; there it holds by the drill below.
-      const foe = enemyOn(retaking, enemies, drill.counterattack.lostWithin);
+      const foe = enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack.lostWithin);
       if (foe) {
         game.setStandingOrder(
           u.id,
@@ -546,7 +565,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // — unless the company has gone in and told it to give a base of fire.
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
     const retaking = task.attacking || !drill.counterattack ? undefined : state?.counterattacking.get(u.id);
-    const foe = retaking && enemyOn(retaking, enemies, drill.counterattack!.lostWithin);
+    const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
     const target = foe && distance(u.position, foe.position) <= reach ? foe : pickTarget(u, enemies, axisOf(u, task), drill, reach);
     if (!target) {
       if (!task.attacking && drill.coverWhenIdle && !u.covering && !u.firedThisTurn && u.kind !== "vehicle") {

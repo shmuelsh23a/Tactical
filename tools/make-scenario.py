@@ -84,7 +84,9 @@ A force may also carry, all optional:
     "reserve": true               held back as its platoon's reserve: it holds
                                   its position until one of the platoon's
                                   forward positions is lost, then retakes it
-                                  by the drill (decision 60); infantry only
+                                  by the drill (decision 60); a defending
+                                  squad only, with a forward squad of its
+                                  platoon (read off the id: RED-A-1 is RED-A's)
     "motivation": "normal"        poor|low|normal|high|fanatic - the floor of its
                                   men's starting morale (decision 19)
     "experience": "regular"       green|regular|veteran|elite (decision 19)
@@ -364,6 +366,29 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
 
     for side in sorted(SIDES):
         require(any(f["side"] == side for f in forces), f"spec: {side} has no forces")
+
+    # A reserve that could never counterattack (decision 60) compiles and does
+    # nothing, so it is refused like any other silent mistake. Its platoon is
+    # read off the id as the drill reads it (`platoonKey` in company.ts):
+    # RED-A-1 belongs to RED-A.
+    def platoon_key(force_id: str) -> str:
+        parts = force_id.split("-")
+        return "-".join(parts[:-1]) if len(parts) >= 3 else force_id
+
+    for f in forces:
+        if not f.get("reserve"):
+            continue
+        where = f"force {f['id']}"
+        require(f["side"] not in spec.get("attackers", []), f"{where}: an attacking side has no reserve to hold back")
+        require(f.get("echelon", DEFAULT_ECHELON["infantry"]) == "squad", f"{where}: a reserve is a squad of its platoon")
+        require(
+            any(
+                g is not f and g["side"] == f["side"] and g["kind"] == "infantry" and not g.get("reserve")
+                and platoon_key(g["id"]) == platoon_key(f["id"])
+                for g in forces
+            ),
+            f"{where}: no forward squad of its platoon ({platoon_key(f['id'])}-…) for it to counterattack for",
+        )
 
     charges: list[dict[str, Any]] = []
     for i, charge in enumerate(spec.get("charges", [])):

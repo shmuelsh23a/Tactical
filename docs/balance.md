@@ -2118,7 +2118,7 @@ Every battle before this one was an attack on a defender that never left
 its holes: all three of the platoon's squads forward, no reserve, and no
 drill that moved a defender forward. The author ruled (decision 60): a squad
 in reserve, and the platoon counterattacks by drill. On the tel, RED-A-1
-goes back to (570, 460), dug in beside the platoon command group, 100–110 m
+goes back to (570, 460), dug in beside the platoon command group, 100–112 m
 from each forward position. It is the squad whose post saw none of the
 approach that the other two did not (from full cover, over a grid of the
 southern approach: A-2 sees 192 points, 138 of them only it; A-3 156, 86

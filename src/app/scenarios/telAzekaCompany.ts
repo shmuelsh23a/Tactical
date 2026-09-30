@@ -77,7 +77,7 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
   // Behind the summit, on its northern side.
   game.addUnit(makeCommandGroup("RED-COY", "RED", "company", { x: 600, y: 200 }, 5, "חפ\"ק מ\"פ"));
   game.addUnit(makeCommandGroup("RED-A-HQ", "RED", "platoon", { x: 570, y: 430 }, 3, "חפ\"ק מ\"מ א'"));
-  // The platoon's reserve (decision 60): dug in behind the shoulder, 100-110 m from each forward position.
+  // The platoon's reserve (decision 60): dug in behind the shoulder, 100-112 m from each forward position.
   // Dressed before it is added: addUnit records a force as it stands, so
   // a force camouflaged or covered after the fact would replay undressed.
   const reda1 = makeInfantry("RED-A-1", "RED", "squad", { x: 570, y: 460 }, 8, "מחלקה א'/1");

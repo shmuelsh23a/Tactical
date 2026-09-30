@@ -1,5 +1,5 @@
 import { outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
-import { DrillState, SCOUT_GIVE_UP_TURNS, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
@@ -280,7 +280,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   for (const [id, post] of state.counterattacking) {
     result.counterattacks++;
     const u = g.getUnit(id);
-    if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= 25) result.retaken++;
+    if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= HOLDS_POST_M) result.retaken++;
   }
   for (const u of g.units) {
     for (const s of u.soldiers ?? []) {

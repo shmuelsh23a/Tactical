@@ -2036,10 +2036,13 @@ on the stated reasoning, still awaiting the author's word.
     drill, so it is scripted, as squads and platoons are; which squad is
     the reserve, and where it stands, are the scenario's. ⚠️ Ours: a
     position counts as lost when its squad is out of the fight or more than
-    25 m from it and an enemy is known within 50 m of it; the reserve does
-    not weigh the odds before it goes; and the Tel Azeka layout, where
+    25 m from it (a squad that moved to its alternate position on purpose
+    does not count) and an enemy seen this turn or last is within 50 m of
+    it — an older mark, which may be where the enemy no longer is, does not
+    start or aim a counterattack; the reserve does not weigh the odds
+    before it goes; and the Tel Azeka layout, where
     RED-A-1 (whose post saw no ground the other two did not) is pulled back
-    to 100–110 m behind the other two, beside the platoon command group.
+    to 100–112 m behind the other two, beside the platoon command group.
     The live game plays no drill for a player's side, so there the reserve
     is the defending player's to commit. The balance harness's flat-ground
     battles have no reserve yet, so their tables are unchanged.

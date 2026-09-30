@@ -492,6 +492,48 @@ describe("a defending platoon's reserve (rules decision 60)", () => {
     expect(assaulted).toEqual([enemy.id]);
   });
 
+  it("neither starts nor aims a counterattack on a stale mark", () => {
+    // With the knowledge model: the enemy on the post is found by its fire,
+    // then slips away unseen. Its mark stays where it was (decision 57).
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const reserve = g.addUnit(makeInfantry("RED-A-1", "RED", "squad", { x: 0, y: -100 }, 8));
+    const forward = g.addUnit(makeInfantry("RED-A-2", "RED", "squad", { x: 0, y: 0 }, 8));
+    const enemy = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 30 }, 8));
+    g.beginTurn();
+    const state = new DrillState();
+    move(g, defend(), state);
+    g.advanceToPhase("combat");
+    g.fire(enemy.id, forward.id, { weapon: "smallArms" });
+    enemy.position = { x: 0, y: 900 };
+    forward.neutralized = true;
+    for (let t = 0; t < 3; t++) g.advanceToPhase("initiative"), g.advanceToPhase("combat");
+    expect(g.contactFor("RED", enemy.id)!.lastSeenTurn).toBeLessThan(g.turn - 1);
+    g.advanceToPhase("initiative");
+    move(g, defend(), state);
+    expect(state.counterattacking.size).toBe(0);
+    expect(reserve.position).toEqual({ x: 0, y: -100 });
+    // Committed on a fresh sighting, a reserve whose foe goes stale goes on
+    // to the post rather than waiting at the old mark.
+    state.counterattacking.set(reserve.id, { x: 0, y: 0 });
+    g.advanceToPhase("initiative");
+    move(g, defend(), state);
+    // It makes for the post (the mark is 30 m past it), and stops there.
+    for (let t = 0; t < 3; t++) g.advanceToPhase("initiative"), move(g, defend(), state);
+    expect(reserve.position).toEqual({ x: 0, y: 0 });
+  });
+
+  it("does not count a squad gone to its alternate position as a lost post", () => {
+    const { g, reserve, forward } = field();
+    const state = new DrillState();
+    move(g, defend(), state);
+    g.advanceToPhase("initiative");
+    forward.position = { x: 0, y: -60 };
+    state.displaced.add(forward.id);
+    move(g, defend(), state);
+    expect(state.counterattacking.size).toBe(0);
+    expect(reserve.position).toEqual({ x: 0, y: -100 });
+  });
+
   it("takes the post once no enemy is known on it, and holds it by the drill", () => {
     const { g, reserve, forward, enemy } = field();
     const state = new DrillState();
