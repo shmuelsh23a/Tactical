@@ -115,6 +115,7 @@ import {
   sideBroken,
   snapshotSoldiers,
   suppressionLevel,
+  roundSuppression,
   type FireNote,
   type ForceMorale,
   type MoraleReport,
@@ -122,7 +123,7 @@ import {
   unitSeed,
 } from "./morale.js";
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
-import { SUPPRESSION } from "./data/morale.js";
+import { ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
 import { LEADER_REACH_M, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
@@ -408,6 +409,19 @@ export interface GameOptions {
    */
   shellCover?: ShellCover;
   /**
+   * Suppression reaches further than death (rules decision 63, S1): a shell
+   * or a bomb suppresses every force whose nearest man is within its
+   * suppression reach (`SUPPRESSION_REACH_81MM`), not only those its lethal
+   * blast reaches. On by default; a recording made before it reads it as off.
+   */
+  suppressionReach?: boolean;
+  /**
+   * A roof halves the suppression a shell or a bomb puts on a force (rules
+   * decision 63, S3: `ROOF_SUPPRESSION_FACTOR`). On by default; a recording
+   * made before it reads it as off.
+   */
+  roofsDampSuppression?: boolean;
+  /**
    * The sides attacking (rules decision 44): on the research figures a side
    * attacking gives up at the historical attacker's breakpoint, one
    * defending at the defender's. A side not named defends; in a meeting
@@ -506,6 +520,8 @@ export class Game {
   readonly lethality: Lethality;
   readonly climbCostPerMetre: number;
   readonly shellCover: ShellCover;
+  readonly suppressionReach: boolean;
+  readonly roofsDampSuppression: boolean;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -661,6 +677,8 @@ export class Game {
     this.lethality = opts.lethality ?? "research";
     this.climbCostPerMetre = opts.climbCostPerMetre ?? SLOPE.climbCostPerMetre;
     this.shellCover = opts.shellCover ?? "sources";
+    this.suppressionReach = opts.suppressionReach ?? true;
+    this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
     if (!(this.climbCostPerMetre >= 0 && Number.isFinite(this.climbCostPerMetre))) {
       throw new Error(`climbCostPerMetre: cannot read ${this.climbCostPerMetre}`);
     }
@@ -781,6 +799,8 @@ export class Game {
       lethality: this.lethality,
       climbCostPerMetre: this.climbCostPerMetre,
       shellCover: this.shellCover,
+      ...(this.suppressionReach ? { suppressionReach: true } : {}),
+      ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
       ...(this.attackers.length ? { attackers: [...this.attackers] } : {}),
       ...(this.locationError ? { locationError: true } : {}),
       ...(this.stillDetection ? { stillDetection: true } : {}),
@@ -1477,11 +1497,24 @@ export class Game {
         }
       }
       // Everyone the rounds came down on was shelled, caught or not.
+      const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
       for (const round of fired) {
+        const reached = new Set(round.blast.targets.map((t) => t.unitId));
         for (const hit of round.blast.targets) {
           const unit = this.getUnit(hit.unitId);
-          this.noteFire(unit, "indirect", SUPPRESSION.indirect);
           if (unit.kind === "infantry") shelled.add(unit);
+        }
+        // Who it suppresses: those its blast reached, and since decision 63
+        // everyone within its suppression reach (S1); a roof takes half (S3).
+        const suppressed = this.suppressionReach
+          ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact)) > 0))
+          : this.units.filter((u) => reached.has(u.id));
+        for (const unit of suppressed) {
+          let amount = reached.has(unit.id)
+            ? SUPPRESSION.indirect
+            : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact));
+          if (this.roofsDampSuppression && roofed(unit)) amount *= ROOF_SUPPRESSION_FACTOR;
+          this.noteFire(unit, "indirect", amount);
         }
       }
       // Who called it, so a report can say how far it fell from the aim point

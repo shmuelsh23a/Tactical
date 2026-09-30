@@ -29,12 +29,14 @@ import {
   STATE_ACCURACY,
   SUPPRESSION,
   SUPPRESSION_EFFECT,
+  SUPPRESSION_REACH_81MM,
   TEST,
   THRESHOLDS,
   TOP_LEADER_ECHELON,
   TRAIT_DICE,
   WAVERING_TEST_INTERVAL,
 } from "./data/morale.js";
+import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2 } from "./data/lethality.js";
 
 /**
  * Morale (מורל) — rules decision 19.
@@ -147,6 +149,21 @@ export function hasMorale(unit: Unit): boolean {
 /** The men who will still fight: fit, and not broken. Without morale, every fit man. */
 export function readySoldiers(unit: Unit): Soldier[] {
   return (unit.soldiers ?? []).filter((s) => !s.neutralized && s.morale?.state !== "broken");
+}
+
+/**
+ * What one round of `weapon` suppresses a force whose point is `range` metres
+ * from the burst (rules decision 63, S1): the whole of `SUPPRESSION.indirect`
+ * inside the weapon's full reach of the force's nearest man, half inside its
+ * half reach, else nothing. {@link SUPPRESSION_REACH_81MM} scaled by the
+ * square root of the weapon's lethal area against the mortar's.
+ */
+export function roundSuppression(weapon: string, range: number): number {
+  const scale = Math.sqrt((LETHAL_AREA_M2[weapon] ?? LETHAL_AREA_M2.mortar!) / LETHAL_AREA_M2.mortar!);
+  const nearestMan = Math.max(0, range - FORCE_FOOTPRINT_RADIUS_M);
+  if (nearestMan <= SUPPRESSION_REACH_81MM.full * scale) return SUPPRESSION.indirect;
+  if (nearestMan <= SUPPRESSION_REACH_81MM.half * scale) return SUPPRESSION.indirect / 2;
+  return 0;
 }
 
 export type SuppressionLevel = "none" | "suppressed" | "pinned";

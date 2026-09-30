@@ -198,6 +198,8 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
     throw malformed("climbCostPerMetre");
   }
   if (r.shellCover !== undefined && !SHELL_COVERS.includes(r.shellCover as ShellCover)) throw malformed("shellCover");
+  if (r.suppressionReach !== undefined && typeof r.suppressionReach !== "boolean") throw malformed("suppressionReach");
+  if (r.roofsDampSuppression !== undefined && typeof r.roofsDampSuppression !== "boolean") throw malformed("roofsDampSuppression");
   if (r.attackers !== undefined && !Array.isArray(r.attackers)) throw malformed("attackers");
   if (r.locationError !== undefined && typeof r.locationError !== "boolean") throw malformed("locationError");
   if (r.stillDetection !== undefined && typeof r.stillDetection !== "boolean") throw malformed("stillDetection");
@@ -341,6 +343,10 @@ export interface GameRecording {
    * 31's holes and roofs.
    */
   shellCover?: ShellCover;
+  /** Whether a shell suppressed out to its suppression reach (rules decision 63, S1). Read as **off** when absent. */
+  suppressionReach?: boolean;
+  /** Whether a roof halved a shell's suppression (rules decision 63, S3). Read as **off** when absent. */
+  roofsDampSuppression?: boolean;
   /** The sides attacking (rules decision 44). Absent: none named. */
   attackers?: Side[];
   /**
@@ -527,6 +533,8 @@ export function replayWithOutcomes(
     lethality: recording.lethality ?? "document",
     climbCostPerMetre: recording.climbCostPerMetre ?? SLOPE.climbCostBeforeDecision61,
     shellCover: recording.shellCover ?? "before62",
+    suppressionReach: recording.suppressionReach ?? false,
+    roofsDampSuppression: recording.roofsDampSuppression ?? false,
     ...(recording.attackers ? { attackers: [...recording.attackers] } : {}),
     ...(recording.locationError ? { locationError: true } : {}),
     ...(recording.stillDetection ? { stillDetection: true } : {}),

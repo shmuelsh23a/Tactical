@@ -273,6 +273,29 @@ export const SUPPRESSION = {
   pinned: 40,
 } as const;
 
+/**
+ * How far a shell or a bomb suppresses (rules decision 63, S1; author,
+ * 2026-09-30). Suppression reaches further than death: FM 7-90 (App. B-7)
+ * puts an 81 mm bomb's suppression as probable within **30 m** of the burst
+ * and an even chance at **75 m**, little beyond 125 m. A force whose nearest
+ * man is within `full` of a burst takes the whole of
+ * {@link SUPPRESSION.indirect}, within `half` half of it (the half is ours),
+ * beyond that nothing. The nearest man is the force's point less
+ * `FORCE_FOOTPRINT_RADIUS_M`. Measured for the 81 mm; another weapon's reach
+ * scales by the square root of its lethal area against the mortar's (ours).
+ * Before the decision a round suppressed only the forces its lethal blast
+ * reached, about 37 m from a force's point for the 81 mm.
+ */
+export const SUPPRESSION_REACH_81MM = { full: 30, half: 75 } as const;
+
+/**
+ * A force under a roof — a building, or a position prepared before the
+ * battle — takes this share of the suppression a shell or a bomb puts on it
+ * (rules decision 63, S3). FM 7-90: men under overhead cover are harder to
+ * suppress. The half is ours.
+ */
+export const ROOF_SUPPRESSION_FACTOR = 0.5;
+
 /** What a suppressed or pinned force does to its own shooting, and to its men's nerve. */
 export const SUPPRESSION_EFFECT = {
   suppressed: { accuracy: 0.75, morale: 5 },
