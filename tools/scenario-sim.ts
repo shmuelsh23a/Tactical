@@ -13,6 +13,7 @@
  *   npm run scenario-sim -- --planning-error 0      # the plan on the truth, as before decision 51
  *   npm run scenario-sim -- --seed 11               # seeds from 11 (the browser runs used 11-18)
  *   npm run scenario-sim -- --no-counterattack      # the defender's reserve holds where it is (decision 60 off)
+ *   npm run scenario-sim -- … --smoke 4 --prep-fires  # the company screens its crossing with 4 smoke missions and fires its plan when nothing is sure
  *   npm run scenario-sim -- --no-defender-plan      # the defender registers no targets (every table before the twenty-eighth round)
  *
  * Kept thin on purpose, like tools/balance-sim.ts: what is worth checking
@@ -61,6 +62,8 @@ const fire: FirePlanChoices = {
   ...(args.includes("--no-register") ? { register: false } : {}),
   ...(args.includes("--wait-for-contact") ? { waitForContact: true } : {}),
   ...(value("--aim") ? { aimWithin: Number(value("--aim")) } : {}),
+  ...(value("--smoke") ? { smokeMissions: Number(value("--smoke")) } : {}),
+  ...(args.includes("--prep-fires") ? { prepFires: true } : {}),
   ...(value("--target-first") === "squads" || value("--target-first") === "command"
     ? { targetFirst: value("--target-first") as "squads" | "command" }
     : {}),

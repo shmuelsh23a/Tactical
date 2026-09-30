@@ -2371,6 +2371,52 @@ touched: decision 64's ×2 in the open (ours), the attacker's 30% breakpoint
 lays no smoke from its mortars and no fire plan of its own beyond firing on
 marks.
 
+## Twenty-ninth round: a smarter scripted attacker, and what does not move 3:1, 2026-09-30
+
+The scripted company gained two options (harness policies, ours;
+`FirePlanChoices` in `src/sim/scenarioBattle.ts`, `--smoke N`,
+`--prep-fires`): **smoke** — once it goes and its lead squads are 450 m to
+100 m from the objective, it keeps a mortar screen on the enemy marks
+nearest its squads (else its plan's points), up to N smoke missions, each
+one of its twelve (decision 56); and **fires on the plan** — once it goes,
+with no mark it is sure of, it fires on its registered points in turn, on
+the mark. 200 battles a row, squads first:
+
+| Attacker | 3:1 wins | 2:1 wins |
+|---|---|---|
+| As in the twenty-eighth round | 23% | 16% |
+| + fires on the plan | 23% | 16% |
+| + 4 smoke missions | 7% | 2% |
+| + 4 smoke, fires on the plan | 6% | 3% |
+| + 6 smoke, fires on the plan | 3% | 2% |
+
+**Neither helps; smoke hurts.** The attacker already fires about 11 of its 12
+missions on marks it has found, so the plan has nothing left to fire, and
+every smoke mission is a mission of HE lost; smoke blocks sight both ways, so
+a screen on the defence blinds the attacker's own observers and squads as
+much as the defender's. Both options stay off by default.
+
+Trials, not built (a scratch script changing the figure at run time), each
+with fires on the plan:
+
+| Trial | 3:1 wins | 2:1 wins |
+|---|---|---|
+| The attacker with 24 missions, not 12 | 18% | 10% |
+| … and 4 smoke | 6% | 3% |
+| The attacker lifts its fires at 200 m, not 100 m (12 missions) | 25% | 15% |
+| … with 24 missions | 26% | 17% |
+| Nerve lost in the open ×1, not ×2 (decision 64) | 28% | 19% |
+| The attacker gives up at 40%, not 30% (decision 44) | 34% | 17% |
+
+**No single lever brings 3:1 near the author's 85%.** 2:1 stays under 20%
+under all of them, as the principle wants. More fire does not help the
+attacker; its own fire lifted later helps a little (its bombs, reaching 100 m
+since decision 63, suppress its own closing squads); the rule levers — the
+doubled nerve in the open and the 30% breakpoint — each give 5–11 points.
+The attack loses because it crosses the open under working defensive mortars
+and gives up before it arrives; what would let a 3:1 attack arrive is the
+question for the author.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

@@ -163,9 +163,14 @@ balance.md, *Fourteenth* and *Fifteenth round*.
    tel **3:1 wins about 22% and 2:1 about 15%**: 2:1 fails as the design
    principle says, 3:1 is far under the author's 85%. The attacker gives
    up crossing the open under working defensive mortars, at double nerve
-   loss (64). **For the author:** which lever — 64's ×2 in the open, the
-   attacker's 30% breakpoint (44), or a better scripted attacker (smoke and
-   a fire plan of its own). The balance harness's tables on balance.md
+   loss (64). A smarter scripted attacker was tried next (balance.md,
+   *Twenty-ninth round*): fires on its plan change nothing (it already fires
+   11 of 12 missions) and smoke makes it worse (a screen blinds both sides;
+   each is an HE mission lost) — both kept as options, off. Trials: 24
+   missions 18%, lifting at 200 m 25%, nerve ×1 in the open 28%, a 40%
+   breakpoint 34% — **no single lever brings 3:1 near 85%**; 2:1 stays under
+   20% throughout. **Waiting on the author:** what should let a 3:1 attack
+   on a prepared platoon arrive. The balance harness's tables on balance.md
    predate 62–65 and the command-post fix.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a

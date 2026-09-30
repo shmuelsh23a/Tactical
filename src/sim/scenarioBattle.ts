@@ -81,6 +81,21 @@ export interface FirePlanChoices {
    * objective (the default, and every table before 2026-09-29).
    */
   targetFirst?: "squads" | "command" | "nearest";
+  /**
+   * Smoke (a harness policy, ours): once the company goes and its lead squads
+   * are crossing — {@link SCREEN_FROM_M} to {@link LIFT_AT_M} from the
+   * objective — it keeps a mortar screen on the enemy marks nearest its squads
+   * (else on its plan's points), up to this many smoke missions, each one of
+   * its fire missions (decision 56). Absent or 0: no smoke.
+   */
+  smokeMissions?: number;
+  /**
+   * Fires on the plan (a harness policy, ours): once the company goes, with no
+   * mark it is sure of, it fires on its registered plan points in turn — on
+   * the mark, needing no observer — to keep the defence under fire while it
+   * crosses, until its squads are {@link LIFT_AT_M} from them.
+   */
+  prepFires?: boolean;
 }
 
 export const DEFAULT_FIRE_CHOICES: FirePlanChoices = {
@@ -161,6 +176,8 @@ const DANGER_CLOSE_M = 150;
  * stay on until the assault is nearly there.
  */
 const LIFT_AT_M = 100;
+/** The scripted company screens its crossing from this far out (ours; decision 63's pinned defender sees little inside it anyway). */
+const SCREEN_FROM_M = 450;
 /** Fires lifted for the assault shift beyond this of the company's squads (ours). */
 const LIFTED_CLEAR_M = 300;
 /** The plan's frontage: its centre and this far to either side (the browser tool's). */
@@ -797,6 +814,26 @@ function callAttackerFire(
   // Danger close is a risk it takes (decision 63, S4): its fire stays on
   // until its squads are LIFT_AT_M from the mark.
   const safe = (p: Point) => squads.every((u) => distance(u.position, p) > LIFT_AT_M);
+  const going = company.released !== undefined;
+  // Smoke while it crosses: a screen on the enemy it knows of nearest its
+  // squads, else on the plan, kept up as each one clears (two turns).
+  const lead = Math.min(...squads.map((u) => distance(u.position, objective)));
+  if (going && lead <= SCREEN_FROM_M && lead > LIFT_AT_M && result.smoke[side] < (plan.smokeMissions ?? 0)) {
+    const screened = (p: Point) =>
+      g.smoke.some((s) => distance(s.center, p) < s.radius) ||
+      g.pendingSmoke.some((m) => m.side === side && distance(m.target, p) < m.radius);
+    const nearestOwn = (p: Point) => Math.min(...squads.map((u) => distance(u.position, p)));
+    const marks = sideView(g, side).units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered).map((u) => u.position);
+    const screen = (marks.length ? marks : [...planned])
+      .filter(safe)
+      .sort((a, b) => nearestOwn(a) - nearestOwn(b))
+      .find((p) => !screened(p));
+    if (screen) {
+      g.deploySmoke(MORTAR, side, screen);
+      result.smoke[side]++;
+      return;
+    }
+  }
   let aim: Point | undefined;
   if (plan.waitForContact) {
     const view = sideView(g, side);
@@ -811,6 +848,11 @@ function callAttackerFire(
       .filter((u) => u.side !== side && !u.neutralized && fresh(u.id) && sure(u.id) && safe(u.position))
       .sort((a, b) => rank(a) - rank(b) || distance(a.position, objective) - distance(b.position, objective))[0]?.position;
   } else {
+    const open = planned.filter(safe);
+    aim = open[result.missions[side] % Math.max(1, open.length)];
+  }
+  // Nothing sure to fire on: once it goes, keep the defence under fire on the plan.
+  if (!aim && plan.prepFires && going) {
     const open = planned.filter(safe);
     aim = open[result.missions[side] % Math.max(1, open.length)];
   }
