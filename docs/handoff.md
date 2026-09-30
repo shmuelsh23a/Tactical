@@ -149,6 +149,19 @@ and the browser differ is the next thing to trace.
 balance.md, *Fourteenth* and *Fifteenth round*.
 
 **Start the next session here** — open, in rough order:
+0. **Waiting on the author (2026-09-30, end of day): mortars against men
+   dug in** (validation.md, *Mortars against men dug in*). The sources
+   make the game's mortar several times too lethal against holes and
+   overhead cover: in the tel's 3:1 the attacker's mortars take a man of a
+   dug-in platoon for every 29 bombs, where the OPFOR norm for 30% of a
+   *hasty* position is 300 bombs a hectare, and doctrine gives overhead
+   cover "few, if any" casualties. Proposed factors (`SHELL_VS_MEN`):
+   impact open hole 0.03, roof 0.02; air burst open hole 0.13, roof 0.005.
+   A scratch trial: 3:1 47%, 2:1 18% (were 76% and 59%) — the design
+   principle back — but no attack closes still: the attacker now breaks in
+   the open under the defender's mortars. What the sources say decides it,
+   suppression the assault arrives under, is not modelled; that is the
+   structural question behind both this and the reserve.
 0. **Where the day ended (2026-09-30): the defender's reserve.** Two
    rulings from the author. **Which target the company's guns take is a
    command decision** — Jev's, or the player's; there is to be no scripted

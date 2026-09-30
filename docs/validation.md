@@ -771,6 +771,65 @@ instead of 8. The second is not made: on flat ground the drill's pace in
 contact (half the squads bounding 100 m) nets about 50 m a minute, more
 than twice the sources' 20, if no one is suppressed.
 
+## Mortars against men dug in (2026-09-30) — researched, not changed
+
+The question, from the pace research: on the tel fire decides the battle
+6–9 minutes after the company goes. Is the mortar too lethal against men
+dug in? The game's figures (`SHELL_VS_MEN`, decisions 29–31, 48): an 81 mm
+bomb reaches 476 m² of standing men; in a hole dug in the battle that is ×
+0.125 (impact) or × 0.625 (air burst); under overhead cover — a position
+prepared before the battle — × 0.125 either way.
+
+**What the sources say** (a research pass, 2026-09-30; FM 7-90, FM 6-30
+and FM 100-61 read in full, FM 5-103 not reached, the rest secondary):
+
+| Figure | Value | Source |
+|---|---|---|
+| Men in open holes, proximity fuze | "only 10 percent as effective" as in the open; proximity about 5× impact | FM 7-90, App. B-5c ([GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/7-90/Appb.htm)) |
+| Under overhead cover | proximity: "few, if any" casualties; impact: "some blast and suppressive effect"; light and medium mortars "little effect" | FM 7-90, B-3d, B-5d |
+| Warned platoon | 2 rounds unwarned took 10–15 once it had gone to ground | FM 7-90, B-5a |
+| 81 mm suppression | likely within 30 m, 50% at 75 m, little beyond 125 m; strongest when fire first falls | FM 7-90, B-7 |
+| Relative risk (WWII British), to a standing man | lying ⅓; firing from an open trench 1/15–1/50; crouched in it 1/25–1/100 | Evans, through [balagan.info](https://balagan.info/artillery-and-mortar-tactics-of-ww2) |
+| Neutralization; destruction | 10% casualties; 30% "during a short time span" — destroying dug-in targets by fire "is not economical"; suppression "usually lasts only as long as the fires are continued" | FM 6-30, App. E ([GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/6-30/f630_14.htm)) |
+| Rounds to neutralize (30% of targets, unobserved) a hectare | troops in the open: 35 of 82 mm; a hasty dug-in position: 300 of 82 mm; a prepared strongpoint: no 82 mm norm (120 mm: 200) | FM 100-61, ch. 9 ([GlobalSecurity](https://www.globalsecurity.org/military/library/policy/army/fm/100-61/Ch9.htm)), the US Army's OPFOR norms |
+| Operation Veritable, 1945 | casualties under 5% on both sides, about 20 prisoners a German casualty; success came from assaulting as the fire lifted | Swann (No. 2 ORS), reanalysed by Rooney ([Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/)) |
+| Suppression after the fire stops | "some brief, indeterminate period" | Dupuy ([TDI](https://dupuyinstitute.org/2018/10/11/human-factors-in-warfare-suppression/)) |
+
+**What the game does, measured** (60 battles of the tel's 3:1, the
+twenty-third round's company, squads first). In the 47 the defender lost,
+every one ended at its breakpoint: 32% of its men down, 82% of them by the
+mortars, and another 25% broken but unhurt. The attacker fired about 10 HE
+missions a battle — some 245 bombs for about 8.5 men of a dug-in platoon, a
+man for every 29 bombs. On the OPFOR norm a *hasty* dug-in platoon position
+of 2–6 ha takes 600–1,800 bombs for 30%; for positions under overhead cover
+the sources give no norm and "few, if any" casualties.
+
+**Read together:** against men dug in, the game's mortar is several times
+too lethal — about 5× in an open hole under an air burst (0.49 of standing
+against the sources' 0.10), 2–6× on impact (0.125 against 0.02, or
+1/15–1/100), and most of all under overhead cover, which the game makes no
+safer than an open hole. The sources' factors would be about: impact, open
+hole **0.03**, overhead cover **0.02**; air burst, open hole **0.13**,
+overhead cover **0.005**. Posture in the open (standing 1, lying 0.36)
+agrees with Evans's ⅓.
+
+**A trial with the sources' factors** (scratch, not in the game; 100
+battles, the same company):
+
+| | 3:1 wins | 2:1 wins | defender down (3:1) | explosives' share |
+|---|---|---|---|---|
+| The game's factors | 76% | 59% | 30% | 79–81% |
+| The sources' factors | **47%** | **18%** | 19% | 73% |
+
+The prepared position gets its superiority back — 2:1 fails, 3:1 is an even
+fight — which is the author's design principle. But the battle still ends
+at about turn 25 with no attack closed: now it is the **attacker** that
+reaches its breakpoint, in the open under the defender's mortars. What the
+sources say decides such a fight is missing from the game: fire on men dug
+in mostly **suppresses**, the suppression lasts about as long as the fire,
+and the assault succeeds by arriving while it does (Veritable). Fire that
+only kills cannot give that.
+
 ## Open
 
 For the author, in rough order of what they move:
@@ -797,7 +856,12 @@ For the author, in rough order of what they move:
    cost went from 8 m a metre to 5 (decision 61); the drill's flat-ground
    pace in contact (about 50 m a minute unsuppressed) is left as it is. See
    *Infantry pace under fire*.
-7. **Not researched yet**: the charges (a 100–200 m reach at 50%
+7. **Mortars against men dug in** (2026-09-30): the sources make the game's
+   mortar several times too lethal against holes and overhead cover (see
+   *Mortars against men dug in*). Not changed: the author's call, and what
+   the sources say decides the fight — suppression the assault arrives
+   under — is not in the game.
+8. **Not researched yet**: the charges (a 100–200 m reach at 50%
    activation), and the armour damage table (a flat 20%
    penetration whatever the weapon and facing). The direct-fire HE review
    (agenda item 4) covers the last.
@@ -842,3 +906,9 @@ These were not peer-reviewed and were read through search results.
   Medicine*, section assaults); Billing et al. 2011 and 2015; McGuire et al.
   2025; Myers et al. 2016; Hunt et al. 2016; Looney et al. 2021; Arya et al.
   2022; Scarf 2007; Norman 2004; Goodwin et al. 2024.
+- Mortars against men dug in (2026-09-30): FM 7-90 App. B, FM 6-30 App. E
+  and FM 100-61 ch. 9 (GlobalSecurity, read in full); [the psychology of
+  artillery effectiveness — Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/);
+  [artillery and mortar tactics of WW2 — balagan.info](https://balagan.info/artillery-and-mortar-tactics-of-ww2)
+  (quoting Evans and Ellis); [human factors in warfare: suppression — The
+  Dupuy Institute](https://dupuyinstitute.org/2018/10/11/human-factors-in-warfare-suppression/).
