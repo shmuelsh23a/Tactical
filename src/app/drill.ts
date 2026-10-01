@@ -13,6 +13,7 @@ import {
 } from "../engine/index.js";
 import { sideView } from "./hotseat.js";
 import { HOLD_SHORT_M, platoonKey, type CompanyOrders } from "./company.js";
+import { isDeadGround } from "./deadGround.js";
 
 /**
  * The squad drill (backlog 15 and 20): how a simulated subordinate carries out
@@ -220,6 +221,8 @@ export class DrillState {
   readonly posts = new Map<string, Point>();
   /** Each reserve committed to a counterattack, and the position it is retaking. */
   readonly counterattacking = new Map<string, Point>();
+  /** Turns each attacking platoon has waited at the last cover for the others to come level. */
+  readonly levelWaits = new Map<string, { turn: number; count: number }>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -237,6 +240,30 @@ function toward(from: Point, to: Point, d: number): Point {
   const r = distance(from, to);
   if (r <= d) return { ...to };
   return { x: from.x + ((to.x - from.x) / r) * d, y: from.y + ((to.y - from.y) / r) * d };
+}
+
+/** Arriving together (ours): a platoon this near the enemy waits while another is this much further back, for so many turns at most. */
+const TOGETHER = { waitWithinM: 300, gapM: 100, maxWaitTurns: 5 } as const;
+
+/** Covered routes (ours): straight in from this close; a step off the line must still close this share of it. */
+const COVERED = { straightWithinM: 150, minProgress: 0.4 } as const;
+
+/**
+ * A step of `d` metres toward `to` through ground out of sight of `watchers`,
+ * where some step that still closes on it is: the straight one if it is
+ * covered, else the one nearest it, up to 60° off. Undefined when none is.
+ */
+function coveredStep(terrain: NonNullable<Game["terrain"]>, from: Point, to: Point, d: number, watchers: Point[]): Point | undefined {
+  const r = distance(from, to);
+  if (r <= d) return undefined;
+  const bearing = Math.atan2(to.y - from.y, to.x - from.x);
+  for (const off of [0, 20, -20, 40, -40, 60, -60]) {
+    const a = bearing + (off * Math.PI) / 180;
+    const p = { x: from.x + Math.cos(a) * d, y: from.y + Math.sin(a) * d };
+    if (r - distance(p, to) < COVERED.minProgress * d) continue;
+    if (isDeadGround({ terrain, watchers }, p)) return p;
+  }
+  return undefined;
 }
 
 /** `d` metres from `from`, directly away from `threat`. */
@@ -348,6 +375,16 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
   }
 
+  // How near each assaulting platoon's leading squad is to the enemy it knows of, for the platoons to arrive together.
+  const leads = new Map<string, number>();
+  if (company && company.arriveTogether !== false && enemies.length) {
+    for (const u of forces) {
+      const k = company.platoonOf?.get(u.id);
+      if (!k || !inPlay(u) || scouts.has(u.id) || (company.platoonTasks?.get(k) ?? "assault") !== "assault") continue;
+      const d = Math.min(...enemies.map((e) => distance(u.position, e.position)));
+      leads.set(k, Math.min(leads.get(k) ?? Infinity, d));
+    }
+  }
   forces.forEach((u, i) => {
     if (!inPlay(u)) return;
     state.startingStrength(u);
@@ -491,6 +528,20 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         stay();
         return;
       }
+      // Together (ours, balance.md, forty-fifth round): a platoon that has come
+      // to the last cover before the enemy waits there while another is still
+      // well behind, so they close together, not one after another — for a few
+      // turns at most, so a platoon stopped for good does not hold it back.
+      if (platoon && nearest && leads.size > 1 && distance(u.position, nearest.position) <= TOGETHER.waitWithinM) {
+        const mine = leads.get(platoon) ?? Infinity;
+        const behindMost = Math.max(...[...leads].filter(([k]) => k !== platoon).map(([, d]) => d));
+        const w = state.levelWaits.get(platoon) ?? { turn: -1, count: 0 };
+        if (behindMost - mine > TOGETHER.gapM && w.count < TOGETHER.maxWaitTurns) {
+          if (w.turn !== game.turn) state.levelWaits.set(platoon, { turn: game.turn, count: w.count + 1 });
+          stay();
+          return;
+        }
+      }
       // Bounding by platoon: one assaulting platoon moves while the others halt
       // and fire — only within the drill's fire range of a known enemy, where
       // the halted ones can cover it (thirty-seventh round: from the first
@@ -526,9 +577,16 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     const goal = byVia ? via : task.objective;
     // On the way to the axis point it keeps to the axis, unless the enemy is close.
     const aim = nearest && (!byVia || distance(u.position, nearest.position) < 250) ? nearest.position : goal;
+    const step = inContact ? drill.bound.metres : 100;
+    // By covered ground where it has some (ours, forty-fifth round): out of
+    // sight of the enemy the side knows of, until it is close.
+    const covered =
+      task.attacking && company && company.coveredRoutes !== false && game.terrain && enemies.length && nearest && distance(u.position, nearest.position) > COVERED.straightWithinM
+        ? coveredStep(game.terrain, u.position, aim, step, enemies.map((e) => e.position))
+        : undefined;
     game.setStandingOrder(u.id, {
       gait: inContact ? drill.bound.gait : "normal",
-      destination: toward(u.position, aim, inContact ? drill.bound.metres : 100),
+      destination: covered ?? toward(u.position, aim, step),
     });
   });
   game.executeStandingOrders(side);

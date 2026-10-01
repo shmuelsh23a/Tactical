@@ -57,6 +57,10 @@ export interface CompanyOrders {
   holdShort?: boolean;
   /** Where a platoon pulled back goes: the company's start line. */
   fallBackTo?: Point;
+  /** Squads go by ground out of sight of the enemy they know of, until close (ours, forty-fifth round); on unless false. */
+  coveredRoutes?: boolean;
+  /** Assaulting platoons wait at the last cover for each other, to close together (ours, forty-fifth round); on unless false. */
+  arriveTogether?: boolean;
 }
 
 /**
@@ -133,6 +137,10 @@ export interface ReconPlan {
 
 export interface CompanyPlan {
   recon?: ReconPlan;
+  /** See `CompanyOrders.coveredRoutes`; on unless false. */
+  coveredRoutes?: boolean;
+  /** See `CompanyOrders.arriveTogether`; on unless false. */
+  arriveTogether?: boolean;
   /** Where the rest wait while the scouts look: where they stand, or the nearest dead ground. */
   waitIn?: "place" | "deadGround";
 }
@@ -344,6 +352,8 @@ export class ScriptedCompany {
       ...(this.bounding ? { boundByPlatoon: true } : {}),
       ...(this.holdingShort ? { holdShort: true } : {}),
       fallBackTo: this.home,
+      ...(this.plan.coveredRoutes === false ? { coveredRoutes: false } : {}),
+      ...(this.plan.arriveTogether === false ? { arriveTogether: false } : {}),
     };
   }
 

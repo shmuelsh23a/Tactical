@@ -129,6 +129,10 @@ export interface ScenarioBattleOptions {
   fireOnTheMove?: number;
   /** The attacker's breakpoint (`GameOptions.attackerBreakpoint`), set on the scenario's game before the first turn. */
   attackerBreakpoint?: number;
+  /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
+  coveredRoutes?: boolean;
+  /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
+  arriveTogether?: boolean;
   /**
    * Someone else commands the attacking company (Jev, or an agent standing in
    * for it, `tools/jev-sim.ts`): its scouts, their posts, where the rest wait,
@@ -270,7 +274,11 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   /** Each squad's fit men at the last platoon question, and when each platoon was last asked about. */
   const platoonFit = new Map<string, number>();
   const platoonAsked = new Map<string, number>();
-  const company = new ScriptedCompany(g, attacker, objective, suspected, companyPlan, {
+  const drillChoices = {
+    ...(opts.coveredRoutes === false ? { coveredRoutes: false } : {}),
+    ...(opts.arriveTogether === false ? { arriveTogether: false } : {}),
+  };
+  const company = new ScriptedCompany(g, attacker, objective, suspected, { ...companyPlan, ...drillChoices }, {
     terrain: g.terrain,
     width: mapWidth,
     height: mapHeight,

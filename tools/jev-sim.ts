@@ -91,6 +91,9 @@ const attackerBreakpoint = value("--attacker-breakpoint") === undefined ? undefi
 if (attackerBreakpoint !== undefined && !(attackerBreakpoint > 0 && attackerBreakpoint < 1)) throw new Error("--attacker-breakpoint: a share in (0, 1)");
 const engine = {
   defenderFirePlan,
+  // The drill's covered routes and arriving together (balance.md, forty-fifth round), on unless turned off.
+  ...(args.includes("--no-covered") ? { coveredRoutes: false } : {}),
+  ...(args.includes("--no-together") ? { arriveTogether: false } : {}),
   ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}),
   ...(attackerBreakpoint !== undefined ? { attackerBreakpoint } : {}),
 };
@@ -157,6 +160,8 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
   if (fireOnTheMove !== undefined) framing += `, fire on the move ×${fireOnTheMove}`;
   if (attackerBreakpoint !== undefined) framing += `, attacker breaks at ${Math.round(attackerBreakpoint * 100)}%`;
+  if (args.includes("--no-covered")) framing += ", no covered routes";
+  if (args.includes("--no-together")) framing += ", platoons not together";
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
