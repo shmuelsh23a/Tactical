@@ -3264,6 +3264,42 @@ the standard measurement, and its reasonable plans' medians at 42% and 24%
 on Rowland, not on the game; the 2:1 band is a judgement, and it should be
 judged as one, not because the game meets it.
 
+## Forty-first round: the hasty attack against history, 2026-10-01
+
+Under decision 67 (100 seeds a scenario from 1000), the hasty attack and its
+two parts:
+
+| 3:1 (2:1) | Wins | Cost against the calibrated plan |
+|---|---|---|
+| A. Calibrated | 59% (24%) | — |
+| One scout instead of three | 24% (6%) | 35 points |
+| In as soon as found, no fire first | 30% (8%) | 29 points |
+| C. Hasty (both) | 7% (5%) | 52 points |
+
+A research pass (validation.md, *Hasty and deliberate attacks*; every
+figure second-hand, the proxy refused the pages) found no source that counts
+hasty against deliberate attacks on prepared positions at small-unit level.
+The nearest: a US planning table puts even odds for a **hasty attack on a
+prepared defence at 3.75:1** (about 35–45% at 3:1); the MoD's 1978 desert
+war game rates hasty operations at **70% of deliberate**; Rowland's surprise
+split at 3:1 is 22 points; RAND's NTC studies tie good reconnaissance to
+success without a size.
+
+**Read against it** (±10 points, judgement): a hasty company attack on a
+dug-in platoon at 3:1 should win about **15–35%** (centre about 25%), and the
+gap to a deliberate one should be about **20–35 points**, not 52.
+- **No fire before going in** (29 points) is near the 15–25 the sources
+  suggest — a little high.
+- **One scout** (35 points, the enemy found seven minutes later) is **too
+  much**: about 10–15 would fit. RAND says reconnaissance matters; nothing
+  says seven minutes is worth a third of the attack's chance.
+- **The two compound** (each costs about 30, together 52); the sources
+  suggest less than additive.
+
+**Next:** trace what one scout costs beyond the seven minutes — fewer
+positions found, so the fire and the assault meet squads nobody saw, or the
+time — before anything is changed.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

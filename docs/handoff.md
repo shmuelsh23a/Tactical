@@ -150,8 +150,9 @@ else about them. In short:
   is 30% again, and the win targets are set for small-unit attacks (3:1
   40–55%, 2:1 20–35%). The game meets them: the standard measurement 49% and
   27%, the reasonable plans' median 42% and 24% (the hasty attack aside), and
-  losses in the sources' range. **Open with the author:** is the hasty
-  attack's cost real (7% at 3:1 under decision 67, 19% at 40%)? **Next:** the Claude and Jev
+  losses in the sources' range. **The hasty attack** (balance.md, forty-first
+  round): 7% at 3:1 against history's 15–35%; one scout costs 35 points
+  where about 10–15 would fit. Next: trace why, before changing anything. **Next:** the Claude and Jev
   comparison on the new rules (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,

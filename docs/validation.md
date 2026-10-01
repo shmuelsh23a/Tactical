@@ -953,6 +953,31 @@ too long**: the attacker loses about twice what the sources say before it
 stops, because it stops at 40% (decision 66, raised from 30% to meet the win
 targets), where battalion doctrine says about 20%.
 
+## Hasty and deliberate attacks (2026-10-01)
+
+Whether the game's hasty attack (one scout, in as soon as the enemy is
+found, no fire first) is as costly as history says (balance.md, *Forty-first
+round*). **Every figure is second-hand** (search extracts; the cloud proxy
+refused the pages). No source found counts hasty against deliberate attacks
+on prepared positions at small-unit level.
+
+| Condition | Figure | Source |
+|---|---|---|
+| Rowland, small units, WWII, 3:1 | 54% without surprise, 76% with; surprise cuts the defence's effectiveness by about 60% | [review](https://www.themself.org/2013/12/stress-of-battle-5-ww2-heroism-surprise/) |
+| US planning table (doctrinal, not measured) | even odds need 3.75:1 for a hasty attack on a prepared defence, 2.5:1 on a hasty one | [forum extract](https://forums.matrixgames.com/viewtopic.php?t=303455) |
+| Dupuy (QJM) posture factors | hasty defence ×1.3, prepared ×1.5, fortified ×1.6; surprise ×1.1–2.2 | [TDI](https://dupuyinstitute.org/2017/07/05/human-factors-in-warfare-defensive-posture/) |
+| MoD, British Army Desert War Game (1978) | hasty operations 70% as effective as deliberate | war-game rule, via thewargameswebsite.com |
+| FM 3-90 | a hasty attack trades preparation for speed, chosen for a fleeting chance; up to a third held in reserve for the risk | [FM 3-90 ch. 5](https://www.globalsecurity.org/military/library/policy/army/fm/3-90/ch5.htm) |
+| RAND, NTC (Goldsmith 1987; 1997) | strong correlation of good reconnaissance with success; essential reconnaissance done in about half the battles; about a third of companies accomplished the mission | [N2628](https://www.rand.org/pubs/notes/N2628.html), [MR846](https://www.rand.org/pubs/monograph_reports/MR846.html) |
+| ORS, Operation Veritable (1945) | infantry close behind a heavy fire plan took 1,115 prisoners for 349 losses in 16 battalion attacks | via [Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/) |
+| Sinai, 8 October 1973 | unsupported armoured counterattacks on dug-in infantry with ATGMs failed badly | [Israel State Archives](https://catalog.archives.gov.il/en/chapter/8-9-october-counter-attack-and-failure-in-the-south-recovery-in-the-north/) |
+
+**Read together** (a judgement, ±10 points): a hasty company attack on a
+prepared platoon at 3:1 wins about 15–35%; the gap to a deliberate attack is
+about 20–35 points; preparatory fire is the larger and better-supported part
+of it. Selection bias runs the other way in history: hasty attacks are
+launched when they look good.
+
 ## Open
 
 For the author, in rough order of what they move:
