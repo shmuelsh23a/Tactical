@@ -3549,6 +3549,25 @@ the assault position is chosen against the plan's estimate (the thirty-
 seventh round's mistake); Jev stops its scouts short and halts under fire.
 Tokens: Haiku about 1.3 M in, 66 k out; Jev about 2,000 calls.
 
+## Forty-seventh round: moving up before the enemy is found, 2026-10-01
+
+Haiku moved up to an assault position at turn 5, before the enemy was found,
+in all 40 of its battles (forty-sixth round). Tried: re-siting the assault
+position against the enemy once found. Measured with `--rule earlyup` (the
+calibrated plan, moving up at the first chance), 3:1, 100 seeds:
+
+| | Wins | Men lost before going in |
+|---|---|---|
+| Calibrated, moving up once the enemy is found (A + move up) | 28% | 4.0 |
+| Moving up at the first chance, no re-siting | 11% | — |
+| Moving up at the first chance, re-sited once found | 9% | 9.9 |
+
+**Re-siting does not help, and is withdrawn.** The cost is not where the
+assault position is but moving the company forward before the enemy is
+located: it is seen on the way and shelled. That is a real mistake —
+doctrine has reconnaissance before the move to an assault position — and
+the game punishes it as it should. `earlyup` stays as a rule variant.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

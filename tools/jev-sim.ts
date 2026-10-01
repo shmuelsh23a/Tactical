@@ -253,7 +253,8 @@ try {
  * goes from there; "flank" goes round a flank where the ground has one (else
  * by a scout's observation point), not straight; "prep" goes only once most missions are fired on the enemy in
  * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once;
- * "twoscouts" sends two; "posts-p1-p2-straight" sets where each scout watches.
+ * "twoscouts" sends two; "posts-p1-p2-straight" sets where each scout watches;
+ * "earlyup" moves up at the first chance, the enemy found or not.
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
@@ -273,6 +274,8 @@ function ruleAsker(extra: Set<string>): Asker {
         if (extra.has("blind")) return "yes";
         // "moveup": once the enemy is found, move up to an assault position chosen against it.
         if (extra.has("moveup") && has("up") && /just found|in sight \d+ turns/.test(q.ask)) return "up";
+        // "earlyup": move up at the first chance, the enemy found or not, as Haiku does.
+        if (extra.has("earlyup") && has("up")) return "up";
         if (extra.has("prep")) {
           // Fire first: go once most missions are fired on the enemy in sight, or by turn 30 whatever.
           const left = Number(/Mortar missions left: (\d+)/.exec(q.view)?.[1] ?? 0);
