@@ -2771,6 +2771,7 @@ Each is intended to be an independent, toggleable module:
       (balance.md, thirty-seventh to forty-fifth rounds) measured again.
     Relation to backlog 20: the TTP editor is how an instructor changes a
     drill; this is where the default drills come from.
+    The brief for that session: [docs/doctrine-handoff.md](docs/doctrine-handoff.md).
 22. **An AI commander in three parts: plan once, compute, execute cheaply.**
     (Discussed 2026-10-01.) An expensive model writes several candidate plans
     once a battle, as structured parameters (the `--rule` vocabulary: scouts,
