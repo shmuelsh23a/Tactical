@@ -148,15 +148,15 @@ else about them. In short:
   the reasonable plans' median falls to **40% (3:1)** and **21.5% (2:1)**.
 - **Decisions 67 and 68** (author, 2026-10-01): the attacker's breakpoint
   is 30% again, and the win targets are set for small-unit attacks (3:1
-  40–55%, 2:1 20–35%). The game meets them: the standard measurement 49% and
-  27%, the reasonable plans' median 42% and 24% (the hasty attack aside), and
-  losses in the sources' range. **The hasty attack** (balance.md, forty-first
-  round): 7% at 3:1 against history's 15–35%; one scout costs 35 points
-  where about 10–15 would fit. Traced (forty-first round): the scouts are the fire's only eyes in the
-  assault. An overwatch and binoculars for command groups were tried and
-  withdrawn (forty-second round: they hand the defender more than the
-  attacker). Open with the author. **Next:** the Claude and Jev
-  comparison on the new rules (Haiku and Jev), and playing it in the browser.
+  40–55%, 2:1 20–35%). **The reference plans meet them** (balance.md,
+  *Forty-third round*): median 40% (3:1) and 21.5% (2:1), at the bottom of
+  each band; losses in the sources' range; the hasty attack (three scouts,
+  no fire first — no one sends a lone scout, author) wins 30%, inside
+  history's 15–35%. Tried and withdrawn: fire on the move, an overwatch and
+  binoculars for command groups (thirty-seventh and forty-second rounds).
+- **Next:** the scout question (`plan.scouts`) — Jev and every Claude model
+  chose one scout, which no one does — then the AI comparison on the new
+  rules (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):

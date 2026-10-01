@@ -3362,6 +3362,49 @@ gift — a second observer for the company that stays hidden (an observation
 post put out in planning, decision 38), or scouts that survive better — are
 for the author.
 
+## Forty-third round: the hasty attack redefined, and where the plans stand, 2026-10-01
+
+**No one sends a lone scout** (author, 2026-10-01). The hasty plan keeps the
+company's normal reconnaissance (three scouts) and gives up only the
+preparation: in as soon as the enemy is found, no fire first (`--rule
+rush`). The one-scout cost (forty-first and forty-second rounds) is no longer
+a reference plan's; the question still offers one scout, and it stays
+costly.
+
+| Hasty attack, decision 67 | 3:1 | 2:1 |
+|---|---|---|
+| One scout, no fire first (the old C) | 7% | 5% |
+| **Three scouts, no fire first (C)** | **30%** | 8% |
+| History (validation.md, *Hasty and deliberate attacks*) | 15–35% | — |
+
+The gap to the deliberate plan at 3:1 is 29 points (history: 20–35).
+
+The reference plans under decisions 67 and 68, 100 seeds a scenario from
+1000:
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| A. Calibrated | 59% | 24% |
+| A + flank | 47% | 26% |
+| E. Fire-heavy | 45% | 28% |
+| B. Deliberate | 42% | 41% |
+| D. Flank | 38% | 18% |
+| A + move up | 33% | 19% |
+| C. Hasty (three scouts) | 30% | 8% |
+| B + move up | 25% | 16% |
+| **Median** | **40%** | **21.5%** |
+| **Target (decision 68)** | **40–55%** | **20–35%** |
+
+**Both medians are inside the targets**, at the bottom of each band; losses
+are in the sources' range (fortieth round); the controls lose clearly. The
+balance the thirty-seventh round set out to check holds for reasonable plans,
+not one.
+
+**For the AI comparison:** Jev and all three Claude models chose one scout in
+nearly every battle (thirty-fifth and thirty-sixth rounds). If no commander
+would, the scout question (`plan.scouts`) is steering them; look at its
+wording with `jev-probe` before the next comparison.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
