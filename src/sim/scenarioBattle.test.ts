@@ -73,6 +73,17 @@ describe("the defending company's fire plan", () => {
     expect(open).not.toEqual(plan);
   });
 
+  it("counts men lost, prisoners and the fled with the fallen, at least as many as down", () => {
+    const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES };
+    for (const seed of [11, 12]) {
+      const r = runScenarioBattle(telAzekaAssaultListing, seed, opts);
+      for (const side of ["RED", "BLUE"] as const) {
+        expect(r.lost[side]).toBeGreaterThanOrEqual(r.down[side]);
+        expect(r.lost[side]).toBeLessThanOrEqual(r.men[side]);
+      }
+    }
+  });
+
   it("fires some of its missions on the plan, and none without one", () => {
     const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES };
     const withPlan = [11, 12, 13].map((s) => runScenarioBattle(telAzekaAssaultListing, s, opts));

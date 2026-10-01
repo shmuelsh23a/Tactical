@@ -140,6 +140,12 @@ export interface ScenarioBattleResult {
   turns: number;
   men: Record<Side, number>;
   down: Record<Side, number>;
+  /**
+   * Men out of the fight at the end: down, and the fit men of forces that
+   * surrendered or are routing — prisoners and the fled, which real loss
+   * figures for a lost position count (thirty-ninth round).
+   */
+  lost: Record<Side, number>;
   outBy: { smallArms: number; explosive: number };
   /** The turn the attacker's main body was let go, if it waited for its scouts. */
   released?: number;
@@ -279,6 +285,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     turns: 0,
     men,
     down: { RED: 0, BLUE: 0 },
+    lost: { RED: 0, BLUE: 0 },
     outBy: { smallArms: 0, explosive: 0 },
     downWhileWaiting: 0,
     missions: { RED: 0, BLUE: 0 },
@@ -339,7 +346,9 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= HOLDS_POST_M) result.retaken++;
   }
   for (const u of g.units) {
+    const gone = !!u.surrendered || !!u.routing;
     for (const s of u.soldiers ?? []) {
+      if (s.neutralized || gone || s.morale?.state === "broken") result.lost[u.side]++;
       if (!s.neutralized) continue;
       result.down[u.side]++;
       if (s.outBy) result.outBy[s.outBy]++;
