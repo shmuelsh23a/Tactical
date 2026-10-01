@@ -123,6 +123,8 @@ export interface ScenarioBattleOptions {
    * registers them on the open ground first instead (thirty-seventh round).
    */
   defenderFirePlan?: boolean | "open";
+  /** Fire on the move (`GameOptions.fireOnTheMove`), set on the scenario's game before the first turn. */
+  fireOnTheMove?: number;
   /**
    * Someone else commands the attacking company (Jev, or an agent standing in
    * for it, `tools/jev-sim.ts`): its scouts, their posts, where the rest wait,
@@ -187,6 +189,7 @@ const PLAN_SPREAD_M = 90;
 /** One battle of `listing`, on `seed`, to an end or to `maxTurns`. */
 export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: ScenarioBattleOptions): ScenarioBattleResult {
   const { game: g, mapWidth, mapHeight, reserves } = listing.build(seed);
+  if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;

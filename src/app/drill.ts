@@ -465,6 +465,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     const platoon = company?.platoonOf?.get(u.id);
     const job = (platoon && company?.platoonTasks?.get(platoon)) ?? "assault";
     const stay = () => game.setStandingOrder(u.id, { gait: "normal" });
+    let platoonBounds = false;
     if (company && job === "withdraw") {
       const home = company.fallBackTo;
       if (home && distance(u.position, home) > 20) {
@@ -490,14 +491,22 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         stay();
         return;
       }
-      // Bounding by platoon: one assaulting platoon moves while the others halt and fire.
-      if (company.boundByPlatoon && platoon && inContact) {
+      // Bounding by platoon: one assaulting platoon moves while the others halt
+      // and fire — only within the drill's fire range of a known enemy, where
+      // the halted ones can cover it (thirty-seventh round: from the first
+      // sighting anywhere it was waiting out of reach).
+      if (company.boundByPlatoon && platoon && nearest && distance(u.position, nearest.position) <= drill.attackFireRange) {
         const assaulting = [...new Set([...(company.platoonOf?.entries() ?? [])].map(([, k]) => k))]
           .filter((k) => (company.platoonTasks?.get(k) ?? "assault") === "assault")
           .sort();
-        if (assaulting.length > 1 && assaulting[game.turn % assaulting.length] !== platoon) {
-          stay();
-          return;
+        if (assaulting.length > 1) {
+          if (assaulting[game.turn % assaulting.length] !== platoon) {
+            stay();
+            return;
+          }
+          // The bounding platoon's squads go together: one level of bounding,
+          // not squads alternating inside a platoon that already alternates.
+          platoonBounds = true;
         }
       }
     }
@@ -505,7 +514,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       game.setStandingOrder(u.id, { gait: "normal" }); // close enough: hold, and assault in the fire phase
       return;
     }
-    const bounding = !inContact || !drill.overwatch || (i + game.turn) % 2 === 0;
+    const bounding = !inContact || !drill.overwatch || platoonBounds || (i + game.turn) % 2 === 0;
     if (!bounding) {
       game.setStandingOrder(u.id, { gait: "normal" });
       return;

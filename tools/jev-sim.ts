@@ -83,6 +83,10 @@ const decide = fromAnswers(answers);
 const defenderPlan = value("--defender-plan") ?? "dead";
 if (!["dead", "open", "none"].includes(defenderPlan)) throw new Error(`--defender-plan: "${defenderPlan}" is not one of dead, open, none`);
 const defenderFirePlan = defenderPlan === "none" ? false : defenderPlan === "open" ? ("open" as const) : true;
+// Fire on the move (`--fire-on-the-move 0.5`): a force that moved fires at that factor of its hit chance.
+const fireOnTheMove = value("--fire-on-the-move") === undefined ? undefined : Number(value("--fire-on-the-move"));
+if (fireOnTheMove !== undefined && !(fireOnTheMove > 0 && fireOnTheMove <= 1)) throw new Error("--fire-on-the-move: a factor in (0, 1]");
+const engine = { defenderFirePlan, ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}) };
 
 if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude")) {
   // A commander for each battle: a Claude model with a plan or a memory keeps state between questions.
@@ -144,6 +148,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   const out =
     value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
   if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
+  if (fireOnTheMove !== undefined) framing += `, fire on the move ×${fireOnTheMove}`;
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
@@ -157,7 +162,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     try {
       const c = commander();
       const { result, answers: given, log } = await playWithAsker(
-        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, defenderFirePlan, decide: d }),
+        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, ...engine, decide: d }),
         timed(c.ask),
       );
       const plan = c.plan?.();
@@ -192,7 +197,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
 }
 
 try {
-  const r = runScenarioBattle(listing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, defenderFirePlan, decide });
+  const r = runScenarioBattle(listing, seed, { drill, fire: DEFAULT_FIRE_CHOICES, ...engine, decide });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   console.log(
     `RESULT ${id} seed ${seed}: ${r.winner === attacker ? "the attack won" : r.winner === "draw" ? "a draw" : (r.outOfTime ? "the defence held: the attack ran out of time" : "the defence held")} ` +
