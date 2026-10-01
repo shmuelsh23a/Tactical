@@ -3296,9 +3296,37 @@ gap to a deliberate one should be about **20–35 points**, not 52.
 - **The two compound** (each costs about 30, together 52); the sources
   suggest less than additive.
 
-**Next:** trace what one scout costs beyond the seven minutes — fewer
-positions found, so the fire and the assault meet squads nobody saw, or the
-time — before anything is changed.
+### What one scout costs: traced
+
+Replaying the 100 battles of each (`onTurn` hook), at the moment the company
+goes in and after:
+
+| 3:1 | Three scouts | One scout |
+|---|---|---|
+| Enemy squads known on going in (of 3) | 1.5 | 1.3 |
+| Enemy men down by then | 0.6 | 0.4 |
+| Scouts still alive on going in | **2.8** | **0.8** |
+| Missions fired after going in | 8.3 | 7.5 |
+| Enemy men down at the end | 7.8 | 5.6 |
+| Wins | 59% | 24% |
+
+- **The finding is not the cost**: on going in the company knows about as
+  much either way, and its fire has done as little.
+- **The scouts are the fire's only eyes during the assault**, when most of it
+  is fired. Moving squads cannot find a still, dug-in enemy (decision 53),
+  and the company command group walks 80 m behind its squads and never
+  stops to look. With one scout gone before the company went in (22 of
+  100), the attack won none; with it alive, one viewpoint wins 31% against
+  three's 62%.
+- **Time is mostly a confound**: battles where the enemy is found late are
+  ones where the plan's estimate was far off, which are harder anyway.
+
+A real company's fire is directed by its commander's observer from
+overwatch, not by its scouts alone. Proposed (for the author): the drill
+halts the company command group in overwatch once the company goes in
+(ours), and command groups carry binoculars (a rule; decision 53 gives them
+to scouting squads only) — or an observation post may be set up during the
+battle (a rule; decision 38 allows it only in planning).
 
 ## How the engine scales, 2026-09-23
 
