@@ -2646,7 +2646,7 @@ The attack's wins, 3:1 (`telAzekaAssault`), same 20 seeds (±11 points):
 | … mortars held until the company goes | 40% |
 | … fire on the first mark offered, sure or not | 65% |
 | … bound by platoon (`go.bound`) | 20% |
-| … hold short under the fires (`go.lift`) | 10% |
+| … hold short under the fires (`go.lift`) | ~~10%~~ **65%** (corrected in the thirty-seventh round: rerun at this round's own commit; the 10% does not reproduce) |
 | … one scout, not three | 40% |
 | … in as soon as the enemy is found (no four turns of shelling first) | 55% |
 | … Jev's choices together: one scout, in at once, bound, hold short | 30–40% |
@@ -2712,6 +2712,13 @@ most attacks it should win.
    recorded questions first (`jev-probe`). Steering Jev off bounding or
    holding short by rewording would hide the question above, so it has not
    been done.
+
+> **Correction (thirty-seventh round).** Holding short costs the rule about
+> 6 points at 3:1 (57% over 100 seeds), not the 50 the table above says; the
+> 10% does not reproduce at this round's own commit. Bounding by platoon is
+> the costly choice, and it was a drill artefact (thirty-seventh round). The
+> text above and the thirty-fifth and thirty-sixth rounds' readings of
+> "holding short" are wrong where they lean on the 10%.
 
 ## Thirty-fifth round: Claude models in Jev's place, 2026-09-30
 
@@ -2918,6 +2925,150 @@ where it was. But the choices moved, and the reasons say why.
    holding short cost this much?) matters less than it seemed — commanders
    drop both once told the time, and still lose. The costly choice is when the
    company goes, and the game gives no way to go part of the way.
+
+## Thirty-seventh round: reasonable plans, not one plan, 2026-10-01
+
+Back to the balance itself. The targets (3:1 on a prepared platoon 55–70%,
+2:1 30–45%; validation.md, *What an attack at 3:1 should win*) were met in
+the thirty-first round with **one** commander, and every other commander
+since — Jev, three Claude models, the rule with one choice changed — lands far
+under them. The author's guideline for judging results: **close to real life
+in the outcomes**. So the measure here is a set of reasonable plans, not the
+calibrated one, and a check that tactics move the result about as much as
+they do in real attacks: Rowland's small-unit data has 3:1 winning 54%
+without surprise and 76% with it — tactics worth some 20 points, not 50.
+
+Everything here is the rule (`npm run jev-sim -- --rule <choices>`): no
+model, no tokens, 100 seeds a scenario from 1000.
+
+### The plans (author, 2026-10-01)
+
+| Plan | `--rule` | Scouts | Goes | Platoons | Bound | Hold short |
+|---|---|---|---|---|---|---|
+| A. Calibrated | — | 3 | 4 turns with the enemy in sight | all assault | no | no |
+| A + move up | `moveup` | 3 | moves up to an assault position first | all assault | no | no |
+| B. Deliberate | `basefire,bound,holdshort` | 3 | as A | 1 base of fire, 2 assault | yes | yes |
+| B + move up | `…,moveup` | 3 | as A + move up | as B | yes | yes |
+| C. Hasty | `onescout,rush` | 1 | as soon as the enemy is found | all assault | no | no |
+| D. Flank | `basefire,holdshort,flank` | 3 | as A, by a scout's observation point | 1 base of fire, 2 assault | no | yes |
+| E. Fire-heavy | `holdshort,prep` | 3 | once most missions are fired (by turn 30) | all assault | no | yes |
+| Control: blind | `blind` | 3 | turn 5, found or not | all assault | no | no |
+| Control: no scouts | `noscout` | 0 | at once | all assault | no | no |
+
+New for this round: a go answer that moves the company up to an assault
+position (the last dead ground about 250 m short of where the plan puts the
+enemy, `company.ts`, `moveUp`; question set `2026-09-30.4`); `basefire`,
+`flank`, `prep`, `noscout`; `--defender-plan` (where the defender registers
+its mortars); `--fire-on-the-move`.
+
+### The defender's mortar plan is not the cause
+
+The scripted defender registers its mortars on the dead ground in front of
+it (a harness policy, ours). Moving them to the open ground first, or
+registering none, moves the plans by under 10 points (3:1, the calibrated
+plan 63% / 63% / 71%; every other plan alike; 2:1 within 4 points). It
+stays as it is: real defenders plot fires on dead ground and likely assault
+positions.
+
+### Bounding was a drill artefact
+
+Bounding by platoon took 3:1 from 63% to 16% (2:1 unchanged). Three things
+in the drill and the engine made it so:
+
+1. **Two layers of bounding.** Inside a moving platoon the squads already
+   alternate (`overwatch`); bounding by platoon stopped two platoons of
+   three on top of that. A squad moved one turn in six in contact — about
+   **8 m a minute**, against the sources' **15–30 m a minute** for an
+   advance under fire (validation.md, *Infantry pace under fire*), which
+   already include fire and movement. Squad alternation alone gives about 25.
+2. **From the first sighting anywhere.** The drill counted the company in
+   contact as soon as the side knew of any enemy — a scout's mark 500 m off —
+   so platoons halted to "cover" beyond their own 400 m reach.
+3. **A halted platoon covered no better than a moving one.** The engine gave
+   a force that moved no penalty to its own fire.
+
+**Changed (the drill, ours):** a platoon bounds only within the drill's fire
+range (400 m) of a known enemy, and the bounding platoon's squads go
+together. **Offered (a rule, off):** `GameOptions.fireOnTheMove`, a factor
+on a moving force's small-arms hit chance (the sources give no direct figure:
+kneeling hits about 0.68 as often as prone at 300 m, and marching fire is
+unaimed; the factor is ours).
+
+| Plan | 3:1 before → after the drill change | 2:1 before → after |
+|---|---|---|
+| Bound | 16% → **48%** | 38% → 35% |
+| Bound, hold short | 16% → 44% | 35% → 23% |
+| B. Deliberate | 29% → **50%** (out of time 56 → 6) | 44% → 44% |
+| B + move up | 11% → 16% | 21% → 21% |
+
+Fire on the move at ×0.5 moves little (calibrated 63% → 57%, bound 48% →
+51%, deliberate 50% → 46%, the rest within a few points): against men dug
+in with overhead cover, rifle fire works by suppression, and a burst
+suppresses whether it hits or not. **It is not recommended**: it changes
+nothing the plans need.
+
+### Moving up is where the attack is lost
+
+Moving up to an assault position takes the calibrated plan from 63% to
+**10%** (2:1 34% → 15%), and the company loses **10.4 men** before it goes
+in (0.8 without). Traced over 20 battles at 3:1: 132 men lost while moving
+up and holding there, to rifle fire (42), mortars (31), both (21) and
+unattributed (38); the defender saw the company in 18 of 20 battles, a
+median 5 turns after the move began, and the median range from the nearest
+defending squad when a man fell was **254 m** — inside rifle range. The
+"dead ground" is chosen against where the plan puts the enemy, which is off
+by an observer's error, and the move is made at the first chance, before the
+scouts have found anything. A real assault position is chosen after the enemy
+is found, against what was found.
+
+### Where the plans stand
+
+After the drill change, fire on the move off:
+
+| Plan | 3:1 | 2:1 | Attacker down (3:1) | Defence down (3:1) |
+|---|---|---|---|---|
+| A. Calibrated | 63% | 34% | 14% | 25% |
+| B. Deliberate | 50% | 44% | 16% | 23% |
+| E. Fire-heavy | 47% | 33% | 18% | 23% |
+| C. Hasty | 19% | 5% | 22% | 19% |
+| D. Flank | 11% | 6% | 21% | 14% |
+| A + move up | 10% | 15% | 22% | 15% |
+| B + move up | 16% | 21% | 22% | 14% |
+| Control: blind | 18% | 4% | 23% | 15% |
+| Control: no scouts | 1% | 0% | 23% | 13% |
+
+Against the criteria (author, 2026-10-01):
+
+- **The median reasonable plan** (A–E): 3:1 **47%**, 2:1 **33%** — just under
+  the 3:1 band, inside the 2:1 one.
+- **The floor is not met.** Three plans sit far under it, and each for a
+  reason in the harness, not the rules:
+  - *Moving up* — the assault position above.
+  - *Flank* — "by a scout's observation point" sends the company to the
+    observation point, which is back near the start line (the
+    observation points are 350–550 m out by construction), so the "flank"
+    is a long detour, not an approach on the enemy's side.
+  - *Hasty* — one scout and no shelling before going in. Real hasty attacks
+    on a prepared position do worse than deliberate ones; whether by 44
+    points (63% → 19%) is the open question.
+- **The controls lose clearly** (1–18% at 3:1, 0–5% at 2:1), as they
+  should.
+- **Losses**: attackers lose 14–23% of their men on average and defenders
+  13–25%. Whether a failed attack's exchange (the attacker down 22–23%, the
+  defence 13–15%) is what real failed attacks cost is not yet checked
+  against a source (next, 4).
+
+### Next
+
+1. **The assault position chosen against what the scouts found**, and only
+   once they have found it: then rerun A + move up and B + move up.
+2. **A flank that approaches the enemy's side**: an axis point beside the
+   objective (off the line of attack, in dead ground), not the scouts'
+   observation point.
+3. Then the hasty attack's gap, with the mechanism traced as above.
+4. A research pass on loss exchange in failed attacks (the one outcome the
+   sources here do not cover).
+
 
 ## How the engine scales, 2026-09-23
 

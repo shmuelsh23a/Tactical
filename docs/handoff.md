@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-30, after the Claude comparison (balance.md, thirty-fifth and thirty-sixth rounds) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after the reference plans (balance.md, thirty-seventh round), the Claude comparison (thirty-fifth and thirty-sixth) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 797 tests, 46 files
+npm run check       lint + typecheck clean, 801 tests, 47 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -112,11 +112,29 @@ else about them. In short:
   plans they write (move up under cover to an assault position, find and
   shell the enemy, then go) **cannot be played**: "send the company in"
   commits it to the attack, and there is no step to move up and hold.
-- **Next: a move to an assault position.** A go option that moves the company
-  up to dead ground or a named point short of the enemy and holds it there
-  until a second question sends it in. A question-set and drill change (bump
-  `QUESTION_SET_VERSION`); then measure the rule, Jev and Opus again, 20
-  seeds each.
+- **Back to the balance** (balance.md, *Thirty-seventh round*, 2026-10-01).
+  The author's guideline: results are judged by **closeness to real-life
+  outcomes**, and balance means **reasonable plans**, not the calibrated one,
+  land in the targets, with tactics worth about the 20 points the sources
+  show. A set of reference plans (A calibrated, B deliberate, C hasty,
+  D flank, E fire-heavy, each with and without moving up to an assault
+  position, and two controls) is measured by `--rule`, 100 seeds, no tokens.
+  Found: the defender's mortar plan is not the cause; **bounding was a drill
+  artefact** (two layers of it and from the first sighting: 8 m a minute
+  against the sources' 15–30), fixed in the drill — deliberate attack 29% →
+  50% at 3:1; **holding short costs about 6 points, not 50** (round 34's
+  10% does not reproduce; corrected there). Fire on the move
+  (`GameOptions.fireOnTheMove`) is offered, off, and not recommended. The
+  median reasonable plan is 47% (3:1) and 33% (2:1); the floor fails on
+  three plans, each for a harness reason: the **assault position** is chosen
+  against the plan's estimate before the enemy is found (seen in 18 of 20,
+  men lost at 254 m), the **flank** goes by the scouts' observation point
+  (a detour), and the **hasty** attack's gap (19%) is untraced.
+- **Next:** the assault position chosen against what the scouts found, once
+  they have found it; a flank that approaches the enemy's side; then trace
+  the hasty attack; a research pass on loss exchange in failed attacks.
+  The Claude and Jev comparison waits for this (cheaper models only: Haiku
+  and Jev; Sonnet answers as Opus does).
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):
@@ -148,7 +166,7 @@ twenty-second to thirty-third rounds; validation.md):
 
 **Open, in rough order:**
 
-1. **Jev** (above).
+1. **The balance by reference plans** (above), then **Jev** with Haiku beside it.
 2. **Play the new rules in the browser as a player.** Suppression, heads
    down, danger close, the nerve test under assault and the counterattack
    have only been played by scripts. The live game plays no drill for a
