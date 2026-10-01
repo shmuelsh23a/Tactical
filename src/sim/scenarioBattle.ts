@@ -125,6 +125,8 @@ export interface ScenarioBattleOptions {
   defenderFirePlan?: boolean | "open";
   /** Fire on the move (`GameOptions.fireOnTheMove`), set on the scenario's game before the first turn. */
   fireOnTheMove?: number;
+  /** The attacker's breakpoint (`GameOptions.attackerBreakpoint`), set on the scenario's game before the first turn. */
+  attackerBreakpoint?: number;
   /**
    * Someone else commands the attacking company (Jev, or an agent standing in
    * for it, `tools/jev-sim.ts`): its scouts, their posts, where the rest wait,
@@ -196,6 +198,7 @@ const PLAN_SPREAD_M = 90;
 export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: ScenarioBattleOptions): ScenarioBattleResult {
   const { game: g, mapWidth, mapHeight, reserves } = listing.build(seed);
   if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
+  if (opts.attackerBreakpoint !== undefined) g.attackerBreakpoint = opts.attackerBreakpoint;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;

@@ -583,7 +583,8 @@ export class Game {
   fireOnTheMove: number;
   readonly nerveByCover: boolean;
   readonly nerveInOpen: number;
-  readonly attackerBreakpoint: number;
+  /** See {@link GameOptions.attackerBreakpoint}. Set it before the first turn only: a recording keeps one value. */
+  attackerBreakpoint: number;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */

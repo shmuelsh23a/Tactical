@@ -86,7 +86,14 @@ const defenderFirePlan = defenderPlan === "none" ? false : defenderPlan === "ope
 // Fire on the move (`--fire-on-the-move 0.5`): a force that moved fires at that factor of its hit chance.
 const fireOnTheMove = value("--fire-on-the-move") === undefined ? undefined : Number(value("--fire-on-the-move"));
 if (fireOnTheMove !== undefined && !(fireOnTheMove > 0 && fireOnTheMove <= 1)) throw new Error("--fire-on-the-move: a factor in (0, 1]");
-const engine = { defenderFirePlan, ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}) };
+// The attacker's breakpoint (`--attacker-breakpoint 0.3`): the share of its men down, broken or fled at which the attack is called off.
+const attackerBreakpoint = value("--attacker-breakpoint") === undefined ? undefined : Number(value("--attacker-breakpoint"));
+if (attackerBreakpoint !== undefined && !(attackerBreakpoint > 0 && attackerBreakpoint < 1)) throw new Error("--attacker-breakpoint: a share in (0, 1)");
+const engine = {
+  defenderFirePlan,
+  ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}),
+  ...(attackerBreakpoint !== undefined ? { attackerBreakpoint } : {}),
+};
 
 if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude")) {
   // A commander for each battle: a Claude model with a plan or a memory keeps state between questions.
@@ -149,6 +156,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
   if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
   if (fireOnTheMove !== undefined) framing += `, fire on the move ×${fireOnTheMove}`;
+  if (attackerBreakpoint !== undefined) framing += `, attacker breaks at ${Math.round(attackerBreakpoint * 100)}%`;
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
