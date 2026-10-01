@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-30, after rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider waiting on an API key (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after the reference plans and loss exchange (balance.md, thirty-seventh to fortieth rounds), the Claude comparison (thirty-fifth and thirty-sixth) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 788 tests, 45 files
+npm run check       lint + typecheck clean, 803 tests, 47 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -66,22 +66,108 @@ here from AGENTS.md alone.
 **Everything is merged to `main`** (the 2026-09-30 PR). Rules decisions
 60–66 are built, and the balance is inside the author's targets on the tel.
 
-**First thing in the new session: Jev.** The author has a TypeSafe API key.
-The decider is built and tested against stand-ins (`src/sim/jev.ts`,
-README backlog 15), but has never talked to Jev:
+**Jev and three Claude models have played** (2026-09-30, branch
+`claude/jev-api-key-check-zsfa16`, not merged yet): `TYPESAFE_API_KEY` is set
+and `api.typesafe.ai` allowed in the cloud environment. Read balance.md,
+*Thirty-fourth round* (Jev) and the *thirty-fifth* and *thirty-sixth* (Claude) before anything
+else about them. In short:
 
-1. The author sets **`TYPESAFE_API_KEY`** as an environment variable in the
-   cloud environment's settings (never pasted into a chat) and allows the
-   host **`api.typesafe.ai`** under Network access. A new session picks both
-   up. Check with `echo ${TYPESAFE_API_KEY:+set}` and
-   `curl -sS -o /dev/null -w "%{http_code}" https://api.typesafe.ai/`
-   (403 "Host not in allowlist" means the host is still blocked).
-2. Run `npm run jev-sim -- --jev --seed 1000 --n 10` (answers and logs go to
-   `jev-runs/`, ignored). Compare Jev's company with the scripted one on the
-   same seeds: the standard measurement (balance.md, *Thirty-first round*)
-   gives the scripted commander 3:1 **58%**, 2:1 **38%**.
-3. Look at the logs: which questions Jev is least sure of (`confidence`),
-   and whether any answer is one a company commander would not give.
+- **Working with Jev**: it is steady, judges rather than plans, and leans to
+  an option whose words the state repeats. The question set now frames each
+  question with the commander's role and mission (`MISSION`, naming no
+  option — tested), words each option by what it does to the attack, and
+  tells it what the company has been ordered. Change a question's wording
+  only after `npm run jev-probe` shows what it does on Jev's own recorded
+  questions, and bump `QUESTION_SET_VERSION` (now `2026-09-30.3`).
+- **Balance with Jev**: 3:1 **10%**, 2:1 **15%** (20 seeds each) against the
+  scripted commander's 65% and 25% on the same seeds. The questions are not
+  the gap — `jev-sim --rule` answers them as the scripted commander decides
+  and wins 63% and 34% over 100 seeds; given Jev's four plan choices, 23% and
+  14% — Jev's choices are: it bounds by platoon and holds short
+  under its fires, textbook both, and each costs the attack about as much as
+  a platoon never committed. **Waiting on the author**: should they (drill
+  mechanics, ours), and are the targets meant to hold for Jev too?
+- **Claude in Jev's place** (balance.md, *Thirty-fifth round*):
+  `jev-sim --claude <model>` (`src/sim/claude.ts`) answers the same questions
+  through the Anthropic API. **The key goes in as `JEV_ANTHROPIC_API_KEY`**
+  (the cloud session keeps `ANTHROPIC_API_KEY` for Claude Code itself).
+  20 seeds a scenario from 1000, 3:1 / 2:1: `claude-haiku-4-5` **20% / 0%**,
+  `claude-sonnet-5-5` **5% / 0%**, `claude-opus-5-5` **5% / 5%**, beside Jev
+  10% / 15% and the rule 63% / 34%. A model that reasons does not beat one
+  that judges, and the small one does best, because it waits for the enemy
+  to be found. Sonnet and Opus go in at turn 5, the enemy not found, in
+  every battle ("waiting wastes time" against the deadline), and hoard their
+  mortars for an approach they never reach. All three send one scout and
+  bound by platoon; Haiku and Opus hold short (Opus then won't lift the
+  fires until the company has massed).
+- **An order, a plan and a memory** (balance.md, *Thirty-sixth round*):
+  `--order` gives the OPORD from battalion (`src/sim/opord.ts`, ours: the
+  author's to check), `--plan` a plan the model writes before the first
+  question, `--memory` its decisions so far. **No commander wins more**
+  (0–15% everywhere). Told how long closing under fire takes, Opus and Sonnet
+  stop bounding and Jev stops holding short, so those two textbook costs
+  were not what held the wins down. The costly choice is going in blind:
+  `--rule blind` (the rule sent in at turn 5) wins **18% / 4%** against 63% /
+  34%. The order's time line pushes every commander to go sooner, and the
+  plans they write (move up under cover to an assault position, find and
+  shell the enemy, then go) **cannot be played**: "send the company in"
+  commits it to the attack, and there is no step to move up and hold.
+- **Back to the balance** (balance.md, *Thirty-seventh round*, 2026-10-01).
+  The author's guideline: results are judged by **closeness to real-life
+  outcomes**, and balance means **reasonable plans**, not the calibrated one,
+  land in the targets, with tactics worth about the 20 points the sources
+  show. A set of reference plans (A calibrated, B deliberate, C hasty,
+  D flank, E fire-heavy, each with and without moving up to an assault
+  position, and two controls) is measured by `--rule`, 100 seeds, no tokens.
+  Found: the defender's mortar plan is not the cause; **bounding was a drill
+  artefact** (two layers of it and from the first sighting: 8 m a minute
+  against the sources' 15–30), fixed in the drill — deliberate attack 29% →
+  50% at 3:1; **holding short costs about 6 points, not 50** (round 34's
+  10% does not reproduce; corrected there). Fire on the move
+  (`GameOptions.fireOnTheMove`) is offered, off, and not recommended. The
+  median reasonable plan is 47% (3:1) and 33% (2:1); the floor fails on
+  three plans, each for a harness reason: the **assault position** is chosen
+  against the plan's estimate before the enemy is found (seen in 18 of 20,
+  men lost at 254 m), the **flank** goes by the scouts' observation point
+  (a detour), and the **hasty** attack's gap (19%) is untraced.
+- **The assault position and the flank** (balance.md, *Thirty-eighth
+  round*): moving up now chooses ground against what the scouts found (A +
+  move up 10% → 37% at 3:1), and a flank option goes in on the enemy's side
+  (flank plan 11% → 42%). The reasonable plans' median is **45% (3:1)** and
+  **30% (2:1)**; the spread is about 30 points, the hasty attack (19%) aside.
+- **The hasty attack and what attacks cost** (balance.md, *Thirty-ninth
+  round*; validation.md, *Loss exchange in attacks*): the hasty attack is two
+  ordinary costs (one scout finds the enemy 7 turns later, −33; no fire
+  before going in, −20). Against the sources, a **won** attack costs what
+  history says (attacker 8–14%, defender ~50%, mostly prisoners and the
+  fled); a **failed** one goes on too long (attacker 35–41% lost, sources
+  10–25%), because the attacker's breakpoint is 40% (decision 66).
+- **The breakpoint at 30%** (balance.md, *Fortieth round*): losses in failed
+  attacks come into the sources' range (attacker killed and wounded 16–22%,
+  against 19–28% at 40%; round 39's "twice" was a counting error, corrected);
+  the reasonable plans' median falls to **40% (3:1)** and **21.5% (2:1)**.
+- **Decisions 67 and 68** (author, 2026-10-01): the attacker's breakpoint
+  is 30% again, and the win targets are set for small-unit attacks (3:1
+  40–55%, 2:1 20–35%). **The reference plans meet them** (balance.md,
+  *Forty-third round*): median 40% (3:1) and 21.5% (2:1), at the bottom of
+  each band; losses in the sources' range; the hasty attack (three scouts,
+  no fire first — no one sends a lone scout, author) wins 30%, inside
+  history's 15–35%. Tried and withdrawn: fire on the move, an overwatch and
+  binoculars for command groups (thirty-seventh and forty-second rounds).
+- **The scout question** (balance.md, *Forty-fourth round*): reworded with
+  what scouts do (question set `2026-10-01.3`); Jev now sends three, Haiku
+  two. **Two scouts win 18% at 3:1** (three 59%, one 24%): traced to the
+  western platoon's approach, where the attack is lost piecemeal — the third
+  scout wins by keeping a squad off it. The drill sends squads straight at
+  the enemy by no covered route. **Done** (balance.md, *Forty-fifth round*): the
+  drill now steps by covered ground and brings platoons in together; scouts
+  count in order (one 28%, two 35%, three 57%); the reference plans' median
+  42% (3:1) and 24% (2:1), inside the targets. The hasty attack rose to 45%
+  (history 15–35%), the flank fell to 25%: open with the author. The AI
+  comparison on these rules (forty-sixth round): Jev 15% / 5%, Haiku 5% /
+  5% — mostly their plans (the hasty attack with bounding; the flank and
+  moving up), and Haiku moves up before the enemy is found. Next: playing it
+  in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):
@@ -95,8 +181,11 @@ twenty-second to thirty-third rounds; validation.md):
   defender assaulted tests its nerve (surrender or rout on a roll). **64**
   nerve lost to fire by cover (open ×1 since 66, partial ×1, hole ×0.3, roof
   ×0.15). **65** a pinned force fires to 400 m at half its chance beyond
-  100 m. **66** the targets — 3:1 on a prepared position **55–70%**, 2:1
-  **30–45%** — nerve in the open ×1, an attacker's breakpoint 40%.
+  100 m. **66** nerve in the open ×1 (and division-level targets, 55–70% and
+  30–45%). **67** an attacker's breakpoint at 30% again. **68** the targets
+  for small-unit attacks — 3:1 on a prepared position **40–55%** (70–75%
+  with surprise or strong suppression), 2:1 **20–35%** — judged on
+  reasonable plans and on losses.
 - **75% of losses by explosives is for real ground** (author): the tel meets
   it (73–77%); the flat harness gives about 51% and is not held to it.
 - **Harness policies (ours, not rules):** the scripted defender registers its
@@ -108,12 +197,13 @@ twenty-second to thirty-third rounds; validation.md):
   scout from each attacking platoon); `--classic` gives the old harness.
 - **The standard measurement:**
   `npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground --n 200 --target-first squads`
-  — 3:1 58%, 2:1 38%, the reserve counterattacking in about one battle in
-  seven.
+  — since decision 67 (the attacker's breakpoint at 30%): 3:1 **49%**, 2:1
+  **27%** (58% and 38% at 40%), explosives 72–75%, the reserve
+  counterattacking in about one battle in seven.
 
 **Open, in rough order:**
 
-1. **Jev** (above).
+1. **The balance by reference plans** (above), then **Jev** with Haiku beside it.
 2. **Play the new rules in the browser as a player.** Suppression, heads
    down, danger close, the nerve test under assault and the counterattack
    have only been played by scripts. The live game plays no drill for a

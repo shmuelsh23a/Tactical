@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, planDefenderFires, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import type { Question } from "./companyQuestions.js";
 import { isDeadGround } from "../app/deadGround.js";
 import { EYE_HEIGHT, distance } from "../engine/index.js";
 
@@ -64,6 +65,25 @@ describe("the defending company's fire plan", () => {
     expect(distance(plan[0]!, centre)).toBeLessThan(distance(plan.at(-1)!, centre));
   });
 
+  it("registers on open ground first when told to", () => {
+    const open = planDefenderFires(game, "RED", attackFrom, mapWidth, mapHeight, "open");
+    const query = { terrain: game.terrain!, watchers: own.map((u) => u.position), watcherEye: EYE_HEIGHT.fullCover, reach: Infinity };
+    expect(open).toHaveLength(6);
+    expect(open.filter((p) => !isDeadGround(query, p)).length).toBeGreaterThan(open.filter((p) => isDeadGround(query, p)).length);
+    expect(open).not.toEqual(plan);
+  });
+
+  it("counts men lost, prisoners and the fled with the fallen, at least as many as down", () => {
+    const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES };
+    for (const seed of [11, 12]) {
+      const r = runScenarioBattle(telAzekaAssaultListing, seed, opts);
+      for (const side of ["RED", "BLUE"] as const) {
+        expect(r.lost[side]).toBeGreaterThanOrEqual(r.down[side]);
+        expect(r.lost[side]).toBeLessThanOrEqual(r.men[side]);
+      }
+    }
+  });
+
   it("fires some of its missions on the plan, and none without one", () => {
     const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES };
     const withPlan = [11, 12, 13].map((s) => runScenarioBattle(telAzekaAssaultListing, s, opts));
@@ -72,4 +92,56 @@ describe("the defending company's fire plan", () => {
     const without = runScenarioBattle(telAzekaAssaultListing, 11, { ...opts, defenderFirePlan: false });
     expect(without.defenderPlanned).toBe(0);
   });
+});
+
+describe("moving up to an assault position", () => {
+  it("is offered while the company holds, moves it nearer the enemy, and the picture says so", () => {
+    const asked: Question[] = [];
+    const decide = (q: Question): string => {
+      asked.push(q);
+      if (q.id === "plan.scouts") return "3";
+      if (q.id === "plan.wait") return "deadGround";
+      if (/^go\.\d/.test(q.id)) return q.options.some((o) => o.id === "up") ? "up" : q.turn >= 15 ? "yes" : "no";
+      return q.options[0]!.id;
+    };
+    const opts = { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES, decide };
+    const r = runScenarioBattle(telAzekaAssaultListing, 1000, opts);
+    const gos = asked.filter((q) => /^go\.\d/.test(q.id));
+    // The first is a choice of three; once moved up, a yes or no.
+    expect(gos[0]!.kind).toBe("choice");
+    expect(gos[0]!.options.map((o) => o.id)).toEqual(["yes", "up", "no"]);
+    expect(gos[1]!.kind).toBe("noul");
+    expect(gos[1]!.options.map((o) => o.id)).toEqual(["yes", "no"]);
+    expect(gos[1]!.view).toContain("moved up to its assault position");
+    expect(r.released).toBeGreaterThanOrEqual(15);
+  }, 60_000);
+});
+
+describe("going round a flank", () => {
+  it("offers a flank whose point is beside the enemy, off the line of attack", () => {
+    let axis: Question | undefined;
+    const decide = (q: Question): string => {
+      if (q.id === "plan.scouts") return "3";
+      if (q.id === "plan.wait") return "deadGround";
+      if (/^go\.\d/.test(q.id)) return q.turn >= 10 ? "yes" : "no";
+      if (q.id.startsWith("go.axis")) {
+        axis = q;
+        return q.options.find((o) => o.id.startsWith("flank:"))?.id ?? "straight";
+      }
+      return q.options[0]!.id;
+    };
+    runScenarioBattle(telAzekaAssaultListing, 1000, { drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } }, fire: DEFAULT_FIRE_CHOICES, decide });
+    const flank = axis!.options.find((o) => o.id.startsWith("flank:"))!;
+    expect(flank.label).toMatch(/^round the (west|east) flank: by covered ground at \(\d+, \d+\)/);
+    const [x, y] = /\((\d+), (\d+)\)/.exec(flank.label)!.slice(1).map(Number) as [number, number];
+    // The start line is south of the shoulder (y grows southward): a flank is well to one side of the line between them.
+    const { game } = telAzekaAssaultListing.build(1000);
+    const blue = game.units.filter((u) => u.side === "BLUE" && u.kind === "infantry");
+    const red = game.units.filter((u) => u.side === "RED" && u.kind === "infantry");
+    const home = { x: blue.reduce((t, u) => t + u.position.x, 0) / blue.length, y: blue.reduce((t, u) => t + u.position.y, 0) / blue.length };
+    const enemy = { x: red.reduce((t, u) => t + u.position.x, 0) / red.length, y: red.reduce((t, u) => t + u.position.y, 0) / red.length };
+    const len = distance(home, enemy);
+    const off = Math.abs((x - enemy.x) * (home.y - enemy.y) - (y - enemy.y) * (home.x - enemy.x)) / len;
+    expect(off).toBeGreaterThan(100);
+  }, 60_000);
 });

@@ -2589,6 +2589,985 @@ difference.
   (`validation.ts`), so validation.md's figures stay comparable until it is
   rerun.
 
+## Thirty-fourth round: Jev commands the company, 2026-09-30
+
+The first battles with Jev itself (`jev-1.13.0`, TypeSafe) in the attacking
+company commander's chair (`npm run jev-sim -- --jev`), on the tel, seeds
+from 1000. What was learned about working with Jev comes first, because
+the wins depend on it more than on anything in the rules.
+
+### How Jev answers
+
+`npm run jev-probe` re-asks the questions of battles already played
+(recovered by replay, so Jev sees exactly the picture it saw) in other
+framings and prints how the answers move.
+
+- **It is steady.** The same question asked again gets the same answer
+  almost every time (a few in thirty move on a choice near even odds).
+  `jev-preview` answers like `jev-latest`. Calls take about 150 ms.
+- **It judges; it does not plan.** It weighs the state against the options'
+  words. It never weighs a scarce resource (it fired all twelve mortar
+  missions as fast as it was allowed) or a clock it is not told about.
+- **It leans to an option whose words the state repeats.** Principles in
+  the state saying "a reserve exists to be committed" made it pick
+  "reserve" more often, not less; "keep the company out of sight while it
+  waits" made it answer "no" to going in 178 times out of 197 once the enemy
+  was found. The mission text it is given (`MISSION`, `src/sim/jev.ts`)
+  therefore names no option, and a test holds it to that.
+- **Option labels move it most.** "reserve: stay back where it waited,
+  ready to be committed" read as the safe choice: it held two platoons of
+  three back and never committed them (105 of 118 "carry on"). Labels that
+  say what each option does to the attack ("assault the position: close
+  with the enemy and take the objective"; "reserve: … out of the fight until
+  you commit it later") turned that round (assault 27 of 30).
+- **It needs to be told what a commander would know**: the picture now
+  says whether the company has gone in and each platoon's task. And it does
+  what a label says: offered "hold fire: save the mission for when your
+  assault is closing on the enemy" before the company went, it held every
+  mission until then (24 of 25) — which costs the attack 30 points (below),
+  so the hold option is bare again.
+- **A "no" must not say something false.** With its scouts all lost, "no:
+  keep holding while the scouts look" kept the company on the start line
+  (124 of 126); the label now says there are no scouts left to look.
+
+### What the questions can reach without Jev
+
+`npm run jev-sim -- --rule` answers the questions by rule, as the scripted
+commander of the standard measurement (thirty-first round) decides: three
+scouts, wait in dead ground, go after four turns with the enemy in sight,
+every platoon assaulting, mortars on what the scouts hold in sight, sure
+to 40 m, squads first. `--rule a,b` changes one choice at a time to Jev's.
+The attack's wins, 3:1 (`telAzekaAssault`), same 20 seeds (±11 points):
+
+| Commander | 3:1 wins |
+|---|---|
+| Scripted (the standard measurement, no questions) | 65% |
+| Rule through the questions | **70%** |
+| … mortars held until the company goes | 40% |
+| … fire on the first mark offered, sure or not | 65% |
+| … bound by platoon (`go.bound`) | 20% |
+| … hold short under the fires (`go.lift`) | ~~10%~~ **65%** (corrected in the thirty-seventh round: rerun at this round's own commit; the 10% does not reproduce) |
+| … one scout, not three | 40% |
+| … in as soon as the enemy is found (no four turns of shelling first) | 55% |
+| … Jev's choices together: one scout, in at once, bound, hold short | 30–40% |
+
+And over 100 seeds a scenario from 1000 (±5 points):
+
+| Commander | 3:1 wins | 2:1 wins |
+|---|---|---|
+| Rule through the questions | **63%** | **34%** |
+| Rule with Jev's four choices (one scout, in at once, bound, hold short) | **23%** | **14%** |
+| Jev itself (20 seeds, below) | 10% | 15% |
+
+The rule lands inside the targets (55–70%, 30–45%) as the scripted
+commander does; with Jev's four plan choices it falls to where Jev is.
+
+So the questions are not the gap: answered as the scripted commander
+decides, they win what it wins. What costs are **choices** — four of them
+account for most of the distance to Jev, and the
+largest are ones a trained commander makes on purpose: bounding by platoon
+and holding the assault short under its own fires are textbook, and in
+this game they cost the attack as much as leaving two platoons in reserve
+did. That is a question for the rules and the drill, not for Jev's wording
+(see below).
+
+### Jev's battles
+
+Twenty seeds a scenario from 1000, the attack's wins (the scripted
+commander on the same seeds: 3:1 **65%**, 2:1 **25%**; on the standard 200,
+58% and 38%):
+
+| Question set | What changed | 3:1 | 2:1 |
+|---|---|---|---|
+| 2026-09-30 (10 seeds) | as built | 20% | — |
+| .2 | mission framing, platoon options by what they do, three scouts offered | 10% | 20% |
+| .2 + stage | the picture carries the company's stage; hold "saves the mission"; the mission text does not say "wait" | 5% | 15% |
+| **.3** | hold fire bare again | **10%** | **15%** |
+
+Each fix did what it was for — the reserve is committed (every platoon
+assaults), the company goes in when the enemy is found (turn 16–18, median),
+the company waits in dead ground — and the wins did not come, because the
+choices left are the costly ones: Jev bounds by platoon in 40 battles of 40
+and holds short under its fires in 29 of 40; it sends one scout, not three
+(it is offered three); and it goes in as soon as the enemy is found rather
+than shelling it first. Losses stay in hand (attacker 22–23% down, the
+defence 12–16%), and explosives cause 77–81% of them.
+
+**Jev sits far under the targets** (3:1 55–70%, 2:1 30–45%) where the
+scripted commander sits inside them. Read as a measure of the game, that
+says **the game rewards the scripted commander's plan, not a textbook
+one**: a commander who bounds and holds short, as doctrine teaches, loses
+most attacks it should win.
+
+**For the author** (⚠️ nothing here changes a rule):
+
+1. Should bounding by platoon and holding the assault short under the
+   fires cost that much? Both are drill mechanics (`boundByPlatoon`,
+   `holdShort` in `src/app/drill.ts`), ours, not the document's; if a
+   trained commander's choices are to win, they are where to look.
+2. The balance targets were met with the scripted commander. Is that the
+   commander they are meant for, or should they hold for Jev (the opponent
+   in single-player) too?
+3. The framing is ours to tune, and every change is measured on Jev's own
+   recorded questions first (`jev-probe`). Steering Jev off bounding or
+   holding short by rewording would hide the question above, so it has not
+   been done.
+
+> **Correction (thirty-seventh round).** Holding short costs the rule about
+> 6 points at 3:1 (57% over 100 seeds), not the 50 the table above says; the
+> 10% does not reproduce at this round's own commit. Bounding by platoon is
+> the costly choice, and it was a drill artefact (thirty-seventh round). The
+> text above and the thirty-fifth and thirty-sixth rounds' readings of
+> "holding short" are wrong where they lean on the 10%.
+
+## Thirty-fifth round: Claude models in Jev's place, 2026-09-30
+
+Three Claude models answered the attacking company commander's questions
+(`npm run jev-sim -- --claude <model>`, `src/sim/claude.ts`, question set
+`2026-09-30.3`, default effort), on the tel, 20 seeds a scenario from 1000,
+four battles at once. Each model gets the same picture and mission Jev does,
+answers with an option id held by a JSON schema, and logs a one-sentence
+reason. Every call stands alone: a model does not see its own earlier
+answers or reasons, and it gets no order beyond the one-line tasking and the
+principles (`MISSION`) — as Jev.
+
+| Commander | 3:1 | 2:1 | Attacker down | Defence down | s a call |
+|---|---|---|---|---|---|
+| Rule through the questions (100 seeds) | **63%** | **34%** | | | |
+| Jev (`jev-1.13.0`) | 10% | 15% | 22–23% | 12–16% | 0.15 |
+| `claude-haiku-4-5` | **20%** | 0% | 17% / 24% | 14% / 11% | 1.8 |
+| `claude-sonnet-5-5` | 5% | 0% | 26% / 29% | 8% / 4% | 4.5–5.1 |
+| `claude-opus-5-5` | 5% | 5% | 27% / 28% | 10% / 5% | 5.2–6.1 |
+
+(±9–11 points at 20 seeds. Explosives cause 80–83% of losses throughout.
+Tokens over the six runs: about 4.5 M in, 1.3 M more read from the cache, and 0.76 M
+out. Haiku's calls are not cached: the system prompt is shorter than its
+cache minimum.)
+
+**A model that reasons does not beat one that judges, and a small one does
+best.** None comes near the rule; Sonnet and Opus sit under Jev. Most of
+their battles end on turns 10–22 with the attack at its breakpoint (40%) and
+the defence barely touched (0–6 men down).
+
+### The choices, beside Jev's
+
+| Choice | Rule | Jev | Haiku | Sonnet | Opus |
+|---|---|---|---|---|---|
+| Scouts | 3 | 1 | 1 (39 of 40) | 1 (40/40) | 1 (40/40) |
+| When it goes in | 4 turns with the enemy in sight | as soon as found (turn 16–18) | when found, or a few turns after (median turn 20–22) | **turn 5, enemy not found** (40/40) | **turn 5, enemy not found** (40/40) |
+| Platoon tasks | all assault | all assault | 68 assault, 28 base of fire | all assault | all assault |
+| Bound by platoon | no | yes (40/40) | yes (26 of 26 asked) | yes (37 of 40) | yes (40/40) |
+| Hold short under the fires | no | 29 of 40 | yes (36 of 36 asked) | **no** (38 of 40) | yes (40/40), then won't lift (34 of 37) |
+| Mortars | sure marks in sight, before going | all twelve, as fast as allowed | about 10 missions, first on turn 17–18 | median 4–7 of 12; held 233 times | median 3–8 of 12; held 206 times; 87 smoke |
+
+What the logged reasons say, choice by choice:
+
+- **Scouts.** All three send one, for the reason Jev's choice suggests: "one
+  scouting squad finds the enemy without splitting the mass" (Sonnet);
+  "keeping the other eight squads massed" (Opus). The principle *mass at the
+  decisive point* is read against scouting.
+- **When it goes in: the largest difference.** Sonnet and Opus go at the
+  first chance (turn 5) in every battle, the enemy not yet found, and on the
+  deadline: "with 41 turns left and the objective about 400 m away, waiting
+  wastes time" (Sonnet); "the briefing already places the enemy on the
+  shoulder, so more scouting adds little, while starting now keeps the full 41
+  turns" (Opus). Haiku waits: "committing to attack before locating the enemy
+  risks walking into prepared defenses", and goes once the enemy is found
+  ("enemy is pinned and visible with 29 turns remaining"). Its four 3:1 wins
+  all went in on turns 22–29. Waiting is the one thing Haiku does as the rule
+  does, and it is the one model above Jev.
+- **Platoon tasks.** Sonnet and Opus assault with every platoon, as Jev now
+  does. Haiku gives one platoon a base of fire in a third of its battles:
+  "commit platoons 1 and 2 to the assault while platoon 3 provides covering
+  fire from the flank".
+- **Bounding.** All three bound, as Jev does, and give the textbook reason:
+  "one platoon's fire keeps the defenders' heads down while the other
+  closes" (Sonnet).
+- **Holding short.** Opus and Haiku hold short, as Jev does ("holding at
+  200 m lets the squads gather under the mortars and go in together").
+  Opus then declines to lift the fires 34 times in 37: "BLUE-1-2 would go in
+  alone against a prepared platoon while the rest of the company is still
+  130–300 m back" — it waits to mass, and the squads at the line wait under
+  the defender's fire. Sonnet alone goes straight in: "holding at 200 m under
+  mortars gives the enemy time to recover and burns turns".
+- **Mortar fire.** Where Jev fires everything at once, Sonnet and Opus hoard:
+  "my squads are still 400+ m from the enemy, so bombs now would lift before
+  the assault closes; I'll save the missions for the final approach"
+  (Sonnet). That is the principle *fire … is wasted unless the attack moves
+  while it lasts*, read literally. Because they went in blind, the fire
+  questions come with stale or unsure marks, and much of the ammunition is
+  never fired. Opus also fires smoke (87 missions), which the scripted
+  attacker found hurts (twenty-ninth round).
+
+### What it says
+
+- **Going in blind is the costliest choice, and it is the reasoners' own.**
+  It comes from the deadline line (the first principle, and the picture's
+  "or the attack has failed") with no word on how long an approach takes:
+  a model that reasons about time decides it has none to spare. The
+  scripted commander goes on about turn 20 and wins.
+- **Every commander so far chooses bounding and holding short** (Jev and
+  three of three Claude models; Sonnet alone does not hold short). The
+  thirty-fourth round's question to the author (should they cost this much?)
+  now has four commanders behind it, not one.
+- **The comparison is of stateless answerers.** No model sees its earlier
+  answers, so none can hold to a plan: Opus holds short, then refuses the
+  lift that the hold-short plan needs; it saves missions for an approach no
+  later call knows about. An order (OPORD) from higher headquarters, a
+  plan written at turn 0, and each call carrying the plan and the decisions so
+  far, is the next thing to measure. It would change the comparison with Jev,
+  which cannot carry a plan the same way.
+
+## Thirty-sixth round: an order, a plan and a memory, 2026-09-30
+
+The thirty-fifth round's commanders answered every question afresh, from a
+one-line tasking. This round gives them what a company commander has: an
+**order from battalion** (`src/sim/opord.ts`, `--order`; for Jev `--framing
+order`) in five paragraphs — the enemy (a platoon dug in with overhead cover,
+a squad held back to retake a position, mines, registered mortars), the
+ground, the company and its 12 missions, the mission and intent, and time
+and movement (50 m a turn walking, half under fire, 5 m per metre climbed:
+about 11 turns to the shoulder unopposed, about twice that under fire). It
+names no option (tested). With a Claude model, `--plan` has it write its own
+plan before the first question and carry it in every call, and `--memory`
+carries the battle's decisions so far with their reasons. And, without the
+API, `--rule blind` measures the choice that cost the reasoners most: the
+rule's commander, but sent in at the first chance (turn 5), the enemy found or
+not.
+
+⚠️ The order is ours (the intelligence picture and the intent are written for
+the test beds); it is the author's to check.
+
+### What going in blind costs
+
+| Commander (100 seeds a scenario from 1000) | 3:1 | 2:1 |
+|---|---|---|
+| Rule through the questions | 63% | 34% |
+| … sent in at turn 5, found or not (`--rule blind`) | **18%** | **4%** |
+
+That one choice costs 45 and 30 points: most of the distance from the rule to
+Sonnet and Opus (thirty-fifth round). Nothing else the rule does changes.
+
+### The battles
+
+20 seeds a scenario from 1000, the attack's wins (±9–11 points):
+
+| Commander | Given | 3:1 | 2:1 | Went in blind | Bound | Held short |
+|---|---|---|---|---|---|---|
+| Jev | mission (35th round) | 10% | 15% | — | 40/40 | 29/40 |
+| Jev | + order | 10% | 5% | 31/40 | 40/40 | **0/40** |
+| Haiku | mission (35th round) | 20% | 0% | 0/40 | 26/26 | 36/36 |
+| Haiku | + order, plan, memory | 5% | 15% | 15/40 | 21/27 | 36/40 |
+| Sonnet | mission (35th round) | 5% | 0% | 40/40 | 37/40 | 2/40 |
+| Sonnet | + order, plan, memory | 0% | 0% | 28/40 | **8/39** | 10/40 |
+| Opus | mission (35th round) | 5% | 5% | 40/40 | 40/40 | 40/40 |
+| Opus | + order | 0% | 0% | 40/40 | **3/40** | 21/40 |
+| Opus | + order, plan, memory | 5% | 0% | 36/40 | **1/40** | **7/40** |
+
+(Tokens for the round's Claude runs: about 11.3 M in, 5.0 M more read from
+the cache, 1.04 M out. Haiku's calls are still not cached.)
+
+**None wins more.** Every commander stays at 0–15%, within the noise of
+where it was. But the choices moved, and the reasons say why.
+
+### What the order and the plan changed
+
+- **Bounding and holding short went, on the time line alone.** Nothing in the
+  order names either; Opus, told how long closing under fire takes, stopped
+  bounding: "bounding by platoon would roughly double the ~22 turns needed
+  under fire and split the mass we must put on the objective together by turn
+  45". Jev stopped holding short (0 of 40, from 29). So the thirty-fourth
+  round's two textbook costs are not fixed choices: a commander told the time
+  drops them. They were not what kept the wins down.
+- **Going in blind got worse, and the order is why.** The same time line —
+  "about twice that under fire" — reads as 22 turns of 41, and every
+  commander counts back from it: "with 41 turns left and roughly 22 needed to
+  close under fire, waiting on the scouts wastes the time the attack needs"
+  (Opus, order only, 40 of 40 blind). Jev, which went in when the enemy was
+  found, now goes blind in 31 of 40. The only one that waits more is Haiku,
+  which had waited already.
+- **The plans are sound, and cannot be played.** Opus's plan (seed 1000,
+  3:1): "the company moves by bounds into the dead ground about 250-300 m
+  short of the shoulder … once the positions are fixed and 2 and 3 Platoons
+  are at the assault position, I call 'AZEKA'. Mortars fire, 1 Platoon opens
+  fire, and all platoons assault … No later than T30 we go in regardless."
+  Sonnet's: "Turns 0-12: advance to the last cover, about 150-200 m from the
+  shoulder, and locate the positions". With the memory, they follow their
+  plans: "the plan had the company closing into the dead ground by T12 …
+  advancing now" (Opus, go.10). But **the questions have no step for it**.
+  The company waits where it is (`plan.wait`) or goes in: "yes" to "send the
+  company in" commits it to the attack, with no halt at an assault position
+  to find and shell the enemy first. The plan every reasoner writes — move
+  up under cover, fix, fire, then go — is played as going in blind, which
+  costs 45 points.
+- **Mortars are still hoarded.** The plans budget them ("2 missions to pin
+  identified positions while we close, 6 for the assault, keep 4 for the
+  counterattack"), and the fire question's own words — "the assault has to
+  arrive before you lift" — keep them for a close that a blind attack rarely
+  reaches: Sonnet and Opus fire a median 3–6 missions of 12.
+
+### What it says
+
+1. **The gap to the rule is a missing move, not missing judgement.** The rule
+   wins by waiting where it is while the scouts find the enemy and the mortars
+   shell it, then going. A reasoner's plan does the same from nearer, and the
+   game offers it only "wait at the start line" or "attack now". Next: a go
+   option that moves the company up to an assault position (dead ground or a
+   named point short of the enemy) and holds it there until a second
+   question sends it in — then measure the rule, Jev and the models again.
+   That is a question-set change (`QUESTION_SET_VERSION`), and a drill one.
+2. **Our order pushes time too hard.** "About twice that under fire" and "will
+   not extend the deadline" are both true and both read as "go now". A
+   version that also says when an attack typically has to leave its assault
+   position is advice, not fact, and is not written; the question in 1 is the
+   better fix.
+3. **For the author**: the thirty-fourth round's question (should bounding and
+   holding short cost this much?) matters less than it seemed — commanders
+   drop both once told the time, and still lose. The costly choice is when the
+   company goes, and the game gives no way to go part of the way.
+
+## Thirty-seventh round: reasonable plans, not one plan, 2026-10-01
+
+Back to the balance itself. The targets (3:1 on a prepared platoon 55–70%,
+2:1 30–45%; validation.md, *What an attack at 3:1 should win*) were met in
+the thirty-first round with **one** commander, and every other commander
+since — Jev, three Claude models, the rule with one choice changed — lands far
+under them. The author's guideline for judging results: **close to real life
+in the outcomes**. So the measure here is a set of reasonable plans, not the
+calibrated one, and a check that tactics move the result about as much as
+they do in real attacks: Rowland's small-unit data has 3:1 winning 54%
+without surprise and 76% with it — tactics worth some 20 points, not 50.
+
+Everything here is the rule (`npm run jev-sim -- --rule <choices>`): no
+model, no tokens, 100 seeds a scenario from 1000.
+
+### The plans (author, 2026-10-01)
+
+| Plan | `--rule` | Scouts | Goes | Platoons | Bound | Hold short |
+|---|---|---|---|---|---|---|
+| A. Calibrated | — | 3 | 4 turns with the enemy in sight | all assault | no | no |
+| A + move up | `moveup` | 3 | moves up to an assault position first | all assault | no | no |
+| B. Deliberate | `basefire,bound,holdshort` | 3 | as A | 1 base of fire, 2 assault | yes | yes |
+| B + move up | `…,moveup` | 3 | as A + move up | as B | yes | yes |
+| C. Hasty | `onescout,rush` | 1 | as soon as the enemy is found | all assault | no | no |
+| D. Flank | `basefire,holdshort,flank` | 3 | as A, by a scout's observation point | 1 base of fire, 2 assault | no | yes |
+| E. Fire-heavy | `holdshort,prep` | 3 | once most missions are fired (by turn 30) | all assault | no | yes |
+| Control: blind | `blind` | 3 | turn 5, found or not | all assault | no | no |
+| Control: no scouts | `noscout` | 0 | at once | all assault | no | no |
+
+New for this round: a go answer that moves the company up to an assault
+position (the last dead ground about 250 m short of where the plan puts the
+enemy, `company.ts`, `moveUp`; question set `2026-09-30.4`); `basefire`,
+`flank`, `prep`, `noscout`; `--defender-plan` (where the defender registers
+its mortars); `--fire-on-the-move`.
+
+### The defender's mortar plan is not the cause
+
+The scripted defender registers its mortars on the dead ground in front of
+it (a harness policy, ours). Moving them to the open ground first, or
+registering none, moves the plans by under 10 points (3:1, the calibrated
+plan 63% / 63% / 71%; every other plan alike; 2:1 within 4 points). It
+stays as it is: real defenders plot fires on dead ground and likely assault
+positions.
+
+### Bounding was a drill artefact
+
+Bounding by platoon took 3:1 from 63% to 16% (2:1 unchanged). Three things
+in the drill and the engine made it so:
+
+1. **Two layers of bounding.** Inside a moving platoon the squads already
+   alternate (`overwatch`); bounding by platoon stopped two platoons of
+   three on top of that. A squad moved one turn in six in contact — about
+   **8 m a minute**, against the sources' **15–30 m a minute** for an
+   advance under fire (validation.md, *Infantry pace under fire*), which
+   already include fire and movement. Squad alternation alone gives about 25.
+2. **From the first sighting anywhere.** The drill counted the company in
+   contact as soon as the side knew of any enemy — a scout's mark 500 m off —
+   so platoons halted to "cover" beyond their own 400 m reach.
+3. **A halted platoon covered no better than a moving one.** The engine gave
+   a force that moved no penalty to its own fire.
+
+**Changed (the drill, ours):** a platoon bounds only within the drill's fire
+range (400 m) of a known enemy, and the bounding platoon's squads go
+together. **Offered (a rule, off):** `GameOptions.fireOnTheMove`, a factor
+on a moving force's small-arms hit chance (the sources give no direct figure:
+kneeling hits about 0.68 as often as prone at 300 m, and marching fire is
+unaimed; the factor is ours).
+
+| Plan | 3:1 before → after the drill change | 2:1 before → after |
+|---|---|---|
+| Bound | 16% → **48%** | 38% → 35% |
+| Bound, hold short | 16% → 44% | 35% → 23% |
+| B. Deliberate | 29% → **50%** (out of time 56 → 6) | 44% → 44% |
+| B + move up | 11% → 16% | 21% → 21% |
+
+Fire on the move at ×0.5 moves little (calibrated 63% → 57%, bound 48% →
+51%, deliberate 50% → 46%, the rest within a few points): against men dug
+in with overhead cover, rifle fire works by suppression, and a burst
+suppresses whether it hits or not. **It is not recommended**: it changes
+nothing the plans need.
+
+### Moving up is where the attack is lost
+
+Moving up to an assault position takes the calibrated plan from 63% to
+**10%** (2:1 34% → 15%), and the company loses **10.4 men** before it goes
+in (0.8 without). Traced over 20 battles at 3:1: 132 men lost while moving
+up and holding there, to rifle fire (42), mortars (31), both (21) and
+unattributed (38); the defender saw the company in 18 of 20 battles, a
+median 5 turns after the move began, and the median range from the nearest
+defending squad when a man fell was **254 m** — inside rifle range. The
+"dead ground" is chosen against where the plan puts the enemy, which is off
+by an observer's error, and the move is made at the first chance, before the
+scouts have found anything. A real assault position is chosen after the enemy
+is found, against what was found.
+
+### Where the plans stand
+
+After the drill change, fire on the move off:
+
+| Plan | 3:1 | 2:1 | Attacker down (3:1) | Defence down (3:1) |
+|---|---|---|---|---|
+| A. Calibrated | 63% | 34% | 14% | 25% |
+| B. Deliberate | 50% | 44% | 16% | 23% |
+| E. Fire-heavy | 47% | 33% | 18% | 23% |
+| C. Hasty | 19% | 5% | 22% | 19% |
+| D. Flank | 11% | 6% | 21% | 14% |
+| A + move up | 10% | 15% | 22% | 15% |
+| B + move up | 16% | 21% | 22% | 14% |
+| Control: blind | 18% | 4% | 23% | 15% |
+| Control: no scouts | 1% | 0% | 23% | 13% |
+
+Against the criteria (author, 2026-10-01):
+
+- **The median reasonable plan** (A–E): 3:1 **47%**, 2:1 **33%** — just under
+  the 3:1 band, inside the 2:1 one.
+- **The floor is not met.** Three plans sit far under it, and each for a
+  reason in the harness, not the rules:
+  - *Moving up* — the assault position above.
+  - *Flank* — "by a scout's observation point" sends the company to the
+    observation point, which is back near the start line (the
+    observation points are 350–550 m out by construction), so the "flank"
+    is a long detour, not an approach on the enemy's side.
+  - *Hasty* — one scout and no shelling before going in. Real hasty attacks
+    on a prepared position do worse than deliberate ones; whether by 44
+    points (63% → 19%) is the open question.
+- **The controls lose clearly** (1–18% at 3:1, 0–5% at 2:1), as they
+  should.
+- **Losses**: attackers lose 14–23% of their men on average and defenders
+  13–25%. Whether a failed attack's exchange (the attacker down 22–23%, the
+  defence 13–15%) is what real failed attacks cost is not yet checked
+  against a source (next, 4).
+
+### Next
+
+1. **The assault position chosen against what the scouts found**, and only
+   once they have found it: then rerun A + move up and B + move up.
+2. **A flank that approaches the enemy's side**: an axis point beside the
+   objective (off the line of attack, in dead ground), not the scouts'
+   observation point.
+3. Then the hasty attack's gap, with the mechanism traced as above.
+4. A research pass on loss exchange in failed attacks (the one outcome the
+   sources here do not cover).
+
+
+## Thirty-eighth round: the assault position and the flank, 2026-10-01
+
+The thirty-seventh round left three reasonable plans far under the floor, two
+of them for reasons in the harness. Both are changed (question set
+`2026-10-01.1`):
+
+- **The assault position is chosen against what was found.** `moveUp` takes
+  the enemy where the side has found it near the objective (its marks), else
+  where the plan puts it, and seeks dead ground out of sight of both; the
+  rule moves up only once the enemy is found, not at the first chance.
+- **A flank that goes in on the enemy's side.** The axis question offers
+  `flank:west` / `flank:east`: the dead ground nearest a point 200 m to one
+  side of the enemy and 100 m back toward the company (ours), named by the
+  compass. The scouts' observation points stay as options; they sit 350–550 m
+  out, back near the start line, and going by one was a detour. The `flank`
+  rule takes a flank where the ground has one.
+
+100 seeds a scenario from 1000:
+
+| Plan | 3:1 before → after | 2:1 before → after | Men lost before going in (3:1) | Out of time (3:1 / 2:1) |
+|---|---|---|---|---|
+| A + move up | 10% → **37%** | 15% → **31%** | 10.4 → 4.3 | 2 / 1 |
+| B + move up | 16% → 32% | 21% → 22% | 10.4 → 4.3 | 4 / 28 |
+| D. Flank | 11% → **42%** | 6% → 18% | 0.8 | 5 / 41 |
+| A + flank (new) | 52% | 30% | 0.8 | 3 / 8 |
+
+Moving up still costs about 4 men before the attack (0.8 from the start line)
+and 26 points against the calibrated plan; going round a flank costs 11.
+
+### Where the reasonable plans stand
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| A. Calibrated | 63% | 34% |
+| A + flank | 52% | 30% |
+| B. Deliberate | 50% | 44% |
+| E. Fire-heavy | 47% | 33% |
+| D. Flank | 42% | 18% |
+| A + move up | 37% | 31% |
+| B + move up | 32% | 22% |
+| C. Hasty | 19% | 5% |
+| **Median** | **45%** | **30%** |
+
+- **The median** is 45% at 3:1 (target 55–70%) and 30% at 2:1 (target
+  30–45%): the 2:1 at the bottom of its band, the 3:1 ten points under.
+- **The spread** (3:1, hasty aside) is 32–63%: about 30 points, against the
+  sources' 20 or so for tactics. The hasty attack is still 44 under the
+  calibrated plan, and untraced.
+- **At 2:1, a base of fire leaves one platoon to close**: plans B and D run
+  out of time in a third to two-fifths of their battles. One platoon
+  assaulting a prepared platoon is 1:1 at the point of contact; that it
+  fails is plausible.
+
+### Next
+
+1. **Trace the hasty attack** (one scout, in as soon as the enemy is found):
+   where its 44 points go.
+2. **The 3:1 median is ten points short.** Once the hasty attack is
+   understood, whether the gap is the plans or the game is the author's
+   question: tuning toward 55% for the median plan would lift the
+   calibrated plan above 70%.
+3. A research pass on loss exchange in failed attacks.
+
+
+## Thirty-ninth round: the hasty attack, and what attacks cost, 2026-10-01
+
+### The hasty attack is two ordinary costs
+
+Plan C (one scout, in as soon as the enemy is found) wins 19% at 3:1 against
+the calibrated plan's 63%. Taken apart, 100 seeds each:
+
+| 3:1 | Wins | Enemy found (turn, mean) | Company goes (turn) | Own missions before going |
+|---|---|---|---|---|
+| A. Calibrated (3 scouts, 4 turns' fire first) | 63% | 11 | 16 | 3.0 |
+| One scout | 30% | **18** | 23 | 2.5 |
+| In as soon as found | 43% | 11 | 11 | **0** |
+| C. Hasty (both) | 19% | 18 | 18 | 0 |
+
+(2:1: 34%, 7%, 21%, 5%.) One scout finds the enemy seven turns later than
+three (33 points); going in at once fires nothing on it first (20 points);
+together, 44. Neither is a fault in the harness: finding the enemy and
+shelling it before the assault are what a deliberate attack is for. Whether
+they are worth this much in real life the sources do not say directly
+(Rowland's surprise, 22 points at 3:1, is the nearest).
+
+### What attacks cost: the sources against the game
+
+A research pass (validation.md, *Loss exchange in attacks*; second-hand
+extracts) and a new count: `ScenarioBattleResult.lost` adds to the killed
+and wounded the men of forces that surrendered or are routing, and men
+broken — real figures for a lost position are mostly prisoners.
+
+| 100 battles a plan, the tel | Attacker lost | Defender lost | The sources |
+|---|---|---|---|
+| Won (A, B, E) | 8–14% | 50–52% | attacker 5–20%, defender 40–90% |
+| Won (C, hasty) | 24% | 50% | |
+| Failed (A, B, E, C) | **35–41%** (B at 2:1: 25%) | 16–29% | attacker 10–25%, defender 5–20% |
+
+- **A won attack costs what the sources say.** The attacker loses about a
+  tenth; the defence about half, most of it prisoners and the fled.
+- **A failed attack goes on too long** (overstated: see the correction in
+  the fortieth round). The attacker loses 35–41% before it
+  stops; the sources put a company's stall at 10–25%, battalion doctrine its
+  breakpoint at about 20%. The game's is 40% (decision 66), raised from
+  decision 44's 30% in the thirtieth and thirty-first rounds to bring the
+  calibrated plan's wins into the target.
+- **The two pull against each other.** The 3:1 median plan is already ten
+  points under its target (thirty-eighth round); a breakpoint nearer the
+  sources' would lower every plan's wins further.
+
+### For the author
+
+1. **The attacker's breakpoint** (decision 66, 40%): failed attacks cost
+   about twice what the sources say. Lowering it toward 25–30% is closer to
+   real life in losses, and costs wins.
+2. **The 3:1 wins**: the median reasonable plan wins 45% (target 55–70%). If
+   the breakpoint comes down, what else should carry 3:1 back up — or is
+   the target the one to move, since it was set from division and
+   all-postures data and small-unit attacks without surprise win 54%
+   (Rowland)?
+3. **The hasty attack** (19%): finding the enemy late and not shelling it
+   first cost 33 and 20 points. Real, or too much?
+
+
+## Fortieth round: the attacker's breakpoint at 30%, 2026-10-01
+
+The author asked what taking the attacker's breakpoint back to 30%
+(decision 44's figure; decision 66 has 40%) does. All eight reference plans,
+100 seeds a scenario from 1000 (`--attacker-breakpoint 0.3`).
+
+> **Correction to the thirty-ninth round.** It said a failed attack costs
+> the attacker "about twice" what the sources say. That compared the game's
+> *lost* (killed, wounded, prisoners, the fled and the broken) with the
+> sources' *casualties* (killed, wounded, captured); a failed attacker's
+> broken and fled men mostly rally and are not casualties. Counted as the
+> sources count, a failed attack costs the attacker **19–28%** at 40% —
+> at or a little over the top of the sources' 10–25%, not twice it. A won
+> attack's defender is rightly counted with its prisoners and fled.
+
+| Plan | 3:1 at 40% → 30% | 2:1 at 40% → 30% |
+|---|---|---|
+| A. Calibrated | 63% → 59% | 34% → 24% |
+| A + flank | 52% → 47% | 30% → 26% |
+| B. Deliberate | 50% → 42% | 44% → 41% |
+| E. Fire-heavy | 47% → 45% | 33% → 28% |
+| D. Flank | 42% → 38% | 18% → 18% |
+| A + move up | 37% → 33% | 31% → 19% |
+| B + move up | 32% → 25% | 22% → 16% |
+| C. Hasty | 19% → 7% | 5% → 5% |
+| **Median** | **44.5% → 40%** | **30.5% → 21.5%** |
+
+What a failed attack costs the attacker in killed and wounded (A, B, E, C;
+the sources 10–25%, centred near 15%): at 40%, 23–27% (3:1) and 19–28%
+(2:1); at 30%, **18–22%** and **16–22%**. A won attack is unchanged: the
+attacker loses 6–14%, the defender about 50%, mostly prisoners and fled.
+
+**Read together:** 30% puts losses where the sources put them, and costs
+about 5 points at 3:1 and 9 at 2:1. **Adopted as rules decision 67** (author,
+2026-10-01). The standard measurement (thirty-first round's command, 200
+battles) at 30%: 3:1 **49%** (58% at 40%), 2:1 **27%** (38%), explosives
+72–75%. The win targets (55–70%, 30–45%) were
+read from division-level, all-postures data; small-unit attacks without
+surprise win 54% at 3:1 (Rowland). With the author: the breakpoint, and
+whether the targets should be set for small-unit attacks on prepared
+positions.
+
+### Win targets for small-unit attacks: a proposal (for the author)
+
+The author asked (2026-10-01) for the targets to be set for small-unit
+attacks separately. The current ones (decision 66: 3:1 on a prepared
+position 55–70%, 2:1 30–45%) were read from division-level tables that mix
+postures (validation.md, *What an attack at 3:1 should win*). The
+small-unit evidence there is Rowland's (WWII, via a review): 3:1 wins **54%**
+without surprise and **76%** with it; 1:1 wins 40% and 70%; a prepared
+position is worth about **×1.65** to the defender. Rowland does not split
+by preparation.
+
+- **3:1 on a prepared position: 40–55%.** Rowland's 54% is for all
+  positions, so it is the top of the band for a prepared one; with ×1.65 the
+  effective ratio is about 1.8:1, which on Rowland's 1:1–3:1 line is about
+  46%. **Up to 70–75% with surprise or strong suppression** (Rowland's 76%).
+- **2:1 on a prepared position: 20–35%.** No small-unit source gives 2:1.
+  Rowland's line read the same way (effective 1.2:1) would say about 41%,
+  which contradicts "an attack below 3:1 on a prepared position usually
+  fails" (doctrine, and the division-level band's own 25-point step from
+  3:1). The proposal keeps that step under the new 3:1 band. This is the
+  weaker of the two.
+
+**Caution:** the game today (decision 67) lands at 3:1 49% and 2:1 27% in
+the standard measurement, and its reasonable plans' medians at 42% and 24%
+(the hasty attack aside) — inside both proposed bands. The 3:1 band stands
+on Rowland, not on the game; the 2:1 band is a judgement, and it should be
+judged as one, not because the game meets it.
+
+## Forty-first round: the hasty attack against history, 2026-10-01
+
+Under decision 67 (100 seeds a scenario from 1000), the hasty attack and its
+two parts:
+
+| 3:1 (2:1) | Wins | Cost against the calibrated plan |
+|---|---|---|
+| A. Calibrated | 59% (24%) | — |
+| One scout instead of three | 24% (6%) | 35 points |
+| In as soon as found, no fire first | 30% (8%) | 29 points |
+| C. Hasty (both) | 7% (5%) | 52 points |
+
+A research pass (validation.md, *Hasty and deliberate attacks*; every
+figure second-hand, the proxy refused the pages) found no source that counts
+hasty against deliberate attacks on prepared positions at small-unit level.
+The nearest: a US planning table puts even odds for a **hasty attack on a
+prepared defence at 3.75:1** (about 35–45% at 3:1); the MoD's 1978 desert
+war game rates hasty operations at **70% of deliberate**; Rowland's surprise
+split at 3:1 is 22 points; RAND's NTC studies tie good reconnaissance to
+success without a size.
+
+**Read against it** (±10 points, judgement): a hasty company attack on a
+dug-in platoon at 3:1 should win about **15–35%** (centre about 25%), and the
+gap to a deliberate one should be about **20–35 points**, not 52.
+- **No fire before going in** (29 points) is near the 15–25 the sources
+  suggest — a little high.
+- **One scout** (35 points, the enemy found seven minutes later) is **too
+  much**: about 10–15 would fit. RAND says reconnaissance matters; nothing
+  says seven minutes is worth a third of the attack's chance.
+- **The two compound** (each costs about 30, together 52); the sources
+  suggest less than additive.
+
+### What one scout costs: traced
+
+Replaying the 100 battles of each (`onTurn` hook), at the moment the company
+goes in and after:
+
+| 3:1 | Three scouts | One scout |
+|---|---|---|
+| Enemy squads known on going in (of 3) | 1.5 | 1.3 |
+| Enemy men down by then | 0.6 | 0.4 |
+| Scouts still alive on going in | **2.8** | **0.8** |
+| Missions fired after going in | 8.3 | 7.5 |
+| Enemy men down at the end | 7.8 | 5.6 |
+| Wins | 59% | 24% |
+
+- **The finding is not the cost**: on going in the company knows about as
+  much either way, and its fire has done as little.
+- **The scouts are the fire's only eyes during the assault**, when most of it
+  is fired. Moving squads cannot find a still, dug-in enemy (decision 53),
+  and the company command group walks 80 m behind its squads and never
+  stops to look. With one scout gone before the company went in (22 of
+  100), the attack won none; with it alive, one viewpoint wins 31% against
+  three's 62%.
+- **Time is mostly a confound**: battles where the enemy is found late are
+  ones where the plan's estimate was far off, which are harder anyway.
+
+A real company's fire is directed by its commander's observer from
+overwatch, not by its scouts alone. Proposed (for the author): the drill
+halts the company command group in overwatch once the company goes in
+(ours), and command groups carry binoculars (a rule; decision 53 gives them
+to scouting squads only) — or an observation post may be set up during the
+battle (a rule; decision 38 allows it only in planning).
+
+## Forty-second round: an overwatch and binoculars for command groups, tried and withdrawn, 2026-10-01
+
+The forty-first round traced one scout's cost to the company's fire having
+no eyes but the scouts' during the assault. The author asked for both fixes
+proposed there: the drill halts the company command group in overwatch (an
+observation point onto the plan's enemy, from the scouts' vantage finder,
+350–550 m out), and command groups carry binoculars (a rule). Built and
+measured, the calibrated plan at 3:1, 100 seeds:
+
+| | Wins | Men lost before going in | Defender down |
+|---|---|---|---|
+| Neither (as the game is) | 59% | 0.8 | 24% |
+| Overwatch only | 25% | 2.2 | 18% |
+| Command groups' binoculars only (both sides) | **2%** | 13.7 | 2% |
+| Both | 3% | 13.9 | 1% |
+
+- **Binoculars for command groups help the defender far more than the
+  attacker.** The defending company's command post and the platoon's sit high
+  on the tel watching their approaches; with binoculars they see the waiting
+  company and its scouts and shell them before the attack starts (battles
+  end on turn 12–14, the attack broken, the defence untouched).
+- **The overwatch puts the company command group on an exposed vantage
+  point**, where it is seen and shelled; losing it loses the company's fire
+  control (decision 55), which costs more than its eyes give.
+
+**Both withdrawn**; nothing of them is in the game. What it says: the scouts'
+weight is not simply "eyes the company lacks" — any observer close enough to
+see a dug-in enemy is close enough to be seen and shelled, and the defender
+on the high ground is the better placed watcher. The one-scout gap
+(forty-first round) stays open; ways that do not hand the defender the same
+gift — a second observer for the company that stays hidden (an observation
+post put out in planning, decision 38), or scouts that survive better — are
+for the author.
+
+## Forty-third round: the hasty attack redefined, and where the plans stand, 2026-10-01
+
+**No one sends a lone scout** (author, 2026-10-01). The hasty plan keeps the
+company's normal reconnaissance (three scouts) and gives up only the
+preparation: in as soon as the enemy is found, no fire first (`--rule
+rush`). The one-scout cost (forty-first and forty-second rounds) is no longer
+a reference plan's; the question still offers one scout, and it stays
+costly.
+
+| Hasty attack, decision 67 | 3:1 | 2:1 |
+|---|---|---|
+| One scout, no fire first (the old C) | 7% | 5% |
+| **Three scouts, no fire first (C)** | **30%** | 8% |
+| History (validation.md, *Hasty and deliberate attacks*) | 15–35% | — |
+
+The gap to the deliberate plan at 3:1 is 29 points (history: 20–35).
+
+The reference plans under decisions 67 and 68, 100 seeds a scenario from
+1000:
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| A. Calibrated | 59% | 24% |
+| A + flank | 47% | 26% |
+| E. Fire-heavy | 45% | 28% |
+| B. Deliberate | 42% | 41% |
+| D. Flank | 38% | 18% |
+| A + move up | 33% | 19% |
+| C. Hasty (three scouts) | 30% | 8% |
+| B + move up | 25% | 16% |
+| **Median** | **40%** | **21.5%** |
+| **Target (decision 68)** | **40–55%** | **20–35%** |
+
+**Both medians are inside the targets**, at the bottom of each band; losses
+are in the sources' range (fortieth round); the controls lose clearly. The
+balance the thirty-seventh round set out to check holds for reasonable plans,
+not one.
+
+**For the AI comparison:** Jev and all three Claude models chose one scout in
+nearly every battle (thirty-fifth and thirty-sixth rounds). If no commander
+would, the scout question (`plan.scouts`) is steering them; look at its
+wording with `jev-probe` before the next comparison.
+
+## Forty-fourth round: the scout question, and what two scouts win, 2026-10-01
+
+Jev and every Claude model chose **one scout** in nearly every battle
+(thirty-fifth and thirty-sixth rounds), which no commander does (author).
+The question's options were bare ("one squad", "two squads") beside a
+mission that says *mass at the decisive point*, and the models' reasons said
+so: "one squad finds the enemy without splitting the mass". `npm run
+scout-probe` puts the question to Jev and Haiku in four wordings, 20 seeds:
+
+| Wording | Jev | Haiku |
+|---|---|---|
+| Bare (as it was) | 1 scout, 20 of 20 | 1 scout, 19 of 20 |
+| + what scouts do, in the question | 3, 20 of 20 | 2, 20 of 20 |
+| + what each option means, in its label | 2, 20 of 20 | 1 (8), 2 (11), 0 (1) |
+| **Both** | **3, 20 of 20** | **2, 20 of 20** |
+
+What is added is the game's own fact, no advice: each scout watches from its
+own observation point; the scouts stay at their posts when the company goes
+in, and are the eyes for its mortar fire, since moving squads cannot find men
+dug in (forty-first round). **Adopted**, question set `2026-10-01.3`.
+
+### Two scouts win less than one
+
+Haiku now chooses two scouts, a plan not measured before (`--rule
+twoscouts`, 100 seeds): **3:1 18%, 2:1 16%** — under one scout (24%, 6%) and
+far under three (59%, 24%). Traced (as the forty-first round): with both
+scouts alive on going in (89 of 100) it fires about as many missions after
+(8.3 against three's 8.8) and wins 20% against 62%. **Observation is not the
+difference.** The plans show why it is odd: only two observation points are
+offered, so the third of three scouts goes to the first's point (`p1`
+twice) — three scouts are two viewpoints and one more squad out of the
+assault. That three win 59% where two win 18% says the calibrated plan wins
+by something fragile, not by more eyes. **Next:** find it, since the
+calibrated plan anchors the balance.
+
+### What the third scout does: traced
+
+**Not its viewpoint.** Where the third of three scouts watches does not
+matter (`--rule posts-…`, 100 seeds, 3:1): at `p1` 59%, at `p2` 54%,
+straight ahead 62%; two scouts at `p1`,`p2` 18%, both at `p1` 21%, at
+`p2`,`p1` 18%. **What matters is that the squad is out of the assault.** The
+scouts are the squads nearest where the plan puts the enemy, so the third is
+usually the western platoon's (BLUE-1).
+
+**The western platoon's approach is where the attack is lost.** Per squad
+over 100 battles, with two scouts the western platoon's three squads lose
+about 9.8 men a battle and are the first to lose a man in 75 of 100; the
+attack's breakpoint is about 26 men. The western platoon closes first (43
+of 55 battles where two platoons close), and the attack is piecemeal: when
+two platoons do close to 150 m of the enemy, the calibrated plan wins 79%
+and two scouts 38% — but with two scouts only 23 attacks of 100 get two
+platoons there at all (55 with three); the rest break on the approach.
+
+**So the calibrated plan wins by sending fewer men up the western
+approach**, not by its scouts. The drill sends each squad straight at the
+nearest enemy once the company goes in, at full pace, by no covered route,
+and the side gives up at 30% of all its men: one more squad on the exposed
+approach tips the attack. A real company moves its platoons by covered
+routes and brings them in together. For the author: whether the drill should
+do the same (a drill change, ours) before the balance is called met.
+
+## Forty-fifth round: covered routes, and platoons that close together, 2026-10-01
+
+The forty-fourth round found the attack lost piecemeal on the western
+approach: once released, every squad went straight at the nearest enemy at
+full pace, and the western platoon arrived first, alone. Two drill changes
+(ours, author asked for both, 2026-10-01):
+
+- **Covered routes.** An attacking squad steps through ground out of sight
+  of the enemy its side knows of, where a step that still closes on it (by at
+  least 40% of the step, up to 60° off the line) is; straight within 150 m.
+- **Closing together.** An assaulting platoon within 300 m of the enemy waits
+  at the last cover while another assaulting platoon's lead is 100 m or more
+  further back — five turns at most.
+
+`--no-covered` and `--no-together` turn each off. 100 seeds a scenario from
+1000, decision 67:
+
+| 3:1 | Neither | Covered only | Together only | Both |
+|---|---|---|---|---|
+| Two scouts | 18% | 30% | 30% | **35%** |
+| Calibrated (three scouts) | 59% | 61% | 53% | 57% |
+
+**Scouts now count as they should**: one 28%, two 35%, three 57% (2:1: 15%,
+29%, 31%) — rising with the number, where two had won less than one.
+
+| Reference plan | 3:1 before → after | 2:1 before → after |
+|---|---|---|
+| A. Calibrated | 59% → 57% | 24% → 31% |
+| A + flank | 47% → 41% | 26% → 21% |
+| B. Deliberate | 42% → 49% | 41% → 25% (out of time 38) |
+| E. Fire-heavy | 45% → 43% | 28% → 25% |
+| D. Flank | 38% → 25% | 18% → 15% (out of time 44) |
+| A + move up | 33% → 28% | 19% → 25% |
+| B + move up | 25% → 27% | 16% → 21% |
+| C. Hasty (three scouts) | 30% → **45%** | 8% → 23% |
+| **Median** | **40% → 42%** | **21.5% → 24%** |
+| **Target (decision 68)** | 40–55% | 20–35% |
+
+- **The medians stay inside the targets**, a little higher; the attacker
+  loses less on the way in (calibrated 11% down, was 13%).
+- **The hasty attack gains most** (30% → 45%): going in by covered ground
+  and together makes up much of what preparation gave. That is now above
+  history's 15–35% and 12 points under the calibrated plan (history: 20–35).
+- **The flank plan loses** (38% → 25%): the detour to the flank point and the
+  covered steps lengthen an approach that was already long.
+- **At 2:1 a base of fire leaves one platoon to close**, and with covered
+  steps it runs out of time more often (B, D).
+
+**For the author:** the hasty attack is now a little better than history
+suggests; the flank, worse.
+
+## Forty-sixth round: Jev and Haiku on today's rules, 2026-10-01
+
+Decisions 67–68, the drill of the forty-fifth round, question set
+`2026-10-01.3`; the mission framing, no order, plan or memory (as the
+thirty-fifth round); 20 seeds a scenario from 1000.
+
+| | 3:1 | 2:1 |
+|---|---|---|
+| Jev | 15% | 5% |
+| Rule with Jev's main choices (`rush,bound,holdshort`, 100 seeds) | 27% | 14% |
+| Haiku (`claude-haiku-4-5`) | 5% | 5% |
+| Rule with Haiku's main choices (`twoscouts,flank,basefire,holdshort,moveup`) | 20% | 18% |
+| Reference plans' median | 42% | 24% |
+
+**Their choices** (40 battles each):
+- **Jev:** three scouts at 3:1, two at 2:1 (one before the scout question was
+  reworded); in as soon as the enemy is found (40 of 40); bounds (37 of 37)
+  and holds short (39 of 40); all platoons assault; often tells a scout to
+  stop where it is (49 times) and halts platoons under fire (16).
+- **Haiku:** two scouts (40 of 40); **moves up at turn 5, before the enemy is
+  found** (40 of 40: "move to covered ground 250 m short to mass forces while
+  scouts complete reconnaissance"); round a flank (33 of 33); a base of fire
+  for a platoon in 29 of 70 tasks; holds short (32 of 32).
+
+**Read:** most of the distance to the reference plans is their plans — the
+hasty attack with bounding and holding short (Jev), the flank and moving up
+with a base of fire (Haiku), the weakest pieces measured. A further 10–15
+points are in-battle answers: Haiku moves up before the enemy is found, so
+the assault position is chosen against the plan's estimate (the thirty-
+seventh round's mistake); Jev stops its scouts short and halts under fire.
+Tokens: Haiku about 1.3 M in, 66 k out; Jev about 2,000 calls.
+
+## Forty-seventh round: moving up before the enemy is found, 2026-10-01
+
+Haiku moved up to an assault position at turn 5, before the enemy was found,
+in all 40 of its battles (forty-sixth round). Tried: re-siting the assault
+position against the enemy once found. Measured with `--rule earlyup` (the
+calibrated plan, moving up at the first chance), 3:1, 100 seeds:
+
+| | Wins | Men lost before going in |
+|---|---|---|
+| Calibrated, moving up once the enemy is found (A + move up) | 28% | 4.0 |
+| Moving up at the first chance, no re-siting | 11% | — |
+| Moving up at the first chance, re-sited once found | 9% | 9.9 |
+
+**Re-siting does not help, and is withdrawn.** The cost is not where the
+assault position is but moving the company forward before the enemy is
+located: it is seen on the way and shelled. That is a real mistake —
+doctrine has reconnaissance before the move to an assault position — and
+the game punishes it as it should. `earlyup` stays as a rule variant.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

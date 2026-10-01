@@ -859,6 +859,15 @@ the division-level tables. With a prepared defender worth about 1.65 times
 its numbers, 3:1 is about 1.8:1 in effect. **A defensible target: 3:1
 against a prepared platoon about 55–70%, with 75–85% for an attack with
 surprise or strong suppression; 2:1 about 30–45%** — "usually fails" holds.
+
+**Set for small-unit attacks** (rules decision 68, author, 2026-10-01): the
+bands above read the division-level tables. For squad-to-company attacks on
+a prepared position the targets are **3:1 40–55%** — Rowland's 54% (3:1,
+no surprise, all positions) as the top, and about 46% at the ×1.65
+prepared-position factor's effective 1.8:1 — **70–75%** with surprise or
+strong suppression, and **2:1 20–35%** (no small-unit source gives 2:1; the
+25-point step below 3:1 is kept: a judgement). The division-level bands
+stand for battles of that size.
 85% fits as a ceiling, not as the typical result. Mearsheimer's 1989 paper,
 Helmbold 1969 and the Kress & Talmor model were read as abstracts only.
 
@@ -898,6 +907,103 @@ the classic harness → the game's rules:
   open ground the scouted attack closes to rifle range, and small arms do
   more of the work. **The author ruled (2026-09-30): 75% is for real
   ground, and the tel meets it.** The flat harness's 51% is not a miss.
+
+## Loss exchange in attacks (2026-10-01)
+
+What a won and a failed attack cost each side, for the reference plans
+(balance.md, *Thirty-ninth round*). A research pass; **every figure was read
+through search extracts, not the pages** (the cloud proxy refused the Dupuy
+Institute's site, DTIC and the review sites), so they are second-hand, to be
+checked against the books.
+
+| Condition | Figure | Source |
+|---|---|---|
+| Division, WWII, failed attacks (54) | attacker 2.98%/day, defender 2.62%/day (% ratio ≈ 1.1) | Lawrence, *War by Numbers*, table 8.6, via [TDI](https://dupuyinstitute.org/2020/12/26/more-combat-results-tables-from-war-by-numbers/) |
+| Same, attack advances (71) / defender penetrated (33) | attacker 1.20% / 0.83%, defender 2.96% / 6.40%; 47% of the defender's losses captured when penetrated | same |
+| Campaign level, failed / won | absolute exchange 1.66 / 0.64 (attacker to defender) | [TDI, CaDB](https://dupuyinstitute.org/2024/04/23/analysis-for-force-ratios-using-the-campaign-data-base-cadb/) |
+| Dupuy's attrition verities | winners lose at lower rates than losers; small forces at higher rates than large | [TDI](https://dupuyinstitute.org/2016/06/17/trevor-n-dupuys-combat-attrition-verities/) |
+| UK field trials and history, a dug-in company assaulted successfully | the defender loses about 80 of 100 (killed, wounded, captured) whatever the odds; 3:1 raised the attacker's losses over 1:1 without raising the defender's | Rowland, *The Stress of Battle*, via [a review](https://www.cold-steel.org/2013/book-review-the-stress-of-battle-by-david-rowlands-part-1/) |
+| Where attacks stop, division level, 52 engagements | median attacker loss when called off under 4%; defender under 8% | McQuie (1987), via [TDI](https://dupuyinstitute.org/2017/06/23/battle-outcomes-casualty-rates-as-a-measure-of-defeat/) |
+| Battalion | doctrine (FM 105-5): attacker breaks about 20%, defender about 40%; Clark (ORO 1954), 43–44 US battalions: mean about 40%, range 1–100% | [TDI](https://dupuyinstitute.org/2024/03/26/the-40-rule/) |
+| Battalion, successful attacks on prepared positions, 1982 | Goose Green: attacker ~12%, defender ~100% (961 of ~1,000 captured); Mount Longdon: attacker ~11–15%, defender ~70% | [Goose Green](https://en.wikipedia.org/wiki/Battle_of_Goose_Green), [Mount Longdon](https://en.wikipedia.org/wiki/Battle_of_Mount_Longdon) |
+
+**Read together, for a company attacking a prepared platoon** (an
+extrapolation; small units lose at higher rates than divisions): a **won**
+attack costs the attacker about 5–20% (centred near 10–12%) and the defender
+40–90%, mostly prisoners — a % ratio of 0.1–0.4. A **failed** attack costs
+the attacker about 10–25% (centred near 15%) and the defender 5–20% — a %
+ratio of 1–2. Attacks stall at company scale around 10–20% lost.
+
+**The game against it** (the tel, 100 battles a plan, "lost" counting the
+killed and wounded, prisoners, the fled and the broken):
+
+| | Attacker lost | Defender lost | Sources |
+|---|---|---|---|
+| Won | 8–14% (hasty 24%) | 50–52% | attacker 5–20%, defender 40–90% ✓ |
+| Failed | **35–41%** (deliberate at 2:1: 25%) | 16–29% | attacker 10–25% ✗, defender 5–20% (a little high) |
+
+(Corrected, balance.md, fortieth round: the attacker's *lost* includes its
+broken and fled, who are not casualties in the sources' sense. Its killed and
+wounded in a failed attack are 19–28% at 40%, 16–22% at 30%.)
+
+A won attack is where the sources put it (the defender at the low end: a
+battle ends when the defence gives up at 50%, decision 49, where a
+penetrated position in history is mostly captured). **A failed attack goes on
+too long**: the attacker loses about twice what the sources say before it
+stops, because it stops at 40% (decision 66, raised from 30% to meet the win
+targets), where battalion doctrine says about 20%.
+
+## Hasty and deliberate attacks (2026-10-01)
+
+Whether the game's hasty attack (one scout, in as soon as the enemy is
+found, no fire first) is as costly as history says (balance.md, *Forty-first
+round*). **Every figure is second-hand** (search extracts; the cloud proxy
+refused the pages). No source found counts hasty against deliberate attacks
+on prepared positions at small-unit level.
+
+| Condition | Figure | Source |
+|---|---|---|
+| Rowland, small units, WWII, 3:1 | 54% without surprise, 76% with; surprise cuts the defence's effectiveness by about 60% | [review](https://www.themself.org/2013/12/stress-of-battle-5-ww2-heroism-surprise/) |
+| US planning table (doctrinal, not measured) | even odds need 3.75:1 for a hasty attack on a prepared defence, 2.5:1 on a hasty one | [forum extract](https://forums.matrixgames.com/viewtopic.php?t=303455) |
+| Dupuy (QJM) posture factors | hasty defence ×1.3, prepared ×1.5, fortified ×1.6; surprise ×1.1–2.2 | [TDI](https://dupuyinstitute.org/2017/07/05/human-factors-in-warfare-defensive-posture/) |
+| MoD, British Army Desert War Game (1978) | hasty operations 70% as effective as deliberate | war-game rule, via thewargameswebsite.com |
+| FM 3-90 | a hasty attack trades preparation for speed, chosen for a fleeting chance; up to a third held in reserve for the risk | [FM 3-90 ch. 5](https://www.globalsecurity.org/military/library/policy/army/fm/3-90/ch5.htm) |
+| RAND, NTC (Goldsmith 1987; 1997) | strong correlation of good reconnaissance with success; essential reconnaissance done in about half the battles; about a third of companies accomplished the mission | [N2628](https://www.rand.org/pubs/notes/N2628.html), [MR846](https://www.rand.org/pubs/monograph_reports/MR846.html) |
+| ORS, Operation Veritable (1945) | infantry close behind a heavy fire plan took 1,115 prisoners for 349 losses in 16 battalion attacks | via [Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/) |
+| Sinai, 8 October 1973 | unsupported armoured counterattacks on dug-in infantry with ATGMs failed badly | [Israel State Archives](https://catalog.archives.gov.il/en/chapter/8-9-october-counter-attack-and-failure-in-the-south-recovery-in-the-north/) |
+
+**Read together** (a judgement, ±10 points): a hasty company attack on a
+prepared platoon at 3:1 wins about 15–35%; the gap to a deliberate attack is
+about 20–35 points; preparatory fire is the larger and better-supported part
+of it. Selection bias runs the other way in history: hasty attacks are
+launched when they look good.
+
+## The breakpoints and explosives' share, under decisions 67–68 (2026-10-01)
+
+`npm run validate` rerun after the attacker's breakpoint went back to 30%
+(decision 67) and the drill gained one-level bounding, covered routes and
+platoons that close together (balance.md, thirty-seventh to forty-fifth
+rounds). Research figures, 100 battles a cell, the previous run → now:
+
+| Battle | Fire | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives | Minutes, median |
+|---|---|---|---|---|---|---|
+| Platoon meeting | — | 40% → 37% | 39% → 31% | — | 33% → 32% | 8 → 7 |
+| Platoon 3:1 attack | — | 95% → 84% | 25% → 19% | 67% → 56% | 16% → 14% | 34 → 34 |
+| Platoon 2:1 attack | — | 46% → 35% | 28% → 22% | 50% → 44% | 21% → 19% | 34 → 32 |
+| Company 3:1 attack | a bomb a turn | 61% → 54% | 16% → 13% | 31% → 28% | 33% → 23% | 29 → 31 |
+| Company 2:1 attack | a bomb a turn | 0% → 0% | 20% → 17% | — | 20% → 14% | 29 → 29 |
+| Company 3:1 attack | calibrated | 68% → 68% | 23% → 20% | 28% → 28% | 51% → 42% | 27 → 28 |
+| Company 2:1 attack | calibrated | 9% → 7% | 26% → 21% | 25% → 18% | 50% → 45% | 28 → 27 |
+
+- **Attackers give up at 13–22%**, inside the sources' 10–25% for a failed
+  attack (*Loss exchange in attacks*) and near the rule of thumb's 20–25%.
+- **Explosives' share on the flat harness is 42–45% with calibrated fire**:
+  fewer attacks run long under the shells now they stop at 30%. The 75% is
+  for real ground (author, 2026-09-30), where the tel gives 72–75% (balance.md,
+  fortieth round).
+- The flat harness is not the balance's measure (the tel's reference plans
+  are, balance.md, forty-third to forty-fifth rounds); its company 3:1 at 68%
+  is one scripted plan on open ground.
 
 ## Open
 

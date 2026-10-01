@@ -20,7 +20,9 @@
     "balance": "vite-node tools/balance-sim.ts",
     "validate": "vite-node tools/validation-sim.ts",
     "scenario-sim": "vite-node tools/scenario-sim.ts",
-    "jev-sim": "vite-node tools/jev-sim.ts"
+    "jev-sim": "vite-node tools/jev-sim.ts",
+    "jev-probe": "vite-node tools/jev-probe.ts",
+    "scout-probe": "vite-node tools/scout-probe.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
@@ -34,6 +36,7 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.130.0",
     "@typesafe-ai/sdk": "^0.6.0",
     "milsymbol": "^2.2.0",
     "react": "^18.3.1",

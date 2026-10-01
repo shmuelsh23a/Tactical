@@ -35,7 +35,7 @@ export type Decider = (q: Question) => string;
  * question-set version). Change it when a question's wording, options or
  * picture change in a way that could change an answer.
  */
-export const QUESTION_SET_VERSION = "2026-09-30";
+export const QUESTION_SET_VERSION = "2026-10-01.3";
 
 /** Thrown by a decider with no answer yet: the battle stops at this question. */
 export class NeedAnswer extends Error {
@@ -70,7 +70,7 @@ const round = (p: Point) => `(${Math.round(p.x)}, ${Math.round(p.y)})`;
 export function viewOf(
   game: Game,
   side: Side,
-  plan: { objective: Point; mortarLeft: number | null; brief?: string; startLine?: Point; reports?: readonly string[] },
+  plan: { objective: Point; mortarLeft: number | null; brief?: string; startLine?: Point; reports?: readonly string[]; stage?: string },
 ): string {
   const view = sideView(game, side);
   const lines: string[] = [];
@@ -95,6 +95,7 @@ export function viewOf(
     `Your plan puts the enemy position about ${round(plan.objective)}, ground ${h(plan.objective)} m` +
       (plan.startLine ? `; your start line is about ${round(plan.startLine)}, ground ${h(plan.startLine)} m.` : "."),
   );
+  if (plan.stage) lines.push(plan.stage);
   if (plan.mortarLeft !== null) lines.push(`Mortar missions left: ${plan.mortarLeft}.`);
   if (plan.reports?.length) {
     lines.push("Your fire last turn, as your forces saw it:");

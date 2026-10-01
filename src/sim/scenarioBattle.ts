@@ -19,7 +19,7 @@ import {
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
 import { bestVantages, isDeadGround } from "../app/deadGround.js";
-import { FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
+import { ASSAULT_POSITION_M, FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
 import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
 import type { IndirectFireResult } from "../engine/index.js";
@@ -119,9 +119,20 @@ export interface ScenarioBattleOptions {
    * The defending company's fire plan (`planDefenderFires`): its mortar
    * targets registered on the dead ground in front of it, fired on as the
    * attacker crosses them. On unless false; false is every table before
-   * 2026-09-30's twenty-eighth round, where it registered nothing.
+   * 2026-09-30's twenty-eighth round, where it registered nothing. `"open"`
+   * registers them on the open ground first instead (thirty-seventh round).
    */
-  defenderFirePlan?: boolean;
+  defenderFirePlan?: boolean | "open";
+  /** Called at the end of each turn's fire phase with the game, to trace a battle (read it; never change it). */
+  onTurn?: (g: Game, turn: number) => void;
+  /** Fire on the move (`GameOptions.fireOnTheMove`), set on the scenario's game before the first turn. */
+  fireOnTheMove?: number;
+  /** The attacker's breakpoint (`GameOptions.attackerBreakpoint`), set on the scenario's game before the first turn. */
+  attackerBreakpoint?: number;
+  /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
+  coveredRoutes?: boolean;
+  /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
+  arriveTogether?: boolean;
   /**
    * Someone else commands the attacking company (Jev, or an agent standing in
    * for it, `tools/jev-sim.ts`): its scouts, their posts, where the rest wait,
@@ -137,6 +148,12 @@ export interface ScenarioBattleResult {
   turns: number;
   men: Record<Side, number>;
   down: Record<Side, number>;
+  /**
+   * Men out of the fight at the end: down, and the fit men of forces that
+   * surrendered or are routing — prisoners and the fled, which real loss
+   * figures for a lost position count (thirty-ninth round).
+   */
+  lost: Record<Side, number>;
   outBy: { smallArms: number; explosive: number };
   /** The turn the attacker's main body was let go, if it waited for its scouts. */
   released?: number;
@@ -186,6 +203,8 @@ const PLAN_SPREAD_M = 90;
 /** One battle of `listing`, on `seed`, to an end or to `maxTurns`. */
 export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: ScenarioBattleOptions): ScenarioBattleResult {
   const { game: g, mapWidth, mapHeight, reserves } = listing.build(seed);
+  if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
+  if (opts.attackerBreakpoint !== undefined) g.attackerBreakpoint = opts.attackerBreakpoint;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
@@ -211,7 +230,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   }
   const defenderTargets =
     opts.defenderFirePlan !== false && g.mayCall(defender, MORTAR)
-      ? planDefenderFires(g, defender, startLine, mapWidth, mapHeight)
+      ? planDefenderFires(g, defender, startLine, mapWidth, mapHeight, opts.defenderFirePlan === "open" ? "open" : "deadGround")
       : [];
   for (const t of defenderTargets) g.registerTarget(defender, MORTAR, t);
 
@@ -240,11 +259,13 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     seenHits.clear();
     return out;
   };
+  /** Where the company stands, once there is a company: a commander knows what it has ordered. */
+  let stage: () => string | undefined = () => undefined;
   const question = (q: Omit<Question, "turn" | "view">): string =>
     ask!({
       ...q,
       turn: g.turn,
-      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine, reports: reports() }),
+      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine, reports: reports(), stage: stage() }),
     });
   const companyPlan = ask ? askPlan(g, attacker, objective, suspected, mapWidth, mapHeight, question) : opts.company ?? {};
   const scoutFit = new Map<string, number>();
@@ -253,11 +274,16 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   /** Each squad's fit men at the last platoon question, and when each platoon was last asked about. */
   const platoonFit = new Map<string, number>();
   const platoonAsked = new Map<string, number>();
-  const company = new ScriptedCompany(g, attacker, objective, suspected, companyPlan, {
+  const drillChoices = {
+    ...(opts.coveredRoutes === false ? { coveredRoutes: false } : {}),
+    ...(opts.arriveTogether === false ? { arriveTogether: false } : {}),
+  };
+  const company = new ScriptedCompany(g, attacker, objective, suspected, { ...companyPlan, ...drillChoices }, {
     terrain: g.terrain,
     width: mapWidth,
     height: mapHeight,
   });
+  stage = () => companyStage(g, company);
 
   const tasks: Record<Side, DrillTask> = {
     [attacker]: { side: attacker, attacking: true, objective },
@@ -272,6 +298,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     turns: 0,
     men,
     down: { RED: 0, BLUE: 0 },
+    lost: { RED: 0, BLUE: 0 },
     outBy: { smallArms: 0, explosive: 0 },
     downWhileWaiting: 0,
     missions: { RED: 0, BLUE: 0 },
@@ -313,6 +340,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     }
     heard(g.advanceToPhase("combat").resolved);
     for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill, state);
+    opts.onTurn?.(g, turn);
     if (settle()) break;
     const next = g.advanceToPhase("initiative");
     heard(next.resolved);
@@ -332,7 +360,9 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= HOLDS_POST_M) result.retaken++;
   }
   for (const u of g.units) {
+    const gone = !!u.surrendered || !!u.routing;
     for (const s of u.soldiers ?? []) {
+      if (s.neutralized || gone || s.morale?.state === "broken") result.lost[u.side]++;
       if (!s.neutralized) continue;
       result.down[u.side]++;
       if (s.outBy) result.outBy[s.outBy]++;
@@ -360,11 +390,17 @@ function askPlan(
     question({
       id: "plan.scouts",
       kind: "choice",
-      ask: "How many squads do you send ahead to find the enemy before the company goes? Scouts walk, look harder, hold their fire, and carry binoculars.",
+      // What scouts do in this game, said as fact: bare, the question drew one
+      // scout from Jev and every Claude model (docs/balance.md, forty-fourth round).
+      ask:
+        "How many squads do you send ahead to find the enemy before the company goes? Scouts walk, look harder, hold their fire, and carry binoculars." +
+        " Each scout squad watches from its own observation point, chosen so the points see different parts of the enemy's ground." +
+        " When the company goes in, the scouts stay at their posts, and they are the eyes for your mortar fire: the assaulting squads, on the move, cannot find men dug in.",
       options: [
         { id: "0", label: "none: the whole company advances at once" },
-        { id: "1", label: "one squad" },
-        { id: "2", label: "two squads" },
+        { id: "1", label: "one squad: one observation point, the enemy's ground seen from one side" },
+        { id: "2", label: "two squads: two observation points" },
+        { id: "3", label: "three squads: three observation points, the enemy's ground seen from three sides" },
       ],
     }),
   );
@@ -450,34 +486,55 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
         ? "Your side has just found the enemy near the objective."
         : `Your side has held the enemy near the objective in sight ${company.turnsHeldInSight + 1} turns in a row.`
       : notInSight(g, company);
+  // A choice of three while the company can still move up; a yes or no after.
   const go =
     question({
       id: `go.${turn}`,
-      kind: "noul",
+      kind: company.movedUp ? "noul" : "choice",
       ask: `${why} Send the company in now?`,
       options: [
         { id: "yes", label: "yes: the company advances to the attack" },
-        { id: "no", label: "no: keep holding while the scouts look" },
+        ...(company.movedUp
+          ? []
+          : [
+              {
+                id: "up",
+                label: `move up: the company moves to the last covered ground about ${ASSAULT_POSITION_M} m short of where your plan puts the enemy, and holds there until you send it in`,
+              },
+            ]),
+        { id: "no", label: lost ? "no: the company stays where it is, with no scouts left to find the enemy" : "no: keep holding while the scouts look" },
       ],
-    }) === "yes";
-  if (!go) return false;
-  // Which way it goes: straight, or by one of the scouts' observation points,
-  // coming in from that side.
+    });
+  // The enemy as the side has found it near the objective, if it has: where the company moves up to, and flanks.
+  const found = sideView(g, company.side)
+    .units.filter((e) => e.side !== company.side && !e.neutralized && distance(e.position, company.objectivePoint) <= FIND_WITHIN_M)
+    .map((e) => e.position);
+  if (go === "up") company.moveUp(g, found);
+  if (go !== "yes") return false;
+  // Which way it goes: straight, round a flank, or by one of the scouts'
+  // observation points, coming in from that side.
   const posts = [...company.posts].filter((e): e is [string, Point] => e[1] !== null);
-  if (posts.length) {
+  const flanks = company.flankPoints(found);
+  if (posts.length || flanks.length) {
     const axis = question({
       id: `go.axis.${turn}`,
       kind: "choice",
       ask: "Which way does the company go in?",
       options: [
         { id: "straight", label: "straight at the plan's centre" },
+        ...flanks.map((f) => ({
+          id: `flank:${f.side}`,
+          label: `round the ${f.side} flank: by covered ground at (${Math.round(f.at.x)}, ${Math.round(f.at.y)}), beside the enemy, coming in on its side`,
+        })),
         ...posts.map(([id, p]) => ({
           id: `via:${id}`,
           label: `by ${id}'s observation point (${Math.round(p.x)}, ${Math.round(p.y)}), coming in from that side`,
         })),
       ],
     });
-    company.setAxis(axis === "straight" ? undefined : posts.find(([id]) => `via:${id}` === axis)?.[1]);
+    company.setAxis(
+      axis === "straight" ? undefined : (flanks.find((f) => `flank:${f.side}` === axis)?.at ?? posts.find(([id]) => `via:${id}` === axis)?.[1]),
+    );
   }
   if (company.liveScouts(g).length) {
     company.setScoutsFire(
@@ -538,10 +595,13 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
   return true;
 }
 
+// Each option says what it does to the attack, not only what the platoon does:
+// Jev, asked "assault / base of fire / reserve" bare, kept two platoons of three
+// back and they never fought (docs/balance.md, thirty-fourth round).
 const PLATOON_GO_OPTIONS = [
-  { id: "assault", label: "assault the position" },
-  { id: "support", label: "base of fire: close to small-arms reach of the enemy and fire from there" },
-  { id: "reserve", label: "reserve: stay back where it waited, ready to be committed" },
+  { id: "assault", label: "assault the position: close with the enemy and take the objective" },
+  { id: "support", label: "base of fire: stop at small-arms reach of the enemy and fire, without closing to take the objective" },
+  { id: "reserve", label: "reserve: stay back where it waited, out of the fight until you commit it later" },
 ];
 const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered;
 const describePlatoon = (us: readonly Unit[]) =>
@@ -586,12 +646,13 @@ function askPlatoons(
       : task === "halt"
         ? "has been halted, gone to ground, three turns"
         : "is still in reserve";
+    // "Carry on" last, and every option by what it does to the attack (as PLATOON_GO_OPTIONS).
     const options = [
-      { id: "on", label: `carry on (${PLATOON_TASK_WORDS[task]})` },
-      ...(task !== "assault" ? [{ id: "assault", label: "assault the position" }] : []),
-      ...(task !== "support" ? [{ id: "support", label: "base of fire: close to small-arms reach and fire from there" }] : []),
-      ...(task !== "halt" ? [{ id: "halt", label: "halt and go to ground where it is" }] : []),
-      { id: "withdraw", label: "pull back to the start line" },
+      ...(task !== "assault" ? [{ id: "assault", label: PLATOON_GO_OPTIONS[0]!.label }] : []),
+      ...(task !== "support" ? [{ id: "support", label: PLATOON_GO_OPTIONS[1]!.label }] : []),
+      ...(task !== "halt" ? [{ id: "halt", label: "halt and go to ground where it is: stop moving and stop fighting forward" }] : []),
+      { id: "withdraw", label: "pull back to the start line, out of the attack" },
+      { id: "on", label: `carry on: ${PLATOON_TASK_CARRY_ON[task]}` },
     ];
     const a = question({
       id: `platoon.${key}.${g.turn}`,
@@ -624,6 +685,30 @@ function askPlatoons(
       if (lift === "yes") company.liftFires();
     }
   }
+}
+
+const PLATOON_TASK_CARRY_ON: Record<PlatoonTask, string> = {
+  assault: "keep assaulting",
+  support: "keep giving a base of fire",
+  reserve: "stay in reserve, out of the fight",
+  halt: "stay halted, gone to ground",
+  withdraw: "keep pulling back",
+};
+
+/** The company's stage in the commander's picture: not gone in yet, or gone in and what each platoon was ordered. */
+function companyStage(g: Game, company: ScriptedCompany): string {
+  if (company.released === undefined)
+    return company.movedUp
+      ? `Your company has not gone in to the attack yet: it has moved up to its assault position, about ${ASSAULT_POSITION_M} m short of where your plan puts the enemy, and holds there.`
+      : "Your company has not gone in to the attack yet.";
+  const tasks = [...company.platoons(g)]
+    .filter(([, us]) => us.some(fighting))
+    .map(([key]) => `${key} ${PLATOON_TASK_WORDS[company.platoonTask(key)]}`);
+  return (
+    `Your company went in to the attack on turn ${company.released}` +
+    (tasks.length ? `: ${tasks.join(", ")}` : "") +
+    (company.holdsShort ? `. The assault stops ${HOLD_SHORT_M} m short of the enemy until you lift your fires.` : ".")
+  );
 }
 
 const PLATOON_TASK_WORDS: Record<PlatoonTask, string> = {
@@ -771,6 +856,9 @@ function askAttackerFire(
       ...(company.released !== undefined
         ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs one of your missions)` }))
         : []),
+      // Bare, on purpose: worded "save the mission for when your assault is closing", Jev held every
+      // mission until the company went, and fire held that long costs the attack about 30 points
+      // (docs/balance.md, thirty-fourth round).
       { id: "hold", label: "hold fire this turn" },
     ],
   });
@@ -878,7 +966,14 @@ const DEFENDER_TARGET_SPACING_M = 120;
  * positions, the ground and the direction of the attack (the brief's tasking,
  * taken as the attacker's start line) — never where the attacker is.
  */
-export function planDefenderFires(g: Game, side: Side, attackFrom: Point, width: number, height: number): Point[] {
+export function planDefenderFires(
+  g: Game,
+  side: Side,
+  attackFrom: Point,
+  width: number,
+  height: number,
+  prefer: "deadGround" | "open" = "deadGround",
+): Point[] {
   const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
   if (!own.length || !g.terrain) return [];
   const centre = mean(own);
@@ -900,10 +995,12 @@ export function planDefenderFires(g: Game, side: Side, attackFrom: Point, width:
       candidates.push({ at, dead: isDeadGround(query, at), along, off });
     }
   }
-  // Dead ground first, the nearest the positions first — where an assault
-  // forms up and closes; then nearest the line of attack; ties by position.
+  // Dead ground first (or open ground, `prefer`), the nearest the positions
+  // first — where an assault forms up and closes; then nearest the line of
+  // attack; ties by position.
+  const first = prefer === "open" ? -1 : 1;
   candidates.sort(
-    (a, b) => Number(b.dead) - Number(a.dead) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
+    (a, b) => first * (Number(b.dead) - Number(a.dead)) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
   );
   const chosen: Point[] = [];
   for (const c of candidates) {

@@ -57,6 +57,10 @@ export interface CompanyOrders {
   holdShort?: boolean;
   /** Where a platoon pulled back goes: the company's start line. */
   fallBackTo?: Point;
+  /** Squads go by ground out of sight of the enemy they know of, until close (ours, forty-fifth round); on unless false. */
+  coveredRoutes?: boolean;
+  /** Assaulting platoons wait at the last cover for each other, to close together (ours, forty-fifth round); on unless false. */
+  arriveTogether?: boolean;
 }
 
 /**
@@ -73,6 +77,27 @@ export type PlatoonTask = "assault" | "support" | "reserve" | "halt" | "withdraw
  * a margin. Ours.
  */
 export const HOLD_SHORT_M = 200;
+
+/**
+ * An assault position: the last covered ground before the objective, where
+ * the company forms up out of sight before it goes in (doctrine; the distance
+ * is ours). Sought within {@link ASSAULT_POSITION_SEARCH_M} of the point this
+ * far short of where the plan puts the enemy.
+ */
+export const ASSAULT_POSITION_M = 250;
+export const ASSAULT_POSITION_SEARCH_M = 150;
+
+/**
+ * A flank: the axis point beside the enemy, this far to one side of the line
+ * of attack and this far back toward the company (ours).
+ */
+export const FLANK_OFFSET_M = 200;
+export const FLANK_SHORT_M = 100;
+
+const centreOf = (ps: readonly Point[]): Point => ({
+  x: ps.reduce((t, p) => t + p.x, 0) / ps.length,
+  y: ps.reduce((t, p) => t + p.y, 0) / ps.length,
+});
 
 /**
  * The platoon a force belongs to, read from its id as the scenarios name
@@ -112,6 +137,10 @@ export interface ReconPlan {
 
 export interface CompanyPlan {
   recon?: ReconPlan;
+  /** See `CompanyOrders.coveredRoutes`; on unless false. */
+  coveredRoutes?: boolean;
+  /** See `CompanyOrders.arriveTogether`; on unless false. */
+  arriveTogether?: boolean;
   /** Where the rest wait while the scouts look: where they stand, or the nearest dead ground. */
   waitIn?: "place" | "deadGround";
 }
@@ -157,11 +186,17 @@ export class ScriptedCompany {
   firesLifted = false;
   /** The turn the rest were let go; undefined while they hold. */
   released: number | undefined;
+  /** The rest have moved up to an assault position and hold there (`moveUp`). */
+  movedUp = false;
+  private readonly ground: CompanyGround;
+  private readonly suspected: readonly Point[];
 
   constructor(game: Game, side: Side, objective: Point, suspected: readonly Point[], plan: CompanyPlan, ground: CompanyGround) {
     this.side = side;
     this.objective = { ...objective };
     this.plan = plan;
+    this.ground = ground;
+    this.suspected = suspected;
     const own = game.units.filter((u) => u.side === side && u.kind === "infantry");
     for (const u of own) this.platoonOfSquad.set(u.id, platoonKey(u.id));
     this.home = own.length
@@ -212,6 +247,75 @@ export class ScriptedCompany {
     }
   }
 
+  /**
+   * Move the rest up to an assault position and hold them there: each squad
+   * to the dead ground nearest a point {@link ASSAULT_POSITION_M} short of the
+   * enemy, on its own line to it — the last cover before the objective. The
+   * enemy is where the side has found it (`found`, its marks near the
+   * objective) when it has, else where the plan puts it; the ground must be
+   * out of sight of both. A squad with no dead ground there keeps where it
+   * waited. Returns whether any squad has somewhere to go.
+   */
+  moveUp(game: Game, found: readonly Point[] = []): boolean {
+    if (this.released !== undefined || this.movedUp) return false;
+    const enemy = found.length ? centreOf(found) : this.objective;
+    const watchers = [...this.suspected, ...found];
+    let any = false;
+    for (const u of game.units) {
+      if (u.side !== this.side || u.kind !== "infantry" || this.scouts.has(u.id) || u.neutralized) continue;
+      const from = this.waitAt.get(u.id) ?? u.position;
+      const range = distance(from, enemy);
+      if (range <= ASSAULT_POSITION_M) continue;
+      const k = ASSAULT_POSITION_M / range;
+      const aim = { x: enemy.x + (from.x - enemy.x) * k, y: enemy.y + (from.y - enemy.y) * k };
+      const at = nearestDeadGround({ terrain: this.ground.terrain, watchers }, aim, {
+        width: this.ground.width,
+        height: this.ground.height,
+        radius: ASSAULT_POSITION_SEARCH_M,
+        step: 20,
+      });
+      if (at && distance(at, enemy) < range) {
+        this.waitAt.set(u.id, at);
+        any = true;
+      }
+    }
+    this.movedUp = any;
+    return any;
+  }
+
+  /**
+   * Where a flanking approach goes in: dead ground beside the enemy, off the
+   * line of attack — {@link FLANK_OFFSET_M} to one side of it and
+   * {@link FLANK_SHORT_M} back toward the company — so the company comes in on
+   * the enemy's side, not at its front. One point a side, where the ground has
+   * one; the enemy as `moveUp` takes it.
+   */
+  flankPoints(found: readonly Point[] = []): { side: "west" | "east"; at: Point }[] {
+    const enemy = found.length ? centreOf(found) : this.objective;
+    const back = distance(this.home, enemy);
+    if (back === 0) return [];
+    const bx = (this.home.x - enemy.x) / back;
+    const by = (this.home.y - enemy.y) / back;
+    const watchers = [...this.suspected, ...found];
+    const out: { side: "west" | "east"; at: Point }[] = [];
+    for (const sign of [1, -1]) {
+      const aim = {
+        x: enemy.x + bx * FLANK_SHORT_M + sign * by * FLANK_OFFSET_M,
+        y: enemy.y + by * FLANK_SHORT_M - sign * bx * FLANK_OFFSET_M,
+      };
+      if (aim.x < 0 || aim.y < 0 || aim.x > this.ground.width || aim.y > this.ground.height) continue;
+      const at = nearestDeadGround({ terrain: this.ground.terrain, watchers }, aim, {
+        width: this.ground.width,
+        height: this.ground.height,
+        radius: ASSAULT_POSITION_SEARCH_M,
+        step: 20,
+      });
+      // Named by the compass: which side of the enemy it is on.
+      if (at) out.push({ side: at.x < enemy.x ? "west" : "east", at });
+    }
+    return out.sort((a, b) => (a.side < b.side ? 1 : -1));
+  }
+
   /** Whether a force is one of this company's scouts. */
   isScout(u: Unit): boolean {
     return this.scouts.has(u.id);
@@ -248,6 +352,8 @@ export class ScriptedCompany {
       ...(this.bounding ? { boundByPlatoon: true } : {}),
       ...(this.holdingShort ? { holdShort: true } : {}),
       fallBackTo: this.home,
+      ...(this.plan.coveredRoutes === false ? { coveredRoutes: false } : {}),
+      ...(this.plan.arriveTogether === false ? { arriveTogether: false } : {}),
     };
   }
 

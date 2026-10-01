@@ -2155,6 +2155,28 @@ on the stated reasoning, still awaiting the author's word.
     The scripted company the balance is measured with now sends **three
     scouts** (ours, `--recon 3`). What it gives: docs/balance.md,
     *Thirty-first round*.
+67. ✅ **An attacking side gives up at 30% again** (author, 2026-10-01). The
+    reference plans (docs/balance.md, thirty-seventh to fortieth rounds) put
+    a failed attack's cost to the attacker at 19–28% killed and wounded under
+    decision 66's 40%, at or over the top of the sources' 10–25%
+    (docs/validation.md, *Loss exchange in attacks*); at 30% it is 16–22%.
+    Closeness to real-life outcomes is the guideline (author), so the
+    breakpoint returns to decision 44's figure, and the win targets are to be
+    set for small-unit attacks separately (pending). `SIDE_BREAK_BY_POSTURE`;
+    a recording carries its own breakpoint. Question set `2026-10-01.2` (the
+    commander's picture states it).
+68. ✅ **Win targets for small-unit attacks** (author, 2026-10-01: "I
+    accept the new bands"). Squad-to-company attacks on a prepared position:
+    3:1 **40–55%** (Rowland: 54% at 3:1 without surprise, all positions; a
+    prepared position ×1.65 puts 3:1 at about 1.8:1 in effect, about 46%),
+    **70–75%** with surprise or strong suppression (Rowland's 76%); 2:1
+    **20–35%** (no small-unit source; the division-level bands' 25-point
+    step below 3:1 kept, as doctrine's "below 3:1 usually fails" — a
+    judgement). Judged on the reasonable plans' median, with losses against
+    the sources (docs/validation.md, *Loss exchange in attacks*). Where it
+    stands at decision 67: the standard measurement 49% and 27%, the
+    reasonable plans' median 42% and 24% (docs/balance.md, fortieth round).
+    `TARGETS` in `src/sim/balance.ts`.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
@@ -2207,11 +2229,16 @@ Still modelled by reasonable assumption (flag if you want them changed):
   by playing:
   - **A prepared position is what gives the defender its superiority**, and
     what makes an attack need **3:1**. Attacked below it, a prepared defender
-    should hold; at 3:1 the attack should succeed. **The targets** (author,
-    2026-09-30, rules decision 66, from the research in validation.md, *What
+    should hold; at 3:1 the attack should succeed more often than not, and
+    only just. **The targets for small-unit attacks** (author, 2026-10-01,
+    rules decision 68, from Rowland's small-unit data in validation.md, *What
     an attack at 3:1 should win*): a 3:1 attack on a prepared position wins
-    **55–70%** — 75–85% only with surprise or strong suppression, the 85%
-    of decision 54 now a ceiling — and a 2:1 attack **30–45%**.
+    **40–55%** — 70–75% with surprise or strong suppression, the 85% of
+    decision 54 a ceiling — and a 2:1 attack **20–35%**. They are judged on
+    **reasonable plans**, not one plan (docs/balance.md, thirty-seventh
+    round), and against real-life losses as well as wins. Decision 66's
+    55–70% and 30–45% were read from division-level tables, and stand for
+    battles of that size.
   - **In a meeting engagement nobody has prepared anything**, so nobody has a
     defender's bonus: the larger force should win. What the ground offers —
     a building, a crest — still favours whoever reaches it first.
@@ -2576,11 +2603,22 @@ Each is intended to be an independent, toggleable module:
     question as a `noul` or a `choice` over its options. A battle is replayed
     to each question and driven on by the answer, so the answers are all Jev
     contributes and a replay never calls it (tested). Every call is logged
-    with its answer, confidence, model and `QUESTION_SET_VERSION`. Tested
-    against a stand-in for the service; not yet run against Jev itself — it
-    needs `TYPESAFE_API_KEY` in the environment and `api.typesafe.ai`
-    allowed, which the session's network denied on 2026-09-30. The live game
-    does not call it.
+    with its answer, confidence, model and `QUESTION_SET_VERSION`. The live
+    game does not call it.
+
+    **First run against Jev** (2026-09-30, docs/balance.md, thirty-fourth
+    round): Jev is steady (the same question gets the same answer), judges
+    rather than plans, and leans to an option whose words the state
+    repeats, so how a question is framed decides much of what it answers.
+    Each question now goes with the commander's role and mission (naming no
+    option), each option says what it does to the attack, and the picture
+    says what the company has been ordered. `npm run jev-probe` measures a
+    framing on Jev's own recorded questions before it is adopted; `jev-sim
+    --rule` puts the scripted commander's choices through the same questions
+    (it wins what the scripted commander wins). Jev wins 10% at 3:1 and 15%
+    at 2:1: it bounds by platoon and holds short under its fires, as
+    doctrine teaches, and both cost the attack heavily in this game — a
+    question for the author.
 
 16. **Campaigns — battles that remember the last one.** A pre-built series
     rather than a single engagement: the same force fights again on the next
@@ -2705,3 +2743,52 @@ Each is intended to be an independent, toggleable module:
     obvious start); whether a drill can branch on events ("if pinned, call
     smoke") or only set numbers; where drills are stored and shared; and
     whether a scenario can require a drill, as an exercise would.
+21. **A doctrine engine — the drills taken from the manuals, not tuned by us.**
+    (Author, 2026-10-01.) The rules are tuned against real outcomes; the drills
+    that carry out orders should not be tuned at all, or a quirk in one hides a
+    fault in the other (docs/balance.md, forty-fourth round: the third scout
+    "won" by keeping a squad off a killing ground). So the layers divide:
+    **rules** are set from research and tuned to real outcomes; **drills** are
+    transcribed from doctrine and fixed; **plans** are the players' (or the
+    AI's). If doctrinal drills do not give real outcomes, the rules are wrong.
+    - **Civilian edition: US doctrine from open sources** (Distribution A):
+      ATP 3-21.8 *Infantry Platoon and Squad* (the battle drills), ATP 3-21.10
+      *Infantry Rifle Company*, FM 3-90 *Tactics* (forms of manoeuvre, hasty
+      and deliberate attack, the defence). Each drill parameter records *the
+      manual says X, our value Y* — manuals give procedures, not distances.
+    - **Institutional edition: the doctrine engine adapted to the customer's
+      doctrine and material**, as part of tailoring (docs/business-plan.md,
+      *Editions*).
+    - **Where the work is done:** on a local computer, not a cloud session —
+      the manuals are long, the military sites were refused by the cloud
+      proxy, and the author has doctrinal material to embed.
+    - **First step:** an inventory of every drill the game plays (scouting,
+      waiting, the approach, bounding overwatch, base of fire, holding short
+      and lifting fires, the assault, consolidation; the defender's fire
+      discipline, displacement, counterattack, fire plan), each mapped to its
+      manual paragraph as *matches*, *ours and differs*, or *ours, doctrine
+      silent*. Then the drills rewritten to doctrine, and the reference plans
+      (balance.md, thirty-seventh to forty-fifth rounds) measured again.
+    Relation to backlog 20: the TTP editor is how an instructor changes a
+    drill; this is where the default drills come from.
+22. **An AI commander in three parts: plan once, compute, execute cheaply.**
+    (Discussed 2026-10-01.) An expensive model writes several candidate plans
+    once a battle, as structured parameters (the `--rule` vocabulary: scouts,
+    posts, axis, tasks, when to go, bound, hold short, fire policy); the engine
+    estimates each one's chance of success by playing it many times; a cheap
+    executor (Jev, or a small model) chooses among options with those numbers
+    and the plan's bounds, and explains its choices in the debrief. Measured
+    reasons (balance.md, thirty-fifth, thirty-sixth and forty-sixth rounds):
+    the models' plans failed where the questions could not express them, and
+    they judge odds badly; numbers judge them well.
+    - **The trap: the engine knows the truth.** Played from the real state,
+      the estimates know where the enemy is. They must start from the side's
+      belief — worlds sampled to fit what the side knows (the plan's estimate,
+      marks with their error, the order's intelligence).
+    - **The estimates inherit the drill's quirks**, so they want backlog 21's
+      doctrinal drills first; meanwhile the same machinery finds dominant
+      plans, which is a balance tool.
+    - **Stages:** (1) plan once and evaluate once at turn 0, the best plan
+      executed by rule; (2) estimates for the two or three decisions that
+      matter (going in, lifting the fires); (3) the full loop, the executor
+      narrating.

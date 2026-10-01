@@ -781,22 +781,24 @@ export const CONFIGURATIONS: readonly Configuration[] = ([undefined, 0.3, 0.5, 0
  * a prepared position:
  *
  * - at 1:1 the defender should hold: the attacker wins **at most 30%**;
- * - at about 2:1 the attacker wins **30–45%** — the defence usually holds;
- * - at 3–4:1 the attack should succeed: the attacker wins **55–70%**;
+ * - at about 2:1 the attacker wins **20–35%** — the defence usually holds;
+ * - at 3–4:1 the attack should succeed more often than not: **40–55%**;
  * - and a winning attacker at 3–4:1 should pay for it: **10–30%** of his men
  *   down, where "as it stands" pays 0–8%.
  *
- * The 2:1 and 3:1 bands are the author's since rules decision 66
- * (2026-09-30), from the research in docs/validation.md, *What an attack at
- * 3:1 should win*; before, they were ours: 30–70% and at least 70%.
+ * The 2:1 and 3:1 bands are the author's for small-unit attacks since rules
+ * decision 68 (2026-10-01), from Rowland's small-unit data in
+ * docs/validation.md, *What an attack at 3:1 should win*; decision 66 had
+ * 30–45% and 55–70% (division-level tables), and before that they were
+ * ours: 30–70% and at least 70%.
  *
  * Each echelon is judged on its own; a configuration's score is how many of
  * the twelve targets (four at each of three echelons) it meets.
  */
 export const TARGETS = {
   attack1MaxWin: 30,
-  attack2Win: [30, 45] as const,
-  attack3Win: [55, 70] as const,
+  attack2Win: [20, 35] as const,
+  attack3Win: [40, 55] as const,
   attack3AttackerDown: [10, 30] as const,
 } as const;
 

@@ -1,5 +1,6 @@
-import type { TypeSafeClient } from "@typesafe-ai/sdk";
+import type { JsonValue, TypeSafeClient } from "@typesafe-ai/sdk";
 import { NeedAnswer, QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "./companyQuestions.js";
+import type { Order } from "./opord.js";
 
 /**
  * Jev answers the company commander's questions (README, backlog 15).
@@ -35,6 +36,10 @@ export interface JevAnswer {
   model: string;
   /** How long the call took, in milliseconds, if the asker timed it (the tools do; nothing in src reads a clock). */
   ms?: number;
+  /** Why, where the model says (a Claude model does; Jev does not). */
+  reason?: string;
+  /** Tokens the call used, where the model reports them. */
+  usage?: { input: number; cached: number; output: number };
 }
 
 /** Answers one question, however long it takes. */
@@ -52,11 +57,52 @@ export interface JevLogEntry extends JevAnswer {
   questionSet: string;
 }
 
-/** The Jev request for one question: the commander's picture as its state, one question named `decision`. */
-export function jevRequest(q: Question) {
+/**
+ * How a question is framed for Jev. Jev is a fast judging model: it weighs the
+ * state against the options' words and does not plan, and what it knows of the
+ * job is what the request tells it — so the framing is part of the question
+ * set. Measured on its own recorded questions by `npm run jev-probe`
+ * (docs/balance.md, thirty-fourth round).
+ *
+ * - `plain`: the commander's picture as the state, the question as asked.
+ * - `role`: the same, the state saying whose decision it is.
+ * - `mission` (the default): the role, and the mission and the principles a
+ *   trained company commander decides by, beside the picture.
+ * - `order`: `mission`, and the order from battalion (`opord.ts`) for the
+ *   scenario, where one is written (docs/balance.md, thirty-sixth round).
+ */
+export type JevFraming = "plain" | "role" | "mission" | "order";
+
+const ROLE = "You are the company commander of the attacking side. You decide for your own company only, from what your side knows.";
+
+/**
+ * What a trained company commander brings to every decision: textbook
+ * infantry doctrine, not the game's rules and not a script for this battle.
+ * **It names no option.** Jev leans to an option whose words the state
+ * repeats: the same principles saying "a reserve exists to be committed" made
+ * it choose "reserve" more often, not less, and "keep the company out of
+ * sight while it waits" made it wait.
+ */
+export const MISSION: readonly string[] = [
+  "The mission is to take the objective before the deadline. An attack that has not taken it by then has failed, however few men it lost.",
+  "Mass at the decisive point: bring as much of the company as possible onto the objective together. Platoons held back take nothing.",
+  "Fire and movement: fire keeps the enemy's heads down so that the attack can close. It is wasted unless the attack moves while it lasts.",
+  "Use the ground: move by ground that hides the company from the enemy, even when it is a detour.",
+  "Losses are the price of the attack. Break it off only when it can no longer succeed.",
+];
+
+export const JEV_FRAMINGS: Record<JevFraming, (view: string, order?: Order) => string | Record<string, JsonValue>> = {
+  plain: (view) => view,
+  role: (view) => ({ role: ROLE, situation: view }),
+  mission: (view) => ({ role: ROLE, mission: [...MISSION], situation: view }),
+  order: (view, order) => ({ role: ROLE, mission: [...MISSION], ...(order ? { orders: [...order] } : {}), situation: view }),
+};
+
+/** The Jev request for one question: the commander's picture as its state, framed, and one question named `decision`. */
+export function jevRequest(q: Question, framing: JevFraming = "mission", order?: Order) {
   const label = (id: string) => q.options.find((o) => o.id === id)?.label ?? id;
   return {
-    state: q.view,
+    state: JEV_FRAMINGS[framing](q.view, order),
     questions: {
       decision:
         q.kind === "noul"
@@ -74,9 +120,9 @@ export function jevRequest(q: Question) {
  * An asker backed by Jev (`TypeSafeClient.systemOne`). A yes or no is Jev's
  * probability of yes, taken at even odds; a choice is Jev's pick.
  */
-export function jevAsker(client: Pick<TypeSafeClient, "systemOne">, model?: string): Asker {
+export function jevAsker(client: Pick<TypeSafeClient, "systemOne">, model?: string, framing: JevFraming = "mission", order?: Order): Asker {
   return async (q) => {
-    const request = jevRequest(q);
+    const request = jevRequest(q, framing, order);
     const { answers, model: used } = await client.systemOne({ ...request, ...(model ? { model } : {}) });
     const a = answers.decision as
       | { type: "noul"; noul: number }

@@ -448,6 +448,14 @@ export interface GameOptions {
    */
   pinnedFiresAtRange?: boolean;
   /**
+   * Fire on the move: a force that moved this turn fires its small arms at
+   * this factor of its hit chance — unaimed fire from unsupported positions
+   * (proposed, thirty-seventh round; the factor is ours). 1, no penalty, by
+   * default, as the game has always played; it may also be set before the
+   * first turn ({@link Game.fireOnTheMove}).
+   */
+  fireOnTheMove?: number;
+  /**
    * Nerve lost to fire by cover (rules decision 64, `NERVE_BY_COVER`): the
    * nerve the enemy's fire costs a man each turn is doubled in the open and
    * cut to 0.3 in a hole, 0.15 under a roof. On by default; a recording made
@@ -571,9 +579,12 @@ export class Game {
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
+  /** See {@link GameOptions.fireOnTheMove}. Set it before the first turn only: a recording keeps one value. */
+  fireOnTheMove: number;
   readonly nerveByCover: boolean;
   readonly nerveInOpen: number;
-  readonly attackerBreakpoint: number;
+  /** See {@link GameOptions.attackerBreakpoint}. Set it before the first turn only: a recording keeps one value. */
+  attackerBreakpoint: number;
   /** The sides attacking (rules decision 44). */
   readonly attackers: Side[];
   /** Whether a sighting carries location error (rules decision 51). */
@@ -734,6 +745,7 @@ export class Game {
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
+    this.fireOnTheMove = opts.fireOnTheMove ?? 1;
     this.nerveByCover = opts.nerveByCover ?? true;
     this.nerveInOpen = opts.nerveInOpen ?? NERVE_BY_COVER.none;
     this.attackerBreakpoint = opts.attackerBreakpoint ?? SIDE_BREAK_BY_POSTURE.attacking;
@@ -865,6 +877,7 @@ export class Game {
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
+      ...(this.fireOnTheMove !== 1 ? { fireOnTheMove: this.fireOnTheMove } : {}),
       ...(this.nerveByCover ? { nerveByCover: true } : {}),
       nerveInOpen: this.nerveInOpen,
       attackerBreakpoint: this.attackerBreakpoint,
@@ -2330,8 +2343,8 @@ export class Game {
       ...this.movementTerms(target, target.movedThisTurn > 0),
       ...(opts.cover == null ? this.coverModifierFor(target) : {}),
       ...opts,
-      // Heads down beyond close range (decision 65): the engine's, not the caller's.
-      ...this.headsDownAim(attacker, target),
+      // Heads down beyond close range (decision 65), and fire on the move: the engine's, not the caller's.
+      ...this.aimOf(attacker, target),
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
@@ -3082,6 +3095,12 @@ export class Game {
    * close range it fires over the parapet, at `HEADS_DOWN.beyondAimFactor`.
    * Absent when the shot is taken as any other.
    */
+  /** Heads down and fire on the move together, as one factor on the shooter's aim. */
+  private aimOf(unit: Unit, target: Unit): { aimFactor?: number } {
+    const aim = (this.headsDownAim(unit, target).aimFactor ?? 1) * (unit.movedThisTurn > 0 ? this.fireOnTheMove : 1);
+    return aim === 1 ? {} : { aimFactor: aim };
+  }
+
   private headsDownAim(unit: Unit, target: Unit): { aimFactor?: number } {
     if (!this.headsDown || !this.pinnedFiresAtRange || suppressionLevel(unit) !== "pinned") return {};
     return distance(unit.position, target.position) > HEADS_DOWN.aimedWithinM ? { aimFactor: HEADS_DOWN.beyondAimFactor } : {};

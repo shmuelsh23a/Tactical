@@ -204,6 +204,8 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
   if (r.pinnedFiresAtRange !== undefined && typeof r.pinnedFiresAtRange !== "boolean") throw malformed("pinnedFiresAtRange");
+  if (r.fireOnTheMove !== undefined && (typeof r.fireOnTheMove !== "number" || !(r.fireOnTheMove > 0 && r.fireOnTheMove <= 1)))
+    throw malformed("fireOnTheMove");
   if (r.nerveByCover !== undefined && typeof r.nerveByCover !== "boolean") throw malformed("nerveByCover");
   for (const key of ["nerveInOpen", "attackerBreakpoint"] as const) {
     const v = r[key];
@@ -362,6 +364,8 @@ export interface GameRecording {
   assaultNerve?: boolean;
   /** Whether a pinned force fired out to rifle range (rules decision 65). Read as **off** when absent. */
   pinnedFiresAtRange?: boolean;
+  /** Fire on the move (`GameOptions.fireOnTheMove`); absent: 1, no penalty. */
+  fireOnTheMove?: number;
   /** Whether fire cost nerve by cover (rules decision 64). Read as **off** when absent. */
   nerveByCover?: boolean;
   /** The nerve factor in the open (rules decision 66). Read as **2**, decision 64's, when absent. */
@@ -559,6 +563,7 @@ export function replayWithOutcomes(
     headsDown: recording.headsDown ?? false,
     assaultNerve: recording.assaultNerve ?? false,
     pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,
+    fireOnTheMove: recording.fireOnTheMove ?? 1,
     nerveByCover: recording.nerveByCover ?? false,
     nerveInOpen: recording.nerveInOpen ?? NERVE_IN_OPEN_BEFORE_66,
     attackerBreakpoint: recording.attackerBreakpoint ?? ATTACKER_BREAK_BEFORE_66,

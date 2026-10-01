@@ -720,19 +720,21 @@ describe("a side's breakpoint by posture (rules decision 44)", () => {
     return g;
   };
 
-  it("gives up an attack at 40% (decision 66) and a defence at 50%, on the research figures (decision 49)", () => {
-    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.4, defending: 0.5 });
-    expect(battle({ attackers: ["BLUE"] }, 3).sideBroken("BLUE")).toBe(false);
-    const at4 = battle({ attackers: ["BLUE"] }, 4);
-    expect(at4.sideBroken("BLUE")).toBe(true);
-    expect(at4.sideBroken("RED")).toBe(false);
+  it("gives up an attack at 30% (decision 67) and a defence at 50%, on the research figures (decision 49)", () => {
+    expect(SIDE_BREAK_BY_POSTURE).toEqual({ attacking: 0.3, defending: 0.5 });
+    expect(battle({ attackers: ["BLUE"] }, 2).sideBroken("BLUE")).toBe(false);
+    const at3 = battle({ attackers: ["BLUE"] }, 3);
+    expect(at3.sideBroken("BLUE")).toBe(true);
+    expect(at3.sideBroken("RED")).toBe(false);
     expect(battle({ attackers: ["BLUE"] }, 5).sideBroken("RED")).toBe(true);
     // In a meeting engagement both attack.
-    expect(battle({ attackers: ["BLUE", "RED"] }, 4).sideBroken("RED")).toBe(true);
-    // Decision 44's 30%, which a recording made before decision 66 replays at.
-    expect(battle({ attackers: ["BLUE"], attackerBreakpoint: ATTACKER_BREAK_BEFORE_66 }, 3).sideBroken("BLUE")).toBe(true);
+    expect(battle({ attackers: ["BLUE", "RED"] }, 3).sideBroken("RED")).toBe(true);
+    // Decision 66's 40%, which a recording made under it carries and replays at.
+    expect(battle({ attackers: ["BLUE"], attackerBreakpoint: 0.4 }, 3).sideBroken("BLUE")).toBe(false);
+    const r66 = battle({ attackers: ["BLUE"], attackerBreakpoint: 0.4 }, 0).toRecording();
+    expect(replayGame(r66).attackerBreakpoint).toBe(0.4);
     const r = battle({ attackers: ["BLUE"] }, 0).toRecording();
-    expect(r.attackerBreakpoint).toBe(0.4);
+    expect(r.attackerBreakpoint).toBe(0.3);
     delete (r as { attackerBreakpoint?: number }).attackerBreakpoint;
     expect(replayGame(r).attackerBreakpoint).toBe(ATTACKER_BREAK_BEFORE_66);
   });
@@ -769,13 +771,13 @@ describe("a rout counts by its casualties on the research figures (rules decisio
     expect(platoon("research").sideBroken("BLUE")).toBe(false);
   });
 
-  it("still breaks the attack at 40% of its men really down or broken (decision 66)", () => {
+  it("still breaks the attack at 30% of its men really down or broken (decision 67)", () => {
     const g = platoon("research");
-    g.getUnit("B2").soldiers!.slice(0, 4).forEach((s) => (s.neutralized = true));
-    // 8 of 24: 33%, under the breakpoint.
+    g.getUnit("B2").soldiers!.slice(0, 3).forEach((s) => (s.neutralized = true));
+    // 7 of 24: 29%, under the breakpoint.
     expect(g.sideBroken("BLUE")).toBe(false);
-    g.getUnit("B2").soldiers!.slice(4, 6).forEach((s) => (s.neutralized = true));
-    // 10 of 24: 42%.
+    g.getUnit("B2").soldiers![3]!.neutralized = true;
+    // 8 of 24: 33%.
     expect(g.sideBroken("BLUE")).toBe(true);
   });
 

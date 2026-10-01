@@ -4,7 +4,7 @@ import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
 import { QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "./companyQuestions.js";
-import { jevAsker, jevRequest, playWithAsker, type Asker } from "./jev.js";
+import { MISSION, jevAsker, jevRequest, playWithAsker, type Asker } from "./jev.js";
 
 /**
  * Jev answering the company commander's questions (backlog 15), tested with
@@ -39,15 +39,24 @@ const noulQ: Question = {
 
 describe("a question as Jev is asked it", () => {
   it("puts the commander's picture as the state and the options as the criteria", () => {
-    expect(jevRequest(choiceQ)).toEqual({
+    expect(jevRequest(choiceQ, "plain")).toEqual({
       state: "Your forces: …",
       questions: { decision: { type: "choice", instructions: "How many scouts?", criteria: { "1": "one squad", "2": "two squads" } } },
     });
-    expect(jevRequest(noulQ).questions.decision).toEqual({
+    expect(jevRequest(noulQ, "plain").questions.decision).toEqual({
       type: "noul",
       instructions: "Send the company in now?",
       criteria: { true: "yes: the company advances", false: "no: keep holding" },
     });
+  });
+
+  it("frames it by default with the commander's role and mission, naming none of the options", () => {
+    const { state } = jevRequest(choiceQ);
+    expect(state).toMatchObject({ situation: "Your forces: …", mission: [...MISSION] });
+    expect(typeof (state as { role: unknown }).role).toBe("string");
+    // Jev leans to an option whose words the state repeats (docs/balance.md, thirty-fourth round).
+    const words = MISSION.join(" ").toLowerCase();
+    for (const option of ["reserve", "assault", "base of fire", "halt", "withdraw", "carry on"]) expect(words).not.toContain(option);
   });
 
   it("reads Jev's answers through the SDK: a choice is its pick, a yes or no is its probability at even odds", async () => {
@@ -75,7 +84,7 @@ describe("a question as Jev is asked it", () => {
     expect(no.answer).toBe("no");
     expect(no.confidence).toBeCloseTo(0.7, 6);
     expect(bodies).toHaveLength(2);
-    expect(bodies[0]).toMatchObject({ state: "Your forces: …", model: "jev-latest" });
+    expect(bodies[0]).toMatchObject({ state: { situation: "Your forces: …" }, model: "jev-latest" });
   });
 });
 
