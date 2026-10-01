@@ -3517,6 +3517,38 @@ full pace, and the western platoon arrived first, alone. Two drill changes
 **For the author:** the hasty attack is now a little better than history
 suggests; the flank, worse.
 
+## Forty-sixth round: Jev and Haiku on today's rules, 2026-10-01
+
+Decisions 67–68, the drill of the forty-fifth round, question set
+`2026-10-01.3`; the mission framing, no order, plan or memory (as the
+thirty-fifth round); 20 seeds a scenario from 1000.
+
+| | 3:1 | 2:1 |
+|---|---|---|
+| Jev | 15% | 5% |
+| Rule with Jev's main choices (`rush,bound,holdshort`, 100 seeds) | 27% | 14% |
+| Haiku (`claude-haiku-4-5`) | 5% | 5% |
+| Rule with Haiku's main choices (`twoscouts,flank,basefire,holdshort,moveup`) | 20% | 18% |
+| Reference plans' median | 42% | 24% |
+
+**Their choices** (40 battles each):
+- **Jev:** three scouts at 3:1, two at 2:1 (one before the scout question was
+  reworded); in as soon as the enemy is found (40 of 40); bounds (37 of 37)
+  and holds short (39 of 40); all platoons assault; often tells a scout to
+  stop where it is (49 times) and halts platoons under fire (16).
+- **Haiku:** two scouts (40 of 40); **moves up at turn 5, before the enemy is
+  found** (40 of 40: "move to covered ground 250 m short to mass forces while
+  scouts complete reconnaissance"); round a flank (33 of 33); a base of fire
+  for a platoon in 29 of 70 tasks; holds short (32 of 32).
+
+**Read:** most of the distance to the reference plans is their plans — the
+hasty attack with bounding and holding short (Jev), the flank and moving up
+with a base of fire (Haiku), the weakest pieces measured. A further 10–15
+points are in-battle answers: Haiku moves up before the enemy is found, so
+the assault position is chosen against the plan's estimate (the thirty-
+seventh round's mistake); Jev stops its scouts short and halts under fire.
+Tokens: Haiku about 1.3 M in, 66 k out; Jev about 2,000 calls.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

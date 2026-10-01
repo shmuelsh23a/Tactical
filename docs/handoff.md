@@ -163,8 +163,11 @@ else about them. In short:
   drill now steps by covered ground and brings platoons in together; scouts
   count in order (one 28%, two 35%, three 57%); the reference plans' median
   42% (3:1) and 24% (2:1), inside the targets. The hasty attack rose to 45%
-  (history 15–35%), the flank fell to 25%: open with the author. Next: the
-  AI comparison (Haiku and Jev), and playing it in the browser.
+  (history 15–35%), the flank fell to 25%: open with the author. The AI
+  comparison on these rules (forty-sixth round): Jev 15% / 5%, Haiku 5% /
+  5% — mostly their plans (the hasty attack with bounding; the flank and
+  moving up), and Haiku moves up before the enemy is found. Next: playing it
+  in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):
