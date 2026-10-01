@@ -3070,6 +3070,70 @@ Against the criteria (author, 2026-10-01):
    sources here do not cover).
 
 
+## Thirty-eighth round: the assault position and the flank, 2026-10-01
+
+The thirty-seventh round left three reasonable plans far under the floor, two
+of them for reasons in the harness. Both are changed (question set
+`2026-10-01.1`):
+
+- **The assault position is chosen against what was found.** `moveUp` takes
+  the enemy where the side has found it near the objective (its marks), else
+  where the plan puts it, and seeks dead ground out of sight of both; the
+  rule moves up only once the enemy is found, not at the first chance.
+- **A flank that goes in on the enemy's side.** The axis question offers
+  `flank:west` / `flank:east`: the dead ground nearest a point 200 m to one
+  side of the enemy and 100 m back toward the company (ours), named by the
+  compass. The scouts' observation points stay as options; they sit 350–550 m
+  out, back near the start line, and going by one was a detour. The `flank`
+  rule takes a flank where the ground has one.
+
+100 seeds a scenario from 1000:
+
+| Plan | 3:1 before → after | 2:1 before → after | Men lost before going in (3:1) | Out of time (3:1 / 2:1) |
+|---|---|---|---|---|
+| A + move up | 10% → **37%** | 15% → **31%** | 10.4 → 4.3 | 2 / 1 |
+| B + move up | 16% → 32% | 21% → 22% | 10.4 → 4.3 | 4 / 28 |
+| D. Flank | 11% → **42%** | 6% → 18% | 0.8 | 5 / 41 |
+| A + flank (new) | 52% | 30% | 0.8 | 3 / 8 |
+
+Moving up still costs about 4 men before the attack (0.8 from the start line)
+and 26 points against the calibrated plan; going round a flank costs 11.
+
+### Where the reasonable plans stand
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| A. Calibrated | 63% | 34% |
+| A + flank | 52% | 30% |
+| B. Deliberate | 50% | 44% |
+| E. Fire-heavy | 47% | 33% |
+| D. Flank | 42% | 18% |
+| A + move up | 37% | 31% |
+| B + move up | 32% | 22% |
+| C. Hasty | 19% | 5% |
+| **Median** | **45%** | **30%** |
+
+- **The median** is 45% at 3:1 (target 55–70%) and 30% at 2:1 (target
+  30–45%): the 2:1 at the bottom of its band, the 3:1 ten points under.
+- **The spread** (3:1, hasty aside) is 32–63%: about 30 points, against the
+  sources' 20 or so for tactics. The hasty attack is still 44 under the
+  calibrated plan, and untraced.
+- **At 2:1, a base of fire leaves one platoon to close**: plans B and D run
+  out of time in a third to two-fifths of their battles. One platoon
+  assaulting a prepared platoon is 1:1 at the point of contact; that it
+  fails is plausible.
+
+### Next
+
+1. **Trace the hasty attack** (one scout, in as soon as the enemy is found):
+   where its 44 points go.
+2. **The 3:1 median is ten points short.** Once the hasty attack is
+   understood, whether the gap is the plans or the game is the author's
+   question: tuning toward 55% for the median plan would lift the
+   calibrated plan above 70%.
+3. A research pass on loss exchange in failed attacks.
+
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
