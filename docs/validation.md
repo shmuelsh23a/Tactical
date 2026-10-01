@@ -899,6 +899,47 @@ the classic harness → the game's rules:
   more of the work. **The author ruled (2026-09-30): 75% is for real
   ground, and the tel meets it.** The flat harness's 51% is not a miss.
 
+## Loss exchange in attacks (2026-10-01)
+
+What a won and a failed attack cost each side, for the reference plans
+(balance.md, *Thirty-ninth round*). A research pass; **every figure was read
+through search extracts, not the pages** (the cloud proxy refused the Dupuy
+Institute's site, DTIC and the review sites), so they are second-hand, to be
+checked against the books.
+
+| Condition | Figure | Source |
+|---|---|---|
+| Division, WWII, failed attacks (54) | attacker 2.98%/day, defender 2.62%/day (% ratio ≈ 1.1) | Lawrence, *War by Numbers*, table 8.6, via [TDI](https://dupuyinstitute.org/2020/12/26/more-combat-results-tables-from-war-by-numbers/) |
+| Same, attack advances (71) / defender penetrated (33) | attacker 1.20% / 0.83%, defender 2.96% / 6.40%; 47% of the defender's losses captured when penetrated | same |
+| Campaign level, failed / won | absolute exchange 1.66 / 0.64 (attacker to defender) | [TDI, CaDB](https://dupuyinstitute.org/2024/04/23/analysis-for-force-ratios-using-the-campaign-data-base-cadb/) |
+| Dupuy's attrition verities | winners lose at lower rates than losers; small forces at higher rates than large | [TDI](https://dupuyinstitute.org/2016/06/17/trevor-n-dupuys-combat-attrition-verities/) |
+| UK field trials and history, a dug-in company assaulted successfully | the defender loses about 80 of 100 (killed, wounded, captured) whatever the odds; 3:1 raised the attacker's losses over 1:1 without raising the defender's | Rowland, *The Stress of Battle*, via [a review](https://www.cold-steel.org/2013/book-review-the-stress-of-battle-by-david-rowlands-part-1/) |
+| Where attacks stop, division level, 52 engagements | median attacker loss when called off under 4%; defender under 8% | McQuie (1987), via [TDI](https://dupuyinstitute.org/2017/06/23/battle-outcomes-casualty-rates-as-a-measure-of-defeat/) |
+| Battalion | doctrine (FM 105-5): attacker breaks about 20%, defender about 40%; Clark (ORO 1954), 43–44 US battalions: mean about 40%, range 1–100% | [TDI](https://dupuyinstitute.org/2024/03/26/the-40-rule/) |
+| Battalion, successful attacks on prepared positions, 1982 | Goose Green: attacker ~12%, defender ~100% (961 of ~1,000 captured); Mount Longdon: attacker ~11–15%, defender ~70% | [Goose Green](https://en.wikipedia.org/wiki/Battle_of_Goose_Green), [Mount Longdon](https://en.wikipedia.org/wiki/Battle_of_Mount_Longdon) |
+
+**Read together, for a company attacking a prepared platoon** (an
+extrapolation; small units lose at higher rates than divisions): a **won**
+attack costs the attacker about 5–20% (centred near 10–12%) and the defender
+40–90%, mostly prisoners — a % ratio of 0.1–0.4. A **failed** attack costs
+the attacker about 10–25% (centred near 15%) and the defender 5–20% — a %
+ratio of 1–2. Attacks stall at company scale around 10–20% lost.
+
+**The game against it** (the tel, 100 battles a plan, "lost" counting the
+killed and wounded, prisoners, the fled and the broken):
+
+| | Attacker lost | Defender lost | Sources |
+|---|---|---|---|
+| Won | 8–14% (hasty 24%) | 50–52% | attacker 5–20%, defender 40–90% ✓ |
+| Failed | **35–41%** (deliberate at 2:1: 25%) | 16–29% | attacker 10–25% ✗, defender 5–20% (a little high) |
+
+A won attack is where the sources put it (the defender at the low end: a
+battle ends when the defence gives up at 50%, decision 49, where a
+penetrated position in history is mostly captured). **A failed attack goes on
+too long**: the attacker loses about twice what the sources say before it
+stops, because it stops at 40% (decision 66, raised from 30% to meet the win
+targets), where battalion doctrine says about 20%.
+
 ## Open
 
 For the author, in rough order of what they move:

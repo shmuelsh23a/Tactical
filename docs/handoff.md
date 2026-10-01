@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-09-30, after the reference plans (balance.md, thirty-seventh and thirty-eighth rounds), the Claude comparison (thirty-fifth and thirty-sixth) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-09-30, after the reference plans and loss exchange (balance.md, thirty-seventh to thirty-ninth rounds), the Claude comparison (thirty-fifth and thirty-sixth) and rules decisions 60–66 (merged to `main`): a reserve that counterattacks, the climb cost, the sources' cover against shells, suppression, nerve by cover, and the balance targets — 3:1 wins 58% and 2:1 38% on the tel, inside the author's 55–70% and 30–45% — and a Jev decider, now run against Jev itself (see *Start here*). Before that, decisions 51–59 (PR #10): neither side knows exactly where the other is — sightings carry location error, and the test players plan fires on an estimate — and the attacker can send reconnaissance first. Before that, decisions 40–50 (PR #9): a turn is 60 s; blast, the tank gun and rates of fire are set from published data; explosives cause 75% of losses where fire support is used; sides give up at the historical breakpoints (30% attacking, 50% defending); prepared positions are dug in with overhead cover; digging in takes minutes (30 to a prone shelter, 90 to a foxhole). The author's design principles are recorded in the README and measured ([validation.md](validation.md), *The design principles, measured*). Before that: decisions 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 802 tests, 47 files
+npm run check       lint + typecheck clean, 803 tests, 47 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -135,10 +135,18 @@ else about them. In short:
   move up 10% → 37% at 3:1), and a flank option goes in on the enemy's side
   (flank plan 11% → 42%). The reasonable plans' median is **45% (3:1)** and
   **30% (2:1)**; the spread is about 30 points, the hasty attack (19%) aside.
-- **Next:** trace the hasty attack; then, with the author, whether the 3:1
-  median's ten-point gap is the plans or the game; a research pass on loss
-  exchange in failed attacks. The Claude and Jev comparison waits for this
-  (cheaper models only: Haiku and Jev).
+- **The hasty attack and what attacks cost** (balance.md, *Thirty-ninth
+  round*; validation.md, *Loss exchange in attacks*): the hasty attack is two
+  ordinary costs (one scout finds the enemy 7 turns later, −33; no fire
+  before going in, −20). Against the sources, a **won** attack costs what
+  history says (attacker 8–14%, defender ~50%, mostly prisoners and the
+  fled); a **failed** one goes on too long (attacker 35–41% lost, sources
+  10–25%), because the attacker's breakpoint is 40% (decision 66).
+- **Waiting on the author** (balance.md, thirty-ninth round, *For the
+  author*): lower the attacker's breakpoint toward the sources (costs wins)?
+  What carries 3:1 to its target then, or is the target to move (small-unit
+  attacks without surprise win 54%, Rowland)? Is the hasty attack's cost
+  real? The Claude and Jev comparison waits for this (Haiku and Jev).
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):

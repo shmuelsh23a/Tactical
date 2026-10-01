@@ -3134,6 +3134,65 @@ and 26 points against the calibrated plan; going round a flank costs 11.
 3. A research pass on loss exchange in failed attacks.
 
 
+## Thirty-ninth round: the hasty attack, and what attacks cost, 2026-10-01
+
+### The hasty attack is two ordinary costs
+
+Plan C (one scout, in as soon as the enemy is found) wins 19% at 3:1 against
+the calibrated plan's 63%. Taken apart, 100 seeds each:
+
+| 3:1 | Wins | Enemy found (turn, mean) | Company goes (turn) | Own missions before going |
+|---|---|---|---|---|
+| A. Calibrated (3 scouts, 4 turns' fire first) | 63% | 11 | 16 | 3.0 |
+| One scout | 30% | **18** | 23 | 2.5 |
+| In as soon as found | 43% | 11 | 11 | **0** |
+| C. Hasty (both) | 19% | 18 | 18 | 0 |
+
+(2:1: 34%, 7%, 21%, 5%.) One scout finds the enemy seven turns later than
+three (33 points); going in at once fires nothing on it first (20 points);
+together, 44. Neither is a fault in the harness: finding the enemy and
+shelling it before the assault are what a deliberate attack is for. Whether
+they are worth this much in real life the sources do not say directly
+(Rowland's surprise, 22 points at 3:1, is the nearest).
+
+### What attacks cost: the sources against the game
+
+A research pass (validation.md, *Loss exchange in attacks*; second-hand
+extracts) and a new count: `ScenarioBattleResult.lost` adds to the killed
+and wounded the men of forces that surrendered or are routing, and men
+broken — real figures for a lost position are mostly prisoners.
+
+| 100 battles a plan, the tel | Attacker lost | Defender lost | The sources |
+|---|---|---|---|
+| Won (A, B, E) | 8–14% | 50–52% | attacker 5–20%, defender 40–90% |
+| Won (C, hasty) | 24% | 50% | |
+| Failed (A, B, E, C) | **35–41%** (B at 2:1: 25%) | 16–29% | attacker 10–25%, defender 5–20% |
+
+- **A won attack costs what the sources say.** The attacker loses about a
+  tenth; the defence about half, most of it prisoners and the fled.
+- **A failed attack goes on too long.** The attacker loses 35–41% before it
+  stops; the sources put a company's stall at 10–25%, battalion doctrine its
+  breakpoint at about 20%. The game's is 40% (decision 66), raised from
+  decision 44's 30% in the thirtieth and thirty-first rounds to bring the
+  calibrated plan's wins into the target.
+- **The two pull against each other.** The 3:1 median plan is already ten
+  points under its target (thirty-eighth round); a breakpoint nearer the
+  sources' would lower every plan's wins further.
+
+### For the author
+
+1. **The attacker's breakpoint** (decision 66, 40%): failed attacks cost
+   about twice what the sources say. Lowering it toward 25–30% is closer to
+   real life in losses, and costs wins.
+2. **The 3:1 wins**: the median reasonable plan wins 45% (target 55–70%). If
+   the breakpoint comes down, what else should carry 3:1 back up — or is
+   the target the one to move, since it was set from division and
+   all-postures data and small-unit attacks without surprise win 54%
+   (Rowland)?
+3. **The hasty attack** (19%): finding the enemy late and not shelling it
+   first cost 33 and 20 points. Real, or too much?
+
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
