@@ -3236,6 +3236,34 @@ surprise win 54% at 3:1 (Rowland). With the author: the breakpoint, and
 whether the targets should be set for small-unit attacks on prepared
 positions.
 
+### Win targets for small-unit attacks: a proposal (for the author)
+
+The author asked (2026-10-01) for the targets to be set for small-unit
+attacks separately. The current ones (decision 66: 3:1 on a prepared
+position 55–70%, 2:1 30–45%) were read from division-level tables that mix
+postures (validation.md, *What an attack at 3:1 should win*). The
+small-unit evidence there is Rowland's (WWII, via a review): 3:1 wins **54%**
+without surprise and **76%** with it; 1:1 wins 40% and 70%; a prepared
+position is worth about **×1.65** to the defender. Rowland does not split
+by preparation.
+
+- **3:1 on a prepared position: 40–55%.** Rowland's 54% is for all
+  positions, so it is the top of the band for a prepared one; with ×1.65 the
+  effective ratio is about 1.8:1, which on Rowland's 1:1–3:1 line is about
+  46%. **Up to 70–75% with surprise or strong suppression** (Rowland's 76%).
+- **2:1 on a prepared position: 20–35%.** No small-unit source gives 2:1.
+  Rowland's line read the same way (effective 1.2:1) would say about 41%,
+  which contradicts "an attack below 3:1 on a prepared position usually
+  fails" (doctrine, and the division-level band's own 25-point step from
+  3:1). The proposal keeps that step under the new 3:1 band. This is the
+  weaker of the two.
+
+**Caution:** the game today (decision 67) lands at 3:1 49% and 2:1 27% in
+the standard measurement, and its reasonable plans' medians at 42% and 24%
+(the hasty attack aside) — inside both proposed bands. The 3:1 band stands
+on Rowland, not on the game; the 2:1 band is a judgement, and it should be
+judged as one, not because the game meets it.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
