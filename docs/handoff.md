@@ -61,13 +61,13 @@ call the project's npm scripts and a reviewer that reads
 [review-checklist.md](review-checklist.md). Any assistant should be able to work
 here from AGENTS.md alone.
 
-## Start here (2026-09-30, end of the day)
+## Start here (2026-10-01)
 
-**Everything is merged to `main`** (the 2026-09-30 PR). Rules decisions
-60–66 are built, and the balance is inside the author's targets on the tel.
+**Everything is merged to `main`** (PR #12, 2026-10-01: balance rounds
+34–47, rules decisions 67–68). The reference plans meet the author's
+small-unit targets on the tel (balance.md, *Forty-fifth round*).
 
-**Jev and three Claude models have played** (2026-09-30, branch
-`claude/jev-api-key-check-zsfa16`, not merged yet): `TYPESAFE_API_KEY` is set
+**Jev and three Claude models have played** (2026-09-30 and 2026-10-01): `TYPESAFE_API_KEY` is set
 and `api.typesafe.ai` allowed in the cloud environment. Read balance.md,
 *Thirty-fourth round* (Jev) and the *thirty-fifth* and *thirty-sixth* (Claude) before anything
 else about them. In short:
