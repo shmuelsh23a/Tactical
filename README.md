@@ -2743,3 +2743,52 @@ Each is intended to be an independent, toggleable module:
     obvious start); whether a drill can branch on events ("if pinned, call
     smoke") or only set numbers; where drills are stored and shared; and
     whether a scenario can require a drill, as an exercise would.
+21. **A doctrine engine — the drills taken from the manuals, not tuned by us.**
+    (Author, 2026-10-01.) The rules are tuned against real outcomes; the drills
+    that carry out orders should not be tuned at all, or a quirk in one hides a
+    fault in the other (docs/balance.md, forty-fourth round: the third scout
+    "won" by keeping a squad off a killing ground). So the layers divide:
+    **rules** are set from research and tuned to real outcomes; **drills** are
+    transcribed from doctrine and fixed; **plans** are the players' (or the
+    AI's). If doctrinal drills do not give real outcomes, the rules are wrong.
+    - **Civilian edition: US doctrine from open sources** (Distribution A):
+      ATP 3-21.8 *Infantry Platoon and Squad* (the battle drills), ATP 3-21.10
+      *Infantry Rifle Company*, FM 3-90 *Tactics* (forms of manoeuvre, hasty
+      and deliberate attack, the defence). Each drill parameter records *the
+      manual says X, our value Y* — manuals give procedures, not distances.
+    - **Institutional edition: the doctrine engine adapted to the customer's
+      doctrine and material**, as part of tailoring (docs/business-plan.md,
+      *Editions*).
+    - **Where the work is done:** on a local computer, not a cloud session —
+      the manuals are long, the military sites were refused by the cloud
+      proxy, and the author has doctrinal material to embed.
+    - **First step:** an inventory of every drill the game plays (scouting,
+      waiting, the approach, bounding overwatch, base of fire, holding short
+      and lifting fires, the assault, consolidation; the defender's fire
+      discipline, displacement, counterattack, fire plan), each mapped to its
+      manual paragraph as *matches*, *ours and differs*, or *ours, doctrine
+      silent*. Then the drills rewritten to doctrine, and the reference plans
+      (balance.md, thirty-seventh to forty-fifth rounds) measured again.
+    Relation to backlog 20: the TTP editor is how an instructor changes a
+    drill; this is where the default drills come from.
+22. **An AI commander in three parts: plan once, compute, execute cheaply.**
+    (Discussed 2026-10-01.) An expensive model writes several candidate plans
+    once a battle, as structured parameters (the `--rule` vocabulary: scouts,
+    posts, axis, tasks, when to go, bound, hold short, fire policy); the engine
+    estimates each one's chance of success by playing it many times; a cheap
+    executor (Jev, or a small model) chooses among options with those numbers
+    and the plan's bounds, and explains its choices in the debrief. Measured
+    reasons (balance.md, thirty-fifth, thirty-sixth and forty-sixth rounds):
+    the models' plans failed where the questions could not express them, and
+    they judge odds badly; numbers judge them well.
+    - **The trap: the engine knows the truth.** Played from the real state,
+      the estimates know where the enemy is. They must start from the side's
+      belief — worlds sampled to fit what the side knows (the plan's estimate,
+      marks with their error, the order's intelligence).
+    - **The estimates inherit the drill's quirks**, so they want backlog 21's
+      doctrinal drills first; meanwhile the same machinery finds dominant
+      plans, which is a balance tool.
+    - **Stages:** (1) plan once and evaluate once at turn 0, the best plan
+      executed by rule; (2) estimates for the two or three decisions that
+      matter (going in, lifting the fires); (3) the full loop, the executor
+      narrating.

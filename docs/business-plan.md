@@ -91,6 +91,11 @@ For the civilian edition, every order-of-battle and TTP detail keeps a note of
 the public source it came from, so "unclassified" can be shown and not just
 asserted.
 
+**Doctrine** (author, 2026-10-01; README, backlog 21): the civilian edition's
+drills come from US doctrine in open sources (ATP 3-21.8, ATP 3-21.10,
+FM 3-90); the institutional edition's doctrine engine is adapted to the
+customer's own doctrine and material.
+
 ### Free and paid ✅
 
 The line is drawn at what costs money to run.
