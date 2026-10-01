@@ -146,11 +146,11 @@ else about them. In short:
   attacks come into the sources' range (attacker killed and wounded 16–22%,
   against 19–28% at 40%; round 39's "twice" was a counting error, corrected);
   the reasonable plans' median falls to **40% (3:1)** and **21.5% (2:1)**.
-- **Waiting on the author:** the breakpoint (30% recommended, for losses), and
-  whether the win targets should be set for small-unit attacks on prepared
-  positions (Rowland: 54% at 3:1 without surprise) or something else should
-  carry 3:1 up. Is the hasty attack's cost real? The Claude and Jev
-  comparison waits for this (Haiku and Jev).
+- **Decision 67** (author, 2026-10-01): the attacker's breakpoint is 30%
+  again. **Waiting on the author:** the win targets for small-unit attacks
+  (asked to be set separately; a proposal is in balance.md, fortieth
+  round). Is the hasty attack's cost real? The Claude and Jev comparison
+  waits for this (Haiku and Jev).
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):
@@ -177,8 +177,9 @@ twenty-second to thirty-third rounds; validation.md):
   scout from each attacking platoon); `--classic` gives the old harness.
 - **The standard measurement:**
   `npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground --n 200 --target-first squads`
-  — 3:1 58%, 2:1 38%, the reserve counterattacking in about one battle in
-  seven.
+  — since decision 67 (the attacker's breakpoint at 30%): 3:1 **49%**, 2:1
+  **27%** (58% and 38% at 40%), explosives 72–75%, the reserve
+  counterattacking in about one battle in seven.
 
 **Open, in rough order:**
 

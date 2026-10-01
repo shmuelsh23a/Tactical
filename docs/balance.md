@@ -3227,7 +3227,10 @@ the sources 10–25%, centred near 15%): at 40%, 23–27% (3:1) and 19–28%
 attacker loses 6–14%, the defender about 50%, mostly prisoners and fled.
 
 **Read together:** 30% puts losses where the sources put them, and costs
-about 5 points at 3:1 and 9 at 2:1. The win targets (55–70%, 30–45%) were
+about 5 points at 3:1 and 9 at 2:1. **Adopted as rules decision 67** (author,
+2026-10-01). The standard measurement (thirty-first round's command, 200
+battles) at 30%: 3:1 **49%** (58% at 40%), 2:1 **27%** (38%), explosives
+72–75%. The win targets (55–70%, 30–45%) were
 read from division-level, all-postures data; small-unit attacks without
 surprise win 54% at 3:1 (Rowland). With the author: the breakpoint, and
 whether the targets should be set for small-unit attacks on prepared
