@@ -2165,6 +2165,18 @@ on the stated reasoning, still awaiting the author's word.
     set for small-unit attacks separately (pending). `SIDE_BREAK_BY_POSTURE`;
     a recording carries its own breakpoint. Question set `2026-10-01.2` (the
     commander's picture states it).
+68. ✅ **Win targets for small-unit attacks** (author, 2026-10-01: "I
+    accept the new bands"). Squad-to-company attacks on a prepared position:
+    3:1 **40–55%** (Rowland: 54% at 3:1 without surprise, all positions; a
+    prepared position ×1.65 puts 3:1 at about 1.8:1 in effect, about 46%),
+    **70–75%** with surprise or strong suppression (Rowland's 76%); 2:1
+    **20–35%** (no small-unit source; the division-level bands' 25-point
+    step below 3:1 kept, as doctrine's "below 3:1 usually fails" — a
+    judgement). Judged on the reasonable plans' median, with losses against
+    the sources (docs/validation.md, *Loss exchange in attacks*). Where it
+    stands at decision 67: the standard measurement 49% and 27%, the
+    reasonable plans' median 42% and 24% (docs/balance.md, fortieth round).
+    `TARGETS` in `src/sim/balance.ts`.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
@@ -2217,11 +2229,16 @@ Still modelled by reasonable assumption (flag if you want them changed):
   by playing:
   - **A prepared position is what gives the defender its superiority**, and
     what makes an attack need **3:1**. Attacked below it, a prepared defender
-    should hold; at 3:1 the attack should succeed. **The targets** (author,
-    2026-09-30, rules decision 66, from the research in validation.md, *What
+    should hold; at 3:1 the attack should succeed more often than not, and
+    only just. **The targets for small-unit attacks** (author, 2026-10-01,
+    rules decision 68, from Rowland's small-unit data in validation.md, *What
     an attack at 3:1 should win*): a 3:1 attack on a prepared position wins
-    **55–70%** — 75–85% only with surprise or strong suppression, the 85%
-    of decision 54 now a ceiling — and a 2:1 attack **30–45%**.
+    **40–55%** — 70–75% with surprise or strong suppression, the 85% of
+    decision 54 a ceiling — and a 2:1 attack **20–35%**. They are judged on
+    **reasonable plans**, not one plan (docs/balance.md, thirty-seventh
+    round), and against real-life losses as well as wins. Decision 66's
+    55–70% and 30–45% were read from division-level tables, and stand for
+    battles of that size.
   - **In a meeting engagement nobody has prepared anything**, so nobody has a
     defender's bonus: the larger force should win. What the ground offers —
     a building, a crest — still favours whoever reaches it first.

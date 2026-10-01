@@ -859,6 +859,15 @@ the division-level tables. With a prepared defender worth about 1.65 times
 its numbers, 3:1 is about 1.8:1 in effect. **A defensible target: 3:1
 against a prepared platoon about 55–70%, with 75–85% for an attack with
 surprise or strong suppression; 2:1 about 30–45%** — "usually fails" holds.
+
+**Set for small-unit attacks** (rules decision 68, author, 2026-10-01): the
+bands above read the division-level tables. For squad-to-company attacks on
+a prepared position the targets are **3:1 40–55%** — Rowland's 54% (3:1,
+no surprise, all positions) as the top, and about 46% at the ×1.65
+prepared-position factor's effective 1.8:1 — **70–75%** with surprise or
+strong suppression, and **2:1 20–35%** (no small-unit source gives 2:1; the
+25-point step below 3:1 is kept: a judgement). The division-level bands
+stand for battles of that size.
 85% fits as a ceiling, not as the typical result. Mearsheimer's 1989 paper,
 Helmbold 1969 and the Kress & Talmor model were read as abstracts only.
 

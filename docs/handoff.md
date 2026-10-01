@@ -146,11 +146,13 @@ else about them. In short:
   attacks come into the sources' range (attacker killed and wounded 16–22%,
   against 19–28% at 40%; round 39's "twice" was a counting error, corrected);
   the reasonable plans' median falls to **40% (3:1)** and **21.5% (2:1)**.
-- **Decision 67** (author, 2026-10-01): the attacker's breakpoint is 30%
-  again. **Waiting on the author:** the win targets for small-unit attacks
-  (asked to be set separately; a proposal is in balance.md, fortieth
-  round). Is the hasty attack's cost real? The Claude and Jev comparison
-  waits for this (Haiku and Jev).
+- **Decisions 67 and 68** (author, 2026-10-01): the attacker's breakpoint
+  is 30% again, and the win targets are set for small-unit attacks (3:1
+  40–55%, 2:1 20–35%). The game meets them: the standard measurement 49% and
+  27%, the reasonable plans' median 42% and 24% (the hasty attack aside), and
+  losses in the sources' range. **Open with the author:** is the hasty
+  attack's cost real (7% at 3:1 under decision 67, 19% at 40%)? **Next:** the Claude and Jev
+  comparison on the new rules (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):
@@ -164,8 +166,11 @@ twenty-second to thirty-third rounds; validation.md):
   defender assaulted tests its nerve (surrender or rout on a roll). **64**
   nerve lost to fire by cover (open ×1 since 66, partial ×1, hole ×0.3, roof
   ×0.15). **65** a pinned force fires to 400 m at half its chance beyond
-  100 m. **66** the targets — 3:1 on a prepared position **55–70%**, 2:1
-  **30–45%** — nerve in the open ×1, an attacker's breakpoint 40%.
+  100 m. **66** nerve in the open ×1 (and division-level targets, 55–70% and
+  30–45%). **67** an attacker's breakpoint at 30% again. **68** the targets
+  for small-unit attacks — 3:1 on a prepared position **40–55%** (70–75%
+  with surprise or strong suppression), 2:1 **20–35%** — judged on
+  reasonable plans and on losses.
 - **75% of losses by explosives is for real ground** (author): the tel meets
   it (73–77%); the flat harness gives about 51% and is not held to it.
 - **Harness policies (ours, not rules):** the scripted defender registers its
