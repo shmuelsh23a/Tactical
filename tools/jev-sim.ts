@@ -248,7 +248,7 @@ try {
  * goes from there; "flank" goes round a flank where the ground has one (else
  * by a scout's observation point), not straight; "prep" goes only once most missions are fired on the enemy in
  * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once;
- * "twoscouts" sends two.
+ * "twoscouts" sends two; "posts-p1-p2-straight" sets where each scout watches.
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
@@ -258,6 +258,9 @@ function ruleAsker(extra: Set<string>): Asker {
         return extra.has("noscout") ? "0" : extra.has("onescout") ? "1" : extra.has("twoscouts") ? "2" : Math.max(...q.options.map((o) => Number(o.id))).toString();
       if (q.id.startsWith("plan.post.")) {
         const i = Number(q.id.slice("plan.post.".length));
+        // "posts-p1-p2-straight": where each scout watches, in turn.
+        const set = [...extra].find((e) => e.startsWith("posts-"))?.split("-").slice(1);
+        if (set?.[i - 1] && has(set[i - 1]!)) return set[i - 1]!;
         return has(`p${i}`) ? `p${i}` : "p1";
       }
       if (q.id === "plan.wait") return "deadGround";

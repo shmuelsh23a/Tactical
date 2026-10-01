@@ -3440,6 +3440,32 @@ assault. That three win 59% where two win 18% says the calibrated plan wins
 by something fragile, not by more eyes. **Next:** find it, since the
 calibrated plan anchors the balance.
 
+### What the third scout does: traced
+
+**Not its viewpoint.** Where the third of three scouts watches does not
+matter (`--rule posts-…`, 100 seeds, 3:1): at `p1` 59%, at `p2` 54%,
+straight ahead 62%; two scouts at `p1`,`p2` 18%, both at `p1` 21%, at
+`p2`,`p1` 18%. **What matters is that the squad is out of the assault.** The
+scouts are the squads nearest where the plan puts the enemy, so the third is
+usually the western platoon's (BLUE-1).
+
+**The western platoon's approach is where the attack is lost.** Per squad
+over 100 battles, with two scouts the western platoon's three squads lose
+about 9.8 men a battle and are the first to lose a man in 75 of 100; the
+attack's breakpoint is about 26 men. The western platoon closes first (43
+of 55 battles where two platoons close), and the attack is piecemeal: when
+two platoons do close to 150 m of the enemy, the calibrated plan wins 79%
+and two scouts 38% — but with two scouts only 23 attacks of 100 get two
+platoons there at all (55 with three); the rest break on the approach.
+
+**So the calibrated plan wins by sending fewer men up the western
+approach**, not by its scouts. The drill sends each squad straight at the
+nearest enemy once the company goes in, at full pace, by no covered route,
+and the side gives up at 30% of all its men: one more squad on the exposed
+approach tips the attack. A real company moves its platoons by covered
+routes and brings them in together. For the author: whether the drill should
+do the same (a drill change, ours) before the balance is called met.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

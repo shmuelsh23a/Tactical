@@ -156,9 +156,12 @@ else about them. In short:
   binoculars for command groups (thirty-seventh and forty-second rounds).
 - **The scout question** (balance.md, *Forty-fourth round*): reworded with
   what scouts do (question set `2026-10-01.3`); Jev now sends three, Haiku
-  two. **Two scouts win 18% at 3:1** (three 59%, one 24%), and not for want
-  of eyes: the calibrated plan wins by something fragile. **Next:** find it,
-  then the AI comparison (Haiku and Jev), and playing it in the browser.
+  two. **Two scouts win 18% at 3:1** (three 59%, one 24%): traced to the
+  western platoon's approach, where the attack is lost piecemeal — the third
+  scout wins by keeping a squad off it. The drill sends squads straight at
+  the enemy by no covered route. **Open with the author:** covered routes and
+  a coordinated arrival in the drill, before the balance is called met; then
+  the AI comparison (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):
