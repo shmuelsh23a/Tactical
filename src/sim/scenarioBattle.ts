@@ -123,6 +123,8 @@ export interface ScenarioBattleOptions {
    * registers them on the open ground first instead (thirty-seventh round).
    */
   defenderFirePlan?: boolean | "open";
+  /** Called at the end of each turn's fire phase with the game, to trace a battle (read it; never change it). */
+  onTurn?: (g: Game, turn: number) => void;
   /** Fire on the move (`GameOptions.fireOnTheMove`), set on the scenario's game before the first turn. */
   fireOnTheMove?: number;
   /** The attacker's breakpoint (`GameOptions.attackerBreakpoint`), set on the scenario's game before the first turn. */
@@ -330,6 +332,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     }
     heard(g.advanceToPhase("combat").resolved);
     for (const side of g.initiativeOrder) drillCombat(g, tasks[side], side === attacker ? drill : defenderDrill, state);
+    opts.onTurn?.(g, turn);
     if (settle()) break;
     const next = g.advanceToPhase("initiative");
     heard(next.resolved);
