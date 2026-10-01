@@ -3328,6 +3328,40 @@ halts the company command group in overwatch once the company goes in
 to scouting squads only) — or an observation post may be set up during the
 battle (a rule; decision 38 allows it only in planning).
 
+## Forty-second round: an overwatch and binoculars for command groups, tried and withdrawn, 2026-10-01
+
+The forty-first round traced one scout's cost to the company's fire having
+no eyes but the scouts' during the assault. The author asked for both fixes
+proposed there: the drill halts the company command group in overwatch (an
+observation point onto the plan's enemy, from the scouts' vantage finder,
+350–550 m out), and command groups carry binoculars (a rule). Built and
+measured, the calibrated plan at 3:1, 100 seeds:
+
+| | Wins | Men lost before going in | Defender down |
+|---|---|---|---|
+| Neither (as the game is) | 59% | 0.8 | 24% |
+| Overwatch only | 25% | 2.2 | 18% |
+| Command groups' binoculars only (both sides) | **2%** | 13.7 | 2% |
+| Both | 3% | 13.9 | 1% |
+
+- **Binoculars for command groups help the defender far more than the
+  attacker.** The defending company's command post and the platoon's sit high
+  on the tel watching their approaches; with binoculars they see the waiting
+  company and its scouts and shell them before the attack starts (battles
+  end on turn 12–14, the attack broken, the defence untouched).
+- **The overwatch puts the company command group on an exposed vantage
+  point**, where it is seen and shelled; losing it loses the company's fire
+  control (decision 55), which costs more than its eyes give.
+
+**Both withdrawn**; nothing of them is in the game. What it says: the scouts'
+weight is not simply "eyes the company lacks" — any observer close enough to
+see a dug-in enemy is close enough to be seen and shelled, and the defender
+on the high ground is the better placed watcher. The one-scout gap
+(forty-first round) stays open; ways that do not hand the defender the same
+gift — a second observer for the company that stays hidden (an observation
+post put out in planning, decision 38), or scouts that survive better — are
+for the author.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

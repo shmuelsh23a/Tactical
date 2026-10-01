@@ -152,7 +152,10 @@ else about them. In short:
   27%, the reasonable plans' median 42% and 24% (the hasty attack aside), and
   losses in the sources' range. **The hasty attack** (balance.md, forty-first
   round): 7% at 3:1 against history's 15–35%; one scout costs 35 points
-  where about 10–15 would fit. Next: trace why, before changing anything. **Next:** the Claude and Jev
+  where about 10–15 would fit. Traced (forty-first round): the scouts are the fire's only eyes in the
+  assault. An overwatch and binoculars for command groups were tried and
+  withdrawn (forty-second round: they hand the defender more than the
+  attacker). Open with the author. **Next:** the Claude and Jev
   comparison on the new rules (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
