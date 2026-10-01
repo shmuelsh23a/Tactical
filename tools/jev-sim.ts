@@ -236,9 +236,9 @@ try {
  * sends one scout, as Jev does, not three; "blind" sends it in at the first
  * chance (turn 5), the enemy found or not, as Sonnet and Opus do; "basefire"
  * gives the first platoon a base of fire and sends the rest in; "moveup"
- * moves the company up to its assault position at the first chance and goes
- * from there; "flank" goes in by the first scout's observation point, not
- * straight; "prep" goes only once most missions are fired on the enemy in
+ * moves the company up to an assault position once the enemy is found and
+ * goes from there; "flank" goes round a flank where the ground has one (else
+ * by a scout's observation point), not straight; "prep" goes only once most missions are fired on the enemy in
  * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once.
  */
 function ruleAsker(extra: Set<string>): Asker {
@@ -253,7 +253,8 @@ function ruleAsker(extra: Set<string>): Asker {
       if (q.id === "plan.wait") return "deadGround";
       if (/^go\.\d/.test(q.id)) {
         if (extra.has("blind")) return "yes";
-        if (extra.has("moveup") && has("up")) return "up";
+        // "moveup": once the enemy is found, move up to an assault position chosen against it.
+        if (extra.has("moveup") && has("up") && /just found|in sight \d+ turns/.test(q.ask)) return "up";
         if (extra.has("prep")) {
           // Fire first: go once most missions are fired on the enemy in sight, or by turn 30 whatever.
           const left = Number(/Mortar missions left: (\d+)/.exec(q.view)?.[1] ?? 0);
@@ -262,7 +263,9 @@ function ruleAsker(extra: Set<string>): Asker {
         if (extra.has("rush") && /just found|in sight \d+ turns/.test(q.ask)) return "yes";
         return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
       }
-      if (q.id.startsWith("go.axis")) return extra.has("flank") ? (q.options.find((o) => o.id.startsWith("via:"))?.id ?? "straight") : "straight";
+      // "flank": round a flank where the ground has one, else by a scout's observation point.
+      if (q.id.startsWith("go.axis"))
+        return extra.has("flank") ? (q.options.find((o) => o.id.startsWith("flank:"))?.id ?? q.options.find((o) => o.id.startsWith("via:"))?.id ?? "straight") : "straight";
       if (q.id.startsWith("go.support")) return "no";
       // "basefire": the first platoon asked gives a base of fire, the rest assault.
       if (q.id.startsWith("go.platoon")) return extra.has("basefire") && q.id.startsWith("go.platoon.BLUE-1.") ? "support" : "assault";

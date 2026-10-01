@@ -35,7 +35,7 @@ export type Decider = (q: Question) => string;
  * question-set version). Change it when a question's wording, options or
  * picture change in a way that could change an answer.
  */
-export const QUESTION_SET_VERSION = "2026-09-30.4";
+export const QUESTION_SET_VERSION = "2026-10-01.1";
 
 /** Thrown by a decider with no answer yet: the battle stops at this question. */
 export class NeedAnswer extends Error {

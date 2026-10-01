@@ -477,25 +477,36 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
         { id: "no", label: lost ? "no: the company stays where it is, with no scouts left to find the enemy" : "no: keep holding while the scouts look" },
       ],
     });
-  if (go === "up") company.moveUp(g);
+  // The enemy as the side has found it near the objective, if it has: where the company moves up to, and flanks.
+  const found = sideView(g, company.side)
+    .units.filter((e) => e.side !== company.side && !e.neutralized && distance(e.position, company.objectivePoint) <= FIND_WITHIN_M)
+    .map((e) => e.position);
+  if (go === "up") company.moveUp(g, found);
   if (go !== "yes") return false;
-  // Which way it goes: straight, or by one of the scouts' observation points,
-  // coming in from that side.
+  // Which way it goes: straight, round a flank, or by one of the scouts'
+  // observation points, coming in from that side.
   const posts = [...company.posts].filter((e): e is [string, Point] => e[1] !== null);
-  if (posts.length) {
+  const flanks = company.flankPoints(found);
+  if (posts.length || flanks.length) {
     const axis = question({
       id: `go.axis.${turn}`,
       kind: "choice",
       ask: "Which way does the company go in?",
       options: [
         { id: "straight", label: "straight at the plan's centre" },
+        ...flanks.map((f) => ({
+          id: `flank:${f.side}`,
+          label: `round the ${f.side} flank: by covered ground at (${Math.round(f.at.x)}, ${Math.round(f.at.y)}), beside the enemy, coming in on its side`,
+        })),
         ...posts.map(([id, p]) => ({
           id: `via:${id}`,
           label: `by ${id}'s observation point (${Math.round(p.x)}, ${Math.round(p.y)}), coming in from that side`,
         })),
       ],
     });
-    company.setAxis(axis === "straight" ? undefined : posts.find(([id]) => `via:${id}` === axis)?.[1]);
+    company.setAxis(
+      axis === "straight" ? undefined : (flanks.find((f) => `flank:${f.side}` === axis)?.at ?? posts.find(([id]) => `via:${id}` === axis)?.[1]),
+    );
   }
   if (company.liveScouts(g).length) {
     company.setScoutsFire(
