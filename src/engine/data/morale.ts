@@ -241,14 +241,16 @@ export const SIDE_BREAK_SHARE = 2 / 3;
  * explosives. Which side is attacking is `GameOptions.attackers`; a side not
  * named defends.
  */
-export const SIDE_BREAK_BY_POSTURE = { attacking: 0.4, defending: 0.5 } as const;
+export const SIDE_BREAK_BY_POSTURE = { attacking: 0.3, defending: 0.5 } as const;
 
 /**
- * **The attacker gives up at 40% since rules decision 66** (author,
- * 2026-09-30, "adopt all three"): at 30% no scripted attack on a prepared
- * platoon reached the research's 55–70% at 3:1 (docs/balance.md, thirtieth
- * round). A game plays `GameOptions.attackerBreakpoint`; a recording made
- * before the decision replays at this, decision 44's 30%.
+ * **The attacker gives up at 30% again since rules decision 67** (author,
+ * 2026-10-01): decision 66's 40% let a failed attack cost the attacker
+ * 19–28% killed and wounded, at or over the top of the sources' 10–25%; at
+ * 30% it is 16–22% (docs/balance.md, fortieth round). Decision 66 had raised
+ * it from decision 44's 30% to meet the win targets. A game plays
+ * `GameOptions.attackerBreakpoint`; a recording carries its own, and one made
+ * before decision 66 replays at this, decision 44's 30%.
  */
 export const ATTACKER_BREAK_BEFORE_66 = 0.3;
 

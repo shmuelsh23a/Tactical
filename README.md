@@ -2155,6 +2155,16 @@ on the stated reasoning, still awaiting the author's word.
     The scripted company the balance is measured with now sends **three
     scouts** (ours, `--recon 3`). What it gives: docs/balance.md,
     *Thirty-first round*.
+67. ✅ **An attacking side gives up at 30% again** (author, 2026-10-01). The
+    reference plans (docs/balance.md, thirty-seventh to fortieth rounds) put
+    a failed attack's cost to the attacker at 19–28% killed and wounded under
+    decision 66's 40%, at or over the top of the sources' 10–25%
+    (docs/validation.md, *Loss exchange in attacks*); at 30% it is 16–22%.
+    Closeness to real-life outcomes is the guideline (author), so the
+    breakpoint returns to decision 44's figure, and the win targets are to be
+    set for small-unit attacks separately (pending). `SIDE_BREAK_BY_POSTURE`;
+    a recording carries its own breakpoint. Question set `2026-10-01.2` (the
+    commander's picture states it).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

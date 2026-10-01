@@ -1,4 +1,6 @@
-import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "../engine/index.js";
+import { MORALE_RULES, MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "../engine/index.js";
+
+const { SIDE_BREAK_BY_POSTURE } = MORALE_RULES;
 
 /**
  * The order the attacking company commander is given before the battle: an
@@ -48,7 +50,8 @@ function telAssaultOrder(platoons: number): Order {
       `${WALK} m a turn walking, ${RUN} m running, and half that under fire (${UNDER_FIRE} m walking); ` +
       "every metre climbed costs 5 m of a move. From the start line to the shoulder is about 30 m of climb: " +
       `about ${Math.round((400 + 30 * 5) / WALK)} turns walking unopposed, about twice that under fire. ` +
-      "The attack is called off when about 40% of your men are down, broken or fled; the enemy gives up at about 50% of his.",
+      `The attack is called off when about ${Math.round(SIDE_BREAK_BY_POSTURE.attacking * 100)}% of your men are down, broken or fled; ` +
+        `the enemy gives up at about ${Math.round(SIDE_BREAK_BY_POSTURE.defending * 100)}% of his.`,
     "4. SUSTAINMENT. Small-arms ammunition is not a constraint in this action; the mortar missions are what is scarce.",
     "5. COMMAND AND SIGNAL. You control the company by platoon. Your scouts report what they see as they see it. " +
       "The battalion expects the shoulder by turn 45 and will not extend the deadline.",
