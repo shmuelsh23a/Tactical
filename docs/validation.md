@@ -933,6 +933,10 @@ killed and wounded, prisoners, the fled and the broken):
 | Won | 8–14% (hasty 24%) | 50–52% | attacker 5–20%, defender 40–90% ✓ |
 | Failed | **35–41%** (deliberate at 2:1: 25%) | 16–29% | attacker 10–25% ✗, defender 5–20% (a little high) |
 
+(Corrected, balance.md, fortieth round: the attacker's *lost* includes its
+broken and fled, who are not casualties in the sources' sense. Its killed and
+wounded in a failed attack are 19–28% at 40%, 16–22% at 30%.)
+
 A won attack is where the sources put it (the defender at the low end: a
 battle ends when the defence gives up at 50%, decision 49, where a
 penetrated position in history is mostly captured). **A failed attack goes on

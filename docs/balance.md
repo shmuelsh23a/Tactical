@@ -3170,7 +3170,8 @@ broken — real figures for a lost position are mostly prisoners.
 
 - **A won attack costs what the sources say.** The attacker loses about a
   tenth; the defence about half, most of it prisoners and the fled.
-- **A failed attack goes on too long.** The attacker loses 35–41% before it
+- **A failed attack goes on too long** (overstated: see the correction in
+  the fortieth round). The attacker loses 35–41% before it
   stops; the sources put a company's stall at 10–25%, battalion doctrine its
   breakpoint at about 20%. The game's is 40% (decision 66), raised from
   decision 44's 30% in the thirtieth and thirty-first rounds to bring the
@@ -3192,6 +3193,45 @@ broken — real figures for a lost position are mostly prisoners.
 3. **The hasty attack** (19%): finding the enemy late and not shelling it
    first cost 33 and 20 points. Real, or too much?
 
+
+## Fortieth round: the attacker's breakpoint at 30%, 2026-10-01
+
+The author asked what taking the attacker's breakpoint back to 30%
+(decision 44's figure; decision 66 has 40%) does. All eight reference plans,
+100 seeds a scenario from 1000 (`--attacker-breakpoint 0.3`).
+
+> **Correction to the thirty-ninth round.** It said a failed attack costs
+> the attacker "about twice" what the sources say. That compared the game's
+> *lost* (killed, wounded, prisoners, the fled and the broken) with the
+> sources' *casualties* (killed, wounded, captured); a failed attacker's
+> broken and fled men mostly rally and are not casualties. Counted as the
+> sources count, a failed attack costs the attacker **19–28%** at 40% —
+> at or a little over the top of the sources' 10–25%, not twice it. A won
+> attack's defender is rightly counted with its prisoners and fled.
+
+| Plan | 3:1 at 40% → 30% | 2:1 at 40% → 30% |
+|---|---|---|
+| A. Calibrated | 63% → 59% | 34% → 24% |
+| A + flank | 52% → 47% | 30% → 26% |
+| B. Deliberate | 50% → 42% | 44% → 41% |
+| E. Fire-heavy | 47% → 45% | 33% → 28% |
+| D. Flank | 42% → 38% | 18% → 18% |
+| A + move up | 37% → 33% | 31% → 19% |
+| B + move up | 32% → 25% | 22% → 16% |
+| C. Hasty | 19% → 7% | 5% → 5% |
+| **Median** | **44.5% → 40%** | **30.5% → 21.5%** |
+
+What a failed attack costs the attacker in killed and wounded (A, B, E, C;
+the sources 10–25%, centred near 15%): at 40%, 23–27% (3:1) and 19–28%
+(2:1); at 30%, **18–22%** and **16–22%**. A won attack is unchanged: the
+attacker loses 6–14%, the defender about 50%, mostly prisoners and fled.
+
+**Read together:** 30% puts losses where the sources put them, and costs
+about 5 points at 3:1 and 9 at 2:1. The win targets (55–70%, 30–45%) were
+read from division-level, all-postures data; small-unit attacks without
+surprise win 54% at 3:1 (Rowland). With the author: the breakpoint, and
+whether the targets should be set for small-unit attacks on prepared
+positions.
 
 ## How the engine scales, 2026-09-23
 
