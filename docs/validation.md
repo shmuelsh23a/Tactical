@@ -978,6 +978,33 @@ about 20–35 points; preparatory fire is the larger and better-supported part
 of it. Selection bias runs the other way in history: hasty attacks are
 launched when they look good.
 
+## The breakpoints and explosives' share, under decisions 67–68 (2026-10-01)
+
+`npm run validate` rerun after the attacker's breakpoint went back to 30%
+(decision 67) and the drill gained one-level bounding, covered routes and
+platoons that close together (balance.md, thirty-seventh to forty-fifth
+rounds). Research figures, 100 battles a cell, the previous run → now:
+
+| Battle | Fire | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives | Minutes, median |
+|---|---|---|---|---|---|---|
+| Platoon meeting | — | 40% → 37% | 39% → 31% | — | 33% → 32% | 8 → 7 |
+| Platoon 3:1 attack | — | 95% → 84% | 25% → 19% | 67% → 56% | 16% → 14% | 34 → 34 |
+| Platoon 2:1 attack | — | 46% → 35% | 28% → 22% | 50% → 44% | 21% → 19% | 34 → 32 |
+| Company 3:1 attack | a bomb a turn | 61% → 54% | 16% → 13% | 31% → 28% | 33% → 23% | 29 → 31 |
+| Company 2:1 attack | a bomb a turn | 0% → 0% | 20% → 17% | — | 20% → 14% | 29 → 29 |
+| Company 3:1 attack | calibrated | 68% → 68% | 23% → 20% | 28% → 28% | 51% → 42% | 27 → 28 |
+| Company 2:1 attack | calibrated | 9% → 7% | 26% → 21% | 25% → 18% | 50% → 45% | 28 → 27 |
+
+- **Attackers give up at 13–22%**, inside the sources' 10–25% for a failed
+  attack (*Loss exchange in attacks*) and near the rule of thumb's 20–25%.
+- **Explosives' share on the flat harness is 42–45% with calibrated fire**:
+  fewer attacks run long under the shells now they stop at 30%. The 75% is
+  for real ground (author, 2026-09-30), where the tel gives 72–75% (balance.md,
+  fortieth round).
+- The flat harness is not the balance's measure (the tel's reference plans
+  are, balance.md, forty-third to forty-fifth rounds); its company 3:1 at 68%
+  is one scripted plan on open ground.
+
 ## Open
 
 For the author, in rough order of what they move:
