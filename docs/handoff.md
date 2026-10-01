@@ -159,9 +159,12 @@ else about them. In short:
   two. **Two scouts win 18% at 3:1** (three 59%, one 24%): traced to the
   western platoon's approach, where the attack is lost piecemeal — the third
   scout wins by keeping a squad off it. The drill sends squads straight at
-  the enemy by no covered route. **Open with the author:** covered routes and
-  a coordinated arrival in the drill, before the balance is called met; then
-  the AI comparison (Haiku and Jev), and playing it in the browser.
+  the enemy by no covered route. **Done** (balance.md, *Forty-fifth round*): the
+  drill now steps by covered ground and brings platoons in together; scouts
+  count in order (one 28%, two 35%, three 57%); the reference plans' median
+  42% (3:1) and 24% (2:1), inside the targets. The hasty attack rose to 45%
+  (history 15–35%), the flank fell to 25%: open with the author. Next: the
+  AI comparison (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):

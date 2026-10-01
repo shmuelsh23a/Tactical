@@ -3466,6 +3466,57 @@ approach tips the attack. A real company moves its platoons by covered
 routes and brings them in together. For the author: whether the drill should
 do the same (a drill change, ours) before the balance is called met.
 
+## Forty-fifth round: covered routes, and platoons that close together, 2026-10-01
+
+The forty-fourth round found the attack lost piecemeal on the western
+approach: once released, every squad went straight at the nearest enemy at
+full pace, and the western platoon arrived first, alone. Two drill changes
+(ours, author asked for both, 2026-10-01):
+
+- **Covered routes.** An attacking squad steps through ground out of sight
+  of the enemy its side knows of, where a step that still closes on it (by at
+  least 40% of the step, up to 60° off the line) is; straight within 150 m.
+- **Closing together.** An assaulting platoon within 300 m of the enemy waits
+  at the last cover while another assaulting platoon's lead is 100 m or more
+  further back — five turns at most.
+
+`--no-covered` and `--no-together` turn each off. 100 seeds a scenario from
+1000, decision 67:
+
+| 3:1 | Neither | Covered only | Together only | Both |
+|---|---|---|---|---|
+| Two scouts | 18% | 30% | 30% | **35%** |
+| Calibrated (three scouts) | 59% | 61% | 53% | 57% |
+
+**Scouts now count as they should**: one 28%, two 35%, three 57% (2:1: 15%,
+29%, 31%) — rising with the number, where two had won less than one.
+
+| Reference plan | 3:1 before → after | 2:1 before → after |
+|---|---|---|
+| A. Calibrated | 59% → 57% | 24% → 31% |
+| A + flank | 47% → 41% | 26% → 21% |
+| B. Deliberate | 42% → 49% | 41% → 25% (out of time 38) |
+| E. Fire-heavy | 45% → 43% | 28% → 25% |
+| D. Flank | 38% → 25% | 18% → 15% (out of time 44) |
+| A + move up | 33% → 28% | 19% → 25% |
+| B + move up | 25% → 27% | 16% → 21% |
+| C. Hasty (three scouts) | 30% → **45%** | 8% → 23% |
+| **Median** | **40% → 42%** | **21.5% → 24%** |
+| **Target (decision 68)** | 40–55% | 20–35% |
+
+- **The medians stay inside the targets**, a little higher; the attacker
+  loses less on the way in (calibrated 11% down, was 13%).
+- **The hasty attack gains most** (30% → 45%): going in by covered ground
+  and together makes up much of what preparation gave. That is now above
+  history's 15–35% and 12 points under the calibrated plan (history: 20–35).
+- **The flank plan loses** (38% → 25%): the detour to the flank point and the
+  covered steps lengthen an approach that was already long.
+- **At 2:1 a base of fire leaves one platoon to close**, and with covered
+  steps it runs out of time more often (B, D).
+
+**For the author:** the hasty attack is now a little better than history
+suggests; the flank, worse.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
