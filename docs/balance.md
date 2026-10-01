@@ -3405,6 +3405,41 @@ nearly every battle (thirty-fifth and thirty-sixth rounds). If no commander
 would, the scout question (`plan.scouts`) is steering them; look at its
 wording with `jev-probe` before the next comparison.
 
+## Forty-fourth round: the scout question, and what two scouts win, 2026-10-01
+
+Jev and every Claude model chose **one scout** in nearly every battle
+(thirty-fifth and thirty-sixth rounds), which no commander does (author).
+The question's options were bare ("one squad", "two squads") beside a
+mission that says *mass at the decisive point*, and the models' reasons said
+so: "one squad finds the enemy without splitting the mass". `npm run
+scout-probe` puts the question to Jev and Haiku in four wordings, 20 seeds:
+
+| Wording | Jev | Haiku |
+|---|---|---|
+| Bare (as it was) | 1 scout, 20 of 20 | 1 scout, 19 of 20 |
+| + what scouts do, in the question | 3, 20 of 20 | 2, 20 of 20 |
+| + what each option means, in its label | 2, 20 of 20 | 1 (8), 2 (11), 0 (1) |
+| **Both** | **3, 20 of 20** | **2, 20 of 20** |
+
+What is added is the game's own fact, no advice: each scout watches from its
+own observation point; the scouts stay at their posts when the company goes
+in, and are the eyes for its mortar fire, since moving squads cannot find men
+dug in (forty-first round). **Adopted**, question set `2026-10-01.3`.
+
+### Two scouts win less than one
+
+Haiku now chooses two scouts, a plan not measured before (`--rule
+twoscouts`, 100 seeds): **3:1 18%, 2:1 16%** — under one scout (24%, 6%) and
+far under three (59%, 24%). Traced (as the forty-first round): with both
+scouts alive on going in (89 of 100) it fires about as many missions after
+(8.3 against three's 8.8) and wins 20% against 62%. **Observation is not the
+difference.** The plans show why it is odd: only two observation points are
+offered, so the third of three scouts goes to the first's point (`p1`
+twice) — three scouts are two viewpoints and one more squad out of the
+assault. That three win 59% where two win 18% says the calibrated plan wins
+by something fragile, not by more eyes. **Next:** find it, since the
+calibrated plan anchors the balance.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

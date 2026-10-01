@@ -247,13 +247,15 @@ try {
  * moves the company up to an assault position once the enemy is found and
  * goes from there; "flank" goes round a flank where the ground has one (else
  * by a scout's observation point), not straight; "prep" goes only once most missions are fired on the enemy in
- * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once.
+ * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once;
+ * "twoscouts" sends two.
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
     const has = (id: string) => q.options.some((o) => o.id === id);
     const pick = (): string => {
-      if (q.id === "plan.scouts") return extra.has("noscout") ? "0" : extra.has("onescout") ? "1" : Math.max(...q.options.map((o) => Number(o.id))).toString();
+      if (q.id === "plan.scouts")
+        return extra.has("noscout") ? "0" : extra.has("onescout") ? "1" : extra.has("twoscouts") ? "2" : Math.max(...q.options.map((o) => Number(o.id))).toString();
       if (q.id.startsWith("plan.post.")) {
         const i = Number(q.id.slice("plan.post.".length));
         return has(`p${i}`) ? `p${i}` : "p1";

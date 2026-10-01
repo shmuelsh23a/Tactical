@@ -21,7 +21,8 @@
     "validate": "vite-node tools/validation-sim.ts",
     "scenario-sim": "vite-node tools/scenario-sim.ts",
     "jev-sim": "vite-node tools/jev-sim.ts",
-    "jev-probe": "vite-node tools/jev-probe.ts"
+    "jev-probe": "vite-node tools/jev-probe.ts",
+    "scout-probe": "vite-node tools/scout-probe.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

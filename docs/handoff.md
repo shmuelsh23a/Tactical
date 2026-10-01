@@ -154,9 +154,11 @@ else about them. In short:
   no fire first — no one sends a lone scout, author) wins 30%, inside
   history's 15–35%. Tried and withdrawn: fire on the move, an overwatch and
   binoculars for command groups (thirty-seventh and forty-second rounds).
-- **Next:** the scout question (`plan.scouts`) — Jev and every Claude model
-  chose one scout, which no one does — then the AI comparison on the new
-  rules (Haiku and Jev), and playing it in the browser.
+- **The scout question** (balance.md, *Forty-fourth round*): reworded with
+  what scouts do (question set `2026-10-01.3`); Jev now sends three, Haiku
+  two. **Two scouts win 18% at 3:1** (three 59%, one 24%), and not for want
+  of eyes: the calibrated plan wins by something fragile. **Next:** find it,
+  then the AI comparison (Haiku and Jev), and playing it in the browser.
 
 **Where the game stands** (README, *Rules decisions*; balance.md,
 twenty-second to thirty-third rounds; validation.md):

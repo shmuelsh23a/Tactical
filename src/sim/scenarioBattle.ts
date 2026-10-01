@@ -382,12 +382,17 @@ function askPlan(
     question({
       id: "plan.scouts",
       kind: "choice",
-      ask: "How many squads do you send ahead to find the enemy before the company goes? Scouts walk, look harder, hold their fire, and carry binoculars.",
+      // What scouts do in this game, said as fact: bare, the question drew one
+      // scout from Jev and every Claude model (docs/balance.md, forty-fourth round).
+      ask:
+        "How many squads do you send ahead to find the enemy before the company goes? Scouts walk, look harder, hold their fire, and carry binoculars." +
+        " Each scout squad watches from its own observation point, chosen so the points see different parts of the enemy's ground." +
+        " When the company goes in, the scouts stay at their posts, and they are the eyes for your mortar fire: the assaulting squads, on the move, cannot find men dug in.",
       options: [
         { id: "0", label: "none: the whole company advances at once" },
-        { id: "1", label: "one squad" },
-        { id: "2", label: "two squads" },
-        { id: "3", label: "three squads" },
+        { id: "1", label: "one squad: one observation point, the enemy's ground seen from one side" },
+        { id: "2", label: "two squads: two observation points" },
+        { id: "3", label: "three squads: three observation points, the enemy's ground seen from three sides" },
       ],
     }),
   );
