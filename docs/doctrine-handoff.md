@@ -1,10 +1,16 @@
 # Doctrine handoff — the drills from the manuals (backlog 21)
 
 The brief for the session that replaces the game's drills with doctrine.
-**It is local work, on the author's computer** (author, 2026-10-01): the
-manuals are long, the cloud sessions' proxy refuses most military sites
-(handoff.md, *Traps*), and the author has doctrinal material to embed. The
-cloud handoff is [handoff.md](handoff.md); read its *Start here* first.
+**It waits for the author's manuals** (author, 2026-10-02): a good number of
+open-source manuals collected over the years, kept on the author's computer
+and to be embedded alongside the ones named below — so the work starts when
+the author brings them into a session. It is **commercial-edition work
+and belongs in this public repository**: the commercial edition is built on
+open-source manuals only. (The 2026-10-01 note that it was local work, with
+the author's material in a private package, is superseded.) The cloud
+sessions' proxy refuses most military sites (handoff.md, *Traps*), so the
+manuals arrive as files, not downloads. The cloud handoff is
+[handoff.md](handoff.md); read its *Start here* first.
 
 ## Why
 
@@ -32,11 +38,28 @@ wrong — and that is a decision for the author, made on the numbers.
   defence). Check the current edition of each and record it.
 - **Institutional edition: the doctrine engine adapted to the customer's
   doctrine and material** (business-plan.md, *Editions*).
-- ⚠️ **Keep anything not public out of this repository.** The civilian
-  edition must be able to show where every TTP detail came from in open
-  sources (business-plan.md); the author's own material — and any
-  institution's — belongs in a separate, private doctrine package, never in
-  a public commit. Decide where that package lives before embedding it.
+- **Every manual embedded must be cleared for public release** — for US
+  doctrine, *Distribution A* on its cover. Some older or restricted editions
+  are not, even where copies circulate; check each before it is committed,
+  and record its title, edition, marking and source, so the commercial
+  edition can show where every TTP detail came from (business-plan.md).
+- **Also from doctrine** (author, 2026-10-02), so in scope here:
+  - **mission and victory conditions** (backlog 18) — the manuals'
+    definitions of mission accomplishment (seize, secure, defend, delay…);
+  - **the MOS list and each squad's and platoon's makeup** — who carries
+    what, for README decision 73 (every soldier an MOS, with kit and a
+    skill), and what the manuals say about taking up a fallen gunner's
+    weapon;
+  - **reserves for the other layouts** — which squad each defending
+    platoon holds back (the platoon battle, the company battle's platoon B,
+    Yokneam);
+  - **the OPORD** (`src/sim/opord.ts`) — rewritten in the manuals'
+    five-paragraph form; ours until then, and not to be used again before;
+  - **fire on the move** (`GameOptions.fireOnTheMove`, off) — kept until
+    doctrine says whether infantry fires while moving (assault fire);
+  - **the hasty attack at 45% and the flank plan at 25%** (balance.md,
+    forty-fifth round) — no ruling until the reference plans are measured
+    again on the doctrinal drill (Step 3).
 
 ## Step 1 — the inventory (no code)
 

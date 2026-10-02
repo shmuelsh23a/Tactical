@@ -79,6 +79,10 @@ this file:
   `debriefText.ts` (its Hebrew narration). The disclosure rules cannot be
   skipped by omission, and an unnarrated action cannot print its raw object at
   a player.
+- [`src/engine/scaling.test.ts`](src/engine/scaling.test.ts) holds a turn's
+  cost to the forces, not the men in them: a line of sight is asked between
+  forces, never per soldier, so a brigade still plays (README, after rules
+  decision 74).
 - `tsconfig.engine.json` sets `"types": []`, so the standalone engine build
   cannot quietly acquire node's ambient globals from `node_modules/@types`.
 
