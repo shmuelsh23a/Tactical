@@ -2207,6 +2207,63 @@ on the stated reasoning, still awaiting the author's word.
     2026-10-02, answering the question of 2026-09-28). An attacker at 3:1
     brings what its scenario spec gives it; no rule scales missions or
     tubes with the force ratio.
+71. ✅ **Fatigue, by strength** (author, 2026-10-02, after a survey of
+    Combat Mission, Close Combat and Battle Brothers). **Ruled, not built.**
+    Each man keeps a fatigue count that rises with running, climbing and
+    being under fire and falls each quiet turn; his strength sets how much
+    he takes before it tells. A tired man moves slower and shoots worse.
+    ⚠️ Ours, to settle when built: the costs, the recovery, the thresholds
+    and the penalties — measured, with the sources where they exist. One
+    counter per man, updated at end of turn: no sight lines, no new draws.
+72. ✅ **Who fires first, by agility** (author, 2026-10-02; Battle
+    Brothers' initiative, Jagged Alliance 2's interrupts). **Ruled, not
+    built.** Suppression lands with the fire (decision 63), so the order of
+    the fire phase matters; forces fire in order of their men's agility.
+    ⚠️ Ours: posture still comes first (a force already aiming beats one on
+    the move), and how a force's agility is read (its men's mean). One sort
+    of the forces a turn.
+73. ✅ **Every soldier has an MOS, with his kit and his skill** (author,
+    2026-10-02). **Ruled, not built.**
+    - **The MOS list and each squad's makeup come from doctrine** — the
+      manuals' squad and platoon organisation, cited (doctrine-handoff.md).
+    - **Kit**: his **weapon** (each man fires his own weapon's table, so a
+      squad's fire changes as its gunner falls), the **weight** he carries
+      (read by decisions 69 and 71), his **ammunition**, used up as he
+      fires (this settles backlog 12 at the man), and **equipment** —
+      binoculars, radio, night sights, medical kit, demolitions — which is
+      what makes a skill possible.
+    - **A comrade takes up a fallen specialist's weapon** after a turn, at
+      his own skill.
+    - **A skill level per man in his MOS**, drawn like the traits and grown
+      by learning (decision 74). Among the skills: the **medic** (slows a
+      serious wound's bleeding, returns a light wound to the fight), the
+      **sapper** (lays a charge faster than decision 16's two turns, clears
+      mines more safely), the **marksman and MG gunner** (accuracy with his
+      own weapon, apart from intelligence).
+
+    ⚠️ Ours: every number. Weapons move from the force to the man, which
+    changes how fire is resolved; the per-man hit roll is already there
+    ("hit% × fit soldiers", rolled per soldier), so the draws stay one a
+    man. Ammunition is one counter a man.
+74. ✅ **Campaign traits: learning, quirks, relationships** (author,
+    2026-10-02). **Ruled, not built; they matter with campaigns (backlog
+    16).** Men who survive a battle **learn** — their MOS skill grows, at a
+    rate set by **wisdom** (Jagged Alliance 2). A few rare **named quirks**
+    with a fixed effect (Battle Brothers: Fearless, Iron Lungs, Night
+    Blind). **Relationships** — liking and disliking — **within a squad
+    only**, felt in morale when a friend falls. ⚠️ The squad bound is a
+    cost rule: relationships grow with the square of the men, so never
+    company- or campaign-wide.
+
+    **Cost as the game scales (2026-10-02, measured: ten company battles
+    in 1.5 s).** What makes a turn expensive is sight lines between pairs
+    of forces. Decisions 69–74 add none: each reads a man's values once an
+    action or once a turn, which stays trivial at a brigade's 3,000 men.
+    Keep it so: a force's summaries (slowest pace, best observer, fire
+    order) computed in upkeep from its men's current values, never cached on
+    the unit; **no sight lines per soldier** (Combat Mission's relative
+    spotting multiplies them by 50–100 at battalion); **no new die per man**
+    where the force rolls once today (cost, and it reorders the rng).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

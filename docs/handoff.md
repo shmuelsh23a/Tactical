@@ -120,6 +120,14 @@ backlog 22 (plan once, compute, execute cheaply), after the doctrine work.
 | Direct-fire HE | Review it now — cloud work, no manuals needed |
 | Reserves for the other layouts | From doctrine |
 | The traits' other effects | Ruled: README decision 69 (per soldier, ±20%, slowest man sets the pace) — not built |
+| Fatigue | By strength (decision 71) — not built |
+| Who fires first | By agility, posture first (decision 72) — not built |
+| Skills | Every soldier has an MOS from doctrine, with weapon, weight, ammunition and equipment, a skill level per man, and a comrade takes up a fallen specialist's weapon (decision 73) — not built |
+| Campaign traits | Learning by wisdom, named quirks, relationships within a squad only (decision 74) — with campaigns |
+
+Decisions 69–74 came from a survey of what other tactical games use traits
+for, with the cost at scale kept in view: none adds a sight line, and none
+adds a die where the force rolls once today (README, after decision 74).
 
 The doctrine items are in [doctrine-handoff.md](doctrine-handoff.md)'s
 scope. The author asked for the rulings to be recorded and nothing built
@@ -172,8 +180,11 @@ How the last two days went, round by round, is in
    indirect fire only (a tank round or an RPG still ignores cover, posture
    and roofs), and the sources — a proposal for the author to rule on.
    Needs no manuals.
-3. **Build the traits** (decision 69) — ruled, waiting for the go-ahead;
-   measure the reference plans with it on.
+3. **Build the traits** (decisions 69, 71, 72) — ruled, waiting for the
+   go-ahead; measure the reference plans with them on. **The MOS**
+   (decision 73) needs the doctrine's squad organisation first, and moves
+   weapons from the force to the man; **campaign traits** (74) wait for
+   campaigns (backlog 16).
 4. **Play the new rules in the browser as a player** (the author, on the
    author's computer). Suppression, heads down, danger close, the nerve
    test, the counterattack, the 30% breakpoint: none has been played by a

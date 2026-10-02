@@ -46,6 +46,10 @@ wrong — and that is a decision for the author, made on the numbers.
 - **Also from doctrine** (author, 2026-10-02), so in scope here:
   - **mission and victory conditions** (backlog 18) — the manuals'
     definitions of mission accomplishment (seize, secure, defend, delay…);
+  - **the MOS list and each squad's and platoon's makeup** — who carries
+    what, for README decision 73 (every soldier an MOS, with kit and a
+    skill), and what the manuals say about taking up a fallen gunner's
+    weapon;
   - **reserves for the other layouts** — which squad each defending
     platoon holds back (the platoon battle, the company battle's platoon B,
     Yokneam);
