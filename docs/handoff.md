@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next, on the author's computer ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -74,8 +74,11 @@ govern the next step:
 2. **The layers divide** (README, backlog 21): **rules** are tuned to real
    outcomes; **drills** come from doctrine and stay fixed; **plans** are the
    players' or the AI's. Today's drills are still ours, and the next large
-   piece of work is replacing them from the manuals — on the author's local
-   computer, not here: **[doctrine-handoff.md](doctrine-handoff.md)**.
+   piece of work is replacing them from the manuals:
+   **[doctrine-handoff.md](doctrine-handoff.md)**. It is commercial-edition
+   work on open-source manuals and goes in this public repo; it waits only
+   for the manuals the author has collected, which are on the author's
+   computer and are to be embedded too (author, 2026-10-02).
 
 **Where the balance stands** (balance.md, thirty-seventh to forty-seventh
 rounds; README, decisions 67–68):
@@ -105,13 +108,22 @@ alike and cost far more: compare Haiku and Jev only. Keys:
 session keeps `ANTHROPIC_API_KEY` for itself). The next design for the AI is
 backlog 22 (plan once, compute, execute cheaply), after the doctrine work.
 
-**Open with the author** (none blocks the next step):
-- The **hasty attack** rose to 45% at 3:1 with covered routes (history
-  15–35%), and the **flank plan** fell to 25% (balance.md, forty-fifth round).
-- The **OPORD** text (`src/sim/opord.ts`) is ours, for him to check before it
-  is used again.
-- **Fire on the move** (`GameOptions.fireOnTheMove`) is in the engine, off,
-  and not recommended; keep or remove.
+**Rulings of 2026-10-02** (the author, answering every open question):
+
+| Question | Ruling |
+|---|---|
+| Hasty attack 45% at 3:1, flank plan 25% | Wait for doctrine: measure the reference plans again on the doctrinal drill, then rule |
+| Fire on the move (`fireOnTheMove`, off) | Keep, off, until doctrine says whether infantry fires while moving |
+| Fire support by odds | Per scenario, in its spec (README decision 70) |
+| The OPORD (`src/sim/opord.ts`) | Rewrite it from doctrine; not to be used again before |
+| Mission and victory conditions (backlog 18) | From doctrine: the manuals' definitions of mission accomplishment |
+| Direct-fire HE | Review it now — cloud work, no manuals needed |
+| Reserves for the other layouts | From doctrine |
+| The traits' other effects | Ruled: README decision 69 (per soldier, ±20%, slowest man sets the pace) — not built |
+
+The doctrine items are in [doctrine-handoff.md](doctrine-handoff.md)'s
+scope. The author asked for the rulings to be recorded and nothing built
+yet.
 
 How the last two days went, round by round, is in
 [handoff-archive.md](handoff-archive.md), *2026-09-30 to 2026-10-01*.
@@ -148,22 +160,28 @@ How the last two days went, round by round, is in
 
 **Open, in rough order:**
 
-1. **The doctrine engine** (backlog 21) — local, with the author's material:
-   [doctrine-handoff.md](doctrine-handoff.md). Then the reference plans
-   measured again on doctrinal drills.
-2. **Play the new rules in the browser as a player** (the author, on his
-   computer). Suppression, heads down, danger close, the nerve test, the
-   counterattack, the 30% breakpoint: none has been played by a person. The
-   browser game is hotseat; the scripted company's choices (scouts, moving up,
-   bounding) exist only in the headless harness.
-3. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
+1. **The doctrine engine** (backlog 21), when the author brings the manuals:
+   [doctrine-handoff.md](doctrine-handoff.md). Its scope now takes in
+   victory conditions, reserves, the OPORD, fire on the move and the hasty
+   attack's ruling. Then the reference plans measured again on doctrinal
+   drills.
+2. **Direct-fire HE** (tanks, RPGs, rifle grenades, ATGMs) — the author
+   asked for the review now (2026-10-02): the document's tables
+   (`resolveDirectExplosive`, the `EXPLOSIVES` entries with
+   `delivery: "directFire"`), what decisions 29–31 and 62 changed for
+   indirect fire only (a tank round or an RPG still ignores cover, posture
+   and roofs), and the sources — a proposal for the author to rule on.
+   Needs no manuals.
+3. **Build the traits** (decision 69) — ruled, waiting for the go-ahead;
+   measure the reference plans with it on.
+4. **Play the new rules in the browser as a player** (the author, on the
+   author's computer). Suppression, heads down, danger close, the nerve
+   test, the counterattack, the 30% breakpoint: none has been played by a
+   person. The browser game is hotseat; the scripted company's choices
+   (scouts, moving up, bounding) exist only in the headless harness.
+5. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
    evaluate once by rule from the side's belief) — after 1.
-4. **Reserves for the other layouts** — the platoon battle, the company
-   battle's platoon B, Yokneam: which squad each holds back is the author's.
-5. **Fire support by odds** — asked 2026-09-28, never answered.
-6. **Direct-fire HE** (tanks, RPGs, rifle grenades, ATGMs) — the author's old
-   agenda item 4; decisions 29–31 and 62 cover indirect fire only.
-7. **Flat-ground misses**, **overhead cover for higher echelons**,
+6. **Flat-ground misses**, **overhead cover for higher echelons**,
    **ammunition** (backlog 12) — for battalion battles.
 
 ## Waiting on the author
@@ -235,15 +253,14 @@ before chasing it.
   It measures as irrelevant, and we suggest 30%.
 - **The size of the prepared-defender bonus** (decision 24, his rule, our
   numbers).
-- **The traits' other effects**: his next session on morale.
+- ~~The traits' other effects~~: ruled 2026-10-02 (decision 69).
 
-**Morale is built (rules decision 19), and the author's next session is the
-traits.** He said so on 2026-09-22: strength, intelligence, wisdom, agility,
-charisma and luck are drawn for every man now, but only wisdom, luck and a
-leader's intelligence and charisma do anything — through morale. What the
-others do to shooting, movement, detection and the rest is the next ruling;
-build nothing on them before it. Also his, and not built: **campaigns carry
-the pool of will, and only rest refills it** (backlog 16), and **taking the
+**Morale is built (rules decision 19), and the traits are ruled (decision
+69, 2026-10-02), not built.** Strength, intelligence, wisdom, agility,
+charisma and luck are drawn for every man; today only wisdom, luck and a
+leader's intelligence and charisma do anything — through morale. Decision 69
+says what the rest do to pace, being hit, spotting, mines and accuracy.
+Also the author's, and not built: **campaigns carry the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
 
 **Two further things, both raised 2026-09-21, neither blocking today's work.**
@@ -370,15 +387,10 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-*Start here*'s **Open** list is the order. Two older items still stand
-behind it, both wanting a word from the author before anything is built:
-
-- **Mission and victory conditions** (backlog 18) — under the whole product
-  direction: a campaign needs a result to carry (16), a mission builder needs
-  "objective" to mean something (17). Today a battle ends on a side's defeat
-  or the attacker's deadline (decision 58).
-- **The traits' other rules** — the author's session on morale; build nothing
-  on strength, agility and the rest before it.
+*Start here*'s **Open** list is the order. While the manuals are not
+here, the direct-fire HE review is the one item that can start without
+them; building the traits waits for the author's go-ahead. Mission and
+victory conditions (backlog 18) are to come from doctrine.
 
 ## Traps that cost real time
 

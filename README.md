@@ -1087,7 +1087,7 @@ on the stated reasoning, still awaiting the author's word.
     - ✅ **Six traits per soldier**, 1–10: strength, intelligence, wisdom,
       agility, charisma, luck. (Drawn as the rounded-up mean of two d10, so most
       men are average — ⚠️ ours.) Only wisdom, luck and a leader's intelligence
-      and charisma do anything yet; the rest wait for the next session's rules.
+      and charisma do anything yet; the rest are ruled in decision 69, not yet built.
     - ✅ **Leadership = intelligence + wisdom + charisma**, for leaders only: a
       squad's first man is its squad leader, a command group's is its
       commander. A regular soldier has no leadership.
@@ -2177,6 +2177,36 @@ on the stated reasoning, still awaiting the author's word.
     stands at decision 67: the standard measurement 49% and 27%, the
     reasonable plans' median 42% and 24% (docs/balance.md, fortieth round).
     `TARGETS` in `src/sim/balance.ts`.
+69. ✅ **What the traits do beyond morale** (author, 2026-10-02 — the
+    traits session decision 19 left open). **Ruled, not built.** Each
+    effect applies **per soldier**, to his own actions, and is worth up to
+    **±20%** at a trait of 1 or 10 against the average (5–6):
+    - **Strength**: pace under load (climbing, long rushes) and pace while
+      carrying the wounded.
+    - **Agility**: harder to hit on a rush, quicker to cover under fire,
+      and pace.
+    - **Wisdom**: spotting the enemy, and noticing mines and traps.
+    - **Intelligence**: accuracy.
+    - **Luck**: when he is hit, a chance it misses after all, and a shift
+      from a kill towards a wound.
+    - **Charisma**: unchanged (leadership, and steadying comrades out of a
+      leader's reach).
+    - **A force moves at its slowest man's pace.**
+
+    ⚠️ Ours, to settle when it is built: the ±20% scaled linearly from 5.5
+    to the extremes; luck's shift applied to decision 26's d10 (no new
+    die); where a roll is made once for the force (detection), the trait of
+    the man it belongs to (the best observer) rather than a roll per man —
+    a new draw per man would reorder the rng; a `GameOptions` flag, needing
+    `morale` (the traits are drawn only with it), off by default so games
+    and recordings play as before. **Expect it to move the balance**: the
+    slowest of eight men is usually well below average, so nearly every
+    squad slows — the reference plans are to be measured with it on before
+    it is called done.
+70. ✅ **Fire support is set per scenario, not by the odds** (author,
+    2026-10-02, answering the question of 2026-09-28). An attacker at 3:1
+    brings what its scenario spec gives it; no rule scales missions or
+    tubes with the force ratio.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
