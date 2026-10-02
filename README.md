@@ -2263,7 +2263,9 @@ on the stated reasoning, still awaiting the author's word.
     order) computed in upkeep from its men's current values, never cached on
     the unit; **no sight lines per soldier** (Combat Mission's relative
     spotting multiplies them by 50–100 at battalion); **no new die per man**
-    where the force rolls once today (cost, and it reorders the rng).
+    where the force rolls once today (cost, and it reorders the rng). The
+    first is checked: `src/engine/scaling.test.ts` fails when squads five
+    times larger ask for half as many sight lines again.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
