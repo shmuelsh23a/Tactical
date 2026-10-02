@@ -11,6 +11,65 @@ and why" — is what belongs below.
 
 ---
 
+## 2026-10-02 — the author's rulings, and what other games use traits for
+
+PR #14. The author answered every open question with the reasons below. The rulings
+themselves are in the README (decisions 69–74) and in handoff.md's
+*Rulings of 2026-10-02*. What led to 71–74 was a survey of what other
+tactical and role-playing games use a soldier's traits for, read with the
+cost at scale in mind.
+
+**The survey** (2026-10-02):
+
+| Use | Games | Outcome |
+|---|---|---|
+| Accuracy | XCOM (Aim, +1% a point), Jagged Alliance 2 (marksmanship, dexterity), Combat Mission and Close Combat (experience) | Intelligence (69) |
+| Spotting | Combat Mission, Close Combat (experience spots sooner), Fallout and Phoenix Point (Perception) | Wisdom (69) |
+| Movement | XCOM (Mobility), Phoenix Point (Speed), Fallout and Jagged Alliance 2 (agility gives action points) | Agility, strength under load (69) |
+| Morale and panic | XCOM (Will), Battle Brothers (Resolve), Combat Mission | Already decision 19 |
+| A hit that wounds instead of kills | XCOM (Will: critically wounded rather than killed) | Luck (69) |
+| Fatigue | Battle Brothers (every action costs fatigue, recovered each turn), Close Combat (tired men shoot worse, obey less), Combat Mission (fitness: how fast men tire and recover) | Strength (71) |
+| Who acts first | Battle Brothers (Initiative), Jagged Alliance 2 (interrupts), Fallout (Sequence) | Agility (72) |
+| Load and throwing | Phoenix Point (Strength: weight, throw range), Jagged Alliance 2 | Load, through the MOS's kit (73); throw range not chosen |
+| Learning | Jagged Alliance 2 (wisdom sets how fast skills grow), Close Combat | Wisdom (74) |
+| Skills apart from traits | Jagged Alliance 2 (medical, explosives, mechanical), XCOM (hacking) | Widened by the author to an MOS for every soldier, with kit and a skill level (73) |
+| Named quirks | Battle Brothers (Fearless, Iron Lungs, Eagle Eyes, Night Blind) | Yes (74) |
+| Relationships | Jagged Alliance 2, Battle Brothers | Within a squad only, for cost (74) |
+
+**The cost, measured the same day:** ten company battles headless in 1.5 s.
+The step that grows fastest is the line of sight between forces, which
+samples the ground and grows with the square of the forces. Combat Mission
+gives every soldier his own view ("relative spotting"). Copying it would
+multiply sight lines by the squad's size, about 50 to 100 times at battalion. So the
+rulings keep sight lines between forces, read traits as modifiers, and roll
+no new die per man where the force rolls once. `src/engine/scaling.test.ts`
+now holds the first of these.
+
+**The other rulings:**
+- **Wait for doctrine:** the hasty attack's 45%, fire on the move, reserves
+  and victory conditions. The answers should come from doctrine, not from us.
+- **Rewrite the OPORD from doctrine:** it is ours.
+- **Fire support per scenario:** the specs already set it.
+- **Doctrine engine public:** the author corrected the 2026-10-01 note that it
+  was local, private work. The commercial edition is built on open-source
+  manuals, and the work waits only for the author's collection.
+
+Sources: [XCOM 2 soldier](https://xcom.fandom.com/wiki/Soldier_(XCOM_2)),
+[XCOM 2 stats](https://xcom2.wiki.fextralife.com/Stats),
+[Phoenix Point stats](https://phoenixpoint.wiki.fextralife.com/Stats),
+[Combat Mission: experience, motivation and leadership](https://community.battlefront.com/topic/137563-experience-motivation-and-leadership-kg-peiper/),
+[soft factors, morale and fatigue](https://www.thefewgoodmen.com/thefgmforum/goto/post?id=239477),
+[why CMx2 infantry combat is different](https://community.battlefront.com/topic/93490-why-infantry-combat-in-cmx2-is-so-different/),
+[Close Combat (series)](https://en.wikipedia.org/wiki/Close_Combat_(series)),
+[Close Combat manual](https://manualmachine.com/microsoft/closecombat/660292-user-manual/),
+[Jagged Alliance 2](https://en.wikipedia.org/wiki/Jagged_Alliance_2),
+[JA2 official secrets](https://www.fadden.com/gaming/ja2/ja2-official-secrets.txt),
+[Battle Brothers dev blog #111](https://www.gamebanshee.com/k4hc8),
+[Battle Brothers tips](https://battlebrothers.fandom.com/wiki/Loading_Screen_Tips),
+[Fallout SPECIAL](https://geck.uesp.net/wiki/SPECIAL).
+
+---
+
 ## 2026-09-30 to 2026-10-01 — Jev and Claude as commander, then the balance by reference plans
 
 Moved here from handoff.md at the end of 2026-10-01 (PR #12 merged). The
