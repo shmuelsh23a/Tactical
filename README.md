@@ -1344,7 +1344,8 @@ on the stated reasoning, still awaiting the author's word.
     published lethal areas: a foxhole is ×0.10–0.13 against standing men.
     **The factors are ours**, from those sources, and so is the scope:
     indirect fire only. Grenades, rifle grenades, RPGs, tank rounds and mines
-    are unchanged. The figures are `SHELL_VS_MEN` in `data/explosives.ts`.
+    are unchanged. *Since decision 75 rifle grenades, RPGs and tank rounds
+    follow them too.* The figures are `SHELL_VS_MEN` in `data/explosives.ts`.
     - **Rejected:** option b, where only full cover counts.
 30. ✅ **The first volley catches men on their feet** (author, 2026-09-23).
     A shell's blast chance is the document's against men standing. Once a
@@ -2266,6 +2267,41 @@ on the stated reasoning, still awaiting the author's word.
     where the force rolls once today (cost, and it reorders the rng). The
     first is checked: `src/engine/scaling.test.ts` fails when squads five
     times larger ask for half as many sight lines again.
+
+75. ✅ **Direct-fire HE follows the shell's rules** (author, 2026-10-03:
+    "put it on the same rule set as indirect fires with respect to logic").
+    Until now decisions 29–31, 62 and 63 applied to indirect fire only, so
+    a tank round, an RPG or a rifle grenade ignored cover, posture and
+    roofs, caught only the force it was aimed at, and suppressed no one
+    beside it. With `GameOptions.directHeAsShell` (on for a new game; a
+    recording made before it reads it as off), a round that hits:
+    - **Counts posture and cover against men** as an impact-fuzed shell
+      does (`shellFactor`): ×½ behind partial cover, ×0.36 once down, a
+      hole ×0.03 and a roof ×0.02 (decision 62's figures, or decision 31's
+      under `shellCover: "before62"`).
+    - **Catches whoever is in its blast**, the firer's own side too,
+      measured from the target. An anti-armour round (`usesArmorTable`)
+      connects only with the vehicle it was aimed at; plain HE rolls for
+      any vehicle's tracks in its blast, as decision 3 has a shell do.
+    - **Puts the men it came down on to ground** (`downUnderShelling`,
+      decision 30) until they move. Direct fire is taken shot by shot, so
+      the next shot that turn finds them down; a shell's rounds that land
+      in one turn find them as they were.
+    - **Suppresses within its reach** (decision 63, S1, under
+      `suppressionReach`): forces its blast reached take a direct round's
+      15, and those beyond it but within the weapon's suppression reach
+      take `roundSuppression` scaled from a shell's 25 to a direct round's
+      15. A roof halves all of it, the target's too (S3, under
+      `roofsDampSuppression`). A miss suppresses the target as before; an
+      RPG against armour has no lethal area against men and suppresses
+      only the forces in its blast.
+    - **Unchanged:** the to-hit roll, the target's own suppression figures
+      (15, 15 more on a hit), and the nerve. Direct HE costs decision 19's
+      `firedOn`, not `bombarded`.
+    - ⚠️ **The factors are a shell's.** They come from lethal areas and
+      trench figures for 105–155 mm rounds falling from above, applied
+      as they stand to a flat-trajectory round. A round aimed through a
+      window or into a firing slit is not modelled.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

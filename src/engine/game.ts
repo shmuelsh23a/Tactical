@@ -27,7 +27,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { EXPLOSIVES, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover } from "./data/explosives.js";
-import { FIRE_UNIT_TUBES, LETHALITIES, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
+import { FIRE_UNIT_TUBES, LETHALITIES, LETHAL_AREA_M2, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -82,9 +82,10 @@ import {
 } from "./combat/directFire.js";
 import {
   resolveDirectExplosive,
+  type BlastTargetResult,
   type DirectExplosiveResult,
 } from "./combat/explosives.js";
-import { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
+import { resolveIndirectFire, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
 import { fitSoldiers } from "./units.js";
@@ -426,6 +427,16 @@ export interface GameOptions {
    */
   roofsDampSuppression?: boolean;
   /**
+   * Direct-fire HE (tank round, RPG, rifle grenade) follows the shell's rules
+   * (rules decision 75): posture, cover and roofs scale its blast against men
+   * as a shell's impact fuze does (`shellFactor`), its blast catches every
+   * force within it, men caught by it go to ground, and its suppression
+   * reaches and is damped by a roof as a shell's does (decision 63, S1 and
+   * S3, each under its own switch). On by default; a recording made before
+   * it reads it as off.
+   */
+  directHeAsShell?: boolean;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -576,6 +587,7 @@ export class Game {
   readonly shellCover: ShellCover;
   readonly suppressionReach: boolean;
   readonly roofsDampSuppression: boolean;
+  readonly directHeAsShell: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -742,6 +754,7 @@ export class Game {
     this.shellCover = opts.shellCover ?? "sources";
     this.suppressionReach = opts.suppressionReach ?? true;
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
+    this.directHeAsShell = opts.directHeAsShell ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -874,6 +887,7 @@ export class Game {
       shellCover: this.shellCover,
       ...(this.suppressionReach ? { suppressionReach: true } : {}),
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
+      ...(this.directHeAsShell ? { directHeAsShell: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -2394,34 +2408,84 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
+    const asShell = this.directHeAsShell;
+    const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
-      collateral,
+      // Like a shell's, the round's blast finds whoever is within it (rules
+      // decision 75) — save another vehicle, which only the round aimed at
+      // it connects with when it is an anti-armour round.
+      collateral: asShell
+        ? this.units.filter((u) => u !== target && !(u.kind === "vehicle" && EXPLOSIVES[weaponKey]?.usesArmorTable))
+        : collateral,
       turn: this.turn,
       lethality: this.lethality,
+      // Posture, cover and roofs against men, as an impact-fuzed shell (decisions 29–30, 62).
+      ...(asShell ? { shell: { factorFor: (u: Unit) => shellFactor(u, "impact", roofed(u), shellVsMen(this.shellCover)), airburst: false } } : {}),
     });
     if (result.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       const caught = result.blast?.targets ?? [];
       const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);
+      // A roof halves it, as it does a shell's (decision 63, S3).
+      const damp = (u: Unit, amount: number) =>
+        asShell && this.roofsDampSuppression && roofed(u) ? amount * ROOF_SUPPRESSION_FACTOR : amount;
       this.noteFire(
         target,
         "explosive",
-        SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0),
+        damp(target, SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0)),
         attacker.position,
         undefined,
         attacker.id,
       );
-      for (const t of caught) {
-        if (t.unitId !== target.id) {
-          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position, undefined, attacker.id);
+      if (asShell) {
+        if (result.hit) this.suppressAroundDirectHit(weaponKey, attacker, target, caught, damp);
+        // Everyone the round came down on goes to ground (decision 30).
+        for (const t of caught) {
+          const unit = this.getUnit(t.unitId);
+          if (unit.kind === "infantry") unit.downUnderShelling = true;
+        }
+      } else {
+        for (const t of caught) {
+          if (t.unitId !== target.id) {
+            this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position, undefined, attacker.id);
+          }
         }
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return { ...result, coveringFire };
+  }
+
+  /**
+   * Who else a direct-fire HE round that hit suppresses, as a shell would
+   * (rules decision 75): the forces its blast reached, and with
+   * `suppressionReach` every force within its suppression reach of the
+   * target (decision 63, S1), at a direct-fire round's weight rather than a
+   * shell's. A round with no lethal area against men (the RPG against
+   * armour) reaches no further than its blast.
+   */
+  private suppressAroundDirectHit(
+    weaponKey: string,
+    attacker: Unit,
+    target: Unit,
+    caught: BlastTargetResult[],
+    damp: (u: Unit, amount: number) => number,
+  ): void {
+    const reached = new Set(caught.map((t) => t.unitId));
+    const reaches = this.suppressionReach && LETHAL_AREA_M2[weaponKey] !== undefined;
+    const scale = SUPPRESSION.explosive / SUPPRESSION.indirect;
+    for (const unit of this.units) {
+      if (unit === target || unit.neutralized || unit.surrendered) continue;
+      const amount = reached.has(unit.id)
+        ? SUPPRESSION.explosive
+        : reaches
+          ? roundSuppression(weaponKey, distance(unit.position, target.position)) * scale
+          : 0;
+      if (amount > 0) this.noteFire(unit, "explosive", damp(unit, amount), attacker.position, undefined, attacker.id);
+    }
   }
 
   /**

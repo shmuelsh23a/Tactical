@@ -746,7 +746,12 @@ export function describeOutcome(
       const volley = r.rounds && r.rounds > 1 ? `${r.rounds} ${unit} ` : "";
       if (!observed) return `ירה ${volley}ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
       if (!r.hit) return `${volley}החטאה (${pct(r.hitChance)})`;
-      const caught = (r.blast?.targets ?? []).filter((t) => t.caught);
+      // The target's losses; whoever else the blast caught (rules decision
+      // 75) is told apart, and only to a reader who may know of it.
+      const targetId = action?.kind === "fireExplosive" ? action.targetId : shotAt;
+      const all = (r.blast?.targets ?? []).filter((t) => t.caught);
+      const caught = all.filter((t) => t.unitId === targetId);
+      const others = all.filter((t) => t.unitId !== targetId && lens.mayKnow(t.unitId));
       const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
       const armour = caught.find((t) => t.armorEffect)?.armorEffect;
       const armourText = armour
@@ -760,7 +765,10 @@ export function describeOutcome(
           : ""
         : `, ${casualtyReport(casualties, false)}`;
       const hits = r.rounds && r.rounds > 1 ? `${r.hits}/${r.rounds} פגיעות` : "פגיעה";
-      return `${hits} (${pct(r.hitChance)})${losses}${armourText}`;
+      const besides = others
+        .map((t) => ` · נפגע גם ${who(t.unitId)} — ${casualtyReport(t.newCasualties, umpire || lens.isOwn(t.unitId))}`)
+        .join("");
+      return `${hits} (${pct(r.hitChance)})${losses}${armourText}${besides}`;
     }
 
     case "assault": {

@@ -184,14 +184,15 @@ function mergeBlasts(blasts: BlastResult[]): BlastResult {
 /**
  * Resolve a direct-fire explosive (RPG, tank round, ATGM): first a range-banded
  * to-hit check; on a hit, detonate at the target and resolve the blast against
- * the target (and optional collateral units).
+ * the target (and optional collateral units). Given `shell`, the blast counts
+ * posture and cover against men as a shell's does (rules decision 75).
  */
 export function resolveDirectExplosive(
   rng: Rng,
   weaponKey: string,
   attacker: Unit,
   target: Unit,
-  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number; lethality?: Lethality } = {},
+  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number; lethality?: Lethality; shell?: ShellEffect } = {},
 ): DirectExplosiveResult {
   const lethality = opts.lethality ?? "document";
   const weapon = explosiveFor(weaponKey, lethality);
@@ -226,7 +227,7 @@ export function resolveDirectExplosive(
   while (rounds < rate && !(rounds > 0 && isDown(target))) {
     rounds++;
     if (!rng.chance(result.hitChance)) continue; // missed
-    blasts.push(resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, undefined, lethality));
+    blasts.push(resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, opts.shell, lethality));
   }
   result.hit = blasts.length > 0;
   if (blasts.length) result.blast = blasts.length === 1 ? blasts[0] : mergeBlasts(blasts);

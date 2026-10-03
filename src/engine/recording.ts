@@ -201,6 +201,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.shellCover !== undefined && !SHELL_COVERS.includes(r.shellCover as ShellCover)) throw malformed("shellCover");
   if (r.suppressionReach !== undefined && typeof r.suppressionReach !== "boolean") throw malformed("suppressionReach");
   if (r.roofsDampSuppression !== undefined && typeof r.roofsDampSuppression !== "boolean") throw malformed("roofsDampSuppression");
+  if (r.directHeAsShell !== undefined && typeof r.directHeAsShell !== "boolean") throw malformed("directHeAsShell");
   if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
   if (r.pinnedFiresAtRange !== undefined && typeof r.pinnedFiresAtRange !== "boolean") throw malformed("pinnedFiresAtRange");
@@ -358,6 +359,8 @@ export interface GameRecording {
   suppressionReach?: boolean;
   /** Whether a roof halved a shell's suppression (rules decision 63, S3). Read as **off** when absent. */
   roofsDampSuppression?: boolean;
+  /** Whether direct-fire HE followed the shell's rules (rules decision 75). Read as **off** when absent. */
+  directHeAsShell?: boolean;
   /** Whether a pinned force kept its head down (rules decision 63, S2). Read as **off** when absent. */
   headsDown?: boolean;
   /** Whether an assault tested a pinned defender's nerve first (rules decision 63, S5). Read as **off** when absent. */
@@ -560,6 +563,7 @@ export function replayWithOutcomes(
     shellCover: recording.shellCover ?? "before62",
     suppressionReach: recording.suppressionReach ?? false,
     roofsDampSuppression: recording.roofsDampSuppression ?? false,
+    directHeAsShell: recording.directHeAsShell ?? false,
     headsDown: recording.headsDown ?? false,
     assaultNerve: recording.assaultNerve ?? false,
     pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,

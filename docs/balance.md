@@ -3568,6 +3568,38 @@ located: it is seen on the way and shelled. That is a real mistake —
 doctrine has reconnaissance before the move to an assault position — and
 the game punishes it as it should. `earlyup` stays as a rule variant.
 
+## Forty-eighth round: direct-fire HE as a shell, 2026-10-03
+
+Rules decision 75 puts tank rounds, RPGs and rifle grenades on the shell's
+rules: cover, posture, roofs, a blast that catches whoever is in it, men
+going to ground, suppression out to its reach. The standard measurement,
+200 battles a scenario from seed 1000, the same seeds with the switch
+(`directHeAsShell`) off and on:
+
+| | 3:1 wins | 2:1 wins | Attacker down (3:1 / 2:1) | Defender down | Out by HE |
+|---|---|---|---|---|---|
+| Off (as before) | 48% | 32% | 14% / 17% | 21% / 18% | 75% / 76% |
+| On (decision 75) | **42%** | **29%** | 15% / 18% | 20% / 17% | 74% / 75% |
+
+- **The attacker loses 6 and 3 points.** Its rifle grenades now meet a
+  defender that is dug in and under a roof: ×0.02 where they were ×1.
+  The defender's fire hardly changes, because the attacker is mostly in
+  the open, where a shell's factor is ×1 too.
+- **Both are still inside decision 68's targets** (40–55%, 20–35%), the
+  3:1 near the bottom. The reference plans' median was 42% and 24% before
+  this change. If it falls by as much, the 3:1 median drops below 40%:
+  the reference plans should be measured again before any ruling on it.
+- **A side effect in the drill:** a defending squad displaces to its
+  alternate position once it has been shelled (`drill.displace` reads
+  `downUnderShelling`). A direct HE round that hits now sets that too, so
+  a rifle grenade can move a defender out. Not separated from the rest in
+  these figures.
+- 200 battles put about ±3.5 points of noise on each figure. The 3:1
+  drop is beyond that; the 2:1 drop is within it.
+- **The baseline has drifted.** With the switch off, the standard
+  measurement now gives 48% / 32%; the handoff records 49% / 27%. The
+  difference was already there before this change.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

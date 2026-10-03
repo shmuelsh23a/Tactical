@@ -1056,6 +1056,13 @@ export function App({ scenario, onLeave }: AppProps) {
             "casualty",
             sharedBy(viewingSide),
           );
+        // Its blast finds whoever stands near the target, as a shell's does
+        // (rules decision 75): each force it caught, to whoever may know of it.
+        for (const hit of r.blast?.targets ?? []) {
+          if (!hit.caught || hit.unitId === target.id) continue;
+          const victim = game.units.find((u) => u.id === hit.unitId);
+          if (victim) logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, selectedOwn.side, "נפגע מפגז טנק");
+        }
       } else {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.
