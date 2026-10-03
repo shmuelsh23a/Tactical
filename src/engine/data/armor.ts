@@ -176,6 +176,17 @@ export const HE_FRAGMENTS_IN: Readonly<Partial<Record<VehicleClass, number>>> = 
   soft: 0.8,
 };
 
+/**
+ * The chance each crewman is put out of the fight when a round penetrates
+ * anywhere but the track (rules decision 78, research figures; 2026-10-03).
+ * 2006 Lebanon, read on the page: 22 Merkavas penetrated and 23 tankers
+ * killed (GlobalSecurity), and "over a hundred tank crewmen were killed or
+ * wounded by ATGMs" (StrategyPage). The table's own crew rolls gave about
+ * 0.2 crew hits a penetration. ⚠️ 0.35 is ours: 1.4 of a crew of four put
+ * out, killed or badly wounded, against about one killed.
+ */
+export const CREW_OUT_ON_PENETRATION = 0.35;
+
 /** The side of a vehicle facing `bearingToFirer` (from the vehicle) when its hull points `facing`. */
 export function armourFacing(facing: number, bearingToFirer: number): ArmourFacing {
   const off = Math.abs(((((bearingToFirer - facing) % 360) + 540) % 360) - 180);

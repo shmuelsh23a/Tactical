@@ -4,12 +4,14 @@ import type { TankPart, Unit } from "../types.js";
 import {
   ARMOR_TABLE,
   CATASTROPHIC_ON_PENETRATION,
+  CREW_OUT_ON_PENETRATION,
   PENETRATION,
   armourFacing,
   type ArmorRow,
 } from "../data/armor.js";
 import { bearingDegrees, type Point } from "../geometry.js";
 import { applyComponentDamage, damageCrew, refreshUnitStatus } from "../units.js";
+import { CASUALTY_RULES } from "../data/casualties.js";
 
 export interface ArmorHitResult {
   part: TankPart;
@@ -92,7 +94,12 @@ export function resolveArmorHit(
     return result; // bounced off
   }
   result.penetrated = true;
-  switch (row.effect) {
+  // On the research figures the crew is rolled once for every penetration
+  // but the track's (below), in place of the table's crew rows.
+  const researchCrew = research !== undefined && row.part !== "track";
+  switch (researchCrew && (row.effect === "crewCasualties" || row.effect === "driverCasualty") ? "none" : row.effect) {
+    case "none":
+      break;
     case "crewCasualties": {
       // 1d8 damage, with a per-crew-member chance to be wounded.
       for (const crew of v.crew) {
@@ -129,6 +136,16 @@ export function resolveArmorHit(
     }
   }
 
+  // Penetration kills crews (decision 78; 2006 Lebanon): each man out at
+  // CREW_OUT_ON_PENETRATION.
+  if (researchCrew) {
+    for (const crew of v.crew) {
+      if (crew.neutralized || !rng.chance(CREW_OUT_ON_PENETRATION)) continue;
+      damageCrew(crew, Math.max(0, CASUALTY_RULES.neutralizeThreshold - crew.damagePoints));
+      result.crewHit.push(crew.id);
+      if (crew.role === "driver") v.mobilityKilled = true;
+    }
+  }
   // A thin-skinned vehicle burns far more often than a tank (decision 78).
   const catastrophic = research ? CATASTROPHIC_ON_PENETRATION[v.vehicleClass ?? "mbt"] : 0;
   if (catastrophic > 0 && !v.destroyed && rng.chance(catastrophic)) v.destroyed = true;

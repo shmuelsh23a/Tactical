@@ -274,3 +274,81 @@ describe("the review's fixes (decisions 76–78)", () => {
     expect(() => replayGame(rec)).toThrow(RecordingError);
   });
 });
+
+describe("corrections from the sources read on the page (2026-10-03)", () => {
+  it("an RPG through a window is no critical hit: FM 3-06.11 says it wastes itself on the back wall", () => {
+    let criticals = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const g = new Game({ lethality: "document", seed, enforceC2: false, terrain: GROUND, structuresTakeDamage: false });
+      const rpg = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 60 }, 8));
+      const inHouse = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 105 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      criticals += g.fireExplosive("rpgVsInfantry", rpg.id, inHouse.id, { hasLineOfSight: true }).criticals ?? 0;
+    }
+    expect(criticals).toBe(0);
+  });
+
+  it("a tank round breaches the wall: the men inside are behind partial cover, not under a roof", () => {
+    const g = new Game({ lethality: "document", seed: 1, enforceC2: false, terrain: GROUND, criticalHits: false });
+    const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: -200 }));
+    const inHouse = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 105 }, 8));
+    const dugIn = makeInfantry("B2", "BLUE", "squad", { x: 200, y: 105 }, 8);
+    dugIn.baseCover = "full";
+    g.addUnit(dugIn);
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    const house = g.fireExplosive("tankRound", tank.id, inHouse.id, { hasLineOfSight: true });
+    expect(house.hit).toBe(true);
+    expect(house.blast!.targets.find((t) => t.unitId === inHouse.id)!.blastChance).toBeCloseTo(0.5 * 0.5, 6);
+    tank.firedThisTurn = false;
+    const hole = g.fireExplosive("tankRound", tank.id, dugIn.id, { hasLineOfSight: true });
+    expect(hole.hit).toBe(true);
+    // A prepared position has its roof still: the tank round does not breach a building there.
+    expect(hole.blast!.targets.find((t) => t.unitId === dugIn.id)!.blastChance).toBeCloseTo(0.5 * 0.02, 6);
+  });
+
+  it("a penetration puts about 1.4 of a crew of four out, on the research figures", () => {
+    const rng = new Rng(11);
+    let out = 0;
+    let pens = 0;
+    for (let i = 0; i < 3000; i++) {
+      const v = makeVehicle("V", "BLUE", { x: 0, y: 0 }, 0, "V", "lightApc");
+      const r = resolveArmorHit(rng, v, "hullFront", { weapon: "rpgVsArmor", from: { x: 100, y: 0 } });
+      if (!r.penetrated) continue;
+      pens++;
+      out += v.vehicle!.crew.filter((c) => c.neutralized).length;
+    }
+    expect(pens).toBe(3000); // an M113 is penetrated every time
+    expect(out / pens).toBeCloseTo(4 * 0.35, 1);
+  });
+
+  it("a house brought down kills about a quarter of the men inside", () => {
+    let crushed = 0;
+    let inside = 0;
+    for (let seed = 1; seed <= 150; seed++) {
+      const g = new Game({ lethality: "document", seed, enforceC2: false, terrain: GROUND, criticalHits: false, directHeAsShell: false });
+      const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: -200 }));
+      // Out of the blast's reach of the target, but in the house: what the collapse alone does.
+      const target = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: -60, y: 105 }, 8));
+      const other = g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 5, y: 112 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      for (let shot = 0; shot < 40 && g.structureState("house") !== "rubble"; shot++) {
+        // Fire at the house through the squad in it; move the target in for the shot.
+        target.position = { x: 0, y: 105 };
+        tank.firedThisTurn = false;
+        const fitBefore = other.soldiers!.filter((s) => !s.neutralized).length;
+        const r = g.fireExplosive("tankRound", tank.id, target.id, { hasLineOfSight: true });
+        target.position = { x: -60, y: 105 };
+        const c = r.structure?.crushed?.find((x) => x.unitId === other.id);
+        if (r.structure?.state === "rubble" && r.structure.changed) {
+          inside += fitBefore;
+          crushed += c?.casualties ?? 0;
+        }
+      }
+    }
+    expect(inside).toBeGreaterThan(500);
+    expect(crushed / inside).toBeCloseTo(0.25, 1);
+  });
+});

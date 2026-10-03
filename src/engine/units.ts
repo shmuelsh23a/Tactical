@@ -172,6 +172,14 @@ export function damageCrew(crew: CrewMember, damage: number): boolean {
   return false;
 }
 
+/** A man killed outright, by no wound roll: a building coming down on him (2026-10-03). */
+export function killOutright(s: Soldier): void {
+  s.damagePoints = Math.max(s.damagePoints, CASUALTY_RULES.neutralizeThreshold);
+  s.wound = "killed";
+  s.neutralized = true;
+  s.outBy = "explosive";
+}
+
 /** Convenience constructor for an infantry unit at full strength. */
 export function makeInfantry(
   id: string,

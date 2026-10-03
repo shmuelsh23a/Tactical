@@ -74,6 +74,11 @@ export const RUBBLE_HEIGHT_M = 2;
  * hit windows at 50 m when forced to aim and fire quickly" (FM 3-22.31); an
  * RPG-7 hits a tank-sized target about half the time at 200 m. A slit is
  * about a third of a window's size.
+ *
+ * **No RPG** (2026-10-03, after reading FM 3-06.11 on the page): "a round
+ * passing through a window wastes much of its energy on the back wall";
+ * a shaped charge fired into an aperture "may be wasted … little or no
+ * damage … unless hit directly". The manual aims it beside the window.
  */
 export const CRITICAL_CHANCE: Readonly<Record<string, { window: readonly RangeBand[]; slit: readonly RangeBand[] }>> = {
   tankRound: {
@@ -86,19 +91,6 @@ export const CRITICAL_CHANCE: Readonly<Record<string, { window: readonly RangeBa
       { maxRange: 500, value: 0.4 },
       { maxRange: 1000, value: 0.15 },
       { maxRange: 3000, value: 0.05 },
-    ],
-  },
-  rpgVsInfantry: {
-    window: [
-      { maxRange: 100, value: 0.4 },
-      { maxRange: 200, value: 0.15 },
-      { maxRange: 300, value: 0.05 },
-      { maxRange: 700, value: 0.01 },
-    ],
-    slit: [
-      { maxRange: 100, value: 0.1 },
-      { maxRange: 200, value: 0.05 },
-      { maxRange: 300, value: 0.01 },
     ],
   },
   rifleGrenade: {
@@ -122,7 +114,10 @@ export const CRITICAL_CHANCE: Readonly<Record<string, { window: readonly RangeBa
  * for a 155 mm shell. An air burst never goes through.
  */
 export const ROOF_PENETRATION: Readonly<Record<string, number>> = {
-  mortar: 0.05,
+  // FM 3-06.11, read on the page: the 60 mm "cannot penetrate most
+  // rooftops, even with a delay setting"; the 81 mm does "with a delay
+  // setting" on light buildings. Superquick, rarer still: 2% (was 5%).
+  mortar: 0.02,
   artillery: 0.3,
 };
 
@@ -135,3 +130,22 @@ export const ROOF_PENETRATION: Readonly<Record<string, number>> = {
  * is less closed than a bus, so ×2–3 rather than ×6.
  */
 export const ENCLOSED_BLAST_FACTOR = 2.5;
+
+/**
+ * Weapons whose round, striking the wall of a building, breaches it and
+ * throws spall among the men inside: they find them as if behind partial
+ * cover, not under a roof (2026-10-03). FM 3-06.11, read on the page: tank
+ * HEAT is "large enough to displace enough spall to inflict casualties
+ * inside a building"; a light shaped charge is not ("usually, only those
+ * enemy soldiers directly in the path of the spall … become casualties").
+ * ⚠️ Partial cover's ×0.5 for it is ours.
+ */
+export const SPALLS_INSIDE: ReadonlySet<string> = new Set(["tankRound"]);
+
+/**
+ * The share of the men inside a building that dies when it comes down
+ * (2026-10-03). Arnold et al., *Ann Emerg Med* 2004, 29 bombings, 8,364
+ * casualties: immediate mortality 25% where the structure collapsed,
+ * against 4% in the open air.
+ */
+export const COLLAPSE_KILLS = 0.25;

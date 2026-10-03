@@ -88,7 +88,7 @@ import {
 import { resolveIndirectFire, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
-import { fitSoldiers } from "./units.js";
+import { fitSoldiers, killOutright, refreshUnitStatus } from "./units.js";
 import {
   FLAT_GROUND,
   betterCover,
@@ -108,8 +108,10 @@ import {
 } from "./terrain.js";
 import { OBJECT_COVER_REACH_M, SLOPE } from "./data/terrain.js";
 import {
+  COLLAPSE_KILLS,
   CRITICAL_CHANCE,
   ENCLOSED_BLAST_FACTOR,
+  SPALLS_INSIDE,
   ROOF_PENETRATION,
   STRUCTURE_DAMAGE,
   type StructureState,
@@ -712,7 +714,11 @@ export class Game {
    * changes state, rebuild the live view of the ground. Returns its state
    * after the round. Nothing happens to an object that is not a building.
    */
-  private strikeStructure(o: MapObject, weapon: string): StructureState | undefined {
+  private strikeStructure(
+    o: MapObject,
+    weapon: string,
+    crushed: { unitId: string; casualties: number }[] = [],
+  ): StructureState | undefined {
     if (!this.structuresTakeDamage || o.kind !== "building") return undefined;
     // Struck by a round of the same volley after it came down: rubble is not a building.
     if (this.structureState(o.id) === "rubble") return "rubble";
@@ -722,7 +728,31 @@ export class Game {
     if (points > 0) this.structureDamage.set(o.id, total);
     const after = stateOfStructure(o, total);
     if (after !== before) this.rebuildGround();
+    if (after === "rubble" && before !== "rubble") crushed.push(...this.collapseOn(o));
     return after;
+  }
+
+  /**
+   * A building comes down on the men inside it (2026-10-03): each fit man
+   * dies at {@link COLLAPSE_KILLS} — Arnold et al. 2004, a quarter killed
+   * at once where the structure collapsed.
+   */
+  private collapseOn(o: MapObject): { unitId: string; casualties: number }[] {
+    const crushed: { unitId: string; casualties: number }[] = [];
+    for (const u of this.units) {
+      if (u.kind === "vehicle" || distanceToFootprint(o.footprint, u.position) > OBJECT_COVER_REACH_M) continue;
+      let casualties = 0;
+      for (const s of u.soldiers ?? []) {
+        if (s.neutralized || !this.rng.chance(COLLAPSE_KILLS)) continue;
+        killOutright(s);
+        casualties++;
+      }
+      if (!casualties) continue;
+      u.hitThisTurn = true;
+      refreshUnitStatus(u);
+      crushed.push({ unitId: u.id, casualties });
+    }
+    return crushed;
   }
 
   /** The map with every damaged building holed and every one brought down turned to rubble. */
@@ -1766,9 +1796,10 @@ export class Game {
     // men inside were under the roofs as they were (decision 76).
     for (const { round, building } of strikes) {
       const before = this.structureState(building.id);
-      const state = this.strikeStructure(building, round.weapon);
+      const crushed: { unitId: string; casualties: number }[] = [];
+      const state = this.strikeStructure(building, round.weapon, crushed);
       if (!state) continue;
-      const strike = { objectId: building.id, state, changed: state !== before };
+      const strike = { objectId: building.id, state, changed: state !== before, ...(crushed.length ? { crushed } : {}) };
       // The copy handed back for this round, which carries the side.
       const out = results.find((r) => r.dispersion === round.dispersion);
       if (out) out.structure = strike;
@@ -2573,6 +2604,9 @@ export class Game {
     const alreadyFired = attacker.firedThisTurn;
     const asShell = this.directHeAsShell;
     const window = this.criticalHits ? this.throughTheWindow(weaponKey, attacker, target) : undefined;
+    // The building the target is in, when the round is one that breaches its wall.
+    const breached =
+      SPALLS_INSIDE.has(weaponKey) && target.kind !== "vehicle" ? this.buildingAt(target.position) : undefined;
     const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
@@ -2584,8 +2618,18 @@ export class Game {
         : collateral,
       turn: this.turn,
       lethality: this.lethality,
-      // Posture, cover and roofs against men, as an impact-fuzed shell (decisions 29–30, 62).
-      ...(asShell ? { shell: { factorFor: (u: Unit) => shellFactor(u, "impact", roofed(u), shellVsMen(this.shellCover)), airburst: false } } : {}),
+      // Posture, cover and roofs against men, as an impact-fuzed shell
+      // (decisions 29–30, 62) — but a round that breaches the wall of the
+      // building the target is in throws its spall among the men inside it,
+      // who are behind partial cover then, not under a roof (2026-10-03).
+      ...(asShell ? { shell: { factorFor: (u: Unit) => {
+        const table = shellVsMen(this.shellCover);
+        if (breached && u.kind === "infantry" && distanceToFootprint(breached.footprint, u.position) <= OBJECT_COVER_REACH_M) {
+          const f = table.impact;
+          return Math.min(f.partial, u.downUnderShelling ? f.down : f.standing);
+        }
+        return shellFactor(u, "impact", roofed(u), table);
+      }, airburst: false } } : {}),
       armour: this.armour,
       ...(window ? { critical: window } : {}),
     });
@@ -2627,8 +2671,9 @@ export class Game {
     if (struck && result.hit) {
       const before = this.structureState(struck.id);
       let state: StructureState | undefined;
-      for (let i = 0; i < (result.hits ?? 1); i++) state = this.strikeStructure(struck, weaponKey);
-      if (state) result.structure = { objectId: struck.id, state, changed: state !== before };
+      const crushed: { unitId: string; casualties: number }[] = [];
+      for (let i = 0; i < (result.hits ?? 1); i++) state = this.strikeStructure(struck, weaponKey, crushed);
+      if (state) result.structure = { objectId: struck.id, state, changed: state !== before, ...(crushed.length ? { crushed } : {}) };
     }
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return { ...result, coveringFire };

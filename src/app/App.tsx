@@ -674,6 +674,7 @@ export function App({ scenario, onLeave }: AppProps) {
         if (!victim) continue;
         logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, r.side, `נפגע מ${weapon}`);
       }
+      logCrushed(r.structure, r.side);
     }
     if (resolved.length) checkVictory();
   }
@@ -685,6 +686,14 @@ export function App({ scenario, onLeave }: AppProps) {
    * nothing. `by` is whose colour the line flies — the side that caused it,
    * where there is one.
    */
+  /** The men a building killed when it came down on them (2026-10-03), to whoever may know. */
+  function logCrushed(strike: { crushed?: { unitId: string; casualties: number }[] } | undefined, by: Side | undefined) {
+    for (const c of strike?.crushed ?? []) {
+      const victim = game.units.find((u) => u.id === c.unitId);
+      if (victim) logLosses(victim, c.casualties, 0, victim.neutralized, by, "נקבר בהריסות");
+    }
+  }
+
   function logLosses(
     victim: Unit,
     casualties: number,
@@ -1067,6 +1076,7 @@ export function App({ scenario, onLeave }: AppProps) {
           const victim = game.units.find((u) => u.id === hit.unitId);
           if (victim) logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, selectedOwn.side, "נפגע מפגז טנק");
         }
+        logCrushed(r.structure, selectedOwn.side);
       } else {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.

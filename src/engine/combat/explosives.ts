@@ -40,6 +40,8 @@ export interface StructureStrike {
   state: StructureState;
   /** Whether this fire changed its state: what a report speaks of. */
   changed: boolean;
+  /** Forces inside when it came down, and the men it killed (2026-10-03). */
+  crushed?: { unitId: string; casualties: number }[];
 }
 
 export interface BlastResult {

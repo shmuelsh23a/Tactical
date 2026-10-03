@@ -2333,6 +2333,15 @@ on the stated reasoning, still awaiting the author's word.
       MPAT round normally creates a breach hole in all but the thickest
       masonry". **How many rounds bring a house down is ours**: no source
       gives it ("large expenditures of ammunition are required").
+    - **A tank round breaches the wall** of the building its target is
+      in. The men inside are then behind partial cover (×0.5, or their
+      posture if lower), not under a roof (×0.02). FM 3-06.11: tank HEAT
+      is "large enough to displace enough spall to inflict casualties
+      inside a building" (`SPALLS_INSIDE`; ⚠️ the 0.5 is ours).
+    - **A building brought down kills a quarter of the men inside it**
+      (`COLLAPSE_KILLS`). Arnold et al. 2004, 29 bombings: immediate
+      mortality was 25% where the structure collapsed, and 4% in the
+      open. The log says "נקבר בהריסות", to whoever may know of the force.
     - Not built: rubble slowing movement, walls breached, charges against
       buildings.
 77. ✅ **Critical hits: through the window, the slit or the roof**
@@ -2345,16 +2354,22 @@ on the stated reasoning, still awaiting the author's word.
       gone in through a window; one that hits a force in a position
       prepared before the battle, through its firing slit. The chance is
       by weapon and range (`CRITICAL_CHANCE`), a slit about a third of a
-      window: tank round 85% / 40% to 500 m, 50% / 15% to 1,000 m; RPG
-      40% / 10% to 100 m, falling to 1% at 300 m and beyond; rifle grenade
-      35% / 10% to 50 m, 15% / 5% to 150 m.
+      window: tank round 85% / 40% to 500 m, 50% / 15% to 1,000 m; rifle
+      grenade 35% / 10% to 50 m, 15% / 5% to 150 m. **Not the RPG**: FM
+      3-06.11, read on the page, says a shaped charge "passing through a
+      window wastes much of its energy on the back wall", and aims it
+      beside the window instead.
     - **Indirect fire:** an impact-fuzed round that lands on a building
-      goes through its roof at 5% for a mortar bomb and 30% for a 155 mm
-      shell (`ROOF_PENETRATION`). An air burst never does.
+      goes through its roof at 2% for a mortar bomb and 30% for a 155 mm
+      shell (`ROOF_PENETRATION`). An air burst never does. FM 3-06.11:
+      even with a delay fuze the 60 mm "cannot penetrate most rooftops",
+      and the 81 mm gets through only "the roofs of light buildings".
     - **What it does:** the burst is among the men inside. Each man's
       blast chance is the open ground's ×**2.5**, capped at 1
       (`ENCLOSED_BLAST_FACTOR`). Cover and roof count for nothing against
-      it. Other forces in the blast are resolved as before. Only infantry
+      it. The sources put a room at ×2 to ×6 the open air: ×2 from 29
+      bombings pooled (Arnold et al. 2004), ×6 from bus bombings
+      (Leibovici et al. 1996). Other forces in the blast are resolved as before. Only infantry
       takes one: a command group has no blast roll to amplify.
     - The log and the debrief say "חדר דרך חלון או חרך" / "חדר דרך הגג".
     - ⚠️ **Every figure is ours.** No source gives the chance a round goes
@@ -2386,6 +2401,12 @@ on the stated reasoning, still awaiting the author's word.
       20% against a tank, 90% against an M113. A track keeps the table's
       70% whatever the weapon. Where it hits and what a penetration does
       stay the table's.
+    - **A penetration kills crews:** each crewman is put out at 35%
+      (`CREW_OUT_ON_PENETRATION`), which is 1.4 of a crew of four. This
+      applies to every penetration but the track's, and replaces the
+      table's crew rows. 2006 Lebanon, read on the page: 22 Merkavas
+      penetrated and 23 tankers killed. The table had given about 0.2
+      crew hits a penetration. ⚠️ The 35% is ours.
     - **A thin-skinned vehicle burns:** a penetration destroys an M113
       outright at 30% and a truck at 70% (`CATASTROPHIC_ON_PENETRATION`),
       on top of the table's own 5% on the ammunition.

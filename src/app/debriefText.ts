@@ -370,6 +370,23 @@ export function structureHe(strike: { state: "intact" | "damaged" | "rubble"; ch
   return strike.state === "rubble" ? " · המבנה קרס להריסות" : " · המבנה נפגע";
 }
 
+/**
+ * The men a building killed when it came down (2026-10-03), to a reader
+ * entitled to hear of each force: exact for its own, a report otherwise,
+ * nothing of a force it may not know of.
+ */
+export function crushedHe(
+  strike: { crushed?: { unitId: string; casualties: number }[] } | undefined,
+  who: (id: string) => string,
+  lens: Lens,
+): string {
+  const umpire = lens.side == null;
+  return (strike?.crushed ?? [])
+    .filter((c) => lens.mayKnow(c.unitId))
+    .map((c) => ` · ${who(c.unitId)} נקבר בהריסות — ${casualtyReport(c.casualties, umpire || lens.isOwn(c.unitId))}`)
+    .join("");
+}
+
 /** A round that burst inside, among the men (rules decision 77). */
 export function criticalHe(criticals: number | undefined, how: "window" | "roof"): string {
   if (!criticals) return "";
@@ -669,7 +686,7 @@ export function describeOutcome(
             }`
           : ", ללא פגיעות";
         const fell = !aimed ? "נחיתה" : off > 0 ? `נחיתה בסטייה ${off}מ'` : "נחיתה מדויקת";
-        parts.push(`${fell}${criticalHe(impact.critical ? 1 : 0, "roof")}${hit}${structureHe(impact.structure)}`);
+        parts.push(`${fell}${criticalHe(impact.critical ? 1 : 0, "roof")}${hit}${structureHe(impact.structure)}${crushedHe(impact.structure, who, lens)}`);
       }
       return parts.join(" · ");
     }
@@ -786,7 +803,7 @@ export function describeOutcome(
       const besides = others
         .map((t) => ` · נפגע גם ${who(t.unitId)} — ${casualtyReport(t.newCasualties, umpire || lens.isOwn(t.unitId))}`)
         .join("");
-      return `${hits} (${pct(r.hitChance)})${criticalHe(r.criticals, "window")}${losses}${armourText}${besides}${structureHe(r.structure)}`;
+      return `${hits} (${pct(r.hitChance)})${criticalHe(r.criticals, "window")}${losses}${armourText}${besides}${structureHe(r.structure)}${crushedHe(r.structure, who, lens)}`;
     }
 
     case "assault": {
