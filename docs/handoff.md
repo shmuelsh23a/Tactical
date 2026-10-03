@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-03: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-03: the urban test bed (`yokneamUrban`) and the figures checked against the sources (decision 79: the 2:1 tel attack is now 39%, above decision 68's target). Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 835 tests, 50 files
+npm run check       lint + typecheck clean, 849 tests, 52 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]

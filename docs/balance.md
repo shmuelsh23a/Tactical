@@ -3653,6 +3653,32 @@ Standard measurement, 100 battles from seed 1000:
 - **Out by HE is 98%**: the defender's losses come from the tanks' main
   guns, three window criticals a battle among them.
 
+## Fifty-first round: the figures checked against the sources, 2026-10-03
+
+Rules decision 79 is on and off, on the same seeds: 200 battles a
+scenario from seed 1000, standard measurement.
+
+| | Off: attacker wins | On: attacker wins | Off / on: attacker down | Off / on: defender down |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 43% | **49%** | 15% / 12% | 20% / 21% |
+| telAzekaAssault2 (2:1) | 29% | **39%** | 18% / 15% | 17% / 18% |
+| yokneamUrban | 38% | **17%** | 10% / 11% | 30% / 23% |
+
+| | Off | On |
+|---|---|---|
+| Urban: BLUE's vehicles out | 53% | 25% |
+| Urban: window / slit criticals a battle | 3.2 | 3.2 |
+| Urban: buildings damaged a battle | 1.1 | 1.1 |
+
+- **On the tel the attacker gains.** Weaker charges (a 60° fan at
+  30%) and suppression out to 125 m both work for it, and it loses
+  fewer men.
+- **2:1 is now 39%, above decision 68's 20–35%.** For the author: the
+  checked figures and the targets disagree, and nothing is retuned here.
+- **In the town the attacker loses ground.** Its tanks' HE is smaller
+  (280 m² against 390 m²), so the defender loses 23% where it lost 30%.
+  The mortars no longer immobilise its vehicles by near misses.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

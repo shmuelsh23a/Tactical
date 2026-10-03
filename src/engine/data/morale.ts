@@ -302,6 +302,20 @@ export const SUPPRESSION = {
 export const SUPPRESSION_REACH_81MM = { full: 30, half: 75 } as const;
 
 /**
+ * Suppression reach by weapon on the checked figures (rules decision 79):
+ * FM 7-90 B-7's own table, read on the page — the 81 mm "within 30 meters
+ * … probably", "within 75 meters … a 50 percent chance", "beyond 125
+ * meters, little"; the heavy mortar with a proximity fuze 65 / 125 / 200 m,
+ * which stands for the 155 mm here (⚠️ the nearest row the FM has). Beyond
+ * `half` and within `little` a quarter (⚠️ ours, for "little"). A weapon not
+ * in the table scales the 81 mm's by the square root of its lethal area.
+ */
+export const CHECKED_SUPPRESSION_REACH: Readonly<Record<string, { full: number; half: number; little: number }>> = {
+  mortar: { full: 30, half: 75, little: 125 },
+  artillery: { full: 65, half: 125, little: 200 },
+};
+
+/**
  * A force under a roof — a building, or a position prepared before the
  * battle — takes this share of the suppression a shell or a bomb puts on it
  * (rules decision 63, S3). FM 7-90: men under overhead cover are harder to

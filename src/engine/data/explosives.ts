@@ -251,6 +251,14 @@ export const SHELL_VS_MEN_BEFORE_62: ShellVsMen = {
   airburst: { standing: 1.28, down: 0.97, partial: 1.28, openHole: 0.625, roof: 0.125 },
 };
 
+/**
+ * A mortar bomb against men down, on the checked figures (rules decision 79):
+ * FM 7-90 B-5a, read on the page — "mortar fire against standing enemy
+ * forces is almost twice as effective as fire against prone targets". The
+ * 0.36 above comes from the 155 mm's lethal areas.
+ */
+export const MORTAR_DOWN_CHECKED = 0.5;
+
 /** Which full-cover figures a battle plays against a shell (rules decision 62). */
 export type ShellCover = "sources" | "before62";
 export const SHELL_COVERS: readonly ShellCover[] = ["sources", "before62"];

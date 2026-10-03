@@ -26,7 +26,7 @@ import {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover } from "./data/explosives.js";
+import { EXPLOSIVES, MORTAR_DOWN_CHECKED, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
 import { FIRE_UNIT_TUBES, LETHALITIES, LETHAL_AREA_M2, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
@@ -470,6 +470,14 @@ export interface GameOptions {
    */
   armour?: ArmourFigures;
   /**
+   * The research figures as checked against the sources on 2026-10-03 (rules
+   * decision 79): tank HE's lethal area, the RPG's hit chance against
+   * armour, charges as Claymores and IEDs, a mortar's ×0.5 against men down,
+   * FM 7-90's suppression table, and plain HE reaching a vehicle only within
+   * its blast. On by default; a recording made before it reads it as off.
+   */
+  checkedFigures?: boolean;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -635,6 +643,7 @@ export class Game {
   readonly structuresTakeDamage: boolean;
   readonly criticalHits: boolean;
   readonly armour: ArmourFigures;
+  readonly checkedFigures: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -808,6 +817,23 @@ export class Game {
     return chance ? { chance, factor: ENCLOSED_BLAST_FACTOR } : undefined;
   }
 
+  /** Whether the checked figures are in play: they amend the research ones (rules decision 79). */
+  private get checked(): boolean {
+    return this.checkedFigures && this.lethality === "research";
+  }
+
+  /**
+   * What a shell or a bomb does to men by posture and cover. On the checked
+   * figures a mortar bomb finds men down at ×0.5: FM 7-90 B-5a, "mortar fire
+   * against standing enemy forces is almost twice as effective as fire
+   * against prone targets" (rules decision 79). The 0.36 stays the 155 mm's.
+   */
+  private shellTable(weapon: string): ShellVsMen {
+    const table = shellVsMen(this.shellCover);
+    if (!this.checked || weapon !== "mortar") return table;
+    return { ...table, impact: { ...table.impact, down: MORTAR_DOWN_CHECKED } };
+  }
+
   /** The building a force at `p` is in or against, if any. */
   private buildingAt(p: Point): MapObject | undefined {
     return this.ground.objects.find(
@@ -918,6 +944,7 @@ export class Game {
     this.structuresTakeDamage = opts.structuresTakeDamage ?? true;
     this.criticalHits = opts.criticalHits ?? true;
     this.armour = opts.armour ?? "research";
+    this.checkedFigures = opts.checkedFigures ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -1054,6 +1081,7 @@ export class Game {
       ...(this.structuresTakeDamage ? { structuresTakeDamage: true } : {}),
       ...(this.criticalHits ? { criticalHits: true } : {}),
       armour: this.armour,
+      ...(this.checkedFigures ? { checkedFigures: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -1747,8 +1775,9 @@ export class Game {
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           cepM,
           lethality: this.lethality,
-          shellVsMen: shellVsMen(this.shellCover),
+          shellVsMen: this.shellTable(m.weapon),
           armour: this.armour,
+          checked: this.checked,
           ...(this.criticalHits ? { criticalAt: (impact: Point) => this.throughTheRoof(m.weapon, impact) } : {}),
         }),
       );
@@ -1783,12 +1812,12 @@ export class Game {
         // Who it suppresses: those its blast reached, and since decision 63
         // everyone within its suppression reach (S1); a roof takes half (S3).
         const suppressed = this.suppressionReach
-          ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact)) > 0))
+          ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact), this.checked) > 0))
           : this.units.filter((u) => reached.has(u.id));
         for (const unit of suppressed) {
           let amount = reached.has(unit.id)
             ? SUPPRESSION.indirect
-            : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact));
+            : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact), this.checked);
           if (this.roofsDampSuppression && roofed(unit)) amount *= ROOF_SUPPRESSION_FACTOR;
           this.noteFire(unit, "indirect", amount);
         }
@@ -1933,6 +1962,8 @@ export class Game {
       this.units,
       this.turn,
       this.armour,
+      this.checked,
+      this.lethality,
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
     for (const d of detonations) {
@@ -2639,6 +2670,7 @@ export class Game {
         return shellFactor(u, "impact", roofed(u), table);
       }, airburst: false } } : {}),
       armour: this.armour,
+      checked: this.checked,
       ...(window ? { critical: window } : {}),
     });
     if (result.fired) {
@@ -2711,7 +2743,7 @@ export class Game {
       const amount = reached.has(unit.id)
         ? SUPPRESSION.explosive
         : reaches
-          ? roundSuppression(weaponKey, distance(unit.position, target.position)) * scale
+          ? roundSuppression(weaponKey, distance(unit.position, target.position), this.checked) * scale
           : 0;
       if (amount > 0) this.noteFire(unit, "explosive", damp(unit, amount), attacker.position, undefined, attacker.id);
     }

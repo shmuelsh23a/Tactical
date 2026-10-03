@@ -205,6 +205,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.directHeAsShell !== undefined && typeof r.directHeAsShell !== "boolean") throw malformed("directHeAsShell");
   if (r.structuresTakeDamage !== undefined && typeof r.structuresTakeDamage !== "boolean") throw malformed("structuresTakeDamage");
   if (r.criticalHits !== undefined && typeof r.criticalHits !== "boolean") throw malformed("criticalHits");
+  if (r.checkedFigures !== undefined && typeof r.checkedFigures !== "boolean") throw malformed("checkedFigures");
   if (r.armour !== undefined && !ARMOUR_FIGURES.includes(r.armour as ArmourFigures)) throw malformed("armour");
   if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
@@ -377,6 +378,8 @@ export interface GameRecording {
   criticalHits?: boolean;
   /** Whose armour figures (rules decision 78). Read as **`document`** when absent. */
   armour?: ArmourFigures;
+  /** Whether the research figures were the checked ones (rules decision 79). Read as **off** when absent. */
+  checkedFigures?: boolean;
   /** Whether a pinned force kept its head down (rules decision 63, S2). Read as **off** when absent. */
   headsDown?: boolean;
   /** Whether an assault tested a pinned defender's nerve first (rules decision 63, S5). Read as **off** when absent. */
@@ -583,6 +586,7 @@ export function replayWithOutcomes(
     structuresTakeDamage: recording.structuresTakeDamage ?? false,
     criticalHits: recording.criticalHits ?? false,
     armour: recording.armour ?? "document",
+    checkedFigures: recording.checkedFigures ?? false,
     headsDown: recording.headsDown ?? false,
     assaultNerve: recording.assaultNerve ?? false,
     pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,

@@ -1,9 +1,24 @@
 import { Rng } from "../rng.js";
-import { segmentIntersectsCircle, type Point } from "../geometry.js";
+import { angleBetween, bearingDegrees, distance, segmentIntersectsCircle, type Point } from "../geometry.js";
 import type { Mine, MovementMode, Side, Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
 import type { ArmourFigures } from "../data/armor.js";
+import { CHECKED_AP_CHARGE_FAN_DEG, type Lethality } from "../data/lethality.js";
+
+/**
+ * The forces in a charge's fan, which faces the way the enemy came (rules
+ * decision 79) — and the force that set it off, wherever its bound ended.
+ */
+function inFan(at: Point, towards: Point, mover: Unit, units: Unit[]): Unit[] {
+  const facing = bearingDegrees(at, towards);
+  return units.filter(
+    (u) =>
+      u === mover ||
+      distance(at, u.position) === 0 ||
+      angleBetween(bearingDegrees(at, u.position), facing) <= CHECKED_AP_CHARGE_FAN_DEG / 2,
+  );
+}
 
 /**
  * How close a moving force has to pass to set a charge off (מטען). The document
@@ -62,6 +77,12 @@ export function triggerMines(
   turn = 0,
   /** Whose armour figures (rules decision 78): the research ones read a mine as striking the belly. */
   armour: ArmourFigures = "document",
+  /**
+   * The research figures as checked (rules decision 79): an anti-personnel
+   * charge throws its fragments in a 60° fan towards the way the enemy came.
+   */
+  checked = false,
+  lethality: Lethality = "document",
 ): { detonations: MineDetonation[]; spent: string[] } {
   const detonations: MineDetonation[] = [];
   const spent: string[] = [];
@@ -90,7 +111,17 @@ export function triggerMines(
       side: mine.side,
       position: mine.position,
       activated,
-      blast: resolveBlast(rng, weaponKey, mine.position, allUnits, turn, undefined, "document", { figures: armour }),
+      blast: resolveBlast(
+        rng,
+        weaponKey,
+        mine.position,
+        checked && mine.type === "antiPersonnel" ? inFan(mine.position, from, mover, allUnits) : allUnits,
+        turn,
+        undefined,
+        checked ? lethality : "document",
+        { figures: armour },
+        checked,
+      ),
     });
     spent.push(mine.id);
   }

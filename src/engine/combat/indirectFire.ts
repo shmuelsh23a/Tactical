@@ -58,6 +58,8 @@ export function resolveIndirectFire(
     criticalAt?: (impact: Point) => { chance: number; inside: (u: Unit) => boolean; factor: number } | undefined;
     /** Whose armour figures (rules decision 78). The document's unless given. */
     armour?: ArmourFigures;
+    /** The research figures as checked against the sources (rules decision 79). */
+    checked?: boolean;
   } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];
@@ -80,7 +82,7 @@ export function resolveIndirectFire(
     factorFor: (u) =>
       critical && onBuilding.inside(u) ? onBuilding.factor : shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
     airburst: fuze === "airburst",
-  }, opts.lethality ?? "document", { figures: opts.armour ?? "document" });
+  }, opts.lethality ?? "document", { figures: opts.armour ?? "document" }, opts.checked ?? false);
   return { weapon: weaponKey, aim, dispersion, blast, ...(critical ? { critical: true as const } : {}) };
 }
 

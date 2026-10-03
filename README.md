@@ -2425,6 +2425,44 @@ on the stated reasoning, still awaiting the author's word.
       light vehicles, a direct artillery hit on a vehicle, active
       protection (Trophy), passengers in an APC.
 
+79. ✅ **The research figures, checked against the sources** (author,
+    2026-10-03, each item chosen after the third pass on
+    docs/validation.md). With `GameOptions.checkedFigures` (on for a new
+    game; a recording made before it reads it as off):
+    - **Tank HE: 280 m²**, the 105 mm round's lethal area on impact. The
+      390 m² used before was its air-burst figure in the same source.
+    - **The RPG against armour, by the 1976 US Army trial** against a
+      moving tank-sized panel: 100% to 50 m, 96% to 100 m, 51% to 200 m,
+      22% to 300 m, 9% to 400 m, 4% to 500 m, and nothing beyond.
+    - **An anti-personnel charge is a Claymore**: a 60° fan facing the
+      way the enemy came, 30% to 50 m and 10% to 100 m. The force that set
+      it off is always in the fan.
+    - **An anti-tank charge is a 155 mm shell IED**: 971 m² against men,
+      and only the vehicle within 20 m of it. The document's charges
+      reached 200 m, all round.
+    - **A mortar bomb finds men down at ×0.5**, not ×0.36. FM 7-90:
+      "almost twice as effective" against standing men as prone. The 0.36
+      stays for the 155 mm.
+    - **Suppression by FM 7-90's table**:
+      - 81 mm: 30 m probable, 75 m even, a quarter to 125 m;
+      - 155 mm: the heavy mortar's row, 65 m / 125 m / 200 m;
+      - other weapons: scaled from the 81 mm's row as before.
+    - **Plain HE reaches a vehicle's tracks only within its blast against
+      men**, not the document's 100–200 m. On the urban test bed this cut
+      BLUE's vehicles lost to mortars from 53% to 25%.
+    - ⚠️ Ours:
+      - the quarter out to "little";
+      - the heavy mortar's row standing for the 155 mm;
+      - the 20 m reach of a charge against a vehicle;
+      - the fan facing the way the enemy came.
+
+      The lethal areas themselves rest on one 2025 forum post that derives
+      them from BRL 530, since JMEM is classified (docs/validation.md).
+    - **What it moved** (balance.md, *Fifty-first round*):
+      - the 3:1 tel attack 43% → 49%;
+      - the 2:1 tel attack 29% → 39%, **above decision 68's 20–35%**;
+      - the urban attack 38% → 17%.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
