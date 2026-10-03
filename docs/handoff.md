@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 825 tests, 50 files
+npm run check       lint + typecheck clean, 835 tests, 50 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -187,8 +187,10 @@ How the last two days went, round by round, is in
    the README; sources on validation.md). They could not be measured: the
    harness's battles have no buildings and no vehicles (balance.md,
    *Forty-ninth round*). Next: **a test bed**, an attack into a village
-   with APCs. Then measure, and check the sources against the pages,
-   which the session's proxy would not open. Not built: rubble slowing
+   with APCs. Then measure. The sources were read on the page on
+   2026-10-03 (validation.md, *second pass*), and four rules were
+   corrected from them. Still unsourced: rounds to bring a house down,
+   window, slit and roof chances. Not built: rubble slowing
    movement, breaching walls, an ATGM weapon, machine guns against light
    vehicles, active protection, passengers.
 3. **Build the traits** (decisions 69, 71, 72) — ruled, waiting for the
