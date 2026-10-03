@@ -1005,6 +1005,344 @@ rounds). Research figures, 100 battles a cell, the previous run → now:
   are, balance.md, forty-third to forty-fifth rounds); its company 3:1 at 68%
   is one scripted plan on open ground.
 
+## Buildings, windows and rooms (2026-10-03) — rules decisions 76–77
+
+**How these were read.** The session's network proxy blocked opening the
+pages. Every figure below comes from a search engine's extract of the page
+named, not from the page itself. Re-check against the text before treating
+any of them as final; the main one is FM 3-06.11, ch. 7
+(globalsecurity.org/military/library/policy/army/fm/3-06-11/ch7.htm).
+
+| Claim | Source | Used for |
+|---|---|---|
+| "One MPAT round normally creates a breach hole in all but the thickest masonry construction" | FM 3-06.11, ch. 7 | One tank round damages a house |
+| 155 mm direct fire penetrates 28 in of reinforced concrete "with considerable damage beyond the wall"; "large expenditures of ammunition are required to knock down buildings of any size" | FM 3-06.11, ch. 7 | Artillery 15 points; no figure for rubble |
+| 81 mm with delay "can penetrate the roofs of light buildings"; mortars "seldom penetrate more than the upper stories" | FM 3-06.11, ch. 7 and 12; FM 7-90, app. B | Mortar 4 points; roof 5% superquick |
+| The LAW needs five rounds on one spot to loophole an 8-in double-brick wall | FM 3-06.11, ch. 7 | RPG 3 points |
+| "The M203 cannot reasonably deliver the rounds needed to breach a typical exterior wall" | FM 3-06.11, ch. 7 | Rifle grenade: no damage |
+| Rubble "often becomes … a stronger position for defending troops than it was before" | FM 3-06.11 | Rubble is full cover |
+| M203 point targets include windows to 150 m; inherent accuracy to put grenades into windows at about 125 m, but gunners "cannot consistently hit windows at 50 m when forced to aim and fire quickly" | FM 3-22.31 | Rifle-grenade window chance |
+| Tank-gun dispersion 0.2–0.3 mil | Search extracts naming KNDS / Jane's (SHARD) and IMI (XM329); the Soviet acceptance figure came from a forum post | Tank window chance, by range |
+| RPG-7 about 50% on a tank-sized target at 180–200 m | Search extracts of US RPG-7 threat material on globalsecurity, page not confirmed | RPG window chance |
+| The same bombs killed 7.8% (15/204) of their casualties in the open and 49% (46/93) in buses | Leibovici et al., *J Trauma* 1996;41(6):1030–35 (pubmed 8970558) | Enclosed blast ×2.5 |
+
+**Ours, with no source:**
+- how many rounds bring a house down: 10 tank rounds, 7 shells, 25 bombs, 34 RPGs;
+- every window, slit and roof chance;
+- the room factor's 2.5, inside the ×2–3 that the bus figures and the windowed room together suggest.
+
+## Armour by weapon, class and facing (2026-10-03) — rules decision 78
+
+Read the same way, through search extracts; nothing was checked against the
+page.
+
+| Figure | Source | Status |
+|---|---|---|
+| PG-7V 260 mm, PG-7VL 500 mm, PG-7VR 600 mm behind reactive armour, 900 mm bare | modernfirearms.net; globalsecurity rpg-7-specs; defense-update | Published |
+| Kornet 1,000–1,200 mm | AT-14 articles | Published |
+| 120 mm APFSDS 700–850 mm at 2 km | Wikipedia M829: "very little is publicly known" | Estimate |
+| Merkava 4, Namer, Achzarit armour by facing | Forum estimates; army-technology: Namer "equal to Merkava 4" | **Estimate: classified** |
+| M113: 28–44 mm aluminium | Wikipedia M113 | Published |
+| P(pen) = 1 / (1 + e^−(pen − armour)/(0.1 × armour)) | The curve's shape is standard ballistic practice (NIST IR 7760); the spread of 0.1 is ours | Ours |
+| 2006 Lebanon: about 50 Merkavas hit, 21–22 penetrated, two destroyed (both by IEDs or mines); 11 of 14 APCs hit by ATGMs perforated | strategypage, 2007-01-15 and 2008-08-27; globalsecurity, merkava-combat | Check: the table agrees |
+| 1988 US tests: a 155 mm round within 30 m of an APC sent fragments in and caused casualties | *Field Artillery Journal*, cited second-hand | `HE_FRAGMENTS_IN` |
+| 1982 Lebanon: about 50 Merkavas out of action, 7 total losses; no fires | tankarchives, second-hand | A tank's 5% catastrophic stays the table's |
+
+**Ours, with no source:** a light APC's 30% and a truck's 70% chance of
+being destroyed by a penetration; and every number in the Merkava, Namer
+and Achzarit columns.
+
+## Buildings, vehicles and rooms: the sources read (2026-10-03, second pass)
+
+The first pass read search extracts only (above). This one opened the
+pages through a fetch service, and searched the peer-reviewed literature
+(Consensus). **Read on the page** marks a figure checked against the
+text; anything else is still as the first pass left it.
+
+**FM 3-06.11, ch. 7** (globalsecurity.org/military/library/policy/army/fm/3-06-11/ch7.htm), read in full:
+- Tank HEAT: "One HEAT round normally creates a breach hole in all but
+  the thickest masonry construction". "Tank HEAT rounds are large enough
+  to displace enough spall to inflict casualties inside a building."
+  **Read on the page.**
+- Light shaped charges (the RPG's kind): "A round passing through a
+  window wastes much of its energy on the back wall"; rounds fired into
+  apertures "may be wasted … little or no damage … unless hit directly".
+  The manual says to aim "6 to 12 inches from the sides or bottom of a
+  window" instead. "Usually, only those enemy soldiers directly in the
+  path of the spall from a HEAT round become casualties." AT4 / Carl
+  Gustav "may require 3 to 5 rounds" to penetrate brick walls; heavy stone
+  is "the most difficult to penetrate". **Read on the page. It
+  contradicts decision 77 for the RPG**: through the window is the
+  *worse* outcome for a shaped charge, not a critical hit.
+- M203: "the inherent accuracy to place grenades into windows at 125
+  meters and bunker apertures at 50 meters"; gunners "cannot consistently
+  hit windows at 50 meters when forced to aim and fire quickly"; HEDP
+  fragments "do not reliably penetrate interior walls". "Cannot
+  reasonably deliver the rounds needed to breach a typical exterior
+  wall." **Read on the page.**
+- Mortars: the 60 mm "cannot penetrate most rooftops, even with a delay
+  setting"; the 81 mm "with a delay setting … can penetrate the roofs of
+  light buildings"; "delay settings can increase penetration slightly".
+  The 120 mm with delay "can penetrate deep into a building". **Read on
+  the page.** So a superquick 81 mm round through a roof is rarer than
+  decision 77's 5%.
+- Artillery: indirect fire "tends to impact on roofs or upper stories";
+  "large expenditures of ammunition are required to knock down buildings
+  of any size"; "up to 25 percent of all HE rounds fail to detonate
+  because they glance off hard surfaces". **Read on the page.** Still no
+  count of rounds to bring a house down.
+
+**2006 Lebanon:**
+- StrategyPage, "Merkava Muddles and Miracles in Lebanon", 2007-01-15:
+  - About 10% of "several hundred" Merkavas were hit.
+  - 18 were seriously damaged, a third of them by ATGMs. Two were
+    destroyed, both by roadside bombs.
+  - "Merkava frontal armor was impervious to their Russian Kornet ATGMs."
+    From the side and rear "the ATGM warhead often penetrated", but the
+    tank and crew mostly survived.
+  - "Over a hundred tank crewmen were killed or wounded by ATGMs", many of
+    them commanders standing in the hatch.
+
+  **Read on the page.**
+- GlobalSecurity, *Merkava – Combat*:
+  - 2006: of 400 tanks, 52 were knocked out, 50 of them by missiles and
+    RPGs; 22 had their armour pierced; 23 tankers were killed.
+  - 1982: about 50 Merkavas were out of action, 7 were total losses, 9
+    crew were killed, and none caught fire.
+
+  **Read on the page.** The two pages disagree on how many tanks were
+  destroyed.
+- What follows for decision 78:
+  - Penetrated given hit ≈ 22 / 50 = **44%**. The table's mix of facings
+    matches it.
+  - A tank's front against an RPG at 2% is consistent with "impervious".
+  - **Crew losses are about one killed per penetration** (23 killed over
+    22 penetrations, before the wounded). The table gives about 0.2 crew
+    *hits* per penetration, and a hit is a 1d8 that may not even put the
+    man down. **Decision 78 under-kills crews several times over.**
+
+**Rooms** (Consensus, peer-reviewed):
+- Arnold et al., *Ann Emerg Med* 2004, 29 bombings, 8,364 casualties,
+  pooled immediate mortality:
+  - open air 4%;
+  - confined space 8%;
+  - **structural collapse 25%**.
+- Leibovici et al., *J Trauma* 1996: open air 7.8% against buses 49%.
+- Rats, explosion in an enclosure against the free field: 21.7% against
+  6.7% (Lai, *J Traumatic Surgery* 2008).
+
+So a room is **×2 to ×6** the open air. Decision 77's ×2.5 is inside that
+range, near the pooled figure. A building that collapses on its occupants
+kills about a quarter of them at once; the game does not model that yet.
+
+**Still found nowhere:** the number of rounds that brings a house down,
+the chance a direct round goes in through a window or a slit, or the
+chance a shell goes through a roof. They remain ours.
+
+## The figures still marked ours: third pass (2026-10-03)
+
+Three searches, each through a fetch service and Consensus. **Page** marks
+a figure read on the page itself. **Abstract** marks a peer-reviewed
+abstract. DTIC was down for maintenance all day, so the BRL tank-accuracy
+report, *Heavy artillery in MOUT* and Frame's WWII suppression data are
+still unread.
+
+**Confirmed on the page**
+- FM 7-90, app. B-7: an 81 mm round "within 30 meters … will probably be
+  suppressed"; "within 75 meters … a 50 percent chance"; "beyond 125
+  meters, little suppression". Decision 63's 30 m and 75 m.
+- RPG-7: PG-7V 260 mm, PG-7VL more than 500 mm (Wikipedia, citing
+  Rosoboronexport). Kornet: 1,000 mm or more behind reactive armour (KBP).
+  The M113 "was only designed for 7.62 mm and shell splinter protection".
+- 40 mm HEDP: "casualties within a 5-meter radius" (FAS), hence 79 m².
+  OG-7V: a lethal radius of 7 m, hence 154 m². That figure is for the
+  anti-personnel round only.
+- Mortar rates "8–16 rpm sustained, 20–30 … for short periods" (M252). The
+  RPG's 6 a minute; 155 mm sustained 2 a minute.
+- One grenadier to a fire team of four (US fireteam).
+- Infantry pace under fire: assault simulations average 15–23 m a minute
+  (Silk 2013, *Mil Med*; Billing 2015, *JSCR*; abstracts).
+
+**Contradicted**
+- **Namer:** "more heavily armored than the Merkava IV tanks" (Brig. Gen.
+  Livnat, page). Decision 78 had the heavy APC's front weaker than a tank's.
+- **PG-7VR:** 600 mm behind reactive armour and 900 mm without it (page).
+  The first pass had 600–750 mm.
+- **155 mm maximum rate:** 5 a minute (M777A2, USMC TBS *Principles of
+  Fire Support*, page), not 4.
+- **Lethal areas rest on one forum post.** The 971 / 346 m² for 155 mm
+  are a 2025 post on secretprojects.co.uk. Its author says JMEM is
+  classified and derives the figures from BRL 530 and Mott's formulas.
+  The same thread gives the 105 mm round **271–290 m² on impact**; 390 m²
+  is its *air-burst* figure. The 130 m² "foxhole" figure is on the
+  air-burst row.
+- **Prone against standing:** FM 7-90 B-5a, page: "Mortar fire against
+  standing enemy forces is almost twice as effective as fire against
+  prone targets". That puts prone at about **0.5** for mortars, where
+  decision 30 has 0.36 from the 155 mm lethal areas.
+- **Suppression reach of other weapons:** FM 7-90 gives a table, where
+  decision 63 scales by the square root of lethal area:
+
+  | Weapon | Probable | 50% | Little beyond |
+  |---|---|---|---|
+  | 60 mm | 20 m | 35 m | 50 m |
+  | 81 mm | 30 m | 75 m | 125 m |
+  | Heavy mortar, proximity fuze | 65 m | 125 m | 200 m |
+
+- **Breakpoints:** the Dupuy Institute (page) attributes the attacker's
+  20% and the defender's 40% to FM 105-5 (1964), and says it has "never
+  found any studies establishing the data". The data, quoted on the same
+  page, reject any fixed breakpoint:
+  - Clark (1954, 43 battalions): losses at the end ran from about 1% to
+    nearly 100%.
+  - McQuie (1987): most forces quit at under 10% casualties, and enemy
+    manoeuvre, not losses, was the reason in 64% of cases.
+
+  Decisions 44, 49 and 67 cited "the Dupuy Institute's breakpoints"; the
+  doctrine is FM 105-5's.
+- **RPG against armour** (1976 US Army trial, moving 5 × 2.5 m panel,
+  page): 100% at 50 m, 96% at 100 m, 51% at 200 m, 22% at 300 m, 9% at
+  400 m, 4% at 500 m. The document's 50% to 200 m is low close in, and its
+  10% to 700 m is high; "maximum effective range is 500 meters".
+- **Charges** (M18 Claymore, page): a 60° fan; "30%" at 50 m and "around
+  10%" at 100 m. The document's charges are all round, at 50% to 50 m and
+  25% to 100 m, and its anti-tank charge reaches 200 m. Nothing supports
+  that reach; a 155 mm IED is about an 18 m radius.
+- **Range estimates** (Leaper et al. 2023, abstract; sightings at sea):
+  the naked eye's distance error is about 39%, and with reticle binoculars
+  19–33%. Decision 51 has 20%, and decision 54 halves it.
+
+**Still unsourced:**
+- the tank gun's 90% to 2,000 m;
+- RPG hit chances against men;
+- fatigue;
+- a charge's 50% activation;
+- the UAV's chances of finding charges;
+- detection beyond 20 m (the one trial found, Le et al. 2024, has the best
+  camouflage first seen at 30–35 m);
+- rounds to bring a house down (a Ukrainian survey, page: 20 direct shell
+  hits leave a large panel block unfit, not rubble);
+- window, slit and roof chances;
+- an M113's or a truck's chance of burning (Grozny, Grau 1997, page: 3–6
+  lethal hits for each vehicle destroyed);
+- the size of a roof's effect on suppression, and heads down;
+- nerve lost per turn;
+- the assault nerve test.
+
+## ARES Special Report No. 3, *Indirect Fire* (2017), read in full
+
+Dullum, Fish, Jenzen-Jones et al., *Indirect Fire: A Technical Analysis of
+the Employment, Accuracy, and Effects of Indirect-fire Artillery Weapons*,
+Armament Research Services, January 2017, 93 pp.
+(armamentresearch.com/wp-content/uploads/2017/01/ARES-Special-Report-Indirect-Fire_web.pdf).
+Read on the page, through the fetch service, 2026-10-03.
+
+**Agrees with the game:**
+- Artillery caused "between 50 and 80 per cent" of 20th-century
+  casualties: decision 43's 75%.
+- "As soon as the target takes cover in ditches or foxholes … the
+  effectiveness of the fire may be significantly reduced"; units "strive
+  for simultaneous impact". This is decision 30, the first volley.
+- Mortar error is "3.0" along and "2.5" across the line of fire, as a
+  share of range (Table 3.3): about 90 × 75 m at 3 km, against our 100 m
+  first-round CEP.
+- A "good" first round lands "within 400 meters", and corrections run
+  "800, 400, 200, 100, and 50 metres" (successive bracketing). Decision
+  32 halves the CEP with each observed round.
+- A superquick fuze destroys a building's top floors and leaves "much of
+  the building intact"; bringing it down takes a delay fuze.
+  Decisions 76–77.
+- "The degree of suppression is related to the frequency of impacts and
+  explosive quantity of the munitions used" (citing US Army, 1980).
+
+**Disagrees with the game:**
+- **"Fragmentation" areas** (Tables 1.1–1.2, "genericised estimates",
+  citing Cross et al. 2016):
+
+  | Round | ARES | The game |
+  |---|---|---|
+  | 155 mm | **665 m²** | 971 |
+  | 81 mm | **250 m²** | 476 |
+  | 105 mm | **495 m²** | (tank HE) 280 |
+  | 60 mm | 150 m² | — |
+  | 120 mm mortar | 650 m² | — |
+
+  The report does not define "fragmentation" area. Its rocket table
+  (Table 1.5) gives "Lethal Area" figures of the same size: a 122 mm rocket
+  with 6.4 kg of explosive, 700 m² on impact. It is a published, citable
+  report; the game's figures rest on one forum post.
+- **Air burst against impact**, from Table 1.5's rockets: **×1.08–1.22**.
+  Decision 31 has ×1.28 against standing men.
+- **155 mm first-round CEP**, Table 3.1: 95 m at 15 km, 115 m at 20 km,
+  140 m at 25 km, 275 m at 30 km. Our first round is 270 m at any range,
+  which is a gun at its maximum range.
+- Dud rates "from as low as 0.1 per cent to more than 30 per cent". FM
+  3-06.11 gives up to 25% in a town; the game has none.
+
+**Not used:** Table 4.1 (3 psi "residential structures collapse", 5 psi
+"most buildings collapse") is for large, long-duration blasts. Applied to
+an 11 kg shell it would flatten houses at about 20 m, which contradicts FM
+3-06.11's "large expenditures of ammunition".
+
+## GICHD, *Explosive Weapon Effects – Final Report* (February 2017), read
+
+Geneva International Centre for Humanitarian Demining, ISBN
+978-2-940369-61-4, 145 pp.
+(gichd.org/fileadmin/uploads/gichd/Publications/Explosive_weapon_effects_web.pdf).
+Read through the fetch service, 2026-10-03: the effects, accuracy, payload
+and effects-analysis chapters. ARES's Special Report No. 3 draws on the
+same work, so where the two agree it is one source, not two. The
+per-weapon annexes (C: mortars, D: tank guns) were on
+characterisationexplosiveweapons.org, which no longer answers.
+
+**What "lethal area" means here:**
+- "The fragmentation effect can be quantified by the two-dimensional
+  function p(x,y), which is the probability of being affected … the effect
+  of the munition can be stated as a single quantity called lethal area."
+  That is how decision 41 reads it: the integral of the chance of being put
+  out.
+- "Military modelling assumes that the targeted soldiers are in the prone
+  position and present an area of 0.5 m²"; "the U.S. Army bases its lethal
+  area calculations (and PI) on a prone male soldier in winter clothing".
+  Official lethal areas are against men down.
+- The worked example is against a standing man. A 122 mm Grad rocket
+  (6.4 kg of explosive) has a lethal area of "700 m²", and Table 6 gives
+  its chance of incapacitation by distance: 96% at 3 m, 85% at 6 m, 64% at
+  10 m, 36% at 15 m, 17% at 20 m. Its hit-probability figure is for a
+  "standing adult". Integrated over the ground, Table 6 gives about 730 m²,
+  so the table and the area agree.
+- ARES's 665 m² for a 155 mm shell (about 11 kg of explosive) sits on the
+  Grad's scale. Reading ARES's areas as against standing men, as decision
+  80 does, is consistent with this, though neither report says so outright.
+
+**Other figures:**
+- **155 mm in the open** (Table 8, after Champion et al. 2009): fragments
+  kill out to 25 m and injure to 40 m, with "possible injury" to 550 m.
+  A lethal area of 665 m² is a 14.5 m disc, and 971 m² is 17.6 m; both
+  fit.
+- **120 mm mortar, Markale** (angle of fall 60–65°, point-detonating
+  fuze): a lethal area of "290–380 m²". ARES gives 650 m². The two
+  reports disagree by half on this round.
+- **Tank HE:** "tank munitions were often found to have a more limited
+  lethal area than others." **This contradicts decision 80**, which gives
+  tank HE 495 m² against the 81 mm's 250 m².
+- **Enclosed against open** (Table 7, Leibovici 1996): 49% killed against
+  8%. Decision 77 is ×2.5 against a ×2–6 range.
+- **155 mm CEP** (Table 2): the same as ARES's (Dullum 2010, Hill 2007), so
+  not a second source. "The U.S. Army has previously designated 267 m as an
+  acceptable CEP, at the maximum range." A NATO 120 mm mortar's nominal CEP
+  at maximum range without a fire-control system is about 136 m.
+- **Risk estimate distances** (Table 10), the range at which 10% of
+  unprotected friendly troops are incapacitated, delivery error included:
+  81 mm 80 m, tank 120 mm 90 m, 120 mm mortar 100 m, 155 mm 125 m. These
+  are context for decision 63's danger-close distances.
+- **Buildings:** "a modern urban environment, composed of brick, stone and
+  concrete structures, would provide a much greater level of protection
+  from primary fragmentation". Men are safer "prone on the ground in a
+  small depression or narrow ditch", away from structures.
+- **Explosive fill** (Table 9): 155 mm 7–11 kg; tank 115–125 mm 2.7–4 kg;
+  120 mm mortar 2.25–2.6 kg.
+
 ## Open
 
 For the author, in rough order of what they move:

@@ -26,8 +26,8 @@ import {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover } from "./data/explosives.js";
-import { FIRE_UNIT_TUBES, LETHALITIES, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
+import { ARES_AIRBURST, EXPLOSIVES, MORTAR_DOWN_CHECKED, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
+import { FIRE_UNIT_TUBES, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -36,6 +36,8 @@ import {
   defaultRoundsForEffect,
   MAX_ADJUSTING_ROUNDS,
   INDIRECT_ACCURACY,
+  ARES_GUN_RANGE_KM,
+  aresGunCep,
   MAX_ROUNDS_PER_MISSION,
   OBSERVE_RANGE_M,
   ON_TARGET_M,
@@ -82,12 +84,13 @@ import {
 } from "./combat/directFire.js";
 import {
   resolveDirectExplosive,
+  type BlastTargetResult,
   type DirectExplosiveResult,
 } from "./combat/explosives.js";
-import { resolveIndirectFire, type IndirectFireResult } from "./combat/indirectFire.js";
+import { resolveIndirectFire, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
-import { fitSoldiers } from "./units.js";
+import { fitSoldiers, killOutright, refreshUnitStatus } from "./units.js";
 import {
   FLAT_GROUND,
   betterCover,
@@ -100,9 +103,22 @@ import {
   reachAlong,
   steepestGradeAlong,
   terrainBlocksSight,
+  distanceToFootprint,
+  stateOfStructure,
+  type MapObject,
   type Terrain,
 } from "./terrain.js";
-import { SLOPE } from "./data/terrain.js";
+import { OBJECT_COVER_REACH_M, SLOPE } from "./data/terrain.js";
+import {
+  COLLAPSE_KILLS,
+  CRITICAL_CHANCE,
+  ENCLOSED_BLAST_FACTOR,
+  SPALLS_INSIDE,
+  ROOF_PENETRATION,
+  STRUCTURE_DAMAGE,
+  type StructureState,
+} from "./data/structures.js";
+import type { ArmourFigures } from "./data/armor.js";
 import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
 import { hasArrived, type StandingOrder, type StandingOrderExecution } from "./orders.js";
 import {
@@ -426,6 +442,58 @@ export interface GameOptions {
    */
   roofsDampSuppression?: boolean;
   /**
+   * Direct-fire HE (tank round, RPG, rifle grenade) follows the shell's rules
+   * (rules decision 75): posture, cover and roofs scale its blast against men
+   * as a shell's impact fuze does (`shellFactor`), its blast catches every
+   * force within it, men caught by it go to ground, and its suppression
+   * reaches and is damped by a roof as a shell's does (decision 63, S1 and
+   * S3, each under its own switch). On by default; a recording made before
+   * it reads it as off.
+   */
+  directHeAsShell?: boolean;
+  /**
+   * HE wears buildings down — intact, damaged (roof holed), rubble — and the
+   * map changes with them (rules decision 76: `STRUCTURE_DAMAGE`). On by
+   * default; a recording made before it reads it as off.
+   */
+  structuresTakeDamage?: boolean;
+  /**
+   * A critical hit (rules decision 77): a round goes in through a window, a
+   * firing slit or the roof and bursts among the men inside, at
+   * `ENCLOSED_BLAST_FACTOR`. On by default; a recording made before it reads
+   * it as off.
+   */
+  criticalHits?: boolean;
+  /**
+   * Whose armour figures (rules decision 78): `research`, the default —
+   * penetration by weapon, by vehicle class and by the side struck; or
+   * `document`, the table's flat chance. A recording made before it reads
+   * it as `document`.
+   */
+  armour?: ArmourFigures;
+  /**
+   * The research figures as checked against the sources on 2026-10-03 (rules
+   * decision 79): tank HE's lethal area, the RPG's hit chance against
+   * armour, charges as Claymores and IEDs, a mortar's ×0.5 against men down,
+   * FM 7-90's suppression table, and plain HE reaching a vehicle only within
+   * its blast. On by default; a recording made before it reads it as off.
+   */
+  checkedFigures?: boolean;
+  /**
+   * On top of the checked figures, ARES Special Report No. 3, *Indirect
+   * Fire* (2017) (rules decision 80): its lethal areas, its 155 mm CEP by
+   * range, and an air burst at ×1.15 the impact's area. On by default; a
+   * recording made before it reads it as off.
+   */
+  aresFigures?: boolean;
+  /**
+   * A direct-fire explosive (tank round, RPG, rifle grenade) costs the nerve
+   * of a bombardment, as a shell does, not only of being fired on (rules
+   * decision 81; author, 2026-10-03). On by default; a recording made
+   * before it reads it as off.
+   */
+  directHeBombards?: boolean;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -559,7 +627,18 @@ export class Game {
   readonly sides: Side[];
   readonly enforceC2: boolean;
   readonly trackIntel: boolean;
-  readonly terrain: Terrain;
+  /** The map the battle was set on, as given: what a recording carries. */
+  readonly mapTerrain: Terrain;
+  /** The map as it stands now: {@link mapTerrain} with what HE has done to its buildings (rules decision 76). */
+  private ground: Terrain;
+  /** Damage points on each building HE has struck, by object id (rules decision 76). */
+  private structureDamage = new Map<string, number>();
+  /** What the battle's rounds did inside buildings (decisions 76–77): read by the harness, never by a rule. */
+  private readonly tally = { windowCriticals: 0, roofCriticals: 0, crushed: 0 };
+  /** A copy of {@link tally}. */
+  get urbanTally(): { windowCriticals: number; roofCriticals: number; crushed: number } {
+    return { ...this.tally };
+  }
   readonly morale: boolean;
   readonly variants: RuleVariants;
   /** Targets registered before the battle (rules decisions 32 and 38): with the options, then in planning. */
@@ -576,6 +655,13 @@ export class Game {
   readonly shellCover: ShellCover;
   readonly suppressionReach: boolean;
   readonly roofsDampSuppression: boolean;
+  readonly directHeAsShell: boolean;
+  readonly structuresTakeDamage: boolean;
+  readonly criticalHits: boolean;
+  readonly armour: ArmourFigures;
+  readonly checkedFigures: boolean;
+  readonly aresFigures: boolean;
+  readonly directHeBombards: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -642,6 +728,138 @@ export class Game {
   /** Every fire mission called, in the order called — copies: change them and nothing happens. */
   get fireMissions(): FireMission[] {
     return cloneForRecord(this.missions);
+  }
+
+  /** The ground as it stands now, buildings damaged and brought down included (rules decision 76). */
+  get terrain(): Terrain {
+    return this.ground;
+  }
+
+  /** What HE has done to a building on the map (rules decision 76). */
+  structureState(objectId: string): StructureState {
+    const o = this.mapTerrain.objects.find((x) => x.id === objectId);
+    if (!o || o.kind !== "building") return "intact";
+    return stateOfStructure(o, this.structureDamage.get(objectId) ?? 0);
+  }
+
+  /**
+   * A round of `weapon` struck the building `o`: wear it down, and when it
+   * changes state, rebuild the live view of the ground. Returns its state
+   * after the round. Nothing happens to an object that is not a building.
+   */
+  private strikeStructure(
+    o: MapObject,
+    weapon: string,
+    crushed: { unitId: string; casualties: number }[] = [],
+  ): StructureState | undefined {
+    if (!this.structuresTakeDamage || o.kind !== "building") return undefined;
+    // Struck by a round of the same volley after it came down: rubble is not a building.
+    if (this.structureState(o.id) === "rubble") return "rubble";
+    const points = STRUCTURE_DAMAGE[weapon] ?? 0;
+    const before = stateOfStructure(o, this.structureDamage.get(o.id) ?? 0);
+    const total = (this.structureDamage.get(o.id) ?? 0) + points;
+    if (points > 0) this.structureDamage.set(o.id, total);
+    const after = stateOfStructure(o, total);
+    if (after !== before) this.rebuildGround();
+    if (after === "rubble" && before !== "rubble") crushed.push(...this.collapseOn(o));
+    return after;
+  }
+
+  /**
+   * A building comes down on the men inside it (2026-10-03): each fit man
+   * dies at {@link COLLAPSE_KILLS} — Arnold et al. 2004, a quarter killed
+   * at once where the structure collapsed.
+   */
+  private collapseOn(o: MapObject): { unitId: string; casualties: number }[] {
+    const crushed: { unitId: string; casualties: number }[] = [];
+    for (const u of this.units) {
+      if (u.kind === "vehicle" || distanceToFootprint(o.footprint, u.position) > OBJECT_COVER_REACH_M) continue;
+      let casualties = 0;
+      for (const s of u.soldiers ?? []) {
+        if (s.neutralized || !this.rng.chance(COLLAPSE_KILLS)) continue;
+        killOutright(s);
+        casualties++;
+      }
+      if (!casualties) continue;
+      u.hitThisTurn = true;
+      refreshUnitStatus(u);
+      crushed.push({ unitId: u.id, casualties });
+      this.tally.crushed += casualties;
+    }
+    return crushed;
+  }
+
+  /** The map with every damaged building holed and every one brought down turned to rubble. */
+  private rebuildGround(): void {
+    this.ground = {
+      ...this.mapTerrain,
+      objects: this.mapTerrain.objects.map((o) => {
+        if (o.kind !== "building") return o;
+        const state = stateOfStructure(o, this.structureDamage.get(o.id) ?? 0);
+        if (state === "rubble") return { id: o.id, kind: "rubble" as const, footprint: o.footprint };
+        if (state === "damaged") return { ...o, damaged: true };
+        return o;
+      }),
+    };
+  }
+
+  /**
+   * A shell landing on a building (rules decision 77): the chance it goes
+   * through the roof, and who is inside. Undefined off a building.
+   */
+  private throughTheRoof(weapon: string, impact: Point) {
+    const chance = ROOF_PENETRATION[weapon];
+    if (!chance) return undefined;
+    const building = this.ground.objects.find(
+      (o) => o.kind === "building" && distanceToFootprint(o.footprint, impact) === 0,
+    );
+    if (!building) return undefined;
+    return {
+      chance,
+      factor: ENCLOSED_BLAST_FACTOR,
+      inside: (u: Unit) => u.kind === "infantry" && distanceToFootprint(building.footprint, u.position) <= OBJECT_COVER_REACH_M,
+    };
+  }
+
+  /**
+   * A direct round's chance of going in through a window or a slit at the
+   * target (rules decision 77): a window where it is in a building, a slit
+   * where it holds a position prepared before the battle. Undefined where it
+   * has neither, or the weapon has no figure.
+   */
+  private throughTheWindow(weapon: string, attacker: Unit, target: Unit) {
+    const figures = CRITICAL_CHANCE[weapon];
+    if (!figures || target.kind !== "infantry") return undefined;
+    const aperture = this.buildingAt(target.position) ? figures.window : target.baseCover === "full" ? figures.slit : undefined;
+    const chance = aperture ? lookupBand(aperture, distance(attacker.position, target.position))?.value : undefined;
+    return chance ? { chance, factor: ENCLOSED_BLAST_FACTOR } : undefined;
+  }
+
+  /** Whether the checked figures are in play: they amend the research ones (rules decision 79). */
+  private get checked(): Checked {
+    if (!this.checkedFigures || this.lethality !== "research") return false;
+    return this.aresFigures ? "ares" : "checked";
+  }
+
+  /**
+   * What a shell or a bomb does to men by posture and cover. On the checked
+   * figures a mortar bomb finds men down at ×0.5: FM 7-90 B-5a, "mortar fire
+   * against standing enemy forces is almost twice as effective as fire
+   * against prone targets" (rules decision 79). The 0.36 stays the 155 mm's.
+   */
+  private shellTable(weapon: string): ShellVsMen {
+    let table = shellVsMen(this.shellCover);
+    // An air burst covers ×1.15 the impact's area, not ×1.28 (decision 80).
+    if (this.checked === "ares") table = { ...table, airburst: { ...table.airburst, ...ARES_AIRBURST } };
+    if (!this.checked || weapon !== "mortar") return table;
+    return { ...table, impact: { ...table.impact, down: MORTAR_DOWN_CHECKED } };
+  }
+
+  /** The building a force at `p` is in or against, if any. */
+  private buildingAt(p: Point): MapObject | undefined {
+    return this.ground.objects.find(
+      (o) => (o.kind === "building") && distanceToFootprint(o.footprint, p) <= OBJECT_COVER_REACH_M,
+    );
   }
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
@@ -727,7 +945,8 @@ export class Game {
     this.sides = opts.sides ?? ["RED", "BLUE"];
     this.enforceC2 = opts.enforceC2 ?? true;
     this.trackIntel = opts.trackIntel ?? false;
-    this.terrain = opts.terrain ?? FLAT_GROUND;
+    this.mapTerrain = opts.terrain ?? FLAT_GROUND;
+    this.ground = this.mapTerrain;
     this.morale = opts.morale ?? false;
     this.variants = opts.variants ?? {};
     this.commandEchelons = { ...(opts.commandEchelon ?? {}) };
@@ -742,6 +961,13 @@ export class Game {
     this.shellCover = opts.shellCover ?? "sources";
     this.suppressionReach = opts.suppressionReach ?? true;
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
+    this.directHeAsShell = opts.directHeAsShell ?? true;
+    this.structuresTakeDamage = opts.structuresTakeDamage ?? true;
+    this.criticalHits = opts.criticalHits ?? true;
+    this.armour = opts.armour ?? "research";
+    this.checkedFigures = opts.checkedFigures ?? true;
+    this.aresFigures = opts.aresFigures ?? true;
+    this.directHeBombards = opts.directHeBombards ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -874,6 +1100,13 @@ export class Game {
       shellCover: this.shellCover,
       ...(this.suppressionReach ? { suppressionReach: true } : {}),
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
+      ...(this.directHeAsShell ? { directHeAsShell: true } : {}),
+      ...(this.structuresTakeDamage ? { structuresTakeDamage: true } : {}),
+      ...(this.criticalHits ? { criticalHits: true } : {}),
+      armour: this.armour,
+      ...(this.checkedFigures ? { checkedFigures: true } : {}),
+      ...(this.aresFigures ? { aresFigures: true } : {}),
+      ...(this.directHeBombards ? { directHeBombards: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -892,7 +1125,7 @@ export class Game {
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
-      ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
+      ...(this.mapTerrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.mapTerrain) }),
       actions: cloneForRecord(this.actions),
     };
   }
@@ -1516,8 +1749,10 @@ export class Game {
    * {@link ADJUSTMENT_RADIUS_M}, down to that best.
    */
   private cepFor(m: PendingFireMission): { cepM: number; adjustments: number } {
-    const spec = INDIRECT_ACCURACY[m.weapon];
-    if (!spec) throw new Error(`no accuracy for ${m.weapon}`);
+    const base = INDIRECT_ACCURACY[m.weapon];
+    if (!base) throw new Error(`no accuracy for ${m.weapon}`);
+    // ARES Table 3.1: a gun's first round by its range (decision 80).
+    const spec = this.checked === "ares" && m.weapon === "artillery" ? { ...base, firstM: aresGunCep(ARES_GUN_RANGE_KM) } : base;
     const previous = this.adjustedFrom(m.side, m.weapon, m.target);
     const adjustments = previous ? previous.adjustments + 1 : 0;
     const onMark = this.isOnTheMark(m.side, m.weapon, m.target);
@@ -1553,6 +1788,7 @@ export class Game {
     // Everything due this turn lands together: the men are as they were for
     // all of it, and go to ground after it (rules decision 30).
     const shelled = new Set<Unit>();
+    const strikes: { round: IndirectFireResult; building: MapObject }[] = [];
     const results = due.flatMap((m) => {
       const { cepM, adjustments } = this.cepFor(m);
       const fired = Array.from({ length: m.rounds ?? 1 }, () =>
@@ -1566,9 +1802,23 @@ export class Game {
           underRoof: (u) => u.baseCover === "full" || underRoof(this.terrain, u.position),
           cepM,
           lethality: this.lethality,
-          shellVsMen: shellVsMen(this.shellCover),
+          shellVsMen: this.shellTable(m.weapon),
+          armour: this.armour,
+          checked: this.checked,
+          ...(this.criticalHits ? { criticalAt: (impact: Point) => this.throughTheRoof(m.weapon, impact) } : {}),
         }),
       );
+      // The buildings the rounds landed on (decision 76). An air burst goes
+      // off above the roof and does not touch it. The damage is done once
+      // everything due this turn has landed, below.
+      if (m.fuze !== "airburst") {
+        for (const f of fired) {
+          const struck = this.ground.objects.find(
+            (o) => o.kind === "building" && distanceToFootprint(o.footprint, f.dispersion.impact) === 0,
+          );
+          if (struck) strikes.push({ round: f, building: struck });
+        }
+      }
       // What the side saw of it teaches the next round; a round seen on the
       // mark puts the guns on it for whatever follows (decisions 32–33).
       const seen = fired.filter((f) => this.observes(m.side, f.dispersion.impact, m.observedByUav));
@@ -1589,12 +1839,12 @@ export class Game {
         // Who it suppresses: those its blast reached, and since decision 63
         // everyone within its suppression reach (S1); a roof takes half (S3).
         const suppressed = this.suppressionReach
-          ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact)) > 0))
+          ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact), this.checked) > 0))
           : this.units.filter((u) => reached.has(u.id));
         for (const unit of suppressed) {
           let amount = reached.has(unit.id)
             ? SUPPRESSION.indirect
-            : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact));
+            : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact), this.checked);
           if (this.roofsDampSuppression && roofed(unit)) amount *= ROOF_SUPPRESSION_FACTOR;
           this.noteFire(unit, "indirect", amount);
         }
@@ -1602,9 +1852,22 @@ export class Game {
       // Who called it, so a report can say how far it fell from the aim point
       // to the side that aimed it and no further (rules decision 17). After the
       // spread, so the mission stays the authority if the resolver ever sets it.
+      this.tally.roofCriticals += fired.filter((f) => f.critical).length;
       return fired.map((f) => ({ ...f, side: m.side }));
     });
     for (const unit of shelled) unit.downUnderShelling = true;
+    // What it all did to the buildings it landed on, after every blast: the
+    // men inside were under the roofs as they were (decision 76).
+    for (const { round, building } of strikes) {
+      const before = this.structureState(building.id);
+      const crushed: { unitId: string; casualties: number }[] = [];
+      const state = this.strikeStructure(building, round.weapon, crushed);
+      if (!state) continue;
+      const strike = { objectId: building.id, state, changed: state !== before, ...(crushed.length ? { crushed } : {}) };
+      // The copy handed back for this round, which carries the side.
+      const out = results.find((r) => r.dispersion === round.dispersion);
+      if (out) out.structure = strike;
+    }
     return results;
   }
 
@@ -1687,6 +1950,14 @@ export class Game {
 
     const from = unit.position;
     unit.position = { ...to };
+    // A vehicle's hull points the way it drove: which side a round strikes
+    // is read from it (rules decision 78).
+    // Armour reverses out of contact: a vehicle withdrawing or routing keeps
+    // its front to the enemy it is leaving.
+    const reversing = unit.routing === true || this.standingOrders.get(unit.id)?.withdraw === true;
+    if (unit.vehicle && this.armour === "research" && !reversing && distance(from, to) > 0) {
+      unit.vehicle.facing = bearingDegrees(from, to);
+    }
     this.bounds.set(unit.id, (this.bounds.get(unit.id) ?? 0) + 1);
     unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
@@ -1697,7 +1968,7 @@ export class Game {
     // or where there is ground to see over. A flat game without the model
     // draws exactly what it always drew.
     const sight =
-      this.trackIntel || this.terrain !== FLAT_GROUND
+      this.trackIntel || this.mapTerrain !== FLAT_GROUND
         ? (observer: Unit, target: Unit) => this.hasLineOfSight(observer, target)
         : undefined;
     // `from` is where the bound started: a walking force searches the ground it
@@ -1717,6 +1988,9 @@ export class Game {
       this.mines,
       this.units,
       this.turn,
+      this.armour,
+      this.checked,
+      this.lethality,
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
     for (const d of detonations) {
@@ -2394,34 +2668,112 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
+    const asShell = this.directHeAsShell;
+    const window = this.criticalHits ? this.throughTheWindow(weaponKey, attacker, target) : undefined;
+    // The building the target is in, when the round is one that breaches its wall.
+    const breached =
+      SPALLS_INSIDE.has(weaponKey) && target.kind !== "vehicle" ? this.buildingAt(target.position) : undefined;
+    const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
-      collateral,
+      // Like a shell's, the round's blast finds whoever is within it (rules
+      // decision 75) — save another vehicle, which only the round aimed at
+      // it connects with when it is an anti-armour round.
+      collateral: asShell
+        ? this.units.filter((u) => u !== target && !(u.kind === "vehicle" && EXPLOSIVES[weaponKey]?.usesArmorTable))
+        : collateral,
       turn: this.turn,
       lethality: this.lethality,
+      // Posture, cover and roofs against men, as an impact-fuzed shell
+      // (decisions 29–30, 62) — but a round that breaches the wall of the
+      // building the target is in throws its spall among the men inside it,
+      // who are behind partial cover then, not under a roof (2026-10-03).
+      ...(asShell ? { shell: { factorFor: (u: Unit) => {
+        const table = shellVsMen(this.shellCover);
+        if (breached && u.kind === "infantry" && distanceToFootprint(breached.footprint, u.position) <= OBJECT_COVER_REACH_M) {
+          const f = table.impact;
+          return Math.min(f.partial, u.downUnderShelling ? f.down : f.standing);
+        }
+        return shellFactor(u, "impact", roofed(u), table);
+      }, airburst: false } } : {}),
+      armour: this.armour,
+      checked: this.checked,
+      ...(window ? { critical: window } : {}),
     });
     if (result.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       const caught = result.blast?.targets ?? [];
       const bodies = caught.reduce((n, t) => n + t.newCasualties, 0);
+      // A roof halves it, as it does a shell's (decision 63, S3).
+      const damp = (u: Unit, amount: number) =>
+        asShell && this.roofsDampSuppression && roofed(u) ? amount * ROOF_SUPPRESSION_FACTOR : amount;
       this.noteFire(
         target,
         "explosive",
-        SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0),
+        damp(target, SUPPRESSION.explosive + (result.hit ? SUPPRESSION.explosiveHit : 0)),
         attacker.position,
         undefined,
         attacker.id,
       );
-      for (const t of caught) {
-        if (t.unitId !== target.id) {
-          this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position, undefined, attacker.id);
+      if (asShell) {
+        if (result.hit) this.suppressAroundDirectHit(weaponKey, attacker, target, caught, damp);
+        // Everyone the round came down on goes to ground (decision 30).
+        for (const t of caught) {
+          const unit = this.getUnit(t.unitId);
+          if (unit.kind === "infantry") unit.downUnderShelling = true;
+        }
+      } else {
+        for (const t of caught) {
+          if (t.unitId !== target.id) {
+            this.noteFire(this.getUnit(t.unitId), "explosive", SUPPRESSION.explosive, attacker.position, undefined, attacker.id);
+          }
         }
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
     }
+    this.tally.windowCriticals += result.criticals ?? 0;
+    // Every round that hit struck the building the target is in (decision 76),
+    // after its blast and suppression: the men were under the roof as it was.
+    const struck = target.kind === "vehicle" ? undefined : this.buildingAt(target.position);
+    if (struck && result.hit) {
+      const before = this.structureState(struck.id);
+      let state: StructureState | undefined;
+      const crushed: { unitId: string; casualties: number }[] = [];
+      for (let i = 0; i < (result.hits ?? 1); i++) state = this.strikeStructure(struck, weaponKey, crushed);
+      if (state) result.structure = { objectId: struck.id, state, changed: state !== before, ...(crushed.length ? { crushed } : {}) };
+    }
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return { ...result, coveringFire };
+  }
+
+  /**
+   * Who else a direct-fire HE round that hit suppresses, as a shell would
+   * (rules decision 75): the forces its blast reached, and with
+   * `suppressionReach` every force within its suppression reach of the
+   * target (decision 63, S1), at a direct-fire round's weight rather than a
+   * shell's. A round with no lethal area against men (the RPG against
+   * armour) reaches no further than its blast.
+   */
+  private suppressAroundDirectHit(
+    weaponKey: string,
+    attacker: Unit,
+    target: Unit,
+    caught: BlastTargetResult[],
+    damp: (u: Unit, amount: number) => number,
+  ): void {
+    const reached = new Set(caught.map((t) => t.unitId));
+    const reaches = this.suppressionReach && LETHAL_AREA_M2[weaponKey] !== undefined;
+    const scale = SUPPRESSION.explosive / SUPPRESSION.indirect;
+    for (const unit of this.units) {
+      if (unit === target || unit.neutralized || unit.surrendered) continue;
+      const amount = reached.has(unit.id)
+        ? SUPPRESSION.explosive
+        : reaches
+          ? roundSuppression(weaponKey, distance(unit.position, target.position), this.checked) * scale
+          : 0;
+      if (amount > 0) this.noteFire(unit, "explosive", damp(unit, amount), attacker.position, undefined, attacker.id);
+    }
   }
 
   /**
@@ -3057,6 +3409,8 @@ export class Game {
     this.fireLog.push({ turn: this.turn, targetId: target.id, kind, ...(firerId ? { firerId } : {}) });
     if (!this.morale) return;
     const note: FireNote = from ? { kind, bearing: bearingDegrees(at ?? target.position, from) } : { kind };
+    // Direct HE is a bombardment for the nerve, like a shell (decision 81).
+    if (kind === "explosive" && this.directHeBombards) note.bombards = true;
     this.stress.firedOn(target, note);
     addSuppression(target, suppression);
   }

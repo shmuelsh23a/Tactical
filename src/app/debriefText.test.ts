@@ -203,3 +203,53 @@ describe("an enemy's move, read by the other side", () => {
     expect(describeAction(move, names)).toContain("412");
   });
 });
+
+describe("a direct-fire round's blast in the debrief (decision 75)", () => {
+  const names = new Map([
+    ["T", "טנק"],
+    ["B1", "כיתה א'"],
+    ["B2", "כיתה ב'"],
+  ]);
+  const action = { kind: "fireExplosive" as const, weaponKey: "tankRound", attackerId: "T", targetId: "B1", opts: {} };
+  const target = (unitId: string, newCasualties: number) => ({
+    unitId,
+    blastChance: 0.5,
+    caught: true,
+    damage: newCasualties * 3,
+    newCasualties,
+    neutralized: false,
+  });
+  const outcome = {
+    kind: "fireExplosive" as const,
+    result: {
+      fired: true,
+      range: 200,
+      hit: true,
+      hitChance: 0.9,
+      blast: { weapon: "tankRound", impact: { x: 0, y: 200 }, targets: [target("B1", 2), target("B2", 3)] },
+      coveringFire: [],
+    },
+  };
+
+  it("counts the target's losses apart from a force beside it", () => {
+    const text = describeOutcome(outcome as never, names, undefined, action);
+    expect(text).toContain("2 נפגעים");
+    expect(text).toContain("נפגע גם כיתה ב' — 3 נפגעים");
+  });
+
+  it("says nothing of a force beside it that the reader may not know of", () => {
+    const lens = { isOwn: (id: string) => id === "T", mayKnow: (id: string) => id !== "B2", side: "RED" as const };
+    expect(describeOutcome(outcome as never, names, lens, action)).not.toContain("כיתה ב'");
+  });
+});
+
+describe("buildings and critical hits in the log (decisions 76–77)", () => {
+  it("speaks of a building only when its state changes", async () => {
+    const { structureHe, criticalHe } = await import("./debriefText.js");
+    expect(structureHe({ state: "damaged", changed: true })).toContain("המבנה נפגע");
+    expect(structureHe({ state: "damaged", changed: false })).toBe("");
+    expect(structureHe({ state: "rubble", changed: true })).toContain("הריסות");
+    expect(criticalHe(undefined, "window")).toBe("");
+    expect(criticalHe(1, "roof")).toContain("הגג");
+  });
+});

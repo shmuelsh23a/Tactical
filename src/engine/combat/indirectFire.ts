@@ -2,10 +2,11 @@ import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze, type ShellVsMen } from "../data/explosives.js";
-import type { Lethality } from "../data/lethality.js";
+import type { Checked, Lethality } from "../data/lethality.js";
+import type { ArmourFigures } from "../data/armor.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
-import { resolveBlast, type BlastResult } from "./explosives.js";
+import { resolveBlast, type BlastResult, type StructureStrike } from "./explosives.js";
 
 export interface IndirectFireResult {
   weapon: string;
@@ -20,6 +21,10 @@ export interface IndirectFireResult {
   aim: Point;
   dispersion: DispersionResult;
   blast: BlastResult;
+  /** The round went through the roof of the building it landed on (rules decision 77). */
+  critical?: true;
+  /** The building the round landed on, and its state after (rules decision 76). Filled in by `Game`. */
+  structure?: StructureStrike;
 }
 
 /**
@@ -45,6 +50,16 @@ export function resolveIndirectFire(
     lethality?: Lethality;
     /** What full cover does against it (rules decision 62). The sources' unless given. */
     shellVsMen?: ShellVsMen;
+    /**
+     * A critical hit (rules decision 77): where the round lands on a
+     * building, the chance it goes through the roof, who is inside, and the
+     * factor on their blast chance when it does. Absent: no round can.
+     */
+    criticalAt?: (impact: Point) => { chance: number; inside: (u: Unit) => boolean; factor: number } | undefined;
+    /** Whose armour figures (rules decision 78). The document's unless given. */
+    armour?: ArmourFigures;
+    /** The research figures as checked against the sources (rules decision 79). */
+    checked?: Checked;
   } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];
@@ -60,11 +75,15 @@ export function resolveIndirectFire(
   // against no other blast.
   const fuze = opts.fuze ?? "impact";
   const underRoof = opts.underRoof ?? (() => false);
+  // An air burst goes off above the roof, never through it.
+  const onBuilding = fuze === "impact" ? opts.criticalAt?.(dispersion.impact) : undefined;
+  const critical = onBuilding !== undefined && rng.chance(onBuilding.chance);
   const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
-    factorFor: (u) => shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
+    factorFor: (u) =>
+      critical && onBuilding.inside(u) ? onBuilding.factor : shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
     airburst: fuze === "airburst",
-  }, opts.lethality ?? "document");
-  return { weapon: weaponKey, aim, dispersion, blast };
+  }, opts.lethality ?? "document", { figures: opts.armour ?? "document" }, opts.checked ?? false);
+  return { weapon: weaponKey, aim, dispersion, blast, ...(critical ? { critical: true as const } : {}) };
 }
 
 /**

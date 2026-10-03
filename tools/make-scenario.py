@@ -158,7 +158,7 @@ def load_tool(filename: str):
 
 WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield", "objects", "constant"}
 FORCE_KEYS = {
-    "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing",
+    "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing", "vehicleClass",
     "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
     "motivation", "experience",
 }
@@ -182,7 +182,7 @@ KINDS = {"infantry", "vehicle", "command"}
 KIND_KEYS = {
     "infantry": {"echelon", "soldiers", "reserve"},
     "command": {"echelon", "personnel"},
-    "vehicle": {"facing"},
+    "vehicle": {"facing", "vehicleClass"},
 }
 DEFAULT_ECHELON = {"infantry": "squad", "command": "platoon", "vehicle": "squad"}
 SLUG = re.compile(r"[A-Za-z][A-Za-z0-9]*$")
@@ -190,6 +190,8 @@ SIDES = {"RED", "BLUE"}
 ECHELONS = {"squad", "platoon", "company", "battalion", "brigade"}
 COVER = {"none", "partial", "full"}
 CHARGE_TYPES = {"antiPersonnel", "antiTank"}
+# What kind of vehicle (rules decision 78); absent, a main battle tank.
+VEHICLE_CLASSES = {"mbt", "heavyApc", "lightApc", "soft"}
 
 
 def brief_with_deadline(spec: dict[str, Any]) -> str:
@@ -342,6 +344,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         require_int(force, "soldiers", where, 1, 60)
         require_int(force, "personnel", where, 1, 60)
         require_int(force, "facing", where, 0, 359)
+        require("vehicleClass" not in force or force["vehicleClass"] in VEHICLE_CLASSES, f"{where}: unknown vehicleClass")
         require_bool(force, "scouting", where)
         require_bool(force, "canLayCharges", where)
         require_bool(force, "reserve", where)
@@ -550,6 +553,9 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         given_name = [ts(f["name"])] if "name" in f else []
         if f["kind"] == "vehicle":
             args = [ts(f["id"]), ts(f["side"]), at, num(f.get("facing", 0))]
+            if "vehicleClass" in f:
+                given_name = given_name or [ts(f["id"])]
+                given_name.append(ts(f["vehicleClass"]))
             call = "makeVehicle(" + ", ".join(args + given_name) + ")"
         elif f["kind"] == "command":
             args = [ts(f["id"]), ts(f["side"]), ts(f.get("echelon", DEFAULT_ECHELON["command"])), at, num(f.get("personnel", 3))]

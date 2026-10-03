@@ -1344,7 +1344,8 @@ on the stated reasoning, still awaiting the author's word.
     published lethal areas: a foxhole is ×0.10–0.13 against standing men.
     **The factors are ours**, from those sources, and so is the scope:
     indirect fire only. Grenades, rifle grenades, RPGs, tank rounds and mines
-    are unchanged. The figures are `SHELL_VS_MEN` in `data/explosives.ts`.
+    are unchanged. *Since decision 75 rifle grenades, RPGs and tank rounds
+    follow them too.* The figures are `SHELL_VS_MEN` in `data/explosives.ts`.
     - **Rejected:** option b, where only full cover counts.
 30. ✅ **The first volley catches men on their feet** (author, 2026-09-23).
     A shell's blast chance is the document's against men standing. Once a
@@ -1594,7 +1595,7 @@ on the stated reasoning, still awaiting the author's word.
       figure there is (the document's where it gave one) and is the
       **likeliest**; the high is the highest published rate, the **outlier**:
       tank gun 1–7, rifle grenade 1–7, RPG 1–6, mortar 3–30 a tube,
-      artillery 2–4 a gun.
+      artillery 2–5 a gun (5 since 2026-10-03: the M777A2's maximum).
     - **What a crew fires in a turn is drawn**: a geometric tail above the
       low rate, each round above it 0.6 as likely as the one below for a fresh
       crew and 0.15 for a tired one (`TAIL_WEIGHT`, ours). A crew goes from
@@ -1608,7 +1609,8 @@ on the stated reasoning, still awaiting the author's word.
     - Under `document` nothing changed: one round, no ceiling, the same rng
       draws. `turnsFiring` is kept only on the research figures.
     - Nothing counts ammunition (backlog 12).
-43. ✅ **Calibrated to 75% of losses by explosives** (author, 2026-09-28: "I
+43. ✅ **Calibrated to 75% of losses by explosives — a 60–80% range since
+    decision 81** (author, 2026-09-28: "I
     want the numbers to reflect 75% HE casualties"; the sources give 72–78%,
     docs/validation.md). **The 75% is for battles on real ground** (author,
     2026-09-30): the tel meets it (73–77%); the flat harness, where a scouted
@@ -2267,6 +2269,261 @@ on the stated reasoning, still awaiting the author's word.
     first is checked: `src/engine/scaling.test.ts` fails when squads five
     times larger ask for half as many sight lines again.
 
+75. ✅ **Direct-fire HE follows the shell's rules** (author, 2026-10-03:
+    "put it on the same rule set as indirect fires with respect to logic").
+    Until now decisions 29–31, 62 and 63 applied to indirect fire only, so
+    a tank round, an RPG or a rifle grenade ignored cover, posture and
+    roofs, caught only the force it was aimed at, and suppressed no one
+    beside it. With `GameOptions.directHeAsShell` (on for a new game; a
+    recording made before it reads it as off), a round that hits:
+    - **Counts posture and cover against men** as an impact-fuzed shell
+      does (`shellFactor`): ×½ behind partial cover, ×0.36 once down, a
+      hole ×0.03 and a roof ×0.02 (decision 62's figures, or decision 31's
+      under `shellCover: "before62"`).
+    - **Catches whoever is in its blast**, the firer's own side too,
+      measured from the target. An anti-armour round (`usesArmorTable`)
+      connects only with the vehicle it was aimed at; plain HE rolls for
+      any vehicle's tracks in its blast, as decision 3 has a shell do.
+    - **Puts the men it came down on to ground** (`downUnderShelling`,
+      decision 30) until they move. Direct fire is taken shot by shot, so
+      the next shot that turn finds them down; a shell's rounds that land
+      in one turn find them as they were.
+    - **Suppresses within its reach** (decision 63, S1, under
+      `suppressionReach`): forces its blast reached take a direct round's
+      15, and those beyond it but within the weapon's suppression reach
+      take `roundSuppression` scaled from a shell's 25 to a direct round's
+      15. A roof halves all of it, the target's too (S3, under
+      `roofsDampSuppression`). A miss suppresses the target as before; an
+      RPG against armour has no lethal area against men and suppresses
+      only the forces in its blast.
+    - **Unchanged:** the to-hit roll, the target's own suppression figures
+      (15, 15 more on a hit), and the nerve. Direct HE costs decision 19's
+      `firedOn`, not `bombarded`.
+    - ⚠️ **The factors are a shell's.** They come from lethal areas and
+      trench figures for 105–155 mm rounds falling from above, applied
+      as they stand to a flat-trajectory round. A round that goes in
+      through a window or a firing slit is decision 77.
+
+76. ✅ **Buildings take damage: intact, damaged, rubble** (author,
+    2026-10-03, option "3 states"). The document says nothing of
+    structures; until now a building was cover and a sight-line block that
+    nothing could touch. With `GameOptions.structuresTakeDamage` (on for a
+    new game, off for a recording made before it):
+    - A round that hits a force in a building, or a shell that lands on
+      one, wears it down in damage points (`STRUCTURE_DAMAGE`): artillery
+      15, tank round 10, mortar 4, RPG 3, and the 40 mm grenade nothing.
+      Small arms do nothing, and an air burst goes off above the roof
+      and does not touch it. A round aimed at a vehicle beside a house
+      does not strike the house.
+    - The damage is done after the fire that caused it: everything due
+      in a turn lands on the roofs as they were, and a direct round's
+      blast and suppression find the men under the roof as it was.
+    - **Damaged** at 10 points, **rubble** at 100, for a 100 m² house;
+      a larger building takes proportionally more (never under half).
+    - A damaged building is still full cover, but its roof is holed: a
+      shell finds the men as in an open hole. Rubble is **full cover with
+      no roof**, 2 m high for sight lines. FM 3-06.11: a town reduced to
+      rubble is "a stronger position for defending troops than it was
+      before".
+    - The map the battle was set on is never changed: the game keeps a
+      live view (`game.terrain`) with the damage on it, and a recording
+      carries the original and replays the damage. The map draws a
+      damaged building dashed and rubble pale; both sides see it.
+    - The log and the debrief say "המבנה נפגע" / "המבנה קרס להריסות".
+    - ⚠️ One tank round damaging a house is sourced: FM 3-06.11, "one
+      MPAT round normally creates a breach hole in all but the thickest
+      masonry". **How many rounds bring a house down is ours**: no source
+      gives it ("large expenditures of ammunition are required").
+    - **A tank round breaches the wall** of the building its target is
+      in. The men inside are then behind partial cover (×0.5, or their
+      posture if lower), not under a roof (×0.02). FM 3-06.11: tank HEAT
+      is "large enough to displace enough spall to inflict casualties
+      inside a building" (`SPALLS_INSIDE`; ⚠️ the 0.5 is ours).
+    - **A building brought down kills a quarter of the men inside it**
+      (`COLLAPSE_KILLS`). Arnold et al. 2004, 29 bombings: immediate
+      mortality was 25% where the structure collapsed, and 4% in the
+      open. The log says "נקבר בהריסות", to whoever may know of the force.
+    - Not built: rubble slowing movement, walls breached, charges against
+      buildings.
+77. ✅ **Critical hits: through the window, the slit or the roof**
+    (author, 2026-10-03: "a shell going directly through a window and
+    doing full damage to people inside"; scope: tank rounds, RPGs and
+    rifle grenades, firing slits too, and indirect fire through a roof;
+    effect: amplified). With `GameOptions.criticalHits` (on for a new
+    game, off for a recording made before it):
+    - **Direct fire:** each round that hits a force in a building may have
+      gone in through a window; one that hits a force in a position
+      prepared before the battle, through its firing slit. The chance is
+      by weapon and range (`CRITICAL_CHANCE`), a slit about a third of a
+      window: tank round 85% / 40% to 500 m, 50% / 15% to 1,000 m; rifle
+      grenade 35% / 10% to 50 m, 15% / 5% to 150 m. **Not the RPG**: FM
+      3-06.11, read on the page, says a shaped charge "passing through a
+      window wastes much of its energy on the back wall", and aims it
+      beside the window instead.
+    - **Indirect fire:** an impact-fuzed round that lands on a building
+      goes through its roof at 2% for a mortar bomb and 30% for a 155 mm
+      shell (`ROOF_PENETRATION`). An air burst never does. FM 3-06.11:
+      even with a delay fuze the 60 mm "cannot penetrate most rooftops",
+      and the 81 mm gets through only "the roofs of light buildings".
+    - **What it does:** the burst is among the men inside. Each man's
+      blast chance is the open ground's ×**2.5**, capped at 1
+      (`ENCLOSED_BLAST_FACTOR`). Cover and roof count for nothing against
+      it. The sources put a room at ×2 to ×6 the open air: ×2 from 29
+      bombings pooled (Arnold et al. 2004), ×6 from bus bombings
+      (Leibovici et al. 1996). Other forces in the blast are resolved as before. Only infantry
+      takes one: a command group has no blast roll to amplify.
+    - The log and the debrief say "חדר דרך חלון או חרך" / "חדר דרך הגג".
+    - ⚠️ **Every figure is ours.** No source gives the chance a round goes
+      in through a window, or through a roof by fuze. They come from
+      dispersion: a tank gun's 0.2–0.3 mil; FM 3-22.31 on the M203, which
+      can put a grenade through a window at about 125 m but whose gunners
+      "cannot consistently hit windows at 50 m when forced to aim and fire
+      quickly"; an RPG-7 hits a tank-sized target about half the time at
+      200 m. The ×2.5 is anchored on bombs that killed 7.8% of their
+      casualties in the open and 49% in buses (Leibovici et al., J Trauma
+      1996). A room with windows is less enclosed than a bus, so the
+      factor was set at 2.5, inside a ×2–3 range, rather than ×6.
+78. ✅ **Armour by weapon, by vehicle class and by the side struck**
+    (author, 2026-10-03, option "+ vehicle types"). The document's table
+    gives every weapon a 20% penetration from any side. With
+    `GameOptions.armour` `research` (the default; `document` plays the
+    table, and a recording made before it reads `document`):
+    - **Vehicle classes:** `mbt` (Merkava 4, T-72), `heavyApc` (Namer,
+      Achzarit), `lightApc` (M113), `soft` (a truck). `makeVehicle`'s
+      sixth argument and a scenario spec's `vehicleClass`; absent, a tank.
+    - **The side struck** is read from the hull's heading and where the
+      round came from: front within 45°, rear within 45° of behind, side
+      otherwise. A vehicle's hull now turns to face the way it drives,
+      except when it withdraws or routs: armour reverses out of contact,
+      keeping its front to the enemy it leaves (⚠️ ours).
+    - **Penetration** (`PENETRATION`), front / side / rear against a tank:
+      tank round 40% / 100% / 100%, RPG 2% / 40% / 90%; a light APC or a
+      truck is penetrated every time. An anti-tank mine strikes the belly:
+      20% against a tank, 90% against an M113. A track keeps the table's
+      70% whatever the weapon. Where it hits and what a penetration does
+      stay the table's.
+    - **A penetration kills crews:** each crewman is put out at 35%
+      (`CREW_OUT_ON_PENETRATION`), which is 1.4 of a crew of four. This
+      applies to every penetration but the track's, and replaces the
+      table's crew rows. 2006 Lebanon, read on the page: 22 Merkavas
+      penetrated and 23 tankers killed. The table had given about 0.2
+      crew hits a penetration. ⚠️ The 35% is ours.
+    - **A thin-skinned vehicle burns:** a penetration destroys an M113
+      outright at 30% and a truck at 70% (`CATASTROPHIC_ON_PENETRATION`),
+      on top of the table's own 5% on the ammunition.
+    - **Plain HE** (mortar, artillery, rifle grenade) within its blast of an
+      M113 sends fragments in at 50%, and of a truck at 80%
+      (`HE_FRAGMENTS_IN`); a tank and a heavy APC keep the document's
+      track roll.
+    - ⚠️ **The armour of a Merkava 4 or a Namer is classified**, so their
+      columns are estimates. The penetrations are published figures (PG-7VL
+      500 mm, Kornet 1,000 mm, 120 mm APFSDS 700–850 mm), but they were read
+      through search summaries and not checked against the pages. They are
+      turned into a chance by a logistic curve whose spread, a tenth of the
+      armour, is ours. 2006 Lebanon agrees: about 40–45% of Merkavas hit by
+      ATGMs were penetrated, and 11 of 14 APCs.
+    - Not built: an ATGM (Kornet) as a weapon, heavy machine guns against
+      light vehicles, a direct artillery hit on a vehicle, active
+      protection (Trophy), passengers in an APC.
+
+79. ✅ **The research figures, checked against the sources** (author,
+    2026-10-03, each item chosen after the third pass on
+    docs/validation.md). With `GameOptions.checkedFigures` (on for a new
+    game; a recording made before it reads it as off):
+    - **Tank HE: 280 m²**, the 105 mm round's lethal area on impact. The
+      390 m² used before was its air-burst figure in the same source.
+    - **The RPG against armour, by the 1976 US Army trial** against a
+      moving tank-sized panel: 100% to 50 m, 96% to 100 m, 51% to 200 m,
+      22% to 300 m, 9% to 400 m, 4% to 500 m, and nothing beyond.
+    - **An anti-personnel charge is a Claymore**: a 60° fan facing the
+      way the enemy came, 30% to 50 m and 10% to 100 m. The force that set
+      it off is always in the fan.
+    - **An anti-tank charge is a 155 mm shell IED**: 971 m² against men,
+      and only the vehicle within 20 m of it. The document's charges
+      reached 200 m, all round.
+    - **A mortar bomb finds men down at ×0.5**, not ×0.36. FM 7-90:
+      "almost twice as effective" against standing men as prone. The 0.36
+      stays for the 155 mm.
+    - **Suppression by FM 7-90's table**:
+      - 81 mm: 30 m probable, 75 m even, a quarter to 125 m;
+      - 155 mm: the heavy mortar's row, 65 m / 125 m / 200 m;
+      - other weapons: scaled from the 81 mm's row as before.
+    - **Plain HE reaches a vehicle's tracks only within its blast against
+      men**, not the document's 100–200 m. On the urban test bed this cut
+      BLUE's vehicles lost to mortars from 53% to 25%.
+    - ⚠️ Ours:
+      - the quarter out to "little";
+      - the heavy mortar's row standing for the 155 mm;
+      - the 20 m reach of a charge against a vehicle;
+      - the fan facing the way the enemy came.
+
+      The lethal areas themselves rest on one 2025 forum post that derives
+      them from BRL 530, since JMEM is classified (docs/validation.md).
+    - **What it moved** (balance.md, *Fifty-first round*):
+      - the 3:1 tel attack 43% → 49%;
+      - the 2:1 tel attack 29% → 39%, **above decision 68's 20–35%**;
+      - the urban attack 38% → 17%.
+
+80. ✅ **ARES Special Report No. 3's indirect-fire figures** (author,
+    2026-10-03: "check it out", then all three chosen). The report is
+    Dullum, Jenzen-Jones et al., *Indirect Fire*, Armament Research
+    Services, 2017; docs/validation.md has what was read in it. With
+    `GameOptions.aresFigures` (on for a new game; a recording made before
+    it reads it as off), on top of decision 79:
+    - **Lethal areas from ARES**, Tables 1.1–1.2: **155 mm 665 m²**
+      (was 971) and **81 mm 250 m²** (was 476). A shell IED is 665 m².
+      Tank HE stays at decision 79's **280 m²**. ARES gives 495 m² for a
+      105 mm artillery round, but GICHD's *Explosive Weapon Effects*
+      (2017) found "tank munitions … a more limited lethal area than
+      others" (author, 2026-10-03, after reading it). The report is
+      citable, where the old figures were a forum post; but it calls these
+      "fragmentation" areas and never defines them.
+    - **A gun's first-round CEP by its range**, Table 3.1: 95 m at 15 km,
+      115 m at 20 km, 140 m at 25 km, 275 m at 30 km. Until a scenario
+      says otherwise, the guns are 20 km back (⚠️ ours), so the first
+      round is **115 m**, not 270 m. Adjusting still halves it to 50 m.
+    - **An air burst ×1.15** against standing men, not ×1.28. ARES's
+      rocket table puts the air burst's lethal area at 1.08–1.22× the
+      impact's. Partial cover still gives nothing against it, and an open
+      hole takes a tenth (×0.115).
+    - Suppression reach still follows FM 7-90's table for the mortar and
+      the 155 mm. For other weapons it scales with the square root of these
+      lethal areas, against the 81 mm's 250 m².
+    - **What it moved** (balance.md, *Fifty-second round*):
+      - the tel attacks: 3:1 49% → 41%, 2:1 39% → 36%;
+      - **explosives' share of losses: 70% → 64%, below decision 43's
+        75%**;
+      - the urban attack: 36% with tank HE at 495 m², and **18%** at the
+        280 m² kept after GICHD.
+
+81. ✅ **Rulings of 2026-10-03, after decisions 75–80** (the author,
+    answering the open questions one at a time):
+    - **Explosives' share of losses: a 60–80% range**, not 75% (amends
+      decision 43). The tel's 64% is inside it.
+    - **The 2:1 attack at 36% is accepted**, one point over decision 68's
+      20–35%.
+    - **Direct HE costs a bombardment's nerve**, as a shell does.
+      `GameOptions.directHeBombards` is on for a new game, and a recording
+      made before it reads it as off. A tank round, RPG or rifle grenade
+      now counts as decision 19's `bombarded` (5 a turn, scaled by cover
+      under decision 64), not only `firedOn` (1).
+    - **Several types of house**, each with its own strength. To be
+      defined with the urban combat work. Until then a house of 208 m²
+      takes about 20 tank rounds, and none comes down in the urban battle.
+    - **Force quality as a matrix.** Ruled, not built. Three levels of
+      force type (irregular, regular, elite) against three of experience
+      (inexperienced, experienced, very experienced). Morale is affected
+      by both, as well as by the other factors already described. Today's
+      breakpoints (30% attacker, 50% defender; decisions 44, 49, 67) are
+      **a trained, regular, experienced force's**, and the other eight
+      cells are measured against it. The literature's warning stays
+      recorded: no study establishes fixed breakpoints, and McQuie found
+      most forces quit under 10% (docs/validation.md, *third pass*). The
+      game already carries `experience` (green, regular, veteran, elite)
+      and `motivation` per force; the matrix replaces or maps them.
+    - **The traits** (decisions 69, 71, 72): **go-ahead to build**, after
+      this branch is merged and discussed.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -2479,7 +2736,11 @@ Each is intended to be an independent, toggleable module:
    older rules is flagged rather than silently reinterpreted.
 8. **Leaderboards.**
 9. **Leagues.**
-10. **Air support** — fixed/rotary CAS missions.
+10. **Air support** — fixed/rotary CAS missions. The figures to start from
+    (Mk 82: 89 kg of explosive, most buildings collapse within 31 m,
+    100% lethality across about 32 m; CEP 94.5 m unguided, 5 m GPS, 1.1 m
+    laser) are in [docs/sources.md](docs/sources.md), *Air-delivered
+    munitions*, from GICHD's *Explosive Weapon Effects* (2017).
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
 12. **Logistics** — ammunition, fuel, resupply, sustainment. For indirect fire,
     ammunition is the battalion's and above, set by the mission's parameters;

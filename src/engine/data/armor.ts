@@ -94,3 +94,106 @@ export const ARMOR_TABLE: readonly ArmorRow[] = [
     casualtyChance: 0.4, // 40% chance to hit the driver
   },
 ];
+
+/** Whose armour figures a battle plays (rules decision 78). */
+export type ArmourFigures = "document" | "research";
+export const ARMOUR_FIGURES: readonly ArmourFigures[] = ["document", "research"];
+
+/**
+ * What kind of vehicle (rules decision 78). The document has one: a tank. A
+ * vehicle made before the decision is a main battle tank.
+ */
+export type VehicleClass = "mbt" | "heavyApc" | "lightApc" | "soft";
+export const VEHICLE_CLASSES: readonly VehicleClass[] = ["mbt", "heavyApc", "lightApc", "soft"];
+
+/** The side of a vehicle a round strikes, from where it was fired and the hull's heading. */
+export type ArmourFacing = "front" | "side" | "rear";
+
+/**
+ * The chance a hit penetrates, by weapon, vehicle class and the side struck
+ * (rules decision 78) — **not the document's**, whose table gives 20% for any
+ * weapon from any side. A logistic curve on the weapon's penetration against
+ * the armour's (RHA-equivalent), spread by a tenth of the armour; see
+ * docs/validation.md, *Armour by weapon, class and facing*.
+ *
+ * ⚠️ The armour of a Merkava 4 or a Namer is classified: their columns are
+ * estimates, not data. The penetrations are published figures read through
+ * search summaries (PG-7VL 500 mm, Kornet 1,000 mm, 120 mm APFSDS 700–850 mm).
+ * 2006 Lebanon checks the result: about 40–45% of Merkavas hit by ATGMs were
+ * penetrated, and 11 of 14 APCs (strategypage, globalsecurity).
+ *
+ * A track keeps the document's chance whatever the weapon: it is thin from
+ * every side. `atMine` strikes the belly, whatever the facing.
+ */
+export const PENETRATION: Readonly<Record<string, Record<VehicleClass, Record<ArmourFacing, number>>>> = {
+  // A tank fires a kinetic round at armour (120 mm APFSDS).
+  // The heavy APC's front is the tank's: the Namer is "more heavily armored
+  // than the Merkava IV tanks" (Brig. Gen. Livnat; read on the page,
+  // 2026-10-03). Its sides and rear stay estimates.
+  tankRound: {
+    mbt: { front: 0.4, side: 1, rear: 1 },
+    heavyApc: { front: 0.4, side: 1, rear: 1 },
+    lightApc: { front: 1, side: 1, rear: 1 },
+    soft: { front: 1, side: 1, rear: 1 },
+  },
+  // RPG-7, PG-7VL / VR.
+  rpgVsArmor: {
+    mbt: { front: 0.02, side: 0.4, rear: 0.9 },
+    heavyApc: { front: 0.02, side: 0.5, rear: 0.95 },
+    lightApc: { front: 1, side: 1, rear: 1 },
+    soft: { front: 1, side: 1, rear: 1 },
+  },
+  // An anti-tank mine under the hull: a breach of the belly.
+  atMine: {
+    mbt: { front: 0.2, side: 0.2, rear: 0.2 },
+    heavyApc: { front: 0.1, side: 0.1, rear: 0.1 },
+    lightApc: { front: 0.9, side: 0.9, rear: 0.9 },
+    soft: { front: 1, side: 1, rear: 1 },
+  },
+};
+
+/**
+ * The chance a penetration destroys the vehicle outright, by class (rules
+ * decision 78), on top of the table's own (5% on the ammunition). ⚠️ Ours:
+ * 1982 and 2006 Lebanon put a penetrated Merkava's loss at about 5% (the
+ * table already gives that); an M113 burns far more often, a truck nearly
+ * always.
+ */
+export const CATASTROPHIC_ON_PENETRATION: Readonly<Record<VehicleClass, number>> = {
+  mbt: 0,
+  heavyApc: 0,
+  lightApc: 0.3,
+  soft: 0.7,
+};
+
+/**
+ * Plain HE bursting within its blast of a lightly armoured or soft vehicle
+ * (rules decision 78): the chance its fragments go in, resolved as a
+ * penetrating hit. A tank and a heavy APC keep the document's track roll.
+ * ⚠️ From 1988 US tests (155 mm within 30 m of an APC sent fragments in and
+ * caused casualties; *Field Artillery Journal*, as cited second-hand); the
+ * figures are ours.
+ */
+export const HE_FRAGMENTS_IN: Readonly<Partial<Record<VehicleClass, number>>> = {
+  lightApc: 0.5,
+  soft: 0.8,
+};
+
+/**
+ * The chance each crewman is put out of the fight when a round penetrates
+ * anywhere but the track (rules decision 78, research figures; 2026-10-03).
+ * 2006 Lebanon, read on the page: 22 Merkavas penetrated and 23 tankers
+ * killed (GlobalSecurity), and "over a hundred tank crewmen were killed or
+ * wounded by ATGMs" (StrategyPage). The table's own crew rolls gave about
+ * 0.2 crew hits a penetration. ⚠️ 0.35 is ours: 1.4 of a crew of four put
+ * out, killed or badly wounded, against about one killed.
+ */
+export const CREW_OUT_ON_PENETRATION = 0.35;
+
+/** The side of a vehicle facing `bearingToFirer` (from the vehicle) when its hull points `facing`. */
+export function armourFacing(facing: number, bearingToFirer: number): ArmourFacing {
+  const off = Math.abs(((((bearingToFirer - facing) % 360) + 540) % 360) - 180);
+  if (off <= 45) return "front";
+  if (off >= 135) return "rear";
+  return "side";
+}

@@ -1,4 +1,5 @@
 import type { Fuze } from "./data/explosives.js";
+import type { VehicleClass } from "./data/armor.js";
 import type { Point } from "./geometry.js";
 import type { SmokeSource } from "./data/smoke.js";
 import type { CoverState } from "./data/directFire.js";
@@ -105,8 +106,10 @@ export interface VehicleState {
   crew: CrewMember[];
   mobilityKilled: boolean; // engine or track disabled
   destroyed: boolean; // catastrophic (e.g. ammo) kill
-  /** Heading in degrees (0 = +x). Used to resolve front/rear hits later. */
+  /** Heading in degrees (0 = +x): which side a round strikes (rules decision 78). */
   facing: number;
+  /** What kind of vehicle (rules decision 78). Absent: a main battle tank. */
+  vehicleClass?: VehicleClass;
 }
 
 /**

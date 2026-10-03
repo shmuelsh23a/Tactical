@@ -359,6 +359,41 @@ export function executionVisibleTo(done: StandingOrderExecution, lens: Lens): bo
  *
  * Bands are ⚠️ chosen, not from the document.
  */
+/**
+ * What a round did to the building it struck (rules decision 76), and
+ * whether it went in through a window, a slit or the roof (decision 77).
+ * A building is ground both sides look at, so the words are the same for
+ * every reader. Said once, when the state changes.
+ */
+export function structureHe(strike: { state: "intact" | "damaged" | "rubble"; changed: boolean } | undefined): string {
+  if (!strike || !strike.changed || strike.state === "intact") return "";
+  return strike.state === "rubble" ? " · המבנה קרס להריסות" : " · המבנה נפגע";
+}
+
+/**
+ * The men a building killed when it came down (2026-10-03), to a reader
+ * entitled to hear of each force: exact for its own, a report otherwise,
+ * nothing of a force it may not know of.
+ */
+export function crushedHe(
+  strike: { crushed?: { unitId: string; casualties: number }[] } | undefined,
+  who: (id: string) => string,
+  lens: Lens,
+): string {
+  const umpire = lens.side == null;
+  return (strike?.crushed ?? [])
+    .filter((c) => lens.mayKnow(c.unitId))
+    .map((c) => ` · ${who(c.unitId)} נקבר בהריסות — ${casualtyReport(c.casualties, umpire || lens.isOwn(c.unitId))}`)
+    .join("");
+}
+
+/** A round that burst inside, among the men (rules decision 77). */
+export function criticalHe(criticals: number | undefined, how: "window" | "roof"): string {
+  if (!criticals) return "";
+  const where = how === "roof" ? "חדר דרך הגג" : "חדר דרך חלון או חרך";
+  return criticals > 1 ? ` · ${criticals} פגזים ${where}` : ` · ${where}`;
+}
+
 export function casualtyReport(casualties: number, exact: boolean): string {
   if (exact) return `${casualties} נפגעים`;
   if (casualties === 0) return "ללא נפגעים שנצפו";
@@ -651,7 +686,7 @@ export function describeOutcome(
             }`
           : ", ללא פגיעות";
         const fell = !aimed ? "נחיתה" : off > 0 ? `נחיתה בסטייה ${off}מ'` : "נחיתה מדויקת";
-        parts.push(`${fell}${hit}`);
+        parts.push(`${fell}${criticalHe(impact.critical ? 1 : 0, "roof")}${hit}${structureHe(impact.structure)}${crushedHe(impact.structure, who, lens)}`);
       }
       return parts.join(" · ");
     }
@@ -746,7 +781,12 @@ export function describeOutcome(
       const volley = r.rounds && r.rounds > 1 ? `${r.rounds} ${unit} ` : "";
       if (!observed) return `ירה ${volley}ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
       if (!r.hit) return `${volley}החטאה (${pct(r.hitChance)})`;
-      const caught = (r.blast?.targets ?? []).filter((t) => t.caught);
+      // The target's losses; whoever else the blast caught (rules decision
+      // 75) is told apart, and only to a reader who may know of it.
+      const targetId = action?.kind === "fireExplosive" ? action.targetId : shotAt;
+      const all = (r.blast?.targets ?? []).filter((t) => t.caught);
+      const caught = all.filter((t) => t.unitId === targetId);
+      const others = all.filter((t) => t.unitId !== targetId && lens.mayKnow(t.unitId));
       const casualties = caught.reduce((n, t) => n + t.newCasualties, 0);
       const armour = caught.find((t) => t.armorEffect)?.armorEffect;
       const armourText = armour
@@ -760,7 +800,10 @@ export function describeOutcome(
           : ""
         : `, ${casualtyReport(casualties, false)}`;
       const hits = r.rounds && r.rounds > 1 ? `${r.hits}/${r.rounds} פגיעות` : "פגיעה";
-      return `${hits} (${pct(r.hitChance)})${losses}${armourText}`;
+      const besides = others
+        .map((t) => ` · נפגע גם ${who(t.unitId)} — ${casualtyReport(t.newCasualties, umpire || lens.isOwn(t.unitId))}`)
+        .join("");
+      return `${hits} (${pct(r.hitChance)})${criticalHe(r.criticals, "window")}${losses}${armourText}${besides}${structureHe(r.structure)}${crushedHe(r.structure, who, lens)}`;
     }
 
     case "assault": {

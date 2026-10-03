@@ -1,4 +1,5 @@
 import type { CoverState } from "./directFire.js";
+import { RUBBLE_COVER, RUBBLE_HEIGHT_M } from "./structures.js";
 
 /**
  * Elevation and objects (README rules decision 15). The document has no
@@ -23,7 +24,7 @@ export const EYE_HEIGHT = {
 } as const;
 
 /** The kinds of object a map carries. */
-export type MapObjectKind = "building" | "wall" | "tree";
+export type MapObjectKind = "building" | "wall" | "tree" | "rubble";
 
 /**
  * The protection an object gives a force standing in or against it (author,
@@ -35,6 +36,7 @@ export const OBJECT_COVER: Record<MapObjectKind, CoverState> = {
   building: "full", // author (tentative)
   wall: "partial", // author (tentative)
   tree: "partial", // author (tentative)
+  rubble: RUBBLE_COVER, // rules decision 76: a building brought down
 };
 
 /**
@@ -57,6 +59,7 @@ export const OBJECT_HEIGHT_M: Record<MapObjectKind, number> = {
   building: 6, // ours — two storeys
   wall: 1.5, // ours — a stone terrace wall, chest high
   tree: 4, // ours — an oak, the crown counted
+  rubble: RUBBLE_HEIGHT_M, // rules decision 76
 };
 
 /**

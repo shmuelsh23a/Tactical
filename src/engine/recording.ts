@@ -40,6 +40,7 @@ import type { MapLineKind, Terrain } from "./terrain.js";
 import { OBJECT_HEIGHT_M, SLOPE } from "./data/terrain.js";
 import { ATTACKER_BREAK_BEFORE_66, NERVE_IN_OPEN_BEFORE_66 } from "./data/morale.js";
 import { LETHALITIES, type Lethality } from "./data/lethality.js";
+import { ARMOUR_FIGURES, VEHICLE_CLASSES, type ArmourFigures, type VehicleClass } from "./data/armor.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -201,6 +202,13 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.shellCover !== undefined && !SHELL_COVERS.includes(r.shellCover as ShellCover)) throw malformed("shellCover");
   if (r.suppressionReach !== undefined && typeof r.suppressionReach !== "boolean") throw malformed("suppressionReach");
   if (r.roofsDampSuppression !== undefined && typeof r.roofsDampSuppression !== "boolean") throw malformed("roofsDampSuppression");
+  if (r.directHeAsShell !== undefined && typeof r.directHeAsShell !== "boolean") throw malformed("directHeAsShell");
+  if (r.structuresTakeDamage !== undefined && typeof r.structuresTakeDamage !== "boolean") throw malformed("structuresTakeDamage");
+  if (r.criticalHits !== undefined && typeof r.criticalHits !== "boolean") throw malformed("criticalHits");
+  if (r.checkedFigures !== undefined && typeof r.checkedFigures !== "boolean") throw malformed("checkedFigures");
+  if (r.aresFigures !== undefined && typeof r.aresFigures !== "boolean") throw malformed("aresFigures");
+  if (r.directHeBombards !== undefined && typeof r.directHeBombards !== "boolean") throw malformed("directHeBombards");
+  if (r.armour !== undefined && !ARMOUR_FIGURES.includes(r.armour as ArmourFigures)) throw malformed("armour");
   if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
   if (r.pinnedFiresAtRange !== undefined && typeof r.pinnedFiresAtRange !== "boolean") throw malformed("pinnedFiresAtRange");
@@ -228,6 +236,12 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
     if (field) throw new RecordingError({ kind: "malformedTerrain", field });
   }
   if (!Array.isArray(r.actions)) throw malformed("actions");
+  // A vehicle's class picks its armour row (rules decision 78): an unknown one
+  // would throw mid-replay rather than say what is wrong with the file.
+  for (const a of r.actions as { kind?: unknown; unit?: { vehicle?: { vehicleClass?: unknown } } }[]) {
+    const cls = a?.kind === "addUnit" ? a.unit?.vehicle?.vehicleClass : undefined;
+    if (cls !== undefined && !VEHICLE_CLASSES.includes(cls as VehicleClass)) throw malformed("vehicleClass");
+  }
 }
 
 /** Every kind of line a map may draw — a `Record` so a new kind cannot be missed. */
@@ -358,6 +372,20 @@ export interface GameRecording {
   suppressionReach?: boolean;
   /** Whether a roof halved a shell's suppression (rules decision 63, S3). Read as **off** when absent. */
   roofsDampSuppression?: boolean;
+  /** Whether direct-fire HE followed the shell's rules (rules decision 75). Read as **off** when absent. */
+  directHeAsShell?: boolean;
+  /** Whether HE wore buildings down (rules decision 76). Read as **off** when absent. */
+  structuresTakeDamage?: boolean;
+  /** Whether a round could go in through a window, a slit or a roof (rules decision 77). Read as **off** when absent. */
+  criticalHits?: boolean;
+  /** Whose armour figures (rules decision 78). Read as **`document`** when absent. */
+  armour?: ArmourFigures;
+  /** Whether the research figures were the checked ones (rules decision 79). Read as **off** when absent. */
+  checkedFigures?: boolean;
+  /** Whether ARES's indirect-fire figures were played on top (rules decision 80). Read as **off** when absent. */
+  aresFigures?: boolean;
+  /** Whether direct HE cost a bombardment's nerve (rules decision 81). Read as **off** when absent. */
+  directHeBombards?: boolean;
   /** Whether a pinned force kept its head down (rules decision 63, S2). Read as **off** when absent. */
   headsDown?: boolean;
   /** Whether an assault tested a pinned defender's nerve first (rules decision 63, S5). Read as **off** when absent. */
@@ -560,6 +588,13 @@ export function replayWithOutcomes(
     shellCover: recording.shellCover ?? "before62",
     suppressionReach: recording.suppressionReach ?? false,
     roofsDampSuppression: recording.roofsDampSuppression ?? false,
+    directHeAsShell: recording.directHeAsShell ?? false,
+    structuresTakeDamage: recording.structuresTakeDamage ?? false,
+    criticalHits: recording.criticalHits ?? false,
+    armour: recording.armour ?? "document",
+    checkedFigures: recording.checkedFigures ?? false,
+    aresFigures: recording.aresFigures ?? false,
+    directHeBombards: recording.directHeBombards ?? false,
     headsDown: recording.headsDown ?? false,
     assaultNerve: recording.assaultNerve ?? false,
     pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,

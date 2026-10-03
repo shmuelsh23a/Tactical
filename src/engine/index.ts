@@ -180,6 +180,7 @@ export {
   boundCost,
   climbAlong,
   coverFromObjects,
+  underRoof,
   distanceToFootprint,
   effectiveCover,
   eyeHeight,

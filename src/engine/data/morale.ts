@@ -227,8 +227,10 @@ export const SIDE_BREAK_SHARE = 2 / 3;
  * The same, by posture, on the research figures (rules decision 44, the
  * author, 2026-09-28: "adapt the morale to historical rules of thumb"): an
  * attack stops at about 20–25% losses, and a defence cannot hold at about 40%
- * (the Dupuy Institute's breakpoints; US doctrine calls a unit destroyed at
- * 30%). A side counts down, broken and fled men against these, so they sit
+ * (FM 105-5, 1964, as the Dupuy Institute reports it — which adds that it
+ * has "never found any studies establishing the data", and that the data
+ * reject a fixed breakpoint: docs/validation.md, *third pass*; US doctrine
+ * calls a unit destroyed at 30%). A side counts down, broken and fled men against these, so they sit
  * above the losses they stand for; they are set so that the **casualties** at
  * the break come out at the rule of thumb in the balance harness — an attacker
  * at a median 19–25%, a defender at 33–49% (docs/validation.md, *Where a side
@@ -298,6 +300,20 @@ export const SUPPRESSION = {
  * reached, about 37 m from a force's point for the 81 mm.
  */
 export const SUPPRESSION_REACH_81MM = { full: 30, half: 75 } as const;
+
+/**
+ * Suppression reach by weapon on the checked figures (rules decision 79):
+ * FM 7-90 B-7's own table, read on the page — the 81 mm "within 30 meters
+ * … probably", "within 75 meters … a 50 percent chance", "beyond 125
+ * meters, little"; the heavy mortar with a proximity fuze 65 / 125 / 200 m,
+ * which stands for the 155 mm here (⚠️ the nearest row the FM has). Beyond
+ * `half` and within `little` a quarter (⚠️ ours, for "little"). A weapon not
+ * in the table scales the 81 mm's by the square root of its lethal area.
+ */
+export const CHECKED_SUPPRESSION_REACH: Readonly<Record<string, { full: number; half: number; little: number }>> = {
+  mortar: { full: 30, half: 75, little: 125 },
+  artillery: { full: 65, half: 125, little: 200 },
+};
 
 /**
  * A force under a roof — a building, or a position prepared before the

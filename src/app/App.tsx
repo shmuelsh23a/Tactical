@@ -42,6 +42,8 @@ import {
 } from "../engine/index.js";
 import {
   casualtyReport,
+  criticalHe,
+  structureHe,
   chargeHe,
   chargeWorkHe,
   planningRefusalHe,
@@ -652,14 +654,16 @@ export function App({ scenario, onLeave }: AppProps) {
     for (const r of resolved) {
       const off = Math.round(distance(r.aim, r.dispersion.impact));
       const weapon = tubeHe[r.weapon as Tube] ?? r.weapon;
-      const fell = `${weapon}: נחיתה`;
+      // Through the roof, and what was left of the building: plain to both sides.
+      const after = `${criticalHe(r.critical ? 1 : 0, "roof")}${structureHe(r.structure)}`;
+      const fell = `${weapon}: נחיתה${after}`;
       if (r.side) {
         pushPerSide("fire", r.side, (reader) =>
           reader !== r.side
             ? fell
             : off > 0
-              ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה`
-              : `${weapon}: פגיעה מדויקת במטרה`,
+              ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה${after}`
+              : `${weapon}: פגיעה מדויקת במטרה${after}`,
         );
       } else {
         pushLog(fell, "fire", TABLE);
@@ -670,6 +674,7 @@ export function App({ scenario, onLeave }: AppProps) {
         if (!victim) continue;
         logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, r.side, `נפגע מ${weapon}`);
       }
+      logCrushed(r.structure, r.side);
     }
     if (resolved.length) checkVictory();
   }
@@ -681,6 +686,14 @@ export function App({ scenario, onLeave }: AppProps) {
    * nothing. `by` is whose colour the line flies — the side that caused it,
    * where there is one.
    */
+  /** The men a building killed when it came down on them (2026-10-03), to whoever may know. */
+  function logCrushed(strike: { crushed?: { unitId: string; casualties: number }[] } | undefined, by: Side | undefined) {
+    for (const c of strike?.crushed ?? []) {
+      const victim = game.units.find((u) => u.id === c.unitId);
+      if (victim) logLosses(victim, c.casualties, 0, victim.neutralized, by, "נקבר בהריסות");
+    }
+  }
+
   function logLosses(
     victim: Unit,
     casualties: number,
@@ -1052,10 +1065,18 @@ export function App({ scenario, onLeave }: AppProps) {
           );
         else
           pushLog(
-            `${selectedOwn.name} פגע ב${target.name} ${r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}`,
+            `${selectedOwn.name} פגע ב${target.name} ${r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}${criticalHe(r.criticals, "window")}${structureHe(r.structure)}`,
             "casualty",
             sharedBy(viewingSide),
           );
+        // Its blast finds whoever stands near the target, as a shell's does
+        // (rules decision 75): each force it caught, to whoever may know of it.
+        for (const hit of r.blast?.targets ?? []) {
+          if (!hit.caught || hit.unitId === target.id) continue;
+          const victim = game.units.find((u) => u.id === hit.unitId);
+          if (victim) logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, selectedOwn.side, "נפגע מפגז טנק");
+        }
+        logCrushed(r.structure, selectedOwn.side);
       } else {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.

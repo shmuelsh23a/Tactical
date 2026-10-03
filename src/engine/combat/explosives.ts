@@ -3,7 +3,15 @@ import { roll } from "../dice.js";
 import { distance, lookupBand, type Point } from "../geometry.js";
 import type { Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
-import { RATE_OF_FIRE, explosiveFor, freshness, rollRate, type Lethality } from "../data/lethality.js";
+import {
+  CHECKED_VEHICLE_BANDS,
+  RATE_OF_FIRE,
+  explosiveForChecked,
+  freshness,
+  type Checked,
+  rollRate,
+  type Lethality,
+} from "../data/lethality.js";
 import { HE_VS_ARMOR } from "../data/armor.js";
 import {
   applyComponentDamage,
@@ -12,6 +20,8 @@ import {
   woundHit,
 } from "../units.js";
 import { resolveArmorHit } from "./armorDamage.js";
+import { HE_FRAGMENTS_IN, type ArmourFigures } from "../data/armor.js";
+import type { StructureState } from "../data/structures.js";
 import { suppressionAccuracy } from "../morale.js";
 
 export interface BlastTargetResult {
@@ -30,6 +40,16 @@ export interface ShellEffect {
   factorFor: (unit: Unit) => number;
   /** Burst in the air: no effect on a vehicle's tracks. */
   airburst: boolean;
+}
+
+/** A building a round struck, and its state after (rules decision 76). */
+export interface StructureStrike {
+  objectId: string;
+  state: StructureState;
+  /** Whether this fire changed its state: what a report speaks of. */
+  changed: boolean;
+  /** Forces inside when it came down, and the men it killed (2026-10-03). */
+  crushed?: { unitId: string; casualties: number }[];
 }
 
 export interface BlastResult {
@@ -55,8 +75,12 @@ export function resolveBlast(
   turn = 0,
   shell?: ShellEffect,
   lethality: Lethality = "document",
+  /** Whose armour figures, and where a direct round came from (rules decision 78). The document's unless given. */
+  armour: { figures: ArmourFigures; from?: Point } = { figures: "document" },
+  /** The research figures as checked against the sources (rules decision 79). */
+  checked: Checked = false,
 ): BlastResult {
-  const weapon = explosiveFor(weaponKey, lethality);
+  const weapon = explosiveForChecked(weaponKey, lethality, checked);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
 
   const targets: BlastTargetResult[] = [];
@@ -66,7 +90,14 @@ export function resolveBlast(
     const dist = distance(impact, unit.position);
     // The research figures are lethal areas against men (rules decision 41):
     // a vehicle is reached, and connected with, as the document has it.
-    const bands = unit.kind === "infantry" ? weapon.blastBands : EXPLOSIVES[weaponKey]!.blastBands;
+    // On the checked figures a charge reaches the vehicle on it, and plain HE
+    // a vehicle's tracks only within its blast against men (decision 79).
+    const plainHe = !weapon.usesArmorTable && !weapon.damageDiceVsArmor;
+    const vehicleBands =
+      checked && lethality === "research"
+        ? (CHECKED_VEHICLE_BANDS[weaponKey] ?? (plainHe ? weapon.blastBands : EXPLOSIVES[weaponKey]!.blastBands))
+        : EXPLOSIVES[weaponKey]!.blastBands;
+    const bands = unit.kind === "infantry" ? weapon.blastBands : vehicleBands;
     const band = lookupBand(bands, dist);
     if (!band) continue; // outside the lethal radius
     // A shell against men: posture, cover and fuze (rules decisions 29–31).
@@ -101,7 +132,10 @@ export function resolveBlast(
         // Dedicated anti-armour munition: blast chance = chance to connect.
         if (rng.chance(blastChance)) {
           res.caught = true;
-          res.armorEffect = resolveArmorHit(rng, unit);
+          res.armorEffect =
+            armour.figures === "research"
+              ? resolveArmorHit(rng, unit, undefined, { weapon: weaponKey, ...(armour.from ? { from: armour.from } : {}) })
+              : resolveArmorHit(rng, unit);
           unit.hitThisTurn = true;
         }
       } else if (weapon.damageDiceVsArmor) {
@@ -111,6 +145,13 @@ export function resolveBlast(
           const dmg = roll(rng, weapon.damageDiceVsArmor);
           res.damage = dmg;
           applyComponentDamage(unit.vehicle, "track", dmg);
+          unit.hitThisTurn = true;
+        }
+      } else if (armour.figures === "research" && HE_FRAGMENTS_IN[unit.vehicle.vehicleClass ?? "mbt"] !== undefined) {
+        // A thin-skinned vehicle: the fragments go in (decision 78).
+        if (rng.chance(HE_FRAGMENTS_IN[unit.vehicle.vehicleClass ?? "mbt"]!)) {
+          res.caught = true;
+          res.armorEffect = resolveArmorHit(rng, unit, undefined, { weapon: weaponKey, penetrates: true });
           unit.hitThisTurn = true;
         }
       } else if (!shell?.airburst) {
@@ -153,6 +194,10 @@ export interface DirectExplosiveResult {
   rounds?: number;
   /** Rounds that hit, when more than one was fired. */
   hits?: number;
+  /** Rounds that went in through a window or a firing slit (rules decision 77). Absent: none. */
+  criticals?: number;
+  /** The building the target was in, and what the hits left of it (rules decision 76). */
+  structure?: StructureStrike;
 }
 
 /** How bad an armour effect is, to keep the worst of several rounds'. */
@@ -184,17 +229,34 @@ function mergeBlasts(blasts: BlastResult[]): BlastResult {
 /**
  * Resolve a direct-fire explosive (RPG, tank round, ATGM): first a range-banded
  * to-hit check; on a hit, detonate at the target and resolve the blast against
- * the target (and optional collateral units).
+ * the target (and optional collateral units). Given `shell`, the blast counts
+ * posture and cover against men as a shell's does (rules decision 75).
  */
 export function resolveDirectExplosive(
   rng: Rng,
   weaponKey: string,
   attacker: Unit,
   target: Unit,
-  opts: { hasLineOfSight?: boolean; collateral?: Unit[]; turn?: number; lethality?: Lethality } = {},
+  opts: {
+    hasLineOfSight?: boolean;
+    collateral?: Unit[];
+    turn?: number;
+    lethality?: Lethality;
+    shell?: ShellEffect;
+    /**
+     * A critical hit (rules decision 77): each round that hits goes in
+     * through a window or a slit at `chance`, and bursts among the target's
+     * men at `factor` on their blast chance. Absent: no round can.
+     */
+    critical?: { chance: number; factor: number };
+    /** Whose armour figures (rules decision 78). The document's unless given. */
+    armour?: ArmourFigures;
+    /** The research figures as checked against the sources (rules decision 79). */
+    checked?: Checked;
+  } = {},
 ): DirectExplosiveResult {
   const lethality = opts.lethality ?? "document";
-  const weapon = explosiveFor(weaponKey, lethality);
+  const weapon = explosiveForChecked(weaponKey, lethality, opts.checked ?? false);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
   if (weapon.delivery !== "directFire") {
     throw new Error(`${weaponKey} is not a direct-fire weapon`);
@@ -223,11 +285,26 @@ export function resolveDirectExplosive(
   const candidates = [target, ...(opts.collateral ?? [])];
   const blasts: BlastResult[] = [];
   let rounds = 0;
+  let criticals = 0;
   while (rounds < rate && !(rounds > 0 && isDown(target))) {
     rounds++;
     if (!rng.chance(result.hitChance)) continue; // missed
-    blasts.push(resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, undefined, lethality));
+    const critical = opts.critical !== undefined && rng.chance(opts.critical.chance);
+    if (critical) criticals++;
+    const shell: ShellEffect | undefined = critical
+      ? {
+          factorFor: (u) => (u === target ? opts.critical!.factor : (opts.shell?.factorFor(u) ?? 1)),
+          airburst: opts.shell?.airburst ?? false,
+        }
+      : opts.shell;
+    blasts.push(
+      resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, shell, lethality, {
+        figures: opts.armour ?? "document",
+        from: attacker.position,
+      }, opts.checked ?? false),
+    );
   }
+  if (criticals) result.criticals = criticals;
   result.hit = blasts.length > 0;
   if (blasts.length) result.blast = blasts.length === 1 ? blasts[0] : mergeBlasts(blasts);
   if (rof) {

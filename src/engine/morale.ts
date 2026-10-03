@@ -30,6 +30,7 @@ import {
   SUPPRESSION,
   SUPPRESSION_EFFECT,
   SUPPRESSION_REACH_81MM,
+  CHECKED_SUPPRESSION_REACH,
   ASSAULT_NERVE,
   NERVE_BY_COVER,
   TEST,
@@ -38,7 +39,7 @@ import {
   TRAIT_DICE,
   WAVERING_TEST_INTERVAL,
 } from "./data/morale.js";
-import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2 } from "./data/lethality.js";
+import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2, lethalAreas, type Checked } from "./data/lethality.js";
 
 /**
  * Morale (מורל) — rules decision 19.
@@ -160,9 +161,20 @@ export function readySoldiers(unit: Unit): Soldier[] {
  * half reach, else nothing. {@link SUPPRESSION_REACH_81MM} scaled by the
  * square root of the weapon's lethal area against the mortar's.
  */
-export function roundSuppression(weapon: string, range: number): number {
-  const scale = Math.sqrt((LETHAL_AREA_M2[weapon] ?? LETHAL_AREA_M2.mortar!) / LETHAL_AREA_M2.mortar!);
+export function roundSuppression(weapon: string, range: number, checked: Checked = false): number {
   const nearestMan = Math.max(0, range - FORCE_FOOTPRINT_RADIUS_M);
+  if (checked) {
+    // FM 7-90's table (rules decision 79).
+    const mortar = CHECKED_SUPPRESSION_REACH.mortar!;
+    const areas = lethalAreas(checked);
+    const k = Math.sqrt((areas[weapon] ?? areas.mortar!) / areas.mortar!);
+    const reach = CHECKED_SUPPRESSION_REACH[weapon] ?? { full: mortar.full * k, half: mortar.half * k, little: mortar.little * k };
+    if (nearestMan <= reach.full) return SUPPRESSION.indirect;
+    if (nearestMan <= reach.half) return SUPPRESSION.indirect / 2;
+    if (nearestMan <= reach.little) return SUPPRESSION.indirect / 4;
+    return 0;
+  }
+  const scale = Math.sqrt((LETHAL_AREA_M2[weapon] ?? LETHAL_AREA_M2.mortar!) / LETHAL_AREA_M2.mortar!);
   if (nearestMan <= SUPPRESSION_REACH_81MM.full * scale) return SUPPRESSION.indirect;
   if (nearestMan <= SUPPRESSION_REACH_81MM.half * scale) return SUPPRESSION.indirect / 2;
   return 0;
@@ -459,6 +471,11 @@ export function sideBroken(
 export interface FireNote {
   kind: "direct" | "explosive" | "assault" | "indirect" | "mine";
   /**
+   * A direct-fire explosive that costs the nerve of a bombardment, as a
+   * shell does (rules decision 81, `GameOptions.directHeBombards`).
+   */
+  bombards?: true;
+  /**
    * The bearing from the force to whoever fired, taken **where the force was
    * when the shot was taken** — a force caught mid-bound is judged on the
    * geometry of that shot, not of where it ended the turn. Absent for fire
@@ -744,7 +761,7 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
   for (const u of inPlay) {
     const notes = stress.get(u.id)?.firedOn ?? [];
     const firedOn = notes.length > 0;
-    const bombarded = notes.some((n) => n.kind === "indirect");
+    const bombarded = notes.some((n) => n.kind === "indirect" || n.bombards);
     const flanked = wasFlanked(u, notes);
     const ownDown = downCount.get(u.id) ?? 0;
     const ownWounded = woundedCount.get(u.id) ?? 0;

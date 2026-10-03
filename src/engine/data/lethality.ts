@@ -138,7 +138,7 @@ export interface RateOfFire {
 
 export const RATE_OF_FIRE: Readonly<Record<string, RateOfFire>> = {
   mortar: { low: 3, high: 30 },
-  artillery: { low: 2, high: 4 },
+  artillery: { low: 2, high: 5 }, // M777A2: sustained 2, maximum 5 a minute (USMC TBS, 2026-10-03; was 4)
   tankRound: { low: 1, high: 7 },
   rifleGrenade: { low: 1, high: 7 },
   rpgVsInfantry: { low: 1, high: 6 },
@@ -290,4 +290,109 @@ const RESEARCH_EXPLOSIVES: Readonly<Record<string, ExplosiveWeapon>> = Object.fr
  */
 export function explosiveFor(key: string, lethality: Lethality): ExplosiveWeapon | undefined {
   return lethality === "research" ? RESEARCH_EXPLOSIVES[key] : EXPLOSIVES[key];
+}
+
+/**
+ * The research figures as checked against the sources on 2026-10-03 (rules
+ * decision 79; docs/validation.md, *third pass*). A game plays them with
+ * `GameOptions.checkedFigures`, on for a new one; a recording made before
+ * reads it as off and replays on the research figures as they were.
+ */
+export const CHECKED_LETHAL_AREA_M2: Readonly<Record<string, number>> = {
+  ...LETHAL_AREA_M2,
+  // The 105 mm round on impact: 271–290 m² (390 m² was its air-burst figure).
+  tankRound: 280,
+  // An anti-tank charge as a 155 mm shell IED: about an 18 m radius.
+  atMine: 971,
+};
+
+/**
+ * An RPG against armour, by range: the 1976 US Army trial against a 5 ×
+ * 2.5 m panel moving at 4 m/s — 100% at 50 m, 96% at 100 m, 51% at 200 m,
+ * 22% at 300 m, 9% at 400 m, 4% at 500 m; "maximum effective range is 500
+ * meters" (GlobalSecurity). The document's: 50% to 200 m, 25% to 400 m,
+ * 10% to 700 m.
+ */
+export const CHECKED_RPG_VS_ARMOR_TO_HIT: readonly RangeBand[] = [
+  { maxRange: 50, value: 1 },
+  { maxRange: 100, value: 0.96 },
+  { maxRange: 200, value: 0.51 },
+  { maxRange: 300, value: 0.22 },
+  { maxRange: 400, value: 0.09 },
+  { maxRange: 500, value: 0.04 },
+];
+
+/**
+ * An anti-personnel charge as a Claymore: a 60° fan, 30% at 50 m and about
+ * 10% at 100 m (M18; read on the page). The document's is all round, 50% to
+ * 50 m and 25% to 100 m. The fan faces the way the enemy came.
+ */
+export const CHECKED_AP_CHARGE_BANDS: readonly RangeBand[] = [
+  { maxRange: 50, value: 0.3 },
+  { maxRange: 100, value: 0.1 },
+];
+export const CHECKED_AP_CHARGE_FAN_DEG = 60;
+
+/**
+ * How far a charge or a plain HE round reaches a vehicle, on the checked
+ * figures. A charge strikes the vehicle on it: 20 m (⚠️ ours; the document's
+ * 200 m has no source). Plain HE reaches a vehicle's tracks only within its
+ * blast against men — an 81 mm bomb near-miss does not immobilise a tank
+ * 100 m off (rules decision 79). Absent: the document's bands.
+ */
+export const CHECKED_VEHICLE_BANDS: Readonly<Record<string, readonly RangeBand[]>> = {
+  atMine: [{ maxRange: 20, value: 0.7 }],
+  apMine: [{ maxRange: 20, value: 0.5 }],
+};
+
+/**
+ * Which corrected figures a game plays on top of the research ones: none,
+ * the checked set (rules decision 79), or that set with ARES Special Report
+ * No. 3's indirect-fire figures (decision 80).
+ */
+export type Checked = false | "checked" | "ares";
+
+/**
+ * Lethal areas on ARES Special Report No. 3, *Indirect Fire* (2017), Tables
+ * 1.1–1.2 ("genericised estimates", after Cross et al. 2016): 155 mm 665 m²,
+ * 81 mm 250 m², 105 mm 495 m² (rules decision 80). A published report, where
+ * the research figures rest on one forum post; it calls them "fragmentation"
+ * areas without defining them. The 155 mm stands for a shell IED. Tank HE
+ * keeps decision 79's 280 m², not ARES's 495 m² for a 105 mm artillery
+ * round: GICHD's *Explosive Weapon Effects* (2017) found "tank munitions
+ * … a more limited lethal area than others" (author, 2026-10-03).
+ */
+export const ARES_LETHAL_AREA_M2: Readonly<Record<string, number>> = {
+  ...CHECKED_LETHAL_AREA_M2,
+  artillery: 665,
+  mortar: 250,
+  atMine: 665,
+};
+
+/** The lethal areas a game plays, by its corrected figures. */
+export function lethalAreas(checked: Checked): Readonly<Record<string, number>> {
+  return checked === "ares" ? ARES_LETHAL_AREA_M2 : checked === "checked" ? CHECKED_LETHAL_AREA_M2 : LETHAL_AREA_M2;
+}
+
+const correctedExplosives = (areas: Readonly<Record<string, number>>): Readonly<Record<string, ExplosiveWeapon>> => Object.fromEntries(
+  Object.entries(RESEARCH_EXPLOSIVES).map(([key, w]) => {
+    const area = areas[key];
+    return [
+      key,
+      {
+        ...w,
+        ...(area !== undefined ? { blastBands: blastBandsFromLethalArea(area) } : {}),
+        ...(key === "rpgVsArmor" ? { toHitBands: CHECKED_RPG_VS_ARMOR_TO_HIT } : {}),
+        ...(key === "apMine" ? { blastBands: CHECKED_AP_CHARGE_BANDS } : {}),
+      },
+    ];
+  }),
+);
+const CHECKED_EXPLOSIVES = correctedExplosives(CHECKED_LETHAL_AREA_M2);
+const ARES_EXPLOSIVES = correctedExplosives(ARES_LETHAL_AREA_M2);
+
+/** A weapon as a game plays it: the research figures, checked when `checked` (rules decision 79). */
+export function explosiveForChecked(key: string, lethality: Lethality, checked: Checked): ExplosiveWeapon | undefined {
+  if (lethality !== "research" || !checked) return explosiveFor(key, lethality);
+  return checked === "ares" ? ARES_EXPLOSIVES[key] : CHECKED_EXPLOSIVES[key];
 }

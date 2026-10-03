@@ -3568,6 +3568,144 @@ located: it is seen on the way and shelled. That is a real mistake —
 doctrine has reconnaissance before the move to an assault position — and
 the game punishes it as it should. `earlyup` stays as a rule variant.
 
+## Forty-eighth round: direct-fire HE as a shell, 2026-10-03
+
+Rules decision 75 puts tank rounds, RPGs and rifle grenades on the shell's
+rules: cover, posture, roofs, a blast that catches whoever is in it, men
+going to ground, suppression out to its reach. The standard measurement,
+200 battles a scenario from seed 1000, the same seeds with the switch
+(`directHeAsShell`) off and on:
+
+| | 3:1 wins | 2:1 wins | Attacker down (3:1 / 2:1) | Defender down | Out by HE |
+|---|---|---|---|---|---|
+| Off (as before) | 48% | 32% | 14% / 17% | 21% / 18% | 75% / 76% |
+| On (decision 75) | **42%** | **29%** | 15% / 18% | 20% / 17% | 74% / 75% |
+
+- **The attacker loses 6 and 3 points.** Its rifle grenades now meet a
+  defender that is dug in and under a roof: ×0.02 where they were ×1.
+  The defender's fire hardly changes, because the attacker is mostly in
+  the open, where a shell's factor is ×1 too.
+- **Both are still inside decision 68's targets** (40–55%, 20–35%), the
+  3:1 near the bottom. The reference plans' median was 42% and 24% before
+  this change. If it falls by as much, the 3:1 median drops below 40%:
+  the reference plans should be measured again before any ruling on it.
+- **A side effect in the drill:** a defending squad displaces to its
+  alternate position once it has been shelled (`drill.displace` reads
+  `downUnderShelling`). A direct HE round that hits now sets that too, so
+  a rifle grenade can move a defender out. Not separated from the rest in
+  these figures.
+- 200 battles put about ±3.5 points of noise on each figure. The 3:1
+  drop is beyond that; the 2:1 drop is within it.
+- **The baseline has drifted.** With the switch off, the standard
+  measurement now gives 48% / 32%; the handoff records 49% / 27%. The
+  difference was already there before this change.
+
+## Forty-ninth round: buildings, critical hits and armour, 2026-10-03
+
+Rules decisions 76–78, the standard measurement, 200 battles a scenario
+from seed 1000, all three off and all three on:
+
+| | 3:1 wins | 2:1 wins | Attacker down | Defender down |
+|---|---|---|---|---|
+| Off (decision 75 alone) | 42% | 29% | 15% / 18% | 20% / 17% |
+| On | 43% | 29% | 15% / 18% | 20% / 17% |
+| Critical hits alone | 43% | 29% | 15% / 18% | 20% / 17% |
+
+- **These battles cannot measure most of today's work.** Tel Azeka has
+  no buildings, and the assault scenarios have no vehicles. The only
+  part they exercise is the firing slit: the attacker's rifle grenades
+  on the defender's prepared positions, within 150 m. That moves
+  nothing beyond the noise.
+- **Building damage and armour need a battle with both.** Yokneam has
+  249 buildings and one tank, but it is not in the harness. A scenario
+  with an attack into a village, with APCs, is the test bed these
+  rules need.
+
+## Fiftieth round: the urban test bed, 2026-10-03
+
+`yokneamUrban` (tools/scenarios/yokneam-urban.json): BLUE has a company,
+two tanks and two Namer APCs in the low ground north of Yokneam. RED has a
+platoon in prepared houses on the north-west edge of the town on the hill,
+about 450 m off and 80 m up. The drill now fires a tank's main gun out to
+1,500 m and a squad's RPG at armour out to 300 m (`SquadDrill.heavyWeapons`,
+⚠️ ours). The runner reports buildings and vehicles in a second table.
+Standard measurement, 100 battles from seed 1000:
+
+| | Attacker wins | Defender wins (out of time) | Turns | Attacker down | Defender down | Out by HE |
+|---|---|---|---|---|---|---|
+| yokneamUrban | 32% | 66% (14%) | 15 | 11% | 29% | 98% |
+| telAzekaAssault, same day | 44% | 55% (4%) | 26 | 14% | 22% | 73% |
+
+| | Buildings damaged | Rubble | Window / slit criticals | Roof criticals | Men buried | Vehicles out (BLUE) |
+|---|---|---|---|---|---|---|
+| yokneamUrban | 1.1 | 0 | 3.0 | 0 | 0 | 57% |
+
+- **The tanks fire about 5 main-gun rounds a battle, and the RPGs about
+  2.** The town's houses average 208 m², twice the reference house, so
+  one needs about 20 tank rounds to come down. No house was brought down.
+- **57% of BLUE's vehicles end the battle immobilised, every one by its
+  tracks**, with track damage of up to 90 points. The cause is the
+  document's HE-against-tracks roll (decision 3): 20% for 2 points on
+  any vehicle within the blast, read off the document's bands (100 m for
+  a mortar bomb). RED's mortars, fired at BLUE's infantry, keep catching
+  the vehicles beside them. That makes the 81 mm the best anti-tank weapon
+  on the field. Open, for the author.
+- **Out by HE is 98%**: the defender's losses come from the tanks' main
+  guns, three window criticals a battle among them.
+
+## Fifty-first round: the figures checked against the sources, 2026-10-03
+
+Rules decision 79 is on and off, on the same seeds: 200 battles a
+scenario from seed 1000, standard measurement.
+
+| | Off: attacker wins | On: attacker wins | Off / on: attacker down | Off / on: defender down |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 43% | **49%** | 15% / 12% | 20% / 21% |
+| telAzekaAssault2 (2:1) | 29% | **39%** | 18% / 15% | 17% / 18% |
+| yokneamUrban | 38% | **17%** | 10% / 11% | 30% / 23% |
+
+| | Off | On |
+|---|---|---|
+| Urban: BLUE's vehicles out | 53% | 25% |
+| Urban: window / slit criticals a battle | 3.2 | 3.2 |
+| Urban: buildings damaged a battle | 1.1 | 1.1 |
+
+- **On the tel the attacker gains.** Weaker charges (a 60° fan at
+  30%) and suppression out to 125 m both work for it, and it loses
+  fewer men.
+- **2:1 is now 39%, above decision 68's 20–35%.** For the author: the
+  checked figures and the targets disagree, and nothing is retuned here.
+- **In the town the attacker loses ground.** Its tanks' HE is smaller
+  (280 m² against 390 m²), so the defender loses 23% where it lost 30%.
+  The mortars no longer immobilise its vehicles by near misses.
+
+## Fifty-second round: ARES's indirect-fire figures, 2026-10-03
+
+Rules decision 80 on and off, with decision 79 on; same seeds, 200
+battles a scenario.
+
+| | Off: attacker wins | On: attacker wins | Off / on: out by HE | Off / on: defender down |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 49% | **41%** | 70% / 64% | 21% / 19% |
+| telAzekaAssault2 (2:1) | 39% | **36%** | 71% / 64% | 18% / 16% |
+| yokneamUrban | 17% | **36%** | 98% / 98% | 23% / 29% |
+
+- **The mortars kill fewer on the tel.** The 81 mm's area is now 250 m²
+  (was 476), so the defender is worn down less before the assault, and
+  explosives' share falls to 64%, below decision 43's 75%.
+- **The 2:1 attack is 36%,** just above decision 68's 20–35%. The 3:1
+  attack is 41%, inside its 40–55%.
+- **In the town the tanks matter more.** HE at 495 m² rather than 280 m²
+  puts the defender's losses up from 23% to 29%, and the attacker's wins
+  from 17% to 36%. BLUE's vehicles out: 19%.
+- **Tank HE back at 280 m²** (author, after GICHD's *Explosive Weapon
+  Effects*: "tank munitions … a more limited lethal area than others").
+  The urban attack is **18%** (defender down 23%, BLUE vehicles out 21%,
+  200 battles). The tel battles have no tanks and do not move.
+- For the author: ARES calls its areas "fragmentation" areas and never
+  defines them. If they are smaller than lethal areas in the JMEM sense,
+  this round understates the shells.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

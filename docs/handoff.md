@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-03: the author's rulings on the open questions (README decision 81: explosives 60–80%, 2:1 accepted, direct HE bombards, house types and a force-quality matrix to come, traits go-ahead after merge). Before that: the urban test bed (`yokneamUrban`), the figures checked against the sources (decision 79) and ARES's indirect-fire figures (decision 80). Now: tel 3:1 41%, 2:1 36% (just above target), explosives' share 64% (below decision 43's 75%), urban 36%. Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -17,6 +17,10 @@ out of here on purpose:
   committing, written for any reviewer of any make.
 - [docs/driving-the-game.md](driving-the-game.md) — scripting the browser to
   verify a change for real.
+- [docs/sources.md](sources.md) — the reference library: every report and
+  page the numbers were checked against, where to find it, how far it was
+  read, the figures in play with their sources, and the air-delivered
+  munition figures for when air support comes (backlog 10).
 - [docs/business-plan.md](business-plan.md) — who it is for, editions, free
   and paid, build order, and the open business items.
 - [docs/validation.md](validation.md) — the game's numbers against the
@@ -25,7 +29,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 804 tests, 48 files
+npm run check       lint + typecheck clean, 856 tests, 52 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -80,16 +84,23 @@ govern the next step:
    for the manuals the author has collected, which are on the author's
    computer and are to be embedded too (author, 2026-10-02).
 
-**Where the balance stands** (balance.md, thirty-seventh to forty-seventh
-rounds; README, decisions 67–68):
+**Where the balance stands, 2026-10-03** (balance.md, fiftieth to
+fifty-second rounds; README, decisions 75–80; every figure in play and its
+source in [sources.md](sources.md)). Standard measurement, 200 battles each:
 
-| Measure | 3:1 | 2:1 | Target / source |
-|---|---|---|---|
-| Reference plans' median (A–E, the hasty attack with three scouts) | **42%** | **24%** | 40–55%, 20–35% (decision 68) |
-| Standard measurement (the calibrated plan, 200 battles) | 49% | 27% | — |
-| A failed attack's cost to the attacker (killed and wounded) | 16–22% | | 10–25% |
-| A won attack: attacker / defender lost | 6–14% / ~50% | | 5–20% / 40–90% |
-| Explosives' share on the tel | 72–75% | | 75% (author) |
+| Measure | Now | Target / source |
+|---|---|---|
+| Tel Azeka 3:1 | **41%** | 40–55% (decision 68) |
+| Tel Azeka 2:1 | **36%** | 20–35%; accepted (decision 81) |
+| Yokneam urban (company, 2 tanks, 2 APCs against a platoon in houses) | **18%** | — (the test bed for decisions 75–78) |
+| Explosives' share of losses, tel | **64%** | 60–80% (decision 81) |
+| Urban: BLUE's vehicles out a battle | 21% | — |
+| Urban: window / slit criticals a battle | 3.2 | — |
+
+The author looked at these and found them fine (2026-10-03). Before
+decisions 75–80 the same measurement gave 49% and 27%. The reference
+plans (below) have not been measured since; their medians were 42% and 24%
+on 2026-10-01.
 
 The **reference plans** are `--rule` variants of `npm run jev-sim` (A
 calibrated `—`; A + flank `flank`; B deliberate `basefire,bound,holdshort`;
@@ -173,15 +184,30 @@ How the last two days went, round by round, is in
    victory conditions, reserves, the OPORD, fire on the move and the hasty
    attack's ruling. Then the reference plans measured again on doctrinal
    drills.
-2. **Direct-fire HE** (tanks, RPGs, rifle grenades, ATGMs) — the author
-   asked for the review now (2026-10-02): the document's tables
-   (`resolveDirectExplosive`, the `EXPLOSIVES` entries with
-   `delivery: "directFire"`), what decisions 29–31 and 62 changed for
-   indirect fire only (a tank round or an RPG still ignores cover, posture
-   and roofs), and the sources — a proposal for the author to rule on.
-   Needs no manuals.
-3. **Build the traits** (decisions 69, 71, 72) — ruled, waiting for the
-   go-ahead; measure the reference plans with them on. **The MOS**
+2. **Direct-fire HE** — **done 2026-10-03** as rules decision 75: the
+   author's ruling was to put it on the same rules as indirect fire, and
+   it is on for a new game (`directHeAsShell`). It cost the attacker
+   6 / 3 points on the standard measurement (48% → 42%, 32% → 29%;
+   balance.md, *Forty-eighth round*). Left open: **measure the reference
+   plans again under it**, since the 3:1 median was 42% before and may
+   now fall below decision 68's 40%; the armour damage table (a flat 20%
+   penetration whatever the weapon and facing), which this did not touch;
+   and whether direct HE should cost `bombarded` nerve like a shell.
+2a. **Buildings, critical hits, armour** — **built 2026-10-03** as rules
+   decisions 76–78, on by default. Most of their figures are ours (⚠️ in
+   the README; sources on validation.md). They could not be measured: the
+   harness's battles have no buildings and no vehicles (balance.md,
+   *Forty-ninth round*). **The test bed is built**: `yokneamUrban`
+   (balance.md, fiftieth to fifty-second rounds), 18% for the attacker
+   today. Its houses are twice the reference size, so none comes down in a
+   battle (about 5 tank rounds a battle against about 20 needed). The
+   sources were read on the page on
+   2026-10-03 (validation.md, *second pass*), and four rules were
+   corrected from them. Still unsourced: rounds to bring a house down,
+   window, slit and roof chances. Not built: rubble slowing
+   movement, breaching walls, an ATGM weapon, machine guns against light
+   vehicles, active protection, passengers.
+3. **Build the traits** (decisions 69, 71, 72) — **go-ahead given 2026-10-03** (decision 81), after this branch is merged and discussed; measure the reference plans with them on. **The MOS**
    (decision 73) needs the doctrine's squad organisation first, and moves
    weapons from the force to the man; **campaign traits** (74) wait for
    campaigns (backlog 16).
@@ -192,7 +218,8 @@ How the last two days went, round by round, is in
    (scouts, moving up, bounding) exist only in the headless harness.
 5. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
    evaluate once by rule from the side's belief) — after 1.
-6. **Flat-ground misses**, **overhead cover for higher echelons**,
+6. **Force quality matrix** (decision 81): force type × experience, 3 × 3, today's breakpoints being the regular / experienced cell; morale driven by both. **House types** (decision 81), with the urban combat work.
+7. **Flat-ground misses**, **overhead cover for higher echelons**,
    **ammunition** (backlog 12) — for battalion battles.
 
 ## Waiting on the author
@@ -399,8 +426,9 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 *Start here*'s **Open** list is the order. While the manuals are not
-here, the direct-fire HE review is the one item that can start without
-them; building the traits waits for the author's go-ahead. Mission and
+here: measure the reference plans under decision 75 (item 2), then the
+armour damage table; building the traits waits for the author's
+go-ahead. Mission and
 victory conditions (backlog 18) are to come from doctrine.
 
 ## Traps that cost real time
