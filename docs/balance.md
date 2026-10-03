@@ -3954,6 +3954,42 @@ reconnaissance, no coordination). The deliberate plan's four turns of
 fire before moving buy nothing that lasts: suppression halves every turn.
 The variant is withdrawn; nothing in the drill changed.
 
+## Fifty-seventh round: the hasty plan renamed, 2026-10-03
+
+The author's ruling (2026-10-03, after the fifty-sixth round): **rename,
+don't retune.** The forty-third round's plan C (three scouts, in as soon as
+the enemy is found, `--rule rush`) is fire and movement, not a hasty attack
+in history's sense: it has the company's full reconnaissance, and it goes
+as its first missions land. From here:
+
+- **C. Fire and movement** (`rush`): three scouts, in as soon as the enemy
+  is found. What the tables since the forty-third round call "C. Hasty".
+- **H. Hasty** (`onescout,rush`): one scout, in as soon as it finds the
+  enemy — history's hasty attack, short of reconnaissance (validation.md,
+  *Hasty and deliberate attacks*: 15–35% at 3:1).
+
+Measured, traits on, 100 battles from seed 1000:
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| **H. Hasty** (one scout) | **29%** | **17%** |
+| Two scouts, in as soon as found (`twoscouts,rush`) | 45% | 36% |
+| C. Fire and movement (three scouts; pooled, fifty-fourth round) | 43% | 25% |
+| A. Calibrated (pooled) | 38.5% | — |
+| B. Deliberate (pooled) | 26% | — |
+| **History, hasty** | **15–35%** | — |
+
+- **The hasty attack is where history puts it** (29% against 15–35%), and
+  about ten points under the calibrated plan; history has the gap at
+  20–35. Reconnaissance is what it lacks: a second scout is worth 16
+  points.
+- **Plan B (base of fire, bounding, holding short) is still the weakest
+  of the deliberate plans** (26%), for the fifty-sixth round's reasons: its
+  base of fire is riflemen, and its waiting outlasts its suppression. The
+  plan, not the game, is what the doctrine manuals are to settle.
+- The reference set keeps its eight plans with C renamed; H is measured
+  beside them as history's check, not counted in the median.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

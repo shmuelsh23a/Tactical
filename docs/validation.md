@@ -972,6 +972,11 @@ on prepared positions at small-unit level.
 | ORS, Operation Veritable (1945) | infantry close behind a heavy fire plan took 1,115 prisoners for 349 losses in 16 battalion attacks | via [Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/) |
 | Sinai, 8 October 1973 | unsupported armoured counterattacks on dug-in infantry with ATGMs failed badly | [Israel State Archives](https://catalog.archives.gov.il/en/chapter/8-9-october-counter-attack-and-failure-in-the-south-recovery-in-the-north/) |
 
+**Since 2026-10-03** (balance.md, fifty-seventh round) the game's hasty
+attack is one scout and in as soon as the enemy is found: 29% at 3:1. The
+three-scout plan that goes at once is *fire and movement*, not a hasty
+attack.
+
 **Read together** (a judgement, ±10 points): a hasty company attack on a
 prepared platoon at 3:1 wins about 15–35%; the gap to a deliberate attack is
 about 20–35 points; preparatory fire is the larger and better-supported part
