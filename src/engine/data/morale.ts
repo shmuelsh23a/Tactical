@@ -227,8 +227,10 @@ export const SIDE_BREAK_SHARE = 2 / 3;
  * The same, by posture, on the research figures (rules decision 44, the
  * author, 2026-09-28: "adapt the morale to historical rules of thumb"): an
  * attack stops at about 20–25% losses, and a defence cannot hold at about 40%
- * (the Dupuy Institute's breakpoints; US doctrine calls a unit destroyed at
- * 30%). A side counts down, broken and fled men against these, so they sit
+ * (FM 105-5, 1964, as the Dupuy Institute reports it — which adds that it
+ * has "never found any studies establishing the data", and that the data
+ * reject a fixed breakpoint: docs/validation.md, *third pass*; US doctrine
+ * calls a unit destroyed at 30%). A side counts down, broken and fled men against these, so they sit
  * above the losses they stand for; they are set so that the **casualties** at
  * the break come out at the rule of thumb in the balance harness — an attacker
  * at a median 19–25%, a defender at 33–49% (docs/validation.md, *Where a side

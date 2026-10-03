@@ -127,16 +127,19 @@ export type ArmourFacing = "front" | "side" | "rear";
  */
 export const PENETRATION: Readonly<Record<string, Record<VehicleClass, Record<ArmourFacing, number>>>> = {
   // A tank fires a kinetic round at armour (120 mm APFSDS).
+  // The heavy APC's front is the tank's: the Namer is "more heavily armored
+  // than the Merkava IV tanks" (Brig. Gen. Livnat; read on the page,
+  // 2026-10-03). Its sides and rear stay estimates.
   tankRound: {
     mbt: { front: 0.4, side: 1, rear: 1 },
-    heavyApc: { front: 0.6, side: 1, rear: 1 },
+    heavyApc: { front: 0.4, side: 1, rear: 1 },
     lightApc: { front: 1, side: 1, rear: 1 },
     soft: { front: 1, side: 1, rear: 1 },
   },
   // RPG-7, PG-7VL / VR.
   rpgVsArmor: {
     mbt: { front: 0.02, side: 0.4, rear: 0.9 },
-    heavyApc: { front: 0.05, side: 0.5, rear: 0.95 },
+    heavyApc: { front: 0.02, side: 0.5, rear: 0.95 },
     lightApc: { front: 1, side: 1, rear: 1 },
     soft: { front: 1, side: 1, rear: 1 },
   },

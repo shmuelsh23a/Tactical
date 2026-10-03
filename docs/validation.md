@@ -1038,7 +1038,7 @@ page.
 
 | Figure | Source | Status |
 |---|---|---|
-| PG-7V 260 mm, PG-7VL 500 mm, PG-7VR 600–750 mm | modernfirearms.net; globalsecurity rpg-7-specs; defense-update | Published |
+| PG-7V 260 mm, PG-7VL 500 mm, PG-7VR 600 mm behind reactive armour, 900 mm bare | modernfirearms.net; globalsecurity rpg-7-specs; defense-update | Published |
 | Kornet 1,000–1,200 mm | AT-14 articles | Published |
 | 120 mm APFSDS 700–850 mm at 2 km | Wikipedia M829: "very little is publicly known" | Estimate |
 | Merkava 4, Namer, Achzarit armour by facing | Forum estimates; army-technology: Namer "equal to Merkava 4" | **Estimate: classified** |
@@ -1138,6 +1138,96 @@ kills about a quarter of them at once; the game does not model that yet.
 **Still found nowhere:** the number of rounds that brings a house down,
 the chance a direct round goes in through a window or a slit, or the
 chance a shell goes through a roof. They remain ours.
+
+## The figures still marked ours: third pass (2026-10-03)
+
+Three searches, each through a fetch service and Consensus. **Page** marks
+a figure read on the page itself. **Abstract** marks a peer-reviewed
+abstract. DTIC was down for maintenance all day, so the BRL tank-accuracy
+report, *Heavy artillery in MOUT* and Frame's WWII suppression data are
+still unread.
+
+**Confirmed on the page**
+- FM 7-90, app. B-7: an 81 mm round "within 30 meters … will probably be
+  suppressed"; "within 75 meters … a 50 percent chance"; "beyond 125
+  meters, little suppression". Decision 63's 30 m and 75 m.
+- RPG-7: PG-7V 260 mm, PG-7VL more than 500 mm (Wikipedia, citing
+  Rosoboronexport). Kornet: 1,000 mm or more behind reactive armour (KBP).
+  The M113 "was only designed for 7.62 mm and shell splinter protection".
+- 40 mm HEDP: "casualties within a 5-meter radius" (FAS), hence 79 m².
+  OG-7V: a lethal radius of 7 m, hence 154 m². That figure is for the
+  anti-personnel round only.
+- Mortar rates "8–16 rpm sustained, 20–30 … for short periods" (M252). The
+  RPG's 6 a minute; 155 mm sustained 2 a minute.
+- One grenadier to a fire team of four (US fireteam).
+- Infantry pace under fire: assault simulations average 15–23 m a minute
+  (Silk 2013, *Mil Med*; Billing 2015, *JSCR*; abstracts).
+
+**Contradicted**
+- **Namer:** "more heavily armored than the Merkava IV tanks" (Brig. Gen.
+  Livnat, page). Decision 78 had the heavy APC's front weaker than a tank's.
+- **PG-7VR:** 600 mm behind reactive armour and 900 mm without it (page).
+  The first pass had 600–750 mm.
+- **155 mm maximum rate:** 5 a minute (M777A2, USMC TBS *Principles of
+  Fire Support*, page), not 4.
+- **Lethal areas rest on one forum post.** The 971 / 346 m² for 155 mm
+  are a 2025 post on secretprojects.co.uk. Its author says JMEM is
+  classified and derives the figures from BRL 530 and Mott's formulas.
+  The same thread gives the 105 mm round **271–290 m² on impact**; 390 m²
+  is its *air-burst* figure. The 130 m² "foxhole" figure is on the
+  air-burst row.
+- **Prone against standing:** FM 7-90 B-5a, page: "Mortar fire against
+  standing enemy forces is almost twice as effective as fire against
+  prone targets". That puts prone at about **0.5** for mortars, where
+  decision 30 has 0.36 from the 155 mm lethal areas.
+- **Suppression reach of other weapons:** FM 7-90 gives a table, where
+  decision 63 scales by the square root of lethal area:
+
+  | Weapon | Probable | 50% | Little beyond |
+  |---|---|---|---|
+  | 60 mm | 20 m | 35 m | 50 m |
+  | 81 mm | 30 m | 75 m | 125 m |
+  | Heavy mortar, proximity fuze | 65 m | 125 m | 200 m |
+
+- **Breakpoints:** the Dupuy Institute (page) attributes the attacker's
+  20% and the defender's 40% to FM 105-5 (1964), and says it has "never
+  found any studies establishing the data". The data, quoted on the same
+  page, reject any fixed breakpoint:
+  - Clark (1954, 43 battalions): losses at the end ran from about 1% to
+    nearly 100%.
+  - McQuie (1987): most forces quit at under 10% casualties, and enemy
+    manoeuvre, not losses, was the reason in 64% of cases.
+
+  Decisions 44, 49 and 67 cited "the Dupuy Institute's breakpoints"; the
+  doctrine is FM 105-5's.
+- **RPG against armour** (1976 US Army trial, moving 5 × 2.5 m panel,
+  page): 100% at 50 m, 96% at 100 m, 51% at 200 m, 22% at 300 m, 9% at
+  400 m, 4% at 500 m. The document's 50% to 200 m is low close in, and its
+  10% to 700 m is high; "maximum effective range is 500 meters".
+- **Charges** (M18 Claymore, page): a 60° fan; "30%" at 50 m and "around
+  10%" at 100 m. The document's charges are all round, at 50% to 50 m and
+  25% to 100 m, and its anti-tank charge reaches 200 m. Nothing supports
+  that reach; a 155 mm IED is about an 18 m radius.
+- **Range estimates** (Leaper et al. 2023, abstract; sightings at sea):
+  the naked eye's distance error is about 39%, and with reticle binoculars
+  19–33%. Decision 51 has 20%, and decision 54 halves it.
+
+**Still unsourced:**
+- the tank gun's 90% to 2,000 m;
+- RPG hit chances against men;
+- fatigue;
+- a charge's 50% activation;
+- the UAV's chances of finding charges;
+- detection beyond 20 m (the one trial found, Le et al. 2024, has the best
+  camouflage first seen at 30–35 m);
+- rounds to bring a house down (a Ukrainian survey, page: 20 direct shell
+  hits leave a large panel block unfit, not rubble);
+- window, slit and roof chances;
+- an M113's or a truck's chance of burning (Grozny, Grau 1997, page: 3–6
+  lethal hits for each vehicle destroyed);
+- the size of a roof's effect on suppression, and heads down;
+- nerve lost per turn;
+- the assault nerve test.
 
 ## Open
 

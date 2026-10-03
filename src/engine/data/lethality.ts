@@ -138,7 +138,7 @@ export interface RateOfFire {
 
 export const RATE_OF_FIRE: Readonly<Record<string, RateOfFire>> = {
   mortar: { low: 3, high: 30 },
-  artillery: { low: 2, high: 4 },
+  artillery: { low: 2, high: 5 }, // M777A2: sustained 2, maximum 5 a minute (USMC TBS, 2026-10-03; was 4)
   tankRound: { low: 1, high: 7 },
   rifleGrenade: { low: 1, high: 7 },
   rpgVsInfantry: { low: 1, high: 6 },
