@@ -426,9 +426,10 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 *Start here*'s **Open** list is the order. While the manuals are not
-here: the author's call on the reference plans' 3:1 median (balance.md,
-fifty-third round), then the force-quality matrix (decision 81). Mission and
-victory conditions (backlog 18) are to come from doctrine.
+here: the force-quality matrix (decision 81), then house types for the
+urban work. Mission and victory conditions (backlog 18) and the **base of
+fire** (machine guns a commander pulls out to form it; README backlog 21)
+are to come from doctrine.
 
 ## Traps that cost real time
 

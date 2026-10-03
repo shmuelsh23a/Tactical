@@ -103,7 +103,11 @@ What the game plays today (`src/app/drill.ts`, `src/app/company.ts`,
   enemy as found (`ASSAULT_POSITION_M`, sought within 150 m); **going round a
   flank** — dead ground 200 m to the side and 100 m back (`FLANK_*`).
 - **Base of fire** — a platoon halts within its fire range (400 m,
-  `attackFireRange`; Western 300) and fires.
+  `attackFireRange`; Western 300) and fires. **Open (author, 2026-10-03):** a
+  platoon or company commander can pull some of his machine guns to form
+  it; today it is riflemen only, and costs the deliberate plan about ten
+  points (balance.md, fifty-sixth round). Who, with which weapons, where and
+  for how long — from the manuals.
 - **Holding short and lifting the fires** — squads stop 200 m from the enemy
   under their own mortars until the fires lift (`HOLD_SHORT_M`).
 - **The assault** — at 25 m, with grenades (`assault`); grenadiers one

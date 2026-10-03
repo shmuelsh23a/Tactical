@@ -3163,6 +3163,13 @@ Each is intended to be an independent, toggleable module:
       manual paragraph as *matches*, *ours and differs*, or *ours, doctrine
       silent*. Then the drills rewritten to doctrine, and the reference plans
       (balance.md, thirty-seventh to forty-fifth rounds) measured again.
+    - **The base of fire, after the doctrine** (author, 2026-10-03). A
+      platoon or company commander can pull some of his machine guns out to
+      form a base of fire; today a base-of-fire platoon fires its riflemen
+      only, which costs the deliberate plan about ten points (docs/balance.md,
+      fifty-sixth round). Who forms it, with which weapons, from where and
+      for how long is to be taken from the manuals, with the soldiers'
+      weapons (decision 73), not tuned here.
     Relation to backlog 20: the TTP editor is how an instructor changes a
     drill; this is where the default drills come from.
     The brief for that session: [docs/doctrine-handoff.md](docs/doctrine-handoff.md).
