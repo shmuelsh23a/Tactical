@@ -3918,6 +3918,42 @@ within 50 m of a defending one; the defenders' mean suppression then):
   Doctrine's base of fire is machine guns; the game's squads carry
   rifles and grenade launchers only.
 
+### Timing the assault with the fires: tried and withdrawn
+
+The author chose to fix it in the drill (2026-10-03): keep missions back
+and fire them as the squads close. Tried as a rule variant (`reserve-N`):
+the last N of the 12 missions fall only on a mark a squad is within 300 m
+of, and stay on until the squads are 100 m from it (decision 63, S4).
+Tel 3:1, 100 battles, traits on:
+
+| Plan | Without | N 6 | N 8 | N 10 |
+|---|---|---|---|---|
+| B. Deliberate (base of fire, bounding, no hold short) | 28–32% | 13% | 2% | 0% |
+| A. Calibrated | 42% | — | 10% | — |
+| D. Flank | 20% | — | 5% | — |
+
+(Kept back only until the company goes, the reserve changed nothing: the
+plans had fired four or five missions by then. Calibrated with 8 kept to
+the go: 48%, against 42%.)
+
+**Holding fire for the assault is worse, by far.** The section fires one
+mission a turn, so 12 missions are 12 minutes of fire. Held back, nothing
+keeps the defence's heads down while the squads cross the open 300–400 m
+in front of it, and close in the scouts are seldom sure enough of a mark to
+fire on. The thirty-fourth round found the same of Jev holding every
+mission until the company went (about 30 points).
+
+**Read:** in the game the fires work as cover for the crossing, and the
+crossing is long (about 10 turns from 300 m, at half pace under fire). The
+plan that goes the moment the enemy is found, under the fires as they
+begin, crosses while they fall. That is what the forty-third round's
+"hasty" plan does: three scouts on their posts, the enemy found and
+reported, the company going as the first missions land. It is fire and
+movement together, not a hasty attack in history's sense (no
+reconnaissance, no coordination). The deliberate plan's four turns of
+fire before moving buy nothing that lasts: suppression halves every turn.
+The variant is withdrawn; nothing in the drill changed.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
