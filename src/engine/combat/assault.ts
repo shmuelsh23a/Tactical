@@ -98,8 +98,9 @@ export function resolveAssault(
   const accuracy = shooterAccuracy(attacker);
   for (let i = 0; i < accuracy.length; i++) {
     if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
-    result.fireHits++;
     const hit = woundHit(rng, defender, turn, "smallArms");
+    if (hit.missed) continue; // a lucky man (rules decision 69)
+    result.fireHits++;
     result.fireDamage += hit.damage;
     if (hit.casualty) result.defenderCasualties++;
   }
@@ -118,8 +119,8 @@ export function resolveAssault(
         result.defenderCasualties += caught.newCasualties;
       }
     } else if (rng.chance(ASSAULT.grenadeHitChance)) {
-      result.grenadeHits++;
       const hit = woundHit(rng, defender, turn, "explosive");
+      if (!hit.missed) result.grenadeHits++;
       result.grenadeDamage += hit.damage;
       if (hit.casualty) result.defenderCasualties++;
     }
@@ -133,8 +134,9 @@ export function resolveAssault(
     const reply = { chance: opts.replyChance, shooters: replyAccuracy.length, hits: 0, damage: 0, casualties: 0 };
     for (const accuracy of replyAccuracy) {
       if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
-      reply.hits++;
       const hit = woundHit(rng, attacker, turn, "smallArms");
+      if (hit.missed) continue; // a lucky man (rules decision 69)
+      reply.hits++;
       reply.damage += hit.damage;
       if (hit.casualty) reply.casualties++;
     }

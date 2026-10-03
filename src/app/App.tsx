@@ -8,7 +8,6 @@ import {
   CAMOUFLAGE,
   CHARGE_LAYING,
   DIG_IN,
-  MOVEMENT_PROFILES,
   OBSERVATION_SECTOR,
   SCOUTING,
   SMOKE_DURATION_TURNS,
@@ -20,7 +19,6 @@ import {
   orderInterval,
   sealRecording,
   sectorBonus,
-  suppressionLevel,
   type ChargeWorkReport,
   type ForceMorale,
   type MoraleReport,
@@ -357,15 +355,9 @@ export function App({ scenario, onLeave }: AppProps) {
   /** A scouting force walks, so the range ring must show the walk. */
   const scoutingSelected = selectedOwn?.scouting ?? false;
   const effectiveGait: Gait = scoutingSelected ? "normal" : gait;
+  // The engine's own budget: under fire, a rush at its slowest man's pace, tired men (decisions 69, 71, 82).
   const moveCap =
-    selectedOwn && enginePhase === "movement" && selectedCanManoeuvre
-      ? Math.max(
-          0,
-          MOVEMENT_PROFILES[effectiveGait].maxDistance *
-            (selectedOwn.underFire || suppressionLevel(selectedOwn) !== "none" ? 0.5 : 1) -
-            selectedOwn.movedThisTurn,
-        )
-      : null;
+    selectedOwn && enginePhase === "movement" && selectedCanManoeuvre ? game.moveBudget(selectedOwn.id, effectiveGait) : null;
 
   const orderInfo: OrderInfo | null =
     selectedOwn && selectedOwn.kind !== "command" && commandGroup

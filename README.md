@@ -2180,7 +2180,7 @@ on the stated reasoning, still awaiting the author's word.
     reasonable plans' median 42% and 24% (docs/balance.md, fortieth round).
     `TARGETS` in `src/sim/balance.ts`.
 69. ✅ **What the traits do beyond morale** (author, 2026-10-02 — the
-    traits session decision 19 left open). **Ruled, not built.** Each
+    traits session decision 19 left open). **Built 2026-10-03 (decision 82).** Each
     effect applies **per soldier**, to his own actions, and is worth up to
     **±20%** at a trait of 1 or 10 against the average (5–6):
     - **Strength**: pace under load (climbing, long rushes) and pace while
@@ -2193,24 +2193,26 @@ on the stated reasoning, still awaiting the author's word.
       from a kill towards a wound.
     - **Charisma**: unchanged (leadership, and steadying comrades out of a
       leader's reach).
-    - **A force moves at its slowest man's pace.**
+    - **A force moves at its slowest man's pace** — on a rush only, as
+      built (author, 2026-10-03, decision 82).
 
     ⚠️ Ours, to settle when it is built: the ±20% scaled linearly from 5.5
     to the extremes; luck's shift applied to decision 26's d10 (no new
     die); where a roll is made once for the force (detection), the trait of
     the man it belongs to (the best observer) rather than a roll per man —
     a new draw per man would reorder the rng; a `GameOptions` flag, needing
-    `morale` (the traits are drawn only with it), off by default so games
-    and recordings play as before. **Expect it to move the balance**: the
-    slowest of eight men is usually well below average, so nearly every
-    squad slows — the reference plans are to be measured with it on before
-    it is called done.
+    `morale` (the traits are drawn only with it). **As built (decision
+    82):** on for a new game and off for a recording made before it, like
+    every switch since decision 75; it did move the balance (the slowest man
+    at every gait cost the 3:1 attack 14 points), and the author ruled it
+    to a rush. The traits are drawn as ⌈2d10 ÷ 2⌉, whose mean is 5.75, not
+    5.5: an average force leans about 1% up on each effect.
 70. ✅ **Fire support is set per scenario, not by the odds** (author,
     2026-10-02, answering the question of 2026-09-28). An attacker at 3:1
     brings what its scenario spec gives it; no rule scales missions or
     tubes with the force ratio.
 71. ✅ **Fatigue, by strength** (author, 2026-10-02, after a survey of
-    Combat Mission, Close Combat and Battle Brothers). **Ruled, not built.**
+    Combat Mission, Close Combat and Battle Brothers). **Built 2026-10-03 (decision 82).**
     Each man keeps a fatigue count that rises with running, climbing and
     being under fire and falls each quiet turn; his strength sets how much
     he takes before it tells. A tired man moves slower and shoots worse.
@@ -2218,8 +2220,8 @@ on the stated reasoning, still awaiting the author's word.
     and the penalties — measured, with the sources where they exist. One
     counter per man, updated at end of turn: no sight lines, no new draws.
 72. ✅ **Who fires first, by agility** (author, 2026-10-02; Battle
-    Brothers' initiative, Jagged Alliance 2's interrupts). **Ruled, not
-    built.** Suppression lands with the fire (decision 63), so the order of
+    Brothers' initiative, Jagged Alliance 2's interrupts). **Built
+    2026-10-03 (decision 82).** Suppression lands with the fire (decision 63), so the order of
     the fire phase matters; forces fire in order of their men's agility.
     ⚠️ Ours: posture still comes first (a force already aiming beats one on
     the move), and how a force's agility is read (its men's mean). One sort
@@ -2523,6 +2525,48 @@ on the stated reasoning, still awaiting the author's word.
       and `motivation` per force; the matrix replaces or maps them.
     - **The traits** (decisions 69, 71, 72): **go-ahead to build**, after
       this branch is merged and discussed.
+82. ✅ **The traits, built** (2026-10-03: decisions 69, 71 and 72;
+    `src/engine/traits.ts`, `data/traits.ts`). Three `GameOptions`
+    switches, each on for a new game and off for a recording made before
+    it: `traitEffects` (69), `fatigue` (71) and `agilityFireOrder` (72).
+    All three act only with `morale`, which draws the traits. The game marks
+    each force's men at `addUnit` (`Unit.traitRules`), so the combat
+    functions read the switch off the force. No rule here draws from the
+    rng.
+    - **Pace (69), ruled by the author on the measurement:** on a rush (a
+      run), agility × strength set each man's pace, and **a force rushes at
+      its slowest man's**. Walking is the gait's own. The slowest man at
+      every gait cost the tel's 3:1 attack 41% → 27% and the 2:1 36% →
+      22%, with battles running out of time (balance.md, fifty-third
+      round); at a run only, 41% and 34%. ⚠️ Ours: strength's "climbing"
+      is left to fatigue (a metre climbed tires a man) rather than pace;
+      carrying the wounded waits for a casualty-evacuation rule.
+    - **Agility (69):** a force that ran is hit at ×0.8–1.2 by its men's
+      mean (the hit is rolled before the man it lands on is chosen). Under
+      a shell, men on their feet are moved toward the "down" figure by up
+      to a fifth (and the least agile away from it). ⚠️ Ours: both on the
+      mean.
+    - **Wisdom (69):** the force's best observer's, on every detection
+      chance and on finding charges.
+    - **Intelligence (69):** each man's own aim (small arms and the
+      assault's fire).
+    - **Luck (69):** read off decision 26's d10 taken as one continuous
+      draw (the same draw `rng.die(10)` makes): a lucky man is missed after
+      all on the bottom 2 × his luck's share of the faces (up to 20% of
+      the hits on him), and the kill band shrinks or grows by up to a fifth
+      of itself. Without the switch the faces are exactly the d10's.
+    - **Fatigue (71):** a run 3 points, a metre climbed 0.1, a turn under
+      fire 1, a quiet turn −3; tired at 6 and exhausted at 12, ×0.8–1.2 by
+      strength; tired ×0.9 and exhausted ×0.75 on pace and aim, at any
+      gait. After Ito et al. 1999 (hits −26% after running, back within
+      1.5 minutes) and Hunt 2016 / Billing 2015 (repeated sprints under
+      load). ⚠️ The points and thresholds are ours (docs/validation.md,
+      *Traits and fatigue*).
+    - **Fire order (72), within a side** (author, 2026-10-03): initiative
+      still picks the side; inside it, still forces first, then by their
+      men's mean agility (`Game.firingOrder`). The engine's fire under
+      standing orders and the scripted drill follow it. ⚠️ In the hotseat
+      the player still fires his forces in the order he chooses.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

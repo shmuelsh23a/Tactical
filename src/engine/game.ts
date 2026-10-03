@@ -87,7 +87,7 @@ import {
   type BlastTargetResult,
   type DirectExplosiveResult,
 } from "./combat/explosives.js";
-import { resolveIndirectFire, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
+import { resolveIndirectFire, postureFactor, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
 import { resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
 import { fitSoldiers, killOutright, refreshUnitStatus } from "./units.js";
@@ -140,6 +140,7 @@ import {
   type SoldierSnapshot,
   unitSeed,
 } from "./morale.js";
+import { firingOrder, rushFactor, tracePace, updateFatigue } from "./traits.js";
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
 import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
@@ -494,6 +495,30 @@ export interface GameOptions {
    */
   directHeBombards?: boolean;
   /**
+   * What the traits do beyond morale (rules decision 69): agility and
+   * strength set each man's pace and the force moves at its slowest man's;
+   * agility makes a running force harder to hit and gets men down quicker
+   * under shelling; wisdom spots and finds charges; intelligence aims;
+   * luck turns a hit away or a kill into a wound. Acts only with `morale`,
+   * which draws the traits. On by default; a recording made before it
+   * reads it as off.
+   */
+  traitEffects?: boolean;
+  /**
+   * Fatigue by strength (rules decision 71): running, climbing and being
+   * under fire tire a man, a quiet turn rests him, and a tired man moves
+   * slower and shoots worse. Acts only with `morale`. On by default; a
+   * recording made before it reads it as off.
+   */
+  fatigue?: boolean;
+  /**
+   * Who fires first, by agility (rules decision 72): a side's forces fire
+   * under their standing orders still forces first, then by their men's mean
+   * agility (`firingOrder`). Initiative still picks the side (author,
+   * 2026-10-03). On by default; a recording made before it reads it as off.
+   */
+  agilityFireOrder?: boolean;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -662,6 +687,9 @@ export class Game {
   readonly checkedFigures: boolean;
   readonly aresFigures: boolean;
   readonly directHeBombards: boolean;
+  readonly traitEffects: boolean;
+  readonly fatigue: boolean;
+  readonly agilityFireOrder: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -872,6 +900,8 @@ export class Game {
 
   /** Turn each unit last received orders, for the C2 interval rule. */
   private lastOrderTurn = new Map<string, number>();
+  /** Metres each force has climbed this turn, for fatigue (rules decision 71). */
+  private readonly climbedThisTurn = new Map<string, number>();
 
   /** What each side has picked up of the other; empty unless `trackIntel`. */
   private readonly intel = new IntelLedger();
@@ -968,6 +998,9 @@ export class Game {
     this.checkedFigures = opts.checkedFigures ?? true;
     this.aresFigures = opts.aresFigures ?? true;
     this.directHeBombards = opts.directHeBombards ?? true;
+    this.traitEffects = opts.traitEffects ?? true;
+    this.fatigue = opts.fatigue ?? true;
+    this.agilityFireOrder = opts.agilityFireOrder ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -1107,6 +1140,9 @@ export class Game {
       ...(this.checkedFigures ? { checkedFigures: true } : {}),
       ...(this.aresFigures ? { aresFigures: true } : {}),
       ...(this.directHeBombards ? { directHeBombards: true } : {}),
+      ...(this.traitEffects ? { traitEffects: true } : {}),
+      ...(this.fatigue ? { fatigue: true } : {}),
+      ...(this.agilityFireOrder ? { agilityFireOrder: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -1159,6 +1195,15 @@ export class Game {
     // why not the game's rng. Before the journal entry, like the cover: the
     // recording carries the men as they were drawn, and a replay keeps them.
     if (this.morale) generateMorale(unit, this.seed);
+    // Which of the traits' rules act on its men (decisions 69 and 71): the
+    // game's switches, read off the force where the men are hit and aim.
+    // Set from the options every time, so a replay plays the recording's.
+    const rules = {
+      ...(this.morale && this.traitEffects ? { effects: true as const } : {}),
+      ...(this.morale && this.fatigue ? { fatigue: true as const } : {}),
+    };
+    if (unit.soldiers && (rules.effects || rules.fatigue)) unit.traitRules = rules;
+    else delete unit.traitRules;
     // An observation post is put out in planning, not brought along
     // (rules decision 38).
     delete unit.observationPost;
@@ -1910,7 +1955,7 @@ export class Game {
     // A scouting force walks, whatever gait the move asked for.
     const gait = this.gaitFor(unit, mode);
     const profile = MOVEMENT_PROFILES[gait];
-    const cap = profile.maxDistance * this.paceFactor(unit);
+    const cap = profile.maxDistance * this.paceFactor(unit, gait);
     const dist = distance(unit.position, to);
     // A vehicle will not take a grade it cannot climb (rules decision 15).
     if (unit.kind === "vehicle") {
@@ -1961,6 +2006,7 @@ export class Game {
     this.bounds.set(unit.id, (this.bounds.get(unit.id) ?? 0) + 1);
     unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
+    if (climb > 0) this.climbedThisTurn.set(unit.id, (this.climbedThisTurn.get(unit.id) ?? 0) + climb);
 
     const enemies = this.units.filter((u) => u.side !== unit.side);
     // Smoke stops the eye as well as the bullet, so observation runs through
@@ -2502,7 +2548,8 @@ export class Game {
   private movementTerms(target: Unit, moved: boolean): { targetMovementFactor?: number } {
     if (!moved) return {};
     const gait = target.ranThisTurn ? "run" : "normal";
-    return { targetMovementFactor: 1 + MOVEMENT_PROFILES[gait].enemyHitModifier };
+    // An agile force is harder to hit at a rush (rules decision 69): 1 unless the game plays it.
+    return { targetMovementFactor: (1 + MOVEMENT_PROFILES[gait].enemyHitModifier) * rushFactor(target) };
   }
 
   /** Everything `side` has picked up of the enemy, with where it last saw it. */
@@ -2692,7 +2739,7 @@ export class Game {
         const table = shellVsMen(this.shellCover);
         if (breached && u.kind === "infantry" && distanceToFootprint(breached.footprint, u.position) <= OBJECT_COVER_REACH_M) {
           const f = table.impact;
-          return Math.min(f.partial, u.downUnderShelling ? f.down : f.standing);
+          return Math.min(f.partial, postureFactor(u, f));
         }
         return shellFactor(u, "impact", roofed(u), table);
       }, airburst: false } } : {}),
@@ -2992,7 +3039,7 @@ export class Game {
       this.executingOrders = true;
       try {
         this.internally(() => {
-          for (const unit of this.units.filter((u) => u.side === side)) {
+          for (const unit of this.phase === "combat" ? this.firingOrder(side) : this.units.filter((u) => u.side === side)) {
             const order = this.standingOrders.get(unit.id);
             if (!order) continue;
             const done =
@@ -3024,7 +3071,7 @@ export class Game {
 
     const gait = this.gaitFor(unit, order.gait);
     const profile = MOVEMENT_PROFILES[gait];
-    const cap = profile.maxDistance * this.paceFactor(unit) - unit.movedThisTurn;
+    const cap = profile.maxDistance * this.paceFactor(unit, gait) - unit.movedThisTurn;
     // The same tolerance moveUnit measures a bound with: a force that has spent
     // its budget is done for the turn, and must not creep the rounding error
     // left over from the bound it just made — a zero-length "move" would report
@@ -3289,6 +3336,17 @@ export class Game {
 
   // ---- upkeep ----
 
+  /**
+   * The order `side`'s forces fire in (rules decision 72): still forces first,
+   * then by their men's agility — or the order they were added in, when the
+   * game does not play it. The engine's own fire under orders follows it, and
+   * so should any caller that fires a side's forces one after another.
+   */
+  firingOrder(side: Side): Unit[] {
+    const own = this.units.filter((u) => u.side === side);
+    return this.agilityFireOrder && this.morale ? firingOrder(own) : own;
+  }
+
   private endOfTurnUpkeep(): { chargeWork: ChargeWorkReport[]; morale: MoraleReport[] } {
     // A report nobody has refreshed for three turns is no longer a contact —
     // unless marks stay where last seen (rules decision 57).
@@ -3301,6 +3359,9 @@ export class Game {
     // After the bleeding, so a man who bled out this turn is counted as lost;
     // before the flags clear, for the same reason as the charge work.
     const morale = this.morale ? this.resolveTurnMorale() : [];
+    // Before the flags clear too: a man tires on what he did this turn (decision 71).
+    for (const u of this.units) updateFatigue(u, this.climbedThisTurn.get(u.id) ?? 0);
+    this.climbedThisTurn.clear();
 
     endTurnUnitUpkeep(
       this.units,
@@ -3471,8 +3532,22 @@ export class Game {
    * The share of its gait a force can make this turn: half under fire (the
    * document's rule) or suppressed (ours) — the two are one slowing, not two.
    */
-  private paceFactor(unit: Unit): number {
-    return unit.underFire || suppressionLevel(unit) !== "none" ? UNDER_FIRE_SPEED_MULTIPLIER : 1;
+  /**
+   * The metres of flat going a force has left this turn at `mode` — what
+   * `moveUnit` will allow it: its gait (a scout walks), halved under fire,
+   * at its slowest man's pace on a rush and its tired men's (rules decisions
+   * 69, 71, 82), less what it has already moved.
+   */
+  moveBudget(unitId: string, mode: MovementMode): number {
+    const unit = this.getUnit(unitId);
+    const gait = this.gaitFor(unit, mode);
+    return Math.max(0, MOVEMENT_PROFILES[gait].maxDistance * this.paceFactor(unit, gait) - unit.movedThisTurn);
+  }
+
+  private paceFactor(unit: Unit, gait: MovementMode): number {
+    const fire = unit.underFire || suppressionLevel(unit) !== "none" ? UNDER_FIRE_SPEED_MULTIPLIER : 1;
+    // Its slowest man's pace at a rush, and its tired men's (rules decisions 69, 71, 82): 1 unless the game plays them.
+    return fire * tracePace(unit, gait);
   }
 
   /** A force's morale as its own side may see it; undefined without morale. */

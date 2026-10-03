@@ -116,10 +116,11 @@ export function resolveBlast(
       const fit = fitSoldiers(unit);
       for (let i = 0; i < fit; i++) {
         if (!rng.chance(blastChance)) continue;
-        res.caught = true;
         // Area effect on a force → random casualty among the fit soldiers;
         // how bad, the same roll as a bullet's (rules decision 27).
         const hit = woundHit(rng, unit, turn, "explosive");
+        if (hit.missed) continue; // a lucky man (rules decision 69)
+        res.caught = true;
         res.damage += hit.damage;
         if (hit.casualty) res.newCasualties++;
       }

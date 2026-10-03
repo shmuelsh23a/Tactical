@@ -1343,6 +1343,48 @@ characterisationexplosiveweapons.org, which no longer answers.
 - **Explosive fill** (Table 9): 155 mm 7–11 kg; tank 115–125 mm 2.7–4 kg;
   120 mm mortar 2.25–2.6 kg.
 
+## Traits and fatigue (2026-10-03) — rules decisions 69, 71, 72, 82
+
+The author set the shape: each trait worth up to ±20% of what it acts on,
+at 1 or 10 against the average, per soldier (decision 69); fatigue by
+strength (decision 71). No source gives a trait's worth; the sources below
+set fatigue's size and speed. Searched through Consensus, 2026-10-03
+("soldier marksmanship accuracy after sprint or load carriage exertion";
+"military load carriage fatigue movement speed decrement").
+
+- **Ito et al. 1999**, *Rifle Shooting Accuracy During Recovery from
+  Fatiguing Exercise* (US Army; 12 soldiers, simulator, 175 and 300 m
+  pop-up targets): "The number of hits dropped from 7.3 … to 5.4 … for
+  running … and from 8.5 … to 6.8 … for load carriage", and "Shooting
+  accuracy returned to pre-exercise levels by the 2nd set of RFT (at 1.5
+  minutes post exercise)." → an exhausted man aims at **×0.75** (−26%),
+  and a quiet turn (a minute) takes off a run's worth of fatigue.
+- **Swain et al. 2011**, *JSCR*: shooting score "decreased significantly
+  after the 200-m run and then rapidly recovered". Agrees with Ito.
+- **Jaworski et al. 2015**, *Mil Med* (18 Marines, the Maneuver Under
+  Fire course at 0–45% of body weight): "Pre- to post-MANUF shot accuracy
+  … and precision … was reduced." Direction only.
+- **Hunt et al. 2016**, *Ergonomics*, and **Billing et al. 2015**, *JSCR*
+  (19 soldiers, five 30 m sprints and sixteen 6 m bounds at 10–30 kg):
+  "Performance deterioration was observed from the beginning to the end of
+  the series", and the slower men lost 1.0–1.4% a kilogram against
+  0.6–0.8% for the faster. → running is what tires a man most, and men
+  differ by nearly two to one in how much a load takes out of them: the
+  strength factor on the thresholds (±20%) is inside that.
+- **Billing 2011**, *Mil Med*: a 30 m sprint took 8.2 s under a 21.6 kg
+  fighting load against 6.2 s without — load costs a third of a sprint's
+  pace, which the game's run already carries; strength at a run moves it
+  ±20% (decision 69).
+- **Against**: Tenan et al. 2017 (*Human Factors*) and Thomas et al. 2018
+  (*JSCR*) found marching and load did not lower marksmanship, or raised
+  it. What lowered it was a high heart rate when shooting — after running,
+  not after walking. So fatigue in the game comes from running, climbing
+  and fire, not from walking.
+
+⚠️ Ours, not the sources': the points (a run 3, a metre climbed 0.1, a turn
+under fire 1, a quiet turn −3), the thresholds (tired at 6, exhausted at
+12, ×0.8–1.2 by strength), and the tired step (×0.9).
+
 ## Open
 
 For the author, in rough order of what they move:

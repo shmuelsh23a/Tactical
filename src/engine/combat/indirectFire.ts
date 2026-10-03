@@ -7,6 +7,7 @@ import type { ArmourFigures } from "../data/armor.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
 import { resolveBlast, type BlastResult, type StructureStrike } from "./explosives.js";
+import { quickToCover } from "../traits.js";
 
 export interface IndirectFireResult {
   weapon: string;
@@ -92,10 +93,19 @@ export function resolveIndirectFire(
  * its own worth and the men's posture — on their feet for the first rounds,
  * down once shelled.
  */
+/**
+ * The men's posture against a shell: on their feet, or down once shelled —
+ * and agile men get down quicker (rules decision 69; 0 unless the game
+ * plays it).
+ */
+export function postureFactor(unit: Unit, f: { standing: number; down: number }): number {
+  return unit.downUnderShelling ? f.down : f.standing + (f.down - f.standing) * quickToCover(unit);
+}
+
 export function shellFactor(unit: Unit, fuze: Fuze, underRoof: boolean, table: ShellVsMen = SHELL_VS_MEN): number {
   const f = table[fuze];
   const cover = effectiveCover(unit);
   if (cover === "full") return underRoof ? f.roof : f.openHole;
-  const posture = unit.downUnderShelling ? f.down : f.standing;
+  const posture = postureFactor(unit, f);
   return cover === "partial" ? Math.min(f.partial, posture) : posture;
 }
