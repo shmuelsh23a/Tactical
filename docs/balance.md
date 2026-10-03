@@ -3698,6 +3698,10 @@ battles a scenario.
 - **In the town the tanks matter more.** HE at 495 m² rather than 280 m²
   puts the defender's losses up from 23% to 29%, and the attacker's wins
   from 17% to 36%. BLUE's vehicles out: 19%.
+- **Tank HE back at 280 m²** (author, after GICHD's *Explosive Weapon
+  Effects*: "tank munitions … a more limited lethal area than others").
+  The urban attack is **18%** (defender down 23%, BLUE vehicles out 21%,
+  200 battles). The tel battles have no tanks and do not move.
 - For the author: ARES calls its areas "fragmentation" areas and never
   defines them. If they are smaller than lethal areas in the JMEM sense,
   this round understates the shells.

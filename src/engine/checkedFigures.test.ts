@@ -103,9 +103,9 @@ describe("ARES Special Report No. 3's indirect-fire figures (decision 80)", () =
     expect(replayGame(rec).aresFigures).toBe(false);
   });
 
-  it("use ARES's lethal areas: 155 mm 665 m², 81 mm 250 m², tank HE 495 m²", async () => {
+  it("use ARES's lethal areas — 155 mm 665 m², 81 mm 250 m² — and keep tank HE at 280 m² (GICHD)", async () => {
     const { ARES_LETHAL_AREA_M2, lethalAreas } = await import("./data/lethality.js");
-    expect([ARES_LETHAL_AREA_M2.artillery, ARES_LETHAL_AREA_M2.mortar, ARES_LETHAL_AREA_M2.tankRound]).toEqual([665, 250, 495]);
+    expect([ARES_LETHAL_AREA_M2.artillery, ARES_LETHAL_AREA_M2.mortar, ARES_LETHAL_AREA_M2.tankRound]).toEqual([665, 250, 280]);
     const reach = (c: "checked" | "ares", k: string) => explosiveForChecked(k, "research", c)!.blastBands.at(-1)!.maxRange;
     expect(reach("ares", "artillery")).toBeLessThan(reach("checked", "artillery"));
     expect(reach("ares", "mortar")).toBeLessThan(reach("checked", "mortar"));

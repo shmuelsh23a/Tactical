@@ -2470,8 +2470,11 @@ on the stated reasoning, still awaiting the author's word.
     `GameOptions.aresFigures` (on for a new game; a recording made before
     it reads it as off), on top of decision 79:
     - **Lethal areas from ARES**, Tables 1.1–1.2: **155 mm 665 m²**
-      (was 971), **81 mm 250 m²** (was 476), and tank HE **495 m²** (was
-      280), as a 105 mm round. A shell IED is 665 m². The report is
+      (was 971) and **81 mm 250 m²** (was 476). A shell IED is 665 m².
+      Tank HE stays at decision 79's **280 m²**. ARES gives 495 m² for a
+      105 mm artillery round, but GICHD's *Explosive Weapon Effects*
+      (2017) found "tank munitions … a more limited lethal area than
+      others" (author, 2026-10-03, after reading it). The report is
       citable, where the old figures were a forum post; but it calls these
       "fragmentation" areas and never defines them.
     - **A gun's first-round CEP by its range**, Table 3.1: 95 m at 15 km,
@@ -2489,7 +2492,8 @@ on the stated reasoning, still awaiting the author's word.
       - the tel attacks: 3:1 49% → 41%, 2:1 39% → 36%;
       - **explosives' share of losses: 70% → 64%, below decision 43's
         75%**;
-      - the urban attack: 17% → 36%, since the tanks' HE is now 495 m².
+      - the urban attack: 36% with tank HE at 495 m², and **18%** at the
+        280 m² kept after GICHD.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -357,14 +357,15 @@ export type Checked = false | "checked" | "ares";
  * 1.1–1.2 ("genericised estimates", after Cross et al. 2016): 155 mm 665 m²,
  * 81 mm 250 m², 105 mm 495 m² (rules decision 80). A published report, where
  * the research figures rest on one forum post; it calls them "fragmentation"
- * areas without defining them. The 105 mm stands for tank HE, and the
- * 155 mm for a shell IED.
+ * areas without defining them. The 155 mm stands for a shell IED. Tank HE
+ * keeps decision 79's 280 m², not ARES's 495 m² for a 105 mm artillery
+ * round: GICHD's *Explosive Weapon Effects* (2017) found "tank munitions
+ * … a more limited lethal area than others" (author, 2026-10-03).
  */
 export const ARES_LETHAL_AREA_M2: Readonly<Record<string, number>> = {
   ...CHECKED_LETHAL_AREA_M2,
   artillery: 665,
   mortar: 250,
-  tankRound: 495,
   atMine: 665,
 };
 
