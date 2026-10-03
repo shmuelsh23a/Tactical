@@ -1595,7 +1595,7 @@ on the stated reasoning, still awaiting the author's word.
       figure there is (the document's where it gave one) and is the
       **likeliest**; the high is the highest published rate, the **outlier**:
       tank gun 1–7, rifle grenade 1–7, RPG 1–6, mortar 3–30 a tube,
-      artillery 2–4 a gun.
+      artillery 2–5 a gun (5 since 2026-10-03: the M777A2's maximum).
     - **What a crew fires in a turn is drawn**: a geometric tail above the
       low rate, each round above it 0.6 as likely as the one below for a fresh
       crew and 0.15 for a tired one (`TAIL_WEIGHT`, ours). A crew goes from
