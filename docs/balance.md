@@ -3783,6 +3783,54 @@ All three inside their targets (3:1 40–55%, 2:1 20–35%, explosives
   The grenadiers' explosives fell from about 1.8× the riflemen-only
   platoon's to 1.5× once the traits acted; not traced.
 
+## Fifty-fourth round: the balance re-validated, 2026-10-03
+
+The author asked for the balance to be re-validated after decision 82.
+Three parts: the numbers against the sources and the targets against
+history (docs/validation.md, *Re-validation after decisions 75–82*), and
+why the plans that wait lost most in the fifty-third round.
+
+**The fifty-third round's plan figures were mostly noise.** At 100 seeds a
+plan's figure moves ±5 by chance, and the median of eight such figures
+moves several points. The tel's 3:1 plans again on seeds 2000–2099, and
+the two runs pooled (200 battles a plan):
+
+| Plan | Off, 1000 / 2000 | On, 1000 / 2000 | **Off, pooled** | **On, pooled** |
+|---|---|---|---|---|
+| A. Calibrated | 40% / 43% | 42% / 35% | 41.5% | 38.5% |
+| A + flank | 37% / 30% | 34% / 31% | 33.5% | 32.5% |
+| E. Fire-heavy | 34% / 34% | 26% / 36% | 34% | 31% |
+| B. Deliberate | 27% / 32% | 28% / 24% | 29.5% | 26% |
+| D. Flank | 35% / 18% | 21% / 6% | 26.5% | **13.5%** |
+| A + move up | 21% / 24% | 27% / 29% | 22.5% | 28% |
+| C. Hasty (three scouts) | 35% / 31% | 44% / 42% | 33% | **43%** |
+| B + move up | 17% / 20% | 19% / 17% | 18.5% | 18% |
+| **Median** | | | **31%** | **29.5%** |
+
+- **The traits move the 3:1 median by about two points**, not seven: 31%
+  → 29.5%. Both are under decision 68's 40–55%. The fall from the
+  forty-third round's 40% came with decisions 75–81 (direct HE as a
+  shell, buildings, armour, the checked and ARES figures), not with the
+  traits.
+- **Two plans move for real.** The flank (D) loses 13 points; the hasty
+  attack (C) gains 10. The fire-heavy plan's fall in the fifty-third round
+  (34 → 26) was chance: on fresh seeds it is 36% against 34%.
+- **The flank has no single cause.** Each trait effect switched off alone
+  (seeds 1000, 100 battles): wisdom 11%, intelligence 16%, fatigue 18%,
+  fire order 19%, luck 21%, pace at a rush 25%, against 21% with all on
+  and 35% with all off. Its long approach gives every small effect time
+  to add up.
+- **⚠️ The hasty attack now beats the deliberate one**: 43% against 26%
+  with the traits, 33% against 29.5% without. History has the hasty
+  attack 20–35 points *below* the deliberate (validation.md, *Hasty and
+  deliberate attacks*); in the forty-third round it was 30% against 42%.
+  The inversion came with decisions 75–81 and the traits widen it. Of
+  everything in this round, this is the finding that most needs the
+  author's eye: a plan that waits and fires first should not lose to one
+  that goes in at once.
+- The scripted company's plan (the standard measurement, 200 battles)
+  stays at 41% and 33%: inside both bands.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

@@ -1343,6 +1343,78 @@ characterisationexplosiveweapons.org, which no longer answers.
 - **Explosive fill** (Table 9): 155 mm 7–11 kg; tank 115–125 mm 2.7–4 kg;
   120 mm mortar 2.25–2.6 kg.
 
+## Re-validation after decisions 75–82 (2026-10-03)
+
+The author asked for the balance to be re-validated after the traits
+(decision 82): the numbers against the sources, the targets against
+history, and why the waiting plans lose (balance.md, fifty-fourth round).
+
+**`npm run validate`, research figures, 100 battles a cell**, the last
+recorded run (decisions 67–68) → today's rules with the traits off →
+with them on:
+
+| Battle | Fire | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives |
+|---|---|---|---|---|---|
+| Platoon meeting | — | 37% → 32% → 39% | 31% → 22% → 22% | — | 32% → 36% → 35% |
+| Platoon 3:1 attack | — | 84% → 85% → 78% | 19% → 19% → 17% | 56% → 56% → 56% | 14% → 15% → 15% |
+| Platoon 2:1 attack | — | 35% → 28% → 25% | 22% → 19% → 19% | 44% → 39% → 39% | 19% → 14% → 12% |
+| Company 3:1 attack | a bomb a turn | 54% → 94% → 91% | 13% → 12% → 8% | 28% → 22% → 22% | 23% → 7% → 6% |
+| Company 2:1 attack | a bomb a turn | 0% → 0% → 0% | 17% → 15% → 14% | — | 14% → 7% → 7% |
+| Company 3:1 attack | calibrated | 68% → 75% → 74% | 20% → 13% → 14% | 28% → 22% → 22% | 42% → 24% → 26% |
+| Company 2:1 attack | calibrated | 7% → 4% → 3% | 21% → 19% → 19% | 18% → 15% → 21% | 45% → 29% → 30% |
+
+- **The single-weapon figures are where their sources put them**: a round's
+  casualties on the point match its lethal area (155 mm 4.43 against 4.45
+  predicted, 81 mm 2.19 against 2.18, tank HE 1.76 against 1.79, 40 mm
+  0.39 against 0.36, RPG 0.72 against 0.71). Rifle fire did not move.
+- **Attackers still give up at 8–22% lost**, inside the sources' 10–25% for
+  a failed attack (*Loss exchange in attacks*). The traits move nothing
+  here beyond the noise.
+- **Defenders give up at 21–22% at company**, under the sources' 40–90%
+  for a won attack (mostly prisoners) — as before decision 75; open since
+  the fortieth round.
+- **Explosives' share on the flat harness fell from 42–45% to 24–30%**
+  with decisions 79–80 (ARES's 81 mm at 250 m², was 476). The tel is the
+  measure (64–66%, inside decision 81's 60–80%); the flat harness is not.
+- **The flat company 3:1 attack with a bomb a turn went from 54% to 91–94%**
+  with decisions 75–81, not the traits. Direct HE as a shell (75) and the
+  bombardment's nerve (81) are the likely cause; it is one scripted plan
+  on open ground, not the balance's measure.
+
+**The targets, checked again** (Apify and Consensus, 2026-10-03):
+
+- **Rowland, read on the page this time** (the review of *The Stress of
+  Battle*, part 5, themself.org): "without surprise the probability of
+  success increases in proportion to the force ratio (at 1:1 40%, at 3:1
+  54%)"; with surprise 70% and 76%; "Attacks below 1:1 ratio were
+  successful 65% of the time when surprise was achieved, where attacks at
+  these ratios were never successful without surprise". Decision 68's
+  anchors stand as transcribed. Rowland's figures are for all positions,
+  not prepared ones; the ×1.65 for a prepared position (part 1) is what
+  takes 54% down to about 46%.
+- **No small-unit table exists in the open.** The Dupuy Institute holds a
+  battalion-level database (127 cases, 1918–1991) and a company-level one
+  (98 cases, 1914–2000), and has published no force-ratio analysis of
+  either ("We do have the ability to look at them at Battalion and
+  Company-level, which I will probably do at some point", 2024). The
+  battalion database's own page lists 76 actions still to be transferred.
+- **Force quality outweighs the ratio**, in the one set nearest this
+  game: TDI's 51 division-level Arab–Israeli engagements (1956–1973). The
+  IDF attacking won 81% at 0.54–0.97:1 and 90% at 1.00–1.47:1; the Arab
+  armies attacking lost every engagement below 3.94:1 and won 71% above
+  it. The targets are for like against like, which decision 81 set as a
+  trained, regular, experienced force; the force-quality matrix is where
+  this belongs.
+- **Peer-reviewed** (Consensus): nothing that splits win rates below
+  division level. Rotte et al. 2003, *Defence and Peace Economics* (battles 1600–1973) find numbers,
+  leadership, morale and surprise all significant; Kress et al. 1999, *JORS*,
+  find the 3:1 rule reasonable only in some combat situations
+  (models, not data).
+
+**Read:** the targets stand on what can be found. 3:1 40–55% and 2:1
+20–35% for like against like on a prepared position; nothing better
+exists in the open, and the anchor is now read on the page.
+
 ## Traits and fatigue (2026-10-03) — rules decisions 69, 71, 72, 82
 
 The author set the shape: each trait worth up to ±20% of what it acts on,
