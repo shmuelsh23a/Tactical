@@ -609,6 +609,12 @@ export class Game {
   private ground: Terrain;
   /** Damage points on each building HE has struck, by object id (rules decision 76). */
   private structureDamage = new Map<string, number>();
+  /** What the battle's rounds did inside buildings (decisions 76–77): read by the harness, never by a rule. */
+  private readonly tally = { windowCriticals: 0, roofCriticals: 0, crushed: 0 };
+  /** A copy of {@link tally}. */
+  get urbanTally(): { windowCriticals: number; roofCriticals: number; crushed: number } {
+    return { ...this.tally };
+  }
   readonly morale: boolean;
   readonly variants: RuleVariants;
   /** Targets registered before the battle (rules decisions 32 and 38): with the options, then in planning. */
@@ -751,6 +757,7 @@ export class Game {
       u.hitThisTurn = true;
       refreshUnitStatus(u);
       crushed.push({ unitId: u.id, casualties });
+      this.tally.crushed += casualties;
     }
     return crushed;
   }
@@ -1789,6 +1796,7 @@ export class Game {
       // Who called it, so a report can say how far it fell from the aim point
       // to the side that aimed it and no further (rules decision 17). After the
       // spread, so the mission stays the authority if the resolver ever sets it.
+      this.tally.roofCriticals += fired.filter((f) => f.critical).length;
       return fired.map((f) => ({ ...f, side: m.side }));
     });
     for (const unit of shelled) unit.downUnderShelling = true;
@@ -2665,6 +2673,7 @@ export class Game {
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
     }
+    this.tally.windowCriticals += result.criticals ?? 0;
     // Every round that hit struck the building the target is in (decision 76),
     // after its blast and suppression: the men were under the roof as it was.
     const struck = target.kind === "vehicle" ? undefined : this.buildingAt(target.position);

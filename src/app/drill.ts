@@ -71,6 +71,16 @@ export interface SquadDrill {
    */
   grenadiers: { menPerLauncher: number } | null;
   /**
+   * Heavy weapons (2026-10-03, ⚠️ ours — a drill, until doctrine gives one).
+   * A tank fires its main gun at its target out to `tankGunRange`, as FM
+   * 3-06.11 has tanks support infantry against buildings; a squad whose
+   * target is a vehicle fires its RPG at it out to `rpgRange`. Absent: a
+   * vehicle fires its coaxial gun only, and a squad carries no RPG — as
+   * every drill did before buildings and armour were modelled (decisions
+   * 76–78).
+   */
+  heavyWeapons?: { tankGunRange: number; rpgRange: number };
+  /**
    * Break contact: a force whose ready men fall below `readyShareBelow` of its
    * strength withdraws `fallBack` metres away from the enemy — before it
    * breaks, rather than after. Null: it fights until morale decides.
@@ -128,6 +138,13 @@ export const SQUAD_GRENADIERS = { menPerLauncher: 4 } as const;
  * the nearest enemy in reach, half bound while half fire, nobody breaks
  * contact. Kept as the baseline a drill is compared against.
  */
+/**
+ * A tank's main gun out to 1,500 m, and an RPG at armour out to 300 m.
+ * ⚠️ Ours: the RPG-7's table runs to 700 m at 10%, but crews hold their
+ * shot to about 300 m, where it hits a quarter of the time or better.
+ */
+const HEAVY_WEAPONS = { tankGunRange: 1500, rpgRange: 300 } as const;
+
 export const PLAIN_SCRIPT: SquadDrill = {
   name: "plain script",
   sectorWidth: 360,
@@ -139,6 +156,7 @@ export const PLAIN_SCRIPT: SquadDrill = {
   coverWhenIdle: true,
   assault: { range: 25, grenades: 1 },
   grenadiers: SQUAD_GRENADIERS,
+  heavyWeapons: HEAVY_WEAPONS,
   breakContact: null,
   commandGroupBehind: 80,
   counterattack: { lostWithin: 50, gait: "run" },
@@ -170,6 +188,7 @@ export const WESTERN_DRILL: SquadDrill = {
   coverWhenIdle: true,
   assault: { range: 25, grenades: 1 },
   grenadiers: SQUAD_GRENADIERS,
+  heavyWeapons: HEAVY_WEAPONS,
   breakContact: { readyShareBelow: 0.5, fallBack: 150 },
   commandGroupBehind: 80,
   counterattack: { lostWithin: 50, gait: "run" },
@@ -632,8 +651,11 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
 export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState): void {
   const { side } = task;
   const enemies = knownEnemies(game, side);
-  const reach = task.attacking ? drill.attackFireRange : drill.openFireRange;
+  const baseReach = task.attacking ? drill.attackFireRange : drill.openFireRange;
+  const heavy = drill.heavyWeapons;
   for (const u of game.units.filter((x) => x.side === side && inPlay(x))) {
+    const tank = heavy !== undefined && u.kind === "vehicle" && (u.vehicle?.vehicleClass ?? "mbt") === "mbt";
+    const reach = tank ? Math.max(baseReach, heavy.tankGunRange) : baseReach;
     // A scout watches and reports; it does not give itself away (decision 52)
     // — unless the company has gone in and told it to give a base of fire.
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
@@ -653,6 +675,16 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     if (u.covering) game.setCovering(u.id, false);
     if (u.kind !== "command" && distance(u.position, target.position) <= drill.assault.range) {
       game.assault(u.id, target.id, drill.assault.grenades);
+    } else if (tank && game.fireExplosive("tankRound", u.id, target.id).fired) {
+      // The main gun; the coaxial gun when it could not fire (below its minimum range, say).
+    } else if (
+      heavy !== undefined &&
+      u.kind === "infantry" &&
+      target.kind === "vehicle" &&
+      distance(u.position, target.position) <= heavy.rpgRange
+    ) {
+      // Rifles do nothing to armour: the squad's RPG does.
+      game.fireExplosive("rpgVsArmor", u.id, target.id);
     } else {
       game.fire(u.id, target.id, { weapon: u.kind === "vehicle" ? "sustainedMg" : "smallArms" });
       if (drill.grenadiers) fireGrenadiers(game, u, target, drill.grenadiers.menPerLauncher);

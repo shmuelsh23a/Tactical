@@ -3621,6 +3621,38 @@ from seed 1000, all three off and all three on:
   with an attack into a village, with APCs, is the test bed these
   rules need.
 
+## Fiftieth round: the urban test bed, 2026-10-03
+
+`yokneamUrban` (tools/scenarios/yokneam-urban.json): BLUE has a company,
+two tanks and two Namer APCs in the low ground north of Yokneam. RED has a
+platoon in prepared houses on the north-west edge of the town on the hill,
+about 450 m off and 80 m up. The drill now fires a tank's main gun out to
+1,500 m and a squad's RPG at armour out to 300 m (`SquadDrill.heavyWeapons`,
+⚠️ ours). The runner reports buildings and vehicles in a second table.
+Standard measurement, 100 battles from seed 1000:
+
+| | Attacker wins | Defender wins (out of time) | Turns | Attacker down | Defender down | Out by HE |
+|---|---|---|---|---|---|---|
+| yokneamUrban | 32% | 66% (14%) | 15 | 11% | 29% | 98% |
+| telAzekaAssault, same day | 44% | 55% (4%) | 26 | 14% | 22% | 73% |
+
+| | Buildings damaged | Rubble | Window / slit criticals | Roof criticals | Men buried | Vehicles out (BLUE) |
+|---|---|---|---|---|---|---|
+| yokneamUrban | 1.1 | 0 | 3.0 | 0 | 0 | 57% |
+
+- **The tanks fire about 5 main-gun rounds a battle, and the RPGs about
+  2.** The town's houses average 208 m², twice the reference house, so
+  one needs about 20 tank rounds to come down. No house was brought down.
+- **57% of BLUE's vehicles end the battle immobilised, every one by its
+  tracks**, with track damage of up to 90 points. The cause is the
+  document's HE-against-tracks roll (decision 3): 20% for 2 points on
+  any vehicle within the blast, read off the document's bands (100 m for
+  a mortar bomb). RED's mortars, fired at BLUE's infantry, keep catching
+  the vehicles beside them. That makes the 81 mm the best anti-tank weapon
+  on the field. Open, for the author.
+- **Out by HE is 98%**: the defender's losses come from the tanks' main
+  guns, three window criticals a battle among them.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

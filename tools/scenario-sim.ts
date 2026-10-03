@@ -72,6 +72,7 @@ const fire: FirePlanChoices = {
 console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}\n`);
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
+const urban: string[] = [];
 for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
@@ -80,4 +81,15 @@ for (const id of ids) {
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);
+  const u = s.urban;
+  const f = (x: number) => x.toFixed(1);
+  if (u.damaged + u.rubble + u.windowCriticals + u.roofCriticals + u.vehicles > 0) {
+    urban.push(`| ${id} | ${f(u.damaged)} | ${f(u.rubble)} | ${f(u.windowCriticals)} | ${f(u.roofCriticals)} | ${f(u.crushed)} | ${u.vehicles ? `${Math.round(u.attackerVehiclesOutPct)}% / ${Math.round(u.defenderVehiclesOutPct)}%` : "—"} |`);
+  }
+}
+// Buildings and vehicles (decisions 76–78): means a battle, where the scenario has any.
+if (urban.length) {
+  console.log("\n| Scenario | Buildings damaged | Rubble | Window / slit criticals | Roof criticals | Men buried | Vehicles out (attacker / defender) |");
+  console.log("|---|---|---|---|---|---|---|");
+  for (const line of urban) console.log(line);
 }

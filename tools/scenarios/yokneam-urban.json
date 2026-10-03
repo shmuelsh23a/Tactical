@@ -1,0 +1,359 @@
+{
+  "slug": "yokneamUrban",
+  "title": "יקנעם — לחימה בשטח בנוי",
+  "brief": "כחול: פלוגה עם טנקים ונגמ\"שים תוקפת מהשטח הנמוך בצפון אל שולי השכונה שעל הגבעה. אדום: מחלקה מחזיקה בבתים בשולי השכונה, בעמדות שהוכנו מראש. לפני הקרב כל צד מתכנן את משימתו.",
+  "attackers": [
+    "BLUE"
+  ],
+  "seed": 2027,
+  "timeLimit": 45,
+  "trackIntel": true,
+  "enforceC2": true,
+  "morale": true,
+  "commandEchelon": {
+    "BLUE": "company",
+    "RED": "company"
+  },
+  "fireSupport": {
+    "BLUE": [
+      {
+        "weapon": "mortar",
+        "missions": 12
+      }
+    ],
+    "RED": [
+      {
+        "weapon": "mortar",
+        "missions": 12
+      }
+    ]
+  },
+  "window": {
+    "lat": 32.645,
+    "lon": 35.085,
+    "width": 900,
+    "height": 800,
+    "spacing": 10,
+    "place": "The southern edge of Yokneam Illit on Ramat Menashe (יקנעם עילית, רמת מנשה): the town's houses on the hill in the south-east, Route 6 (כביש 6) in the west, low ground to the north.",
+    "heightfield": "ramatMenashe",
+    "objects": "ramatMenasheObjects",
+    "constant": "RAMAT_MENASHE"
+  },
+  "about": [
+    "The test bed for urban combat (rules decisions 75-78, 2026-10-03): a BLUE",
+    "company with two tanks and two heavy APCs attacking from the low ground in",
+    "the north, about 450 m and 80 m of climb, into the north-west edge of the",
+    "town on the hill, held by a RED platoon in houses it prepared before the",
+    "battle. Every rule of the day is in play: buildings that are damaged and",
+    "brought down, rounds through windows, slits and roofs, a tank round that",
+    "breaches a wall, armour by class and facing, and the RPG.",
+    "",
+    "The houses on the town's edge see the low ground; the town behind them",
+    "sees almost nothing, so RED's reserve and command groups are hidden until",
+    "the edge is taken. The tanks stand in the low ground in overwatch, where",
+    "the edge houses are in their sights and out of the RPG's 300 m.",
+    "",
+    "⚠️ Ours, not the author's: the layout, the vehicles' places, and the",
+    "drill's heavy weapons (a tank fires its main gun out to 1,500 m, a squad",
+    "its RPG at armour out to 300 m). The APCs carry nobody: passengers are",
+    "not modelled yet."
+  ],
+  "forces": [
+    {
+      "id": "BLUE-COY",
+      "name": "חפ\"ק מ\"פ",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "company",
+      "personnel": 5,
+      "at": [
+        450,
+        15
+      ]
+    },
+    {
+      "id": "BLUE-1-HQ",
+      "name": "חפ\"ק מ\"מ 1",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        330,
+        30
+      ]
+    },
+    {
+      "id": "BLUE-1-1",
+      "name": "כיתה 1/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        280,
+        70
+      ]
+    },
+    {
+      "id": "BLUE-1-2",
+      "name": "כיתה 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        330,
+        80
+      ]
+    },
+    {
+      "id": "BLUE-1-3",
+      "name": "כיתה 1/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        380,
+        75
+      ]
+    },
+    {
+      "id": "BLUE-2-HQ",
+      "name": "חפ\"ק מ\"מ 2",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        480,
+        30
+      ]
+    },
+    {
+      "id": "BLUE-2-1",
+      "name": "כיתה 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        430,
+        85
+      ]
+    },
+    {
+      "id": "BLUE-2-2",
+      "name": "כיתה 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        480,
+        90
+      ]
+    },
+    {
+      "id": "BLUE-2-3",
+      "name": "כיתה 2/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        530,
+        85
+      ]
+    },
+    {
+      "id": "BLUE-3-HQ",
+      "name": "חפ\"ק מ\"מ 3",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        620,
+        40
+      ]
+    },
+    {
+      "id": "BLUE-3-1",
+      "name": "כיתה 3/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        580,
+        95
+      ]
+    },
+    {
+      "id": "BLUE-3-2",
+      "name": "כיתה 3/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        630,
+        100
+      ]
+    },
+    {
+      "id": "BLUE-3-3",
+      "name": "כיתה 3/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        680,
+        95
+      ]
+    },
+    {
+      "id": "BLUE-T1",
+      "name": "טנק 1",
+      "side": "BLUE",
+      "kind": "vehicle",
+      "at": [
+        560,
+        60
+      ],
+      "facing": 90,
+      "note": "Overwatch from the low ground: sees both edge houses, about 450 m off, at a man's height in full cover."
+    },
+    {
+      "id": "BLUE-T2",
+      "name": "טנק 2",
+      "side": "BLUE",
+      "kind": "vehicle",
+      "at": [
+        640,
+        80
+      ],
+      "facing": 90
+    },
+    {
+      "id": "BLUE-APC1",
+      "name": "נמר 1",
+      "side": "BLUE",
+      "kind": "vehicle",
+      "vehicleClass": "heavyApc",
+      "at": [
+        380,
+        40
+      ],
+      "facing": 90
+    },
+    {
+      "id": "BLUE-APC2",
+      "name": "נמר 2",
+      "side": "BLUE",
+      "kind": "vehicle",
+      "vehicleClass": "heavyApc",
+      "at": [
+        540,
+        45
+      ],
+      "facing": 90
+    },
+    {
+      "id": "RED-COY",
+      "name": "חפ\"ק מ\"פ",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "company",
+      "personnel": 5,
+      "at": [
+        636,
+        565
+      ],
+      "note": "In a house deep in the town."
+    },
+    {
+      "id": "RED-A-HQ",
+      "name": "חפ\"ק מ\"מ א'",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        569,
+        525
+      ]
+    },
+    {
+      "id": "RED-A-1",
+      "name": "מחלקה א'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        594,
+        546
+      ],
+      "baseCover": "full",
+      "reserve": true,
+      "note": "The reserve, in a house behind the edge."
+    },
+    {
+      "id": "RED-A-2",
+      "name": "מחלקה א'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        511,
+        508
+      ],
+      "baseCover": "full",
+      "note": "At the north face of the edge house that sees most of the low ground."
+    },
+    {
+      "id": "RED-A-3",
+      "name": "מחלקה א'/3",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        552,
+        494
+      ],
+      "baseCover": "full"
+    }
+  ],
+  "charges": [
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        520,
+        470
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        560,
+        460
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiTank",
+      "at": [
+        540,
+        440
+      ]
+    }
+  ]
+}

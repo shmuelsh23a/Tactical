@@ -169,6 +169,13 @@ export interface ScenarioBattleResult {
   defenderPlanned: number;
   /** The defender's reserves that went in to retake a lost position (decision 60). */
   counterattacks: number;
+  /**
+   * What the battle did to buildings and vehicles (decisions 76–78): the
+   * buildings damaged and brought down at the end, the rounds that went in
+   * through a window, slit or roof, the men buried, and each side's
+   * vehicles out (destroyed, immobilised or without a crew).
+   */
+  urban: { damaged: number; rubble: number; windowCriticals: number; roofCriticals: number; crushed: number; vehiclesOut: Record<Side, number>; vehicles: Record<Side, number> };
   /** Of those, the ones standing on the position they went for at the end, still in the fight. */
   retaken: number;
 }
@@ -309,6 +316,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     counterattacks: 0,
     retaken: 0,
     defenderPlanned: 0,
+    urban: { damaged: 0, rubble: 0, windowCriticals: 0, roofCriticals: 0, crushed: 0, vehiclesOut: { RED: 0, BLUE: 0 }, vehicles: { RED: 0, BLUE: 0 } },
   };
   const downOf = (side: Side) =>
     g.units.filter((u) => u.side === side).reduce((t, u) => t + (u.soldiers ?? []).filter((m) => m.neutralized).length, 0);
@@ -361,6 +369,18 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     result.counterattacks++;
     const u = g.getUnit(id);
     if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= HOLDS_POST_M) result.retaken++;
+  }
+  const tally = g.urbanTally;
+  result.urban = { damaged: 0, rubble: 0, ...tally, vehiclesOut: { RED: 0, BLUE: 0 }, vehicles: { RED: 0, BLUE: 0 } };
+  for (const o of g.mapTerrain.objects) {
+    const state = g.structureState(o.id);
+    if (state === "damaged") result.urban.damaged++;
+    if (state === "rubble") result.urban.rubble++;
+  }
+  for (const u of g.units) {
+    if (!u.vehicle) continue;
+    result.urban.vehicles[u.side]++;
+    if (u.neutralized || u.vehicle.destroyed || u.vehicle.mobilityKilled) result.urban.vehiclesOut[u.side]++;
   }
   for (const u of g.units) {
     const gone = !!u.surrendered || !!u.routing;
@@ -1068,6 +1088,17 @@ export interface ScenarioSummary {
   /** Battles in which the defender's reserve counterattacked (decision 60), and in which it held the position at the end. */
   counterattacked: number;
   retaken: number;
+  /** Means a battle (decisions 76–78); vehicles out as a share of each side's vehicles. */
+  urban: {
+    damaged: number;
+    rubble: number;
+    windowCriticals: number;
+    roofCriticals: number;
+    crushed: number;
+    attackerVehiclesOutPct: number;
+    defenderVehiclesOutPct: number;
+    vehicles: number;
+  };
 }
 
 export function runScenario(
@@ -1096,6 +1127,16 @@ export function runScenario(
     explosivePct: (100 * sum((r) => r.outBy.explosive)) / Math.max(1, out),
     medianDownWhileWaiting: median(rs.map((r) => r.downWhileWaiting)),
     counterattacked: rs.filter((r) => r.counterattacks > 0).length,
+    urban: {
+      damaged: sum((r) => r.urban.damaged) / rs.length,
+      rubble: sum((r) => r.urban.rubble) / rs.length,
+      windowCriticals: sum((r) => r.urban.windowCriticals) / rs.length,
+      roofCriticals: sum((r) => r.urban.roofCriticals) / rs.length,
+      crushed: sum((r) => r.urban.crushed) / rs.length,
+      attackerVehiclesOutPct: (100 * sum((r) => r.urban.vehiclesOut[attacker])) / Math.max(1, sum((r) => r.urban.vehicles[attacker])),
+      defenderVehiclesOutPct: (100 * sum((r) => r.urban.vehiclesOut[defender])) / Math.max(1, sum((r) => r.urban.vehicles[defender])),
+      vehicles: sum((r) => r.urban.vehicles[attacker] + r.urban.vehicles[defender]) / rs.length,
+    },
     retaken: rs.filter((r) => r.retaken > 0).length,
   };
 }
