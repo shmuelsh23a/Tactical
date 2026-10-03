@@ -3831,6 +3831,54 @@ the two runs pooled (200 battles a plan):
 - The scripted company's plan (the standard measurement, 200 battles)
   stays at 41% and 33%: inside both bands.
 
+## Fifty-fifth round: why the hasty attack beats the deliberate one, 2026-10-03
+
+The fifty-fourth round found the hasty plan (C, `rush`) ahead of the
+deliberate one (B, `basefire,bound,holdshort`) at 3:1, against history
+(20–35 points behind). Traced on the tel's 3:1, seeds 1000–1099, 100
+battles a cell, the traits off throughout.
+
+**Where it happened:**
+
+| Code | B. Deliberate | C. Hasty | B − C |
+|---|---|---|---|
+| Forty-third round (decisions 67–68) | 42% | 30% | +12 |
+| Main before decision 75 (after the forty-fourth to forty-seventh rounds' drill) | 49% | 45% | +4 |
+| Decisions 75–81, traits off | 27% | 35% | −8 |
+
+Two steps: the drill rounds after the forty-third (covered routes, platoons
+that close together, moving up) lifted the hasty plan 15 points and the
+deliberate one 7, closing the gap to 4; decisions 75–81 then took 22 from
+the deliberate plan and 10 from the hasty one.
+
+**Which of decisions 75–81** (each switched off alone, on top of the rest):
+
+| Off | B | C |
+|---|---|---|
+| None (as played) | 27% | 35% |
+| `aresFigures` (80) | **40%** | 39% |
+| `checkedFigures` (79, which carries 80 with it) | **45%** | 41% |
+| `directHeAsShell` (75) | 31% | 43% |
+| `directHeBombards` (81) | 28% | 34% |
+| `criticalHits` (77) | 29% | 34% |
+
+- **The mortars are the cause.** The tel's only fire support is two
+  sides' 81 mm (12 missions each). ARES's 250 m² for the 81 mm (decision
+  80; it was 476 m², **ours**, scaled from the 155 mm) and the checked
+  figures (men down at ×0.5, FM 7-90's suppression reach) roughly halve
+  what a mortar does. The deliberate plan is the one that leans on them:
+  it waits for its fires and keeps a base of fire; the hasty plan does
+  not wait for anything. With the old mortar the deliberate plan was 13
+  points better (40% against 27%); the hasty plan only 4.
+- The fire-heavy plan (E) does not move with them (34%, 35%, 37%): it
+  fires its missions before going either way.
+- **Read:** the old 476 m² flattered the mortars, and the deliberate plan's
+  lead rested on it. With the published figure the deliberate plan's
+  edge has to come from what history credits it with: the fires'
+  suppression when the assault goes in close behind them (validation.md,
+  *Hasty and deliberate attacks*: Veritable, 1,115 prisoners for 349
+  losses), not their kills. Nothing is retuned here; the author's call.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
