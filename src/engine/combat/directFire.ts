@@ -140,8 +140,9 @@ export function resolveDirectFire(
   const turn = opts.turn ?? 0;
   for (let i = 0; i < shooters; i++) {
     if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
-    hits++;
     const hit = woundHit(rng, target, turn, "smallArms", opts.targetSoldierId);
+    if (hit.missed) continue; // a lucky man (rules decision 69)
+    hits++;
     totalDamage += hit.damage;
     if (hit.casualty) newCasualties++;
   }

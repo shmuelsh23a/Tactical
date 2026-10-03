@@ -3,6 +3,7 @@ import type { CrewMember, Soldier, TankPart, Unit, VehicleState } from "./types.
 import { CASUALTY_RULES, WOUND_SEVERITY } from "./data/casualties.js";
 import { MOBILITY_THRESHOLDS } from "./data/armor.js";
 import { Rng } from "./rng.js";
+import { luckyOutcome } from "./traits.js";
 
 
 /** Number of soldiers in an infantry unit that are still in the fight. */
@@ -62,10 +63,10 @@ export function woundHit(
   turn: number,
   cause: "smallArms" | "explosive",
   preferredId?: string,
-): { damage: number; casualty: boolean } {
+): { damage: number; casualty: boolean; missed?: true } {
   const hit = severityHit(rng, target, turn, preferredId);
   if (hit.casualty && hit.victim) hit.victim.outBy = cause;
-  return { damage: hit.damage, casualty: hit.casualty };
+  return { damage: hit.damage, casualty: hit.casualty, ...(hit.missed ? { missed: true as const } : {}) };
 }
 
 /** The severity roll (decision 26). The severity is rolled before the victim is chosen. */
@@ -74,12 +75,18 @@ function severityHit(
   target: Unit,
   turn: number,
   preferredId?: string,
-): { damage: number; casualty: boolean; victim?: Soldier } {
+): { damage: number; casualty: boolean; victim?: Soldier; missed?: true } {
   const severity = WOUND_SEVERITY;
-  const d10 = rng.die(10);
-  const kind = d10 <= severity.light ? "light" : d10 <= severity.light + severity.serious ? "serious" : "killed";
+  // The d10 — drawn whole where luck reads it (rules decision 69): one draw
+  // either way, `rng.die(10)` being 1 + ⌊10u⌋ of it, so his luck shifts it
+  // between the faces without a draw of its own. Otherwise the middle of
+  // the face rolled, which reads as the face.
+  const u = target.traitRules?.effects ? rng.next() : (rng.die(10) - 0.5) / 10;
   const victim = selectHitSoldier(target, rng, preferredId);
   if (!victim) return { damage: 0, casualty: false };
+  const kind = luckyOutcome(target, victim, u, severity.light, severity.serious);
+  // His luck turned it away (rules decision 69): not a hit on him at all.
+  if (kind === "miss") return { damage: 0, casualty: false, missed: true };
   if (kind === "light") {
     const out = damageSoldier(victim, severity.lightWoundPoints, turn);
     victim.wound = out ? "serious" : "light";

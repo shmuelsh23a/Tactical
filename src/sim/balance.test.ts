@@ -100,16 +100,18 @@ describe("the defender's mission plan (decision 38)", () => {
 
 describe("the squad's grenadiers", () => {
   it("fire rifle grenades alongside the rifles, and are the platoon's explosives", () => {
-    const seeds = Array.from({ length: 20 }, (_, i) => 1000 + i); // fewer are too noisy for the claim
+    const seeds = Array.from({ length: 80 }, (_, i) => 1000 + i); // fewer are too noisy for the claim (20 gave 14 to 12 once the traits acted)
     // The classic harness, to measure the grenadiers alone: with the game's
     // rules the platoon scouts first and closes differently each battle.
     const withThem = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, classicHarness: true }));
     const without = seeds.map((seed) => runBattle(seed, "platoon", "attack3", { morale: true, drill: RIFLEMEN_ONLY, classicHarness: true }));
-    // Without them the only explosives are the assault's hand grenades. Over
-    // 20 seeds they nearly double them (33 to 18); a pinned squad keeps its
-    // head down (decision 63), so fewer are fired than before (50 to 22).
+    // Without them the only explosives are the assault's hand grenades. They
+    // nearly doubled them (33 to 18 over 20 seeds) until the traits acted
+    // (rules decisions 69–72, 82): now they add half again (103 to 69 over
+    // 80 seeds; 209 to 130 over 160). A pinned squad keeps its head down
+    // (decision 63).
     const he = (rs: typeof withThem) => rs.reduce((n, r) => n + r.outBy.explosive, 0);
-    expect(he(withThem)).toBeGreaterThan(1.5 * he(without));
+    expect(he(withThem)).toBeGreaterThan(1.3 * he(without));
     expect(PLAIN_SCRIPT.grenadiers).toEqual({ menPerLauncher: 4 });
   });
 });
@@ -139,7 +141,10 @@ describe("the harness plays the game's rules unless asked for the classic harnes
     expect(
       runBattle(1000, "platoon", "attack3", {
         morale: true, locationError: false, stillDetection: false, binoculars: false, keepEyesOn: false,
-        commandSuccession: false, planningError: 0, company: {},
+        // No company commander: an empty plan still keeps its platoons
+        // together, which tells once squads move at their slowest man's
+        // pace (rules decision 69), so that goes too.
+        commandSuccession: false, planningError: 0, company: { arriveTogether: false },
       }),
     ).toEqual(classic);
   });

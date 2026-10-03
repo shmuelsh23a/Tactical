@@ -15,6 +15,7 @@ import {
 import { UAV_PROFILES } from "../data/uav.js";
 import { OBSERVATION_POST_RANGE_M } from "../data/planning.js";
 import type { MovementMode } from "../types.js";
+import { eyesFactor } from "../traits.js";
 
 export interface DetectionResult {
   spottedUnitIds: string[];
@@ -126,7 +127,8 @@ export function detectionChance(
       ? profile.hiddenDetectChance + scouting + Math.max(0, focus)
       : 0;
 
-  const chance = base + watching + scouting + focus + exposure - concealment;
+  // His best observer's wisdom (rules decision 69): 1 unless the game plays it.
+  const chance = (base + watching + scouting + focus + exposure - concealment) * eyesFactor(observer);
   return { chance: Math.min(1, Math.max(floor, chance)), range };
 }
 
@@ -213,7 +215,7 @@ export function detectByMovement(
 
   for (const mine of mines) {
     if (mine.detected) continue;
-    if (searched(mine.position, profile.hiddenDetectRange) && rng.chance(profile.hiddenDetectChance)) {
+    if (searched(mine.position, profile.hiddenDetectRange) && rng.chance(profile.hiddenDetectChance * eyesFactor(mover))) {
       mine.detected = true;
       foundMineIds.push(mine.id);
     }

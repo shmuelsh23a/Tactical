@@ -653,7 +653,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
   const enemies = knownEnemies(game, side);
   const baseReach = task.attacking ? drill.attackFireRange : drill.openFireRange;
   const heavy = drill.heavyWeapons;
-  for (const u of game.units.filter((x) => x.side === side && inPlay(x))) {
+  // Still forces first, then the quicker (rules decision 72).
+  for (const u of game.firingOrder(side).filter(inPlay)) {
     const tank = heavy !== undefined && u.kind === "vehicle" && (u.vehicle?.vehicleClass ?? "mbt") === "mbt";
     const reach = tank ? Math.max(baseReach, heavy.tankGunRange) : baseReach;
     // A scout watches and reports; it does not give itself away (decision 52)

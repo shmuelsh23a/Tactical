@@ -3706,6 +3706,290 @@ battles a scenario.
   defines them. If they are smaller than lethal areas in the JMEM sense,
   this round understates the shells.
 
+## Fifty-third round: the traits, 2026-10-03
+
+Rules decision 82 (decisions 69, 71, 72 built): `traitEffects`, `fatigue`
+and `agilityFireOrder`, each on and off, standard measurement, 200 battles
+a scenario from seed 1000.
+
+**As first built**, the force at its slowest man's pace at every gait:
+
+| | All three off (PR #16) | All on | `traitEffects` off | Pace left out of 69 | Wisdom left out |
+|---|---|---|---|---|---|
+| telAzekaAssault (3:1) | 41% | **27%** | 43% | 45% | 21% |
+| telAzekaAssault2 (2:1) | 36% | **22%** | 27% | 30% | 17% |
+| yokneamUrban | 18% | 21% | 18% | — | — |
+
+- **The slowest man is all of it.** With pace left out the rest of
+  decision 69 is worth +4 at 3:1; fatigue alone and the fire order alone
+  move the tel by ±3 (within the noise of 200 battles). The slowest of
+  eight men is usually well below average (decision 69's warning), so
+  every bound shrinks, the attack takes three turns longer (median 30
+  against 27) and 6% of battles run out of time.
+
+The author's ruling (2026-10-03), from three measured choices:
+
+| Pace | 3:1 | 2:1 | Urban |
+|---|---|---|---|
+| Slowest man at every gait (as ruled on 2026-10-02) | 27% | 22% | 21% |
+| The men's mean pace | 39% | 28% | 19% |
+| **Slowest man on a rush only (adopted)** | **41%** | **34%** | **17%** |
+
+**As built** (the rush only; a lucky miss is no hit; a vehicle fires as an
+average force), standard measurement, 200 battles:
+
+| | Attacker wins | Attacker down | Defender down | Out by HE |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | **41%** | 11% | 18% | 66% |
+| telAzekaAssault2 (2:1) | **33%** | 14% | 15% | 65% |
+| yokneamUrban | **18%** | 8% | 24% | 98% |
+
+All three inside their targets (3:1 40–55%, 2:1 20–35%, explosives
+60–80%). Urban: BLUE's vehicles out 21%, criticals 3.2 a battle.
+
+**The reference plans** (thirty-seventh round's eight, `npm run jev-sim --
+--rule <choices>`), 100 seeds a scenario from 1000, on today's rules
+(75–81) with the traits off and on:
+
+| Plan | 3:1 off | 3:1 on | 2:1 off | 2:1 on |
+|---|---|---|---|---|
+| A. Calibrated | 40% | 42% | 28% | 25% |
+| A + flank | 37% | 34% | 21% | 17% |
+| E. Fire-heavy | 34% | 26% | 23% | 23% |
+| B. Deliberate | 27% | 28% | 27% | 19% |
+| D. Flank | 35% | 21% | 17% | 7% |
+| A + move up | 21% | 27% | 18% | 33% |
+| C. Hasty (three scouts) | 35% | 44% | 21% | 25% |
+| B + move up | 17% | 19% | 14% | 16% |
+| **Median** | **34.5%** | **27.5%** | **21%** | **21%** |
+| Forty-third round (decisions 67–68) | 40% | | 21.5% | |
+| **Target (decision 68)** | 40–55% | | 20–35% | |
+
+- **The 3:1 median was already under its band before the traits**:
+  decisions 75–81 took it from 40% to 34.5%. The traits take it to 27.5%.
+  The 2:1 median holds at 21%, inside its band.
+- **The plans that wait lose most**: the flank (35 → 21) and the
+  fire-heavy plan (34 → 26), which hold the company a long time before it
+  goes. The hasty plan gains (35 → 44); untraced (a guess: it goes in
+  before the waiting tells). At 100 seeds a plan's figure moves ±5
+  by chance; the median's move is more than that.
+- **For the author:** the scripted company's plan (the standard
+  measurement) is at 41% and inside the band, but the reasonable plans'
+  median is not. Nothing here is retuned. Whether the gap is the plans
+  (written before the traits, decision 69's warning) or the game is the
+  author's question, with the force-quality matrix (decision 81) still to
+  come.
+- Out of `npm run check`: the grenadiers' test now takes 80 seeds a side.
+  The grenadiers' explosives fell from about 1.8× the riflemen-only
+  platoon's to 1.5× once the traits acted; not traced.
+
+## Fifty-fourth round: the balance re-validated, 2026-10-03
+
+The author asked for the balance to be re-validated after decision 82.
+Three parts: the numbers against the sources and the targets against
+history (docs/validation.md, *Re-validation after decisions 75–82*), and
+why the plans that wait lost most in the fifty-third round.
+
+**The fifty-third round's plan figures were mostly noise.** At 100 seeds a
+plan's figure moves ±5 by chance, and the median of eight such figures
+moves several points. The tel's 3:1 plans again on seeds 2000–2099, and
+the two runs pooled (200 battles a plan):
+
+| Plan | Off, 1000 / 2000 | On, 1000 / 2000 | **Off, pooled** | **On, pooled** |
+|---|---|---|---|---|
+| A. Calibrated | 40% / 43% | 42% / 35% | 41.5% | 38.5% |
+| A + flank | 37% / 30% | 34% / 31% | 33.5% | 32.5% |
+| E. Fire-heavy | 34% / 34% | 26% / 36% | 34% | 31% |
+| B. Deliberate | 27% / 32% | 28% / 24% | 29.5% | 26% |
+| D. Flank | 35% / 18% | 21% / 6% | 26.5% | **13.5%** |
+| A + move up | 21% / 24% | 27% / 29% | 22.5% | 28% |
+| C. Hasty (three scouts) | 35% / 31% | 44% / 42% | 33% | **43%** |
+| B + move up | 17% / 20% | 19% / 17% | 18.5% | 18% |
+| **Median** | | | **31%** | **29.5%** |
+
+- **The traits move the 3:1 median by about two points**, not seven: 31%
+  → 29.5%. Both are under decision 68's 40–55%. The fall from the
+  forty-third round's 40% came with decisions 75–81 (direct HE as a
+  shell, buildings, armour, the checked and ARES figures), not with the
+  traits.
+- **Two plans move for real.** The flank (D) loses 13 points; the hasty
+  attack (C) gains 10. The fire-heavy plan's fall in the fifty-third round
+  (34 → 26) was chance: on fresh seeds it is 36% against 34%.
+- **The flank has no single cause.** Each trait effect switched off alone
+  (seeds 1000, 100 battles): wisdom 11%, intelligence 16%, fatigue 18%,
+  fire order 19%, luck 21%, pace at a rush 25%, against 21% with all on
+  and 35% with all off. Its long approach gives every small effect time
+  to add up.
+- **⚠️ The hasty attack now beats the deliberate one**: 43% against 26%
+  with the traits, 33% against 29.5% without. History has the hasty
+  attack 20–35 points *below* the deliberate (validation.md, *Hasty and
+  deliberate attacks*); in the forty-third round it was 30% against 42%.
+  The inversion came with decisions 75–81 and the traits widen it. Of
+  everything in this round, this is the finding that most needs the
+  author's eye: a plan that waits and fires first should not lose to one
+  that goes in at once.
+- The scripted company's plan (the standard measurement, 200 battles)
+  stays at 41% and 33%: inside both bands.
+
+## Fifty-fifth round: why the hasty attack beats the deliberate one, 2026-10-03
+
+The fifty-fourth round found the hasty plan (C, `rush`) ahead of the
+deliberate one (B, `basefire,bound,holdshort`) at 3:1, against history
+(20–35 points behind). Traced on the tel's 3:1, seeds 1000–1099, 100
+battles a cell, the traits off throughout.
+
+**Where it happened:**
+
+| Code | B. Deliberate | C. Hasty | B − C |
+|---|---|---|---|
+| Forty-third round (decisions 67–68) | 42% | 30% | +12 |
+| Main before decision 75 (after the forty-fourth to forty-seventh rounds' drill) | 49% | 45% | +4 |
+| Decisions 75–81, traits off | 27% | 35% | −8 |
+
+Two steps: the drill rounds after the forty-third (covered routes, platoons
+that close together, moving up) lifted the hasty plan 15 points and the
+deliberate one 7, closing the gap to 4; decisions 75–81 then took 22 from
+the deliberate plan and 10 from the hasty one.
+
+**Which of decisions 75–81** (each switched off alone, on top of the rest):
+
+| Off | B | C |
+|---|---|---|
+| None (as played) | 27% | 35% |
+| `aresFigures` (80) | **40%** | 39% |
+| `checkedFigures` (79, which carries 80 with it) | **45%** | 41% |
+| `directHeAsShell` (75) | 31% | 43% |
+| `directHeBombards` (81) | 28% | 34% |
+| `criticalHits` (77) | 29% | 34% |
+
+- **The mortars are the cause.** The tel's only fire support is two
+  sides' 81 mm (12 missions each). ARES's 250 m² for the 81 mm (decision
+  80; it was 476 m², **ours**, scaled from the 155 mm) and the checked
+  figures (men down at ×0.5, FM 7-90's suppression reach) roughly halve
+  what a mortar does. The deliberate plan is the one that leans on them:
+  it waits for its fires and keeps a base of fire; the hasty plan does
+  not wait for anything. With the old mortar the deliberate plan was 13
+  points better (40% against 27%); the hasty plan only 4.
+- The fire-heavy plan (E) does not move with them (34%, 35%, 37%): it
+  fires its missions before going either way.
+- **Read:** the old 476 m² flattered the mortars, and the deliberate plan's
+  lead rested on it. With the published figure the deliberate plan's
+  edge has to come from what history credits it with: the fires'
+  suppression when the assault goes in close behind them (validation.md,
+  *Hasty and deliberate attacks*: Veritable, 1,115 prisoners for 349
+  losses), not their kills. Nothing is retuned here; the author's call.
+
+## Fifty-sixth round: the assault behind the fires, 2026-10-03
+
+The author's choice after the fifty-fifth round: find whether the
+deliberate plan's assault goes in behind its fires, as history credits
+preparatory fire with. Traits on, the tel's 3:1.
+
+**When the mortars stop, and when the assault arrives** (40 battles a
+plan, seeds 1000–1039; "arrives" is the first turn an attacking squad is
+within 50 m of a defending one; the defenders' mean suppression then):
+
+| Plan | Last mortar round (turn, median) | Within 50 m (turn) | Gap | Defenders' suppression on arrival |
+|---|---|---|---|---|
+| C. Hasty | 20 | 22 | **1 turn** | **92** (pinned) |
+| B. Deliberate | 23 | 27 | **5 turns** | 52 |
+| E. Fire-heavy | 23 | 31 | **9 turns** | 57 |
+
+- **The hasty plan wins because its assault arrives under its own
+  fires.** It goes in as soon as the enemy is found; its missions are
+  called on what the scouts see while it closes, so the last rounds fall
+  as it arrives, and the defenders are pinned. The deliberate plans fire
+  first and go after, and arrive when suppression (halved every turn) has
+  worn off. **This is Swann's finding** (No. 2 ORS on Operation
+  Veritable, 1945, as re-read by Rooney 2020): "an enormous effect from
+  troops assaulting as soon as fire lifted"; where attacks failed, "the
+  main difference was the delay between fire and assault"; above a low
+  volume, more fire made next to no difference. The game reproduces the
+  mechanism; the plans use it backwards.
+- **Not the hold-short line.** At 100, 120, 150 and 200 m the deliberate,
+  fire-heavy and flank plans win the same (28%, 26%, 20%; 100 battles,
+  identical to the battle). Nor bounding: without it, or without holding
+  short, the deliberate plan wins 28–32%.
+- **The base of fire costs about ten points.** The plan with only a base
+  of fire (`basefire`) wins 32%, the calibrated plan without one about
+  40% (fifty-fourth round, pooled). A platoon of riflemen at range against
+  dug-in men (a third of the document's hits, halved by cover) suppresses
+  less than keeping a third of the company out of the assault costs.
+  Doctrine's base of fire is machine guns; the game's squads carry
+  rifles and grenade launchers only.
+
+### Timing the assault with the fires: tried and withdrawn
+
+The author chose to fix it in the drill (2026-10-03): keep missions back
+and fire them as the squads close. Tried as a rule variant (`reserve-N`):
+the last N of the 12 missions fall only on a mark a squad is within 300 m
+of, and stay on until the squads are 100 m from it (decision 63, S4).
+Tel 3:1, 100 battles, traits on:
+
+| Plan | Without | N 6 | N 8 | N 10 |
+|---|---|---|---|---|
+| B. Deliberate (base of fire, bounding, no hold short) | 28–32% | 13% | 2% | 0% |
+| A. Calibrated | 42% | — | 10% | — |
+| D. Flank | 20% | — | 5% | — |
+
+(Kept back only until the company goes, the reserve changed nothing: the
+plans had fired four or five missions by then. Calibrated with 8 kept to
+the go: 48%, against 42%.)
+
+**Holding fire for the assault is worse, by far.** The section fires one
+mission a turn, so 12 missions are 12 minutes of fire. Held back, nothing
+keeps the defence's heads down while the squads cross the open 300–400 m
+in front of it, and close in the scouts are seldom sure enough of a mark to
+fire on. The thirty-fourth round found the same of Jev holding every
+mission until the company went (about 30 points).
+
+**Read:** in the game the fires work as cover for the crossing, and the
+crossing is long (about 10 turns from 300 m, at half pace under fire). The
+plan that goes the moment the enemy is found, under the fires as they
+begin, crosses while they fall. That is what the forty-third round's
+"hasty" plan does: three scouts on their posts, the enemy found and
+reported, the company going as the first missions land. It is fire and
+movement together, not a hasty attack in history's sense (no
+reconnaissance, no coordination). The deliberate plan's four turns of
+fire before moving buy nothing that lasts: suppression halves every turn.
+The variant is withdrawn; nothing in the drill changed.
+
+## Fifty-seventh round: the hasty plan renamed, 2026-10-03
+
+The author's ruling (2026-10-03, after the fifty-sixth round): **rename,
+don't retune.** The forty-third round's plan C (three scouts, in as soon as
+the enemy is found, `--rule rush`) is fire and movement, not a hasty attack
+in history's sense: it has the company's full reconnaissance, and it goes
+as its first missions land. From here:
+
+- **C. Fire and movement** (`rush`): three scouts, in as soon as the enemy
+  is found. What the tables since the forty-third round call "C. Hasty".
+- **H. Hasty** (`onescout,rush`): one scout, in as soon as it finds the
+  enemy — history's hasty attack, short of reconnaissance (validation.md,
+  *Hasty and deliberate attacks*: 15–35% at 3:1).
+
+Measured, traits on, 100 battles from seed 1000:
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| **H. Hasty** (one scout) | **29%** | **17%** |
+| Two scouts, in as soon as found (`twoscouts,rush`) | 45% | 36% |
+| C. Fire and movement (three scouts; pooled, fifty-fourth round) | 43% | 25% |
+| A. Calibrated (pooled) | 38.5% | — |
+| B. Deliberate (pooled) | 26% | — |
+| **History, hasty** | **15–35%** | — |
+
+- **The hasty attack is where history puts it** (29% against 15–35%), and
+  about ten points under the calibrated plan; history has the gap at
+  20–35. Reconnaissance is what it lacks: a second scout is worth 16
+  points.
+- **Plan B (base of fire, bounding, holding short) is still the weakest
+  of the deliberate plans** (26%), for the fifty-sixth round's reasons: its
+  base of fire is riflemen, and its waiting outlasts its suppression. The
+  plan, not the game, is what the doctrine manuals are to settle.
+- The reference set keeps its eight plans with C renamed; H is measured
+  beside them as history's check, not counted in the median.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

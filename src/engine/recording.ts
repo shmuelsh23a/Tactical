@@ -208,6 +208,9 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.checkedFigures !== undefined && typeof r.checkedFigures !== "boolean") throw malformed("checkedFigures");
   if (r.aresFigures !== undefined && typeof r.aresFigures !== "boolean") throw malformed("aresFigures");
   if (r.directHeBombards !== undefined && typeof r.directHeBombards !== "boolean") throw malformed("directHeBombards");
+  if (r.traitEffects !== undefined && typeof r.traitEffects !== "boolean") throw malformed("traitEffects");
+  if (r.fatigue !== undefined && typeof r.fatigue !== "boolean") throw malformed("fatigue");
+  if (r.agilityFireOrder !== undefined && typeof r.agilityFireOrder !== "boolean") throw malformed("agilityFireOrder");
   if (r.armour !== undefined && !ARMOUR_FIGURES.includes(r.armour as ArmourFigures)) throw malformed("armour");
   if (r.headsDown !== undefined && typeof r.headsDown !== "boolean") throw malformed("headsDown");
   if (r.assaultNerve !== undefined && typeof r.assaultNerve !== "boolean") throw malformed("assaultNerve");
@@ -386,6 +389,12 @@ export interface GameRecording {
   aresFigures?: boolean;
   /** Whether direct HE cost a bombardment's nerve (rules decision 81). Read as **off** when absent. */
   directHeBombards?: boolean;
+  /** Whether the traits acted beyond morale (rules decision 69). Read as **off** when absent. */
+  traitEffects?: boolean;
+  /** Whether men tired (rules decision 71). Read as **off** when absent. */
+  fatigue?: boolean;
+  /** Whether a side's forces fired in order of agility (rules decision 72). Read as **off** when absent. */
+  agilityFireOrder?: boolean;
   /** Whether a pinned force kept its head down (rules decision 63, S2). Read as **off** when absent. */
   headsDown?: boolean;
   /** Whether an assault tested a pinned defender's nerve first (rules decision 63, S5). Read as **off** when absent. */
@@ -595,6 +604,9 @@ export function replayWithOutcomes(
     checkedFigures: recording.checkedFigures ?? false,
     aresFigures: recording.aresFigures ?? false,
     directHeBombards: recording.directHeBombards ?? false,
+    traitEffects: recording.traitEffects ?? false,
+    fatigue: recording.fatigue ?? false,
+    agilityFireOrder: recording.agilityFireOrder ?? false,
     headsDown: recording.headsDown ?? false,
     assaultNerve: recording.assaultNerve ?? false,
     pinnedFiresAtRange: recording.pinnedFiresAtRange ?? false,

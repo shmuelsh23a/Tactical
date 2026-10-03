@@ -45,6 +45,9 @@ See validation.md, *second pass*, for how that was done.
 | Le et al. 2024, camouflage patterns | Best patterns first seen at 30–35 m (10 observers) |
 | Leaper et al. 2023, distance estimation (sightings at sea) | Naked eye about 39% error; reticle binoculars 19–33% |
 | Rooney 2020, *Tactical Psychology in Operation Veritable* | Combined threats more than double surrenders (abstract) |
+| Ito et al. 1999, US Army (rifle accuracy after exhausting exercise) | Hits −26% after running, −20% after a loaded march; back to normal within 1.5 minutes |
+| Hunt et al. 2016, *Ergonomics*; Billing et al. 2015, *JSCR* (repeated 30 m sprints and 6 m bounds under load) | Each sprint slower than the last; the slow men lose nearly twice as much per kg as the fast |
+| Billing 2011, *Mil Med* (30 m sprint, 21.6 kg fighting load) | 8.2 s loaded against 6.2 s unloaded |
 
 ## Reference pages
 
@@ -104,6 +107,9 @@ figure and where it comes from.
 | AP charge | 60° fan, 30% at 50 m, 10% at 100 m | M18 Claymore |
 | AT charge | 665 m² against men; vehicles within 20 m | 155 mm shell IED |
 | A tank round breaches a wall | men inside at ×0.5 | FM 3-06.11 (the 0.5 is ours) |
+| A trait at 1 or 10 | ×0.8 / ×1.2 on what it acts on | The author (decision 69); linear between is ours |
+| Fatigue: a tired / exhausted man | pace and aim ×0.9 / ×0.75 | Ito 1999 (−20 to −26% hits); the steps are ours (decision 82) |
+| Fatigue: recovery | a quiet minute takes off a run's worth | Ito 1999: accuracy back within 1.5 minutes |
 
 **The balance on these figures**, 2026-10-03, standard measurement, 200
 battles each (balance.md, *Fifty-second round*):

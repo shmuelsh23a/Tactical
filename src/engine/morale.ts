@@ -40,6 +40,7 @@ import {
   WAVERING_TEST_INTERVAL,
 } from "./data/morale.js";
 import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2, lethalAreas, type Checked } from "./data/lethality.js";
+import { aimFactor } from "./traits.js";
 
 /**
  * Morale (מורל) — rules decision 19.
@@ -206,7 +207,8 @@ export function shooterAccuracy(unit: Unit): number[] {
   return readySoldiers(unit).map((s) => {
     const state = s.morale?.state ?? "steady";
     const own = state === "heroic" ? HEROIC.accuracy : state === "broken" ? 0 : STATE_ACCURACY[state];
-    return force * own;
+    // His intelligence and his tiredness (rules decisions 69 and 71): 1 unless the game plays them.
+    return force * own * aimFactor(unit, s);
   });
 }
 

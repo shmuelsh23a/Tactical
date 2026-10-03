@@ -14,9 +14,10 @@ export type Echelon = "squad" | "platoon" | "company" | "battalion" | "brigade";
 export type MovementMode = "normal" | "run";
 
 /**
- * A soldier's six traits, each 1–10 (author, 2026-09-22). Only wisdom, luck and
- * — for a leader — intelligence and charisma do anything yet, all through
- * morale (rules decision 19); the rest wait for the rules that read them.
+ * A soldier's six traits, each 1–10 (author, 2026-09-22). Wisdom, luck and —
+ * for a leader — intelligence and charisma act through morale (rules decision
+ * 19); with `GameOptions.traitEffects` each also acts on the man's own
+ * actions (decisions 69 and 72; see `traits.ts`).
  */
 export interface Traits {
   strength: number;
@@ -72,6 +73,8 @@ export interface Soldier {
   bleedingSinceTurn?: number;
   /** Drawn when the game is played with morale (rules decision 19). */
   traits?: Traits;
+  /** How tired he is (rules decision 71): see `FATIGUE`. Absent: fresh. */
+  fatigue?: number;
   /**
    * The force's leader: a squad's squad leader, a command group's commander.
    * Only a leader has leadership (intelligence + wisdom + charisma).
@@ -225,6 +228,14 @@ export interface Unit {
   motivation?: Motivation;
   /** How experienced the force is; "regular" when not given. */
   experience?: Experience;
+  /**
+   * Which of the traits' rules act on this force's men (rules decisions 69
+   * and 71): set by the game at `addUnit` from `GameOptions.traitEffects`
+   * and `GameOptions.fatigue`, so the combat functions read the switch off
+   * the force rather than having it threaded through each of them. Absent:
+   * the traits act through morale only, as before.
+   */
+  traitRules?: { effects?: true; fatigue?: true };
   /**
    * How hard it is being shot at (דיכוי): added as fire arrives, halved at the
    * end of every turn. Suppressed at 15, pinned at 40.

@@ -972,6 +972,11 @@ on prepared positions at small-unit level.
 | ORS, Operation Veritable (1945) | infantry close behind a heavy fire plan took 1,115 prisoners for 349 losses in 16 battalion attacks | via [Wavell Room](https://wavellroom.com/2020/08/18/the-psychology-of-artillery-effectiveness-fire-support/) |
 | Sinai, 8 October 1973 | unsupported armoured counterattacks on dug-in infantry with ATGMs failed badly | [Israel State Archives](https://catalog.archives.gov.il/en/chapter/8-9-october-counter-attack-and-failure-in-the-south-recovery-in-the-north/) |
 
+**Since 2026-10-03** (balance.md, fifty-seventh round) the game's hasty
+attack is one scout and in as soon as the enemy is found: 29% at 3:1. The
+three-scout plan that goes at once is *fire and movement*, not a hasty
+attack.
+
 **Read together** (a judgement, ±10 points): a hasty company attack on a
 prepared platoon at 3:1 wins about 15–35%; the gap to a deliberate attack is
 about 20–35 points; preparatory fire is the larger and better-supported part
@@ -1342,6 +1347,120 @@ characterisationexplosiveweapons.org, which no longer answers.
   small depression or narrow ditch", away from structures.
 - **Explosive fill** (Table 9): 155 mm 7–11 kg; tank 115–125 mm 2.7–4 kg;
   120 mm mortar 2.25–2.6 kg.
+
+## Re-validation after decisions 75–82 (2026-10-03)
+
+The author asked for the balance to be re-validated after the traits
+(decision 82): the numbers against the sources, the targets against
+history, and why the waiting plans lose (balance.md, fifty-fourth round).
+
+**`npm run validate`, research figures, 100 battles a cell**, the last
+recorded run (decisions 67–68) → today's rules with the traits off →
+with them on:
+
+| Battle | Fire | Attacker wins | Attacker lost, at its break | Defender lost, at its break | Out by explosives |
+|---|---|---|---|---|---|
+| Platoon meeting | — | 37% → 32% → 39% | 31% → 22% → 22% | — | 32% → 36% → 35% |
+| Platoon 3:1 attack | — | 84% → 85% → 78% | 19% → 19% → 17% | 56% → 56% → 56% | 14% → 15% → 15% |
+| Platoon 2:1 attack | — | 35% → 28% → 25% | 22% → 19% → 19% | 44% → 39% → 39% | 19% → 14% → 12% |
+| Company 3:1 attack | a bomb a turn | 54% → 94% → 91% | 13% → 12% → 8% | 28% → 22% → 22% | 23% → 7% → 6% |
+| Company 2:1 attack | a bomb a turn | 0% → 0% → 0% | 17% → 15% → 14% | — | 14% → 7% → 7% |
+| Company 3:1 attack | calibrated | 68% → 75% → 74% | 20% → 13% → 14% | 28% → 22% → 22% | 42% → 24% → 26% |
+| Company 2:1 attack | calibrated | 7% → 4% → 3% | 21% → 19% → 19% | 18% → 15% → 21% | 45% → 29% → 30% |
+
+- **The single-weapon figures are where their sources put them**: a round's
+  casualties on the point match its lethal area (155 mm 4.43 against 4.45
+  predicted, 81 mm 2.19 against 2.18, tank HE 1.76 against 1.79, 40 mm
+  0.39 against 0.36, RPG 0.72 against 0.71). Rifle fire did not move.
+- **Attackers still give up at 8–22% lost**, inside the sources' 10–25% for
+  a failed attack (*Loss exchange in attacks*). The traits move nothing
+  here beyond the noise.
+- **Defenders give up at 21–22% at company**, under the sources' 40–90%
+  for a won attack (mostly prisoners) — as before decision 75; open since
+  the fortieth round.
+- **Explosives' share on the flat harness fell from 42–45% to 24–30%**
+  with decisions 79–80 (ARES's 81 mm at 250 m², was 476). The tel is the
+  measure (64–66%, inside decision 81's 60–80%); the flat harness is not.
+- **The flat company 3:1 attack with a bomb a turn went from 54% to 91–94%**
+  with decisions 75–81, not the traits. Direct HE as a shell (75) and the
+  bombardment's nerve (81) are the likely cause; it is one scripted plan
+  on open ground, not the balance's measure.
+
+**The targets, checked again** (Apify and Consensus, 2026-10-03):
+
+- **Rowland, read on the page this time** (the review of *The Stress of
+  Battle*, part 5, themself.org): "without surprise the probability of
+  success increases in proportion to the force ratio (at 1:1 40%, at 3:1
+  54%)"; with surprise 70% and 76%; "Attacks below 1:1 ratio were
+  successful 65% of the time when surprise was achieved, where attacks at
+  these ratios were never successful without surprise". Decision 68's
+  anchors stand as transcribed. Rowland's figures are for all positions,
+  not prepared ones; the ×1.65 for a prepared position (part 1) is what
+  takes 54% down to about 46%.
+- **No small-unit table exists in the open.** The Dupuy Institute holds a
+  battalion-level database (127 cases, 1918–1991) and a company-level one
+  (98 cases, 1914–2000), and has published no force-ratio analysis of
+  either ("We do have the ability to look at them at Battalion and
+  Company-level, which I will probably do at some point", 2024). The
+  battalion database's own page lists 76 actions still to be transferred.
+- **Force quality outweighs the ratio**, in the one set nearest this
+  game: TDI's 51 division-level Arab–Israeli engagements (1956–1973). The
+  IDF attacking won 81% at 0.54–0.97:1 and 90% at 1.00–1.47:1; the Arab
+  armies attacking lost every engagement below 3.94:1 and won 71% above
+  it. The targets are for like against like, which decision 81 set as a
+  trained, regular, experienced force; the force-quality matrix is where
+  this belongs.
+- **Peer-reviewed** (Consensus): nothing that splits win rates below
+  division level. Rotte et al. 2003, *Defence and Peace Economics* (battles 1600–1973) find numbers,
+  leadership, morale and surprise all significant; Kress et al. 1999, *JORS*,
+  find the 3:1 rule reasonable only in some combat situations
+  (models, not data).
+
+**Read:** the targets stand on what can be found. 3:1 40–55% and 2:1
+20–35% for like against like on a prepared position; nothing better
+exists in the open, and the anchor is now read on the page.
+
+## Traits and fatigue (2026-10-03) — rules decisions 69, 71, 72, 82
+
+The author set the shape: each trait worth up to ±20% of what it acts on,
+at 1 or 10 against the average, per soldier (decision 69); fatigue by
+strength (decision 71). No source gives a trait's worth; the sources below
+set fatigue's size and speed. Searched through Consensus, 2026-10-03
+("soldier marksmanship accuracy after sprint or load carriage exertion";
+"military load carriage fatigue movement speed decrement").
+
+- **Ito et al. 1999**, *Rifle Shooting Accuracy During Recovery from
+  Fatiguing Exercise* (US Army; 12 soldiers, simulator, 175 and 300 m
+  pop-up targets): "The number of hits dropped from 7.3 … to 5.4 … for
+  running … and from 8.5 … to 6.8 … for load carriage", and "Shooting
+  accuracy returned to pre-exercise levels by the 2nd set of RFT (at 1.5
+  minutes post exercise)." → an exhausted man aims at **×0.75** (−26%),
+  and a quiet turn (a minute) takes off a run's worth of fatigue.
+- **Swain et al. 2011**, *JSCR*: shooting score "decreased significantly
+  after the 200-m run and then rapidly recovered". Agrees with Ito.
+- **Jaworski et al. 2015**, *Mil Med* (18 Marines, the Maneuver Under
+  Fire course at 0–45% of body weight): "Pre- to post-MANUF shot accuracy
+  … and precision … was reduced." Direction only.
+- **Hunt et al. 2016**, *Ergonomics*, and **Billing et al. 2015**, *JSCR*
+  (19 soldiers, five 30 m sprints and sixteen 6 m bounds at 10–30 kg):
+  "Performance deterioration was observed from the beginning to the end of
+  the series", and the slower men lost 1.0–1.4% a kilogram against
+  0.6–0.8% for the faster. → running is what tires a man most, and men
+  differ by nearly two to one in how much a load takes out of them: the
+  strength factor on the thresholds (±20%) is inside that.
+- **Billing 2011**, *Mil Med*: a 30 m sprint took 8.2 s under a 21.6 kg
+  fighting load against 6.2 s without — load costs a third of a sprint's
+  pace, which the game's run already carries; strength at a run moves it
+  ±20% (decision 69).
+- **Against**: Tenan et al. 2017 (*Human Factors*) and Thomas et al. 2018
+  (*JSCR*) found marching and load did not lower marksmanship, or raised
+  it. What lowered it was a high heart rate when shooting — after running,
+  not after walking. So fatigue in the game comes from running, climbing
+  and fire, not from walking.
+
+⚠️ Ours, not the sources': the points (a run 3, a metre climbed 0.1, a turn
+under fire 1, a quiet turn −3), the thresholds (tired at 6, exhausted at
+12, ×0.8–1.2 by strength), and the tired step (×0.9).
 
 ## Open
 
