@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-03: the author's rulings on the open questions (README decision 81: explosives 60–80%, 2:1 accepted, direct HE bombards, house types and a force-quality matrix to come, traits go-ahead after merge). Before that: the urban test bed (`yokneamUrban`), the figures checked against the sources (decision 79) and ARES's indirect-fire figures (decision 80). Now: tel 3:1 41%, 2:1 36% (just above target), explosives' share 64% (below decision 43's 75%), urban 36%. Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-03: the traits built (README decision 82: decisions 69, 71, 72; a force rushes at its slowest man's pace, walking is the gait's own, by the author's ruling on the measurement). Standard measurement: tel 3:1 41%, 2:1 33%, urban 18%; the eight reference plans' median 27.5% at 3:1 (under its 40–55%; it was 34.5% before the traits) and 21% at 2:1 (balance.md, fifty-third round). Before that: PR #16 merged; the author's rulings on the open questions (README decision 81: explosives 60–80%, 2:1 accepted, direct HE bombards, house types and a force-quality matrix to come, traits go-ahead after merge). Before that: the urban test bed (`yokneamUrban`), the figures checked against the sources (decision 79) and ARES's indirect-fire figures (decision 80). Then: tel 3:1 41%, 2:1 36% (accepted), explosives' share 64% (inside 60–80%), urban 18%. Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -29,7 +29,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 856 tests, 52 files
+npm run check       lint + typecheck clean, 880 tests, 53 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -130,9 +130,9 @@ backlog 22 (plan once, compute, execute cheaply), after the doctrine work.
 | Mission and victory conditions (backlog 18) | From doctrine: the manuals' definitions of mission accomplishment |
 | Direct-fire HE | Review it now — cloud work, no manuals needed |
 | Reserves for the other layouts | From doctrine |
-| The traits' other effects | Ruled: README decision 69 (per soldier, ±20%, slowest man sets the pace) — not built |
-| Fatigue | By strength (decision 71) — not built |
-| Who fires first | By agility, posture first (decision 72) — not built |
+| The traits' other effects | Built (decision 82): per soldier, ±20%; the slowest man sets a rush's pace, not a walk's |
+| Fatigue | Built (decision 82): by strength; ⚠️ points and thresholds ours, after Ito 1999 |
+| Who fires first | Built (decision 82): within a side, still forces first, then agility; the hotseat player still chooses his own order |
 | Skills | Every soldier has an MOS from doctrine, with weapon, weight, ammunition and equipment, a skill level per man, and a comrade takes up a fallen specialist's weapon (decision 73) — not built |
 | Campaign traits | Learning by wisdom, named quirks, relationships within a squad only (decision 74) — with campaigns |
 
@@ -207,7 +207,7 @@ How the last two days went, round by round, is in
    window, slit and roof chances. Not built: rubble slowing
    movement, breaching walls, an ATGM weapon, machine guns against light
    vehicles, active protection, passengers.
-3. **Build the traits** (decisions 69, 71, 72) — **go-ahead given 2026-10-03** (decision 81), after this branch is merged and discussed; measure the reference plans with them on. **The MOS**
+3. **The traits are built** (decision 82). **For the author:** the reference plans' 3:1 median is 27.5%, under its band (balance.md, fifty-third round). **The MOS**
    (decision 73) needs the doctrine's squad organisation first, and moves
    weapons from the force to the man; **campaign traits** (74) wait for
    campaigns (backlog 16).
@@ -293,11 +293,11 @@ before chasing it.
   numbers).
 - ~~The traits' other effects~~: ruled 2026-10-02 (decision 69).
 
-**Morale is built (rules decision 19), and the traits are ruled (decision
-69, 2026-10-02), not built.** Strength, intelligence, wisdom, agility,
-charisma and luck are drawn for every man; today only wisdom, luck and a
-leader's intelligence and charisma do anything — through morale. Decision 69
-says what the rest do to pace, being hit, spotting, mines and accuracy.
+**Morale is built (rules decision 19), and so are the traits (decision
+82).** Strength, intelligence, wisdom, agility, charisma and luck are drawn
+for every man and act through morale and, with `traitEffects`, on his own
+pace at a rush, aim, spotting, being hit and his luck; `fatigue` tires him
+by strength.
 Also the author's, and not built: **campaigns carry the pool of will, and only rest refills it** (backlog 16), and **taking the
 objective** as a morale gain, which needs backlog 18 first.
 
@@ -426,9 +426,8 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 *Start here*'s **Open** list is the order. While the manuals are not
-here: measure the reference plans under decision 75 (item 2), then the
-armour damage table; building the traits waits for the author's
-go-ahead. Mission and
+here: the author's call on the reference plans' 3:1 median (balance.md,
+fifty-third round), then the force-quality matrix (decision 81). Mission and
 victory conditions (backlog 18) are to come from doctrine.
 
 ## Traps that cost real time

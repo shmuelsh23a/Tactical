@@ -3706,6 +3706,83 @@ battles a scenario.
   defines them. If they are smaller than lethal areas in the JMEM sense,
   this round understates the shells.
 
+## Fifty-third round: the traits, 2026-10-03
+
+Rules decision 82 (decisions 69, 71, 72 built): `traitEffects`, `fatigue`
+and `agilityFireOrder`, each on and off, standard measurement, 200 battles
+a scenario from seed 1000.
+
+**As first built**, the force at its slowest man's pace at every gait:
+
+| | All three off (PR #16) | All on | `traitEffects` off | Pace left out of 69 | Wisdom left out |
+|---|---|---|---|---|---|
+| telAzekaAssault (3:1) | 41% | **27%** | 43% | 45% | 21% |
+| telAzekaAssault2 (2:1) | 36% | **22%** | 27% | 30% | 17% |
+| yokneamUrban | 18% | 21% | 18% | — | — |
+
+- **The slowest man is all of it.** With pace left out the rest of
+  decision 69 is worth +4 at 3:1; fatigue alone and the fire order alone
+  move the tel by ±3 (within the noise of 200 battles). The slowest of
+  eight men is usually well below average (decision 69's warning), so
+  every bound shrinks, the attack takes three turns longer (median 30
+  against 27) and 6% of battles run out of time.
+
+The author's ruling (2026-10-03), from three measured choices:
+
+| Pace | 3:1 | 2:1 | Urban |
+|---|---|---|---|
+| Slowest man at every gait (as ruled on 2026-10-02) | 27% | 22% | 21% |
+| The men's mean pace | 39% | 28% | 19% |
+| **Slowest man on a rush only (adopted)** | **41%** | **34%** | **17%** |
+
+**As built** (the rush only; a lucky miss is no hit; a vehicle fires as an
+average force), standard measurement, 200 battles:
+
+| | Attacker wins | Attacker down | Defender down | Out by HE |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | **41%** | 11% | 18% | 66% |
+| telAzekaAssault2 (2:1) | **33%** | 14% | 15% | 65% |
+| yokneamUrban | **18%** | 8% | 24% | 98% |
+
+All three inside their targets (3:1 40–55%, 2:1 20–35%, explosives
+60–80%). Urban: BLUE's vehicles out 21%, criticals 3.2 a battle.
+
+**The reference plans** (thirty-seventh round's eight, `npm run jev-sim --
+--rule <choices>`), 100 seeds a scenario from 1000, on today's rules
+(75–81) with the traits off and on:
+
+| Plan | 3:1 off | 3:1 on | 2:1 off | 2:1 on |
+|---|---|---|---|---|
+| A. Calibrated | 40% | 42% | 28% | 25% |
+| A + flank | 37% | 34% | 21% | 17% |
+| E. Fire-heavy | 34% | 26% | 23% | 23% |
+| B. Deliberate | 27% | 28% | 27% | 19% |
+| D. Flank | 35% | 21% | 17% | 7% |
+| A + move up | 21% | 27% | 18% | 33% |
+| C. Hasty (three scouts) | 35% | 44% | 21% | 25% |
+| B + move up | 17% | 19% | 14% | 16% |
+| **Median** | **34.5%** | **27.5%** | **21%** | **21%** |
+| Forty-third round (decisions 67–68) | 40% | | 21.5% | |
+| **Target (decision 68)** | 40–55% | | 20–35% | |
+
+- **The 3:1 median was already under its band before the traits**:
+  decisions 75–81 took it from 40% to 34.5%. The traits take it to 27.5%.
+  The 2:1 median holds at 21%, inside its band.
+- **The plans that wait lose most**: the flank (35 → 21) and the
+  fire-heavy plan (34 → 26), which hold the company a long time before it
+  goes. The hasty plan gains (35 → 44); untraced (a guess: it goes in
+  before the waiting tells). At 100 seeds a plan's figure moves ±5
+  by chance; the median's move is more than that.
+- **For the author:** the scripted company's plan (the standard
+  measurement) is at 41% and inside the band, but the reasonable plans'
+  median is not. Nothing here is retuned. Whether the gap is the plans
+  (written before the traits, decision 69's warning) or the game is the
+  author's question, with the force-quality matrix (decision 81) still to
+  come.
+- Out of `npm run check`: the grenadiers' test now takes 80 seeds a side.
+  The grenadiers' explosives fell from about 1.8× the riflemen-only
+  platoon's to 1.5× once the traits acted; not traced.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
