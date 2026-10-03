@@ -3879,6 +3879,45 @@ the deliberate plan and 10 from the hasty one.
   *Hasty and deliberate attacks*: Veritable, 1,115 prisoners for 349
   losses), not their kills. Nothing is retuned here; the author's call.
 
+## Fifty-sixth round: the assault behind the fires, 2026-10-03
+
+The author's choice after the fifty-fifth round: find whether the
+deliberate plan's assault goes in behind its fires, as history credits
+preparatory fire with. Traits on, the tel's 3:1.
+
+**When the mortars stop, and when the assault arrives** (40 battles a
+plan, seeds 1000–1039; "arrives" is the first turn an attacking squad is
+within 50 m of a defending one; the defenders' mean suppression then):
+
+| Plan | Last mortar round (turn, median) | Within 50 m (turn) | Gap | Defenders' suppression on arrival |
+|---|---|---|---|---|
+| C. Hasty | 20 | 22 | **1 turn** | **92** (pinned) |
+| B. Deliberate | 23 | 27 | **5 turns** | 52 |
+| E. Fire-heavy | 23 | 31 | **9 turns** | 57 |
+
+- **The hasty plan wins because its assault arrives under its own
+  fires.** It goes in as soon as the enemy is found; its missions are
+  called on what the scouts see while it closes, so the last rounds fall
+  as it arrives, and the defenders are pinned. The deliberate plans fire
+  first and go after, and arrive when suppression (halved every turn) has
+  worn off. **This is Swann's finding** (No. 2 ORS on Operation
+  Veritable, 1945, as re-read by Rooney 2020): "an enormous effect from
+  troops assaulting as soon as fire lifted"; where attacks failed, "the
+  main difference was the delay between fire and assault"; above a low
+  volume, more fire made next to no difference. The game reproduces the
+  mechanism; the plans use it backwards.
+- **Not the hold-short line.** At 100, 120, 150 and 200 m the deliberate,
+  fire-heavy and flank plans win the same (28%, 26%, 20%; 100 battles,
+  identical to the battle). Nor bounding: without it, or without holding
+  short, the deliberate plan wins 28–32%.
+- **The base of fire costs about ten points.** The plan with only a base
+  of fire (`basefire`) wins 32%, the calibrated plan without one about
+  40% (fifty-fourth round, pooled). A platoon of riflemen at range against
+  dug-in men (a third of the document's hits, halved by cover) suppresses
+  less than keeping a third of the company out of the assault costs.
+  Doctrine's base of fire is machine guns; the game's squads carry
+  rifles and grenade launchers only.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
