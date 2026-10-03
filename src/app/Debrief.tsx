@@ -80,6 +80,10 @@ export function Debrief({
   const extent = useMemo(() => recordingExtent(recording), [recording]);
   const game = useMemo(() => replayGame(recording, { upToAction: index }), [recording, index]);
   const terrain = useMemo(() => recording.terrain ?? FLAT_GROUND, [recording]);
+  const shownTerrain = useMemo(
+    () => (game.terrain === game.mapTerrain ? terrain : { ...terrain, objects: game.terrain.objects }),
+    [game, terrain],
+  );
   // Outcomes and the contact ledger are fixed by the recording, so the whole
   // battle is replayed once for both; only the board state is re-derived per
   // step.
@@ -174,10 +178,9 @@ export function Debrief({
             width={extent.width}
             height={extent.height}
             // The recording's own terrain, not the per-step replay's fresh
-            // clone, so the drawn map is memoised across steps — until HE has
-            // damaged a building, when the step's own ground is drawn
-            // (rules decision 76).
-            terrain={game.terrain === game.mapTerrain ? terrain : game.terrain}
+            // clone, so the drawn map is memoised across steps — with the
+            // step's own buildings once HE has damaged one (decision 76).
+            terrain={shownTerrain}
             units={units}
             viewingSide={side ?? "BLUE"}
             // The umpire is the one reader entitled to see both sides' arcs.

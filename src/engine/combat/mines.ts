@@ -3,6 +3,7 @@ import { segmentIntersectsCircle, type Point } from "../geometry.js";
 import type { Mine, MovementMode, Side, Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
+import type { ArmourFigures } from "../data/armor.js";
 
 /**
  * How close a moving force has to pass to set a charge off (מטען). The document
@@ -59,6 +60,8 @@ export function triggerMines(
   mines: readonly Mine[],
   allUnits: Unit[],
   turn = 0,
+  /** Whose armour figures (rules decision 78): the research ones read a mine as striking the belly. */
+  armour: ArmourFigures = "document",
 ): { detonations: MineDetonation[]; spent: string[] } {
   const detonations: MineDetonation[] = [];
   const spent: string[] = [];
@@ -87,7 +90,7 @@ export function triggerMines(
       side: mine.side,
       position: mine.position,
       activated,
-      blast: resolveBlast(rng, weaponKey, mine.position, allUnits, turn),
+      blast: resolveBlast(rng, weaponKey, mine.position, allUnits, turn, undefined, "document", { figures: armour }),
     });
     spent.push(mine.id);
   }

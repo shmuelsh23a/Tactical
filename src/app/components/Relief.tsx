@@ -133,7 +133,9 @@ export function Relief({
   height: number;
 }) {
   const hf = terrain.heightfield;
-  const image = useMemo(() => reliefImage(terrain, width, height), [terrain, width, height]);
+  // The shading reads the heightfield alone: a building damaged or brought
+  // down (rules decision 76) gives a new terrain, not new ground to shade.
+  const image = useMemo(() => (hf ? reliefImage({ heightfield: hf, objects: [] }, width, height) : null), [hf, width, height]);
   const contours = useMemo(() => (hf ? contourPaths(hf) : null), [hf]);
   if (!hf) return null;
   return (

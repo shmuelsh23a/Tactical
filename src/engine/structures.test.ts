@@ -196,3 +196,81 @@ describe("armour by weapon, class and facing (decision 78)", () => {
     expect(v.vehicle!.facing).toBe(90);
   });
 });
+
+describe("the review's fixes (decisions 76–78)", () => {
+  it("an anti-tank mine reads the research figures: an M113's belly gives far more often", async () => {
+    const { triggerMines } = await import("./combat/mines.js");
+    const rate = (armour: "document" | "research") => {
+      let pen = 0;
+      const n = 2000;
+      const rng = new Rng(3);
+      for (let i = 0; i < n; i++) {
+        const apc = makeVehicle("V", "BLUE", { x: 0, y: 0 }, 0, "V", "lightApc");
+        const mine = { id: "m", side: "RED" as const, type: "antiTank" as const, position: { x: 0, y: 0 }, armed: true, detected: false };
+        const { detonations } = triggerMines(rng, apc, { x: 0, y: -20 }, { x: 0, y: 20 }, [mine], [apc], 0, armour);
+        if (detonations[0]?.blast?.targets[0]?.armorEffect?.penetrated) pen++;
+      }
+      return pen / n;
+    };
+    expect(rate("research")).toBeGreaterThan(0.25);
+    expect(rate("document")).toBeLessThan(rate("research") / 2);
+  });
+
+  it("a vehicle falling back keeps its front to the enemy", () => {
+    const g = new Game({ seed: 1, enforceC2: false });
+    const v = g.addUnit(makeVehicle("V", "RED", { x: 0, y: 0 }, 0));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    expect(g.setStandingOrder(v.id, { destination: { x: -50, y: 0 }, gait: "normal", withdraw: true })).toBe(true);
+    g.executeStandingOrders("RED");
+    expect(v.position.x).toBeLessThan(0);
+    expect(v.vehicle!.facing).toBe(0);
+  });
+
+  it("an air burst leaves the roof it bursts over alone", () => {
+    // A building so large every round lands on it, so each round reports it.
+    const hall: MapObject = { id: "hall", kind: "building", footprint: { shape: "circle", center: { x: 0, y: 0 }, radius: 2000 } };
+    const struck = (fuze: "impact" | "airburst") => {
+      const g = new Game({ seed: 2, enforceC2: false, terrain: { objects: [hall] }, commandEchelon: { RED: "battalion", BLUE: "battalion" } });
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: -3000 }, 8));
+      g.beginTurn();
+      g.advanceToPhase("targeting");
+      g.queueIndirectFire("artillery", "RED", { x: 0, y: 0 }, { rounds: 4, fuze });
+      // Artillery lands two turns after it is called.
+      let landed = 0;
+      for (let turn = 0; turn < 3; turn++) {
+        g.advanceToPhase("summary");
+        g.advanceToPhase("initiative");
+        const { resolved } = g.advanceToPhase("resolvePriorArty");
+        landed += (resolved ?? []).filter((r) => r.structure).length;
+      }
+      return landed;
+    };
+    expect(struck("impact")).toBeGreaterThan(0);
+    expect(struck("airburst")).toBe(0);
+  });
+
+  it("a command group in a house takes no critical hit: it has no blast to amplify", async () => {
+    const { makeCommandGroup } = await import("./units.js");
+    let criticals = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      const g = new Game({ lethality: "document", seed, enforceC2: false, terrain: GROUND, structuresTakeDamage: false });
+      const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: -200 }));
+      const hq = g.addUnit(makeCommandGroup("HQ", "BLUE", "platoon", { x: 0, y: 105 }));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      criticals += g.fireExplosive("tankRound", tank.id, hq.id, { hasLineOfSight: true }).criticals ?? 0;
+    }
+    expect(criticals).toBe(0);
+  });
+
+  it("refuses a recording with a vehicle of no known class", async () => {
+    const { RecordingError } = await import("./recording.js");
+    const g = new Game({ seed: 1, enforceC2: false });
+    g.addUnit(makeVehicle("V", "RED", { x: 0, y: 0 }, 0, "V", "heavyApc"));
+    const rec = JSON.parse(JSON.stringify(g.toRecording()));
+    expect(() => replayGame(rec)).not.toThrow();
+    rec.actions[0].unit.vehicle.vehicleClass = "hovercraft";
+    expect(() => replayGame(rec)).toThrow(RecordingError);
+  });
+});

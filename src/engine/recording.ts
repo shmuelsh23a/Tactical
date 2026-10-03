@@ -40,7 +40,7 @@ import type { MapLineKind, Terrain } from "./terrain.js";
 import { OBJECT_HEIGHT_M, SLOPE } from "./data/terrain.js";
 import { ATTACKER_BREAK_BEFORE_66, NERVE_IN_OPEN_BEFORE_66 } from "./data/morale.js";
 import { LETHALITIES, type Lethality } from "./data/lethality.js";
-import { ARMOUR_FIGURES, type ArmourFigures } from "./data/armor.js";
+import { ARMOUR_FIGURES, VEHICLE_CLASSES, type ArmourFigures, type VehicleClass } from "./data/armor.js";
 
 /**
  * Battle recording (הקלטת קרב).
@@ -233,6 +233,12 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
     if (field) throw new RecordingError({ kind: "malformedTerrain", field });
   }
   if (!Array.isArray(r.actions)) throw malformed("actions");
+  // A vehicle's class picks its armour row (rules decision 78): an unknown one
+  // would throw mid-replay rather than say what is wrong with the file.
+  for (const a of r.actions as { kind?: unknown; unit?: { vehicle?: { vehicleClass?: unknown } } }[]) {
+    const cls = a?.kind === "addUnit" ? a.unit?.vehicle?.vehicleClass : undefined;
+    if (cls !== undefined && !VEHICLE_CLASSES.includes(cls as VehicleClass)) throw malformed("vehicleClass");
+  }
 }
 
 /** Every kind of line a map may draw — a `Record` so a new kind cannot be missed. */

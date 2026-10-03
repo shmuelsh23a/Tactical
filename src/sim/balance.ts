@@ -550,7 +550,10 @@ export function runBattle(seed: number, echelon: Echelon, kind: BattleKind, give
   const commander =
     opts.company && kind !== "meeting"
       ? new ScriptedCompany(g, attackerSide, objective[attackerSide], plannedTargets, opts.company, {
-          terrain: g.terrain,
+          // The ground as it stands, buildings brought down included (rules decision 76).
+          get terrain() {
+            return g.terrain;
+          },
           width: 2 * X,
           height: NORTH + 1100,
         })

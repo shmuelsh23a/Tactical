@@ -753,7 +753,7 @@ export class Game {
     return {
       chance,
       factor: ENCLOSED_BLAST_FACTOR,
-      inside: (u: Unit) => u.kind !== "vehicle" && distanceToFootprint(building.footprint, u.position) <= OBJECT_COVER_REACH_M,
+      inside: (u: Unit) => u.kind === "infantry" && distanceToFootprint(building.footprint, u.position) <= OBJECT_COVER_REACH_M,
     };
   }
 
@@ -765,7 +765,7 @@ export class Game {
    */
   private throughTheWindow(weapon: string, attacker: Unit, target: Unit) {
     const figures = CRITICAL_CHANCE[weapon];
-    if (!figures || target.kind === "vehicle") return undefined;
+    if (!figures || target.kind !== "infantry") return undefined;
     const aperture = this.buildingAt(target.position) ? figures.window : target.baseCover === "full" ? figures.slit : undefined;
     const chance = aperture ? lookupBand(aperture, distance(attacker.position, target.position))?.value : undefined;
     return chance ? { chance, factor: ENCLOSED_BLAST_FACTOR } : undefined;
@@ -1696,6 +1696,7 @@ export class Game {
     // Everything due this turn lands together: the men are as they were for
     // all of it, and go to ground after it (rules decision 30).
     const shelled = new Set<Unit>();
+    const strikes: { round: IndirectFireResult; building: MapObject }[] = [];
     const results = due.flatMap((m) => {
       const { cepM, adjustments } = this.cepFor(m);
       const fired = Array.from({ length: m.rounds ?? 1 }, () =>
@@ -1714,16 +1715,15 @@ export class Game {
           ...(this.criticalHits ? { criticalAt: (impact: Point) => this.throughTheRoof(m.weapon, impact) } : {}),
         }),
       );
-      // What the rounds did to the buildings they landed on (decision 76),
-      // after their blast: the men inside were under the roof as it was.
-      for (const f of fired) {
-        const struck = this.ground.objects.find(
-          (o) => o.kind === "building" && distanceToFootprint(o.footprint, f.dispersion.impact) === 0,
-        );
-        if (struck) {
-          const before = this.structureState(struck.id);
-          const state = this.strikeStructure(struck, m.weapon);
-          if (state) f.structure = { objectId: struck.id, state, changed: state !== before };
+      // The buildings the rounds landed on (decision 76). An air burst goes
+      // off above the roof and does not touch it. The damage is done once
+      // everything due this turn has landed, below.
+      if (m.fuze !== "airburst") {
+        for (const f of fired) {
+          const struck = this.ground.objects.find(
+            (o) => o.kind === "building" && distanceToFootprint(o.footprint, f.dispersion.impact) === 0,
+          );
+          if (struck) strikes.push({ round: f, building: struck });
         }
       }
       // What the side saw of it teaches the next round; a round seen on the
@@ -1762,6 +1762,17 @@ export class Game {
       return fired.map((f) => ({ ...f, side: m.side }));
     });
     for (const unit of shelled) unit.downUnderShelling = true;
+    // What it all did to the buildings it landed on, after every blast: the
+    // men inside were under the roofs as they were (decision 76).
+    for (const { round, building } of strikes) {
+      const before = this.structureState(building.id);
+      const state = this.strikeStructure(building, round.weapon);
+      if (!state) continue;
+      const strike = { objectId: building.id, state, changed: state !== before };
+      // The copy handed back for this round, which carries the side.
+      const out = results.find((r) => r.dispersion === round.dispersion);
+      if (out) out.structure = strike;
+    }
     return results;
   }
 
@@ -1846,7 +1857,12 @@ export class Game {
     unit.position = { ...to };
     // A vehicle's hull points the way it drove: which side a round strikes
     // is read from it (rules decision 78).
-    if (unit.vehicle && this.armour === "research" && distance(from, to) > 0) unit.vehicle.facing = bearingDegrees(from, to);
+    // Armour reverses out of contact: a vehicle withdrawing or routing keeps
+    // its front to the enemy it is leaving.
+    const reversing = unit.routing === true || this.standingOrders.get(unit.id)?.withdraw === true;
+    if (unit.vehicle && this.armour === "research" && !reversing && distance(from, to) > 0) {
+      unit.vehicle.facing = bearingDegrees(from, to);
+    }
     this.bounds.set(unit.id, (this.bounds.get(unit.id) ?? 0) + 1);
     unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
@@ -1877,6 +1893,7 @@ export class Game {
       this.mines,
       this.units,
       this.turn,
+      this.armour,
     );
     if (spent.length) this.mines = this.mines.filter((m) => !spent.includes(m.id));
     for (const d of detonations) {
@@ -2572,14 +2589,6 @@ export class Game {
       armour: this.armour,
       ...(window ? { critical: window } : {}),
     });
-    // Every round that hit struck the building the target is in (decision 76).
-    const struck = target.kind === "vehicle" ? undefined : this.buildingAt(target.position);
-    if (struck && result.hit) {
-      const before = this.structureState(struck.id);
-      let state: StructureState | undefined;
-      for (let i = 0; i < (result.hits ?? 1); i++) state = this.strikeStructure(struck, weaponKey);
-      if (state) result.structure = { objectId: struck.id, state, changed: state !== before };
-    }
     if (result.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
@@ -2611,6 +2620,15 @@ export class Game {
         }
       }
       this.stress.credit(attacker, bodies, target.neutralized && !targetWasNeutralized);
+    }
+    // Every round that hit struck the building the target is in (decision 76),
+    // after its blast and suppression: the men were under the roof as it was.
+    const struck = target.kind === "vehicle" ? undefined : this.buildingAt(target.position);
+    if (struck && result.hit) {
+      const before = this.structureState(struck.id);
+      let state: StructureState | undefined;
+      for (let i = 0; i < (result.hits ?? 1); i++) state = this.strikeStructure(struck, weaponKey);
+      if (state) result.structure = { objectId: struck.id, state, changed: state !== before };
     }
     this.journal({ kind: "fireExplosive", weaponKey, attackerId, targetId, opts });
     return { ...result, coveringFire };

@@ -2311,7 +2311,12 @@ on the stated reasoning, still awaiting the author's word.
     - A round that hits a force in a building, or a shell that lands on
       one, wears it down in damage points (`STRUCTURE_DAMAGE`): artillery
       15, tank round 10, mortar 4, RPG 3, and the 40 mm grenade nothing.
-      Small arms do nothing.
+      Small arms do nothing, and an air burst goes off above the roof
+      and does not touch it. A round aimed at a vehicle beside a house
+      does not strike the house.
+    - The damage is done after the fire that caused it: everything due
+      in a turn lands on the roofs as they were, and a direct round's
+      blast and suppression find the men under the roof as it was.
     - **Damaged** at 10 points, **rubble** at 100, for a 100 m² house;
       a larger building takes proportionally more (never under half).
     - A damaged building is still full cover, but its roof is holed: a
@@ -2349,7 +2354,8 @@ on the stated reasoning, still awaiting the author's word.
     - **What it does:** the burst is among the men inside. Each man's
       blast chance is the open ground's ×**2.5**, capped at 1
       (`ENCLOSED_BLAST_FACTOR`). Cover and roof count for nothing against
-      it. Other forces in the blast are resolved as before.
+      it. Other forces in the blast are resolved as before. Only infantry
+      takes one: a command group has no blast roll to amplify.
     - The log and the debrief say "חדר דרך חלון או חרך" / "חדר דרך הגג".
     - ⚠️ **Every figure is ours.** No source gives the chance a round goes
       in through a window, or through a roof by fuze. They come from
@@ -2371,7 +2377,9 @@ on the stated reasoning, still awaiting the author's word.
       sixth argument and a scenario spec's `vehicleClass`; absent, a tank.
     - **The side struck** is read from the hull's heading and where the
       round came from: front within 45°, rear within 45° of behind, side
-      otherwise. A vehicle's hull now turns to face the way it drives.
+      otherwise. A vehicle's hull now turns to face the way it drives,
+      except when it withdraws or routs: armour reverses out of contact,
+      keeping its front to the enemy it leaves (⚠️ ours).
     - **Penetration** (`PENETRATION`), front / side / rear against a tank:
       tank round 40% / 100% / 100%, RPG 2% / 40% / 90%; a light APC or a
       truck is penetrated every time. An anti-tank mine strikes the belly:

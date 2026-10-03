@@ -279,7 +279,10 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     ...(opts.arriveTogether === false ? { arriveTogether: false } : {}),
   };
   const company = new ScriptedCompany(g, attacker, objective, suspected, { ...companyPlan, ...drillChoices }, {
-    terrain: g.terrain,
+    // The ground as it stands, buildings brought down included (rules decision 76).
+    get terrain() {
+      return g.terrain;
+    },
     width: mapWidth,
     height: mapHeight,
   });
