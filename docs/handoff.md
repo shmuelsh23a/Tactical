@@ -17,6 +17,10 @@ out of here on purpose:
   committing, written for any reviewer of any make.
 - [docs/driving-the-game.md](driving-the-game.md) — scripting the browser to
   verify a change for real.
+- [docs/sources.md](sources.md) — the reference library: every report and
+  page the numbers were checked against, where to find it, how far it was
+  read, the figures in play with their sources, and the air-delivered
+  munition figures for when air support comes (backlog 10).
 - [docs/business-plan.md](business-plan.md) — who it is for, editions, free
   and paid, build order, and the open business items.
 - [docs/validation.md](validation.md) — the game's numbers against the
@@ -80,16 +84,23 @@ govern the next step:
    for the manuals the author has collected, which are on the author's
    computer and are to be embedded too (author, 2026-10-02).
 
-**Where the balance stands** (balance.md, thirty-seventh to forty-seventh
-rounds; README, decisions 67–68):
+**Where the balance stands, 2026-10-03** (balance.md, fiftieth to
+fifty-second rounds; README, decisions 75–80; every figure in play and its
+source in [sources.md](sources.md)). Standard measurement, 200 battles each:
 
-| Measure | 3:1 | 2:1 | Target / source |
-|---|---|---|---|
-| Reference plans' median (A–E, the hasty attack with three scouts) | **42%** | **24%** | 40–55%, 20–35% (decision 68) |
-| Standard measurement (the calibrated plan, 200 battles) | 49% | 27% | — |
-| A failed attack's cost to the attacker (killed and wounded) | 16–22% | | 10–25% |
-| A won attack: attacker / defender lost | 6–14% / ~50% | | 5–20% / 40–90% |
-| Explosives' share on the tel | 72–75% | | 75% (author) |
+| Measure | Now | Target / source |
+|---|---|---|
+| Tel Azeka 3:1 | **41%** | 40–55% (decision 68) |
+| Tel Azeka 2:1 | **36%** | 20–35%, just above |
+| Yokneam urban (company, 2 tanks, 2 APCs against a platoon in houses) | **18%** | — (the test bed for decisions 75–78) |
+| Explosives' share of losses, tel | **64%** | 75% (decision 43), below |
+| Urban: BLUE's vehicles out a battle | 21% | — |
+| Urban: window / slit criticals a battle | 3.2 | — |
+
+The author looked at these and found them fine (2026-10-03). Before
+decisions 75–80 the same measurement gave 49% and 27%. The reference
+plans (below) have not been measured since; their medians were 42% and 24%
+on 2026-10-01.
 
 The **reference plans** are `--rule` variants of `npm run jev-sim` (A
 calibrated `—`; A + flank `flank`; B deliberate `basefire,bound,holdshort`;

@@ -2707,7 +2707,11 @@ Each is intended to be an independent, toggleable module:
    older rules is flagged rather than silently reinterpreted.
 8. **Leaderboards.**
 9. **Leagues.**
-10. **Air support** — fixed/rotary CAS missions.
+10. **Air support** — fixed/rotary CAS missions. The figures to start from
+    (Mk 82: 89 kg of explosive, most buildings collapse within 31 m,
+    100% lethality across about 32 m; CEP 94.5 m unguided, 5 m GPS, 1.1 m
+    laser) are in [docs/sources.md](docs/sources.md), *Air-delivered
+    munitions*, from GICHD's *Explosive Weapon Effects* (2017).
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
 12. **Logistics** — ammunition, fuel, resupply, sustainment. For indirect fire,
     ammunition is the battalion's and above, set by the mission's parameters;
