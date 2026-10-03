@@ -1229,6 +1229,61 @@ still unread.
 - nerve lost per turn;
 - the assault nerve test.
 
+## ARES Special Report No. 3, *Indirect Fire* (2017), read in full
+
+Dullum, Fish, Jenzen-Jones et al., *Indirect Fire: A Technical Analysis of
+the Employment, Accuracy, and Effects of Indirect-fire Artillery Weapons*,
+Armament Research Services, January 2017, 93 pp.
+(armamentresearch.com/wp-content/uploads/2017/01/ARES-Special-Report-Indirect-Fire_web.pdf).
+Read on the page, through the fetch service, 2026-10-03.
+
+**Agrees with the game:**
+- Artillery caused "between 50 and 80 per cent" of 20th-century
+  casualties: decision 43's 75%.
+- "As soon as the target takes cover in ditches or foxholes … the
+  effectiveness of the fire may be significantly reduced"; units "strive
+  for simultaneous impact". This is decision 30, the first volley.
+- Mortar error is "3.0" along and "2.5" across the line of fire, as a
+  share of range (Table 3.3): about 90 × 75 m at 3 km, against our 100 m
+  first-round CEP.
+- A "good" first round lands "within 400 meters", and corrections run
+  "800, 400, 200, 100, and 50 metres" (successive bracketing). Decision
+  32 halves the CEP with each observed round.
+- A superquick fuze destroys a building's top floors and leaves "much of
+  the building intact"; bringing it down takes a delay fuze.
+  Decisions 76–77.
+- "The degree of suppression is related to the frequency of impacts and
+  explosive quantity of the munitions used" (citing US Army, 1980).
+
+**Disagrees with the game:**
+- **"Fragmentation" areas** (Tables 1.1–1.2, "genericised estimates",
+  citing Cross et al. 2016):
+
+  | Round | ARES | The game |
+  |---|---|---|
+  | 155 mm | **665 m²** | 971 |
+  | 81 mm | **250 m²** | 476 |
+  | 105 mm | **495 m²** | (tank HE) 280 |
+  | 60 mm | 150 m² | — |
+  | 120 mm mortar | 650 m² | — |
+
+  The report does not define "fragmentation" area. Its rocket table
+  (Table 1.5) gives "Lethal Area" figures of the same size: a 122 mm rocket
+  with 6.4 kg of explosive, 700 m² on impact. It is a published, citable
+  report; the game's figures rest on one forum post.
+- **Air burst against impact**, from Table 1.5's rockets: **×1.08–1.22**.
+  Decision 31 has ×1.28 against standing men.
+- **155 mm first-round CEP**, Table 3.1: 95 m at 15 km, 115 m at 20 km,
+  140 m at 25 km, 275 m at 30 km. Our first round is 270 m at any range,
+  which is a gun at its maximum range.
+- Dud rates "from as low as 0.1 per cent to more than 30 per cent". FM
+  3-06.11 gives up to 25% in a town; the game has none.
+
+**Not used:** Table 4.1 (3 psi "residential structures collapse", 5 psi
+"most buildings collapse") is for large, long-duration blasts. Applied to
+an 11 kg shell it would flatten houses at about 20 m, which contradicts FM
+3-06.11's "large expenditures of ammunition".
+
 ## Open
 
 For the author, in rough order of what they move:
