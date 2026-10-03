@@ -1609,7 +1609,8 @@ on the stated reasoning, still awaiting the author's word.
     - Under `document` nothing changed: one round, no ceiling, the same rng
       draws. `turnsFiring` is kept only on the research figures.
     - Nothing counts ammunition (backlog 12).
-43. ✅ **Calibrated to 75% of losses by explosives** (author, 2026-09-28: "I
+43. ✅ **Calibrated to 75% of losses by explosives — a 60–80% range since
+    decision 81** (author, 2026-09-28: "I
     want the numbers to reflect 75% HE casualties"; the sources give 72–78%,
     docs/validation.md). **The 75% is for battles on real ground** (author,
     2026-09-30): the tel meets it (73–77%); the flat harness, where a scouted
@@ -2494,6 +2495,34 @@ on the stated reasoning, still awaiting the author's word.
         75%**;
       - the urban attack: 36% with tank HE at 495 m², and **18%** at the
         280 m² kept after GICHD.
+
+81. ✅ **Rulings of 2026-10-03, after decisions 75–80** (the author,
+    answering the open questions one at a time):
+    - **Explosives' share of losses: a 60–80% range**, not 75% (amends
+      decision 43). The tel's 64% is inside it.
+    - **The 2:1 attack at 36% is accepted**, one point over decision 68's
+      20–35%.
+    - **Direct HE costs a bombardment's nerve**, as a shell does.
+      `GameOptions.directHeBombards` is on for a new game, and a recording
+      made before it reads it as off. A tank round, RPG or rifle grenade
+      now counts as decision 19's `bombarded` (5 a turn, scaled by cover
+      under decision 64), not only `firedOn` (1).
+    - **Several types of house**, each with its own strength. To be
+      defined with the urban combat work. Until then a house of 208 m²
+      takes about 20 tank rounds, and none comes down in the urban battle.
+    - **Force quality as a matrix.** Ruled, not built. Three levels of
+      force type (irregular, regular, elite) against three of experience
+      (inexperienced, experienced, very experienced). Morale is affected
+      by both, as well as by the other factors already described. Today's
+      breakpoints (30% attacker, 50% defender; decisions 44, 49, 67) are
+      **a trained, regular, experienced force's**, and the other eight
+      cells are measured against it. The literature's warning stays
+      recorded: no study establishes fixed breakpoints, and McQuie found
+      most forces quit under 10% (docs/validation.md, *third pass*). The
+      game already carries `experience` (green, regular, veteran, elite)
+      and `motivation` per force; the matrix replaces or maps them.
+    - **The traits** (decisions 69, 71, 72): **go-ahead to build**, after
+      this branch is merged and discussed.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

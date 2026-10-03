@@ -471,6 +471,11 @@ export function sideBroken(
 export interface FireNote {
   kind: "direct" | "explosive" | "assault" | "indirect" | "mine";
   /**
+   * A direct-fire explosive that costs the nerve of a bombardment, as a
+   * shell does (rules decision 81, `GameOptions.directHeBombards`).
+   */
+  bombards?: true;
+  /**
    * The bearing from the force to whoever fired, taken **where the force was
    * when the shot was taken** — a force caught mid-bound is judged on the
    * geometry of that shot, not of where it ended the turn. Absent for fire
@@ -756,7 +761,7 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
   for (const u of inPlay) {
     const notes = stress.get(u.id)?.firedOn ?? [];
     const firedOn = notes.length > 0;
-    const bombarded = notes.some((n) => n.kind === "indirect");
+    const bombarded = notes.some((n) => n.kind === "indirect" || n.bombards);
     const flanked = wasFlanked(u, notes);
     const ownDown = downCount.get(u.id) ?? 0;
     const ownWounded = woundedCount.get(u.id) ?? 0;

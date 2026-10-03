@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-03: the urban test bed (`yokneamUrban`), the figures checked against the sources (decision 79) and ARES's indirect-fire figures (decision 80). Now: tel 3:1 41%, 2:1 36% (just above target), explosives' share 64% (below decision 43's 75%), urban 36%. Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-03: the author's rulings on the open questions (README decision 81: explosives 60–80%, 2:1 accepted, direct HE bombards, house types and a force-quality matrix to come, traits go-ahead after merge). Before that: the urban test bed (`yokneamUrban`), the figures checked against the sources (decision 79) and ARES's indirect-fire figures (decision 80). Now: tel 3:1 41%, 2:1 36% (just above target), explosives' share 64% (below decision 43's 75%), urban 36%. Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -29,7 +29,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 854 tests, 52 files
+npm run check       lint + typecheck clean, 856 tests, 52 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -91,9 +91,9 @@ source in [sources.md](sources.md)). Standard measurement, 200 battles each:
 | Measure | Now | Target / source |
 |---|---|---|
 | Tel Azeka 3:1 | **41%** | 40–55% (decision 68) |
-| Tel Azeka 2:1 | **36%** | 20–35%, just above |
+| Tel Azeka 2:1 | **36%** | 20–35%; accepted (decision 81) |
 | Yokneam urban (company, 2 tanks, 2 APCs against a platoon in houses) | **18%** | — (the test bed for decisions 75–78) |
-| Explosives' share of losses, tel | **64%** | 75% (decision 43), below |
+| Explosives' share of losses, tel | **64%** | 60–80% (decision 81) |
 | Urban: BLUE's vehicles out a battle | 21% | — |
 | Urban: window / slit criticals a battle | 3.2 | — |
 
@@ -207,8 +207,7 @@ How the last two days went, round by round, is in
    window, slit and roof chances. Not built: rubble slowing
    movement, breaching walls, an ATGM weapon, machine guns against light
    vehicles, active protection, passengers.
-3. **Build the traits** (decisions 69, 71, 72) — ruled, waiting for the
-   go-ahead; measure the reference plans with them on. **The MOS**
+3. **Build the traits** (decisions 69, 71, 72) — **go-ahead given 2026-10-03** (decision 81), after this branch is merged and discussed; measure the reference plans with them on. **The MOS**
    (decision 73) needs the doctrine's squad organisation first, and moves
    weapons from the force to the man; **campaign traits** (74) wait for
    campaigns (backlog 16).
@@ -219,7 +218,8 @@ How the last two days went, round by round, is in
    (scouts, moving up, bounding) exist only in the headless harness.
 5. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
    evaluate once by rule from the side's belief) — after 1.
-6. **Flat-ground misses**, **overhead cover for higher echelons**,
+6. **Force quality matrix** (decision 81): force type × experience, 3 × 3, today's breakpoints being the regular / experienced cell; morale driven by both. **House types** (decision 81), with the urban combat work.
+7. **Flat-ground misses**, **overhead cover for higher echelons**,
    **ammunition** (backlog 12) — for battalion battles.
 
 ## Waiting on the author

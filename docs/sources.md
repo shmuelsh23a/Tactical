@@ -111,9 +111,9 @@ battles each (balance.md, *Fifty-second round*):
 | Battle | Attacker wins | Target |
 |---|---|---|
 | Tel Azeka, 3:1 | 41% | 40–55% (decision 68) |
-| Tel Azeka, 2:1 | 36% | 20–35% |
+| Tel Azeka, 2:1 | 36% | 20–35%; accepted (decision 81) |
 | Yokneam, urban (company, 2 tanks, 2 APCs against a platoon in houses) | 18% | — |
-| Explosives' share of losses, tel | 64% | 75% (decision 43) |
+| Explosives' share of losses, tel | 64% | 60–80% (decision 81) |
 
 ## Air-delivered munitions: for when they come (backlog 10)
 

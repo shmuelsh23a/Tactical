@@ -166,3 +166,30 @@ describe("ARES Special Report No. 3's indirect-fire figures (decision 80)", () =
     expect(misses(false)).toBeGreaterThan(200);
   });
 });
+
+describe("direct HE costs a bombardment's nerve (decision 81)", () => {
+  /** The BLUE squad's total will after one rifle grenade volley and the turn's morale step. */
+  const willAfter = (bombards: boolean) => {
+    const g = new Game({ seed: 4, enforceC2: false, morale: true, directHeBombards: bombards });
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 80 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    expect(g.fireExplosive("rifleGrenade", red.id, blue.id).fired).toBe(true);
+    // Morale is judged as the next turn begins.
+    g.advanceToPhase("summary");
+    g.advanceToPhase("initiative");
+    return blue.soldiers!.reduce((t, s) => t + (s.morale?.will ?? 0), 0);
+  };
+
+  it("is on for a new game and off for a recording made before it", () => {
+    const rec = new Game({ seed: 1 }).toRecording();
+    expect(rec.directHeBombards).toBe(true);
+    delete (rec as { directHeBombards?: boolean }).directHeBombards;
+    expect(replayGame(rec).directHeBombards).toBe(false);
+  });
+
+  it("costs the squad more nerve than being fired on", () => {
+    expect(willAfter(true)).toBeLessThan(willAfter(false));
+  });
+});

@@ -487,6 +487,13 @@ export interface GameOptions {
    */
   aresFigures?: boolean;
   /**
+   * A direct-fire explosive (tank round, RPG, rifle grenade) costs the nerve
+   * of a bombardment, as a shell does, not only of being fired on (rules
+   * decision 81; author, 2026-10-03). On by default; a recording made
+   * before it reads it as off.
+   */
+  directHeBombards?: boolean;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -654,6 +661,7 @@ export class Game {
   readonly armour: ArmourFigures;
   readonly checkedFigures: boolean;
   readonly aresFigures: boolean;
+  readonly directHeBombards: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -959,6 +967,7 @@ export class Game {
     this.armour = opts.armour ?? "research";
     this.checkedFigures = opts.checkedFigures ?? true;
     this.aresFigures = opts.aresFigures ?? true;
+    this.directHeBombards = opts.directHeBombards ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -1097,6 +1106,7 @@ export class Game {
       armour: this.armour,
       ...(this.checkedFigures ? { checkedFigures: true } : {}),
       ...(this.aresFigures ? { aresFigures: true } : {}),
+      ...(this.directHeBombards ? { directHeBombards: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -3399,6 +3409,8 @@ export class Game {
     this.fireLog.push({ turn: this.turn, targetId: target.id, kind, ...(firerId ? { firerId } : {}) });
     if (!this.morale) return;
     const note: FireNote = from ? { kind, bearing: bearingDegrees(at ?? target.position, from) } : { kind };
+    // Direct HE is a bombardment for the nerve, like a shell (decision 81).
+    if (kind === "explosive" && this.directHeBombards) note.bombards = true;
     this.stress.firedOn(target, note);
     addSuppression(target, suppression);
   }
