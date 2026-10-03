@@ -1284,6 +1284,65 @@ Read on the page, through the fetch service, 2026-10-03.
 an 11 kg shell it would flatten houses at about 20 m, which contradicts FM
 3-06.11's "large expenditures of ammunition".
 
+## GICHD, *Explosive Weapon Effects – Final Report* (February 2017), read
+
+Geneva International Centre for Humanitarian Demining, ISBN
+978-2-940369-61-4, 145 pp.
+(gichd.org/fileadmin/uploads/gichd/Publications/Explosive_weapon_effects_web.pdf).
+Read through the fetch service, 2026-10-03: the effects, accuracy, payload
+and effects-analysis chapters. ARES's Special Report No. 3 draws on the
+same work, so where the two agree it is one source, not two. The
+per-weapon annexes (C: mortars, D: tank guns) were on
+characterisationexplosiveweapons.org, which no longer answers.
+
+**What "lethal area" means here:**
+- "The fragmentation effect can be quantified by the two-dimensional
+  function p(x,y), which is the probability of being affected … the effect
+  of the munition can be stated as a single quantity called lethal area."
+  That is how decision 41 reads it: the integral of the chance of being put
+  out.
+- "Military modelling assumes that the targeted soldiers are in the prone
+  position and present an area of 0.5 m²"; "the U.S. Army bases its lethal
+  area calculations (and PI) on a prone male soldier in winter clothing".
+  Official lethal areas are against men down.
+- The worked example is against a standing man. A 122 mm Grad rocket
+  (6.4 kg of explosive) has a lethal area of "700 m²", and Table 6 gives
+  its chance of incapacitation by distance: 96% at 3 m, 85% at 6 m, 64% at
+  10 m, 36% at 15 m, 17% at 20 m. Its hit-probability figure is for a
+  "standing adult". Integrated over the ground, Table 6 gives about 730 m²,
+  so the table and the area agree.
+- ARES's 665 m² for a 155 mm shell (about 11 kg of explosive) sits on the
+  Grad's scale. Reading ARES's areas as against standing men, as decision
+  80 does, is consistent with this, though neither report says so outright.
+
+**Other figures:**
+- **155 mm in the open** (Table 8, after Champion et al. 2009): fragments
+  kill out to 25 m and injure to 40 m, with "possible injury" to 550 m.
+  A lethal area of 665 m² is a 14.5 m disc, and 971 m² is 17.6 m; both
+  fit.
+- **120 mm mortar, Markale** (angle of fall 60–65°, point-detonating
+  fuze): a lethal area of "290–380 m²". ARES gives 650 m². The two
+  reports disagree by half on this round.
+- **Tank HE:** "tank munitions were often found to have a more limited
+  lethal area than others." **This contradicts decision 80**, which gives
+  tank HE 495 m² against the 81 mm's 250 m².
+- **Enclosed against open** (Table 7, Leibovici 1996): 49% killed against
+  8%. Decision 77 is ×2.5 against a ×2–6 range.
+- **155 mm CEP** (Table 2): the same as ARES's (Dullum 2010, Hill 2007), so
+  not a second source. "The U.S. Army has previously designated 267 m as an
+  acceptable CEP, at the maximum range." A NATO 120 mm mortar's nominal CEP
+  at maximum range without a fire-control system is about 136 m.
+- **Risk estimate distances** (Table 10), the range at which 10% of
+  unprotected friendly troops are incapacitated, delivery error included:
+  81 mm 80 m, tank 120 mm 90 m, 120 mm mortar 100 m, 155 mm 125 m. These
+  are context for decision 63's danger-close distances.
+- **Buildings:** "a modern urban environment, composed of brick, stone and
+  concrete structures, would provide a much greater level of protection
+  from primary fragmentation". Men are safer "prone on the ground in a
+  small depression or narrow ditch", away from structures.
+- **Explosive fill** (Table 9): 155 mm 7–11 kg; tank 115–125 mm 2.7–4 kg;
+  120 mm mortar 2.25–2.6 kg.
+
 ## Open
 
 For the author, in rough order of what they move:
