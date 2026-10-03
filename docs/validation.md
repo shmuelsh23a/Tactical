@@ -1005,6 +1005,53 @@ rounds). Research figures, 100 battles a cell, the previous run → now:
   are, balance.md, forty-third to forty-fifth rounds); its company 3:1 at 68%
   is one scripted plan on open ground.
 
+## Buildings, windows and rooms (2026-10-03) — rules decisions 76–77
+
+**How these were read.** The session's network proxy blocked opening the
+pages. Every figure below comes from a search engine's extract of the page
+named, not from the page itself. Re-check against the text before treating
+any of them as final; the main one is FM 3-06.11, ch. 7
+(globalsecurity.org/military/library/policy/army/fm/3-06-11/ch7.htm).
+
+| Claim | Source | Used for |
+|---|---|---|
+| "One MPAT round normally creates a breach hole in all but the thickest masonry construction" | FM 3-06.11, ch. 7 | One tank round damages a house |
+| 155 mm direct fire penetrates 28 in of reinforced concrete "with considerable damage beyond the wall"; "large expenditures of ammunition are required to knock down buildings of any size" | FM 3-06.11, ch. 7 | Artillery 15 points; no figure for rubble |
+| 81 mm with delay "can penetrate the roofs of light buildings"; mortars "seldom penetrate more than the upper stories" | FM 3-06.11, ch. 7 and 12; FM 7-90, app. B | Mortar 4 points; roof 5% superquick |
+| The LAW needs five rounds on one spot to loophole an 8-in double-brick wall | FM 3-06.11, ch. 7 | RPG 3 points |
+| "The M203 cannot reasonably deliver the rounds needed to breach a typical exterior wall" | FM 3-06.11, ch. 7 | Rifle grenade: no damage |
+| Rubble "often becomes … a stronger position for defending troops than it was before" | FM 3-06.11 | Rubble is full cover |
+| M203 point targets include windows to 150 m; inherent accuracy to put grenades into windows at about 125 m, but gunners "cannot consistently hit windows at 50 m when forced to aim and fire quickly" | FM 3-22.31 | Rifle-grenade window chance |
+| Tank-gun dispersion 0.2–0.3 mil | Search extracts naming KNDS / Jane's (SHARD) and IMI (XM329); the Soviet acceptance figure came from a forum post | Tank window chance, by range |
+| RPG-7 about 50% on a tank-sized target at 180–200 m | Search extracts of US RPG-7 threat material on globalsecurity, page not confirmed | RPG window chance |
+| The same bombs killed 7.8% (15/204) of their casualties in the open and 49% (46/93) in buses | Leibovici et al., *J Trauma* 1996;41(6):1030–35 (pubmed 8970558) | Enclosed blast ×2.5 |
+
+**Ours, with no source:**
+- how many rounds bring a house down: 10 tank rounds, 7 shells, 25 bombs, 34 RPGs;
+- every window, slit and roof chance;
+- the room factor's 2.5, inside the ×2–3 that the bus figures and the windowed room together suggest.
+
+## Armour by weapon, class and facing (2026-10-03) — rules decision 78
+
+Read the same way, through search extracts; nothing was checked against the
+page.
+
+| Figure | Source | Status |
+|---|---|---|
+| PG-7V 260 mm, PG-7VL 500 mm, PG-7VR 600–750 mm | modernfirearms.net; globalsecurity rpg-7-specs; defense-update | Published |
+| Kornet 1,000–1,200 mm | AT-14 articles | Published |
+| 120 mm APFSDS 700–850 mm at 2 km | Wikipedia M829: "very little is publicly known" | Estimate |
+| Merkava 4, Namer, Achzarit armour by facing | Forum estimates; army-technology: Namer "equal to Merkava 4" | **Estimate: classified** |
+| M113: 28–44 mm aluminium | Wikipedia M113 | Published |
+| P(pen) = 1 / (1 + e^−(pen − armour)/(0.1 × armour)) | The curve's shape is standard ballistic practice (NIST IR 7760); the spread of 0.1 is ours | Ours |
+| 2006 Lebanon: about 50 Merkavas hit, 21–22 penetrated, two destroyed (both by IEDs or mines); 11 of 14 APCs hit by ATGMs perforated | strategypage, 2007-01-15 and 2008-08-27; globalsecurity, merkava-combat | Check: the table agrees |
+| 1988 US tests: a 155 mm round within 30 m of an APC sent fragments in and caused casualties | *Field Artillery Journal*, cited second-hand | `HE_FRAGMENTS_IN` |
+| 1982 Lebanon: about 50 Merkavas out of action, 7 total losses; no fires | tankarchives, second-hand | A tank's 5% catastrophic stays the table's |
+
+**Ours, with no source:** a light APC's 30% and a truck's 70% chance of
+being destroyed by a penetration; and every number in the Merkava, Namer
+and Achzarit columns.
+
 ## Open
 
 For the author, in rough order of what they move:

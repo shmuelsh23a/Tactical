@@ -2300,8 +2300,101 @@ on the stated reasoning, still awaiting the author's word.
       `firedOn`, not `bombarded`.
     - ⚠️ **The factors are a shell's.** They come from lethal areas and
       trench figures for 105–155 mm rounds falling from above, applied
-      as they stand to a flat-trajectory round. A round aimed through a
-      window or into a firing slit is not modelled.
+      as they stand to a flat-trajectory round. A round that goes in
+      through a window or a firing slit is decision 77.
+
+76. ✅ **Buildings take damage: intact, damaged, rubble** (author,
+    2026-10-03, option "3 states"). The document says nothing of
+    structures; until now a building was cover and a sight-line block that
+    nothing could touch. With `GameOptions.structuresTakeDamage` (on for a
+    new game, off for a recording made before it):
+    - A round that hits a force in a building, or a shell that lands on
+      one, wears it down in damage points (`STRUCTURE_DAMAGE`): artillery
+      15, tank round 10, mortar 4, RPG 3, and the 40 mm grenade nothing.
+      Small arms do nothing.
+    - **Damaged** at 10 points, **rubble** at 100, for a 100 m² house;
+      a larger building takes proportionally more (never under half).
+    - A damaged building is still full cover, but its roof is holed: a
+      shell finds the men as in an open hole. Rubble is **full cover with
+      no roof**, 2 m high for sight lines. FM 3-06.11: a town reduced to
+      rubble is "a stronger position for defending troops than it was
+      before".
+    - The map the battle was set on is never changed: the game keeps a
+      live view (`game.terrain`) with the damage on it, and a recording
+      carries the original and replays the damage. The map draws a
+      damaged building dashed and rubble pale; both sides see it.
+    - The log and the debrief say "המבנה נפגע" / "המבנה קרס להריסות".
+    - ⚠️ One tank round damaging a house is sourced: FM 3-06.11, "one
+      MPAT round normally creates a breach hole in all but the thickest
+      masonry". **How many rounds bring a house down is ours**: no source
+      gives it ("large expenditures of ammunition are required").
+    - Not built: rubble slowing movement, walls breached, charges against
+      buildings.
+77. ✅ **Critical hits: through the window, the slit or the roof**
+    (author, 2026-10-03: "a shell going directly through a window and
+    doing full damage to people inside"; scope: tank rounds, RPGs and
+    rifle grenades, firing slits too, and indirect fire through a roof;
+    effect: amplified). With `GameOptions.criticalHits` (on for a new
+    game, off for a recording made before it):
+    - **Direct fire:** each round that hits a force in a building may have
+      gone in through a window; one that hits a force in a position
+      prepared before the battle, through its firing slit. The chance is
+      by weapon and range (`CRITICAL_CHANCE`), a slit about a third of a
+      window: tank round 85% / 40% to 500 m, 50% / 15% to 1,000 m; RPG
+      40% / 10% to 100 m, falling to 1% at 300 m and beyond; rifle grenade
+      35% / 10% to 50 m, 15% / 5% to 150 m.
+    - **Indirect fire:** an impact-fuzed round that lands on a building
+      goes through its roof at 5% for a mortar bomb and 30% for a 155 mm
+      shell (`ROOF_PENETRATION`). An air burst never does.
+    - **What it does:** the burst is among the men inside. Each man's
+      blast chance is the open ground's ×**2.5**, capped at 1
+      (`ENCLOSED_BLAST_FACTOR`). Cover and roof count for nothing against
+      it. Other forces in the blast are resolved as before.
+    - The log and the debrief say "חדר דרך חלון או חרך" / "חדר דרך הגג".
+    - ⚠️ **Every figure is ours.** No source gives the chance a round goes
+      in through a window, or through a roof by fuze. They come from
+      dispersion: a tank gun's 0.2–0.3 mil; FM 3-22.31 on the M203, which
+      can put a grenade through a window at about 125 m but whose gunners
+      "cannot consistently hit windows at 50 m when forced to aim and fire
+      quickly"; an RPG-7 hits a tank-sized target about half the time at
+      200 m. The ×2.5 is anchored on bombs that killed 7.8% of their
+      casualties in the open and 49% in buses (Leibovici et al., J Trauma
+      1996). A room with windows is less enclosed than a bus, so the
+      factor was set at 2.5, inside a ×2–3 range, rather than ×6.
+78. ✅ **Armour by weapon, by vehicle class and by the side struck**
+    (author, 2026-10-03, option "+ vehicle types"). The document's table
+    gives every weapon a 20% penetration from any side. With
+    `GameOptions.armour` `research` (the default; `document` plays the
+    table, and a recording made before it reads `document`):
+    - **Vehicle classes:** `mbt` (Merkava 4, T-72), `heavyApc` (Namer,
+      Achzarit), `lightApc` (M113), `soft` (a truck). `makeVehicle`'s
+      sixth argument and a scenario spec's `vehicleClass`; absent, a tank.
+    - **The side struck** is read from the hull's heading and where the
+      round came from: front within 45°, rear within 45° of behind, side
+      otherwise. A vehicle's hull now turns to face the way it drives.
+    - **Penetration** (`PENETRATION`), front / side / rear against a tank:
+      tank round 40% / 100% / 100%, RPG 2% / 40% / 90%; a light APC or a
+      truck is penetrated every time. An anti-tank mine strikes the belly:
+      20% against a tank, 90% against an M113. A track keeps the table's
+      70% whatever the weapon. Where it hits and what a penetration does
+      stay the table's.
+    - **A thin-skinned vehicle burns:** a penetration destroys an M113
+      outright at 30% and a truck at 70% (`CATASTROPHIC_ON_PENETRATION`),
+      on top of the table's own 5% on the ammunition.
+    - **Plain HE** (mortar, artillery, rifle grenade) within its blast of an
+      M113 sends fragments in at 50%, and of a truck at 80%
+      (`HE_FRAGMENTS_IN`); a tank and a heavy APC keep the document's
+      track roll.
+    - ⚠️ **The armour of a Merkava 4 or a Namer is classified**, so their
+      columns are estimates. The penetrations are published figures (PG-7VL
+      500 mm, Kornet 1,000 mm, 120 mm APFSDS 700–850 mm), but they were read
+      through search summaries and not checked against the pages. They are
+      turned into a chance by a logistic curve whose spread, a tenth of the
+      armour, is ours. 2006 Lebanon agrees: about 40–45% of Merkavas hit by
+      ATGMs were penetrated, and 11 of 14 APCs.
+    - Not built: an ATGM (Kornet) as a weapon, heavy machine guns against
+      light vehicles, a direct artillery hit on a vehicle, active
+      protection (Trophy), passengers in an APC.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

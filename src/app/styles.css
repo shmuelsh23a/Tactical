@@ -103,6 +103,8 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .object-building { fill: #6b5a48; stroke: #2a2118; stroke-width: 1; }
 .object-wall { fill: #b3a27e; stroke: #4a4030; stroke-width: 0.6; }
 .object-tree { fill: #1e6a2c; stroke: #0c3a16; stroke-width: 0.8; }
+.object-damaged { fill: #5a4a3a; stroke-dasharray: 3 2; }
+.object-rubble { fill: #8a7d6b; stroke: #3d352b; stroke-width: 0.6; stroke-dasharray: 1 2; opacity: 0.85; }
 .move-range { fill: rgba(59,130,246,0.10); stroke: var(--blue); stroke-dasharray: 4 4; stroke-width: 1; }
 .selection-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
 .assault-range {

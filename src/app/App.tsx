@@ -42,6 +42,8 @@ import {
 } from "../engine/index.js";
 import {
   casualtyReport,
+  criticalHe,
+  structureHe,
   chargeHe,
   chargeWorkHe,
   planningRefusalHe,
@@ -652,14 +654,16 @@ export function App({ scenario, onLeave }: AppProps) {
     for (const r of resolved) {
       const off = Math.round(distance(r.aim, r.dispersion.impact));
       const weapon = tubeHe[r.weapon as Tube] ?? r.weapon;
-      const fell = `${weapon}: נחיתה`;
+      // Through the roof, and what was left of the building: plain to both sides.
+      const after = `${criticalHe(r.critical ? 1 : 0, "roof")}${structureHe(r.structure)}`;
+      const fell = `${weapon}: נחיתה${after}`;
       if (r.side) {
         pushPerSide("fire", r.side, (reader) =>
           reader !== r.side
             ? fell
             : off > 0
-              ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה`
-              : `${weapon}: פגיעה מדויקת במטרה`,
+              ? `${weapon}: נחיתה בסטייה של ${off}מ' מהמטרה${after}`
+              : `${weapon}: פגיעה מדויקת במטרה${after}`,
         );
       } else {
         pushLog(fell, "fire", TABLE);
@@ -1052,7 +1056,7 @@ export function App({ scenario, onLeave }: AppProps) {
           );
         else
           pushLog(
-            `${selectedOwn.name} פגע ב${target.name} ${r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}`,
+            `${selectedOwn.name} פגע ב${target.name} ${r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}${criticalHe(r.criticals, "window")}${structureHe(r.structure)}`,
             "casualty",
             sharedBy(viewingSide),
           );

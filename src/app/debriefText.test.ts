@@ -242,3 +242,14 @@ describe("a direct-fire round's blast in the debrief (decision 75)", () => {
     expect(describeOutcome(outcome as never, names, lens, action)).not.toContain("כיתה ב'");
   });
 });
+
+describe("buildings and critical hits in the log (decisions 76–77)", () => {
+  it("speaks of a building only when its state changes", async () => {
+    const { structureHe, criticalHe } = await import("./debriefText.js");
+    expect(structureHe({ state: "damaged", changed: true })).toContain("המבנה נפגע");
+    expect(structureHe({ state: "damaged", changed: false })).toBe("");
+    expect(structureHe({ state: "rubble", changed: true })).toContain("הריסות");
+    expect(criticalHe(undefined, "window")).toBe("");
+    expect(criticalHe(1, "roof")).toContain("הגג");
+  });
+});

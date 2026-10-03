@@ -1,3 +1,4 @@
+import type { VehicleClass } from "./data/armor.js";
 import type { CrewMember, Soldier, TankPart, Unit, VehicleState } from "./types.js";
 import { CASUALTY_RULES, WOUND_SEVERITY } from "./data/casualties.js";
 import { MOBILITY_THRESHOLDS } from "./data/armor.js";
@@ -260,6 +261,7 @@ export function makeVehicle(
   position: Unit["position"],
   facing = 0,
   name = id,
+  vehicleClass?: VehicleClass,
 ): Unit {
   const crew: CrewMember[] = (
     ["commander", "gunner", "loader", "driver"] as const
@@ -277,6 +279,7 @@ export function makeVehicle(
       mobilityKilled: false,
       destroyed: false,
       facing,
+      ...(vehicleClass && vehicleClass !== "mbt" ? { vehicleClass } : {}),
     },
     neutralized: false,
     canOnlyRetreat: false,

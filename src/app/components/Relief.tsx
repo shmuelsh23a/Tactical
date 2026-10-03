@@ -181,8 +181,9 @@ export const Roads = memo(function Roads({ roads }: { roads: readonly MapLine[] 
 
 /**
  * The objects on the ground: buildings and walls as their footprints, trees as
- * crowns. Memoised on the object list, which a game never changes, so a town
- * of a few hundred houses is not re-strung on every token re-render.
+ * crowns. Memoised on the object list, which the game replaces only when HE
+ * damages a building or brings one down (rules decision 76), so a town of a
+ * few hundred houses is not re-strung on every token re-render.
  */
 export const TerrainObjects = memo(function TerrainObjects({
   objects,
@@ -195,7 +196,7 @@ export const TerrainObjects = memo(function TerrainObjects({
         o.footprint.shape === "circle" ? (
           <circle
             key={o.id}
-            className={`object object-${o.kind}`}
+            className={`object object-${o.kind}${o.damaged ? " object-damaged" : ""}`}
             cx={o.footprint.center.x}
             cy={o.footprint.center.y}
             r={o.footprint.radius}
@@ -203,7 +204,7 @@ export const TerrainObjects = memo(function TerrainObjects({
         ) : (
           <polygon
             key={o.id}
-            className={`object object-${o.kind}`}
+            className={`object object-${o.kind}${o.damaged ? " object-damaged" : ""}`}
             points={o.footprint.points.map((p) => `${p.x},${p.y}`).join(" ")}
           />
         ),

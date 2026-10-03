@@ -21,6 +21,12 @@ import {
   SLOPE,
   type MapObjectKind,
 } from "./data/terrain.js";
+import {
+  STRUCTURE_MIN_SCALE,
+  STRUCTURE_POINTS,
+  STRUCTURE_REFERENCE_AREA_M2,
+  type StructureState,
+} from "./data/structures.js";
 
 /**
  * The ground (README rules decision 15).
@@ -68,6 +74,11 @@ export interface MapObject {
   footprint: Footprint;
   /** Metres above the ground; the kind's usual height when absent. */
   height?: number;
+  /**
+   * A building HE has damaged (rules decision 76): still full cover, but its
+   * roof is holed. Set on the game's live view of the map, never on a map.
+   */
+  damaged?: boolean;
 }
 
 /** The kinds of line a map draws. */
@@ -187,6 +198,30 @@ export function coverFromObjects(terrain: Terrain, p: Point): CoverState {
   return best;
 }
 
+/** The area a footprint covers, in square metres. */
+export function footprintArea(f: Footprint): number {
+  if (f.shape === "circle") return Math.PI * f.radius * f.radius;
+  let twice = 0;
+  for (let i = 0; i < f.points.length; i++) {
+    const a = f.points[i]!;
+    const b = f.points[(i + 1) % f.points.length]!;
+    twice += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(twice) / 2;
+}
+
+/**
+ * What `points` of damage leave of a building (rules decision 76): its
+ * thresholds scale with its footprint against a reference house, so a large
+ * building takes more to bring down.
+ */
+export function stateOfStructure(o: MapObject, points: number): StructureState {
+  const scale = Math.max(STRUCTURE_MIN_SCALE, footprintArea(o.footprint) / STRUCTURE_REFERENCE_AREA_M2);
+  if (points >= STRUCTURE_POINTS.rubble * scale) return "rubble";
+  if (points >= STRUCTURE_POINTS.damaged * scale) return points > 0 ? "damaged" : "intact";
+  return "intact";
+}
+
 /**
  * Whether a force at `p` has a roof over it: it is in or against a building,
  * the object whose full cover is a roof rather than a hole (rules decision
@@ -194,7 +229,7 @@ export function coverFromObjects(terrain: Terrain, p: Point): CoverState {
  */
 export function underRoof(terrain: Terrain, p: Point): boolean {
   return terrain.objects.some(
-    (o) => o.kind === "building" && distanceToFootprint(o.footprint, p) <= OBJECT_COVER_REACH_M,
+    (o) => o.kind === "building" && !o.damaged && distanceToFootprint(o.footprint, p) <= OBJECT_COVER_REACH_M,
   );
 }
 

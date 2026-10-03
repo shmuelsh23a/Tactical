@@ -1,7 +1,14 @@
 import { Rng } from "../rng.js";
 import { roll } from "../dice.js";
 import type { TankPart, Unit } from "../types.js";
-import { ARMOR_TABLE, type ArmorRow } from "../data/armor.js";
+import {
+  ARMOR_TABLE,
+  CATASTROPHIC_ON_PENETRATION,
+  PENETRATION,
+  armourFacing,
+  type ArmorRow,
+} from "../data/armor.js";
+import { bearingDegrees, type Point } from "../geometry.js";
 import { applyComponentDamage, damageCrew, refreshUnitStatus } from "../units.js";
 
 export interface ArmorHitResult {
@@ -13,6 +20,19 @@ export interface ArmorHitResult {
   componentDamageApplied: number;
   mobilityKilled: boolean;
   destroyed: boolean;
+  /** The side struck, when the research figures decided the penetration (rules decision 78). */
+  facing?: "front" | "side" | "rear";
+}
+
+/**
+ * How a hit is resolved on the research figures (rules decision 78): which
+ * weapon, and where it came from. `penetrates` forces the penetration — HE
+ * fragments going into a thin-skinned vehicle.
+ */
+export interface ArmourResearch {
+  weapon: string;
+  from?: Point;
+  penetrates?: boolean;
 }
 
 /** Roll a hit location from the armour table's hit-chance weights. */
@@ -39,6 +59,7 @@ export function resolveArmorHit(
   rng: Rng,
   target: Unit,
   forcedPart?: TankPart,
+  research?: ArmourResearch,
 ): ArmorHitResult {
   if (!target.vehicle) throw new Error("resolveArmorHit: target is not a vehicle");
   const row = forcedPart
@@ -56,12 +77,21 @@ export function resolveArmorHit(
     destroyed: target.vehicle.destroyed,
   };
 
-  if (!rng.chance(row.penetrationChance)) {
+  const v = target.vehicle;
+  let chance = row.penetrationChance;
+  if (research) {
+    // By weapon, class and side struck; a track keeps the table's chance.
+    const cls = v.vehicleClass ?? "mbt";
+    const facing = research.from ? armourFacing(v.facing, bearingDegrees(target.position, research.from)) : "side";
+    const byWeapon = PENETRATION[research.weapon];
+    if (research.penetrates) chance = 1;
+    else if (byWeapon && row.part !== "track") chance = byWeapon[cls][facing];
+    if (research.from) result.facing = facing;
+  }
+  if (!rng.chance(chance)) {
     return result; // bounced off
   }
   result.penetrated = true;
-
-  const v = target.vehicle;
   switch (row.effect) {
     case "crewCasualties": {
       // 1d8 damage, with a per-crew-member chance to be wounded.
@@ -98,6 +128,10 @@ export function resolveArmorHit(
       break;
     }
   }
+
+  // A thin-skinned vehicle burns far more often than a tank (decision 78).
+  const catastrophic = research ? CATASTROPHIC_ON_PENETRATION[v.vehicleClass ?? "mbt"] : 0;
+  if (catastrophic > 0 && !v.destroyed && rng.chance(catastrophic)) v.destroyed = true;
 
   result.mobilityKilled = v.mobilityKilled;
   result.destroyed = v.destroyed;

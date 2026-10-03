@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-03: direct-fire HE on the shell's rules (README decision 75). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-03: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -25,7 +25,7 @@ out of here on purpose:
 ## Green as of this commit
 
 ```
-npm run check       lint + typecheck clean, 813 tests, 49 files
+npm run check       lint + typecheck clean, 825 tests, 50 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -182,6 +182,15 @@ How the last two days went, round by round, is in
    now fall below decision 68's 40%; the armour damage table (a flat 20%
    penetration whatever the weapon and facing), which this did not touch;
    and whether direct HE should cost `bombarded` nerve like a shell.
+2a. **Buildings, critical hits, armour** — **built 2026-10-03** as rules
+   decisions 76–78, on by default. Most of their figures are ours (⚠️ in
+   the README; sources on validation.md). They could not be measured: the
+   harness's battles have no buildings and no vehicles (balance.md,
+   *Forty-ninth round*). Next: **a test bed**, an attack into a village
+   with APCs. Then measure, and check the sources against the pages,
+   which the session's proxy would not open. Not built: rubble slowing
+   movement, breaching walls, an ATGM weapon, machine guns against light
+   vehicles, active protection, passengers.
 3. **Build the traits** (decisions 69, 71, 72) — ruled, waiting for the
    go-ahead; measure the reference plans with them on. **The MOS**
    (decision 73) needs the doctrine's squad organisation first, and moves

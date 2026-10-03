@@ -174,8 +174,10 @@ export function Debrief({
             width={extent.width}
             height={extent.height}
             // The recording's own terrain, not the per-step replay's fresh
-            // clone, so the drawn map is memoised across steps.
-            terrain={terrain}
+            // clone, so the drawn map is memoised across steps — until HE has
+            // damaged a building, when the step's own ground is drawn
+            // (rules decision 76).
+            terrain={game.terrain === game.mapTerrain ? terrain : game.terrain}
             units={units}
             viewingSide={side ?? "BLUE"}
             // The umpire is the one reader entitled to see both sides' arcs.

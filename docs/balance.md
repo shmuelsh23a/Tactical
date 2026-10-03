@@ -3600,6 +3600,27 @@ going to ground, suppression out to its reach. The standard measurement,
   measurement now gives 48% / 32%; the handoff records 49% / 27%. The
   difference was already there before this change.
 
+## Forty-ninth round: buildings, critical hits and armour, 2026-10-03
+
+Rules decisions 76–78, the standard measurement, 200 battles a scenario
+from seed 1000, all three off and all three on:
+
+| | 3:1 wins | 2:1 wins | Attacker down | Defender down |
+|---|---|---|---|---|
+| Off (decision 75 alone) | 42% | 29% | 15% / 18% | 20% / 17% |
+| On | 43% | 29% | 15% / 18% | 20% / 17% |
+| Critical hits alone | 43% | 29% | 15% / 18% | 20% / 17% |
+
+- **These battles cannot measure most of today's work.** Tel Azeka has
+  no buildings, and the assault scenarios have no vehicles. The only
+  part they exercise is the firing slit: the attacker's rifle grenades
+  on the defender's prepared positions, within 150 m. That moves
+  nothing beyond the noise.
+- **Building damage and armour need a battle with both.** Yokneam has
+  249 buildings and one tank, but it is not in the harness. A scenario
+  with an attack into a village, with APCs, is the test bed these
+  rules need.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

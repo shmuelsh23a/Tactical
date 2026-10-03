@@ -101,9 +101,20 @@ import {
   reachAlong,
   steepestGradeAlong,
   terrainBlocksSight,
+  distanceToFootprint,
+  stateOfStructure,
+  type MapObject,
   type Terrain,
 } from "./terrain.js";
-import { SLOPE } from "./data/terrain.js";
+import { OBJECT_COVER_REACH_M, SLOPE } from "./data/terrain.js";
+import {
+  CRITICAL_CHANCE,
+  ENCLOSED_BLAST_FACTOR,
+  ROOF_PENETRATION,
+  STRUCTURE_DAMAGE,
+  type StructureState,
+} from "./data/structures.js";
+import type { ArmourFigures } from "./data/armor.js";
 import { cloneForRecord, type GameRecording, type RecordedAction } from "./recording.js";
 import { hasArrived, type StandingOrder, type StandingOrderExecution } from "./orders.js";
 import {
@@ -437,6 +448,26 @@ export interface GameOptions {
    */
   directHeAsShell?: boolean;
   /**
+   * HE wears buildings down — intact, damaged (roof holed), rubble — and the
+   * map changes with them (rules decision 76: `STRUCTURE_DAMAGE`). On by
+   * default; a recording made before it reads it as off.
+   */
+  structuresTakeDamage?: boolean;
+  /**
+   * A critical hit (rules decision 77): a round goes in through a window, a
+   * firing slit or the roof and bursts among the men inside, at
+   * `ENCLOSED_BLAST_FACTOR`. On by default; a recording made before it reads
+   * it as off.
+   */
+  criticalHits?: boolean;
+  /**
+   * Whose armour figures (rules decision 78): `research`, the default —
+   * penetration by weapon, by vehicle class and by the side struck; or
+   * `document`, the table's flat chance. A recording made before it reads
+   * it as `document`.
+   */
+  armour?: ArmourFigures;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -570,7 +601,12 @@ export class Game {
   readonly sides: Side[];
   readonly enforceC2: boolean;
   readonly trackIntel: boolean;
-  readonly terrain: Terrain;
+  /** The map the battle was set on, as given: what a recording carries. */
+  readonly mapTerrain: Terrain;
+  /** The map as it stands now: {@link mapTerrain} with what HE has done to its buildings (rules decision 76). */
+  private ground: Terrain;
+  /** Damage points on each building HE has struck, by object id (rules decision 76). */
+  private structureDamage = new Map<string, number>();
   readonly morale: boolean;
   readonly variants: RuleVariants;
   /** Targets registered before the battle (rules decisions 32 and 38): with the options, then in planning. */
@@ -588,6 +624,9 @@ export class Game {
   readonly suppressionReach: boolean;
   readonly roofsDampSuppression: boolean;
   readonly directHeAsShell: boolean;
+  readonly structuresTakeDamage: boolean;
+  readonly criticalHits: boolean;
+  readonly armour: ArmourFigures;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -654,6 +693,89 @@ export class Game {
   /** Every fire mission called, in the order called — copies: change them and nothing happens. */
   get fireMissions(): FireMission[] {
     return cloneForRecord(this.missions);
+  }
+
+  /** The ground as it stands now, buildings damaged and brought down included (rules decision 76). */
+  get terrain(): Terrain {
+    return this.ground;
+  }
+
+  /** What HE has done to a building on the map (rules decision 76). */
+  structureState(objectId: string): StructureState {
+    const o = this.mapTerrain.objects.find((x) => x.id === objectId);
+    if (!o || o.kind !== "building") return "intact";
+    return stateOfStructure(o, this.structureDamage.get(objectId) ?? 0);
+  }
+
+  /**
+   * A round of `weapon` struck the building `o`: wear it down, and when it
+   * changes state, rebuild the live view of the ground. Returns its state
+   * after the round. Nothing happens to an object that is not a building.
+   */
+  private strikeStructure(o: MapObject, weapon: string): StructureState | undefined {
+    if (!this.structuresTakeDamage || o.kind !== "building") return undefined;
+    // Struck by a round of the same volley after it came down: rubble is not a building.
+    if (this.structureState(o.id) === "rubble") return "rubble";
+    const points = STRUCTURE_DAMAGE[weapon] ?? 0;
+    const before = stateOfStructure(o, this.structureDamage.get(o.id) ?? 0);
+    const total = (this.structureDamage.get(o.id) ?? 0) + points;
+    if (points > 0) this.structureDamage.set(o.id, total);
+    const after = stateOfStructure(o, total);
+    if (after !== before) this.rebuildGround();
+    return after;
+  }
+
+  /** The map with every damaged building holed and every one brought down turned to rubble. */
+  private rebuildGround(): void {
+    this.ground = {
+      ...this.mapTerrain,
+      objects: this.mapTerrain.objects.map((o) => {
+        if (o.kind !== "building") return o;
+        const state = stateOfStructure(o, this.structureDamage.get(o.id) ?? 0);
+        if (state === "rubble") return { id: o.id, kind: "rubble" as const, footprint: o.footprint };
+        if (state === "damaged") return { ...o, damaged: true };
+        return o;
+      }),
+    };
+  }
+
+  /**
+   * A shell landing on a building (rules decision 77): the chance it goes
+   * through the roof, and who is inside. Undefined off a building.
+   */
+  private throughTheRoof(weapon: string, impact: Point) {
+    const chance = ROOF_PENETRATION[weapon];
+    if (!chance) return undefined;
+    const building = this.ground.objects.find(
+      (o) => o.kind === "building" && distanceToFootprint(o.footprint, impact) === 0,
+    );
+    if (!building) return undefined;
+    return {
+      chance,
+      factor: ENCLOSED_BLAST_FACTOR,
+      inside: (u: Unit) => u.kind !== "vehicle" && distanceToFootprint(building.footprint, u.position) <= OBJECT_COVER_REACH_M,
+    };
+  }
+
+  /**
+   * A direct round's chance of going in through a window or a slit at the
+   * target (rules decision 77): a window where it is in a building, a slit
+   * where it holds a position prepared before the battle. Undefined where it
+   * has neither, or the weapon has no figure.
+   */
+  private throughTheWindow(weapon: string, attacker: Unit, target: Unit) {
+    const figures = CRITICAL_CHANCE[weapon];
+    if (!figures || target.kind === "vehicle") return undefined;
+    const aperture = this.buildingAt(target.position) ? figures.window : target.baseCover === "full" ? figures.slit : undefined;
+    const chance = aperture ? lookupBand(aperture, distance(attacker.position, target.position))?.value : undefined;
+    return chance ? { chance, factor: ENCLOSED_BLAST_FACTOR } : undefined;
+  }
+
+  /** The building a force at `p` is in or against, if any. */
+  private buildingAt(p: Point): MapObject | undefined {
+    return this.ground.objects.find(
+      (o) => (o.kind === "building") && distanceToFootprint(o.footprint, p) <= OBJECT_COVER_REACH_M,
+    );
   }
   turn = 0;
   phase: Phase = "summary"; // pre-game; first beginTurn() starts turn 1
@@ -739,7 +861,8 @@ export class Game {
     this.sides = opts.sides ?? ["RED", "BLUE"];
     this.enforceC2 = opts.enforceC2 ?? true;
     this.trackIntel = opts.trackIntel ?? false;
-    this.terrain = opts.terrain ?? FLAT_GROUND;
+    this.mapTerrain = opts.terrain ?? FLAT_GROUND;
+    this.ground = this.mapTerrain;
     this.morale = opts.morale ?? false;
     this.variants = opts.variants ?? {};
     this.commandEchelons = { ...(opts.commandEchelon ?? {}) };
@@ -755,6 +878,9 @@ export class Game {
     this.suppressionReach = opts.suppressionReach ?? true;
     this.roofsDampSuppression = opts.roofsDampSuppression ?? true;
     this.directHeAsShell = opts.directHeAsShell ?? true;
+    this.structuresTakeDamage = opts.structuresTakeDamage ?? true;
+    this.criticalHits = opts.criticalHits ?? true;
+    this.armour = opts.armour ?? "research";
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -888,6 +1014,9 @@ export class Game {
       ...(this.suppressionReach ? { suppressionReach: true } : {}),
       ...(this.roofsDampSuppression ? { roofsDampSuppression: true } : {}),
       ...(this.directHeAsShell ? { directHeAsShell: true } : {}),
+      ...(this.structuresTakeDamage ? { structuresTakeDamage: true } : {}),
+      ...(this.criticalHits ? { criticalHits: true } : {}),
+      armour: this.armour,
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -906,7 +1035,7 @@ export class Game {
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
-      ...(this.terrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.terrain) }),
+      ...(this.mapTerrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.mapTerrain) }),
       actions: cloneForRecord(this.actions),
     };
   }
@@ -1581,8 +1710,22 @@ export class Game {
           cepM,
           lethality: this.lethality,
           shellVsMen: shellVsMen(this.shellCover),
+          armour: this.armour,
+          ...(this.criticalHits ? { criticalAt: (impact: Point) => this.throughTheRoof(m.weapon, impact) } : {}),
         }),
       );
+      // What the rounds did to the buildings they landed on (decision 76),
+      // after their blast: the men inside were under the roof as it was.
+      for (const f of fired) {
+        const struck = this.ground.objects.find(
+          (o) => o.kind === "building" && distanceToFootprint(o.footprint, f.dispersion.impact) === 0,
+        );
+        if (struck) {
+          const before = this.structureState(struck.id);
+          const state = this.strikeStructure(struck, m.weapon);
+          if (state) f.structure = { objectId: struck.id, state, changed: state !== before };
+        }
+      }
       // What the side saw of it teaches the next round; a round seen on the
       // mark puts the guns on it for whatever follows (decisions 32–33).
       const seen = fired.filter((f) => this.observes(m.side, f.dispersion.impact, m.observedByUav));
@@ -1701,6 +1844,9 @@ export class Game {
 
     const from = unit.position;
     unit.position = { ...to };
+    // A vehicle's hull points the way it drove: which side a round strikes
+    // is read from it (rules decision 78).
+    if (unit.vehicle && this.armour === "research" && distance(from, to) > 0) unit.vehicle.facing = bearingDegrees(from, to);
     this.bounds.set(unit.id, (this.bounds.get(unit.id) ?? 0) + 1);
     unit.movedThisTurn += cost;
     if (gait === "run") unit.ranThisTurn = true;
@@ -1711,7 +1857,7 @@ export class Game {
     // or where there is ground to see over. A flat game without the model
     // draws exactly what it always drew.
     const sight =
-      this.trackIntel || this.terrain !== FLAT_GROUND
+      this.trackIntel || this.mapTerrain !== FLAT_GROUND
         ? (observer: Unit, target: Unit) => this.hasLineOfSight(observer, target)
         : undefined;
     // `from` is where the bound started: a walking force searches the ground it
@@ -2409,6 +2555,7 @@ export class Game {
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
     const asShell = this.directHeAsShell;
+    const window = this.criticalHits ? this.throughTheWindow(weaponKey, attacker, target) : undefined;
     const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
@@ -2422,7 +2569,17 @@ export class Game {
       lethality: this.lethality,
       // Posture, cover and roofs against men, as an impact-fuzed shell (decisions 29–30, 62).
       ...(asShell ? { shell: { factorFor: (u: Unit) => shellFactor(u, "impact", roofed(u), shellVsMen(this.shellCover)), airburst: false } } : {}),
+      armour: this.armour,
+      ...(window ? { critical: window } : {}),
     });
+    // Every round that hit struck the building the target is in (decision 76).
+    const struck = target.kind === "vehicle" ? undefined : this.buildingAt(target.position);
+    if (struck && result.hit) {
+      const before = this.structureState(struck.id);
+      let state: StructureState | undefined;
+      for (let i = 0; i < (result.hits ?? 1); i++) state = this.strikeStructure(struck, weaponKey);
+      if (state) result.structure = { objectId: struck.id, state, changed: state !== before };
+    }
     if (result.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
