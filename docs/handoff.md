@@ -197,8 +197,11 @@ How the last two days went, round by round, is in
    decisions 76–78, on by default. Most of their figures are ours (⚠️ in
    the README; sources on validation.md). They could not be measured: the
    harness's battles have no buildings and no vehicles (balance.md,
-   *Forty-ninth round*). Next: **a test bed**, an attack into a village
-   with APCs. Then measure. The sources were read on the page on
+   *Forty-ninth round*). **The test bed is built**: `yokneamUrban`
+   (balance.md, fiftieth to fifty-second rounds), 18% for the attacker
+   today. Its houses are twice the reference size, so none comes down in a
+   battle (about 5 tank rounds a battle against about 20 needed). The
+   sources were read on the page on
    2026-10-03 (validation.md, *second pass*), and four rules were
    corrected from them. Still unsourced: rounds to bring a house down,
    window, slit and roof chances. Not built: rubble slowing
