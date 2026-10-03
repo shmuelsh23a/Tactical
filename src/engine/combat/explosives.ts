@@ -8,6 +8,7 @@ import {
   RATE_OF_FIRE,
   explosiveForChecked,
   freshness,
+  type Checked,
   rollRate,
   type Lethality,
 } from "../data/lethality.js";
@@ -77,7 +78,7 @@ export function resolveBlast(
   /** Whose armour figures, and where a direct round came from (rules decision 78). The document's unless given. */
   armour: { figures: ArmourFigures; from?: Point } = { figures: "document" },
   /** The research figures as checked against the sources (rules decision 79). */
-  checked = false,
+  checked: Checked = false,
 ): BlastResult {
   const weapon = explosiveForChecked(weaponKey, lethality, checked);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -251,7 +252,7 @@ export function resolveDirectExplosive(
     /** Whose armour figures (rules decision 78). The document's unless given. */
     armour?: ArmourFigures;
     /** The research figures as checked against the sources (rules decision 79). */
-    checked?: boolean;
+    checked?: Checked;
   } = {},
 ): DirectExplosiveResult {
   const lethality = opts.lethality ?? "document";

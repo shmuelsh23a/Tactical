@@ -345,9 +345,37 @@ export const CHECKED_VEHICLE_BANDS: Readonly<Record<string, readonly RangeBand[]
   apMine: [{ maxRange: 20, value: 0.5 }],
 };
 
-const CHECKED_EXPLOSIVES: Readonly<Record<string, ExplosiveWeapon>> = Object.fromEntries(
+/**
+ * Which corrected figures a game plays on top of the research ones: none,
+ * the checked set (rules decision 79), or that set with ARES Special Report
+ * No. 3's indirect-fire figures (decision 80).
+ */
+export type Checked = false | "checked" | "ares";
+
+/**
+ * Lethal areas on ARES Special Report No. 3, *Indirect Fire* (2017), Tables
+ * 1.1–1.2 ("genericised estimates", after Cross et al. 2016): 155 mm 665 m²,
+ * 81 mm 250 m², 105 mm 495 m² (rules decision 80). A published report, where
+ * the research figures rest on one forum post; it calls them "fragmentation"
+ * areas without defining them. The 105 mm stands for tank HE, and the
+ * 155 mm for a shell IED.
+ */
+export const ARES_LETHAL_AREA_M2: Readonly<Record<string, number>> = {
+  ...CHECKED_LETHAL_AREA_M2,
+  artillery: 665,
+  mortar: 250,
+  tankRound: 495,
+  atMine: 665,
+};
+
+/** The lethal areas a game plays, by its corrected figures. */
+export function lethalAreas(checked: Checked): Readonly<Record<string, number>> {
+  return checked === "ares" ? ARES_LETHAL_AREA_M2 : checked === "checked" ? CHECKED_LETHAL_AREA_M2 : LETHAL_AREA_M2;
+}
+
+const correctedExplosives = (areas: Readonly<Record<string, number>>): Readonly<Record<string, ExplosiveWeapon>> => Object.fromEntries(
   Object.entries(RESEARCH_EXPLOSIVES).map(([key, w]) => {
-    const area = CHECKED_LETHAL_AREA_M2[key];
+    const area = areas[key];
     return [
       key,
       {
@@ -359,8 +387,11 @@ const CHECKED_EXPLOSIVES: Readonly<Record<string, ExplosiveWeapon>> = Object.fro
     ];
   }),
 );
+const CHECKED_EXPLOSIVES = correctedExplosives(CHECKED_LETHAL_AREA_M2);
+const ARES_EXPLOSIVES = correctedExplosives(ARES_LETHAL_AREA_M2);
 
 /** A weapon as a game plays it: the research figures, checked when `checked` (rules decision 79). */
-export function explosiveForChecked(key: string, lethality: Lethality, checked: boolean): ExplosiveWeapon | undefined {
-  return lethality === "research" && checked ? CHECKED_EXPLOSIVES[key] : explosiveFor(key, lethality);
+export function explosiveForChecked(key: string, lethality: Lethality, checked: Checked): ExplosiveWeapon | undefined {
+  if (lethality !== "research" || !checked) return explosiveFor(key, lethality);
+  return checked === "ares" ? ARES_EXPLOSIVES[key] : CHECKED_EXPLOSIVES[key];
 }

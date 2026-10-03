@@ -4,7 +4,7 @@ import type { Mine, MovementMode, Side, Unit } from "../types.js";
 import { EXPLOSIVES } from "../data/explosives.js";
 import { resolveBlast, type BlastResult } from "./explosives.js";
 import type { ArmourFigures } from "../data/armor.js";
-import { CHECKED_AP_CHARGE_FAN_DEG, type Lethality } from "../data/lethality.js";
+import { CHECKED_AP_CHARGE_FAN_DEG, type Checked, type Lethality } from "../data/lethality.js";
 
 /**
  * The forces in a charge's fan, which faces the way the enemy came (rules
@@ -81,7 +81,7 @@ export function triggerMines(
    * The research figures as checked (rules decision 79): an anti-personnel
    * charge throws its fragments in a 60° fan towards the way the enemy came.
    */
-  checked = false,
+  checked: Checked = false,
   lethality: Lethality = "document",
 ): { detonations: MineDetonation[]; spent: string[] } {
   const detonations: MineDetonation[] = [];

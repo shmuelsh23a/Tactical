@@ -50,6 +50,36 @@ export const INDIRECT_ACCURACY: Readonly<Record<string, { firstM: number; capM: 
   mortar: { firstM: 100, capM: 25 },
 };
 
+/**
+ * A 155 mm gun's first-round CEP by its range, on ARES Special Report No. 3,
+ * Table 3.1 (rules decision 80): 95 m at 15 km, 115 m at 20 km, 140 m at
+ * 25 km, 275 m at 30 km — interpolated, and held at the ends. The 270 m above
+ * is a gun at its maximum range.
+ */
+const ARES_155_CEP: readonly { km: number; cep: number }[] = [
+  { km: 15, cep: 95 },
+  { km: 20, cep: 115 },
+  { km: 25, cep: 140 },
+  { km: 30, cep: 275 },
+];
+export function aresGunCep(km: number): number {
+  const t = ARES_155_CEP;
+  if (km <= t[0]!.km) return t[0]!.cep;
+  for (let i = 1; i < t.length; i++) {
+    const a = t[i - 1]!;
+    const b = t[i]!;
+    if (km <= b.km) return a.cep + ((b.cep - a.cep) * (km - a.km)) / (b.km - a.km);
+  }
+  return t.at(-1)!.cep;
+}
+
+/**
+ * How far behind the line the guns stand, until a scenario says (rules
+ * decision 80). ⚠️ Ours: 20 km, a battalion's artillery in general support,
+ * which gives a first round of 115 m.
+ */
+export const ARES_GUN_RANGE_KM = 20;
+
 /** The CEP after `adjustments` observed rounds, or on the mark (rules decision 32). */
 export function cepAfter(spec: { firstM: number; capM: number }, adjustments: number, onMark: boolean): number {
   return onMark ? spec.capM : Math.max(spec.capM, spec.firstM / 2 ** adjustments);

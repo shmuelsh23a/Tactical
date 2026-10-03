@@ -39,7 +39,7 @@ import {
   TRAIT_DICE,
   WAVERING_TEST_INTERVAL,
 } from "./data/morale.js";
-import { CHECKED_LETHAL_AREA_M2, FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2 } from "./data/lethality.js";
+import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2, lethalAreas, type Checked } from "./data/lethality.js";
 
 /**
  * Morale (מורל) — rules decision 19.
@@ -161,12 +161,13 @@ export function readySoldiers(unit: Unit): Soldier[] {
  * half reach, else nothing. {@link SUPPRESSION_REACH_81MM} scaled by the
  * square root of the weapon's lethal area against the mortar's.
  */
-export function roundSuppression(weapon: string, range: number, checked = false): number {
+export function roundSuppression(weapon: string, range: number, checked: Checked = false): number {
   const nearestMan = Math.max(0, range - FORCE_FOOTPRINT_RADIUS_M);
   if (checked) {
     // FM 7-90's table (rules decision 79).
     const mortar = CHECKED_SUPPRESSION_REACH.mortar!;
-    const k = Math.sqrt((CHECKED_LETHAL_AREA_M2[weapon] ?? CHECKED_LETHAL_AREA_M2.mortar!) / CHECKED_LETHAL_AREA_M2.mortar!);
+    const areas = lethalAreas(checked);
+    const k = Math.sqrt((areas[weapon] ?? areas.mortar!) / areas.mortar!);
     const reach = CHECKED_SUPPRESSION_REACH[weapon] ?? { full: mortar.full * k, half: mortar.half * k, little: mortar.little * k };
     if (nearestMan <= reach.full) return SUPPRESSION.indirect;
     if (nearestMan <= reach.half) return SUPPRESSION.indirect / 2;

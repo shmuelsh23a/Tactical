@@ -2,7 +2,7 @@ import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
 import { EXPLOSIVES, SHELL_VS_MEN, type Fuze, type ShellVsMen } from "../data/explosives.js";
-import type { Lethality } from "../data/lethality.js";
+import type { Checked, Lethality } from "../data/lethality.js";
 import type { ArmourFigures } from "../data/armor.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
@@ -59,7 +59,7 @@ export function resolveIndirectFire(
     /** Whose armour figures (rules decision 78). The document's unless given. */
     armour?: ArmourFigures;
     /** The research figures as checked against the sources (rules decision 79). */
-    checked?: boolean;
+    checked?: Checked;
   } = {},
 ): IndirectFireResult {
   const weapon = EXPLOSIVES[weaponKey];

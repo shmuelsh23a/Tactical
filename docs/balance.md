@@ -3679,6 +3679,29 @@ scenario from seed 1000, standard measurement.
   (280 m² against 390 m²), so the defender loses 23% where it lost 30%.
   The mortars no longer immobilise its vehicles by near misses.
 
+## Fifty-second round: ARES's indirect-fire figures, 2026-10-03
+
+Rules decision 80 on and off, with decision 79 on; same seeds, 200
+battles a scenario.
+
+| | Off: attacker wins | On: attacker wins | Off / on: out by HE | Off / on: defender down |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 49% | **41%** | 70% / 64% | 21% / 19% |
+| telAzekaAssault2 (2:1) | 39% | **36%** | 71% / 64% | 18% / 16% |
+| yokneamUrban | 17% | **36%** | 98% / 98% | 23% / 29% |
+
+- **The mortars kill fewer on the tel.** The 81 mm's area is now 250 m²
+  (was 476), so the defender is worn down less before the assault, and
+  explosives' share falls to 64%, below decision 43's 75%.
+- **The 2:1 attack is 36%,** just above decision 68's 20–35%. The 3:1
+  attack is 41%, inside its 40–55%.
+- **In the town the tanks matter more.** HE at 495 m² rather than 280 m²
+  puts the defender's losses up from 23% to 29%, and the attacker's wins
+  from 17% to 36%. BLUE's vehicles out: 19%.
+- For the author: ARES calls its areas "fragmentation" areas and never
+  defines them. If they are smaller than lethal areas in the JMEM sense,
+  this round understates the shells.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

@@ -2463,6 +2463,34 @@ on the stated reasoning, still awaiting the author's word.
       - the 2:1 tel attack 29% → 39%, **above decision 68's 20–35%**;
       - the urban attack 38% → 17%.
 
+80. ✅ **ARES Special Report No. 3's indirect-fire figures** (author,
+    2026-10-03: "check it out", then all three chosen). The report is
+    Dullum, Jenzen-Jones et al., *Indirect Fire*, Armament Research
+    Services, 2017; docs/validation.md has what was read in it. With
+    `GameOptions.aresFigures` (on for a new game; a recording made before
+    it reads it as off), on top of decision 79:
+    - **Lethal areas from ARES**, Tables 1.1–1.2: **155 mm 665 m²**
+      (was 971), **81 mm 250 m²** (was 476), and tank HE **495 m²** (was
+      280), as a 105 mm round. A shell IED is 665 m². The report is
+      citable, where the old figures were a forum post; but it calls these
+      "fragmentation" areas and never defines them.
+    - **A gun's first-round CEP by its range**, Table 3.1: 95 m at 15 km,
+      115 m at 20 km, 140 m at 25 km, 275 m at 30 km. Until a scenario
+      says otherwise, the guns are 20 km back (⚠️ ours), so the first
+      round is **115 m**, not 270 m. Adjusting still halves it to 50 m.
+    - **An air burst ×1.15** against standing men, not ×1.28. ARES's
+      rocket table puts the air burst's lethal area at 1.08–1.22× the
+      impact's. Partial cover still gives nothing against it, and an open
+      hole takes a tenth (×0.115).
+    - Suppression reach still follows FM 7-90's table for the mortar and
+      the 155 mm. For other weapons it scales with the square root of these
+      lethal areas, against the 81 mm's 250 m².
+    - **What it moved** (balance.md, *Fifty-second round*):
+      - the tel attacks: 3:1 49% → 41%, 2:1 39% → 36%;
+      - **explosives' share of losses: 70% → 64%, below decision 43's
+        75%**;
+      - the urban attack: 17% → 36%, since the tanks' HE is now 495 m².
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

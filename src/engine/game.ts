@@ -26,8 +26,8 @@ import {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { EXPLOSIVES, MORTAR_DOWN_CHECKED, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
-import { FIRE_UNIT_TUBES, LETHALITIES, LETHAL_AREA_M2, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
+import { ARES_AIRBURST, EXPLOSIVES, MORTAR_DOWN_CHECKED, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
+import { FIRE_UNIT_TUBES, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -36,6 +36,8 @@ import {
   defaultRoundsForEffect,
   MAX_ADJUSTING_ROUNDS,
   INDIRECT_ACCURACY,
+  ARES_GUN_RANGE_KM,
+  aresGunCep,
   MAX_ROUNDS_PER_MISSION,
   OBSERVE_RANGE_M,
   ON_TARGET_M,
@@ -478,6 +480,13 @@ export interface GameOptions {
    */
   checkedFigures?: boolean;
   /**
+   * On top of the checked figures, ARES Special Report No. 3, *Indirect
+   * Fire* (2017) (rules decision 80): its lethal areas, its 155 mm CEP by
+   * range, and an air burst at ×1.15 the impact's area. On by default; a
+   * recording made before it reads it as off.
+   */
+  aresFigures?: boolean;
+  /**
    * Pinned means heads down (rules decision 63, S2: `HEADS_DOWN`): a pinned
    * force makes no sighting beyond 50 m, is no observer for a fire mission,
    * and fires at nothing beyond 100 m; a suppressed force keeps each sighting
@@ -644,6 +653,7 @@ export class Game {
   readonly criticalHits: boolean;
   readonly armour: ArmourFigures;
   readonly checkedFigures: boolean;
+  readonly aresFigures: boolean;
   readonly headsDown: boolean;
   readonly assaultNerve: boolean;
   readonly pinnedFiresAtRange: boolean;
@@ -818,8 +828,9 @@ export class Game {
   }
 
   /** Whether the checked figures are in play: they amend the research ones (rules decision 79). */
-  private get checked(): boolean {
-    return this.checkedFigures && this.lethality === "research";
+  private get checked(): Checked {
+    if (!this.checkedFigures || this.lethality !== "research") return false;
+    return this.aresFigures ? "ares" : "checked";
   }
 
   /**
@@ -829,7 +840,9 @@ export class Game {
    * against prone targets" (rules decision 79). The 0.36 stays the 155 mm's.
    */
   private shellTable(weapon: string): ShellVsMen {
-    const table = shellVsMen(this.shellCover);
+    let table = shellVsMen(this.shellCover);
+    // An air burst covers ×1.15 the impact's area, not ×1.28 (decision 80).
+    if (this.checked === "ares") table = { ...table, airburst: { ...table.airburst, ...ARES_AIRBURST } };
     if (!this.checked || weapon !== "mortar") return table;
     return { ...table, impact: { ...table.impact, down: MORTAR_DOWN_CHECKED } };
   }
@@ -945,6 +958,7 @@ export class Game {
     this.criticalHits = opts.criticalHits ?? true;
     this.armour = opts.armour ?? "research";
     this.checkedFigures = opts.checkedFigures ?? true;
+    this.aresFigures = opts.aresFigures ?? true;
     this.headsDown = opts.headsDown ?? true;
     this.assaultNerve = opts.assaultNerve ?? true;
     this.pinnedFiresAtRange = opts.pinnedFiresAtRange ?? true;
@@ -1082,6 +1096,7 @@ export class Game {
       ...(this.criticalHits ? { criticalHits: true } : {}),
       armour: this.armour,
       ...(this.checkedFigures ? { checkedFigures: true } : {}),
+      ...(this.aresFigures ? { aresFigures: true } : {}),
       ...(this.headsDown ? { headsDown: true } : {}),
       ...(this.assaultNerve ? { assaultNerve: true } : {}),
       ...(this.pinnedFiresAtRange ? { pinnedFiresAtRange: true } : {}),
@@ -1724,8 +1739,10 @@ export class Game {
    * {@link ADJUSTMENT_RADIUS_M}, down to that best.
    */
   private cepFor(m: PendingFireMission): { cepM: number; adjustments: number } {
-    const spec = INDIRECT_ACCURACY[m.weapon];
-    if (!spec) throw new Error(`no accuracy for ${m.weapon}`);
+    const base = INDIRECT_ACCURACY[m.weapon];
+    if (!base) throw new Error(`no accuracy for ${m.weapon}`);
+    // ARES Table 3.1: a gun's first round by its range (decision 80).
+    const spec = this.checked === "ares" && m.weapon === "artillery" ? { ...base, firstM: aresGunCep(ARES_GUN_RANGE_KM) } : base;
     const previous = this.adjustedFrom(m.side, m.weapon, m.target);
     const adjustments = previous ? previous.adjustments + 1 : 0;
     const onMark = this.isOnTheMark(m.side, m.weapon, m.target);

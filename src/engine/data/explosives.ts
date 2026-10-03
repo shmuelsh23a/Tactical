@@ -259,6 +259,16 @@ export const SHELL_VS_MEN_BEFORE_62: ShellVsMen = {
  */
 export const MORTAR_DOWN_CHECKED = 0.5;
 
+/**
+ * An air burst on ARES Special Report No. 3 (rules decision 80): its rocket
+ * table (Table 1.5) puts the air burst's lethal area at ×1.08–1.22 the
+ * impact's, so ×1.15 against standing men, where decision 31 had ×1.28 (the
+ * 155 mm's 1,240 against 971 m²). Partial cover still gives nothing against
+ * it, and an open hole takes a tenth of it (FM 7-90). Men down, and a roof,
+ * are as before.
+ */
+export const ARES_AIRBURST = { standing: 1.15, partial: 1.15, openHole: 0.115 } as const;
+
 /** Which full-cover figures a battle plays against a shell (rules decision 62). */
 export type ShellCover = "sources" | "before62";
 export const SHELL_COVERS: readonly ShellCover[] = ["sources", "before62"];
