@@ -1052,6 +1052,93 @@ page.
 being destroyed by a penetration; and every number in the Merkava, Namer
 and Achzarit columns.
 
+## Buildings, vehicles and rooms: the sources read (2026-10-03, second pass)
+
+The first pass read search extracts only (above). This one opened the
+pages through a fetch service, and searched the peer-reviewed literature
+(Consensus). **Read on the page** marks a figure checked against the
+text; anything else is still as the first pass left it.
+
+**FM 3-06.11, ch. 7** (globalsecurity.org/military/library/policy/army/fm/3-06-11/ch7.htm), read in full:
+- Tank HEAT: "One HEAT round normally creates a breach hole in all but
+  the thickest masonry construction". "Tank HEAT rounds are large enough
+  to displace enough spall to inflict casualties inside a building."
+  **Read on the page.**
+- Light shaped charges (the RPG's kind): "A round passing through a
+  window wastes much of its energy on the back wall"; rounds fired into
+  apertures "may be wasted … little or no damage … unless hit directly".
+  The manual says to aim "6 to 12 inches from the sides or bottom of a
+  window" instead. "Usually, only those enemy soldiers directly in the
+  path of the spall from a HEAT round become casualties." AT4 / Carl
+  Gustav "may require 3 to 5 rounds" to penetrate brick walls; heavy stone
+  is "the most difficult to penetrate". **Read on the page. It
+  contradicts decision 77 for the RPG**: through the window is the
+  *worse* outcome for a shaped charge, not a critical hit.
+- M203: "the inherent accuracy to place grenades into windows at 125
+  meters and bunker apertures at 50 meters"; gunners "cannot consistently
+  hit windows at 50 meters when forced to aim and fire quickly"; HEDP
+  fragments "do not reliably penetrate interior walls". "Cannot
+  reasonably deliver the rounds needed to breach a typical exterior
+  wall." **Read on the page.**
+- Mortars: the 60 mm "cannot penetrate most rooftops, even with a delay
+  setting"; the 81 mm "with a delay setting … can penetrate the roofs of
+  light buildings"; "delay settings can increase penetration slightly".
+  The 120 mm with delay "can penetrate deep into a building". **Read on
+  the page.** So a superquick 81 mm round through a roof is rarer than
+  decision 77's 5%.
+- Artillery: indirect fire "tends to impact on roofs or upper stories";
+  "large expenditures of ammunition are required to knock down buildings
+  of any size"; "up to 25 percent of all HE rounds fail to detonate
+  because they glance off hard surfaces". **Read on the page.** Still no
+  count of rounds to bring a house down.
+
+**2006 Lebanon:**
+- StrategyPage, "Merkava Muddles and Miracles in Lebanon", 2007-01-15:
+  - About 10% of "several hundred" Merkavas were hit.
+  - 18 were seriously damaged, a third of them by ATGMs. Two were
+    destroyed, both by roadside bombs.
+  - "Merkava frontal armor was impervious to their Russian Kornet ATGMs."
+    From the side and rear "the ATGM warhead often penetrated", but the
+    tank and crew mostly survived.
+  - "Over a hundred tank crewmen were killed or wounded by ATGMs", many of
+    them commanders standing in the hatch.
+
+  **Read on the page.**
+- GlobalSecurity, *Merkava – Combat*:
+  - 2006: of 400 tanks, 52 were knocked out, 50 of them by missiles and
+    RPGs; 22 had their armour pierced; 23 tankers were killed.
+  - 1982: about 50 Merkavas were out of action, 7 were total losses, 9
+    crew were killed, and none caught fire.
+
+  **Read on the page.** The two pages disagree on how many tanks were
+  destroyed.
+- What follows for decision 78:
+  - Penetrated given hit ≈ 22 / 50 = **44%**. The table's mix of facings
+    matches it.
+  - A tank's front against an RPG at 2% is consistent with "impervious".
+  - **Crew losses are about one killed per penetration** (23 killed over
+    22 penetrations, before the wounded). The table gives about 0.2 crew
+    *hits* per penetration, and a hit is a 1d8 that may not even put the
+    man down. **Decision 78 under-kills crews several times over.**
+
+**Rooms** (Consensus, peer-reviewed):
+- Arnold et al., *Ann Emerg Med* 2004, 29 bombings, 8,364 casualties,
+  pooled immediate mortality:
+  - open air 4%;
+  - confined space 8%;
+  - **structural collapse 25%**.
+- Leibovici et al., *J Trauma* 1996: open air 7.8% against buses 49%.
+- Rats, explosion in an enclosure against the free field: 21.7% against
+  6.7% (Lai, *J Traumatic Surgery* 2008).
+
+So a room is **×2 to ×6** the open air. Decision 77's ×2.5 is inside that
+range, near the pooled figure. A building that collapses on its occupants
+kills about a quarter of them at once; the game does not model that yet.
+
+**Still found nowhere:** the number of rounds that brings a house down,
+the chance a direct round goes in through a window or a slit, or the
+chance a shell goes through a roof. They remain ours.
+
 ## Open
 
 For the author, in rough order of what they move:
