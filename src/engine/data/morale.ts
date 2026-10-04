@@ -1,4 +1,4 @@
-import type { Echelon, Experience, Motivation } from "../types.js";
+import type { CombatExperience, Echelon, Experience, ForceType, Motivation } from "../types.js";
 
 /**
  * Morale (מורל), suppression (דיכוי) and soldiers' traits — rules decision 19.
@@ -39,6 +39,41 @@ export const EXPERIENCE: Record<Experience, { test: number; suppression: number 
   regular: { test: 0, suppression: 1 },
   veteran: { test: 10, suppression: 0.8 },
   elite: { test: 15, suppression: 0.7 },
+};
+
+/**
+ * The force-quality matrix (rules decision 83: decision 81's, the author, 2026-10-03): force
+ * type × combat experience, read onto the two dials morale already has. The
+ * author's shape: three levels a side, morale moved by both, and **the
+ * regular, experienced cell is today's force** — `normal` / `regular`, the
+ * cell every breakpoint (decisions 44, 49, 67) was set on — so a game that
+ * names no quality plays exactly as before.
+ *
+ * ⚠️ The mapping is ours (2026-10-04). Force type sets the motivation floor:
+ * an irregular force is held together by less than a regular one, and an
+ * elite one is selected for its will. Combat experience sets `experience` one
+ * step a level — green, regular, veteran — and an elite force's training is
+ * worth one step more, so its very experienced cell is the only `elite`. No
+ * two cells map alike, and each axis only ever steadies a force as it rises.
+ * What each cell is worth is measured, not set (docs/balance.md, fifty-eighth
+ * round).
+ */
+export const FORCE_QUALITY: Record<ForceType, Record<CombatExperience, { motivation: Motivation; experience: Experience }>> = {
+  irregular: {
+    inexperienced: { motivation: "low", experience: "green" },
+    experienced: { motivation: "low", experience: "regular" },
+    veryExperienced: { motivation: "low", experience: "veteran" },
+  },
+  regular: {
+    inexperienced: { motivation: "normal", experience: "green" },
+    experienced: { motivation: "normal", experience: "regular" },
+    veryExperienced: { motivation: "normal", experience: "veteran" },
+  },
+  elite: {
+    inexperienced: { motivation: "high", experience: "regular" },
+    experienced: { motivation: "high", experience: "veteran" },
+    veryExperienced: { motivation: "high", experience: "elite" },
+  },
 };
 
 /** The thresholds the author set, on effective morale. */

@@ -3990,6 +3990,81 @@ Measured, traits on, 100 battles from seed 1000:
 - The reference set keeps its eight plans with C renamed; H is measured
   beside them as history's check, not counted in the median.
 
+## Fifty-eighth round: the force-quality matrix, 2026-10-04
+
+Rules decision 83 builds decision 81's matrix: force type (irregular,
+regular, elite) × combat experience (inexperienced, experienced, very
+experienced), mapped onto the `motivation` and `experience` morale already
+had (`FORCE_QUALITY`, `data/morale.ts`). The author asked for the mapping
+rather than a new field. ⚠️ The mapping is ours:
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | low / green | low / regular | low / veteran |
+| **Regular** | normal / green | **normal / regular** (today) | normal / veteran |
+| **Elite** | high / regular | high / veteran | high / elite |
+
+Each cell measured on one side with the other side left at the regular,
+experienced cell. Tel Azeka 3:1 (`telAzekaAssault`), the standard
+measurement with `--quality SIDE=type/experience`, 200 battles from seed
+1000 and 200 from seed 2000. Figures are the attacker's wins, pooled (400
+battles a cell: one standard error is about 2.5 points, so a gap under 5
+is within chance):
+
+```bash
+npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 \
+  --scout-from vantage --wait-in dead-ground --n 200 --target-first squads \
+  --scenario telAzekaAssault --quality BLUE=elite/veryExperienced
+```
+
+**The attacker's quality** (the defender regular, experienced):
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 32% | 36% | 41% |
+| **Regular** | 33% | **40%** | 45% |
+| **Elite** | 38.5% | 48.5% | 53% |
+
+**The defender's quality** (the attacker regular, experienced):
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 65.5% | 51.5% | 34.5% |
+| **Regular** | 54% | **40%** | 28% |
+| **Elite** | 26.5% | 20% | 14.5% |
+
+- **Every row and every column is ordered** on both sides, pooled. Of
+  the steps under 5 points, which chance could reverse, only one was
+  level in a single window: the irregular attacker's first two cells, at
+  36% and 36% from seed 1000. The baseline cell gives 41% and 39%, so a
+  game that names no quality plays exactly as it did (the standard
+  measurement's 41%).
+- **The defender's quality counts for about twice the attacker's.** The
+  defender's cells move the attack from 14.5% to 65.5%, and the attacker's
+  cells only from 32% to 53%. A defender holds by its nerve. Most of the
+  attacker's losses come from being shot at before the assault, which no
+  quality changes.
+- **For the attacker, the step from irregular to regular is small**: 1–4
+  points, within chance, because the motivation floor 50 against 60 is a
+  small dial. Elite (whose training also moves `experience` up a step)
+  and combat experience are the larger dials: about 9–14.5 points across
+  a row, 12–12.5 down the experienced and very experienced columns. For a
+  defender the type counts for more: the irregular row is 6.5–11.5 points
+  over the regular.
+- **The losses hardly move.** The defender loses 16–20% in every cell, and
+  the attacker 7–15%, depending mostly on the defender's quality. Quality
+  changes *when* a side gives up, not how many it loses before then. That
+  fits the sides' breakpoints counting broken and fled men together with
+  the fallen. The breakpoints themselves (decisions 44, 49, 67) are
+  unchanged: they stay the regular, experienced cell's, as the author
+  ruled.
+- **For the author:** is the spread right? From the worst cell
+  (irregular, inexperienced) to the best (elite, very experienced) is 21
+  points for an attacker and 51 for a defender. Nothing in the reference
+  library sizes it yet. Dupuy's combat-effectiveness values are where to
+  look, and they have not been read (sources.md). Either way, the dial is
+  the cell → motivation / experience mapping, not the breakpoints.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

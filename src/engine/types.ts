@@ -60,6 +60,21 @@ export type Motivation = "poor" | "low" | "normal" | "high" | "fanatic";
 export type Experience = "green" | "regular" | "veteran" | "elite";
 
 /**
+ * Force quality (rules decision 83, decision 81's matrix): what kind of force it is — how it was
+ * raised, trained and selected…
+ */
+export type ForceType = "irregular" | "regular" | "elite";
+
+/** …and how much fighting it has seen. The matrix's two axes, 3 × 3. */
+export type CombatExperience = "inexperienced" | "experienced" | "veryExperienced";
+
+/** A cell of the force-quality matrix; `forceQuality` maps it onto motivation and experience. */
+export interface ForceQuality {
+  type: ForceType;
+  experience: CombatExperience;
+}
+
+/**
  * A single dismounted soldier inside an infantry unit. Damage is tracked in
  * "damage points" (נק"פ) per the casualty rules:
  *   - from 5 nq"p the wound worsens by 1d4 every 5 turns,

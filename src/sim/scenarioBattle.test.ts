@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
-import { DEFAULT_FIRE_CHOICES, planDefenderFires, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import { DEFAULT_FIRE_CHOICES, dressQuality, planDefenderFires, runScenarioBattle, runScenario } from "./scenarioBattle.js";
 import type { Question } from "./companyQuestions.js";
 import { isDeadGround } from "../app/deadGround.js";
-import { EYE_HEIGHT, distance } from "../engine/index.js";
+import { EYE_HEIGHT, MORALE_RULES, distance } from "../engine/index.js";
 
 /**
  * The headless scenario runner: a generated scenario played on its real
@@ -144,4 +144,32 @@ describe("going round a flank", () => {
     const off = Math.abs((x - enemy.x) * (home.y - enemy.y) - (y - enemy.y) * (home.x - enemy.x)) / len;
     expect(off).toBeGreaterThan(100);
   }, 60_000);
+});
+
+describe("a side's force quality in the harness (rules decision 83)", () => {
+  it("redraws only that side's pools, from the cell's floor, keeping every trait and the game's rng", () => {
+    const plain = telAzekaAssaultListing.build(1000).game;
+    const g = telAzekaAssaultListing.build(1000).game;
+    dressQuality(g, { BLUE: { type: "elite", experience: "veryExperienced" } });
+    expect(g.rng.getState()).toBe(plain.rng.getState());
+    expect(g.units.filter((u) => u.side === "BLUE" && u.motivation === "high").length).toBeGreaterThan(0);
+    for (const u of g.units) {
+      const before = plain.getUnit(u.id);
+      if (!u.soldiers?.some((s) => s.morale)) continue;
+      expect(u.soldiers.map((s) => s.traits)).toEqual(before.soldiers!.map((s) => s.traits));
+      if (u.side === "BLUE") {
+        expect([u.motivation, u.experience]).toEqual(["high", "elite"]);
+        for (const s of u.soldiers) expect(s.morale!.will).toBeGreaterThanOrEqual(MORALE_RULES.MOTIVATION_FLOOR.high);
+      } else {
+        expect(u.soldiers.map((s) => s.morale)).toEqual(before.soldiers!.map((s) => s.morale));
+      }
+    }
+  });
+
+  it("leaves the regular, experienced cell exactly as the scenario built it", () => {
+    const plain = telAzekaAssaultListing.build(1000).game;
+    const g = telAzekaAssaultListing.build(1000).game;
+    dressQuality(g, { BLUE: { type: "regular", experience: "experienced" }, RED: { type: "regular", experience: "experienced" } });
+    for (const u of g.units) expect(u.soldiers?.map((s) => s.morale)).toEqual(plain.getUnit(u.id).soldiers?.map((s) => s.morale));
+  });
 });

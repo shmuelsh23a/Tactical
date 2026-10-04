@@ -1,7 +1,7 @@
 import { Rng } from "./rng.js";
 import { ECHELON_RANK } from "./data/c2.js";
 import { angleBetween, bearingDegrees, distance, type Point } from "./geometry.js";
-import type { Echelon, MoraleState, Side, Soldier, SoldierMorale, Traits, Unit } from "./types.js";
+import type { Echelon, Experience, ForceQuality, MoraleState, Motivation, Side, Soldier, SoldierMorale, Traits, Unit } from "./types.js";
 import {
   ARMOUR_COMFORT_M,
   ARMOUR_FEAR_M,
@@ -16,6 +16,7 @@ import {
   LEADER_BONUS,
   LEADER_REACH_M,
   LOSS,
+  FORCE_QUALITY,
   MOTIVATION_FLOOR,
   NEARBY_M,
   OUTNUMBERED_M,
@@ -109,6 +110,16 @@ function drawTraits(rng: Rng): Traits {
     charisma: drawTrait(rng),
     luck: drawTrait(rng),
   };
+}
+
+/**
+ * What a cell of the force-quality matrix (rules decision 83) means for
+ * morale: the motivation and experience it maps onto. Dress a force with it
+ * **before** `addUnit`, which draws its men's pools from the motivation and
+ * records the force as it stands.
+ */
+export function forceQuality(quality: ForceQuality): { motivation: Motivation; experience: Experience } {
+  return { ...FORCE_QUALITY[quality.type][quality.experience] };
 }
 
 /**

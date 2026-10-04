@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { Rng } from "./rng.js";
 import { Game } from "./game.js";
 import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
-import type { Soldier, Unit } from "./types.js";
+import type { CombatExperience, ForceType, Soldier, Unit } from "./types.js";
 import {
   StressLedger,
   effectiveMorale,
   forceBroken,
+  forceQuality,
   generateMorale,
   leaderBonus,
   leadership,
@@ -19,7 +20,7 @@ import {
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
-import { ATTACKER_BREAK_BEFORE_66, HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, NERVE_IN_OPEN_BEFORE_66, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
+import { ATTACKER_BREAK_BEFORE_66, EXPERIENCE, FORCE_QUALITY, HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, NERVE_IN_OPEN_BEFORE_66, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
@@ -82,6 +83,54 @@ describe("morale is a module: off, nothing changes", () => {
       g.addUnit(makeCommandGroup("B-HQ", "BLUE", "platoon", { x: 0, y: 50 }));
     }
     expect(withMorale.rng.getState()).toBe(plain.rng.getState());
+  });
+});
+
+describe("the force-quality matrix (rules decision 83)", () => {
+  const types: ForceType[] = ["irregular", "regular", "elite"];
+  const levels: CombatExperience[] = ["inexperienced", "experienced", "veryExperienced"];
+  const floor = (type: ForceType, experience: CombatExperience) => MOTIVATION_FLOOR[forceQuality({ type, experience }).motivation];
+  const test = (type: ForceType, experience: CombatExperience) => EXPERIENCE[forceQuality({ type, experience }).experience].test;
+
+  it("puts today's force in the regular, experienced cell, the one every breakpoint was set on", () => {
+    expect(forceQuality({ type: "regular", experience: "experienced" })).toEqual({ motivation: "normal", experience: "regular" });
+  });
+
+  it("maps no two cells alike, and never lets a step up on either axis cost a force its nerve", () => {
+    const cells = types.flatMap((t) => levels.map((e) => JSON.stringify(FORCE_QUALITY[t][e])));
+    expect(new Set(cells).size).toBe(9);
+    for (const t of types) {
+      for (const [i, e] of levels.entries()) {
+        const next = levels[i + 1];
+        if (next) {
+          expect(test(t, next)).toBeGreaterThan(test(t, e));
+          expect(floor(t, next)).toBeGreaterThanOrEqual(floor(t, e));
+        }
+      }
+    }
+    for (const e of levels) {
+      for (const [i, t] of types.entries()) {
+        const next = types[i + 1];
+        if (next) {
+          expect(floor(next, e)).toBeGreaterThan(floor(t, e));
+          expect(test(next, e)).toBeGreaterThanOrEqual(test(t, e));
+        }
+      }
+    }
+  });
+
+  it("dresses a force before addUnit, so its men's pools start from the cell's floor and it replays as played", () => {
+    const g = new Game({ seed: 5, morale: true });
+    const u = makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8);
+    Object.assign(u, forceQuality({ type: "irregular", experience: "inexperienced" }));
+    g.addUnit(u);
+    expect(u.motivation).toBe("low");
+    expect(u.experience).toBe("green");
+    for (const s of u.soldiers!) expect(s.morale!.will).toBeGreaterThanOrEqual(MOTIVATION_FLOOR.low);
+    const replayed = replayGame(sealRecording(g.toRecording())).getUnit("B");
+    expect(replayed.motivation).toBe("low");
+    expect(replayed.experience).toBe("green");
+    expect(replayed.soldiers!.map((s) => s.morale!.will)).toEqual(u.soldiers!.map((s) => s.morale!.will));
   });
 });
 

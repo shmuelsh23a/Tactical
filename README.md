@@ -2512,7 +2512,7 @@ on the stated reasoning, still awaiting the author's word.
     - **Several types of house**, each with its own strength. To be
       defined with the urban combat work. Until then a house of 208 m²
       takes about 20 tank rounds, and none comes down in the urban battle.
-    - **Force quality as a matrix.** Ruled, not built. Three levels of
+    - **Force quality as a matrix.** Ruled; built as decision 83. Three levels of
       force type (irregular, regular, elite) against three of experience
       (inexperienced, experienced, very experienced). Morale is affected
       by both, as well as by the other factors already described. Today's
@@ -2567,6 +2567,32 @@ on the stated reasoning, still awaiting the author's word.
       men's mean agility (`Game.firingOrder`). The engine's fire under
       standing orders and the scripted drill follow it. ⚠️ In the hotseat
       the player still fires his forces in the order he chooses.
+83. ✅ **The force-quality matrix, built** (2026-10-04: decision 81's
+    matrix; the author: "the new matrix maps into experience /
+    motivation"). `FORCE_QUALITY` in `data/morale.ts` reads each cell of
+    force type (irregular, regular, elite) × combat experience
+    (inexperienced, experienced, very experienced) onto the two dials
+    decision 19 already had. `forceQuality({ type, experience })` returns
+    them, and a force is dressed with them **before** `addUnit`, which
+    draws its pools and records it. The regular, experienced cell is
+    `normal` / `regular`, today's force, so a game that names no quality
+    plays and replays exactly as before. The breakpoints (decisions 44, 49,
+    67) stay that cell's. No new rule, no new draw, no recording change. A
+    scenario spec takes `"quality": {"type": …, "experience": …}`
+    (`make-scenario.py`), with a `motivation` beside it overriding the
+    cell's (a fanatical irregular). The harness takes `--quality
+    SIDE=type/experience` (`scenario-sim`).
+    - ⚠️ **The mapping is ours.** Type sets the motivation floor
+      (irregular `low`, regular `normal`, elite `high`). Combat experience
+      sets `experience` a step a level (green, regular, veteran), and an
+      elite force's training is worth a step more (regular, veteran,
+      elite). No two cells map alike, and a step up on either axis never
+      costs a force nerve (`morale.test.ts` pins both).
+    - **Measured** (docs/balance.md, fifty-eighth round; tel 3:1, 400
+      battles a cell): the attacker's cells give 32–53% wins, and the
+      defender's cells give the attacker 14.5–65.5%, with every row and
+      column ordered (pooled; ±2.5 one standard error). The losses hardly move: quality decides when a side
+      gives up. For the author: is the spread right?
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
