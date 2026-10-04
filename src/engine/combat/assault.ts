@@ -68,6 +68,9 @@ export function resolveAssault(
      * 30% to hit one man.
      */
     lethality?: Lethality;
+    /** A factor on the assault's fire, and on the reply's (the quality gap, rules decision 84). Absent: 1. */
+    fireFactor?: number;
+    replyFactor?: number;
   } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
@@ -97,7 +100,7 @@ export function resolveAssault(
   // Only the men still willing go in, each as steady as he is (rules decision 19).
   const accuracy = shooterAccuracy(attacker);
   for (let i = 0; i < accuracy.length; i++) {
-    if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]!))) continue;
+    if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]! * (opts.fireFactor ?? 1)))) continue;
     const hit = woundHit(rng, defender, turn, "smallArms");
     if (hit.missed) continue; // a lucky man (rules decision 69)
     result.fireHits++;
@@ -133,7 +136,7 @@ export function resolveAssault(
   if (replyAccuracy && opts.replyChance != null) {
     const reply = { chance: opts.replyChance, shooters: replyAccuracy.length, hits: 0, damage: 0, casualties: 0 };
     for (const accuracy of replyAccuracy) {
-      if (!rng.chance(Math.min(1, opts.replyChance * accuracy))) continue;
+      if (!rng.chance(Math.min(1, opts.replyChance * accuracy * (opts.replyFactor ?? 1)))) continue;
       const hit = woundHit(rng, attacker, turn, "smallArms");
       if (hit.missed) continue; // a lucky man (rules decision 69)
       reply.hits++;

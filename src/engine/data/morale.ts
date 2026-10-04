@@ -1,4 +1,4 @@
-import type { Echelon, Experience, Motivation } from "../types.js";
+import type { CombatExperience, Echelon, Experience, ForceType, Motivation } from "../types.js";
 
 /**
  * Morale (מורל), suppression (דיכוי) and soldiers' traits — rules decision 19.
@@ -40,6 +40,63 @@ export const EXPERIENCE: Record<Experience, { test: number; suppression: number 
   veteran: { test: 10, suppression: 0.8 },
   elite: { test: 15, suppression: 0.7 },
 };
+
+/**
+ * The force-quality matrix (rules decision 83: decision 81's, the author, 2026-10-03): force
+ * type × combat experience, read onto the two dials morale already has. The
+ * author's shape: three levels a side, morale moved by both, and **the
+ * regular, experienced cell is today's force** — `normal` / `regular`, the
+ * cell every breakpoint (decisions 44, 49, 67) was set on — so a game that
+ * names no quality plays exactly as before.
+ *
+ * ⚠️ The mapping is ours (2026-10-04). Force type sets the motivation floor:
+ * an irregular force is held together by less than a regular one, and an
+ * elite one is selected for its will. Combat experience sets `experience` one
+ * step a level — green, regular, veteran — and an elite force's training is
+ * worth one step more, so its very experienced cell is the only `elite`. No
+ * two cells map alike, and each axis only ever steadies a force as it rises.
+ * What each cell is worth is measured, not set (docs/balance.md, fifty-eighth
+ * round).
+ */
+export const FORCE_QUALITY: Record<ForceType, Record<CombatExperience, { motivation: Motivation; experience: Experience }>> = {
+  irregular: {
+    inexperienced: { motivation: "low", experience: "green" },
+    experienced: { motivation: "low", experience: "regular" },
+    veryExperienced: { motivation: "low", experience: "veteran" },
+  },
+  regular: {
+    inexperienced: { motivation: "normal", experience: "green" },
+    experienced: { motivation: "normal", experience: "regular" },
+    veryExperienced: { motivation: "normal", experience: "veteran" },
+  },
+  elite: {
+    inexperienced: { motivation: "high", experience: "regular" },
+    experienced: { motivation: "high", experience: "veteran" },
+    veryExperienced: { motivation: "high", experience: "elite" },
+  },
+};
+
+/**
+ * The quality gap (rules decision 84, the author, 2026-10-04): "the middle,
+ * a clash of equal forces, has zero effect, and the extreme — elite against
+ * irregular — a very large one", in small arms and the assault only, since
+ * most casualties come from explosives and a shell does not care who it
+ * lands on. A force's score is its type's step plus its experience's (−2 to
+ * +2, regular and experienced 0), and the gap is the shooter's less the
+ * target's (−4 to +4). The shooter's chance is multiplied by
+ * `extreme` ^ (sign(gap) · bell(gap) / bell(widest)), where
+ * bell(g) = 1 − exp(−g² / 2σ²): the normal curve turned over, flat about a
+ * fair fight and steep toward the ends. ⚠️ `sigma` and `extreme` are ours:
+ * a gap of one step is worth ×1.16, two ×1.65 (about Dupuy's Germans
+ * against the Americans in Italy, 1.2–1.5) and the widest ×3 a side, so
+ * about ×9 in casualties exchanged (the Arab–Israeli data's 0.43 against
+ * 4.91 at even odds, about ×11; docs/validation.md, *Force quality*).
+ */
+export const QUALITY_STEP: { type: Record<ForceType, number>; experience: Record<CombatExperience, number> } = {
+  type: { irregular: -1, regular: 0, elite: 1 },
+  experience: { inexperienced: -1, experienced: 0, veryExperienced: 1 },
+};
+export const QUALITY_GAP = { sigma: 2, extreme: 3, widest: 4 } as const;
 
 /** The thresholds the author set, on effective morale. */
 export const THRESHOLDS = {

@@ -44,6 +44,9 @@ export type {
   SoldierMorale,
   Motivation,
   Experience,
+  ForceType,
+  CombatExperience,
+  ForceQuality,
 } from "./types.js";
 export {
   fitSoldiers,
@@ -224,6 +227,9 @@ export {
   effectiveMorale,
   forceBroken,
   forceMorale,
+  forceQuality,
+  qualityGapFactor,
+  qualityScore,
   generateMorale,
   hasMorale,
   isCornered,

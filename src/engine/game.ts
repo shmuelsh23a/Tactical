@@ -126,6 +126,7 @@ import {
   addSuppression,
   forceMorale,
   generateMorale,
+  qualityGapFactor,
   refreshMoraleStates,
   resolveMorale,
   sideBroken,
@@ -495,6 +496,12 @@ export interface GameOptions {
    */
   directHeBombards?: boolean;
   /**
+   * The quality gap between two forces acts on small arms and the assault
+   * (rules decision 84): nothing between equals, much at the extremes. On by
+   * default; a recording made before it reads it as off.
+   */
+  qualityGap?: boolean;
+  /**
    * What the traits do beyond morale (rules decision 69): agility and
    * strength set each man's pace and the force moves at its slowest man's;
    * agility makes a running force harder to hit and gets men down quicker
@@ -687,6 +694,7 @@ export class Game {
   readonly checkedFigures: boolean;
   readonly aresFigures: boolean;
   readonly directHeBombards: boolean;
+  readonly qualityGap: boolean;
   readonly traitEffects: boolean;
   readonly fatigue: boolean;
   readonly agilityFireOrder: boolean;
@@ -998,6 +1006,7 @@ export class Game {
     this.checkedFigures = opts.checkedFigures ?? true;
     this.aresFigures = opts.aresFigures ?? true;
     this.directHeBombards = opts.directHeBombards ?? true;
+    this.qualityGap = opts.qualityGap ?? true;
     this.traitEffects = opts.traitEffects ?? true;
     this.fatigue = opts.fatigue ?? true;
     this.agilityFireOrder = opts.agilityFireOrder ?? true;
@@ -1140,6 +1149,7 @@ export class Game {
       ...(this.checkedFigures ? { checkedFigures: true } : {}),
       ...(this.aresFigures ? { aresFigures: true } : {}),
       ...(this.directHeBombards ? { directHeBombards: true } : {}),
+      ...(this.qualityGap ? { qualityGap: true } : {}),
       ...(this.traitEffects ? { traitEffects: true } : {}),
       ...(this.fatigue ? { fatigue: true } : {}),
       ...(this.agilityFireOrder ? { agilityFireOrder: true } : {}),
@@ -2419,7 +2429,10 @@ export class Game {
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
           ...(from ? this.movementTerms(actor, true) : {}),
-          ...this.headsDownAim(coverer, actor),
+          ...(() => {
+            const aim = (this.headsDownAim(coverer, actor).aimFactor ?? 1) * this.qualityAim(coverer, actor);
+            return aim === 1 ? {} : { aimFactor: aim };
+          })(),
               hasLineOfSight: true,
         });
         actor.cover = wasCover;
@@ -2909,6 +2922,10 @@ export class Game {
       grenades,
       turn: this.turn,
       lethality: this.lethality,
+      // The quality gap (decision 84), on the assault's fire and the reply.
+      ...(this.qualityAim(attacker, defender) !== 1
+        ? { fireFactor: this.qualityAim(attacker, defender), replyFactor: this.qualityAim(defender, attacker) }
+        : {}),
       // Ruling 1, on trial: the defender fires back, at a rate being measured.
       ...(reply ? { replyChance: reply } : {}),
     });
@@ -3512,8 +3529,13 @@ export class Game {
    */
   /** Heads down and fire on the move together, as one factor on the shooter's aim. */
   private aimOf(unit: Unit, target: Unit): { aimFactor?: number } {
-    const aim = (this.headsDownAim(unit, target).aimFactor ?? 1) * (unit.movedThisTurn > 0 ? this.fireOnTheMove : 1);
+    const aim = (this.headsDownAim(unit, target).aimFactor ?? 1) * (unit.movedThisTurn > 0 ? this.fireOnTheMove : 1) * this.qualityAim(unit, target);
     return aim === 1 ? {} : { aimFactor: aim };
+  }
+
+  /** The quality gap's factor on `unit`'s small arms against `target` (rules decision 84); 1 without the rule. */
+  private qualityAim(unit: Unit, target: Unit): number {
+    return this.qualityGap ? qualityGapFactor(unit, target) : 1;
   }
 
   private headsDownAim(unit: Unit, target: Unit): { aimFactor?: number } {

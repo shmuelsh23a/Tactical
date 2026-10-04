@@ -3990,6 +3990,140 @@ Measured, traits on, 100 battles from seed 1000:
 - The reference set keeps its eight plans with C renamed; H is measured
   beside them as history's check, not counted in the median.
 
+## Fifty-eighth round: the force-quality matrix, 2026-10-04
+
+Rules decision 83 builds decision 81's matrix: force type (irregular,
+regular, elite) × combat experience (inexperienced, experienced, very
+experienced), mapped onto the `motivation` and `experience` morale already
+had (`FORCE_QUALITY`, `data/morale.ts`). The author asked for the mapping
+rather than a new field. ⚠️ The mapping is ours:
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | low / green | low / regular | low / veteran |
+| **Regular** | normal / green | **normal / regular** (today) | normal / veteran |
+| **Elite** | high / regular | high / veteran | high / elite |
+
+Each cell measured on one side with the other side left at the regular,
+experienced cell. Tel Azeka 3:1 (`telAzekaAssault`), the standard
+measurement with `--quality SIDE=type/experience`, 200 battles from seed
+1000 and 200 from seed 2000. Figures are the attacker's wins, pooled (400
+battles a cell: one standard error is about 2.5 points, so a gap under 5
+is within chance):
+
+```bash
+npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 \
+  --scout-from vantage --wait-in dead-ground --n 200 --target-first squads \
+  --scenario telAzekaAssault --quality BLUE=elite/veryExperienced
+```
+
+**The attacker's quality** (the defender regular, experienced):
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 32% | 36% | 41% |
+| **Regular** | 33% | **40%** | 45% |
+| **Elite** | 38.5% | 48.5% | 53% |
+
+**The defender's quality** (the attacker regular, experienced):
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 65.5% | 51.5% | 34.5% |
+| **Regular** | 54% | **40%** | 28% |
+| **Elite** | 26.5% | 20% | 14.5% |
+
+- **Every row and every column is ordered** on both sides, pooled. Of
+  the steps under 5 points, which chance could reverse, only one was
+  level in a single window: the irregular attacker's first two cells, at
+  36% and 36% from seed 1000. The baseline cell gives 41% and 39%, so a
+  game that names no quality plays exactly as it did (the standard
+  measurement's 41%).
+- **The defender's quality counts for about twice the attacker's.** The
+  defender's cells move the attack from 14.5% to 65.5%, and the attacker's
+  cells only from 32% to 53%. A defender holds by its nerve. Most of the
+  attacker's losses come from being shot at before the assault, which no
+  quality changes.
+- **For the attacker, the step from irregular to regular is small**: 1–4
+  points, within chance, because the motivation floor 50 against 60 is a
+  small dial. Elite (whose training also moves `experience` up a step)
+  and combat experience are the larger dials: about 9–14.5 points across
+  a row, 12–12.5 down the experienced and very experienced columns. For a
+  defender the type counts for more: the irregular row is 6.5–11.5 points
+  over the regular.
+- **The losses hardly move.** The defender loses 16–20% in every cell, and
+  the attacker 7–15%, depending mostly on the defender's quality. Quality
+  changes *when* a side gives up, not how many it loses before then. That
+  fits the sides' breakpoints counting broken and fled men together with
+  the fallen. The breakpoints themselves (decisions 44, 49, 67) are
+  unchanged: they stay the regular, experienced cell's, as the author
+  ruled.
+- **Checked against Dupuy and Rowland** (validation.md, *Force
+  quality*): quality moves nerve and not fighting. An elite attacker
+  exchanges casualties almost as a green one does, where Dupuy's CEV of
+  1.2–2 would move the exchange by that much or more.
+- **For the author:** is the spread right? From the worst cell
+  (irregular, inexperienced) to the best (elite, very experienced) is 21
+  points for an attacker and 51 for a defender. Nothing in the reference
+  library sizes it yet. Dupuy's combat-effectiveness values are where to
+  look, and they have not been read (sources.md). Either way, the dial is
+  the cell → motivation / experience mapping, not the breakpoints.
+
+## Fifty-ninth round: the quality gap, 2026-10-04
+
+Rules decision 84: quality's gap between two forces acts on small arms and
+the assault, ×1 between equals and ×3 at the widest, on the normal curve
+turned over. Tel Azeka 3:1, the standard measurement, 200 battles from
+seed 1000 and 200 from seed 2000, pooled. "Without mortars" is
+`--no-fire-support`: neither side calls a mission, and explosives
+(the squads' rifle and hand grenades) cause 11–20% of losses instead of
+58–67%. The exchange is attacker men lost for each defender man lost.
+
+**The extremes and the equals:**
+
+| Attacker / defender | Wins, with mortars | Exchange | Wins, without | Exchange |
+|---|---|---|---|---|
+| Regular, experienced / the same (baseline) | 40% | 1.72 | 40% | 1.19 |
+| **Elite, very experienced / irregular, inexperienced** | **85%** | 0.66 | **100%** | **0.22** |
+| **Irregular, inexperienced / elite, very experienced** | **4%** | 3.97 | **0%** | **10.75** |
+| Elite, very experienced / the same | 24.5% | 2.03 | 45% | 1.12 |
+| Irregular, inexperienced / the same | 60% | 1.21 | 33.5% | 1.31 |
+
+**One side's cell, the other regular and experienced** (attacker's wins;
+gaps of up to two steps):
+
+| Cell | Attacker's, with mortars | Attacker's, without | Defender's, with mortars | Defender's, without |
+|---|---|---|---|---|
+| Irregular, inexperienced (−2) | 21% | 3% | 73.5% | 91% |
+| Irregular, experienced (−1) | 34% | 21.5% | 53.5% | 59% |
+| Regular, inexperienced (−1) | 31% | 19.5% | 55.5% | 60.5% |
+| Irregular, very experienced (0) | 41% | 46% | 34.5% | 36% |
+| Elite, inexperienced (0) | 38.5% | 48% | 26.5% | 36% |
+| Regular, very experienced (+1) | 45.5% | 63.5% | 24% | 23% |
+| Elite, experienced (+1) | 50.5% | 63.5% | 20% | 19.5% |
+| Elite, very experienced (+2) | 62.5% | 92% | 10.5% | 7% |
+
+- **The extreme is very large, and larger without support weapons**, as
+  the author ruled. Elite against irregular, the exchange is 0.22 against
+  10.75 without mortars (about 50× between the two directions) and 0.66
+  against 3.97 with them (6×). The Arab–Israeli data's 0.43 against 4.91
+  (11×) sits between. Mogadishu's 10–19 Somali casualties for each
+  American (validation.md, *Force quality*) is near the 10.75 of
+  irregulars attacking an elite position.
+- **Score 0 cells play like the baseline when the enemy is regular** (41%,
+  38.5% and 46%, 48% for an attacker): the gap is zero and only nerve
+  differs.
+- **A one-step gap moves the win rate more than its ×1.16 suggests**,
+  most without mortars (19.5–21.5% and 63.5% against 40%). The factor is
+  flat about the middle, but a battle balanced at 40% is on a knife-edge,
+  so a small edge in every exchange decides it.
+- **Between equals nerve still counts.** Two elite forces give the attack
+  24.5% with mortars; two irregular ones 60%. Decision 83 is absolute: a
+  steady defender sits out the shelling, a shaky one does not. Without
+  mortars the equals are within 7 points of the baseline.
+- **The author accepted the round as it stands** (2026-10-04: "looks
+  good"): the curve's size, and nerve between equals.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

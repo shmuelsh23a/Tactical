@@ -90,8 +90,17 @@ A force may also carry, all optional:
     "motivation": "normal"        poor|low|normal|high|fanatic - the floor of its
                                   men's starting morale (decision 19)
     "experience": "regular"       green|regular|veteran|elite (decision 19)
+    "quality": {"type": "regular", "experience": "experienced"}
+                                  a cell of the force-quality matrix (decision
+                                  83): type irregular|regular|elite, experience
+                                  inexperienced|experienced|veryExperienced. It
+                                  sets motivation and experience, and the gap
+                                  between two forces' cells acts on small arms
+                                  and the assault (decision 84); a motivation
+                                  given beside it overrides the cell's (a
+                                  fanatical irregular), an experience is refused
 
-`motivation` and `experience` are refused on a vehicle (a crew carries no
+`motivation`, `experience` and `quality` are refused on a vehicle (a crew carries no
 morale yet) and in a battle played without `morale`, where they would do
 nothing at all.
 
@@ -160,10 +169,12 @@ WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing", "vehicleClass",
     "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
-    "motivation", "experience",
+    "motivation", "experience", "quality",
 }
 MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
+FORCE_TYPES = {"irregular", "regular", "elite"}
+COMBAT_EXPERIENCE = {"inexperienced", "experienced", "veryExperienced"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
     "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "about", "window", "forces", "charges",
@@ -354,6 +365,20 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
             require(force["baseCover"] in COVER, f"{where}: baseCover must be one of {sorted(COVER)}")
         if "note" in force:
             require(isinstance(force["note"], str), f"{where}: note must be a line of text")
+        if "quality" in force:
+            quality = force["quality"]
+            require(
+                isinstance(quality, dict) and set(quality) == {"type", "experience"},
+                f'{where}: quality must be {{"type": ..., "experience": ...}}',
+            )
+            require(isinstance(quality["type"], str) and quality["type"] in FORCE_TYPES, f"{where}: quality type must be one of {sorted(FORCE_TYPES)}")
+            require(
+                isinstance(quality["experience"], str) and quality["experience"] in COMBAT_EXPERIENCE,
+                f"{where}: quality experience must be one of {sorted(COMBAT_EXPERIENCE)}",
+            )
+            require("experience" not in force, f"{where}: quality sets experience; give one or the other")
+            require(kind != "vehicle", f"{where}: a vehicle's crew carries no quality")
+            require(spec.get("morale") is True, f"{where}: quality does nothing in a battle played without morale")
         for key, allowed in (("motivation", MOTIVATIONS), ("experience", EXPERIENCES)):
             if key not in force:
                 continue
@@ -475,6 +500,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     listing = spec["slug"] + "Listing"
     if any(f.get("camouflaged") is True for f in forces):
         imports.insert(0, "CAMOUFLAGE_TURNS_AT_MAX")
+    if any("quality" in f for f in forces):
+        imports.insert(imports.index("Game") + 1, "forceQuality")
     import_list = ", ".join(imports)
 
     lines = [
@@ -565,6 +592,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             call = "makeInfantry(" + ", ".join(args + given_name) + ")"
 
         dressing: list[str] = []
+        # Statements that name the force themselves, rather than set one field on it.
+        statements: list[str] = []
         if f.get("camouflaged"):
             turns = "CAMOUFLAGE_TURNS_AT_MAX" if f["camouflaged"] is True else num(f["camouflaged"])
             dressing += ["camouflaging = true", "camouflageTurns = " + turns]
@@ -574,6 +603,15 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             dressing.append("scouting = true")
         if f.get("canLayCharges"):
             dressing.append("canLayCharges = true")
+        if "quality" in f:
+            # The cell first: a motivation given beside it overrides the cell's.
+            statements.append(
+                "Object.assign({local}, forceQuality({ type: "
+                + ts(f["quality"]["type"])
+                + ", experience: "
+                + ts(f["quality"]["experience"])
+                + " }))"
+            )
         if "motivation" in f:
             dressing.append("motivation = " + ts(f["motivation"]))
         if "experience" in f:
@@ -581,7 +619,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
 
         if "note" in f:
             lines.append("  // " + f["note"])
-        if not dressing:
+        if not dressing and not statements:
             lines.append("  game.addUnit(" + call + ");")
         else:
             if not said_dressing:
@@ -593,6 +631,7 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
                 said_dressing = True
             local = f["id"].replace("-", "").lower()
             lines.append("  const " + local + " = " + call + ";")
+            lines += ["  " + d.replace("{local}", local) + ";" for d in statements]
             lines += ["  " + local + "." + d + ";" for d in dressing]
             lines.append("  game.addUnit(" + local + ");")
     lines.append("")

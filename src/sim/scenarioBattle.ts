@@ -6,11 +6,14 @@ import {
   ADJUSTMENT_RADIUS_M,
   CE_PER_SIGMA,
   EYE_HEIGHT,
+  forceQuality,
+  generateMorale,
   groundHeight,
   Rng,
   distance,
   terrainBlocksSight,
   unitSeed,
+  type ForceQuality,
   type Game,
   type MoraleReport,
   type Point,
@@ -129,6 +132,21 @@ export interface ScenarioBattleOptions {
   fireOnTheMove?: number;
   /** The attacker's breakpoint (`GameOptions.attackerBreakpoint`), set on the scenario's game before the first turn. */
   attackerBreakpoint?: number;
+  /**
+   * A side's force quality (rules decision 83), for every force of it that
+   * carries morale; a side not named keeps the scenario's. Set after the
+   * scenario is built, so its men's pools are drawn again from their own
+   * streams — the same traits, a pool from the new floor. A harness switch
+   * only: a game played in the browser is dressed before `addUnit`.
+   */
+  quality?: Partial<Record<Side, ForceQuality>>;
+  /**
+   * Fight it without fire support: every side's allotted missions taken
+   * away before the first turn, so nothing calls a mortar or a gun — the
+   * small-arms fight the quality gap (decision 84) is measured on. On unless
+   * false.
+   */
+  fireSupport?: boolean;
   /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
   coveredRoutes?: boolean;
   /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
@@ -207,11 +225,36 @@ const LIFTED_CLEAR_M = 300;
 /** The plan's frontage: its centre and this far to either side (the browser tool's). */
 const PLAN_SPREAD_M = 90;
 
+/**
+ * Give a side's forces a cell of the force-quality matrix (rules decision 83,
+ * decision 81's matrix) in a game already built: each force with morale takes
+ * the cell's motivation and experience, and its men's pools are drawn again
+ * from their own streams — the same traits, a pool from the new floor, no
+ * draw from `game.rng`. The harness's way of measuring a cell on a scenario as
+ * generated. **A recording of the dressed game replays the scenario's
+ * quality, not this one** — `addUnit` journalled the forces as built — so it
+ * refuses a game already under way; a game to be recorded is dressed before
+ * `addUnit` instead.
+ */
+export function dressQuality(g: Game, quality: Partial<Record<Side, ForceQuality>>): void {
+  if (g.turn > 0) throw new Error("dressQuality: a game already under way; dress its forces before addUnit");
+  for (const [side, cell] of Object.entries(quality) as [Side, ForceQuality][]) {
+    for (const u of g.units) {
+      if (u.side !== side || !u.soldiers?.some((s) => s.morale)) continue;
+      Object.assign(u, forceQuality(cell));
+      for (const s of u.soldiers) delete s.morale;
+      generateMorale(u, g.seed);
+    }
+  }
+}
+
 /** One battle of `listing`, on `seed`, to an end or to `maxTurns`. */
 export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: ScenarioBattleOptions): ScenarioBattleResult {
   const { game: g, mapWidth, mapHeight, reserves } = listing.build(seed);
   if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
   if (opts.attackerBreakpoint !== undefined) g.attackerBreakpoint = opts.attackerBreakpoint;
+  if (opts.quality) dressQuality(g, opts.quality);
+  if (opts.fireSupport === false) for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;

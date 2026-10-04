@@ -2512,7 +2512,7 @@ on the stated reasoning, still awaiting the author's word.
     - **Several types of house**, each with its own strength. To be
       defined with the urban combat work. Until then a house of 208 m²
       takes about 20 tank rounds, and none comes down in the urban battle.
-    - **Force quality as a matrix.** Ruled, not built. Three levels of
+    - **Force quality as a matrix.** Ruled; built as decision 83. Three levels of
       force type (irregular, regular, elite) against three of experience
       (inexperienced, experienced, very experienced). Morale is affected
       by both, as well as by the other factors already described. Today's
@@ -2567,6 +2567,70 @@ on the stated reasoning, still awaiting the author's word.
       men's mean agility (`Game.firingOrder`). The engine's fire under
       standing orders and the scripted drill follow it. ⚠️ In the hotseat
       the player still fires his forces in the order he chooses.
+83. ✅ **The force-quality matrix, built** (2026-10-04: decision 81's
+    matrix; the author: "the new matrix maps into experience /
+    motivation"). `FORCE_QUALITY` in `data/morale.ts` reads each cell of
+    force type (irregular, regular, elite) × combat experience
+    (inexperienced, experienced, very experienced) onto the two dials
+    decision 19 already had. `forceQuality({ type, experience })` returns
+    them, and a force is dressed with them **before** `addUnit`, which
+    draws its pools and records it. The regular, experienced cell is
+    `normal` / `regular`, today's force, so a game that names no quality
+    plays and replays exactly as before. The breakpoints (decisions 44, 49,
+    67) stay that cell's. No new rule, no new draw, no recording change. A
+    scenario spec takes `"quality": {"type": …, "experience": …}`
+    (`make-scenario.py`), with a `motivation` beside it overriding the
+    cell's (a fanatical irregular). The harness takes `--quality
+    SIDE=type/experience` (`scenario-sim`).
+    - ⚠️ **The mapping is ours.** Type sets the motivation floor
+      (irregular `low`, regular `normal`, elite `high`). Combat experience
+      sets `experience` a step a level (green, regular, veteran), and an
+      elite force's training is worth a step more (regular, veteran,
+      elite). No two cells map alike, and a step up on either axis never
+      costs a force nerve (`morale.test.ts` pins both).
+    - **Measured** (docs/balance.md, fifty-eighth round; tel 3:1, 400
+      battles a cell): the attacker's cells give 32–53% wins, and the
+      defender's cells give the attacker 14.5–65.5%, with every row and
+      column ordered (pooled; ±2.5 one standard error). The losses hardly move: quality decides when a side
+      gives up. For the author: is the spread right? (Answered by decision
+      84.)
+84. ✅ **The quality gap** (2026-10-04, the author, after the sources
+    were checked: "given the majority of casualties are from HE, personal
+    quality matters little in most things other than morale. It should be
+    on a regular distribution, where the middle, which represents a clash
+    of equal forces, has zero effect and the extreme (elite against
+    irregular) a very large effect, especially in special operations where
+    artillery and other support weapons aren't involved"). The cell now
+    travels on the force (`Unit.quality`, set with the rest by
+    `forceQuality`). `GameOptions.qualityGap` is on for a new game and off
+    for a recording made before it.
+    - **Where it acts:** a force's small-arms chance against another, in
+      fire, covering fire, the assault's fire and the assault's reply,
+      multiplied by `qualityGapFactor`. Shells, mortar bombs, tank rounds,
+      RPGs, rifle grenades and hand grenades are untouched. Nerve stays
+      decision 83's.
+    - **Its shape:** each force scores −2 to +2 (type step plus experience
+      step; regular and experienced, or no quality given, is 0). The
+      factor is ×3 ^ (sign(gap) × bell(gap) / bell(4)), with
+      bell(g) = 1 − exp(−g² / 8): the normal curve turned over. A gap of 0
+      is exactly ×1, 1 step ×1.16, 2 ×1.65, 3 ×2.36, 4 ×3, and the inverse
+      the other way. σ = 2, the ×3 at the widest, and type and experience
+      counting one for one were ours, and **the author accepted them on the
+      measurement** (2026-10-04: "looks good").
+    - **Measured** (docs/balance.md, fifty-ninth round; tel 3:1, 400
+      battles a row). Elite, very experienced against irregular,
+      inexperienced: the attack wins **85%** with mortars and **100%**
+      without. The other way round it wins **4%** and **0%**, and without
+      mortars the irregular attacker loses **10.75** men for each elite
+      man. That is close to Mogadishu 1993 (18 US dead and 73 wounded
+      against roughly 900–1,700 Somali casualties). Mortars damp the gap,
+      as the ruling expects. The full 9-cell grid on each side, against a
+      regular, experienced enemy, is in balance.md.
+    - **Accepted with it:** between equals the gap is zero, but nerve is
+      not. Two elite forces give the 3:1 attack 24.5% with mortars and 45%
+      without; two irregular ones give 60% and 33.5% (baseline 40%).
+      Decision 83's morale mapping is absolute, so a steady defender
+      outlasts the shelling.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
