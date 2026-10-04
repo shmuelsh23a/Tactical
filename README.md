@@ -2614,8 +2614,9 @@ on the stated reasoning, still awaiting the author's word.
       factor is ×3 ^ (sign(gap) × bell(gap) / bell(4)), with
       bell(g) = 1 − exp(−g² / 8): the normal curve turned over. A gap of 0
       is exactly ×1, 1 step ×1.16, 2 ×1.65, 3 ×2.36, 4 ×3, and the inverse
-      the other way. ⚠️ Ours: σ = 2, the ×3 at the widest, and type and
-      experience counting one for one.
+      the other way. σ = 2, the ×3 at the widest, and type and experience
+      counting one for one were ours, and **the author accepted them on the
+      measurement** (2026-10-04: "looks good").
     - **Measured** (docs/balance.md, fifty-ninth round; tel 3:1, 400
       battles a row). Elite, very experienced against irregular,
       inexperienced: the attack wins **85%** with mortars and **100%**
@@ -2625,7 +2626,7 @@ on the stated reasoning, still awaiting the author's word.
       against roughly 900–1,700 Somali casualties). Mortars damp the gap,
       as the ruling expects. The full 9-cell grid on each side, against a
       regular, experienced enemy, is in balance.md.
-    - **For the author:** between equals the gap is zero, but nerve is
+    - **Accepted with it:** between equals the gap is zero, but nerve is
       not. Two elite forces give the 3:1 attack 24.5% with mortars and 45%
       without; two irregular ones give 60% and 33.5% (baseline 40%).
       Decision 83's morale mapping is absolute, so a steady defender

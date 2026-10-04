@@ -4121,6 +4121,8 @@ gaps of up to two steps):
   24.5% with mortars; two irregular ones 60%. Decision 83 is absolute: a
   steady defender sits out the shelling, a shaky one does not. Without
   mortars the equals are within 7 points of the baseline.
+- **The author accepted the round as it stands** (2026-10-04: "looks
+  good"): the curve's size, and nerve between equals.
 
 ## How the engine scales, 2026-09-23
 
