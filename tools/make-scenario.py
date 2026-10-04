@@ -94,7 +94,9 @@ A force may also carry, all optional:
                                   a cell of the force-quality matrix (decision
                                   83): type irregular|regular|elite, experience
                                   inexperienced|experienced|veryExperienced. It
-                                  sets motivation and experience; a motivation
+                                  sets motivation and experience, and the gap
+                                  between two forces' cells acts on small arms
+                                  and the assault (decision 84); a motivation
                                   given beside it overrides the cell's (a
                                   fanatical irregular), an experience is refused
 

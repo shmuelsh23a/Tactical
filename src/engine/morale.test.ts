@@ -9,6 +9,7 @@ import {
   forceBroken,
   forceQuality,
   generateMorale,
+  qualityGapFactor,
   leaderBonus,
   leadership,
   readySoldiers,
@@ -20,6 +21,7 @@ import {
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
+import { FLAT_GROUND } from "./terrain.js";
 import { ATTACKER_BREAK_BEFORE_66, EXPERIENCE, FORCE_QUALITY, HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, NERVE_IN_OPEN_BEFORE_66, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
@@ -93,7 +95,11 @@ describe("the force-quality matrix (rules decision 83)", () => {
   const test = (type: ForceType, experience: CombatExperience) => EXPERIENCE[forceQuality({ type, experience }).experience].test;
 
   it("puts today's force in the regular, experienced cell, the one every breakpoint was set on", () => {
-    expect(forceQuality({ type: "regular", experience: "experienced" })).toEqual({ motivation: "normal", experience: "regular" });
+    expect(forceQuality({ type: "regular", experience: "experienced" })).toEqual({
+      motivation: "normal",
+      experience: "regular",
+      quality: { type: "regular", experience: "experienced" },
+    });
   });
 
   it("maps no two cells alike, and never lets a step up on either axis cost a force its nerve", () => {
@@ -131,6 +137,61 @@ describe("the force-quality matrix (rules decision 83)", () => {
     expect(replayed.motivation).toBe("low");
     expect(replayed.experience).toBe("green");
     expect(replayed.soldiers!.map((s) => s.morale!.will)).toEqual(u.soldiers!.map((s) => s.morale!.will));
+  });
+});
+
+describe("the quality gap (rules decision 84)", () => {
+  const force = (id: string, side: "BLUE" | "RED", type?: ForceType, experience?: CombatExperience) => {
+    const u = makeInfantry(id, side, "squad", { x: 0, y: side === "BLUE" ? 0 : 150 }, 8);
+    if (type && experience) Object.assign(u, forceQuality({ type, experience }));
+    return u;
+  };
+  const gap = (a: [ForceType, CombatExperience], b: [ForceType, CombatExperience]) =>
+    qualityGapFactor(force("A", "BLUE", ...a), force("B", "RED", ...b));
+
+  it("is nothing between equals, whatever their cell, and a force given no quality is regular and experienced", () => {
+    for (const t of ["irregular", "regular", "elite"] as const) {
+      expect(gap([t, "veryExperienced"], [t, "veryExperienced"])).toBe(1);
+    }
+    expect(qualityGapFactor(force("A", "BLUE", "regular", "experienced"), force("B", "RED"))).toBe(1);
+    // Type and experience trade one for one: an elite novice is a regular, experienced force's equal.
+    expect(gap(["elite", "inexperienced"], ["regular", "experienced"])).toBe(1);
+  });
+
+  it("is flat about a fair fight and steep toward the ends, three to one at the widest, and the inverse the other way", () => {
+    // The shooter's score less the target's: 0, 1, 2, 3 and 4 steps.
+    const steps = [
+      gap(["regular", "experienced"], ["regular", "experienced"]),
+      gap(["regular", "veryExperienced"], ["regular", "experienced"]),
+      gap(["elite", "veryExperienced"], ["regular", "experienced"]),
+      gap(["elite", "veryExperienced"], ["regular", "inexperienced"]),
+      gap(["elite", "veryExperienced"], ["irregular", "inexperienced"]),
+    ];
+    expect(steps[0]).toBe(1);
+    expect(steps[4]).toBeCloseTo(3, 10);
+    // A step about the middle is worth little; the next ones far more.
+    expect(steps[1]).toBeLessThan(1.2);
+    expect(steps[2]! / steps[1]!).toBeGreaterThan(steps[1]!);
+    expect(steps[3]! / steps[2]!).toBeGreaterThan(steps[1]!);
+    expect(gap(["irregular", "inexperienced"], ["elite", "veryExperienced"])).toBeCloseTo(1 / 3, 10);
+  });
+
+  it("raises the elite's chance against irregulars, and is off for a recording made before it", () => {
+    const shot = (qualityGap: boolean) => {
+      const g = new Game({ seed: 1, enforceC2: false, terrain: FLAT_GROUND, qualityGap });
+      g.addUnit(force("B", "BLUE", "elite", "veryExperienced"));
+      g.addUnit(force("R", "RED", "irregular", "inexperienced"));
+      g.beginTurn();
+      g.advanceToPhase("combat");
+      return g.fire("B", "R", { weapon: "smallArms", hasLineOfSight: true }).hitChance;
+    };
+    expect(shot(true) / shot(false)).toBeCloseTo(3, 6);
+    const g = new Game({ seed: 1 });
+    expect(g.qualityGap).toBe(true);
+    const recording = g.toRecording();
+    expect(replayGame(recording).qualityGap).toBe(true);
+    delete (recording as { qualityGap?: boolean }).qualityGap;
+    expect(replayGame(recording).qualityGap).toBe(false);
   });
 });
 

@@ -173,3 +173,18 @@ describe("a side's force quality in the harness (rules decision 83)", () => {
     for (const u of g.units) expect(u.soldiers?.map((s) => s.morale)).toEqual(plain.getUnit(u.id).soldiers?.map((s) => s.morale));
   });
 });
+
+describe("a battle without fire support (rules decision 84's test bed)", () => {
+  it("leaves neither side a mission to call, so nothing falls from the sky", () => {
+    const left: (number | undefined)[] = [];
+    const r = runScenarioBattle(telAzekaAssaultListing, 11, {
+      drill: PLAIN_SCRIPT,
+      fire: DEFAULT_FIRE_CHOICES,
+      fireSupport: false,
+      maxTurns: 12,
+      onTurn: (g) => left.push(g.fireMissionsLeft("BLUE", "mortar"), g.fireMissionsLeft("RED", "mortar")),
+    });
+    expect(r.turns).toBeGreaterThan(0);
+    expect(left.every((n) => n === 0)).toBe(true);
+  });
+});

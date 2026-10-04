@@ -140,6 +140,13 @@ export interface ScenarioBattleOptions {
    * only: a game played in the browser is dressed before `addUnit`.
    */
   quality?: Partial<Record<Side, ForceQuality>>;
+  /**
+   * Fight it without fire support: every side's allotted missions taken
+   * away before the first turn, so nothing calls a mortar or a gun — the
+   * small-arms fight the quality gap (decision 84) is measured on. On unless
+   * false.
+   */
+  fireSupport?: boolean;
   /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
   coveredRoutes?: boolean;
   /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
@@ -247,6 +254,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
   if (opts.attackerBreakpoint !== undefined) g.attackerBreakpoint = opts.attackerBreakpoint;
   if (opts.quality) dressQuality(g, opts.quality);
+  if (opts.fireSupport === false) for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;

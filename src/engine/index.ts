@@ -228,6 +228,8 @@ export {
   forceBroken,
   forceMorale,
   forceQuality,
+  qualityGapFactor,
+  qualityScore,
   generateMorale,
   hasMorale,
   isCornered,

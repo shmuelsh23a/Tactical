@@ -244,6 +244,12 @@ export interface Unit {
   /** How experienced the force is; "regular" when not given. */
   experience?: Experience;
   /**
+   * Its cell of the force-quality matrix (rules decision 83), which set the
+   * two above; regular, experienced when not given. Read again by the
+   * quality gap (rules decision 84) between two forces in a firefight.
+   */
+  quality?: ForceQuality;
+  /**
    * Which of the traits' rules act on this force's men (rules decisions 69
    * and 71): set by the game at `addUnit` from `GameOptions.traitEffects`
    * and `GameOptions.fatigue`, so the combat functions read the switch off

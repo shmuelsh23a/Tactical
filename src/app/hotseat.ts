@@ -223,12 +223,13 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     unit.suppression == null &&
     !unit.motivation &&
     !unit.experience &&
+    !unit.quality &&
     !unit.observationPost
   ) {
     return unit;
   }
   // Nor that it is an observation post: that is its side's plan (decision 38).
-  const { suppression: _s, motivation: _mo, experience: _ex, observationPost: _op, routing, surrendered, ...rest } = unit;
+  const { suppression: _s, motivation: _mo, experience: _ex, quality: _q, observationPost: _op, routing, surrendered, ...rest } = unit;
   return {
     ...rest,
     ...(seenNow && routing ? { routing } : {}),

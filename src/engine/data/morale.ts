@@ -76,6 +76,28 @@ export const FORCE_QUALITY: Record<ForceType, Record<CombatExperience, { motivat
   },
 };
 
+/**
+ * The quality gap (rules decision 84, the author, 2026-10-04): "the middle,
+ * a clash of equal forces, has zero effect, and the extreme — elite against
+ * irregular — a very large one", in small arms and the assault only, since
+ * most casualties come from explosives and a shell does not care who it
+ * lands on. A force's score is its type's step plus its experience's (−2 to
+ * +2, regular and experienced 0), and the gap is the shooter's less the
+ * target's (−4 to +4). The shooter's chance is multiplied by
+ * `extreme` ^ (sign(gap) · bell(gap) / bell(widest)), where
+ * bell(g) = 1 − exp(−g² / 2σ²): the normal curve turned over, flat about a
+ * fair fight and steep toward the ends. ⚠️ `sigma` and `extreme` are ours:
+ * a gap of one step is worth ×1.16, two ×1.65 (about Dupuy's Germans
+ * against the Americans in Italy, 1.2–1.5) and the widest ×3 a side, so
+ * about ×9 in casualties exchanged (the Arab–Israeli data's 0.43 against
+ * 4.91 at even odds, about ×11; docs/validation.md, *Force quality*).
+ */
+export const QUALITY_STEP: { type: Record<ForceType, number>; experience: Record<CombatExperience, number> } = {
+  type: { irregular: -1, regular: 0, elite: 1 },
+  experience: { inexperienced: -1, experienced: 0, veryExperienced: 1 },
+};
+export const QUALITY_GAP = { sigma: 2, extreme: 3, widest: 4 } as const;
+
 /** The thresholds the author set, on effective morale. */
 export const THRESHOLDS = {
   /** At or below: wavering — tested every few turns. */
