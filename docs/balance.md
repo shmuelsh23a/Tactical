@@ -4058,6 +4058,10 @@ npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40
   the fallen. The breakpoints themselves (decisions 44, 49, 67) are
   unchanged: they stay the regular, experienced cell's, as the author
   ruled.
+- **Checked against Dupuy and Rowland** (validation.md, *Force
+  quality*): quality moves nerve and not fighting. An elite attacker
+  exchanges casualties almost as a green one does, where Dupuy's CEV of
+  1.2–2 would move the exchange by that much or more.
 - **For the author:** is the spread right? From the worst cell
   (irregular, inexperienced) to the best (elite, very experienced) is 21
   points for an attacker and 51 for a defender. Nothing in the reference

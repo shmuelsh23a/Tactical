@@ -218,7 +218,7 @@ How the last two days went, round by round, is in
    (scouts, moving up, bounding) exist only in the headless harness.
 5. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
    evaluate once by rule from the side's belief) — after 1.
-6. **Force quality matrix**: **built 2026-10-04** (decision 83). **For the author:** is its spread right (balance.md, fifty-eighth round)? No scenario uses a cell yet: the test beds are all regular, experienced. **House types** (decision 81), with the urban combat work, are next.
+6. **Force quality matrix**: **built 2026-10-04** (decision 83). **For the author:** checked against Dupuy and the rest (validation.md, *Force quality*), the mapping moves only nerve: the casualty exchange hardly moves with the attacker's quality, where Dupuy's CEV (1.2–1.5 within armies, 1.75–2 Israel against Egypt) would move it a lot. Should quality also act on fighting (aim) as a CEV per cell? That is a new rule. No scenario uses a cell yet: the test beds are all regular, experienced. **House types** (decision 81), with the urban combat work, are next.
 7. **Flat-ground misses**, **overhead cover for higher echelons**,
    **ammunition** (backlog 12) — for battalion battles.
 

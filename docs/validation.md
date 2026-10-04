@@ -1462,6 +1462,81 @@ set fatigue's size and speed. Searched through Consensus, 2026-10-03
 under fire 1, a quiet turn −3), the thresholds (tired at 6, exhausted at
 12, ×0.8–1.2 by strength), and the tired step (×0.9).
 
+## Force quality (2026-10-04) — rules decision 83
+
+The author asked for the matrix (decision 81) to be checked against Dupuy
+and the other sources. TDI's pages were read through the Apify connector,
+because the cloud session's own network does not reach dupuyinstitute.org.
+Marked *snippet* where only a search result was seen.
+
+**What the sources say**
+
+- **Dupuy's combat power is P = S × V × CEV**: quality multiplies strength
+  (TDI, *Human Factors In Warfare: Combat Effectiveness*, read).
+- **Within comparable armies, a CEV of 1.2–1.5.** Germans against US and
+  British troops in Italy 1943–44: "combat effectiveness favored the
+  Germans by 20 to 30 percent" (TDI, *Measuring Human Factors … in Italy*,
+  read). Zetterling's correction of the same data gives 1.4–1.5 (TDI,
+  *CEV Calculations in Italy, 1943*, read). The Italian campaign's
+  divisions span **0.60–1.49** (Dupuy, *Understanding War*, p. 115;
+  snippet).
+- **Between armies of very different quality, 1.75–2.0.** Israelis
+  against Egyptians: **1.75** in 1967 and **1.98** in 1973 (*Elusive
+  Victory*, p. 598, via TDI, *Measuring Human Factors based upon Casualty
+  Effectiveness*, read). At even odds the casualty exchange is much
+  larger than the CEV: Israeli attacks at 0.92:1 lost **0.43** men for
+  each Arab man lost, and Arab attacks at 0.96:1 lost **4.91** (51
+  division-level engagements). Kursk gives about **4:1** the same way.
+  Lawrence: "a force multiplier of two … will produce a casualty exchange
+  rate of greater than two."
+- **Elite units are less clear-cut.** Rowland (*The Stress of Battle*,
+  2006, through two reviews, read) found troop quality largely absent
+  from his data: German paratroops in rubble did "slightly better", not
+  significantly. Gurkhas inflicted about **60%** more casualties than
+  British units.
+- **Experience rises, then falls.** Peak effectiveness comes within the
+  first 90 days of combat, and most men are spent by 140–180 days
+  (combat-exhaustion reports via Ambrose; snippet). Swank and Marchand
+  (1946): after 60 days of continuous combat, 98% of survivors are
+  psychiatric casualties (snippet). No source found gives the rise as a
+  multiplier.
+- **Irregulars** are measured by the force ratio a campaign needs, not by
+  a tactical CEV: more than 10:1 nearly always wins against an insurgency,
+  and 2:1 or less favours the insurgent (TDI, *Force Ratios and
+  Counterinsurgency II*, 83 cases, read). That is a campaign's figure,
+  not a firefight's. Hezbollah 2006 is about 2–6 dead for each Israeli
+  dead, depending on whose count (snippet).
+- **No source turns a CEV into a chance of winning.**
+
+**What the game does: quality moves nerve, not fighting.** Casualties
+exchanged on the tel at 3:1, from the fifty-eighth round's runs (pooled,
+400 battles a cell; attacker men lost for each defender man lost):
+
+| Cell | Attacker's quality | Defender's quality |
+|---|---|---|
+| Irregular, inexperienced | 1.73 (×1.01) | 1.19 (×0.69) |
+| Regular, experienced (today) | 1.72 | 1.72 |
+| Elite, very experienced | 1.55 (×0.90) | 2.16 (×1.26) |
+
+- **An elite attacker loses men at almost the rate a green one does.**
+  Its quality only decides how long it keeps coming. With a CEV of
+  1.2–1.5 from Italy, the exchange would move by more than that. At
+  1.75–2 it would move by several times.
+- **The defender's exchange moves 0.69 to 1.26**, because a steadier
+  defender holds longer and shoots for more turns, not because it shoots
+  better.
+- **Why:** the mapping reaches only `motivation` (the starting pool) and
+  `experience` (the morale test and suppression). Neither touches aim,
+  spotting or being hit. Rowland's finding on elites leans toward the
+  game's way; Dupuy's and the Arab–Israeli data lean hard against it.
+
+⚠️ For the author: to come near Dupuy, quality would have to act on
+fighting too, as a combat-effectiveness factor per cell on what a force
+does (its aim, at least), beside its nerve. That is a new rule. The
+sources would put the corners near **0.6** and **1.5** about the regular,
+experienced cell (Italy's span of divisions). Elite against irregular
+would sit nearer **2** (the Arab–Israeli figure).
+
 ## Open
 
 For the author, in rough order of what they move:
