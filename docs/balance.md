@@ -4069,6 +4069,59 @@ npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40
   look, and they have not been read (sources.md). Either way, the dial is
   the cell → motivation / experience mapping, not the breakpoints.
 
+## Fifty-ninth round: the quality gap, 2026-10-04
+
+Rules decision 84: quality's gap between two forces acts on small arms and
+the assault, ×1 between equals and ×3 at the widest, on the normal curve
+turned over. Tel Azeka 3:1, the standard measurement, 200 battles from
+seed 1000 and 200 from seed 2000, pooled. "Without mortars" is
+`--no-fire-support`: neither side calls a mission, and explosives
+(the squads' rifle and hand grenades) cause 11–20% of losses instead of
+58–67%. The exchange is attacker men lost for each defender man lost.
+
+**The extremes and the equals:**
+
+| Attacker / defender | Wins, with mortars | Exchange | Wins, without | Exchange |
+|---|---|---|---|---|
+| Regular, experienced / the same (baseline) | 40% | 1.72 | 40% | 1.19 |
+| **Elite, very experienced / irregular, inexperienced** | **85%** | 0.66 | **100%** | **0.22** |
+| **Irregular, inexperienced / elite, very experienced** | **4%** | 3.97 | **0%** | **10.75** |
+| Elite, very experienced / the same | 24.5% | 2.03 | 45% | 1.12 |
+| Irregular, inexperienced / the same | 60% | 1.21 | 33.5% | 1.31 |
+
+**One side's cell, the other regular and experienced** (attacker's wins;
+gaps of up to two steps):
+
+| Cell | Attacker's, with mortars | Attacker's, without | Defender's, with mortars | Defender's, without |
+|---|---|---|---|---|
+| Irregular, inexperienced (−2) | 21% | 3% | 73.5% | 91% |
+| Irregular, experienced (−1) | 34% | 21.5% | 53.5% | 59% |
+| Regular, inexperienced (−1) | 31% | 19.5% | 55.5% | 60.5% |
+| Irregular, very experienced (0) | 41% | 46% | 34.5% | 36% |
+| Elite, inexperienced (0) | 38.5% | 48% | 26.5% | 36% |
+| Regular, very experienced (+1) | 45.5% | 63.5% | 24% | 23% |
+| Elite, experienced (+1) | 50.5% | 63.5% | 20% | 19.5% |
+| Elite, very experienced (+2) | 62.5% | 92% | 10.5% | 7% |
+
+- **The extreme is very large, and larger without support weapons**, as
+  the author ruled. Elite against irregular, the exchange is 0.22 against
+  10.75 without mortars (about 50× between the two directions) and 0.66
+  against 3.97 with them (6×). The Arab–Israeli data's 0.43 against 4.91
+  (11×) sits between. Mogadishu's 10–19 Somali casualties for each
+  American (validation.md, *Force quality*) is near the 10.75 of
+  irregulars attacking an elite position.
+- **Score 0 cells play like the baseline when the enemy is regular** (41%,
+  38.5% and 46%, 48% for an attacker): the gap is zero and only nerve
+  differs.
+- **A one-step gap moves the win rate more than its ×1.16 suggests**,
+  most without mortars (19.5–21.5% and 63.5% against 40%). The factor is
+  flat about the middle, but a battle balanced at 40% is on a knife-edge,
+  so a small edge in every exchange decides it.
+- **Between equals nerve still counts.** Two elite forces give the attack
+  24.5% with mortars; two irregular ones 60%. Decision 83 is absolute: a
+  steady defender sits out the shelling, a shaky one does not. Without
+  mortars the equals are within 7 points of the baseline.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

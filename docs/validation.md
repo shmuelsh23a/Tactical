@@ -1530,6 +1530,16 @@ exchanged on the tel at 3:1, from the fifty-eighth round's runs (pooled,
   spotting or being hit. Rowland's finding on elites leans toward the
   game's way; Dupuy's and the Arab–Israeli data lean hard against it.
 
+**Ruled 2026-10-04 and built as decision 84** (the quality gap): see
+balance.md, fifty-ninth round. Mogadishu, 3–4 October 1993 (Wikipedia,
+*Battle of Mogadishu (1993)*, snippet): 18 US dead and 73 wounded, against
+133–700 Somalis dead (most estimates 200–700) and 700 to over 1,000
+wounded, about 10–19 Somali casualties for each American. The game's
+irregulars attacking an elite position without support weapons lose
+10.75 men for each one they kill.
+
+What follows was the question that led to it.
+
 ⚠️ For the author: to come near Dupuy, quality would have to act on
 fighting too, as a combat-effectiveness factor per cell on what a force
 does (its aim, at least), beside its nerve. That is a new rule. The
