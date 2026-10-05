@@ -2737,8 +2737,12 @@ Still modelled by reasonable assumption (flag if you want them changed):
   reload comes back to it; a hotseat battle resumes behind the handoff
   screen for the side to act. Resumed mid-turn, a battle goes on exactly as
   if it had never stopped — `computerSide.test.ts` pins it, and it was driven
-  in the browser to the same 102 actions both ways. One battle is kept; it
-  is cleared when the battle ends. Not yet: several saves, or a save file to
+  in the browser to the same 102 actions both ways. The save carries the
+  game's state fingerprint (`stateDigest`): one that no longer replays to it
+  — the rules have changed since — is refused with a reason on the picker
+  and set aside, never resumed as another battle. A reload resumes only a
+  battle that has been saved (`&saved=1`); a fresh pick stays fresh. One
+  battle is kept; it is cleared when the battle ends. Not yet: several saves, or a save file to
   carry to another device (backlog: user-generated content).
 - **Stage 4 — the app proper: mobile and desktop.** The browser build is the
   development shell. What ports for free is the part that matters: the engine

@@ -24,6 +24,7 @@ import type {
   StandingOrderExecution,
 } from "../engine/index.js";
 import { RecordingLoadError, type LoadProblem } from "./recordingFile.js";
+import type { SessionProblem } from "./session.js";
 
 /** Hebrew phase names, matching the ones the hotseat UI uses. */
 const phaseHe: Record<string, string> = {
@@ -930,6 +931,22 @@ export function recordingDriftNote(firstDivergence: number): string {
  * `RecordingLoadError` — which `readRecording` should never let out — is
  * still said in Hebrew rather than passing an engine's English to a player.
  */
+/**
+ * Why the battle saved in this browser could not be picked up again. The
+ * save is set aside when this is said, so the picker opens clean.
+ */
+export function sessionProblemHe(problem: SessionProblem): string {
+  switch (problem) {
+    case "notJson":
+    case "notASession":
+      return "הקרב השמור פגום ולא ניתן להמשיך בו — נמחק";
+    case "newerVersion":
+      return "הקרב השמור נשמר בגרסה חדשה יותר של המשחק — לא ניתן להמשיך בו כאן";
+    case "doesNotReplay":
+      return "חוקי המשחק השתנו מאז שהקרב נשמר, והוא כבר אינו משתחזר כפי שהיה — נמחק";
+  }
+}
+
 export function recordingLoadFailed(err: unknown): string {
   return `טעינת ההקלטה נכשלה: ${
     err instanceof RecordingLoadError ? loadProblemHe(err.problem) : "לא ניתן לקרוא את הקובץ"

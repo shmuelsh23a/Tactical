@@ -8,6 +8,8 @@ interface ScenarioPickerProps {
   /** The battle in progress saved in this browser, to pick up again; null when there is none. */
   saved: { title: string; turn: number; vsComputer: boolean } | null;
   onResume: () => void;
+  /** Why the battle saved here could not be picked up, in Hebrew; null when nothing went wrong. */
+  savedProblem: string | null;
   /** A saved battle to review instead of fighting one. */
   onLoadRecording: (file: File) => void;
   /** Why the last file could not be reviewed, if it could not. */
@@ -33,7 +35,7 @@ function extent(width: number, height: number): string {
  * A recording needs no battle picked first: it carries its own ground, and
  * the debrief chooses whose eyes to read it through.
  */
-export function ScenarioPicker({ scenarios, onPick, saved, onResume, onLoadRecording, loadError }: ScenarioPickerProps) {
+export function ScenarioPicker({ scenarios, onPick, saved, onResume, savedProblem, onLoadRecording, loadError }: ScenarioPickerProps) {
   const [vsComputer, setVsComputer] = useState(false);
   return (
     <div className="picker">
@@ -47,6 +49,8 @@ export function ScenarioPicker({ scenarios, onPick, saved, onResume, onLoadRecor
           </p>
         </button>
       )}
+      {saved && <p className="picker-note">נשמר קרב אחד: קרב חדש יחליף אותו ברגע שיתחיל.</p>}
+      {savedProblem && <p className="picker-error">{savedProblem}</p>}
       <div className="picker-mode seg">
         <button className={vsComputer ? "" : "on"} onClick={() => setVsComputer(false)}>
           שני שחקנים במחשב אחד

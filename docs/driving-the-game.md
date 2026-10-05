@@ -50,10 +50,11 @@ measurement of anything here comes out around twice its settled cost.
 - **The app opens on the scenario picker, not the battle.** Load
   `/?scenario=yokneamIllit` (or any spec's `slug`) to skip it, and add
   `&vs=computer` to play it against the computer. **A reload resumes the game
-  in progress** (since 2026-10-05: the browser keeps it in
-  `localStorage["tactical.session"]` once anything has happened), replayed
-  from its recording; a fresh Playwright context has empty storage, so a
-  script starts fresh. The picker offers the saved battle as *המשך קרב שמור*.
+  in progress** once it has been saved (since 2026-10-05: kept in
+  `localStorage["tactical.session"]` once anything has happened, and the
+  address gains `&saved=1`), replayed from its recording; a fresh pick
+  reloaded before anything happened stays fresh, and a fresh Playwright
+  context has empty storage, so a script starts fresh. The picker offers the saved battle as *המשך קרב שמור*.
   `החלף תרחיש` goes back —
   once anything has been planned or the first turn has started it asks for a
   second click

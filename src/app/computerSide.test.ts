@@ -88,7 +88,10 @@ describe("a battle against the computer, saved and resumed", () => {
       // Activation by activation across turns, as the browser plays them.
       let i = 0;
       while (i < to) {
-        for (const act of buildActivations(g.initiativeOrder)) {
+        const acts = buildActivations(g.initiativeOrder);
+        // The save point is counted in activations, six a turn (three phases, two sides).
+        expect(acts).toHaveLength(6);
+        for (const act of acts) {
           if (i >= from && i < to) {
             if (g.phase !== act.phase) g.advanceToPhase(act.phase);
             if (act.side === "RED") {
@@ -104,6 +107,8 @@ describe("a battle against the computer, saved and resumed", () => {
       }
     };
     const start = () => {
+      // Seed 1000, the standard measurement's first: its walking attack is
+      // under the defence's fire well before the 20 turns played here.
       const built = telAzekaAssaultListing.build(1000);
       const g = built.game;
       const ai = new ComputerDefender(g, "RED", built);

@@ -42,7 +42,7 @@ import {
   type DirectFireResult,
   type StandingOrderExecution,
   type WithCoveringFire,
-  replayGame,
+  stateDigest,
 } from "../engine/index.js";
 import {
   casualtyReport,
@@ -85,7 +85,7 @@ import {
 import { MapView, orderOverlay } from "./components/MapView.js";
 import { SQUAD_GRENADIERS, fireGrenadiers, type DrillReport } from "./drill.js";
 import { ComputerDefender } from "./computerSide.js";
-import { SESSION_FORMAT, SESSION_VERSION, clearStoredSession, storeSession, type Session } from "./session.js";
+import { SESSION_FORMAT, SESSION_VERSION, clearStoredSession, storeSession, type ResumedBattle } from "./session.js";
 import { Debrief } from "./Debrief.js";
 import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
@@ -146,11 +146,13 @@ interface AppProps {
    */
   vsComputer?: boolean;
   /**
-   * A saved battle to pick up where it stopped: its game is replayed from its
-   * recording, the computer (if it had one) restored, and play goes on from
-   * the activation it was saved in. `vsComputer` is the save's, not the prop's.
+   * A saved battle to pick up where it stopped, already rebuilt and checked
+   * (`resumeBattle`): play goes on from the activation it was saved in.
+   * `vsComputer` is the save's, not the prop's.
    */
-  resume?: Session;
+  resume?: ResumedBattle;
+  /** Called once the battle has first been saved, so a reload knows to come back to it. */
+  onSaved?: () => void;
 }
 
 /**
@@ -163,22 +165,19 @@ function seedFromUrl(): number | undefined {
   return Number.isSafeInteger(seed) && seed > 0 ? seed : undefined;
 }
 
-export function App({ scenario, onLeave, vsComputer, resume }: AppProps) {
+export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }: AppProps) {
+  const resume = resumed?.session;
   // The engine lives in a ref (mutable, imperative); React state mirrors it.
   // Choosing another battle remounts this component rather than rebuilding it.
   // The first turn is not begun here: the battle opens on mission planning
   // (rules decision 38), and begins when both sides have planned.
   const initRef = useRef<{ scn: Scenario; ai: ComputerDefender | null } | null>(null);
-  if (!initRef.current && resume) {
+  if (!initRef.current && resumed) {
     // The engine's state is the recording; the extent and title are the scenario's.
-    const replayed: Scenario = {
-      game: replayGame(resume.recording),
-      mapWidth: scenario.mapWidth,
-      mapHeight: scenario.mapHeight,
-      title: scenario.title,
+    initRef.current = {
+      scn: { game: resumed.game, mapWidth: scenario.mapWidth, mapHeight: scenario.mapHeight, title: scenario.title },
+      ai: resumed.ai,
     };
-    const ai = resume.computer ? ComputerDefender.restore(replayed.game, resume.computer, replayed) : null;
-    initRef.current = { scn: replayed, ai };
   }
   if (!initRef.current) {
     const built = scenario.build(seedFromUrl());
@@ -196,7 +195,7 @@ export function App({ scenario, onLeave, vsComputer, resume }: AppProps) {
   /** The sides a person plans and acts for, in order. */
   const players: Side[] = SIDES.filter((s) => s !== computer);
 
-  const [, force] = useReducer((x: number) => x + 1, 0);
+  const [tick, force] = useReducer((x: number) => x + 1, 0);
   const logIdRef = useRef(resume ? Math.max(0, ...resume.ui.log.map((e) => e.id)) : 0);
   const [log, setLog] = useState<LogEntry[]>(() => resume ? resume.ui.log : [
     {
@@ -1429,17 +1428,23 @@ export function App({ scenario, onLeave, vsComputer, resume }: AppProps) {
    * has happened in it: opening a scenario to look must not overwrite a battle
    * saved earlier. A battle that has ended has nothing to resume.
    */
+  // Kept after each change to the game (`force`) or to where play stands —
+  // not on every render, which a click on a force or a panel also makes.
+  const kept = useRef<boolean | null>(resumed ? true : null);
   useEffect(() => {
     if (stage === "gameover") {
       clearStoredSession();
+      kept.current = null;
       return;
     }
     if (stage === "planning" && !planned) return;
-    storeSession({
+    const first = kept.current === null;
+    kept.current = storeSession({
       format: SESSION_FORMAT,
       version: SESSION_VERSION,
       scenarioId: scenario.id,
       recording: game.toRecording(),
+      digest: stateDigest(game),
       ui: {
         stage,
         activations,
@@ -1453,7 +1458,9 @@ export function App({ scenario, onLeave, vsComputer, resume }: AppProps) {
       },
       ...(ai ? { computer: ai.snapshot() } : {}),
     });
-  });
+    if (first && kept.current) onSaved?.();
+    // The game is mutated in place: `tick` is its change.
+  }, [tick, stage, activations, actIndex, planningIndex, planned, log]);
 
   // ---- render ----
 
@@ -1491,7 +1498,7 @@ export function App({ scenario, onLeave, vsComputer, resume }: AppProps) {
           onBlur={() => setLeaveArmed(false)}
           title="חזרה לבחירת תרחיש"
         >
-          {leaveArmed ? "הקרב יישמר להמשך — לחץ שוב" : "החלף תרחיש"}
+          {leaveArmed ? (kept.current ? "הקרב יישמר להמשך — לחץ שוב" : "הקרב יאבד — לחץ שוב") : "החלף תרחיש"}
         </button>
         <button className="btn-ghost" onClick={handleSaveRecording} title="שמירת הקרב לקובץ לצורך שחזור ותחקיר">
           שמור הקלטה
