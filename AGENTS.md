@@ -277,7 +277,13 @@ the demo.
 One trap: the `Game` instance is held in a React ref, so **Vite's hot reload
 will not pick up an engine change** — the old instance keeps running the old
 code. Hard-reload the page to get a fresh game, or you will "verify" the
-behaviour you just replaced.
+behaviour you just replaced. **Since 2026-10-05 a reload resumes a battle
+that has been saved** (`src/app/session.ts`; the address carries `&saved=1`
+once it has): it is replayed from its recording under the new code, so it
+does run the change — but it is the old battle, rebuilt, and refused with a
+reason on the picker if the change moved its state (the save's `digest`).
+For a fresh one, pick the scenario again from the picker. A Playwright
+browser starts with empty storage, so a driving script always begins fresh.
 
 ### Driving it by script
 

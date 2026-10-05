@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
 import { ComputerDefender } from "./computerSide.js";
+import { replayGame } from "../engine/index.js";
 import { buildActivations } from "./hotseat.js";
 import type { DrillReport } from "./drill.js";
 import type { Game, Point } from "../engine/index.js";
@@ -78,5 +79,62 @@ describe("the computer holding a position (single-player)", () => {
     const silent = play(1000, 20, undefined);
     expect(lines.length).toBeGreaterThan(0);
     expect(told.game.toRecording()).toEqual(silent.game.toRecording());
+  });
+});
+
+describe("a battle against the computer, saved and resumed", () => {
+  it("goes on from the save exactly as it would have without stopping, mid-turn included", () => {
+    const steps = (g: Game, ai: ComputerDefender, from: number, to: number) => {
+      // Activation by activation across turns, as the browser plays them.
+      let i = 0;
+      while (i < to) {
+        const acts = buildActivations(g.initiativeOrder);
+        // The save point is counted in activations, six a turn (three phases, two sides).
+        expect(acts).toHaveLength(6);
+        for (const act of acts) {
+          if (i >= from && i < to) {
+            if (g.phase !== act.phase) g.advanceToPhase(act.phase);
+            if (act.side === "RED") {
+              if (act.phase === "targeting") ai.targeting(g);
+              else if (act.phase === "movement") ai.movement(g);
+              else ai.combat(g);
+            } else if (act.phase !== "targeting") g.executeStandingOrders("BLUE");
+          }
+          i++;
+          if (i >= to) return;
+        }
+        if (i > from) g.advanceToPhase("initiative");
+      }
+    };
+    const start = () => {
+      // Seed 1000, the standard measurement's first: its walking attack is
+      // under the defence's fire well before the 20 turns played here.
+      const built = telAzekaAssaultListing.build(1000);
+      const g = built.game;
+      const ai = new ComputerDefender(g, "RED", built);
+      ai.plan(g);
+      const red = g.units.filter((u) => u.side === "RED");
+      const at = { x: red.reduce((t, u) => t + u.position.x, 0) / red.length, y: red.reduce((t, u) => t + u.position.y, 0) / red.length };
+      for (const u of g.units) if (u.side === "BLUE" && u.kind === "infantry") g.setStandingOrder(u.id, { gait: "normal", destination: at });
+      g.beginTurn();
+      return { g, ai, ground: built };
+    };
+    // Six activations a turn: stop 50 in, on turn 9's movement.
+    const SAVE_AT = 50;
+    const END = 120;
+    const straight = start();
+    steps(straight.g, straight.ai, 0, END);
+
+    const before = start();
+    steps(before.g, before.ai, 0, SAVE_AT);
+    const recording = JSON.parse(JSON.stringify(before.g.toRecording()));
+    const saved = JSON.parse(JSON.stringify(before.ai.snapshot()));
+    const g = replayGame(recording);
+    const ai = ComputerDefender.restore(g, saved, before.ground);
+    steps(g, ai, SAVE_AT, END);
+
+    expect(g.toRecording()).toEqual(straight.g.toRecording());
+    // …and the battle had something in it worth resuming.
+    expect(g.toRecording().actions.filter((a) => a.kind === "fire").length).toBeGreaterThan(0);
   });
 });

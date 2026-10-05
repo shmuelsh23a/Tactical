@@ -1,6 +1,15 @@
 import { ADJUSTMENT_RADIUS_M, EYE_HEIGHT, distance, type Game, type Point, type Side, type Unit } from "../engine/index.js";
 import { isDeadGround } from "./deadGround.js";
-import { DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillReport, type DrillTask, type SquadDrill } from "./drill.js";
+import {
+  DrillState,
+  PLAIN_SCRIPT,
+  drillCombat,
+  drillMovement,
+  type DrillReport,
+  type DrillStateSnapshot,
+  type DrillTask,
+  type SquadDrill,
+} from "./drill.js";
 import { sideView } from "./hotseat.js";
 
 /**
@@ -134,7 +143,7 @@ export function callDefenderFire(g: Game, side: Side, registered: readonly Point
  */
 export class ComputerDefender {
   private readonly task: DrillTask;
-  private readonly state = new DrillState();
+  private state = new DrillState();
   private targets: Point[] = [];
 
   constructor(
@@ -146,6 +155,31 @@ export class ComputerDefender {
     const enemy = g.units.filter((u) => u.side !== side && u.kind !== "command");
     const startLine = enemy.length ? mean(enemy) : mean(g.units.filter((u) => u.side === side));
     this.task = { side, attacking: false, objective: startLine, reserves: new Set(ground.reserves ?? []) };
+  }
+
+  /**
+   * What the computer carries from turn to turn, as plain data, so a saved
+   * battle resumes with the same defender: where it took the attack to come
+   * from (read once, from the start line — never again from the enemy), its
+   * registered targets and the drill's memory.
+   */
+  snapshot(): ComputerSnapshot {
+    return {
+      side: this.side,
+      objective: { ...this.task.objective },
+      reserves: [...(this.task.reserves ?? [])],
+      targets: this.targets.map((t) => ({ ...t })),
+      drill: this.state.snapshot(),
+    };
+  }
+
+  /** The defender a saved battle left, on the game replayed from its recording. */
+  static restore(g: Game, snap: ComputerSnapshot, ground: { mapWidth: number; mapHeight: number }, drill: SquadDrill = PLAIN_SCRIPT): ComputerDefender {
+    const ai = new ComputerDefender(g, snap.side, { ...ground, reserves: snap.reserves }, drill);
+    ai.task.objective = { ...snap.objective };
+    ai.targets = snap.targets.map((t) => ({ ...t }));
+    ai.state = DrillState.restore(snap.drill);
+    return ai;
   }
 
   /** Mission planning (decision 38): its mortar targets, registered; returns them. */
@@ -168,4 +202,13 @@ export class ComputerDefender {
   combat(g: Game, report?: DrillReport): void {
     drillCombat(g, this.task, this.drill, this.state, report);
   }
+}
+
+/** {@link ComputerDefender} as plain data, for a saved battle. */
+export interface ComputerSnapshot {
+  side: Side;
+  objective: Point;
+  reserves: string[];
+  targets: Point[];
+  drill: DrillStateSnapshot;
 }
