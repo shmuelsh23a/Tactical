@@ -4124,6 +4124,42 @@ gaps of up to two steps):
 - **The author accepted the round as it stands** (2026-10-04: "looks
   good"): the curve's size, and nerve between equals.
 
+## Sixtieth round: a raid without support weapons, 2026-10-05
+
+The designed scenario for force quality (`yokneamRaid`, spec
+`tools/scenarios/yokneam-raid.json`): an elite, very experienced BLUE
+platoon (three teams of 8 and a command group) against an irregular,
+experienced militia in the houses at the town's edge, no mortars, no
+vehicles. `npm run scenario-sim -- --n 100 --scenario yokneamRaid`, the
+plain scripted attack, 100 battles a row from seed 1000; the "regular" rows
+put both sides in the regular, experienced cell.
+
+| Raid starts | Militia | Cells | Attacker wins | Out of time | Attacker down | Defender down | Out by HE |
+|---|---|---|---|---|---|---|---|
+| Low ground, 450 m below the edge | 6 × 7 | as designed | 0% | 10% | 33% | 7% | 75% |
+| Low ground | 6 × 7 | regular | 0% | 10% | 29% | 4% | 74% |
+| 250 m below the edge | 3 × 6 | as designed | 4% | 3% | 38% | 16% | 79% |
+| 250 m below the edge | 3 × 6 | regular | 0% | 3% | 33% | 10% | 84% |
+| **Inserted into houses 100–150 m east** | 6 × 7 | **as designed** | **9%** | 36% | 19% | 12% | 50% |
+| Inserted | 6 × 7 | regular | 1% | 37% | 18% | 10% | 42% |
+| Inserted | 4 × 6 | as designed | 2% | 96% | 1% | 1% | 34% |
+
+- **Across open ground into houses no infantry attack wins**, elite or
+  not, even at 24 against 18: the militia's rifle grenades bursting among
+  men in the open cause three quarters of the raid's losses, and the raid
+  breaks at its 30%. Letting the quality gap act on aimed explosives too
+  (rifle grenades, RPG, tank round; tried and withdrawn, not committed)
+  moved nothing: 0%, 0% and 3% on the first three shapes. What decides it
+  is the ground, not the firer's aim.
+- **Inserted among the houses**, as a raid of that kind is, quality shows:
+  9% against 1%, and explosives fall to half the losses. But the scripted
+  attack stalls in the town — a third of the battles run out of time, and
+  with four militia squads nearly all — because it is built to cross open
+  ground from a start line (company.ts), not to clear houses. The harness
+  cannot judge this battle; a player has to.
+- The scenario ships as the inserted raid (six militia squads), to be
+  judged in play. ⚠️ Every number in it is ours.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

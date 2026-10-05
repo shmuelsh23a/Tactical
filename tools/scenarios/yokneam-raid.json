@@ -1,0 +1,232 @@
+{
+  "slug": "yokneamRaid",
+  "title": "יקנעם — פשיטה",
+  "brief": "כחול: כוח מיוחד שהונחת בבתים במזרח השכונה פושט על בלוק הבתים שממערב לו, בלי סיוע אש. אדום: מחזיק בבלוק הבתים. לפני הקרב כל צד מתכנן את משימתו.",
+  "attackers": [
+    "BLUE"
+  ],
+  "seed": 2031,
+  "timeLimit": 30,
+  "trackIntel": true,
+  "enforceC2": true,
+  "morale": true,
+  "commandEchelon": {
+    "BLUE": "platoon",
+    "RED": "company"
+  },
+  "window": {
+    "lat": 32.645,
+    "lon": 35.085,
+    "width": 900,
+    "height": 800,
+    "spacing": 10,
+    "place": "The southern edge of Yokneam Illit on Ramat Menashe (יקנעם עילית, רמת מנשה): the town's houses on the hill in the south-east, Route 6 (כביש 6) in the west, low ground to the north.",
+    "heightfield": "ramatMenashe",
+    "objects": "ramatMenasheObjects",
+    "constant": "RAMAT_MENASHE"
+  },
+  "about": [
+    "A raid without support weapons (the author, 2026-10-04: the quality gap",
+    "\"especially in special operations where artillery and other support",
+    "weapons aren't involved — e.g. Black Hawk Down type scenarios\"): an elite,",
+    "very experienced BLUE platoon of three teams, already inserted into houses",
+    "in the east of the town, raids the block 100-150 m west of it, held by an",
+    "irregular militia of six squads in its houses, nearly two to one.",
+    "No mortars, no vehicles: small arms, rifle grenades and the assault, where",
+    "the quality gap (rules decision 84) counts for most.",
+    "",
+    "The militia holds the houses that see the low ground with four squads and",
+    "keeps two behind them, each retaking a lost house by the drill (decision",
+    "60). It has not prepared its positions: the houses are its only cover.",
+    "",
+    "Measured (docs/balance.md, sixtieth round): the harness's scripted attack",
+    "is built for open ground and stalls in the town, so the raid is judged in play.",
+    "",
+    "⚠️ Ours, not the author's: the layout, the strengths, the militia's",
+    "cell (irregular, experienced) and the 30-turn time limit."
+  ],
+  "forces": [
+    {
+      "id": "BLUE-1-HQ",
+      "name": "חפ\"ק הכוח",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        729,
+        564
+      ],
+      "quality": {
+        "type": "elite",
+        "experience": "veryExperienced"
+      }
+    },
+    {
+      "id": "BLUE-1-1",
+      "name": "צוות 1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        718,
+        510
+      ],
+      "quality": {
+        "type": "elite",
+        "experience": "veryExperienced"
+      }
+    },
+    {
+      "id": "BLUE-1-2",
+      "name": "צוות 2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        722,
+        529
+      ],
+      "quality": {
+        "type": "elite",
+        "experience": "veryExperienced"
+      }
+    },
+    {
+      "id": "BLUE-1-3",
+      "name": "צוות 3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        725,
+        546
+      ],
+      "quality": {
+        "type": "elite",
+        "experience": "veryExperienced"
+      }
+    },
+    {
+      "id": "RED-COY",
+      "name": "מפקד המיליציה",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "company",
+      "personnel": 3,
+      "at": [
+        636,
+        565
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      },
+      "note": "In a house deep in the town."
+    },
+    {
+      "id": "RED-A-1",
+      "name": "חוליה א'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 7,
+      "at": [
+        582,
+        474
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      },
+      "note": "The edge houses that see the low ground."
+    },
+    {
+      "id": "RED-A-2",
+      "name": "חוליה א'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 7,
+      "at": [
+        529,
+        510
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      }
+    },
+    {
+      "id": "RED-A-3",
+      "name": "חוליה א'/3",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 7,
+      "at": [
+        569,
+        525
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      },
+      "reserve": true,
+      "note": "Behind the edge: retakes a lost house."
+    },
+    {
+      "id": "RED-B-1",
+      "name": "חוליה ב'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 7,
+      "at": [
+        644,
+        484
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      }
+    },
+    {
+      "id": "RED-B-2",
+      "name": "חוליה ב'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 7,
+      "at": [
+        602,
+        479
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      }
+    },
+    {
+      "id": "RED-B-3",
+      "name": "חוליה ב'/3",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 7,
+      "at": [
+        638,
+        525
+      ],
+      "quality": {
+        "type": "irregular",
+        "experience": "experienced"
+      },
+      "reserve": true
+    }
+  ],
+  "charges": []
+}
