@@ -248,6 +248,12 @@ export function App({ scenario, onLeave, vsComputer }: AppProps) {
   const missionsUsed = useRef<Record<string, number>>({});
   /** The battle has ended; set with the gameover stage, read before React has re-rendered. */
   const over = useRef(false);
+  /**
+   * Forces already announced as out of the fight. Every round of a fire
+   * mission that lands on a squad already down still reports it down, and so
+   * would the next volley: the news is said once.
+   */
+  const toldDown = useRef(new Set<string>());
   const missionSpent = (side: Side, kind: Mission) =>
     missionsUsed.current[`${side}-${kind}`] === game.turn;
 
@@ -730,11 +736,7 @@ export function App({ scenario, onLeave, vsComputer }: AppProps) {
         ? `${victim.name} ${what}: ${damage} נק"פ, ${casualties} נפגעים`
         : `${victim.name} ${what} — ${casualtyReport(casualties, false)}`;
     });
-    if (!neutralized) return;
-    pushPerSide("casualty", by ?? victim.side, (reader) => {
-      if (!mayKnowOf(reader, victim)) return null;
-      return victim.side === reader ? `${victim.name} נוטרל!` : `${victim.name} נראה מנוטרל`;
-    });
+    if (neutralized) logNeutralized(victim, by ?? victim.side);
   }
 
   const smokeInFlight = game.pendingSmoke.filter((m) => m.side === viewingSide);
@@ -1019,14 +1021,7 @@ export function App({ scenario, onLeave, vsComputer }: AppProps) {
         pushPerSide(engagement.newCasualties > 0 ? "casualty" : "fire", side, (reader) =>
           describeExecution(done, nameOf, engaged?.side === reader ? "target" : "firer", reader === side),
         );
-        if (engaged?.neutralized) {
-          const down = engaged;
-          pushPerSide("casualty", side, (reader) =>
-            mayKnowOf(reader, down)
-              ? `${down.name} ${down.side === reader ? "נוטרל!" : "נראה מנוטרל"}`
-              : null,
-          );
-        }
+        if (engaged) logNeutralized(engaged, side);
       }
       if (done.reason && !isRoutineOrderReason(done.reason)) {
         pushLog(`${name}: ${reasonHe(done.reason)}`, "info", onlyFor(side));
@@ -1165,7 +1160,8 @@ export function App({ scenario, onLeave, vsComputer }: AppProps) {
 
   /** A force put out of the fight, to whoever may know of it. */
   function logNeutralized(target: Unit, by: Side) {
-    if (!target.neutralized) return;
+    if (!target.neutralized || toldDown.current.has(target.id)) return;
+    toldDown.current.add(target.id);
     pushPerSide("casualty", by, (reader) =>
       !mayKnowOf(reader, target) ? null : target.side === reader ? `${target.name} נוטרל!` : `${target.name} נראה מנוטרל`,
     );
@@ -1365,25 +1361,39 @@ export function App({ scenario, onLeave, vsComputer }: AppProps) {
    * player's forces could see — never its plan.
    */
   function playComputer(side: ComputerDefender, phase: ActivationPhase) {
+    // The drill aims at its side's picture of the enemy — a copy taken before
+    // the shot — so whether a force went down is read off the live unit, once,
+    // when the computer's phase is over (a rifle volley and its grenadiers are
+    // one action, as a player's are).
+    const struck = new Set<string>();
     const report: DrillReport = {
       executed: (done) => logExecutions(side.side, done),
       fired: (u, target, r) => {
         logFire(u, target, r);
-        logNeutralized(target, side.side);
+        struck.add(target.id);
       },
       explosive: (u, target, weapon, r) => {
         logTankRound(u, target, r, weapon);
-        logNeutralized(target, side.side);
+        struck.add(target.id);
       },
       grenadiers: (u, target, volleys) => {
         logGrenadierVolleys(u, target, volleys, side.side);
-        logNeutralized(target, side.side);
+        struck.add(target.id);
       },
+      // An assault says its own result, from the engine's.
       assaulted: (u, target, grenades, r) => logAssault(u, target, grenades, r),
     };
-    if (phase === "targeting") side.targeting(game);
-    else if (phase === "movement") side.movement(game, report);
-    else side.combat(game, report);
+    try {
+      if (phase === "targeting") side.targeting(game);
+      else if (phase === "movement") side.movement(game, report);
+      else side.combat(game, report);
+    } catch (err) {
+      // A position the harness never met: the computer loses the rest of this
+      // activation rather than leaving the turn half-advanced.
+      console.error(err);
+      pushLog(`המחשב: ${(err as Error).message}`, "info", onlyFor(side.side));
+    }
+    for (const id of struck) logNeutralized(game.getUnit(id), side.side);
   }
 
   // ---- render ----

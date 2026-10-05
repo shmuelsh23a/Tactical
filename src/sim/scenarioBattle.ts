@@ -942,8 +942,6 @@ function askAttackerFire(
   result.missions[side]++;
 }
 
-/** A side's mortar is free for a call: missions left, none in hand (a section fires one at a time). */
-
 /**
  * The attacking commander's fire (the browser tool's rule): fire for effect
  * on the plan, in turn, while no squad of its own is within danger close of

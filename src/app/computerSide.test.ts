@@ -24,14 +24,6 @@ function play(seed: number, turns: number, report?: DrillReport): { game: Game; 
   for (const u of g.units) {
     if (u.side === "BLUE" && u.kind === "infantry") g.setStandingOrder(u.id, { gait: "normal", destination: at });
   }
-  let shots = 0;
-  const counting: DrillReport = {
-    ...report,
-    fired: (u, t, r) => {
-      shots++;
-      report?.fired?.(u, t, r);
-    },
-  };
   // Closing a turn begins the next, so the game is begun once.
   if (turns > 0) g.beginTurn();
   for (let turn = 0; turn < turns; turn++) {
@@ -39,14 +31,19 @@ function play(seed: number, turns: number, report?: DrillReport): { game: Game; 
       if (g.phase !== act.phase) g.advanceToPhase(act.phase);
       if (act.side === "RED") {
         if (act.phase === "targeting") ai.targeting(g);
-        else if (act.phase === "movement") ai.movement(g, counting);
-        else ai.combat(g, counting);
+        else if (act.phase === "movement") ai.movement(g, report);
+        else ai.combat(g, report);
       } else if (act.phase !== "targeting") {
         g.executeStandingOrders("BLUE");
       }
     }
     g.advanceToPhase("initiative");
   }
+  // The computer's shots, read off the journal rather than a reporter, so a
+  // run with none counts them too.
+  const shots = g
+    .toRecording()
+    .actions.filter((a) => a.kind === "fire" && a.attackerId.startsWith("RED")).length;
   return { game: g, shots, planned };
 }
 
@@ -69,12 +66,16 @@ describe("the computer holding a position (single-player)", () => {
 
   it("is told about, not changed by, the reporter the browser hangs on it", () => {
     const lines: string[] = [];
+    // Every hook, as the browser hangs them…
     const told = play(1000, 20, {
       executed: (done) => lines.push(...done.map((d) => d.unitId)),
       fired: (u, t) => lines.push(`${u.id}>${t.id}`),
+      explosive: (u, t, w) => lines.push(`${u.id}>${w}>${t.id}`),
+      grenadiers: (u, t, v) => lines.push(`${u.id}>${v.length}g>${t.id}`),
       assaulted: (u, t) => lines.push(`${u.id}!${t.id}`),
     });
-    const silent = play(1000, 20);
+    // …against none at all, as the headless harness runs the drill.
+    const silent = play(1000, 20, undefined);
     expect(lines.length).toBeGreaterThan(0);
     expect(told.game.toRecording()).toEqual(silent.game.toRecording());
   });

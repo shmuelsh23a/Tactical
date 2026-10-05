@@ -225,11 +225,6 @@ export interface DrillTask {
 export const SCOUT_GIVE_UP_TURNS = 6;
 
 /**
- * What the drill remembers between turns: each force's strength at the start,
- * and which forces have already broken contact — a force falls back once, and
- * then holds where it fell back to.
- */
-/**
  * What a drilled side did, for whoever has to tell a player about it: the
  * browser game's computer opponent words each action into the live log as a
  * player's own would be. Every hook is optional, and a drill run without a
@@ -245,6 +240,11 @@ export interface DrillReport {
   assaulted?(u: Unit, target: Unit, grenades: number, r: WithCoveringFire<AssaultResult>): void;
 }
 
+/**
+ * What the drill remembers between turns: each force's strength at the start,
+ * and which forces have already broken contact — a force falls back once, and
+ * then holds where it fell back to.
+ */
 export class DrillState {
   private readonly strength = new Map<string, number>();
   readonly fellBack = new Set<string>();
