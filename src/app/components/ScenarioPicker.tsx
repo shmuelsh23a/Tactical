@@ -5,6 +5,9 @@ interface ScenarioPickerProps {
   scenarios: readonly ScenarioListing[];
   /** The battle, and whether it is played against the computer rather than by two at one screen. */
   onPick: (scenario: ScenarioListing, vsComputer: boolean) => void;
+  /** The battle in progress saved in this browser, to pick up again; null when there is none. */
+  saved: { title: string; turn: number; vsComputer: boolean } | null;
+  onResume: () => void;
   /** A saved battle to review instead of fighting one. */
   onLoadRecording: (file: File) => void;
   /** Why the last file could not be reviewed, if it could not. */
@@ -30,11 +33,20 @@ function extent(width: number, height: number): string {
  * A recording needs no battle picked first: it carries its own ground, and
  * the debrief chooses whose eyes to read it through.
  */
-export function ScenarioPicker({ scenarios, onPick, onLoadRecording, loadError }: ScenarioPickerProps) {
+export function ScenarioPicker({ scenarios, onPick, saved, onResume, onLoadRecording, loadError }: ScenarioPickerProps) {
   const [vsComputer, setVsComputer] = useState(false);
   return (
     <div className="picker">
       <h1>בחירת תרחיש</h1>
+      {saved && (
+        <button className="picker-card picker-resume" onClick={onResume}>
+          <h2>המשך קרב שמור</h2>
+          <p>
+            {saved.title} — {saved.turn > 0 ? `תור ${saved.turn}` : "תכנון משימה"}
+            {saved.vsComputer ? " · מול המחשב" : " · שני שחקנים"}
+          </p>
+        </button>
+      )}
       <div className="picker-mode seg">
         <button className={vsComputer ? "" : "on"} onClick={() => setVsComputer(false)}>
           שני שחקנים במחשב אחד

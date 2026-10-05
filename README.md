@@ -2729,6 +2729,17 @@ Still modelled by reasonable assumption (flag if you want them changed):
   out at once with no handoff, and what it does reaches the player's log
   through the same wording as a player's own fire (`DrillReport` in
   `drill.ts`). Not yet: the computer as the attacker, and a choice of side.
+
+  **Save and resume (2026-10-05):** a battle in progress is kept in the
+  browser after every change ([`session.ts`](src/app/session.ts)): its
+  recording, where play stands in the turn, the live log, and the
+  computer's drill memory. The picker offers it as *המשך קרב שמור*, and a
+  reload comes back to it; a hotseat battle resumes behind the handoff
+  screen for the side to act. Resumed mid-turn, a battle goes on exactly as
+  if it had never stopped — `computerSide.test.ts` pins it, and it was driven
+  in the browser to the same 102 actions both ways. One battle is kept; it
+  is cleared when the battle ends. Not yet: several saves, or a save file to
+  carry to another device (backlog: user-generated content).
 - **Stage 4 — the app proper: mobile and desktop.** The browser build is the
   development shell. What ports for free is the part that matters: the engine
   has **no runtime dependencies**, no DOM and no node globals — `build:engine`

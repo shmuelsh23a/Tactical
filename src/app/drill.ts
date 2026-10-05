@@ -270,6 +270,50 @@ export class DrillState {
     }
     return n;
   }
+
+  /** Everything the drill remembers, as plain data: what a saved battle keeps of it. */
+  snapshot(): DrillStateSnapshot {
+    return {
+      strength: [...this.strength],
+      fellBack: [...this.fellBack],
+      displaced: [...this.displaced],
+      watched: [...this.watched],
+      arrivedOn: [...this.arrivedOn],
+      passedVia: [...this.passedVia],
+      posts: [...this.posts],
+      counterattacking: [...this.counterattacking],
+      levelWaits: [...this.levelWaits],
+    };
+  }
+
+  /** The drill's memory as a saved battle left it. */
+  static restore(snap: DrillStateSnapshot): DrillState {
+    const s = new DrillState();
+    const fill = <K, V>(into: Map<K, V>, from: readonly (readonly [K, V])[]) => from.forEach(([k, v]) => into.set(k, v));
+    fill(s.strength, snap.strength);
+    snap.fellBack.forEach((id) => s.fellBack.add(id));
+    snap.displaced.forEach((id) => s.displaced.add(id));
+    fill(s.watched, snap.watched);
+    fill(s.arrivedOn, snap.arrivedOn);
+    snap.passedVia.forEach((id) => s.passedVia.add(id));
+    fill(s.posts, snap.posts);
+    fill(s.counterattacking, snap.counterattacking);
+    fill(s.levelWaits, snap.levelWaits);
+    return s;
+  }
+}
+
+/** {@link DrillState} as plain data, for a saved battle. */
+export interface DrillStateSnapshot {
+  strength: [string, number][];
+  fellBack: string[];
+  displaced: string[];
+  watched: [string, number][];
+  arrivedOn: [string, number][];
+  passedVia: string[];
+  posts: [string, Point][];
+  counterattacking: [string, Point][];
+  levelWaits: [string, { turn: number; count: number }][];
 }
 
 const inPlay = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered;

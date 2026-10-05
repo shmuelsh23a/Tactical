@@ -6,6 +6,7 @@ import { recordingLoadFailed } from "./debriefText.js";
 import { readRecording } from "./recordingFile.js";
 import { ScenarioPicker } from "./components/ScenarioPicker.js";
 import { findScenario, SCENARIOS, type ScenarioListing } from "./scenario.js";
+import { loadStoredSession, type Session } from "./session.js";
 
 const PARAM = "scenario";
 /** `?vs=computer`: the battle is played against the computer (single-player). */
@@ -40,17 +41,32 @@ function remember(id: string | null, vsComputer = false) {
 export function Root() {
   /** Bumped on every pick, so choosing the same battle again is still a new game. */
   const rounds = useRef(0);
-  const [picked, setPicked] = useState<{ listing: ScenarioListing; round: number; vsComputer: boolean } | null>(() => {
+  const [picked, setPicked] = useState<{
+    listing: ScenarioListing;
+    round: number;
+    vsComputer: boolean;
+    resume?: Session;
+  } | null>(() => {
     const params = new URL(window.location.href).searchParams;
     const listing = findScenario(params.get(PARAM));
-    return listing ? { listing, round: 0, vsComputer: params.get(VS) === "computer" } : null;
+    if (!listing) return null;
+    const vsComputer = params.get(VS) === "computer";
+    // A reload comes back to the battle it left, not to a fresh one on the same ground.
+    const saved = loadStoredSession();
+    const same = saved && saved.scenarioId === listing.id && Boolean(saved.computer) === vsComputer;
+    return { listing, round: 0, vsComputer, ...(same ? { resume: saved } : {}) };
   });
+
 
   /** A recording opened from the picker; closing it comes back here. */
   const [review, setReview] = useState<GameRecording | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   if (!picked) {
+    // Read whenever the picker shows: leaving a battle has just saved it.
+    const session = loadStoredSession();
+    const savedListing = session && findScenario(session.scenarioId);
+    const saved = session && savedListing ? { session, listing: savedListing } : null;
     if (review) return <Debrief recording={review} onClose={() => setReview(null)} closeLabel="חזרה לבחירת תרחיש" />;
     return (
       <ScenarioPicker
@@ -59,6 +75,24 @@ export function Root() {
           remember(listing.id, vsComputer);
           setLoadError(null);
           setPicked({ listing, round: ++rounds.current, vsComputer });
+        }}
+        saved={
+          saved
+            ? {
+                title: saved.listing.title,
+                turn: Math.max(0, ...saved.session.ui.log.map((e) => e.turn)),
+                vsComputer: Boolean(saved.session.computer),
+              }
+            : null
+        }
+        onResume={() => {
+          // Read again: the battle may have gone on since the picker first looked.
+          const session = loadStoredSession();
+          const listing = session && findScenario(session.scenarioId);
+          if (!session || !listing) return;
+          remember(listing.id, Boolean(session.computer));
+          setLoadError(null);
+          setPicked({ listing, round: ++rounds.current, vsComputer: Boolean(session.computer), resume: session });
         }}
         onLoadRecording={(file) => {
           // A recording made under other rules still opens: the debrief
@@ -80,6 +114,7 @@ export function Root() {
       key={`${picked.listing.id}-${picked.round}`}
       scenario={picked.listing}
       vsComputer={picked.vsComputer}
+      {...(picked.resume ? { resume: picked.resume } : {})}
       onLeave={() => {
         remember(null);
         setPicked(null);
