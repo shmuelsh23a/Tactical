@@ -1,8 +1,10 @@
+import { useState } from "react";
 import type { ScenarioListing } from "../scenario.js";
 
 interface ScenarioPickerProps {
   scenarios: readonly ScenarioListing[];
-  onPick: (scenario: ScenarioListing) => void;
+  /** The battle, and whether it is played against the computer rather than by two at one screen. */
+  onPick: (scenario: ScenarioListing, vsComputer: boolean) => void;
   /** A saved battle to review instead of fighting one. */
   onLoadRecording: (file: File) => void;
   /** Why the last file could not be reviewed, if it could not. */
@@ -22,17 +24,29 @@ function extent(width: number, height: number): string {
  * has taken one — so a card shows the spec's title, its brief and the size of
  * the ground, and no more.
  *
+ * Who plays is chosen here too: two players passing one screen, or one
+ * against the computer, which takes the side that is not attacking.
+ *
  * A recording needs no battle picked first: it carries its own ground, and
  * the debrief chooses whose eyes to read it through.
  */
 export function ScenarioPicker({ scenarios, onPick, onLoadRecording, loadError }: ScenarioPickerProps) {
+  const [vsComputer, setVsComputer] = useState(false);
   return (
     <div className="picker">
       <h1>בחירת תרחיש</h1>
+      <div className="picker-mode seg">
+        <button className={vsComputer ? "" : "on"} onClick={() => setVsComputer(false)}>
+          שני שחקנים במחשב אחד
+        </button>
+        <button className={vsComputer ? "on" : ""} onClick={() => setVsComputer(true)}>
+          מול המחשב (אתה התוקף)
+        </button>
+      </div>
       <ul className="picker-list">
         {scenarios.map((s) => (
           <li key={s.id}>
-            <button className="picker-card" onClick={() => onPick(s)}>
+            <button className="picker-card" onClick={() => onPick(s, vsComputer)}>
               <h2>{s.title}</h2>
               <p>{s.brief}</p>
               <span className="picker-extent">{extent(s.mapWidth, s.mapHeight)}</span>

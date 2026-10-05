@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
-import { DEFAULT_FIRE_CHOICES, dressQuality, planDefenderFires, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import { DEFAULT_FIRE_CHOICES, dressQuality, runScenarioBattle, runScenario } from "./scenarioBattle.js";
+import { planDefenderFires } from "../app/computerSide.js";
 import type { Question } from "./companyQuestions.js";
 import { isDeadGround } from "../app/deadGround.js";
 import { EYE_HEIGHT, MORALE_RULES, distance } from "../engine/index.js";

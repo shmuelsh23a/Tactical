@@ -7,7 +7,10 @@ import {
   type MovementMode,
   type Point,
   type Side,
+  type AssaultResult,
   type DirectExplosiveResult,
+  type DirectFireResult,
+  type StandingOrderExecution,
   type Unit,
   type WithCoveringFire,
 } from "../engine/index.js";
@@ -222,6 +225,22 @@ export interface DrillTask {
 export const SCOUT_GIVE_UP_TURNS = 6;
 
 /**
+ * What a drilled side did, for whoever has to tell a player about it: the
+ * browser game's computer opponent words each action into the live log as a
+ * player's own would be. Every hook is optional, and a drill run without a
+ * reporter (the headless harness) acts exactly as it always has.
+ */
+export interface DrillReport {
+  /** Its forces' standing orders, carried out in the movement phase. */
+  executed?(done: StandingOrderExecution[]): void;
+  fired?(u: Unit, target: Unit, r: WithCoveringFire<DirectFireResult>): void;
+  /** A tank round or an RPG; a squad's rifle grenades come as `grenadiers`. */
+  explosive?(u: Unit, target: Unit, weapon: "tankRound" | "rpgVsArmor", r: WithCoveringFire<DirectExplosiveResult>): void;
+  grenadiers?(u: Unit, target: Unit, volleys: WithCoveringFire<DirectExplosiveResult>[]): void;
+  assaulted?(u: Unit, target: Unit, grenades: number, r: WithCoveringFire<AssaultResult>): void;
+}
+
+/**
  * What the drill remembers between turns: each force's strength at the start,
  * and which forces have already broken contact — a force falls back once, and
  * then holds where it fell back to.
@@ -378,7 +397,7 @@ function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: D
  * The movement phase: each force's order for the turn, carried out; then the
  * command groups take their place behind their forces.
  */
-export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState): void {
+export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState, report?: DrillReport): void {
   const { side } = task;
   const enemies = knownEnemies(game, side);
   const inContact = enemies.length > 0;
@@ -608,7 +627,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       destination: covered ?? toward(u.position, aim, step),
     });
   });
-  game.executeStandingOrders(side);
+  const done = game.executeStandingOrders(side);
+  report?.executed?.(done);
 
   const live = forces.filter(inPlay);
   if (live.length === 0) return;
@@ -648,7 +668,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
  * idle. With the drill's `state`, a reserve counterattacking (decision 60)
  * takes the enemy on the position it is retaking before anything else.
  */
-export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState): void {
+export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState, report?: DrillReport): void {
   const { side } = task;
   const enemies = knownEnemies(game, side);
   const baseReach = task.attacking ? drill.attackFireRange : drill.openFireRange;
@@ -675,8 +695,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     }
     if (u.covering) game.setCovering(u.id, false);
     if (u.kind !== "command" && distance(u.position, target.position) <= drill.assault.range) {
-      game.assault(u.id, target.id, drill.assault.grenades);
-    } else if (tank && game.fireExplosive("tankRound", u.id, target.id).fired) {
+      const r = game.assault(u.id, target.id, drill.assault.grenades);
+      report?.assaulted?.(u, target, drill.assault.grenades, r);
+    } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {
       // The main gun; the coaxial gun when it could not fire (below its minimum range, say).
     } else if (
       heavy !== undefined &&
@@ -685,12 +706,23 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
       distance(u.position, target.position) <= heavy.rpgRange
     ) {
       // Rifles do nothing to armour: the squad's RPG does.
-      game.fireExplosive("rpgVsArmor", u.id, target.id);
+      const r = game.fireExplosive("rpgVsArmor", u.id, target.id);
+      report?.explosive?.(u, target, "rpgVsArmor", r);
     } else {
-      game.fire(u.id, target.id, { weapon: u.kind === "vehicle" ? "sustainedMg" : "smallArms" });
-      if (drill.grenadiers) fireGrenadiers(game, u, target, drill.grenadiers.menPerLauncher);
+      const r = game.fire(u.id, target.id, { weapon: u.kind === "vehicle" ? "sustainedMg" : "smallArms" });
+      report?.fired?.(u, target, r);
+      if (drill.grenadiers) {
+        const volleys = fireGrenadiers(game, u, target, drill.grenadiers.menPerLauncher);
+        report?.grenadiers?.(u, target, volleys);
+      }
     }
   }
+}
+
+/** Report a tank round only when it went downrange, and say whether it did. */
+function fired(r: WithCoveringFire<DirectExplosiveResult>, tell: (r: WithCoveringFire<DirectExplosiveResult>) => void): boolean {
+  if (r.fired) tell(r);
+  return r.fired;
 }
 
 /** The furthest a rifle grenade is fired: the table's last band. */

@@ -37,6 +37,11 @@ import {
   coverFromObjects,
   groundHeight,
   type Terrain,
+  type AssaultResult,
+  type DirectExplosiveResult,
+  type DirectFireResult,
+  type StandingOrderExecution,
+  type WithCoveringFire,
 } from "../engine/index.js";
 import {
   casualtyReport,
@@ -77,7 +82,8 @@ import {
   type LogEntry,
 } from "./hotseat.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
-import { SQUAD_GRENADIERS, fireGrenadiers } from "./drill.js";
+import { SQUAD_GRENADIERS, fireGrenadiers, type DrillReport } from "./drill.js";
+import { ComputerDefender } from "./computerSide.js";
 import { Debrief } from "./Debrief.js";
 import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
@@ -130,6 +136,13 @@ interface AppProps {
   scenario: ScenarioListing;
   /** Back to the scenario picker; the battle in progress is dropped. */
   onLeave: () => void;
+  /**
+   * Single-player: the computer takes the side that is not attacking
+   * (`game.attackers`; RED when nobody is) and holds its position by the
+   * harness's defender (`computerSide.ts`). It acts on its own activations
+   * at once, and the screen never leaves the player's side. Off: hotseat.
+   */
+  vsComputer?: boolean;
 }
 
 /**
@@ -142,15 +155,27 @@ function seedFromUrl(): number | undefined {
   return Number.isSafeInteger(seed) && seed > 0 ? seed : undefined;
 }
 
-export function App({ scenario, onLeave }: AppProps) {
+export function App({ scenario, onLeave, vsComputer }: AppProps) {
   // The engine lives in a ref (mutable, imperative); React state mirrors it.
   // Choosing another battle remounts this component rather than rebuilding it.
   // The first turn is not begun here: the battle opens on mission planning
   // (rules decision 38), and begins when both sides have planned.
-  const initRef = useRef<{ scn: Scenario } | null>(null);
-  if (!initRef.current) initRef.current = { scn: scenario.build(seedFromUrl()) };
-  const { scn } = initRef.current;
+  const initRef = useRef<{ scn: Scenario; ai: ComputerDefender | null } | null>(null);
+  if (!initRef.current) {
+    const built = scenario.build(seedFromUrl());
+    const attacker = built.game.attackers[0] ?? "BLUE";
+    const ai = vsComputer ? new ComputerDefender(built.game, attacker === "RED" ? "BLUE" : "RED", built) : null;
+    // The computer plans before the player does; its plan is drawn only on its own map.
+    ai?.plan(built.game);
+    initRef.current = { scn: built, ai };
+  }
+  const { scn, ai } = initRef.current;
   const game = scn.game;
+  const computer: Side | undefined = ai?.side;
+  /** The player's side in single-player; null in hotseat, where the screen passes between two. */
+  const human: Side | null = computer ? (computer === "RED" ? "BLUE" : "RED") : null;
+  /** The sides a person plans and acts for, in order. */
+  const players: Side[] = SIDES.filter((s) => s !== computer);
 
   const [, force] = useReducer((x: number) => x + 1, 0);
   const logIdRef = useRef(0);
@@ -170,8 +195,10 @@ export function App({ scenario, onLeave }: AppProps) {
   const [actIndex, setActIndex] = useState(0);
   // Planning starts behind the handoff screen too: the first side's plan is
   // as much its own as any later turn.
-  const [handoffTo, setHandoffTo] = useState<Side | null>(SIDES[0]!);
-  /** Which side is planning, as an index into SIDES (rules decision 38). */
+  // Against the computer there is nobody to hand the device to.
+  const [handoffTo, setHandoffToRaw] = useState<Side | null>(human ? null : SIDES[0]!);
+  const setHandoffTo = (side: Side | null) => setHandoffToRaw(human ? null : side);
+  /** Which side is planning, as an index into the sides a person plays (rules decision 38). */
   const [planningIndex, setPlanningIndex] = useState(0);
   const [planTool, setPlanTool] = useState<PlanTool>("target");
   /** Whether anything has been planned — until it has, leaving loses nothing. */
@@ -219,6 +246,14 @@ export function App({ scenario, onLeave }: AppProps) {
   // One fire mission and one smoke screen per side per turn (see README rules
   // decision 8) — keyed `SIDE-he` / `SIDE-smoke` to the turn it was spent on.
   const missionsUsed = useRef<Record<string, number>>({});
+  /** The battle has ended; set with the gameover stage, read before React has re-rendered. */
+  const over = useRef(false);
+  /**
+   * Forces already announced as out of the fight. Every round of a fire
+   * mission that lands on a squad already down still reports it down, and so
+   * would the next volley: the news is said once.
+   */
+  const toldDown = useRef(new Set<string>());
   const missionSpent = (side: Side, kind: Mission) =>
     missionsUsed.current[`${side}-${kind}`] === game.turn;
 
@@ -291,8 +326,10 @@ export function App({ scenario, onLeave }: AppProps) {
 
   const currentActivation =
     stage === "activation" && actIndex < activations.length ? activations[actIndex] : null;
-  const planningSide: Side | null = stage === "planning" ? SIDES[planningIndex]! : null;
-  const viewingSide: Side = planningSide ?? currentActivation?.side ?? activations[0]?.side ?? "BLUE";
+  const planningSide: Side | null = stage === "planning" ? players[planningIndex]! : null;
+  // Against the computer the screen is always the player's: the computer's
+  // activations are played out at once and never shown.
+  const viewingSide: Side = human ?? planningSide ?? currentActivation?.side ?? activations[0]?.side ?? "BLUE";
   const tubes = callableTubes(viewingSide);
   const smokes = callableSmoke(viewingSide);
   // The choice held over from the other side's screen, or the first it may call.
@@ -379,8 +416,7 @@ export function App({ scenario, onLeave }: AppProps) {
     setLeaveArmed(false);
     game.advanceToPhase("targeting");
     setStage("activation");
-    setActIndex(0);
-    setHandoffTo(activations[0]!.side);
+    enterActivation(activations, 0);
     force();
   }
 
@@ -527,12 +563,12 @@ export function App({ scenario, onLeave }: AppProps) {
     setLeaveArmed(false);
     setSelectedId(null);
     const next = planningIndex + 1;
-    if (next < SIDES.length) {
+    if (next < players.length) {
       setPlanningIndex(next);
       // The tool is the side's own choice, not a setting left on the table.
       setPlanTool("target");
       setTube("mortar");
-      setHandoffTo(SIDES[next]!);
+      setHandoffTo(players[next]!);
       force();
       return;
     }
@@ -700,11 +736,7 @@ export function App({ scenario, onLeave }: AppProps) {
         ? `${victim.name} ${what}: ${damage} נק"פ, ${casualties} נפגעים`
         : `${victim.name} ${what} — ${casualtyReport(casualties, false)}`;
     });
-    if (!neutralized) return;
-    pushPerSide("casualty", by ?? victim.side, (reader) => {
-      if (!mayKnowOf(reader, victim)) return null;
-      return victim.side === reader ? `${victim.name} נוטרל!` : `${victim.name} נראה מנוטרל`;
-    });
+    if (neutralized) logNeutralized(victim, by ?? victim.side);
   }
 
   const smokeInFlight = game.pendingSmoke.filter((m) => m.side === viewingSide);
@@ -921,7 +953,13 @@ export function App({ scenario, onLeave }: AppProps) {
   }
 
   function runStandingOrdersFor(side: Side) {
-    for (const done of game.executeStandingOrders(side)) {
+    logExecutions(side, game.executeStandingOrders(side));
+    checkVictory();
+  }
+
+  /** Word a side's executed standing orders into the log, each line to whoever may read it. */
+  function logExecutions(side: Side, executions: StandingOrderExecution[]) {
+    for (const done of executions) {
       const unit = game.units.find((u) => u.id === done.unitId);
       const name = unit?.name ?? done.unitId;
       if (done.moved) {
@@ -983,20 +1021,12 @@ export function App({ scenario, onLeave }: AppProps) {
         pushPerSide(engagement.newCasualties > 0 ? "casualty" : "fire", side, (reader) =>
           describeExecution(done, nameOf, engaged?.side === reader ? "target" : "firer", reader === side),
         );
-        if (engaged?.neutralized) {
-          const down = engaged;
-          pushPerSide("casualty", side, (reader) =>
-            mayKnowOf(reader, down)
-              ? `${down.name} ${down.side === reader ? "נוטרל!" : "נראה מנוטרל"}`
-              : null,
-          );
-        }
+        if (engaged) logNeutralized(engaged, side);
       }
       if (done.reason && !isRoutineOrderReason(done.reason)) {
         pushLog(`${name}: ${reasonHe(done.reason)}`, "info", onlyFor(side));
       }
     }
-    checkVictory();
   }
 
   /**
@@ -1005,7 +1035,10 @@ export function App({ scenario, onLeave }: AppProps) {
    * landed on it — the same split as a rifle line (rules decision 13).
    */
   function logGrenadiers(squad: Unit, target: Unit) {
-    const volleys = fireGrenadiers(game, squad, target, SQUAD_GRENADIERS.menPerLauncher);
+    logGrenadierVolleys(squad, target, fireGrenadiers(game, squad, target, SQUAD_GRENADIERS.menPerLauncher), viewingSide);
+  }
+
+  function logGrenadierVolleys(squad: Unit, target: Unit, volleys: WithCoveringFire<DirectExplosiveResult>[], by: Side) {
     for (const v of volleys) logCoveringFire(v.coveringFire);
     const fired = volleys.filter((v) => v.fired);
     if (!fired.length) return;
@@ -1016,7 +1049,7 @@ export function App({ scenario, onLeave }: AppProps) {
       0,
     );
     const who = `${squad.name} → ${target.name}`;
-    pushPerSide(casualties > 0 ? "casualty" : "fire", viewingSide, (reader) =>
+    pushPerSide(casualties > 0 ? "casualty" : "fire", by, (reader) =>
       target.side === reader
         ? `${who}: רימוני רובה — ${hits} פגיעות — ${casualtyReport(casualties, true)}`
         : `${who}: רימוני רובה — ${hits}/${rounds} פגיעות ב-${Math.round(fired[0]!.hitChance * 100)}% — ${casualtyReport(casualties, false)}`,
@@ -1045,70 +1078,18 @@ export function App({ scenario, onLeave }: AppProps) {
       // A vehicle fires its main gun unless the coaxial one is chosen; infantry
       // fire small arms, the only table that is theirs (decision 25).
       if (selectedOwn.kind === "vehicle" && weapon !== "sustainedMg") {
-        const r = game.fireExplosive("tankRound", selectedOwn.id, target.id);
-        // A shot that was never taken is the firer's own bookkeeping; a round
-        // going downrange is an exchange both sides are in (decisions 13, 17).
-        if (!r.fired) pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
-        else if (!r.hit)
-          pushLog(
-            `${selectedOwn.name} ירה ${r.rounds && r.rounds > 1 ? `${r.rounds} פגזים` : "פגז"} — החטאה`,
-            "fire",
-            sharedBy(viewingSide),
-          );
-        else
-          pushLog(
-            `${selectedOwn.name} פגע ב${target.name} ${r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}${criticalHe(r.criticals, "window")}${structureHe(r.structure)}`,
-            "casualty",
-            sharedBy(viewingSide),
-          );
-        // Its blast finds whoever stands near the target, as a shell's does
-        // (rules decision 75): each force it caught, to whoever may know of it.
-        for (const hit of r.blast?.targets ?? []) {
-          if (!hit.caught || hit.unitId === target.id) continue;
-          const victim = game.units.find((u) => u.id === hit.unitId);
-          if (victim) logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, selectedOwn.side, "נפגע מפגז טנק");
-        }
-        logCrushed(r.structure, selectedOwn.side);
+        logTankRound(selectedOwn, target, game.fireExplosive("tankRound", selectedOwn.id, target.id));
       } else {
         // Cover is the engine's business: it knows what the target is behind,
         // and the player is not entitled to read it off the map.
         const r = game.fire(selectedOwn.id, target.id, {
           weapon: selectedOwn.kind === "vehicle" ? "sustainedMg" : "smallArms",
         });
-        logCoveringFire(r.coveringFire);
-        if (!r.fired) {
-          pushLog(`${selectedOwn.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
-        } else {
-          // The two readers are told different things, and not just in tone.
-          // **How many of its men fired and at what chance is the firer's own
-          // business** (rules decision 13) — `shooters` is the force's exact
-          // fit strength, so printing it at the target would hand over, every
-          // turn, the very state the casualty bands exist to hide. The target
-          // is told what landed on its own men instead, which is what
-          // `describeExecution` gives it in the debrief.
-          const who = `${selectedOwn.name} → ${target.name}`;
-          pushPerSide(r.newCasualties > 0 ? "casualty" : "fire", viewingSide, (reader) =>
-            target.side === reader
-              ? `${who}: ${r.hits} פגיעות — ${casualtyReport(r.newCasualties, true)}`
-              : `${who}: ${r.shooters} יורים ב-${Math.round(r.hitChance * 100)}% — ${casualtyReport(
-                  r.newCasualties,
-                  false,
-                )}`,
-          );
-          // Its grenadiers fire with its rifles (rules decision 45), as a
-          // simulated squad's do — only inside the rifle grenade's reach.
-          if (selectedOwn.kind === "infantry") logGrenadiers(selectedOwn, target);
-        }
+        // Its grenadiers fire with its rifles (rules decision 45), as a
+        // simulated squad's do — only inside the rifle grenade's reach.
+        if (logFire(selectedOwn, target, r) && selectedOwn.kind === "infantry") logGrenadiers(selectedOwn, target);
       }
-      if (target.neutralized) {
-        pushPerSide("casualty", viewingSide, (reader) =>
-          !mayKnowOf(reader, target)
-            ? null
-            : target.side === reader
-              ? `${target.name} נוטרל!`
-              : `${target.name} נראה מנוטרל`,
-        );
-      }
+      logNeutralized(target, viewingSide);
     } catch (err) {
       pushLog((err as Error).message, "fire", onlyFor(viewingSide));
     }
@@ -1116,61 +1097,128 @@ export function App({ scenario, onLeave }: AppProps) {
     force();
   }
 
+  /** A tank round or an RPG, worded for both sides. */
+  function logTankRound(
+    firer: Unit,
+    target: Unit,
+    r: WithCoveringFire<DirectExplosiveResult>,
+    weapon: "tankRound" | "rpgVsArmor" = "tankRound",
+  ) {
+    const by = firer.side;
+    const rpg = weapon === "rpgVsArmor";
+    // A shot that was never taken is the firer's own bookkeeping; a round
+    // going downrange is an exchange both sides are in (decisions 13, 17).
+    if (!r.fired) pushLog(`${firer.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(by));
+    else if (!r.hit)
+      pushLog(
+        `${firer.name} ירה ${rpg ? "RPG" : r.rounds && r.rounds > 1 ? `${r.rounds} פגזים` : "פגז"} — החטאה`,
+        "fire",
+        sharedBy(by),
+      );
+    else
+      pushLog(
+        `${firer.name} פגע ב${target.name} ${rpg ? "ב-RPG" : r.rounds && r.rounds > 1 ? `ב-${r.hits} מתוך ${r.rounds} פגזים` : "בפגז טנק"}${criticalHe(r.criticals, "window")}${structureHe(r.structure)}`,
+        "casualty",
+        sharedBy(by),
+      );
+    // Its blast finds whoever stands near the target, as a shell's does
+    // (rules decision 75): each force it caught, to whoever may know of it.
+    for (const hit of r.blast?.targets ?? []) {
+      if (!hit.caught || hit.unitId === target.id) continue;
+      const victim = game.units.find((u) => u.id === hit.unitId);
+      if (victim) logLosses(victim, hit.newCasualties, hit.damage, hit.neutralized, by, rpg ? "נפגע מ-RPG" : "נפגע מפגז טנק");
+    }
+    logCrushed(r.structure, by);
+  }
+
+  /** Small arms, worded for each reader; true when the shot was taken. */
+  function logFire(firer: Unit, target: Unit, r: WithCoveringFire<DirectFireResult>): boolean {
+    const by = firer.side;
+    logCoveringFire(r.coveringFire);
+    if (!r.fired) {
+      pushLog(`${firer.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(by));
+      return false;
+    }
+    // The two readers are told different things, and not just in tone.
+    // **How many of its men fired and at what chance is the firer's own
+    // business** (rules decision 13) — `shooters` is the force's exact
+    // fit strength, so printing it at the target would hand over, every
+    // turn, the very state the casualty bands exist to hide. The target
+    // is told what landed on its own men instead, which is what
+    // `describeExecution` gives it in the debrief.
+    const who = `${firer.name} → ${target.name}`;
+    pushPerSide(r.newCasualties > 0 ? "casualty" : "fire", by, (reader) =>
+      target.side === reader
+        ? `${who}: ${r.hits} פגיעות — ${casualtyReport(r.newCasualties, true)}`
+        : `${who}: ${r.shooters} יורים ב-${Math.round(r.hitChance * 100)}% — ${casualtyReport(
+            r.newCasualties,
+            false,
+          )}`,
+    );
+    return true;
+  }
+
+  /** A force put out of the fight, to whoever may know of it. */
+  function logNeutralized(target: Unit, by: Side) {
+    if (!target.neutralized || toldDown.current.has(target.id)) return;
+    toldDown.current.add(target.id);
+    pushPerSide("casualty", by, (reader) =>
+      !mayKnowOf(reader, target) ? null : target.side === reader ? `${target.name} נוטרל!` : `${target.name} נראה מנוטרל`,
+    );
+  }
+
   /** Go in on a neighbouring force: assault fire plus however many grenades. */
   function handleAssault(attacker: Unit, target: Unit) {
     try {
-      const r = game.assault(attacker.id, target.id, grenades);
-      logCoveringFire(r.coveringFire);
-      if (!r.fired) {
-        pushLog(`${attacker.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(viewingSide));
-      } else {
-        // Same split as direct fire: what the attacker threw is its own
-        // ammunition state, what landed is the defender's to count.
-        const went = `${attacker.name} הסתער על ${target.name}`;
-        pushPerSide(r.defenderCasualties > 0 ? "casualty" : "fire", viewingSide, (reader) =>
-          target.side === reader
-            ? `${went}: ${r.fireHits} פגיעות אש` +
-              (r.grenadeHits > 0 ? `, ${r.grenadeHits} פגיעות רימון` : "") +
-              `, ${casualtyReport(r.defenderCasualties, true)}`
-            : `${went}` +
-              (grenades > 0 ? (perManGrenades ? ` עם ${grenades} רימונים ללוחם` : ` עם ${grenades} רימונים`) : "") +
-              `, ${casualtyReport(r.defenderCasualties, false)}`,
-        );
-        // A pinned or suppressed defender's nerve went as the assault came in
-        // (rules decision 63, S5). Giving up or running is behaviour, and the
-        // assaulting force is on top of it: both sides see it.
-        if (r.nerve && r.nerve.outcome !== "held") {
-          pushLog(
-            r.nerve.outcome === "surrendered"
-              ? `${target.name} נכנע כשההסתערות הגיעה אליו`
-              : `${target.name} נשבר ונמלט מפני ההסתערות`,
-            "fire",
-            sharedBy(attacker.side),
-          );
-        }
-        if (r.selfCasualties > 0) {
-          // What a force did to itself with its own grenades is its own to know.
-          pushLog(
-            `${attacker.name} ספג ${r.selfCasualties} נפגעים מרימוני עצמו`,
-            "casualty",
-            onlyFor(viewingSide),
-          );
-        }
-        if (r.defenderNeutralized) {
-          pushPerSide("casualty", viewingSide, (reader) =>
-            !mayKnowOf(reader, target)
-              ? null
-              : target.side === reader
-                ? `${target.name} נוטרל!`
-                : `${target.name} נראה מנוטרל`,
-          );
-        }
-      }
+      logAssault(attacker, target, grenades, game.assault(attacker.id, target.id, grenades));
     } catch (err) {
       pushLog((err as Error).message, "fire", onlyFor(viewingSide));
     }
     checkVictory();
     force();
+  }
+
+  /** An assault, worded for both sides; the attacker's side is the one that went in. */
+  function logAssault(attacker: Unit, target: Unit, grenades: number, r: WithCoveringFire<AssaultResult>) {
+    const by = attacker.side;
+    logCoveringFire(r.coveringFire);
+    if (!r.fired) {
+      pushLog(`${attacker.name}: ${reasonHe(r.reason)}`, "fire", onlyFor(by));
+    } else {
+      // Same split as direct fire: what the attacker threw is its own
+      // ammunition state, what landed is the defender's to count.
+      const went = `${attacker.name} הסתער על ${target.name}`;
+      pushPerSide(r.defenderCasualties > 0 ? "casualty" : "fire", by, (reader) =>
+        target.side === reader
+          ? `${went}: ${r.fireHits} פגיעות אש` +
+            (r.grenadeHits > 0 ? `, ${r.grenadeHits} פגיעות רימון` : "") +
+            `, ${casualtyReport(r.defenderCasualties, true)}`
+          : `${went}` +
+            (grenades > 0 ? (perManGrenades ? ` עם ${grenades} רימונים ללוחם` : ` עם ${grenades} רימונים`) : "") +
+            `, ${casualtyReport(r.defenderCasualties, false)}`,
+      );
+      // A pinned or suppressed defender's nerve went as the assault came in
+      // (rules decision 63, S5). Giving up or running is behaviour, and the
+      // assaulting force is on top of it: both sides see it.
+      if (r.nerve && r.nerve.outcome !== "held") {
+        pushLog(
+          r.nerve.outcome === "surrendered"
+            ? `${target.name} נכנע כשההסתערות הגיעה אליו`
+            : `${target.name} נשבר ונמלט מפני ההסתערות`,
+          "fire",
+          sharedBy(attacker.side),
+        );
+      }
+      if (r.selfCasualties > 0) {
+        // What a force did to itself with its own grenades is its own to know.
+        pushLog(
+          `${attacker.name} ספג ${r.selfCasualties} נפגעים מרימוני עצמו`,
+          "casualty",
+          onlyFor(by),
+        );
+      }
+      if (r.defenderNeutralized) logNeutralized(target, by);
+    }
   }
 
   /**
@@ -1206,6 +1254,9 @@ export function App({ scenario, onLeave }: AppProps) {
 
   /** Ends the battle if a side is out of it or the attack is out of time; true if it ended. */
   function checkVictory(): boolean {
+    // Said once: impacts at a phase change, the orders run after them and the
+    // computer's own activation can each find the same end.
+    if (over.current) return true;
     const beaten = SIDES.filter((side) => sideDefeated(game, side));
     if (beaten.length === 0) {
       // The mission's deadline (rules decision 58): the attack that has not
@@ -1213,6 +1264,7 @@ export function App({ scenario, onLeave }: AppProps) {
       const late = outOfTime(game);
       if (!late) return false;
       const win = late === "RED" ? "BLUE" : "RED";
+      over.current = true;
       setStage("gameover");
       setWinner(win);
       pushLog(`תם הזמן: ${late} לא השלים את המשימה עד תור ${game.timeLimit} — ניצחון ל${win}`, "info", TABLE);
@@ -1221,6 +1273,7 @@ export function App({ scenario, onLeave }: AppProps) {
     // A side that broke still has forces on the map; it has stopped fighting,
     // which is a different thing to say (rules decision 19).
     const how = (side: Side) => (game.sideBroken(side) ? "נשבר" : "נוטרל");
+    over.current = true;
     setStage("gameover");
     if (beaten.length === SIDES.length) {
       // Both at once — one morale step judges both sides, so it can happen.
@@ -1251,41 +1304,96 @@ export function App({ scenario, onLeave }: AppProps) {
     // …and a sector half-laid belongs to the force that was selected, not to
     // whoever the next side clicks on first.
     setAimingSector(false);
-    const next = actIndex + 1;
-    if (next < activations.length) {
-      const from = activations[actIndex]!.phase;
-      const to = activations[next]!.phase;
-      if (from !== to) {
+    enterActivation(activations, actIndex + 1);
+    force();
+  }
+
+  /**
+   * Move play on to activation `index` of the turn: into its phase, and to
+   * whoever acts in it. The computer's activations are played out on the spot,
+   * one after another, until a person's comes up or the turn ends.
+   */
+  function enterActivation(acts: Activation[], index: number) {
+    let next = index;
+    for (; next < acts.length; next++) {
+      const to = acts[next]!.phase;
+      if (game.phase !== to) {
         // Stepping into movement crosses resolvePriorArty, where fire missions
         // marked on an earlier turn come down.
         const { resolved, smokeArrived, observed } = game.advanceToPhase(to);
         pushLog(`מעבר ל${phaseLabelHe[to]}`, "phase", TABLE);
         logImpacts(resolved, smokeArrived);
         logNewContacts(observed);
+        if (over.current) return;
       }
+      if (acts[next]!.side !== computer || !ai) break;
+      playComputer(ai, to);
+      if (checkVictory()) return;
+    }
+    if (next < acts.length) {
       setActIndex(next);
-      setHandoffTo(activations[next]!.side);
+      setHandoffTo(acts[next]!.side);
       // The side taking over acts on the orders it already holds before the
       // player touches anything.
-      const opening = activations[next]!;
+      const opening = acts[next]!;
       if (opening.phase === "movement" || opening.phase === "combat") {
         runStandingOrdersFor(opening.side);
       }
-    } else {
-      // End of turn: run upkeep + begin the next turn.
-      const closed = game.advanceToPhase("initiative");
-      logChargeWork(closed.chargeWork);
-      logMorale(closed.morale);
-      // Morale can end a battle with no shot fired this step: a side breaks.
-      // So can the clock (rules decision 58).
-      if (checkVictory()) return;
-      const order = game.initiativeOrder;
-      setActivations(buildActivations(order));
-      setActIndex(0);
-      setStage("initiative");
-      pushLog(`תור ${game.turn} — יוזמה: ${order.join(" → ")}`, "info", TABLE);
+      return;
     }
-    force();
+    // End of turn: run upkeep + begin the next turn.
+    const closed = game.advanceToPhase("initiative");
+    logChargeWork(closed.chargeWork);
+    logMorale(closed.morale);
+    // Morale can end a battle with no shot fired this step: a side breaks.
+    // So can the clock (rules decision 58).
+    if (checkVictory()) return;
+    const order = game.initiativeOrder;
+    setActivations(buildActivations(order));
+    setActIndex(0);
+    setStage("initiative");
+    pushLog(`תור ${game.turn} — יוזמה: ${order.join(" → ")}`, "info", TABLE);
+  }
+
+  /**
+   * The computer's activation, told to the player as the player's own would
+   * be told to the computer: what landed on the player's forces and what the
+   * player's forces could see — never its plan.
+   */
+  function playComputer(side: ComputerDefender, phase: ActivationPhase) {
+    // The drill aims at its side's picture of the enemy — a copy taken before
+    // the shot — so whether a force went down is read off the live unit, once,
+    // when the computer's phase is over (a rifle volley and its grenadiers are
+    // one action, as a player's are).
+    const struck = new Set<string>();
+    const report: DrillReport = {
+      executed: (done) => logExecutions(side.side, done),
+      fired: (u, target, r) => {
+        logFire(u, target, r);
+        struck.add(target.id);
+      },
+      explosive: (u, target, weapon, r) => {
+        logTankRound(u, target, r, weapon);
+        struck.add(target.id);
+      },
+      grenadiers: (u, target, volleys) => {
+        logGrenadierVolleys(u, target, volleys, side.side);
+        struck.add(target.id);
+      },
+      // An assault says its own result, from the engine's.
+      assaulted: (u, target, grenades, r) => logAssault(u, target, grenades, r),
+    };
+    try {
+      if (phase === "targeting") side.targeting(game);
+      else if (phase === "movement") side.movement(game, report);
+      else side.combat(game, report);
+    } catch (err) {
+      // A position the harness never met: the computer loses the rest of this
+      // activation rather than leaving the turn half-advanced.
+      console.error(err);
+      pushLog(`המחשב: ${(err as Error).message}`, "info", onlyFor(side.side));
+    }
+    for (const id of struck) logNeutralized(game.getUnit(id), side.side);
   }
 
   // ---- render ----
@@ -1988,7 +2096,8 @@ export function App({ scenario, onLeave }: AppProps) {
           */}
           <LogPanel
             log={log}
-            reader={(stage === "activation" || stage === "planning") && !showHandoff ? viewingSide : null}
+            // Against the computer the screen is the player's throughout.
+            reader={human ?? ((stage === "activation" || stage === "planning") && !showHandoff ? viewingSide : null)}
           />
         </aside>
       </div>

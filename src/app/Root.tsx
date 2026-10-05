@@ -8,16 +8,20 @@ import { ScenarioPicker } from "./components/ScenarioPicker.js";
 import { findScenario, SCENARIOS, type ScenarioListing } from "./scenario.js";
 
 const PARAM = "scenario";
+/** `?vs=computer`: the battle is played against the computer (single-player). */
+const VS = "vs";
 
 /**
  * Put the battle being fought in the address, or take it out. Replaced rather
  * than pushed on purpose: a Back button that returned to the picker would drop
  * the battle without the header button's second click.
  */
-function remember(id: string | null) {
+function remember(id: string | null, vsComputer = false) {
   const url = new URL(window.location.href);
   if (id) url.searchParams.set(PARAM, id);
   else url.searchParams.delete(PARAM);
+  if (id && vsComputer) url.searchParams.set(VS, "computer");
+  else url.searchParams.delete(VS);
   window.history.replaceState(null, "", url);
 }
 
@@ -36,9 +40,10 @@ function remember(id: string | null) {
 export function Root() {
   /** Bumped on every pick, so choosing the same battle again is still a new game. */
   const rounds = useRef(0);
-  const [picked, setPicked] = useState<{ listing: ScenarioListing; round: number } | null>(() => {
-    const listing = findScenario(new URL(window.location.href).searchParams.get(PARAM));
-    return listing ? { listing, round: 0 } : null;
+  const [picked, setPicked] = useState<{ listing: ScenarioListing; round: number; vsComputer: boolean } | null>(() => {
+    const params = new URL(window.location.href).searchParams;
+    const listing = findScenario(params.get(PARAM));
+    return listing ? { listing, round: 0, vsComputer: params.get(VS) === "computer" } : null;
   });
 
   /** A recording opened from the picker; closing it comes back here. */
@@ -50,10 +55,10 @@ export function Root() {
     return (
       <ScenarioPicker
         scenarios={SCENARIOS}
-        onPick={(listing) => {
-          remember(listing.id);
+        onPick={(listing, vsComputer) => {
+          remember(listing.id, vsComputer);
           setLoadError(null);
-          setPicked({ listing, round: ++rounds.current });
+          setPicked({ listing, round: ++rounds.current, vsComputer });
         }}
         onLoadRecording={(file) => {
           // A recording made under other rules still opens: the debrief
@@ -74,6 +79,7 @@ export function Root() {
     <App
       key={`${picked.listing.id}-${picked.round}`}
       scenario={picked.listing}
+      vsComputer={picked.vsComputer}
       onLeave={() => {
         remember(null);
         setPicked(null);

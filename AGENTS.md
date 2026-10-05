@@ -158,6 +158,14 @@ one it is in your reply, too.
   commander (dead ground, observation points) live in
   [`deadGround.ts`](src/app/deadGround.ts) and read the ground with the
   engine's own sight test.
+- **The computer opponent and the harness play one defender.**
+  [`computerSide.ts`](src/app/computerSide.ts) holds the defending side's
+  fire plan, fire calls and the `ComputerDefender` the browser plays
+  against; `src/sim/scenarioBattle.ts` imports the same functions. Change
+  the defender there and both move, and the harness's tables with them: rerun
+  the standard measurement (docs/balance.md) and compare. A `DrillReport`
+  passed to the drill must only *read* — `computerSide.test.ts` checks a
+  battle's recording is the same with and without one.
 - **Posture drives both being seen and being hit.** `stationaryTurns`, `cover`
   and `camouflageTurns` on a `Unit` are maintained by `endTurnUnitUpkeep` and
   read by `detectionChance` and by fire resolution — a force is hidden because
