@@ -2717,6 +2717,18 @@ Still modelled by reasonable assumption (flag if you want them changed):
   The opponent itself is specified in **backlog 15** — which also covers the
   simulated subordinates under *every* player once echelons scale, and names
   what neither is allowed to touch.
+
+  **Single-player, first cut (2026-10-05):** the picker offers *מול המחשב*
+  (`?vs=computer`). The player attacks; the computer takes the side that is
+  not attacking and holds it as the headless harness's defender does
+  ([`computerSide.ts`](src/app/computerSide.ts)): its mortars planned on the
+  dead ground in front of it before the battle and called on what it has
+  seen, its squads fighting by the plain drill, holding fire to the drill's
+  range, covering when idle, the reserve retaking a lost position. It reads
+  only its own side's picture, as the drill always has. Its activations play
+  out at once with no handoff, and what it does reaches the player's log
+  through the same wording as a player's own fire (`DrillReport` in
+  `drill.ts`). Not yet: the computer as the attacker, and a choice of side.
 - **Stage 4 — the app proper: mobile and desktop.** The browser build is the
   development shell. What ports for free is the part that matters: the engine
   has **no runtime dependencies**, no DOM and no node globals — `build:engine`

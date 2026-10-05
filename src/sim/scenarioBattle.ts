@@ -3,7 +3,6 @@ import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, drillCombat, drillMoveme
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
-  ADJUSTMENT_RADIUS_M,
   CE_PER_SIGMA,
   EYE_HEIGHT,
   forceQuality,
@@ -21,7 +20,8 @@ import {
   type Unit,
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
-import { bestVantages, isDeadGround } from "../app/deadGround.js";
+import { bestVantages } from "../app/deadGround.js";
+import { callDefenderFire, mortarFree, planDefenderFires } from "../app/computerSide.js";
 import { ASSAULT_POSITION_M, FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
 import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
@@ -379,7 +379,9 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     heard(g.advanceToPhase("targeting").resolved);
     if (ask) askAttackerFire(g, attacker, company, result, question);
     else callAttackerFire(g, attacker, planned, objective, opts.fire, company, result);
-    callDefenderFire(g, defender, result, defenderTargets);
+    const defenderCall = callDefenderFire(g, defender, defenderTargets);
+    if (defenderCall) result.missions[defender]++;
+    if (defenderCall === "plan") result.defenderPlanned++;
 
     const moving = g.advanceToPhase("movement");
     heard(moving.resolved);
@@ -941,11 +943,6 @@ function askAttackerFire(
 }
 
 /** A side's mortar is free for a call: missions left, none in hand (a section fires one at a time). */
-function mortarFree(g: Game, side: Side): boolean {
-  if (!g.mayCall(side, MORTAR)) return false;
-  if ((g.fireMissionsLeft(side, MORTAR) ?? 1) <= 0) return false;
-  return !g.fireMissions.some((m) => m.side === side && m.weapon === MORTAR && m.status === "adjusting");
-}
 
 /**
  * The attacking commander's fire (the browser tool's rule): fire for effect
@@ -1012,105 +1009,6 @@ function callAttackerFire(
   }
   if (!aim) return;
   g.callForFire(side, MORTAR, aim, { method: "effect" });
-  result.missions[side]++;
-}
-
-/** Registered targets the defending company plans (decision 38 allows six a weapon). */
-const DEFENDER_TARGETS = 6;
-/** Where it looks for them: this far in front of its positions (ours). */
-const DEFENDER_PLAN_BAND_M = { near: 100, far: 400 } as const;
-/** No two closer than this: each covers its 100 m on-the-mark radius (ours). */
-const DEFENDER_TARGET_SPACING_M = 120;
-
-/**
- * The defending company's fire plan (a harness policy, ours; rules decision 38
- * lets it register six targets a weapon in planning). It covers with fire what
- * its squads cannot see: the dead ground 100–400 m in front of its positions,
- * toward where the attack comes from, the nearest its positions first — where
- * an assault forms up and closes; if there is too
- * little dead ground, points on the line itself fill the plan. It reads its own
- * positions, the ground and the direction of the attack (the brief's tasking,
- * taken as the attacker's start line) — never where the attacker is.
- */
-export function planDefenderFires(
-  g: Game,
-  side: Side,
-  attackFrom: Point,
-  width: number,
-  height: number,
-  prefer: "deadGround" | "open" = "deadGround",
-): Point[] {
-  const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
-  if (!own.length || !g.terrain) return [];
-  const centre = mean(own);
-  const range = distance(centre, attackFrom);
-  if (range === 0) return [];
-  const ux = (attackFrom.x - centre.x) / range;
-  const uy = (attackFrom.y - centre.y) / range;
-  const query = { terrain: g.terrain, watchers: own.map((u) => u.position), watcherEye: EYE_HEIGHT.fullCover, reach: Infinity };
-  const candidates: { at: Point; dead: boolean; along: number; off: number }[] = [];
-  for (let x = 0; x <= width; x += 20) {
-    for (let y = 0; y <= height; y += 20) {
-      const dx = x - centre.x;
-      const dy = y - centre.y;
-      const along = dx * ux + dy * uy;
-      if (along < DEFENDER_PLAN_BAND_M.near || along > DEFENDER_PLAN_BAND_M.far) continue;
-      const off = Math.abs(dx * uy - dy * ux);
-      if (off > along) continue; // within 45° of the line of attack
-      const at = { x, y };
-      candidates.push({ at, dead: isDeadGround(query, at), along, off });
-    }
-  }
-  // Dead ground first (or open ground, `prefer`), the nearest the positions
-  // first — where an assault forms up and closes; then nearest the line of
-  // attack; ties by position.
-  const first = prefer === "open" ? -1 : 1;
-  candidates.sort(
-    (a, b) => first * (Number(b.dead) - Number(a.dead)) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
-  );
-  const chosen: Point[] = [];
-  for (const c of candidates) {
-    if (chosen.length >= DEFENDER_TARGETS) break;
-    if (chosen.every((p) => distance(p, c.at) >= DEFENDER_TARGET_SPACING_M)) chosen.push(c.at);
-  }
-  return chosen;
-}
-
-/**
- * The defender's fire: for effect on an attacker it has seen this turn or
- * last within the on-the-mark radius of one of its registered targets — the
- * one nearest its own forces — which lands at the weapon's best without an
- * observer; else on the nearest attacker it knows of, from its own forces.
- */
-function callDefenderFire(g: Game, side: Side, result: ScenarioBattleResult, registered: readonly Point[] = []): void {
-  if (!mortarFree(g, side)) return;
-  const view = sideView(g, side);
-  const own = view.units.filter((u) => u.side === side && u.kind !== "command" && !u.neutralized);
-  const foes = view.units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered);
-  const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
-  const nearestOwn = (p: Point) => Math.min(...own.map((u) => distance(u.position, p)));
-  const onPlan = foes
-    .filter((f) => fresh(f.id) && registered.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M))
-    .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
-  if (onPlan && own.length) {
-    g.callForFire(side, MORTAR, onPlan.position, { method: "effect" });
-    result.missions[side]++;
-    result.defenderPlanned++;
-    return;
-  }
-  let best: Point | undefined;
-  let bd = Infinity;
-  for (const f of foes) {
-    for (const u of own) {
-      const d = distance(f.position, u.position);
-      if (d < bd) {
-        bd = d;
-        best = f.position;
-      }
-    }
-  }
-  if (!best) return;
-  g.callForFire(side, MORTAR, best, { method: "effect" });
   result.missions[side]++;
 }
 
