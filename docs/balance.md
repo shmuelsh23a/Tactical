@@ -4127,13 +4127,20 @@ gaps of up to two steps):
 ## Sixty-first round: directional cover, 2026-10-06
 
 Rules decision 85. The specs' prepared defenders face the attack's start
-line (computed from it). Standard measurement, 200 battles from seed 1000:
+line (the bearing to it, worked out once and checked by
+`scenarioFacing.test.ts`). Standard measurement, 200 battles from seed 1000:
 
-| | Before (round 54) | Directional, no facing | **Directional, faced** |
-|---|---|---|---|
-| telAzekaAssault (3:1) | 41% | 42% | **41%** |
-| telAzekaAssault2 (2:1) | 33% | 33% | **34%** |
-| yokneamUrban | 18% | 17% | **17%** |
+| | Before (round 54) | **Directional cover** |
+|---|---|---|
+| telAzekaAssault (3:1) | 41% | **41%** |
+| telAzekaAssault2 (2:1) | 33% | **34%** |
+| yokneamUrban | 18% | **18%** |
+
+(A first build without the facings read 42%, 33%, 17%; it recomputed cover
+from scratch instead of from the force's own, which a review found moved
+the modifier in four cases even with no front. Withdrawn; the rule now
+starts from exactly the cover a force has, and `directional.test.ts` pins
+that it changes nothing with no front and no wall in play.)
 
 The flanking reference plans, `jev-sim --rule`, 100 battles from seed 1000
 (round 54's figure on the same seeds in brackets): A + flank **36%** (34%),

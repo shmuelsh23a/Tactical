@@ -24,13 +24,15 @@ const square = (id: string, kind: MapObject["kind"], cx: number, cy: number, hal
  * A RED squad at the origin, and a BLUE squad 150 m away at `bearing`
  * degrees (0 along +x) firing at it; the hit chance the shot was resolved
  * at. Contacts are kept unless asked otherwise, and RED has seen BLUE, so
- * nothing here is caught unready unless the test says so.
+ * nothing here is caught unready unless the test says so. Morale and heads
+ * down are off: the "seen" volley must not pin or suppress anybody and move
+ * the ratios by something other than this rule, whatever the seed.
  */
 function shot(
   opts: { bearing: number; front?: number; baseCover?: "full" | "partial"; terrain?: Terrain; seen?: boolean; sector?: number } & Partial<GameOptions>,
 ): number {
   const { bearing, front, baseCover, terrain, seen = true, sector, ...gameOpts } = opts;
-  const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, terrain: terrain ?? FLAT_GROUND, ...gameOpts });
+  const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, morale: false, headsDown: false, terrain: terrain ?? FLAT_GROUND, ...gameOpts });
   const red = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8);
   if (baseCover) red.baseCover = baseCover;
   if (front !== undefined) red.front = front;
@@ -105,7 +107,7 @@ describe("directional cover (rules decision 85)", () => {
   });
 
   it("leaves a force caught unready firing at a fraction until the turn is out", () => {
-    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, terrain: FLAT_GROUND });
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, morale: false, headsDown: false, terrain: FLAT_GROUND });
     const red = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8);
     red.front = 0;
     g.addUnit(red);
@@ -116,9 +118,79 @@ describe("directional cover (rules decision 85)", () => {
     const before = g.fire("R", "B2", { weapon: "smallArms", hasLineOfSight: true }).hitChance;
     g.fire("B", "R", { weapon: "smallArms", hasLineOfSight: true });
     expect(red.surprisedUntilTurn).toBe(g.turn);
+    // One action a force a fire phase: cleared so it may shoot again within the
+    // phase, the fastest way to read its next shot's chance in the same turn.
     red.firedThisTurn = false;
     const after = g.fire("R", "B2", { weapon: "smallArms", hasLineOfSight: true }).hitChance;
     expect(after / before).toBeCloseTo(UNREADY.ownFire, 6);
+  });
+
+  it("changes nothing with no front and no wall in play: the shot is resolved as it was before the rule", () => {
+    // Every way a force has cover, read on and off the rule; nothing faces anywhere.
+    const house: Terrain = { objects: [square("h", "building", 0, 0, 6)] };
+    const rubble: Terrain = { objects: [square("r", "rubble", 0, 0, 6)] };
+    const both = (dress: (g: Game, red: ReturnType<typeof makeInfantry>) => void, terrain: Terrain = FLAT_GROUND, cover?: "partial") =>
+      [true, false].map((directionalCover) => {
+        const g = new Game({ seed: 3, enforceC2: false, morale: false, headsDown: false, terrain, directionalCover });
+        const red = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8);
+        g.addUnit(red);
+        g.addUnit(makeInfantry("B", "BLUE", "squad", { x: -150, y: 0 }, 8));
+        g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 150, y: 0 }, 8));
+        g.beginTurn();
+        dress(g, red);
+        g.advanceToPhase("combat");
+        return g.fire("B", "R", { weapon: "smallArms", hasLineOfSight: true, ...(cover ? { cover } : {}) }).hitChance;
+      });
+    const cases: [string, number[]][] = [
+      ["prepared, full", both((_, r) => ((r.baseCover = "full"), (r.cover = "full")))],
+      ["prepared, full, fired from it", both((g, r) => ((r.baseCover = "full"), (r.cover = "full"), (r.firedThisTurn = true)))],
+      ["prepared, partial", both((_, r) => ((r.baseCover = "partial"), (r.cover = "partial")))],
+      ["in a house", both(() => {}, house)],
+      ["in rubble", both(() => {}, rubble)],
+      ["cover dressed by hand", both((_, r) => (r.cover = "full"))],
+      ["the caller says the cover", both(() => {}, FLAT_GROUND, "partial")],
+      [
+        "left the house this turn, still on the house's cover",
+        both((g, r) => {
+          g.advanceToPhase("movement");
+          g.moveUnit("R", { x: 40, y: 0 });
+        }, house),
+      ],
+    ];
+    for (const [name, [on, off]] of cases) expect(on, name).toBeCloseTo(off!, 9);
+  });
+
+  it("takes a wall's side from its nearest point, so a long wall or a yard's covers the right way", () => {
+    const open = shot({ bearing: 90, trackIntel: false });
+    // A wall 50 m long along +x, the force 1 m off it at its west end (wall to the +y side).
+    const long: Terrain = { objects: [{ id: "w", kind: "wall", footprint: { shape: "polygon", points: [{ x: 0, y: 1 }, { x: 50, y: 1 }, { x: 50, y: 1.5 }, { x: 0, y: 1.5 }] } }] };
+    expect(shot({ bearing: 90, terrain: long, trackIntel: false }) / open).toBeCloseTo(0.9, 6); // across the wall: covered
+    expect(shot({ bearing: 0, terrain: long, trackIntel: false }) / open).toBeCloseTo(1, 6); // along it: not
+    // A yard walled all round, 20 m a side, the wall a 1 m strip as fetch-osm.py
+    // builds a closed barrier: an outer ring and an inner one, joined at a seam.
+    // The force stands inside the yard, 1.5 m from its north wall (+y).
+    const ring = [
+      { x: -10, y: -18 }, { x: 10, y: -18 }, { x: 10, y: 3 }, { x: -10, y: 3 }, { x: -10, y: -18 },
+      { x: -9, y: -17 }, { x: -9, y: 2 }, { x: 9, y: 2 }, { x: 9, y: -17 }, { x: -9, y: -17 },
+    ];
+    const yard: Terrain = { objects: [{ id: "y", kind: "wall", footprint: { shape: "polygon", points: ring } }] };
+    expect(shot({ bearing: 90, terrain: yard, trackIntel: false }) / open).toBeCloseTo(0.9, 6); // through the north wall: covered
+    expect(shot({ bearing: 270, terrain: yard, trackIntel: false }) / open).toBeCloseTo(1, 6); // from across the open yard: not
+  });
+
+  it("writes nothing new on a force with the rule off, so an older recording replays to the same state", () => {
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, terrain: FLAT_GROUND, directionalCover: false });
+    const red = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8);
+    red.observationSector = { bearing: 0, width: 60 };
+    red.baseCover = "full";
+    g.addUnit(red);
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: -150, y: 0 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire("B", "R", { weapon: "smallArms", hasLineOfSight: true });
+    g.advanceToPhase("initiative");
+    expect(red.front).toBeUndefined();
+    expect(red.surprisedUntilTurn).toBeUndefined();
   });
 
   it("is on for a new game, and off for a recording made before it", () => {

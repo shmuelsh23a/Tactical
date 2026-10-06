@@ -2636,13 +2636,18 @@ on the stated reasoning, still awaiting the author's word.
     above", on the proposal that a position has a front, cover counts by
     the side fire comes from, and fire from outside the arc a force watches
     catches it unready). `GameOptions.directionalCover`, on for a new game,
-    off for a recording made before it. Small arms only (`fire`, covering
-    fire); ⚠️ explosives and the assault keep today's cover.
+    off for a recording made before it. Small arms only (`fire` and
+    covering fire, which also catches and is caught unready); ⚠️ explosives
+    and the assault keep today's cover. Direction only ever takes cover
+    away: each source is held to the cover the force has, so with no front
+    and no wall in play nothing changes (`directional.test.ts`).
     - **A position has a front** (`Unit.front`): a scenario's `facing` for
       a prepared position, else the arc it watches, else — when it digs —
-      the nearest enemy its side knows of; moving gives it up. The specs'
-      prepared defenders face the attack's start line (the brief's
-      tasking), computed from it, not chosen.
+      the nearest enemy its side knows of; moving gives it up, and a later
+      change of sector does not turn it. A spec's `facing` needs a
+      `baseCover`. The specs' prepared defenders face the attack's start
+      line (the brief's tasking): the bearing to it, worked out once and
+      checked by `scenarioFacing.test.ts`.
     - **Cover by direction** (`DIRECTIONAL_COVER`, `combat/directional.ts`):
       a dug or prepared position's cover counts in full within ±60° of its
       front, 60% of it from the flank, 30% from beyond ±120° — FM 3-21.8's
@@ -2650,7 +2655,8 @@ on the stated reasoning, still awaiting the author's word.
       length, rear one sandbag; ⚠️ the shares are ours, no source gives
       protection by angle. A house covers on every side (FM 3-06.11: 70
       rifle rounds through 9 in of brick); a wall or a tree only from its
-      own side (⚠️ ours). The best of them stands.
+      own side, by the bearing to its nearest point (⚠️ ours). The best of
+      them stands.
     - **Caught unready** (`UNREADY`): fire from an enemy the target's side
       had not seen, from outside the arc it watches (its sector, else
       ±60° of its front), hits at ×1.5 (⚠️ ours, a share of Storr's
@@ -2661,7 +2667,7 @@ on the stated reasoning, still awaiting the author's word.
       no arc is not caught this way; the nerve lost to being flanked
       (decision 19) stands beside it.
     - **Measured** (docs/balance.md, sixty-first round): the standard
-      measurement does not move (41%, 34%, 17%), and nor do the scripted
+      measurement does not move (41%, 34%, 18%), and nor do the scripted
       flank plans (36%, 20%) — because about nine in ten of their shots
       still arrive within ±60° of the defenders' front: the scripted
       company swings wide but attacks into the face of the position. The

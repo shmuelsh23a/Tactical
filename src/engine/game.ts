@@ -2438,23 +2438,37 @@ export class Game {
         actor.position = { ...at };
         const wasNeutralized = actor.neutralized;
         const wasCover = actor.cover;
-        actor.cover = this.groundCoverAt(at);
+        // Caught on the move it is on the ground it crossed; answered for a
+        // shot or an assault it is standing in its own position (decision 85).
+        if (from || !this.directionalCover) actor.cover = this.groundCoverAt(at);
+        // Read before the shot gives the coverer away (decision 85).
+        const unready = this.catchesUnready(coverer, actor);
         const result = resolveDirectFire(this.rng, coverer, actor, {
           weapon: posture.weapon,
           lethality: this.lethality,
           turn: this.turn,
           cover: actor.cover,
-          // The ground it is crossing, by the side the fire comes from
-          // (decision 85); the hole it left behind is no cover.
+          // Its cover by the side the fire comes from (decision 85): the hole
+          // it left behind counts for nothing, and covering fire reads cover
+          // alone, as it always has, not a force that fired from it.
           ...(this.directionalCover
-            ? { coverModifier: directionalCoverModifier(actor, coverer.position, this.terrain, this.lethality, { position: false }) }
+            ? {
+                coverModifier: directionalCoverModifier(actor, coverer.position, this.terrain, this.lethality, {
+                  position: !from,
+                  ignoreFired: true,
+                }),
+              }
             : {}),
           // A force caught on the move is the case the movement table is
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
           ...(from ? this.movementTerms(actor, true) : {}),
           ...(() => {
-            const aim = (this.headsDownAim(coverer, actor).aimFactor ?? 1) * this.qualityAim(coverer, actor);
+            const aim =
+              (this.headsDownAim(coverer, actor).aimFactor ?? 1) *
+              this.qualityAim(coverer, actor) *
+              (unready ? UNREADY.hitFactor : 1) *
+              ((coverer.surprisedUntilTurn ?? -1) >= this.turn ? UNREADY.ownFire : 1);
             return aim === 1 ? {} : { aimFactor: aim };
           })(),
               hasLineOfSight: true,
@@ -2463,6 +2477,7 @@ export class Game {
         actor.position = destination;
 
         if (!result.fired) continue;
+        if (unready) actor.surprisedUntilTurn = this.turn;
         delete coverer.covering;
         // Where it was caught, not where the bound ended (flanking reads it).
         this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at, coverer.id);

@@ -216,6 +216,9 @@ export interface Unit {
    * or from a prepared position's spec, toward the arc it watches or the
    * enemy it knows of, and given up when it moves. A dug or prepared
    * position's cover counts in full only toward it. Absent: all-round.
+   * Fixed once set: a position is dug one way, so re-pointing the force's
+   * observation sector later changes where it looks (and can be caught
+   * from), not which way its parapet faces.
    */
   front?: number;
   /**
