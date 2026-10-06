@@ -82,6 +82,8 @@ export function detectionChance(
   target: Unit,
   observerGait?: MovementMode,
   binoculars = false,
+  /** How alert the observer is (rules decision 86): a factor on the chance, 1 without the rule. */
+  alertness = 1,
 ): { chance: number; range: number } {
   // The observer's own figures: its gait if it is on the move, otherwise the
   // walking figures plus the bonus for watching rather than moving.
@@ -129,7 +131,7 @@ export function detectionChance(
 
   // His best observer's wisdom (rules decision 69): 1 unless the game plays it.
   const chance = (base + watching + scouting + focus + exposure - concealment) * eyesFactor(observer);
-  return { chance: Math.min(1, Math.max(floor, chance)), range };
+  return { chance: Math.min(1, Math.max(floor, chance) * alertness), range };
 }
 
 /**
@@ -189,6 +191,8 @@ export function detectByMovement(
   enemies: Unit[],
   mines: Mine[],
   hasLineOfSight: (observer: Unit, target: Unit) => boolean = () => true,
+  /** The mover's readiness factor (rules decision 86): 1 without the rule. */
+  alertness = 1,
 ): DetectionResult {
   const profile = MOVEMENT_PROFILES[mode];
   const spottedUnitIds: string[] = [];
@@ -207,7 +211,7 @@ export function detectByMovement(
 
   for (const enemy of enemies) {
     if (!isFindable(enemy)) continue;
-    const { chance, range } = detectionChance(mover, enemy, mode);
+    const { chance, range } = detectionChance(mover, enemy, mode, false, alertness);
     if (searched(enemy.position, range) && hasLineOfSight(mover, enemy)) {
       if (rng.chance(chance)) spottedUnitIds.push(enemy.id);
     }
@@ -215,7 +219,7 @@ export function detectByMovement(
 
   for (const mine of mines) {
     if (mine.detected) continue;
-    if (searched(mine.position, profile.hiddenDetectRange) && rng.chance(profile.hiddenDetectChance * eyesFactor(mover))) {
+    if (searched(mine.position, profile.hiddenDetectRange) && rng.chance(Math.min(1, profile.hiddenDetectChance * eyesFactor(mover) * alertness))) {
       mine.detected = true;
       foundMineIds.push(mine.id);
     }
@@ -254,6 +258,8 @@ export function observeFromPosition(
   hasLineOfSight: (observer: Unit, target: Unit) => boolean = () => true,
   stillDetection = false,
   binoculars = false,
+  /** Each observer's readiness factor (rules decision 86): 1 without the rule. */
+  alertness: (observer: Unit) => number = () => 1,
 ): Observation[] {
   const observations: Observation[] = [];
   for (const observer of units) {
@@ -261,7 +267,7 @@ export function observeFromPosition(
     if (!canObserve(observer)) continue;
     for (const target of units) {
       if (target.side === observer.side || !isFindable(target)) continue;
-      let { chance, range } = detectionChance(observer, target, undefined, binoculars);
+      let { chance, range } = detectionChance(observer, target, undefined, binoculars, alertness(observer));
       const d = distance(observer.position, target.position);
       // Watching finds a still force further out than walking past it does
       // (rules decision 53): the same chance, falling off to the edge of sight.

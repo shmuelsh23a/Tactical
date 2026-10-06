@@ -71,6 +71,7 @@ export {
   UNREADY,
   READINESS,
   SURPRISE_RECOVERY_TURNS,
+  READINESS_SPOTTING,
   type CoverState,
 } from "./data/directFire.js";
 export {

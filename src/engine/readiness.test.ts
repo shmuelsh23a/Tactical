@@ -3,7 +3,8 @@ import { Game, type GameOptions } from "./game.js";
 import { makeInfantry } from "./units.js";
 import { FLAT_GROUND } from "./terrain.js";
 import { replayGame } from "./recording.js";
-import { SURPRISE_RECOVERY_TURNS, UNREADY } from "./data/directFire.js";
+import { READINESS_SPOTTING, SURPRISE_RECOVERY_TURNS, UNREADY } from "./data/directFire.js";
+import { detectionChance } from "./combat/detection.js";
 import type { Experience, Readiness } from "./types.js";
 import { forceQuality } from "./morale.js";
 
@@ -165,5 +166,41 @@ describe("readiness (rules decision 86)", () => {
     const off = caught(undefined, 180, { readiness: false });
     expect(off.red.readiness).toBeUndefined();
     expect(off.g.getUnit("B").readiness).toBeUndefined();
+  });
+
+  it("spots worse unaware and better stood to: the chance to see a force, scaled by its level", () => {
+    const watcher = makeInfantry("W", "RED", "squad", { x: 0, y: 0 }, 8);
+    const mover = makeInfantry("M", "BLUE", "squad", { x: 0, y: 200 }, 8);
+    const alert = detectionChance(watcher, mover).chance;
+    expect(detectionChance(watcher, mover, undefined, false, READINESS_SPOTTING[1]).chance).toBeCloseTo(alert * READINESS_SPOTTING[1], 9);
+    expect(detectionChance(watcher, mover, undefined, false, READINESS_SPOTTING[3]).chance).toBeCloseTo(Math.min(1, alert * READINESS_SPOTTING[3]), 9);
+    expect(READINESS_SPOTTING[2]).toBe(1);
+  });
+
+  it("makes an unaware force on the move see about half what an alert one does, and changes nothing when off", () => {
+    const spotted = (level: Readiness, opts: Partial<GameOptions> = {}) => {
+      let n = 0;
+      for (let seed = 0; seed < 400; seed++) {
+        const g = new Game({ seed, enforceC2: false, trackIntel: true, terrain: FLAT_GROUND, ...opts });
+        const m = makeInfantry("M", "BLUE", "squad", { x: 0, y: 0 }, 8);
+        m.readiness = level;
+        g.addUnit(m);
+        const r = makeInfantry("R", "RED", "squad", { x: 0, y: 260 }, 8);
+        g.addUnit(r);
+        g.beginTurn();
+        g.advanceToPhase("movement");
+        // RED on the move too: seen in the 300 m band, not looked for as hidden.
+        r.movedThisTurn = 1;
+        if (g.moveUnit("M", { x: 0, y: 50 }, "normal").detection.spottedUnitIds.length) n++;
+      }
+      return n;
+    };
+    const unaware = spotted(1);
+    const alert = spotted(2);
+    expect(alert).toBeGreaterThan(100);
+    expect(unaware / alert).toBeGreaterThan(READINESS_SPOTTING[1] - 0.1);
+    expect(unaware / alert).toBeLessThan(READINESS_SPOTTING[1] + 0.1);
+    // Off: the level is not read, so the same seeds see exactly the same.
+    expect(spotted(1, { readiness: false })).toBe(spotted(2, { readiness: false }));
   });
 });
