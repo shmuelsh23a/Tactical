@@ -2719,6 +2719,33 @@ on the stated reasoning, still awaiting the author's word.
       so it stays hidden, and the scripted attack does not search for it —
       more battles run out of time (52% against 36%).
 
+87. ✅ **Quality beyond small arms** (2026-10-06, the author, on the raid's
+    diagnosis: "rifle grenades should act similar to grenades and small
+    arms"; the breakpoint "by quality type"). Two `GameOptions`, both on for
+    a new game and off for a recording made before them:
+    - **Rifle grenades** (`qualityGapGrenades`, `QUALITY_GAP_EXPLOSIVES`):
+      decision 84's gap is a factor on each man's chance in the burst, as it
+      is on a rifleman's chance to hit — a rifle grenade within reach always
+      lands (the document's 100%), so the skill is in where. Against the
+      enemy only — the grenadier's own men caught in it take it as before —
+      and with the quality gap and direct HE as a shell, as both are in a
+      new game. A man's chance moved to or from certainty changes how many
+      times the dice are drawn, so a new game plays differently from an
+      old recording of the same seed. ⚠️ Ours: the RPG and the tank round
+      are left as they were.
+    - **The breakpoint by force type** (`qualityBreakpoint`,
+      `QUALITY_BREAK_SHIFT`): irregular −10 points, regular 0, elite +20, on
+      the posture's breakpoint (decision 67) — an attacker gives up at 20%,
+      30% and 50%, a defender at 40%, 50% and 70%; a side of several types
+      takes the mean of its men on foot (a vehicle's crew does not move
+      it), a force with no quality counted regular.
+      ⚠️ The shifts are ours.
+    - **Measured** (docs/balance.md, sixty-third round): the standard
+      measurement does not move (no force in it has a quality); the raid
+      wins 26% and 23% (from 10%). Its 48 battles in 100 that end without a
+      shot are the sight inside houses, left for the urban combat work
+      (backlog 23).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -3372,3 +3399,14 @@ Each is intended to be an independent, toggleable module:
       executed by rule; (2) estimates for the two or three decisions that
       matter (going in, lifting the fires); (3) the full loop, the executor
       narrating.
+23. **Urban combat, as a whole** (the author, 2026-10-06: "we will have to
+    solve urban combat as a whole, at a later session"). Found in the raid
+    (docs/balance.md, *The raid, diagnosed*): a force sees out through its
+    own walls only within 6 m of them (`OWN_OBJECT_SIGHT_M`), and the
+    scenarios stand their forces 6–7.5 m inside their houses, so a force in
+    a house can neither see out nor be seen — half the raids end with no
+    shot fired. Seeing out at any depth was tried and not kept. To settle
+    with it: windows and floors, where in a house a force stands, moving
+    from house to house (through walls, across streets), clearing a house,
+    and what the scripted drill does in a town (it walks to the enemy's
+    centre and stops).

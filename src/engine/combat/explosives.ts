@@ -254,6 +254,12 @@ export function resolveDirectExplosive(
     armour?: ArmourFigures;
     /** The research figures as checked against the sources (rules decision 79). */
     checked?: Checked;
+    /**
+     * A factor on each man's blast chance, by his force: the quality gap's
+     * (rules decision 87). Acts with `shell`, which is what reads a man's
+     * chance by his force; 1 for everyone unless given.
+     */
+    blastFactor?: (unit: Unit) => number;
   } = {},
 ): DirectExplosiveResult {
   const lethality = opts.lethality ?? "document";
@@ -298,8 +304,11 @@ export function resolveDirectExplosive(
           airburst: opts.shell?.airburst ?? false,
         }
       : opts.shell;
+    const gap = opts.blastFactor;
+    // Only as a shell: a critical round builds one of its own, which is not reason enough.
+    const aimed = shell && gap && opts.shell ? { ...shell, factorFor: (u: Unit) => shell.factorFor(u) * gap(u) } : shell;
     blasts.push(
-      resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, shell, lethality, {
+      resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, aimed, lethality, {
         figures: opts.armour ?? "document",
         from: attacker.position,
       }, opts.checked ?? false),
