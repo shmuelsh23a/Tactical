@@ -211,6 +211,8 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.qualityGap !== undefined && typeof r.qualityGap !== "boolean") throw malformed("qualityGap");
   if (r.directionalCover !== undefined && typeof r.directionalCover !== "boolean") throw malformed("directionalCover");
   if (r.readiness !== undefined && typeof r.readiness !== "boolean") throw malformed("readiness");
+  if (r.qualityGapGrenades !== undefined && typeof r.qualityGapGrenades !== "boolean") throw malformed("qualityGapGrenades");
+  if (r.qualityBreakpoint !== undefined && typeof r.qualityBreakpoint !== "boolean") throw malformed("qualityBreakpoint");
   if (r.traitEffects !== undefined && typeof r.traitEffects !== "boolean") throw malformed("traitEffects");
   if (r.fatigue !== undefined && typeof r.fatigue !== "boolean") throw malformed("fatigue");
   if (r.agilityFireOrder !== undefined && typeof r.agilityFireOrder !== "boolean") throw malformed("agilityFireOrder");
@@ -398,6 +400,10 @@ export interface GameRecording {
   directionalCover?: boolean;
   /** Whether forces had a readiness (rules decision 86). Read as **off** when absent. */
   readiness?: boolean;
+  /** Whether the quality gap acted on rifle grenades (rules decision 87). Read as **off** when absent. */
+  qualityGapGrenades?: boolean;
+  /** Whether a side's breakpoint moved with its force type (rules decision 87). Read as **off** when absent. */
+  qualityBreakpoint?: boolean;
   /** Whether the traits acted beyond morale (rules decision 69). Read as **off** when absent. */
   traitEffects?: boolean;
   /** Whether men tired (rules decision 71). Read as **off** when absent. */
@@ -616,6 +622,8 @@ export function replayWithOutcomes(
     qualityGap: recording.qualityGap ?? false,
     directionalCover: recording.directionalCover ?? false,
     readiness: recording.readiness ?? false,
+    qualityGapGrenades: recording.qualityGapGrenades ?? false,
+    qualityBreakpoint: recording.qualityBreakpoint ?? false,
     traitEffects: recording.traitEffects ?? false,
     fatigue: recording.fatigue ?? false,
     agilityFireOrder: recording.agilityFireOrder ?? false,

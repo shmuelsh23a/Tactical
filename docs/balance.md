@@ -4124,6 +4124,119 @@ gaps of up to two steps):
 - **The author accepted the round as it stands** (2026-10-04: "looks
   good"): the curve's size, and nerve between equals.
 
+## Sixtieth round: a raid without support weapons, 2026-10-05
+
+The designed scenario for force quality (`yokneamRaid`, spec
+`tools/scenarios/yokneam-raid.json`): an elite, very experienced BLUE
+platoon (three teams of 8 and a command group) against an irregular,
+experienced militia in the houses at the town's edge, no mortars, no
+vehicles. `npm run scenario-sim -- --n 100 --scenario yokneamRaid`, the
+plain scripted attack, 100 battles a row from seed 1000; the "regular" rows
+put both sides in the regular, experienced cell.
+
+| Raid starts | Militia | Cells | Attacker wins | Out of time | Attacker down | Defender down | Out by HE |
+|---|---|---|---|---|---|---|---|
+| Low ground, 450 m below the edge | 6 × 7 | as designed | 0% | 10% | 33% | 7% | 75% |
+| Low ground | 6 × 7 | regular | 0% | 10% | 29% | 4% | 74% |
+| 250 m below the edge | 3 × 6 | as designed | 4% | 3% | 38% | 16% | 79% |
+| 250 m below the edge | 3 × 6 | regular | 0% | 3% | 33% | 10% | 84% |
+| **Inserted into houses 100–150 m east** | 6 × 7 | **as designed** | **9%** | 36% | 19% | 12% | 50% |
+| Inserted | 6 × 7 | regular | 1% | 37% | 18% | 10% | 42% |
+| Inserted | 4 × 6 | as designed | 2% | 96% | 1% | 1% | 34% |
+
+- **Across open ground into houses no infantry attack wins**, elite or
+  not, even at 24 against 18: the militia's rifle grenades bursting among
+  men in the open cause three quarters of the raid's losses, and the raid
+  breaks at its 30%. Letting the quality gap act on aimed explosives too
+  (rifle grenades, RPG, tank round; tried and withdrawn, not committed)
+  moved nothing: 0%, 0% and 3% on the first three shapes. What decides it
+  is the ground, not the firer's aim.
+- **Inserted among the houses**, as a raid of that kind is, quality shows:
+  9% against 1%, and explosives fall to half the losses. But the scripted
+  attack stalls in the town — a third of the battles run out of time, and
+  with four militia squads nearly all — because it is built to cross open
+  ground from a start line (company.ts), not to clear houses. The harness
+  cannot judge this battle; a player has to.
+- The scenario ships as the inserted raid (six militia squads), to be
+  judged in play. ⚠️ Every number in it is ours.
+- **With directional cover** (decision 85, after the sixty-first round):
+  the militia barricaded in haste, facing the low ground in the north; the
+  raid comes from the east. 9% and 9% (seeds 1000, 2000) as designed, 1%
+  and 2% both regular: unchanged. The sides are 100–150 m apart among the
+  houses and see each other at once, so nobody is caught by an enemy they
+  had not seen, and a house covers all round. The flank pays only an
+  approach the militia does not see coming — a player's, behind the houses.
+- **With readiness** (decision 86), the militia unaware (1): 9% and 9%
+  as designed, 1% and 2% regular — unchanged again. The militia sees the
+  raid at the first turn's look, before any shot, and the sight of the
+  enemy stands it to (3). An unaware force stays unaware only until it
+  sees the enemy, and readiness did not yet change how well it looks.
+  With the spotting effect (sixty-second round) it does, and the scripted
+  raid does worse: 7% and 2%, against 9% and 8% with the militia alert —
+  the militia, not seeing the raid, does not fire and stays hidden, and
+  the script does not search for it.
+## Sixty-third round: quality beyond small arms, 2026-10-06
+
+Rules decision 87: the quality gap on rifle grenades (each man's chance in
+the burst) and the breakpoint by force type (irregular −10 points, elite
++20). The standard measurement does not move — **44%, 32%, 19%**,
+identical, as no force in it has a quality.
+
+**The raid** (`yokneamRaid`, 100 battles a row): **26%** and **23%** (seeds
+1000, 2000; 10% after the NaN fix). Of 100 from seed 1000: 26 won, 24
+broke (42 before) at a median 12 men down (8 before), 48 out of time with
+no shot fired — the sight inside houses (backlog 23), untouched here. The
+raid's losses are still mostly to explosives (394 of 481 men), but fewer
+of them: the militia's grenades now burst among an elite force at the
+quality gap's factor.
+
+**The matrix's extremes**, tel 3:1, 200 battles from seed 1000 and 200 from
+2000, pooled, as the fifty-ninth round:
+
+| Attacker / defender | With mortars (round 59) | Without (round 59) |
+|---|---|---|
+| Elite, very experienced / irregular, inexperienced | **98%** (85%) | **100%** (100%) |
+| Irregular, inexperienced / elite, very experienced | **0.5%** (4%) | **0%** (0%) |
+| Elite, very experienced / the same | **15%** (24.5%) | **43%** (45%) |
+| Irregular, inexperienced / the same | **58.5%** (60%) | **27.5%** (33.5%) |
+
+- The extremes go further to the extremes, as the author's inverted bell
+  asks.
+- **Elite against elite with mortars falls to 15%**: both sides hold on
+  longer, and the defender (70%) gains more from that than the attacker
+  (50%), under the attacker's shells. ⚠️ The shifts are ours; this is
+  the row to watch if they are tuned.
+
+## The raid, diagnosed, 2026-10-06
+
+Why the scripted raid wins about one battle in ten (`yokneamRaid`, 100
+battles from seed 1000, traced turn by turn):
+
+- **A bug, fixed.** The drill steps a command group back from its squads'
+  centre toward the objective; when the squads stood on the objective
+  itself there was no direction, and the raid's command group went to NaN
+  in 39 battles of 100 — seen by the militia through every wall, which is
+  what stood it to. The drill's step now stays put there, and the engine
+  refuses a move to a point that is not one. The standard measurement is
+  untouched (44%, 32%, 19%, identical); the raid reads 10%, 48% out of time.
+- **Three ways a raid ends.** 10 won; 42 broke, at a median 8 men down —
+  the attacker's 30% breakpoint, a company's, on an elite raid; **48 ran out
+  of time without a shot fired by anyone**.
+- **The stalemate is sight inside houses.** Every force in the raid stands
+  6–7.5 m inside its house, and a force sees out through its own walls only
+  within `OWN_OBJECT_SIGHT_M` (6 m) of them — so it can neither see out nor
+  be seen. The raid walks to the militia's centre, a house of its own, and
+  sits 25 m from three squads that cannot see it either. yokneamUrban's
+  defenders in houses stand as deep.
+- **Tried, not kept:** a force inside a house sees out of it, and is seen
+  in it, through its own walls at any depth. The stalemate goes (every
+  battle fights, from turn 2), yokneamUrban does not move (18%), and the
+  raid breaks 89 times in 100 (wins 7%; 19% at a 50% breakpoint, 31% at
+  70%). Of the men down, the raid's are 85% to explosives — the militia's
+  rifle grenades among men crossing between houses — which the quality gap
+  (decision 84, small arms and the assault) does not touch; the militia's
+  are 72% to small arms.
+
 ## Sixty-first round: directional cover, 2026-10-06
 
 Rules decision 85. The specs' prepared defenders face the attack's start

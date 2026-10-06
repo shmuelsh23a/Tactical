@@ -151,7 +151,7 @@ import { firingOrder, rushFactor, tracePace, updateFatigue } from "./traits.js";
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
 import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
-import { LEADER_REACH_M, NERVE_BY_COVER, PREPARED, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
+import { LEADER_REACH_M, NERVE_BY_COVER, PREPARED, QUALITY_BREAK_SHIFT, QUALITY_GAP_EXPLOSIVES, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
 
 /** A command group still in command: not down, routing or surrendered (rules decision 55). */
@@ -523,6 +523,18 @@ export interface GameOptions {
    */
   readiness?: boolean;
   /**
+   * The quality gap acts on rifle grenades as on small arms (rules decision
+   * 87), with `qualityGap`. On by default; a recording made before it reads
+   * it as off.
+   */
+  qualityGapGrenades?: boolean;
+  /**
+   * A side gives up later or sooner by its force type (rules decision 87):
+   * {@link QUALITY_BREAK_SHIFT} on the posture's breakpoint, on the research
+   * figures. On by default; a recording made before it reads it as off.
+   */
+  qualityBreakpoint?: boolean;
+  /**
    * What the traits do beyond morale (rules decision 69): agility and
    * strength set each man's pace and the force moves at its slowest man's;
    * agility makes a running force harder to hit and gets men down quicker
@@ -718,6 +730,8 @@ export class Game {
   readonly qualityGap: boolean;
   readonly directionalCover: boolean;
   readonly readiness: boolean;
+  readonly qualityGapGrenades: boolean;
+  readonly qualityBreakpoint: boolean;
   readonly traitEffects: boolean;
   readonly fatigue: boolean;
   readonly agilityFireOrder: boolean;
@@ -1032,6 +1046,8 @@ export class Game {
     this.qualityGap = opts.qualityGap ?? true;
     this.directionalCover = opts.directionalCover ?? true;
     this.readiness = opts.readiness ?? true;
+    this.qualityGapGrenades = opts.qualityGapGrenades ?? true;
+    this.qualityBreakpoint = opts.qualityBreakpoint ?? true;
     this.traitEffects = opts.traitEffects ?? true;
     this.fatigue = opts.fatigue ?? true;
     this.agilityFireOrder = opts.agilityFireOrder ?? true;
@@ -1177,6 +1193,8 @@ export class Game {
       ...(this.qualityGap ? { qualityGap: true } : {}),
       ...(this.directionalCover ? { directionalCover: true } : {}),
       ...(this.readiness ? { readiness: true } : {}),
+      ...(this.qualityGapGrenades ? { qualityGapGrenades: true } : {}),
+      ...(this.qualityBreakpoint ? { qualityBreakpoint: true } : {}),
       ...(this.traitEffects ? { traitEffects: true } : {}),
       ...(this.fatigue ? { fatigue: true } : {}),
       ...(this.agilityFireOrder ? { agilityFireOrder: true } : {}),
@@ -1975,6 +1993,7 @@ export class Game {
    */
   moveUnit(unitId: string, to: Point, mode: MovementMode = "normal"): MoveResult {
     this.requirePhase("movement");
+    if (!Number.isFinite(to?.x) || !Number.isFinite(to?.y)) throw new Error(`cannot move to ${JSON.stringify(to)}`);
     const unit = this.getUnit(unitId);
     if (unit.neutralized && !unit.canOnlyRetreat) {
       throw new Error(`${unitId} is neutralised and cannot act`);
@@ -2854,6 +2873,10 @@ export class Game {
       armour: this.armour,
       checked: this.checked,
       ...(window ? { critical: window } : {}),
+      // The quality gap on each man the grenade bursts among (decision 87), as on a rifle's hit.
+      ...(this.qualityGapGrenades && this.qualityGap && QUALITY_GAP_EXPLOSIVES.has(weaponKey)
+        ? { blastFactor: (u: Unit) => (u.side === attacker.side ? 1 : this.qualityAim(attacker, u)) }
+        : {}),
     });
     if (result.fired) {
       this.tire(attacker, alreadyFired);
@@ -3744,8 +3767,22 @@ export class Game {
     // or neutralised force counts only its men down or broken (decisions 45
     // and 48); two thirds, and such a force counted whole, on the document's.
     if (this.lethality !== "research") return sideBroken(this.units, side);
-    const share = this.attackers.includes(side) ? this.attackerBreakpoint : SIDE_BREAK_BY_POSTURE.defending;
+    const posture = this.attackers.includes(side) ? this.attackerBreakpoint : SIDE_BREAK_BY_POSTURE.defending;
+    const share = this.qualityBreakpoint ? Math.min(0.95, Math.max(0.05, posture + this.breakShift(side))) : posture;
     return sideBroken(this.units, side, share, false);
+  }
+
+  /** A side's {@link QUALITY_BREAK_SHIFT}: its fighting men's mean, a force without a quality counted regular (rules decision 87). */
+  private breakShift(side: Side): number {
+    let men = 0;
+    let sum = 0;
+    for (const u of this.units) {
+      if (u.side !== side || u.kind === "command" || u.vehicle) continue;
+      const n = u.soldiers?.length ?? 0;
+      men += n;
+      sum += n * QUALITY_BREAK_SHIFT[u.quality?.type ?? "regular"];
+    }
+    return men ? sum / men : 0;
   }
 
   /**

@@ -98,6 +98,28 @@ export const QUALITY_STEP: { type: Record<ForceType, number>; experience: Record
 };
 export const QUALITY_GAP = { sigma: 2, extreme: 3, widest: 4 } as const;
 
+/**
+ * The direct-fire explosives the quality gap acts on as it does on small arms
+ * (rules decision 87; the author, 2026-10-06: "rifle grenades should act
+ * similar to grenades and small arms"): a factor on each man's chance of
+ * being hurt by the burst, as on a rifleman's chance to hit — a rifle grenade
+ * within reach always lands (the document's 100%), so its skill is in where. ⚠️ Ours: the RPG and the tank round are left
+ * out, as weapons the author did not name.
+ */
+export const QUALITY_GAP_EXPLOSIVES: ReadonlySet<string> = new Set(["rifleGrenade"]);
+
+/**
+ * Where a side gives up, by its force type (rules decision 87; the author,
+ * 2026-10-06: by quality type): added to the posture's share
+ * ({@link SIDE_BREAK_BY_POSTURE}, or the game's `attackerBreakpoint`) — an
+ * attacker at 20%, 30% and 50%, a defender at 40%, 50% and 70%. A side of
+ * several types takes the mean of its men on foot (a vehicle's crew, which
+ * the breakpoint counts, does not move it). ⚠️ The shifts are ours; the sources
+ * point the same way (an elite force fighting on far past a line unit's
+ * breakpoint, irregulars dispersing early) but give no number.
+ */
+export const QUALITY_BREAK_SHIFT: Record<ForceType, number> = { irregular: -0.1, regular: 0, elite: 0.2 };
+
 /** The thresholds the author set, on effective morale. */
 export const THRESHOLDS = {
   /** At or below: wavering — tested every few turns. */

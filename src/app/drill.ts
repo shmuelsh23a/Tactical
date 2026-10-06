@@ -321,6 +321,9 @@ const inPlay = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered;
 function toward(from: Point, to: Point, d: number): Point {
   const r = distance(from, to);
   if (r <= d) return { ...to };
+  // On the point itself there is no way toward it or away from it: stay
+  // (a negative `d` steps back, and from the point there is no "back").
+  if (r === 0) return { ...from };
   return { x: from.x + ((to.x - from.x) / r) * d, y: from.y + ((to.y - from.y) / r) * d };
 }
 

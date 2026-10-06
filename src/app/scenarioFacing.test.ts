@@ -10,8 +10,16 @@ import { angleBetween, bearingDegrees } from "../engine/index.js";
  * number, so this is what notices when a start line or a position moves and
  * the facing does not.
  */
+/**
+ * Battles whose defence faces the attack it expects, not the one that comes:
+ * the scenario's point is the surprise, so the facing is deliberate there.
+ */
+const FACES_AWAY: Record<string, string> = {
+  yokneamRaid: "the militia faces the low ground in the north; the raid is inserted from the east",
+};
+
 describe("prepared defenders face the attack's start line", () => {
-  for (const listing of SCENARIOS) {
+  for (const listing of SCENARIOS.filter((s) => !(s.id in FACES_AWAY))) {
     it(listing.id, () => {
       const g = listing.build().game;
       const attackers = new Set(g.attackers);
