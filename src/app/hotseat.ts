@@ -227,7 +227,8 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     !unit.observationPost &&
     unit.readiness === undefined &&
     unit.surprisedUntilTurn === undefined &&
-    unit.front === undefined
+    unit.front === undefined &&
+    !unit.observationSector
   ) {
     return unit;
   }
@@ -243,6 +244,9 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     readiness: _r,
     surprisedUntilTurn: _su,
     front: _f,
+    // The arc it watches is its own plan too (decision 14), and since
+    // decision 85 the arc it can be caught from outside.
+    observationSector: _os,
     routing,
     surrendered,
     ...rest

@@ -2523,6 +2523,8 @@ export class Game {
         // The mover saw the shot from where it was caught, not from the end of its bound.
         this.observe(actor.side, coverer.id, "fire", actor, at);
         this.intelRecordAt(coverer.side, actor, at, coverer);
+        // It saw the enemy it fired on (decision 86), as a force firing on orders does.
+        this.raiseReadiness(coverer, 3);
         taken.push({
           coveringId: coverer.id,
           targetId: actor.id,
@@ -2740,6 +2742,8 @@ export class Game {
     // still happens — interrupted, never cancelled — but it happens with
     // whatever the covering fire has just left it, since a force that has lost
     // men has fewer shooters.
+    // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
+    this.raiseReadiness(attacker, 3);
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
@@ -2806,6 +2810,8 @@ export class Game {
         coveringFire: [],
       };
     }
+    // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
+    this.raiseReadiness(attacker, 3);
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
@@ -2954,6 +2960,8 @@ export class Game {
       };
     }
     // Interrupted before it goes in, like any other action (see `fire`).
+    // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
+    this.raiseReadiness(attacker, 3);
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const defender = this.getUnit(defenderId);
     const defenderWasNeutralized = defender.neutralized;

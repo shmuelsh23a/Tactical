@@ -2680,23 +2680,31 @@ on the stated reasoning, still awaiting the author's word.
     at level 2 by default. Length of recovery from surprise should be
     proportional to experience, but not linear"). `GameOptions.readiness`,
     on for a new game, off for a recording made before it; it works through
-    decision 85's being caught unready.
+    decision 85's being caught unready, so — like it — on small arms and
+    covering fire only (⚠️ an RPG, a tank round or an assault catches no
+    one unready).
     - **Three levels** (`Unit.readiness`, `READINESS`): **1** unaware — caught
       unready by fire from any enemy it had not seen, from any side; **2**
       alert — only from outside the arc it watches (decision 85); **3**
       stood to — not caught. Set in a scenario per side
       (`"readiness": {"RED": 1}`) or per force; ⚠️ a defender not given one
-      is alert too, so every battle before this plays as it did.
+      is alert too. Not quite as before, though: a default (regular) force
+      caught unready is now shaken two turns, not one, and a force is caught
+      at most once before it stands to — the standard measurement does not
+      move (below).
     - **Rises, never falls** (⚠️ ours, all three): a level for an indication
-      of the enemy — a charge it finds, shells landing within 300 m; to 3 at
-      the sight of an enemy force, and the moment it is fired on. Tunnel
+      of the enemy — a charge it finds, shells landing within 300 m (in
+      practice beyond a shell's suppression reach, since a force inside it
+      has been fired on); to 3 at the sight of an enemy force, when it aims
+      at one or gives covering fire, and the moment it is fired on. Tunnel
       entrances wait for underground warfare (backlog 5).
     - **Recovery by experience** (`SURPRISE_RECOVERY_TURNS`): a force caught
       unready fires at ×0.4 for 4 turns green, 2 regular, 1 veteran, and an
       elite one is not shaken at all — halving with each step (⚠️ ours).
     - **Its own, not the enemy's**: the card shows a force's readiness to its
-      own side; `outsideView` strips readiness, surprise and the position's
-      front from what the other side sees.
+      own side, in a game that plays the rule; `outsideView` strips
+      readiness, surprise, the position's front and the watched arc from
+      what the other side sees.
     - **Measured** (docs/balance.md, sixty-second round): the standard
       measurement does not move (41%, 34%, 18%; flank plans 37%, 21%) —
       every force in those battles starts alert and stands to at contact.
