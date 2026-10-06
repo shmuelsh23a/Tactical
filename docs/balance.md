@@ -4166,6 +4166,11 @@ put both sides in the regular, experienced cell.
   houses and see each other at once, so nobody is caught by an enemy they
   had not seen, and a house covers all round. The flank pays only an
   approach the militia does not see coming — a player's, behind the houses.
+- **With readiness** (decision 86), the militia unaware (1): 9% and 9%
+  as designed, 1% and 2% regular — unchanged again. The militia sees the
+  raid at the first turn's look, before any shot, and the sight of the
+  enemy stands it to (3). An unaware force stays unaware only until it
+  sees the enemy, and readiness does not yet change how well it looks.
 ## Sixty-first round: directional cover, 2026-10-06
 
 Rules decision 85. The specs' prepared defenders face the attack's start
@@ -4195,6 +4200,17 @@ A + flank 2,128 within ±60°, 197 from the flank, 3 from the rear; D flank
 face of the position, as its drill tells it to (company.ts). The rule
 changes nothing a frontal attack does and waits for an attack that gets
 round — a player's, or the doctrine engine's.
+
+## Sixty-second round: readiness, 2026-10-06
+
+Rules decision 86. Every force in the standard battles starts alert (2), as
+before the rule, and stands to (3) at its first sight of the enemy or the
+first fire on it, so the rule can only act through how long a surprise
+lasts. Standard measurement, 200 battles from seed 1000: telAzekaAssault
+**41%**, telAzekaAssault2 **34%**, yokneamUrban **18%** (round 61: 41%,
+34%, 18%). Flank plans, `jev-sim --rule`, 100 from seed 1000: A + flank
+**37%** (36%), D flank **21%** (20%). It is a rule for scenarios that set
+a force unaware.
 
 ## How the engine scales, 2026-09-23
 

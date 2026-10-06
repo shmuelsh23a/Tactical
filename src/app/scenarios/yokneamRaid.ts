@@ -72,38 +72,45 @@ export function buildYokneamRaidScenario(seed = 2031): Scenario {
   // In a house deep in the town.
   const redcoy = makeCommandGroup("RED-COY", "RED", "company", { x: 636, y: 565 }, 3, "מפקד המיליציה");
   Object.assign(redcoy, forceQuality({ type: "irregular", experience: "experienced" }));
+  redcoy.readiness = 1;
   game.addUnit(redcoy);
   // The edge houses that see the low ground.
   const reda1 = makeInfantry("RED-A-1", "RED", "squad", { x: 582, y: 474 }, 7, "חוליה א'/1");
   Object.assign(reda1, forceQuality({ type: "irregular", experience: "experienced" }));
   reda1.baseCover = "partial";
   reda1.front = 255;
+  reda1.readiness = 1;
   game.addUnit(reda1);
   const reda2 = makeInfantry("RED-A-2", "RED", "squad", { x: 529, y: 510 }, 7, "חוליה א'/2");
   Object.assign(reda2, forceQuality({ type: "irregular", experience: "experienced" }));
   reda2.baseCover = "partial";
   reda2.front = 263;
+  reda2.readiness = 1;
   game.addUnit(reda2);
   // Behind the edge: retakes a lost house.
   const reda3 = makeInfantry("RED-A-3", "RED", "squad", { x: 569, y: 525 }, 7, "חוליה א'/3");
   Object.assign(reda3, forceQuality({ type: "irregular", experience: "experienced" }));
   reda3.baseCover = "partial";
   reda3.front = 259;
+  reda3.readiness = 1;
   game.addUnit(reda3);
   const redb1 = makeInfantry("RED-B-1", "RED", "squad", { x: 644, y: 484 }, 7, "חוליה ב'/1");
   Object.assign(redb1, forceQuality({ type: "irregular", experience: "experienced" }));
   redb1.baseCover = "partial";
   redb1.front = 248;
+  redb1.readiness = 1;
   game.addUnit(redb1);
   const redb2 = makeInfantry("RED-B-2", "RED", "squad", { x: 602, y: 479 }, 7, "חוליה ב'/2");
   Object.assign(redb2, forceQuality({ type: "irregular", experience: "experienced" }));
   redb2.baseCover = "partial";
   redb2.front = 253;
+  redb2.readiness = 1;
   game.addUnit(redb2);
   const redb3 = makeInfantry("RED-B-3", "RED", "squad", { x: 638, y: 525 }, 7, "חוליה ב'/3");
   Object.assign(redb3, forceQuality({ type: "irregular", experience: "experienced" }));
   redb3.baseCover = "partial";
   redb3.front = 250;
+  redb3.readiness = 1;
   game.addUnit(redb3);
 
   return { game, mapWidth: 900, mapHeight: 800, title: "יקנעם — פשיטה", reserves: ["RED-A-3", "RED-B-3"] };
