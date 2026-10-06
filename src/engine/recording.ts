@@ -209,6 +209,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.aresFigures !== undefined && typeof r.aresFigures !== "boolean") throw malformed("aresFigures");
   if (r.directHeBombards !== undefined && typeof r.directHeBombards !== "boolean") throw malformed("directHeBombards");
   if (r.qualityGap !== undefined && typeof r.qualityGap !== "boolean") throw malformed("qualityGap");
+  if (r.directionalCover !== undefined && typeof r.directionalCover !== "boolean") throw malformed("directionalCover");
   if (r.traitEffects !== undefined && typeof r.traitEffects !== "boolean") throw malformed("traitEffects");
   if (r.fatigue !== undefined && typeof r.fatigue !== "boolean") throw malformed("fatigue");
   if (r.agilityFireOrder !== undefined && typeof r.agilityFireOrder !== "boolean") throw malformed("agilityFireOrder");
@@ -392,6 +393,8 @@ export interface GameRecording {
   directHeBombards?: boolean;
   /** Whether the quality gap acted on small arms and the assault (rules decision 84). Read as **off** when absent. */
   qualityGap?: boolean;
+  /** Whether cover was directional and a force could be caught unready (rules decision 85). Read as **off** when absent. */
+  directionalCover?: boolean;
   /** Whether the traits acted beyond morale (rules decision 69). Read as **off** when absent. */
   traitEffects?: boolean;
   /** Whether men tired (rules decision 71). Read as **off** when absent. */
@@ -608,6 +611,7 @@ export function replayWithOutcomes(
     aresFigures: recording.aresFigures ?? false,
     directHeBombards: recording.directHeBombards ?? false,
     qualityGap: recording.qualityGap ?? false,
+    directionalCover: recording.directionalCover ?? false,
     traitEffects: recording.traitEffects ?? false,
     fatigue: recording.fatigue ?? false,
     agilityFireOrder: recording.agilityFireOrder ?? false,

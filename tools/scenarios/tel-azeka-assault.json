@@ -238,7 +238,7 @@
       ]
     },
     {
-      "id": "RED-A-1",
+      "id": "RED-A-1", "facing": 81,
       "name": "מחלקה א'/1",
       "side": "RED",
       "kind": "infantry",
@@ -253,7 +253,7 @@
       "reserve": true
     },
     {
-      "id": "RED-A-2",
+      "id": "RED-A-2", "facing": 91,
       "name": "מחלקה א'/2",
       "side": "RED",
       "kind": "infantry",
@@ -266,7 +266,7 @@
       "baseCover": "full"
     },
     {
-      "id": "RED-A-3",
+      "id": "RED-A-3", "facing": 67,
       "name": "מחלקה א'/3",
       "side": "RED",
       "kind": "infantry",

@@ -2632,6 +2632,47 @@ on the stated reasoning, still awaiting the author's word.
       Decision 83's morale mapping is absolute, so a steady defender
       outlasts the shelling.
 
+85. ✅ **Directional cover** (2026-10-06, the author: "I want all of the
+    above", on the proposal that a position has a front, cover counts by
+    the side fire comes from, and fire from outside the arc a force watches
+    catches it unready). `GameOptions.directionalCover`, on for a new game,
+    off for a recording made before it. Small arms only (`fire` and
+    covering fire, which also catches and is caught unready); ⚠️ explosives
+    and the assault keep today's cover. Direction only ever takes cover
+    away: each source is held to the cover the force has, so with no front
+    and no wall in play nothing changes (`directional.test.ts`).
+    - **A position has a front** (`Unit.front`): a scenario's `facing` for
+      a prepared position, else the arc it watches, else — when it digs —
+      the nearest enemy its side knows of; moving gives it up, and a later
+      change of sector does not turn it. A spec's `facing` needs a
+      `baseCover`. The specs' prepared defenders face the attack's start
+      line (the brief's tasking): the bearing to it, worked out once and
+      checked by `scenarioFacing.test.ts`.
+    - **Cover by direction** (`DIRECTIONAL_COVER`, `combat/directional.ts`):
+      a dug or prepared position's cover counts in full within ±60° of its
+      front, 60% of it from the flank, 30% from beyond ±120° — FM 3-21.8's
+      parapets, front 2–3 sandbags high and 7 ft long, flanks half the
+      length, rear one sandbag; ⚠️ the shares are ours, no source gives
+      protection by angle. A house covers on every side (FM 3-06.11: 70
+      rifle rounds through 9 in of brick); a wall or a tree only from its
+      own side, by the bearing to its nearest point (⚠️ ours). The best of
+      them stands.
+    - **Caught unready** (`UNREADY`): fire from an enemy the target's side
+      had not seen, from outside the arc it watches (its sector, else
+      ±60° of its front), hits at ×1.5 (⚠️ ours, a share of Storr's
+      casualty ratios by direction: frontal about 2:1 against the attacker,
+      flank 2:1 and rear 4:1 for it), and the force caught fires at ×0.4
+      until the turn is out (Rowland: surprise in "timing, place or
+      direction" cut the defence's effectiveness by 60%). A force watching
+      no arc is not caught this way; the nerve lost to being flanked
+      (decision 19) stands beside it.
+    - **Measured** (docs/balance.md, sixty-first round): the standard
+      measurement does not move (41%, 34%, 18%), and nor do the scripted
+      flank plans (36%, 20%) — because about nine in ten of their shots
+      still arrive within ±60° of the defenders' front: the scripted
+      company swings wide but attacks into the face of the position. The
+      rule is for a player who gets round a flank.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

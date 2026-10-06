@@ -79,6 +79,12 @@ export function endTurnUnitUpkeep(
   groundCover: (at: Point) => CoverState = () => "none",
   preparedCover: (u: Unit) => CoverState = () => "none",
   lethality: Lethality = "document",
+  /**
+   * Which way a position faces once it has one (rules decision 85); absent,
+   * no position is given a front. Asked only of a force with a position and
+   * no front yet.
+   */
+  frontFor?: (u: Unit) => number | undefined,
 ): void {
   for (const u of units) {
     u.movementBlocked = u.hitThisTurn;
@@ -98,6 +104,8 @@ export function endTurnUnitUpkeep(
       u.camouflageTurns = 0;
       u.camouflaging = false;
       u.baseCover = "none";
+      // …and the way it faced.
+      delete u.front;
     }
     // …unless it has come to ground its side prepared: an alternate position
     // (rules decision 38) is as ready as the one it left.
@@ -110,6 +118,10 @@ export function endTurnUnitUpkeep(
       betterCover(u.baseCover, groundCover(u.position)),
       digInCover(u.stationaryTurns, lethality),
     );
+    if (frontFor && u.front === undefined && betterCover(u.baseCover, digInCover(u.stationaryTurns, lethality)) !== "none") {
+      const front = frontFor(u);
+      if (front !== undefined) u.front = front;
+    }
 
     // Men who got up and moved are on their feet for the next shell (rules
     // decision 30); men who stayed down are still down.

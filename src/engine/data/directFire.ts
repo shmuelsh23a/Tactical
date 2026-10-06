@@ -60,3 +60,33 @@ export type CoverState = keyof typeof COVER_MODIFIERS;
  * cover — a wall, a tree, a prepared position — stays at the table's −10%.
  */
 export const FIRING_FROM_COVER_MODIFIER = -0.3;
+
+/**
+ * Directional cover (rules decision 85; the author, 2026-10-06, "I want all
+ * of the above"). A dug or prepared position is built toward its front:
+ * FM 3-21.8 (2007) para 8-150 gives the front parapet 2–3 sandbags high and
+ * about 7 ft long, the flanks the same height and half the length, the rear
+ * one sandbag, filled "in order of front, flanks, and rear"
+ * (docs/validation.md, *Directional cover*). Its cover modifier counts in
+ * full against fire from within `frontHalfArc` of its front, at
+ * `flankShare` from the flank and `rearShare` from beyond `rearBeyond`.
+ * ⚠️ The two shares are ours, scaled from those parapets; no source gives
+ * protection by angle. A house protects on every side (FM 3-06.11: 70 rifle
+ * rounds to go through 9 in of double brick). A wall or a tree covers only
+ * against fire from its side of the force: within `frontHalfArc` of the
+ * bearing to it (⚠️ ours).
+ */
+export const DIRECTIONAL_COVER = { frontHalfArc: 60, rearBeyond: 120, flankShare: 0.6, rearShare: 0.3 } as const;
+
+/**
+ * Caught unready (rules decision 85): fire from an enemy the target's side
+ * had not seen, from outside the arc it watched (its observation sector, or
+ * its position's front). Rowland (*The Stress of Battle*): surprise — "the
+ * unexpected in timing, place or direction" — cut the defence's
+ * effectiveness by 60%, so the surprised force fires at `ownFire` until the
+ * end of the turn. The shot itself hits at `hitFactor` (⚠️ ours: a share of
+ * Storr's casualty ratios by direction of attack, frontal about 2:1 against
+ * the attacker, flank 2:1 and rear 4:1 for it, which bundle cover, surprise
+ * and nerve).
+ */
+export const UNREADY = { hitFactor: 1.5, ownFire: 0.4 } as const;
