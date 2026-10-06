@@ -4175,6 +4175,36 @@ put both sides in the regular, experienced cell.
   raid does worse: 7% and 2%, against 9% and 8% with the militia alert —
   the militia, not seeing the raid, does not fire and stays hidden, and
   the script does not search for it.
+## The raid, diagnosed, 2026-10-06
+
+Why the scripted raid wins about one battle in ten (`yokneamRaid`, 100
+battles from seed 1000, traced turn by turn):
+
+- **A bug, fixed.** The drill steps a command group back from its squads'
+  centre toward the objective; when the squads stood on the objective
+  itself there was no direction, and the raid's command group went to NaN
+  in 39 battles of 100 — seen by the militia through every wall, which is
+  what stood it to. The drill's step now stays put there, and the engine
+  refuses a move to a point that is not one. The standard measurement is
+  untouched (44%, 32%, 19%, identical); the raid reads 10%, 48% out of time.
+- **Three ways a raid ends.** 10 won; 42 broke, at a median 8 men down —
+  the attacker's 30% breakpoint, a company's, on an elite raid; **48 ran out
+  of time without a shot fired by anyone**.
+- **The stalemate is sight inside houses.** Every force in the raid stands
+  6–7.5 m inside its house, and a force sees out through its own walls only
+  within `OWN_OBJECT_SIGHT_M` (6 m) of them — so it can neither see out nor
+  be seen. The raid walks to the militia's centre, a house of its own, and
+  sits 25 m from three squads that cannot see it either. yokneamUrban's
+  defenders in houses stand as deep.
+- **Tried, not kept:** a force inside a house sees out of it, and is seen
+  in it, through its own walls at any depth. The stalemate goes (every
+  battle fights, from turn 2), yokneamUrban does not move (18%), and the
+  raid breaks 89 times in 100 (wins 7%; 19% at a 50% breakpoint, 31% at
+  70%). Of the men down, the raid's are 85% to explosives — the militia's
+  rifle grenades among men crossing between houses — which the quality gap
+  (decision 84, small arms and the assault) does not touch; the militia's
+  are 72% to small arms.
+
 ## Sixty-first round: directional cover, 2026-10-06
 
 Rules decision 85. The specs' prepared defenders face the attack's start

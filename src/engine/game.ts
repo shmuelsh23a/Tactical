@@ -1975,6 +1975,7 @@ export class Game {
    */
   moveUnit(unitId: string, to: Point, mode: MovementMode = "normal"): MoveResult {
     this.requirePhase("movement");
+    if (!Number.isFinite(to?.x) || !Number.isFinite(to?.y)) throw new Error(`cannot move to ${JSON.stringify(to)}`);
     const unit = this.getUnit(unitId);
     if (unit.neutralized && !unit.canOnlyRetreat) {
       throw new Error(`${unitId} is neutralised and cannot act`);

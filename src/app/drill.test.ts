@@ -28,6 +28,18 @@ function field(trackIntel = true) {
 const attack: DrillTask = { side: "BLUE", attacking: true, objective: { x: 0, y: 600 } };
 
 describe("the squad drill", () => {
+  it("keeps its command group on the map when its squads stand on the objective itself", () => {
+    // The squads' centre on the objective: there is no "behind" to step back
+    // to, and the command group once went to NaN (the raid, 39 battles in 100).
+    const { g } = field();
+    g.advanceToPhase("movement");
+    drillMovement(g, { side: "BLUE", attacking: true, objective: { x: 0, y: 0 } }, PLAIN_SCRIPT, new DrillState());
+    const hq = g.getUnit("B-HQ");
+    expect(Number.isFinite(hq.position.x) && Number.isFinite(hq.position.y)).toBe(true);
+    // …and the engine refuses such a move outright.
+    expect(() => g.moveUnit("B", { x: NaN, y: 0 })).toThrow(/cannot move to/);
+  });
+
   it("never shoots at an enemy its side has not found", () => {
     const { g, blue } = field();
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 9));
