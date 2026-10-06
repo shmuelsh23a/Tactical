@@ -212,6 +212,19 @@ export interface Unit {
    */
   observationSector?: ObservationSector;
   /**
+   * The bearing its position faces (rules decision 85): set when it digs in
+   * or from a prepared position's spec, toward the arc it watches or the
+   * enemy it knows of, and given up when it moves. A dug or prepared
+   * position's cover counts in full only toward it. Absent: all-round.
+   */
+  front?: number;
+  /**
+   * Caught unready (rules decision 85): fired on from outside the arc it
+   * watched by an enemy its side had not seen. Its own fire is cut until the
+   * end of this turn.
+   */
+  surprisedUntilTurn?: number;
+  /**
    * An observation post (תצפית), put out in mission planning (rules decision
    * 38): while it stays put it sees a force on the move out to
    * `OBSERVATION_POST_RANGE_M`. Moving or firing ends it — it has given itself

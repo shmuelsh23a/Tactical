@@ -4124,6 +4124,29 @@ gaps of up to two steps):
 - **The author accepted the round as it stands** (2026-10-04: "looks
   good"): the curve's size, and nerve between equals.
 
+## Sixty-first round: directional cover, 2026-10-06
+
+Rules decision 85. The specs' prepared defenders face the attack's start
+line (computed from it). Standard measurement, 200 battles from seed 1000:
+
+| | Before (round 54) | Directional, no facing | **Directional, faced** |
+|---|---|---|---|
+| telAzekaAssault (3:1) | 41% | 42% | **41%** |
+| telAzekaAssault2 (2:1) | 33% | 33% | **34%** |
+| yokneamUrban | 18% | 17% | **17%** |
+
+The flanking reference plans, `jev-sim --rule`, 100 battles from seed 1000
+(round 54's figure on the same seeds in brackets): A + flank **36%** (34%),
+D flank **20%** (21%). Neither moves.
+
+**Why: the scripted flank is not a flank.** Replaying the faced runs'
+decisions, BLUE's rifle shots at RED's squads by angle off their front:
+A + flank 2,128 within ±60°, 197 from the flank, 3 from the rear; D flank
+2,266, 43 and none. The scripted company swings wide but closes on the
+face of the position, as its drill tells it to (company.ts). The rule
+changes nothing a frontal attack does and waits for an attack that gets
+round — a player's, or the doctrine engine's.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

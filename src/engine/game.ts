@@ -1,6 +1,8 @@
 import { Rng } from "./rng.js";
 import { roll } from "./dice.js";
+import { directionalCoverModifier, watchedArc } from "./combat/directional.js";
 import {
+  angleBetween,
   bearingDegrees,
   distance,
   lookupBand,
@@ -65,6 +67,7 @@ import {
 import { OBSERVATION, OBSERVATION_SECTOR, SCOUTING } from "./data/concealment.js";
 import {
   FIRING_FROM_COVER_MODIFIER,
+  UNREADY,
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
   type CoverState,
@@ -502,6 +505,14 @@ export interface GameOptions {
    */
   qualityGap?: boolean;
   /**
+   * Directional cover (rules decision 85): a dug or prepared position counts
+   * in full toward its front, a wall from its side, a house all round; and a
+   * force fired on from outside the arc it watches, by an enemy its side had
+   * not seen, is caught unready. On by default; a recording made before it
+   * reads it as off.
+   */
+  directionalCover?: boolean;
+  /**
    * What the traits do beyond morale (rules decision 69): agility and
    * strength set each man's pace and the force moves at its slowest man's;
    * agility makes a running force harder to hit and gets men down quicker
@@ -695,6 +706,7 @@ export class Game {
   readonly aresFigures: boolean;
   readonly directHeBombards: boolean;
   readonly qualityGap: boolean;
+  readonly directionalCover: boolean;
   readonly traitEffects: boolean;
   readonly fatigue: boolean;
   readonly agilityFireOrder: boolean;
@@ -1007,6 +1019,7 @@ export class Game {
     this.aresFigures = opts.aresFigures ?? true;
     this.directHeBombards = opts.directHeBombards ?? true;
     this.qualityGap = opts.qualityGap ?? true;
+    this.directionalCover = opts.directionalCover ?? true;
     this.traitEffects = opts.traitEffects ?? true;
     this.fatigue = opts.fatigue ?? true;
     this.agilityFireOrder = opts.agilityFireOrder ?? true;
@@ -1150,6 +1163,7 @@ export class Game {
       ...(this.aresFigures ? { aresFigures: true } : {}),
       ...(this.directHeBombards ? { directHeBombards: true } : {}),
       ...(this.qualityGap ? { qualityGap: true } : {}),
+      ...(this.directionalCover ? { directionalCover: true } : {}),
       ...(this.traitEffects ? { traitEffects: true } : {}),
       ...(this.fatigue ? { fatigue: true } : {}),
       ...(this.agilityFireOrder ? { agilityFireOrder: true } : {}),
@@ -1201,6 +1215,11 @@ export class Game {
       betterCover(unit.cover, unit.baseCover),
       coverFromObjects(this.terrain, unit.position),
     );
+    // A position prepared before the battle faces the arc it was set to watch,
+    // unless its spec gave it a front (decision 85).
+    if (this.directionalCover && unit.front === undefined && unit.baseCover !== "none" && unit.observationSector) {
+      unit.front = unit.observationSector.bearing;
+    }
     // Its men's traits and pools, from their own stream — see `unitSeed` for
     // why not the game's rng. Before the journal entry, like the cover: the
     // recording carries the men as they were drawn, and a replay keeps them.
@@ -2425,6 +2444,11 @@ export class Game {
           lethality: this.lethality,
           turn: this.turn,
           cover: actor.cover,
+          // The ground it is crossing, by the side the fire comes from
+          // (decision 85); the hole it left behind is no cover.
+          ...(this.directionalCover
+            ? { coverModifier: directionalCoverModifier(actor, coverer.position, this.terrain, this.lethality, { position: false }) }
+            : {}),
           // A force caught on the move is the case the movement table is
           // written for: +30% against a walker, -20% against a runner. Without
           // it, running under covering fire is never worse than walking.
@@ -2669,16 +2693,22 @@ export class Game {
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
+    // Read before the shot gives the firer away (decision 85).
+    const unready = this.catchesUnready(attacker, target);
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       lethality: this.lethality,
       // A target that moved is easier or harder to hit (decision 22), and one
       // that fired from full cover keeps −30% (decision 23).
       ...this.movementTerms(target, target.movedThisTurn > 0),
-      ...(opts.cover == null ? this.coverModifierFor(target) : {}),
+      ...(opts.cover == null
+        ? this.directionalCover
+          ? { coverModifier: directionalCoverModifier(target, attacker.position, this.terrain, this.lethality) }
+          : this.coverModifierFor(target)
+        : {}),
       ...opts,
       // Heads down beyond close range (decision 65), and fire on the move: the engine's, not the caller's.
-      ...this.aimOf(attacker, target),
+      ...this.aimOf(attacker, target, unready),
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
@@ -2686,6 +2716,7 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) {
+      if (unready) target.surprisedUntilTurn = this.turn;
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position, undefined, attacker.id);
@@ -3386,6 +3417,8 @@ export class Game {
       (u) => this.preparedCoverAt(u),
       // Digging takes minutes on the research figures (rules decision 50).
       this.lethality,
+      // A position faces the way it was dug (decision 85).
+      this.directionalCover ? (u) => this.frontFor(u) : undefined,
     );
     return { chargeWork, morale };
   }
@@ -3528,9 +3561,47 @@ export class Game {
    * Absent when the shot is taken as any other.
    */
   /** Heads down and fire on the move together, as one factor on the shooter's aim. */
-  private aimOf(unit: Unit, target: Unit): { aimFactor?: number } {
-    const aim = (this.headsDownAim(unit, target).aimFactor ?? 1) * (unit.movedThisTurn > 0 ? this.fireOnTheMove : 1) * this.qualityAim(unit, target);
+  private aimOf(unit: Unit, target: Unit, unready = false): { aimFactor?: number } {
+    const aim =
+      (this.headsDownAim(unit, target).aimFactor ?? 1) *
+      (unit.movedThisTurn > 0 ? this.fireOnTheMove : 1) *
+      this.qualityAim(unit, target) *
+      (unready ? UNREADY.hitFactor : 1) *
+      // A force caught unready fires badly until the turn is out (decision 85).
+      ((unit.surprisedUntilTurn ?? -1) >= this.turn ? UNREADY.ownFire : 1);
     return aim === 1 ? {} : { aimFactor: aim };
+  }
+
+  /**
+   * The way a position faces when it is dug (rules decision 85): the arc the
+   * force watches, else the nearest enemy its side knows of. Neither: no
+   * front yet, and it is all-round until it learns which way the threat is.
+   */
+  private frontFor(u: Unit): number | undefined {
+    if (u.observationSector) return u.observationSector.bearing;
+    let best: { d: number; at: Point } | undefined;
+    for (const c of this.contactsFor(u.side)) {
+      if (c.lastKnownNeutralized) continue;
+      // Where the side believes it is: the report, never the force itself.
+      const d = distance(u.position, c.lastKnownPosition);
+      if (!best || d < best.d) best = { d, at: c.lastKnownPosition };
+    }
+    return best ? bearingDegrees(u.position, best.at) : undefined;
+  }
+
+  /**
+   * Whether `shooter`'s fire catches `target` unready (rules decision 85):
+   * from outside the arc it watches, by an enemy its side had not seen this
+   * turn or last. A force watching no arc is not caught this way, and a game
+   * that keeps no contacts cannot say who was seen.
+   */
+  private catchesUnready(shooter: Unit, target: Unit): boolean {
+    if (!this.directionalCover || !this.trackIntel) return false;
+    const arc = watchedArc(target);
+    if (!arc) return false;
+    const seen = this.contactFor(target.side, shooter.id);
+    if (seen && seen.lastSeenTurn >= this.turn - 1) return false;
+    return angleBetween(bearingDegrees(target.position, shooter.position), arc.bearing) > arc.width / 2;
   }
 
   /** The quality gap's factor on `unit`'s small arms against `target` (rules decision 84); 1 without the rule. */

@@ -76,6 +76,10 @@ The spec, in full — everything not marked optional is required:
 
 A force may also carry, all optional:
 
+    "facing": 0                   degrees, 0 along +x: a vehicle's hull; for any
+                                  other force the way its position faces
+                                  (decision 85: a prepared or dug position's
+                                  cover counts in full only toward it)
     "camouflaged": true | turns   true means fully camouflaged from the first
                                   turn - a position prepared before the battle
     "baseCover": "partial"|"full" protection it holds without digging
@@ -191,8 +195,9 @@ KINDS = {"infantry", "vehicle", "command"}
 # command group would otherwise leave a 3-man HQ where 9 men were asked for,
 # which is the same silent failure the unknown-key check exists to stop.
 KIND_KEYS = {
-    "infantry": {"echelon", "soldiers", "reserve"},
-    "command": {"echelon", "personnel"},
+    # `facing` is a vehicle's hull, or the way any other force's position faces (decision 85).
+    "infantry": {"echelon", "soldiers", "reserve", "facing"},
+    "command": {"echelon", "personnel", "facing"},
     "vehicle": {"facing", "vehicleClass"},
 }
 DEFAULT_ECHELON = {"infantry": "squad", "command": "platoon", "vehicle": "squad"}
@@ -603,6 +608,9 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             dressing.append("scouting = true")
         if f.get("canLayCharges"):
             dressing.append("canLayCharges = true")
+        if "facing" in f and f["kind"] != "vehicle":
+            # The way its position faces (decision 85); a vehicle's is its hull's.
+            dressing.append("front = " + num(f["facing"]))
         if "quality" in f:
             # The cell first: a motivation given beside it overrides the cell's.
             statements.append(

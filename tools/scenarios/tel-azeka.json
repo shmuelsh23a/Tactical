@@ -53,7 +53,7 @@
     { "id": "BLUE-HQ", "name": "חפ\"ק מ\"מ", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [470, 980] },
 
     { "id": "RED-1", "name": "מחלקה ב'/1", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [620, 350], "note": "On the summit: it sees the whole southern ridge and none of its own eastern face." },
-    { "id": "RED-2", "name": "מחלקה ב'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [560, 560], "baseCover": "full", "note": "On the shoulder above the ridge, in a position prepared before the battle: it covers the southern approach from 750 m in." },
+    { "id": "RED-2", "facing": 106, "name": "מחלקה ב'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [560, 560], "baseCover": "full", "note": "On the shoulder above the ridge, in a position prepared before the battle: it covers the southern approach from 750 m in." },
     { "id": "RED-3", "name": "מחלקה ב'/3", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 6, "at": [700, 250], "note": "On the northern spur, the only RED force that sees the valley floor — and, if BLUE comes up the ridge, the one watching the wrong ground." },
     { "id": "RED-HQ", "name": "חפ\"ק מ\"מ", "side": "RED", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [560, 280], "note": "Behind the summit, within 300 m of all three squads: this platoon is in contact every turn, which the attacker's will not be for long." }
   ],
