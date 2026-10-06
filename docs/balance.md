@@ -4154,6 +4154,37 @@ face of the position, as its drill tells it to (company.ts). The rule
 changes nothing a frontal attack does and waits for an attack that gets
 round — a player's, or the doctrine engine's.
 
+## Sixty-second round: readiness, 2026-10-06
+
+Rules decision 86. Every force in the standard battles starts alert (2), as
+before the rule, and stands to (3) at its first sight of the enemy or the
+first fire on it, so the rule can only act through how long a surprise
+lasts. Standard measurement, 200 battles from seed 1000: telAzekaAssault
+**41%**, telAzekaAssault2 **34%**, yokneamUrban **18%** (round 61: 41%,
+34%, 18%). Flank plans, `jev-sim --rule`, 100 from seed 1000: A + flank
+**37%** (36%), D flank **21%** (20%). It is a rule for scenarios that set
+a force unaware.
+
+**With the spotting effect** (the author's go-ahead, same day): an unaware
+force spots at ×0.5, an alert one ×1, one stood to ×1.15 (⚠️ ours).
+Standard measurement: **44%**, **32%**, **19%**; flank plans A + flank
+**33%**, D flank **17%** — inside the noise of 200 and 100 battles (about
+±3.5 and ±4.5 points), the shift from the stood-to defender's sharper eye.
+The raid (`yokneamRaid`, its branch with readiness merged, 100 battles a
+row), militia unaware against the control with it alert:
+
+| Militia | Seed 1000 | Seed 2000 | Out of time | Turns (median) |
+|---|---|---|---|---|
+| Alert (2) | 9% | 8% | 36%, 34% | 15, 14 |
+| **Unaware (1)** | **7%** | **2%** | 52%, 56% | 30, 30 |
+
+The unaware militia now does what it was set to: it does not see the raid
+coming. And the scripted raid does worse for it. A militia that has not
+seen the raid does not fire, so it stays hidden among the houses (found in
+the 20 m band), and the plain scripted attack does not search for it — the
+battles run to time. The surprise is there to be used; the script does not
+use it, as it does not use a flank. A player's raid is the test.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

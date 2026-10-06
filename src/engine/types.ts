@@ -60,6 +60,12 @@ export type Motivation = "poor" | "low" | "normal" | "high" | "fanatic";
 export type Experience = "green" | "regular" | "veteran" | "elite";
 
 /**
+ * How ready a force is for the enemy (rules decision 86): 1 unaware, 2
+ * alert, 3 stood to. It decides whether the force can be caught unready.
+ */
+export type Readiness = 1 | 2 | 3;
+
+/**
  * Force quality (rules decision 83, decision 81's matrix): what kind of force it is — how it was
  * raised, trained and selected…
  */
@@ -227,6 +233,12 @@ export interface Unit {
    * end of this turn.
    */
   surprisedUntilTurn?: number;
+  /**
+   * Its readiness (rules decision 86): set by the scenario, raised by what it
+   * sees — an indication of the enemy a level, the enemy itself or its fire
+   * all the way. Absent: {@link READINESS}'s default, alert.
+   */
+  readiness?: Readiness;
   /**
    * An observation post (תצפית), put out in mission planning (rules decision
    * 38): while it stays put it sees a force on the move out to

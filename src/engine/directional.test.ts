@@ -107,7 +107,8 @@ describe("directional cover (rules decision 85)", () => {
   });
 
   it("leaves a force caught unready firing at a fraction until the turn is out", () => {
-    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, morale: false, headsDown: false, terrain: FLAT_GROUND });
+    // Decision 85 alone: with readiness (86) the surprise lasts by experience.
+    const g = new Game({ seed: 3, enforceC2: false, trackIntel: true, morale: false, headsDown: false, terrain: FLAT_GROUND, readiness: false });
     const red = makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8);
     red.front = 0;
     g.addUnit(red);

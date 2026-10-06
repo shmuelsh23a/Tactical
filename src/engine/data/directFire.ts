@@ -1,4 +1,5 @@
 import type { RangeBand } from "../geometry.js";
+import type { Experience, Readiness } from "../types.js";
 
 /**
  * Direct (ballistic) small-arms fire — ירי קליעי.
@@ -90,3 +91,36 @@ export const DIRECTIONAL_COVER = { frontHalfArc: 60, rearBeyond: 120, flankShare
  * and nerve).
  */
 export const UNREADY = { hitFactor: 1.5, ownFire: 0.4 } as const;
+
+/**
+ * Readiness (rules decision 86; the author, 2026-10-06): three levels a
+ * force, set by the scenario — an attacker alert (2) unless it says
+ * otherwise. An unaware force (1) is caught unready by fire from any enemy
+ * it had not seen, from any side; an alert one (2) only from outside the arc
+ * it watches (decision 85); a force stood to (3) is not caught. It rises a
+ * level for an indication of the enemy — a charge found, shells landing
+ * within `indicationM` — and to 3 at the sight of an enemy force or the
+ * moment it is fired on. ⚠️ Ours: the defender's default (alert, as every
+ * battle played before this rule), what counts as an indication, its
+ * reach, and that nothing lowers it.
+ */
+export const READINESS = { default: 2, indicationM: 300 } as const;
+
+/**
+ * How readiness changes what a force sees (rules decision 86; the author,
+ * 2026-10-06): the chance it picks up an enemy force, or finds a charge, is
+ * multiplied by its level's factor. An unaware force is not looking for
+ * anyone, so it sees half of what it would; one stood to is watching for
+ * nothing else. Without this an unaware force sees the enemy coming like any
+ * other and stands to before the first shot. ⚠️ The factors are ours.
+ */
+export const READINESS_SPOTTING: Record<Readiness, number> = { 1: 0.5, 2: 1, 3: 1.15 };
+
+/**
+ * How many turns a force caught unready fires at {@link UNREADY}'s `ownFire`
+ * (rules decision 86; the author: "proportional to experience, but not
+ * linear"): each step of experience halves it, and an elite force is not
+ * shaken at all — the surprise shot still hits it harder. ⚠️ The turns are
+ * ours.
+ */
+export const SURPRISE_RECOVERY_TURNS: Record<Experience, number> = { green: 4, regular: 2, veteran: 1, elite: 0 };

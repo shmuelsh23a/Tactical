@@ -224,12 +224,33 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     !unit.motivation &&
     !unit.experience &&
     !unit.quality &&
-    !unit.observationPost
+    !unit.observationPost &&
+    unit.readiness === undefined &&
+    unit.surprisedUntilTurn === undefined &&
+    unit.front === undefined &&
+    !unit.observationSector
   ) {
     return unit;
   }
   // Nor that it is an observation post: that is its side's plan (decision 38).
-  const { suppression: _s, motivation: _mo, experience: _ex, quality: _q, observationPost: _op, routing, surrendered, ...rest } = unit;
+  // Nor how ready it is, whether it was caught unready, or which way its
+  // position faces (decisions 85 and 86): all its own.
+  const {
+    suppression: _s,
+    motivation: _mo,
+    experience: _ex,
+    quality: _q,
+    observationPost: _op,
+    readiness: _r,
+    surprisedUntilTurn: _su,
+    front: _f,
+    // The arc it watches is its own plan too (decision 14), and since
+    // decision 85 the arc it can be caught from outside.
+    observationSector: _os,
+    routing,
+    surrendered,
+    ...rest
+  } = unit;
   return {
     ...rest,
     ...(seenNow && routing ? { routing } : {}),

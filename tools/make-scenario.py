@@ -91,6 +91,10 @@ A force may also carry, all optional:
                                   by the drill (decision 60); a defending
                                   squad only, with a forward squad of its
                                   platoon (read off the id: RED-A-1 is RED-A's)
+    "readiness": 2                1 unaware, 2 alert, 3 stood to (decision 86):
+                                  who can be caught unready; a side's default
+                                  can be given at the top of the spec as
+                                  "readiness": {"RED": 1}. Alert when not given.
     "motivation": "normal"        poor|low|normal|high|fanatic - the floor of its
                                   men's starting morale (decision 19)
     "experience": "regular"       green|regular|veteran|elite (decision 19)
@@ -173,7 +177,7 @@ WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing", "vehicleClass",
     "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
-    "motivation", "experience", "quality",
+    "motivation", "experience", "quality", "readiness",
 }
 MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
 EXPERIENCES = {"green", "regular", "veteran", "elite"}
@@ -182,7 +186,7 @@ COMBAT_EXPERIENCE = {"inexperienced", "experienced", "veryExperienced"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
     "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "about", "window", "forces", "charges",
-    "commandEchelon", "fireSupport", "attackers",
+    "commandEchelon", "fireSupport", "attackers", "readiness",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
 # The indirect-fire weapons a side can be allotted. Whether its echelon may
@@ -236,6 +240,11 @@ def require_int(given: dict[str, Any], key: str, where: str, low: int, high: int
         isinstance(value, int) and not isinstance(value, bool) and low <= value <= high,
         f"{where}: {key} must be a whole number between {low} and {high}",
     )
+
+
+def is_level(v: Any) -> bool:
+    """A readiness level: 1, 2 or 3, as a whole number (True and 1.0 are not)."""
+    return isinstance(v, int) and not isinstance(v, bool) and v in (1, 2, 3)
 
 
 def require_bool(given: dict[str, Any], key: str, where: str) -> None:
@@ -293,6 +302,13 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "trackIntel", "spec")
     require_bool(spec, "enforceC2", "spec")
     require_bool(spec, "morale", "spec")
+    if "readiness" in spec:
+        require(
+            isinstance(spec["readiness"], dict)
+            and set(spec["readiness"]) <= SIDES
+            and all(is_level(v) for v in spec["readiness"].values()),
+            'spec: readiness is {"RED": 1|2|3, "BLUE": 1|2|3}',
+        )
     require_bool(spec, "locationError", "spec")
     require_bool(spec, "commandSuccession", "spec")
     require_int(spec, "timeLimit", "spec", 1, 1000)
@@ -374,6 +390,9 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         )
         if "note" in force:
             require(isinstance(force["note"], str), f"{where}: note must be a line of text")
+        if "readiness" in force:
+            require(is_level(force["readiness"]), f"{where}: readiness must be 1 (unaware), 2 (alert) or 3 (stood to)")
+            require(kind != "vehicle", f"{where}: a vehicle's crew carries no readiness yet")
         if "quality" in force:
             quality = force["quality"]
             require(
@@ -626,6 +645,10 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             )
         if "motivation" in f:
             dressing.append("motivation = " + ts(f["motivation"]))
+        # Its readiness (decision 86): its own, else its side's in the spec, else the engine's (alert).
+        level = f.get("readiness", spec.get("readiness", {}).get(f["side"]))
+        if level is not None and f["kind"] != "vehicle":
+            dressing.append("readiness = " + str(level))
         if "experience" in f:
             dressing.append("experience = " + ts(f["experience"]))
 

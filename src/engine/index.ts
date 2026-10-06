@@ -44,6 +44,7 @@ export type {
   SoldierMorale,
   Motivation,
   Experience,
+  Readiness,
   ForceType,
   CombatExperience,
   ForceQuality,
@@ -66,6 +67,11 @@ export {
   SUSTAINED_MG_BANDS,
   COVER_MODIFIERS,
   FIRING_FROM_COVER_MODIFIER,
+  DIRECTIONAL_COVER,
+  UNREADY,
+  READINESS,
+  SURPRISE_RECOVERY_TURNS,
+  READINESS_SPOTTING,
   type CoverState,
 } from "./data/directFire.js";
 export {

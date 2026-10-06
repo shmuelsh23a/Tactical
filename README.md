@@ -2673,6 +2673,52 @@ on the stated reasoning, still awaiting the author's word.
       company swings wide but attacks into the face of the position. The
       rule is for a player who gets round a flank.
 
+86. ✅ **Readiness** (2026-10-06, the author: "a readiness level for a
+    force; its starting level is determined by the scenario and it
+    increases if the force sees an enemy coming or an indication of an
+    enemy (IED, tunnel entrances…); three levels; an attacking force starts
+    at level 2 by default. Length of recovery from surprise should be
+    proportional to experience, but not linear"). `GameOptions.readiness`,
+    on for a new game, off for a recording made before it; it works through
+    decision 85's being caught unready, so — like it — on small arms and
+    covering fire only (⚠️ an RPG, a tank round or an assault catches no
+    one unready).
+    - **Three levels** (`Unit.readiness`, `READINESS`): **1** unaware — caught
+      unready by fire from any enemy it had not seen, from any side; **2**
+      alert — only from outside the arc it watches (decision 85); **3**
+      stood to — not caught. Set in a scenario per side
+      (`"readiness": {"RED": 1}`) or per force; ⚠️ a defender not given one
+      is alert too. Not quite as before, though: a default (regular) force
+      caught unready is now shaken two turns, not one, and a force is caught
+      at most once before it stands to — the standard measurement does not
+      move (below).
+    - **Rises, never falls** (⚠️ ours, all three): a level for an indication
+      of the enemy — a charge it finds, shells landing within 300 m (in
+      practice beyond a shell's suppression reach, since a force inside it
+      has been fired on); to 3 at the sight of an enemy force, when it aims
+      at one or gives covering fire, and the moment it is fired on. Tunnel
+      entrances wait for underground warfare (backlog 5).
+    - **Recovery by experience** (`SURPRISE_RECOVERY_TURNS`): a force caught
+      unready fires at ×0.4 for 4 turns green, 2 regular, 1 veteran, and an
+      elite one is not shaken at all — halving with each step (⚠️ ours).
+    - **Spotting** (`READINESS_SPOTTING`, the author's go-ahead the same
+      day): the chance a force picks up an enemy force, or finds a charge,
+      ×0.5 unaware, ×1 alert, ×1.15 stood to (⚠️ ours). Without it an
+      unaware force saw the enemy coming as well as any other and stood to
+      before the first shot. A drone's look is the drone's, not the force's.
+    - **Its own, not the enemy's**: the card shows a force's readiness to its
+      own side, in a game that plays the rule; `outsideView` strips
+      readiness, surprise, the position's front and the watched arc from
+      what the other side sees.
+    - **Measured** (docs/balance.md, sixty-second round): the standard
+      measurement does not move beyond noise (44%, 32%, 19%; flank plans
+      33%, 17%) — every force in those battles starts alert and stands to
+      at contact. In the raid (the militia unaware), the scripted raid does
+      *worse* against a militia that sees less (7% and 2% against 9% and 8%
+      with it alert): a militia that has not seen the raid does not fire,
+      so it stays hidden, and the scripted attack does not search for it —
+      more battles run out of time (52% against 36%).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
