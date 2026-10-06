@@ -4170,7 +4170,11 @@ put both sides in the regular, experienced cell.
   as designed, 1% and 2% regular — unchanged again. The militia sees the
   raid at the first turn's look, before any shot, and the sight of the
   enemy stands it to (3). An unaware force stays unaware only until it
-  sees the enemy, and readiness does not yet change how well it looks.
+  sees the enemy, and readiness did not yet change how well it looks.
+  With the spotting effect (sixty-second round) it does, and the scripted
+  raid does worse: 7% and 2%, against 9% and 8% with the militia alert —
+  the militia, not seeing the raid, does not fire and stays hidden, and
+  the script does not search for it.
 ## Sixty-first round: directional cover, 2026-10-06
 
 Rules decision 85. The specs' prepared defenders face the attack's start
@@ -4211,6 +4215,26 @@ lasts. Standard measurement, 200 battles from seed 1000: telAzekaAssault
 34%, 18%). Flank plans, `jev-sim --rule`, 100 from seed 1000: A + flank
 **37%** (36%), D flank **21%** (20%). It is a rule for scenarios that set
 a force unaware.
+
+**With the spotting effect** (the author's go-ahead, same day): an unaware
+force spots at ×0.5, an alert one ×1, one stood to ×1.15 (⚠️ ours).
+Standard measurement: **44%**, **32%**, **19%**; flank plans A + flank
+**33%**, D flank **17%** — inside the noise of 200 and 100 battles (about
+±3.5 and ±4.5 points), the shift from the stood-to defender's sharper eye.
+The raid (`yokneamRaid`, its branch with readiness merged, 100 battles a
+row), militia unaware against the control with it alert:
+
+| Militia | Seed 1000 | Seed 2000 | Out of time | Turns (median) |
+|---|---|---|---|---|
+| Alert (2) | 9% | 8% | 36%, 34% | 15, 14 |
+| **Unaware (1)** | **7%** | **2%** | 52%, 56% | 30, 30 |
+
+The unaware militia now does what it was set to: it does not see the raid
+coming. And the scripted raid does worse for it. A militia that has not
+seen the raid does not fire, so it stays hidden among the houses (found in
+the 20 m band), and the plain scripted attack does not search for it — the
+battles run to time. The surprise is there to be used; the script does not
+use it, as it does not use a flank. A player's raid is the test.
 
 ## How the engine scales, 2026-09-23
 

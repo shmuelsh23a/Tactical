@@ -242,6 +242,11 @@ def require_int(given: dict[str, Any], key: str, where: str, low: int, high: int
     )
 
 
+def is_level(v: Any) -> bool:
+    """A readiness level: 1, 2 or 3, as a whole number (True and 1.0 are not)."""
+    return isinstance(v, int) and not isinstance(v, bool) and v in (1, 2, 3)
+
+
 def require_bool(given: dict[str, Any], key: str, where: str) -> None:
     """`"false"` is a string, and a string is true in TypeScript."""
     if key in given:
@@ -301,7 +306,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         require(
             isinstance(spec["readiness"], dict)
             and set(spec["readiness"]) <= SIDES
-            and all(v in (1, 2, 3) for v in spec["readiness"].values()),
+            and all(is_level(v) for v in spec["readiness"].values()),
             'spec: readiness is {"RED": 1|2|3, "BLUE": 1|2|3}',
         )
     require_bool(spec, "locationError", "spec")
@@ -386,7 +391,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         if "note" in force:
             require(isinstance(force["note"], str), f"{where}: note must be a line of text")
         if "readiness" in force:
-            require(force["readiness"] in (1, 2, 3), f"{where}: readiness must be 1 (unaware), 2 (alert) or 3 (stood to)")
+            require(is_level(force["readiness"]), f"{where}: readiness must be 1 (unaware), 2 (alert) or 3 (stood to)")
             require(kind != "vehicle", f"{where}: a vehicle's crew carries no readiness yet")
         if "quality" in force:
             quality = force["quality"]

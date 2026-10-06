@@ -2132,6 +2132,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                 order={selectedOrder}
                 nameOf={nameOf}
                 terrain={game.terrain}
+                showReadiness={game.readiness && game.directionalCover}
                 morale={selectedOwn ? game.forceMorale(selectedOwn.id) : undefined}
               />
 
@@ -2201,6 +2202,7 @@ function SelectedUnitCard({
   order,
   nameOf,
   terrain,
+  showReadiness,
   morale,
 }: {
   unit: Unit | null;
@@ -2209,6 +2211,8 @@ function SelectedUnitCard({
   order: StandingOrder | undefined;
   nameOf: (id: string) => string;
   terrain: Terrain;
+  /** Whether the game plays readiness (decision 86): no line on a card where it is not in play. */
+  showReadiness: boolean;
   /** How it is holding up; absent in a game played without morale. */
   morale?: ForceMorale;
 }) {
@@ -2249,7 +2253,7 @@ function SelectedUnitCard({
       {morale && <MoraleLine unit={unit} morale={morale} />}
       {unit.movementBlocked && <div className="warn">נפגע — לא יכול לנוע</div>}
       {unit.firedThisTurn && <div className="warn">בוצעה פעולת ירי בתור זה</div>}
-      <PostureLine unit={unit} terrain={terrain} />
+      <PostureLine unit={unit} terrain={terrain} showReadiness={showReadiness} />
     </div>
   );
 }
@@ -2291,7 +2295,7 @@ const readinessHe: Record<1 | 2 | 3, string> = { 1: "כוננות נמוכה —
  * How exposed the force is: what it is behind, whether it is hidden by holding
  * still, and how far its camouflage has got (rules decision 12).
  */
-function PostureLine({ unit, terrain }: { unit: Unit; terrain: Terrain }) {
+function PostureLine({ unit, terrain, showReadiness }: { unit: Unit; terrain: Terrain; showReadiness: boolean }) {
   const camouflage = camouflageBonus(unit);
   const stationary = unit.movedThisTurn === 0;
   const digging =
@@ -2324,7 +2328,7 @@ function PostureLine({ unit, terrain }: { unit: Unit; terrain: Terrain }) {
           {sectorWorthHe(unit.observationSector)}
         </div>
       )}
-      {unit.kind !== "vehicle" && (
+      {showReadiness && unit.kind !== "vehicle" && (
         <div className={(unit.readiness ?? READINESS.default) === 1 ? "warn" : "ok"}>
           {readinessHe[(unit.readiness ?? READINESS.default) as 1 | 2 | 3]}
         </div>

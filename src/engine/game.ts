@@ -70,6 +70,7 @@ import {
   UNREADY,
   READINESS,
   SURPRISE_RECOVERY_TURNS,
+  READINESS_SPOTTING,
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
   type CoverState,
@@ -2068,7 +2069,7 @@ export class Game {
         : undefined;
     // `from` is where the bound started: a walking force searches the ground it
     // crossed for charges, not only where it halted (rules decision 10).
-    const detection = detectByMovement(this.rng, unit, from, gait, enemies, this.mines, sight);
+    const detection = detectByMovement(this.rng, unit, from, gait, enemies, this.mines, sight, this.alertness(unit));
     // What the mover found. What found the mover is rolled once for the whole
     // turn, by every force in position — see observeFromPosition.
     for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement", unit);
@@ -2132,6 +2133,12 @@ export class Game {
    * Raise a force's readiness (rules decision 86): a `level` for an
    * indication of the enemy, or straight to 3. Nothing lowers it.
    */
+  /** What a force's readiness does to its eyes (rules decision 86): 1 without the rule. */
+  private alertness(u: Unit): number {
+    if (!this.readiness || !this.directionalCover) return 1;
+    return READINESS_SPOTTING[u.readiness ?? READINESS.default];
+  }
+
   private raiseReadiness(u: Unit, to: "level" | 3): void {
     if (!this.readiness || !this.directionalCover) return;
     const now = u.readiness ?? READINESS.default;
@@ -2230,6 +2237,7 @@ export class Game {
       (observer, target) => this.hasLineOfSight(observer, target),
       this.stillDetection,
       this.binoculars,
+      (observer) => this.alertness(observer),
     );
     for (const { observerId, targetId } of seen) {
       const observer = this.getUnit(observerId);
@@ -2523,6 +2531,8 @@ export class Game {
         // The mover saw the shot from where it was caught, not from the end of its bound.
         this.observe(actor.side, coverer.id, "fire", actor, at);
         this.intelRecordAt(coverer.side, actor, at, coverer);
+        // It saw the enemy it fired on (decision 86), as a force firing on orders does.
+        this.raiseReadiness(coverer, 3);
         taken.push({
           coveringId: coverer.id,
           targetId: actor.id,
@@ -2740,6 +2750,8 @@ export class Game {
     // still happens — interrupted, never cancelled — but it happens with
     // whatever the covering fire has just left it, since a force that has lost
     // men has fewer shooters.
+    // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
+    this.raiseReadiness(attacker, 3);
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
@@ -2806,6 +2818,8 @@ export class Game {
         coveringFire: [],
       };
     }
+    // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
+    this.raiseReadiness(attacker, 3);
     const coveringFire = this.answerWithCoveringFire(attacker, "fire");
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
@@ -2954,6 +2968,8 @@ export class Game {
       };
     }
     // Interrupted before it goes in, like any other action (see `fire`).
+    // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
+    this.raiseReadiness(attacker, 3);
     const coveringFire = this.answerWithCoveringFire(attacker, "assault");
     const defender = this.getUnit(defenderId);
     const defenderWasNeutralized = defender.neutralized;

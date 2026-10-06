@@ -1,5 +1,5 @@
 import type { RangeBand } from "../geometry.js";
-import type { Experience } from "../types.js";
+import type { Experience, Readiness } from "../types.js";
 
 /**
  * Direct (ballistic) small-arms fire — ירי קליעי.
@@ -105,6 +105,16 @@ export const UNREADY = { hitFactor: 1.5, ownFire: 0.4 } as const;
  * reach, and that nothing lowers it.
  */
 export const READINESS = { default: 2, indicationM: 300 } as const;
+
+/**
+ * How readiness changes what a force sees (rules decision 86; the author,
+ * 2026-10-06): the chance it picks up an enemy force, or finds a charge, is
+ * multiplied by its level's factor. An unaware force is not looking for
+ * anyone, so it sees half of what it would; one stood to is watching for
+ * nothing else. Without this an unaware force sees the enemy coming like any
+ * other and stands to before the first shot. ⚠️ The factors are ours.
+ */
+export const READINESS_SPOTTING: Record<Readiness, number> = { 1: 0.5, 2: 1, 3: 1.15 };
 
 /**
  * How many turns a force caught unready fires at {@link UNREADY}'s `ownFire`
