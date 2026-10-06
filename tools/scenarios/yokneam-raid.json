@@ -37,7 +37,9 @@
     "",
     "The militia holds the houses that see the low ground with four squads and",
     "keeps two behind them, each retaking a lost house by the drill (decision",
-    "60). It has not prepared its positions: the houses are its only cover.",
+    "60). It has barricaded them in haste (partial cover, facing the low ground in",
+    "the north it expects an attack from); the houses themselves cover all round.",
+    "The raid comes from the east, outside the arc it watches (decision 85).",
     "",
     "Measured (docs/balance.md, sixtieth round): the harness's scripted attack",
     "is built for open ground and stalls in the town, so the raid is judged in play.",
@@ -142,7 +144,9 @@
         "type": "irregular",
         "experience": "experienced"
       },
-      "note": "The edge houses that see the low ground."
+      "note": "The edge houses that see the low ground.",
+      "facing": 255,
+      "baseCover": "partial"
     },
     {
       "id": "RED-A-2",
@@ -158,7 +162,9 @@
       "quality": {
         "type": "irregular",
         "experience": "experienced"
-      }
+      },
+      "facing": 263,
+      "baseCover": "partial"
     },
     {
       "id": "RED-A-3",
@@ -176,7 +182,9 @@
         "experience": "experienced"
       },
       "reserve": true,
-      "note": "Behind the edge: retakes a lost house."
+      "note": "Behind the edge: retakes a lost house.",
+      "facing": 259,
+      "baseCover": "partial"
     },
     {
       "id": "RED-B-1",
@@ -192,7 +200,9 @@
       "quality": {
         "type": "irregular",
         "experience": "experienced"
-      }
+      },
+      "facing": 248,
+      "baseCover": "partial"
     },
     {
       "id": "RED-B-2",
@@ -208,7 +218,9 @@
       "quality": {
         "type": "irregular",
         "experience": "experienced"
-      }
+      },
+      "facing": 253,
+      "baseCover": "partial"
     },
     {
       "id": "RED-B-3",
@@ -225,7 +237,9 @@
         "type": "irregular",
         "experience": "experienced"
       },
-      "reserve": true
+      "reserve": true,
+      "facing": 250,
+      "baseCover": "partial"
     }
   ],
   "charges": []

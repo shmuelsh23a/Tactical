@@ -4159,6 +4159,42 @@ put both sides in the regular, experienced cell.
   cannot judge this battle; a player has to.
 - The scenario ships as the inserted raid (six militia squads), to be
   judged in play. ⚠️ Every number in it is ours.
+- **With directional cover** (decision 85, after the sixty-first round):
+  the militia barricaded in haste, facing the low ground in the north; the
+  raid comes from the east. 9% and 9% (seeds 1000, 2000) as designed, 1%
+  and 2% both regular: unchanged. The sides are 100–150 m apart among the
+  houses and see each other at once, so nobody is caught by an enemy they
+  had not seen, and a house covers all round. The flank pays only an
+  approach the militia does not see coming — a player's, behind the houses.
+## Sixty-first round: directional cover, 2026-10-06
+
+Rules decision 85. The specs' prepared defenders face the attack's start
+line (the bearing to it, worked out once and checked by
+`scenarioFacing.test.ts`). Standard measurement, 200 battles from seed 1000:
+
+| | Before (round 54) | **Directional cover** |
+|---|---|---|
+| telAzekaAssault (3:1) | 41% | **41%** |
+| telAzekaAssault2 (2:1) | 33% | **34%** |
+| yokneamUrban | 18% | **18%** |
+
+(A first build without the facings read 42%, 33%, 17%; it recomputed cover
+from scratch instead of from the force's own, which a review found moved
+the modifier in four cases even with no front. Withdrawn; the rule now
+starts from exactly the cover a force has, and `directional.test.ts` pins
+that it changes nothing with no front and no wall in play.)
+
+The flanking reference plans, `jev-sim --rule`, 100 battles from seed 1000
+(round 54's figure on the same seeds in brackets): A + flank **36%** (34%),
+D flank **20%** (21%). Neither moves.
+
+**Why: the scripted flank is not a flank.** Replaying the faced runs'
+decisions, BLUE's rifle shots at RED's squads by angle off their front:
+A + flank 2,128 within ±60°, 197 from the flank, 3 from the rear; D flank
+2,266, 43 and none. The scripted company swings wide but closes on the
+face of the position, as its drill tells it to (company.ts). The rule
+changes nothing a frontal attack does and waits for an attack that gets
+round — a player's, or the doctrine engine's.
 
 ## How the engine scales, 2026-09-23
 

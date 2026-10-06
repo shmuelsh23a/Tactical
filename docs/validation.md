@@ -1547,6 +1547,47 @@ sources would put the corners near **0.6** and **1.5** about the regular,
 experienced cell (Italy's span of divisions). Elite against irregular
 would sit nearer **2** (the Arab–Israeli figure).
 
+## Directional cover (2026-10-06) — rules decision 85
+
+Searched for figures on cover by direction and on flank and rear attack;
+read on the page through the Apify connector where the session's own
+network does not reach. *Snippet*: seen in a search result only.
+
+- **FM 3-21.8 (2007), ch. 8, para 8-150/151** (read): parapets by
+  direction — front 2–3 sandbags high, about 7 ft long for a two-man hole;
+  flanks the same height, about 3.5 ft long; rear one sandbag high, 3.5 ft;
+  filled "in order of front, flanks, and rear". The position "should give
+  frontal protection from direct fire while allowing fire to the front and
+  oblique"; "a fighting position just 18 inches deep will provide a
+  significant amount of protection from direct fire and even
+  fragmentation". → the front counts in full; the flank and rear shares
+  (0.6, 0.3) are ours, scaled from these parapets.
+- **FM 23-65, App. D** (read): the cover "protects the gun crew from frontal
+  small-arms fire"; the rear parapet is an optional improvement against
+  "small-arms fire from the rear".
+- **FM 3-06.11, ch. 7** (read): 70 rounds of 5.56 mm to penetrate 9 in of
+  double brick, 45 of 7.62 mm. → a house covers on every side.
+- **Rowland, *The Stress of Battle*** (through a review, read): surprise,
+  "the unexpected in timing, place or direction", cut infantry defence
+  effectiveness by 60% at 3:1; shock by 65%. → the surprised force fires at
+  ×0.4.
+- **Storr** (through Thunholm & Henåker 2020, *Comparative Strategy* 39:5,
+  read): a "surprise attack directed against an enemy flank or rear"
+  inflicts at least twice the casualties it suffers; success about 75%,
+  "largely independent of force ratios". Casualty ratios by direction
+  (snippet): frontal about 2:1 against the attacker, exposed flank slightly
+  more than 2:1 for it, rear almost 4:1. → the ×1.5 on the shot is ours, a
+  share of this, since the ratios bundle cover, surprise and nerve.
+- **Dupuy** (TDI, read): QJM surprise 2.24 (complete) to 1.10 (minor),
+  decaying over three days; **no** flank or envelopment factor.
+- **McQuie / HERO, 52 engagements** (TDI, read): "envelopment, encirclement,
+  penetration" was the reason a side gave up in 33%, casualties in 10%.
+- **Games, as design not data**: ASL infantry has no facing; encirclement
+  costs −1 morale and +1 to the encircled unit's own fire (A7.7).
+
+Not found: any figure for cover or hit chance by angle of fire, or for how
+exposed a man at a window is to fire from an angle.
+
 ## Open
 
 For the author, in rough order of what they move:

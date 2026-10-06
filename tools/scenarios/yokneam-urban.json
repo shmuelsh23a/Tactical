@@ -288,7 +288,7 @@
       ]
     },
     {
-      "id": "RED-A-1",
+      "id": "RED-A-1", "facing": 258,
       "name": "מחלקה א'/1",
       "side": "RED",
       "kind": "infantry",
@@ -303,7 +303,7 @@
       "note": "The reserve, in a house behind the edge."
     },
     {
-      "id": "RED-A-2",
+      "id": "RED-A-2", "facing": 268,
       "name": "מחלקה א'/2",
       "side": "RED",
       "kind": "infantry",
@@ -317,7 +317,7 @@
       "note": "At the north face of the edge house that sees most of the low ground."
     },
     {
-      "id": "RED-A-3",
+      "id": "RED-A-3", "facing": 262,
       "name": "מחלקה א'/3",
       "side": "RED",
       "kind": "infantry",
