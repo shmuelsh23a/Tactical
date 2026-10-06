@@ -20,7 +20,7 @@ import type {
   Side,
   Unit,
 } from "./types.js";
-import type { Echelon, MovementMode } from "./types.js";
+import type { Echelon, MovementMode, Readiness } from "./types.js";
 import { ECHELON_RANK } from "./data/c2.js";
 import {
   MAX_ALTERNATE_POSITIONS_PER_FORCE,
@@ -68,6 +68,8 @@ import { OBSERVATION, OBSERVATION_SECTOR, SCOUTING } from "./data/concealment.js
 import {
   FIRING_FROM_COVER_MODIFIER,
   UNREADY,
+  READINESS,
+  SURPRISE_RECOVERY_TURNS,
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
   type CoverState,
@@ -513,6 +515,13 @@ export interface GameOptions {
    */
   directionalCover?: boolean;
   /**
+   * Readiness (rules decision 86): a force unaware, alert or stood to, raised
+   * by what it sees; it decides who can be caught unready, and experience how
+   * long the surprise lasts. Needs `directionalCover`. On by default; a
+   * recording made before it reads it as off.
+   */
+  readiness?: boolean;
+  /**
    * What the traits do beyond morale (rules decision 69): agility and
    * strength set each man's pace and the force moves at its slowest man's;
    * agility makes a running force harder to hit and gets men down quicker
@@ -707,6 +716,7 @@ export class Game {
   readonly directHeBombards: boolean;
   readonly qualityGap: boolean;
   readonly directionalCover: boolean;
+  readonly readiness: boolean;
   readonly traitEffects: boolean;
   readonly fatigue: boolean;
   readonly agilityFireOrder: boolean;
@@ -1020,6 +1030,7 @@ export class Game {
     this.directHeBombards = opts.directHeBombards ?? true;
     this.qualityGap = opts.qualityGap ?? true;
     this.directionalCover = opts.directionalCover ?? true;
+    this.readiness = opts.readiness ?? true;
     this.traitEffects = opts.traitEffects ?? true;
     this.fatigue = opts.fatigue ?? true;
     this.agilityFireOrder = opts.agilityFireOrder ?? true;
@@ -1164,6 +1175,7 @@ export class Game {
       ...(this.directHeBombards ? { directHeBombards: true } : {}),
       ...(this.qualityGap ? { qualityGap: true } : {}),
       ...(this.directionalCover ? { directionalCover: true } : {}),
+      ...(this.readiness ? { readiness: true } : {}),
       ...(this.traitEffects ? { traitEffects: true } : {}),
       ...(this.fatigue ? { fatigue: true } : {}),
       ...(this.agilityFireOrder ? { agilityFireOrder: true } : {}),
@@ -1923,6 +1935,14 @@ export class Game {
           this.noteFire(unit, "indirect", amount);
         }
       }
+      // Shells landing near a force are an indication of the enemy (decision
+      // 86): a level, once for the mission, for each enemy force within reach.
+      if (this.readiness) {
+        for (const u of this.units) {
+          if (u.side === m.side || u.neutralized) continue;
+          if (fired.some((f) => distance(u.position, f.dispersion.impact) <= READINESS.indicationM)) this.raiseReadiness(u, "level");
+        }
+      }
       // Who called it, so a report can say how far it fell from the aim point
       // to the side that aimed it and no further (rules decision 17). After the
       // spread, so the mission stays the authority if the resolver ever sets it.
@@ -2052,6 +2072,8 @@ export class Game {
     // What the mover found. What found the mover is rolled once for the whole
     // turn, by every force in position — see observeFromPosition.
     for (const id of detection.spottedUnitIds) this.observe(unit.side, id, "movement", unit);
+    // A charge found is an indication of the enemy (decision 86).
+    if (detection.foundMineIds.length) this.raiseReadiness(unit, "level");
 
     // Charges are tested against the whole path walked, so a bound cannot vault
     // a minefield. Any that fired are spent.
@@ -2102,6 +2124,19 @@ export class Game {
       if (level === "suppressed" && !this.rng.chance(HEADS_DOWN.suppressedSightChance)) return;
     }
     this.report(side, unit, unit.position, source, observer, from);
+    // The force that saw the enemy is stood to (decision 86).
+    if (observer && observer.side === side) this.raiseReadiness(observer, 3);
+  }
+
+  /**
+   * Raise a force's readiness (rules decision 86): a `level` for an
+   * indication of the enemy, or straight to 3. Nothing lowers it.
+   */
+  private raiseReadiness(u: Unit, to: "level" | 3): void {
+    if (!this.readiness || !this.directionalCover) return;
+    const now = u.readiness ?? READINESS.default;
+    const next = (to === 3 ? 3 : Math.min(3, now + 1)) as Readiness;
+    if (next > now) u.readiness = next;
   }
 
   /**
@@ -2477,7 +2512,7 @@ export class Game {
         actor.position = destination;
 
         if (!result.fired) continue;
-        if (unready) actor.surprisedUntilTurn = this.turn;
+        if (unready) this.surprise(actor);
         delete coverer.covering;
         // Where it was caught, not where the bound ended (flanking reads it).
         this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at, coverer.id);
@@ -2731,7 +2766,7 @@ export class Game {
       hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
     });
     if (fireResult.fired) {
-      if (unready) target.surprisedUntilTurn = this.turn;
+      if (unready) this.surprise(target);
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
       this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position, undefined, attacker.id);
@@ -3533,6 +3568,8 @@ export class Game {
    */
   private noteFire(target: Unit, kind: FireNote["kind"], suppression: number, from?: Point, at?: Point, firerId?: string): void {
     this.fireLog.push({ turn: this.turn, targetId: target.id, kind, ...(firerId ? { firerId } : {}) });
+    // Fired on, it knows (decision 86).
+    this.raiseReadiness(target, 3);
     if (!this.morale) return;
     const note: FireNote = from ? { kind, bearing: bearingDegrees(at ?? target.position, from) } : { kind };
     // Direct HE is a bombardment for the nerve, like a shell (decision 81).
@@ -3612,11 +3649,29 @@ export class Game {
    */
   private catchesUnready(shooter: Unit, target: Unit): boolean {
     if (!this.directionalCover || !this.trackIntel) return false;
-    const arc = watchedArc(target);
-    if (!arc) return false;
     const seen = this.contactFor(target.side, shooter.id);
     if (seen && seen.lastSeenTurn >= this.turn - 1) return false;
+    // Readiness (decision 86): stood to, never; unaware, from any side.
+    const level = this.readiness ? (target.readiness ?? READINESS.default) : 2;
+    if (level >= 3) return false;
+    if (level === 1) return true;
+    const arc = watchedArc(target);
+    if (!arc) return false;
     return angleBetween(bearingDegrees(target.position, shooter.position), arc.bearing) > arc.width / 2;
+  }
+
+  /**
+   * Mark a force caught unready (decisions 85 and 86): it fires at a fraction
+   * until the turn is out — or, with readiness, for as many turns as its
+   * experience takes to recover from it.
+   */
+  private surprise(target: Unit): void {
+    if (!this.readiness) {
+      target.surprisedUntilTurn = this.turn;
+      return;
+    }
+    const turns = SURPRISE_RECOVERY_TURNS[target.experience ?? "regular"];
+    if (turns > 0) target.surprisedUntilTurn = this.turn + turns - 1;
   }
 
   /** The quality gap's factor on `unit`'s small arms against `target` (rules decision 84); 1 without the rule. */

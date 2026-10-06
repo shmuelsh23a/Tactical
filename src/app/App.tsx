@@ -6,6 +6,7 @@ import {
   MAX_REGISTERED_TARGETS_PER_WEAPON,
   OBSERVATION_POST_RANGE_M,
   CAMOUFLAGE,
+  READINESS,
   CHARGE_LAYING,
   DIG_IN,
   OBSERVATION_SECTOR,
@@ -2283,6 +2284,8 @@ function MoraleLine({ unit, morale }: { unit: Unit; morale: ForceMorale }) {
 }
 
 const coverHe: Record<string, string> = { full: "מחסה מלא", partial: "מחסה חלקי", none: "בשטח פתוח" };
+/** Readiness (rules decision 86), as the force's own card says it. */
+const readinessHe: Record<1 | 2 | 3, string> = { 1: "כוננות נמוכה — לא מצפה לאויב", 2: "כוננות — ערני", 3: "כוננות גבוהה — בעמדות" };
 
 /**
  * How exposed the force is: what it is behind, whether it is hidden by holding
@@ -2319,6 +2322,11 @@ function PostureLine({ unit, terrain }: { unit: Unit; terrain: Terrain }) {
         <div className="ok">
           גזרת תצפית: {describeSector(unit.observationSector)} ·{" "}
           {sectorWorthHe(unit.observationSector)}
+        </div>
+      )}
+      {unit.kind !== "vehicle" && (
+        <div className={(unit.readiness ?? READINESS.default) === 1 ? "warn" : "ok"}>
+          {readinessHe[(unit.readiness ?? READINESS.default) as 1 | 2 | 3]}
         </div>
       )}
       {(unit.camouflaging || camouflage > 0) && (

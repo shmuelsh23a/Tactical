@@ -2673,6 +2673,34 @@ on the stated reasoning, still awaiting the author's word.
       company swings wide but attacks into the face of the position. The
       rule is for a player who gets round a flank.
 
+86. ✅ **Readiness** (2026-10-06, the author: "a readiness level for a
+    force; its starting level is determined by the scenario and it
+    increases if the force sees an enemy coming or an indication of an
+    enemy (IED, tunnel entrances…); three levels; an attacking force starts
+    at level 2 by default. Length of recovery from surprise should be
+    proportional to experience, but not linear"). `GameOptions.readiness`,
+    on for a new game, off for a recording made before it; it works through
+    decision 85's being caught unready.
+    - **Three levels** (`Unit.readiness`, `READINESS`): **1** unaware — caught
+      unready by fire from any enemy it had not seen, from any side; **2**
+      alert — only from outside the arc it watches (decision 85); **3**
+      stood to — not caught. Set in a scenario per side
+      (`"readiness": {"RED": 1}`) or per force; ⚠️ a defender not given one
+      is alert too, so every battle before this plays as it did.
+    - **Rises, never falls** (⚠️ ours, all three): a level for an indication
+      of the enemy — a charge it finds, shells landing within 300 m; to 3 at
+      the sight of an enemy force, and the moment it is fired on. Tunnel
+      entrances wait for underground warfare (backlog 5).
+    - **Recovery by experience** (`SURPRISE_RECOVERY_TURNS`): a force caught
+      unready fires at ×0.4 for 4 turns green, 2 regular, 1 veteran, and an
+      elite one is not shaken at all — halving with each step (⚠️ ours).
+    - **Its own, not the enemy's**: the card shows a force's readiness to its
+      own side; `outsideView` strips readiness, surprise and the position's
+      front from what the other side sees.
+    - **Measured** (docs/balance.md, sixty-second round): the standard
+      measurement does not move (41%, 34%, 18%; flank plans 37%, 21%) —
+      every force in those battles starts alert and stands to at contact.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

@@ -4154,6 +4154,17 @@ face of the position, as its drill tells it to (company.ts). The rule
 changes nothing a frontal attack does and waits for an attack that gets
 round — a player's, or the doctrine engine's.
 
+## Sixty-second round: readiness, 2026-10-06
+
+Rules decision 86. Every force in the standard battles starts alert (2), as
+before the rule, and stands to (3) at its first sight of the enemy or the
+first fire on it, so the rule can only act through how long a surprise
+lasts. Standard measurement, 200 battles from seed 1000: telAzekaAssault
+**41%**, telAzekaAssault2 **34%**, yokneamUrban **18%** (round 61: 41%,
+34%, 18%). Flank plans, `jev-sim --rule`, 100 from seed 1000: A + flank
+**37%** (36%), D flank **21%** (20%). It is a rule for scenarios that set
+a force unaware.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn
