@@ -2701,13 +2701,23 @@ on the stated reasoning, still awaiting the author's word.
     - **Recovery by experience** (`SURPRISE_RECOVERY_TURNS`): a force caught
       unready fires at ×0.4 for 4 turns green, 2 regular, 1 veteran, and an
       elite one is not shaken at all — halving with each step (⚠️ ours).
+    - **Spotting** (`READINESS_SPOTTING`, the author's go-ahead the same
+      day): the chance a force picks up an enemy force, or finds a charge,
+      ×0.5 unaware, ×1 alert, ×1.15 stood to (⚠️ ours). Without it an
+      unaware force saw the enemy coming as well as any other and stood to
+      before the first shot. A drone's look is the drone's, not the force's.
     - **Its own, not the enemy's**: the card shows a force's readiness to its
       own side, in a game that plays the rule; `outsideView` strips
       readiness, surprise, the position's front and the watched arc from
       what the other side sees.
     - **Measured** (docs/balance.md, sixty-second round): the standard
-      measurement does not move (41%, 34%, 18%; flank plans 37%, 21%) —
-      every force in those battles starts alert and stands to at contact.
+      measurement does not move beyond noise (44%, 32%, 19%; flank plans
+      33%, 17%) — every force in those battles starts alert and stands to
+      at contact. In the raid (the militia unaware), the scripted raid does
+      *worse* against a militia that sees less (7% and 2% against 9% and 8%
+      with it alert): a militia that has not seen the raid does not fire,
+      so it stays hidden, and the scripted attack does not search for it —
+      more battles run out of time (52% against 36%).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
