@@ -21,7 +21,21 @@ import {
 } from "../engine/index.js";
 import { estimateFrom } from "./balance.js";
 import { bestVantages } from "../app/deadGround.js";
-import { callDefenderFire, mortarFree, planDefenderFires } from "../app/computerSide.js";
+import {
+  DEFAULT_FIRE_CHOICES,
+  attackerPlan,
+  callAttackerFire,
+  callDefenderFire,
+  mortarFree,
+  planDefenderFires,
+  type AttackerFireTally,
+  type FirePlanChoices,
+} from "../app/computerSide.js";
+
+// The attacker's fire plan and fire calls live with the defender's in
+// app/computerSide.ts, so the browser game and the harness play one
+// attacker. Re-exported here because this module was their home.
+export { DEFAULT_FIRE_CHOICES, type FirePlanChoices };
 import { ASSAULT_POSITION_M, FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
 import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
@@ -58,55 +72,6 @@ import type { IndirectFireResult } from "../engine/index.js";
  * the one thing the browser tool also takes from the umpire: the **tasking**,
  * where the defence is, which it spoils by an observer's error before use.
  */
-/**
- * The attacking commander's fire and plan (the scripted stand-in for Jev):
- * where it thinks the enemy is, and when its guns fire.
- */
-export interface FirePlanChoices {
-  /**
-   * How far off the plan puts the defence: that share of the range from the
-   * start line, one standard deviation (rules decision 51). 0.2 is an eye's.
-   */
-  planningError: number;
-  /** Register the plan's three points for the mortars in planning (decision 38). */
-  register: boolean;
-  /**
-   * Fire only on what the side has seen, never on the plan (decision 52);
-   * and, with `aimWithin`, only on a mark the side is that sure of, in metres
-   * of the ring the map draws (decision 54).
-   */
-  waitForContact: boolean;
-  aimWithin?: number;
-  /**
-   * Which mark the guns take first when the scouts have found several: the
-   * squads that hold the position, the command groups that direct it (rules
-   * decision 55 gives losing one its effect), or whichever is nearest the
-   * objective (the default, and every table before 2026-09-29).
-   */
-  targetFirst?: "squads" | "command" | "nearest";
-  /**
-   * Smoke (a harness policy, ours): once the company goes and its lead squads
-   * are crossing — {@link SCREEN_FROM_M} to {@link LIFT_AT_M} from the
-   * objective — it keeps a mortar screen on the enemy marks nearest its squads
-   * (else on its plan's points), up to this many smoke missions, each one of
-   * its fire missions (decision 56). Absent or 0: no smoke.
-   */
-  smokeMissions?: number;
-  /**
-   * Fires on the plan (a harness policy, ours): once the company goes, with no
-   * mark it is sure of, it fires on its registered plan points in turn — on
-   * the mark, needing no observer — to keep the defence under fire while it
-   * crosses, until its squads are {@link LIFT_AT_M} from them.
-   */
-  prepFires?: boolean;
-}
-
-export const DEFAULT_FIRE_CHOICES: FirePlanChoices = {
-  planningError: 0.2,
-  register: true,
-  waitForContact: false,
-};
-
 export interface ScenarioBattleOptions {
   /** How the attacker's squads fight. */
   drill: SquadDrill;
@@ -211,19 +176,8 @@ const MORTAR = "mortar";
  * told of and takes, not a mark he is refused.
  */
 const DANGER_CLOSE_M = 150;
-/**
- * The scripted company keeps its guns on a mark until its own squads are
- * this close to it, then lifts them (decision 63, S4; ours). A pinned
- * defender is free three turns after the fire stops, so the fire has to
- * stay on until the assault is nearly there.
- */
-const LIFT_AT_M = 100;
-/** The scripted company screens its crossing from this far out (ours; decision 63's pinned defender sees little inside it anyway). */
-const SCREEN_FROM_M = 450;
 /** Fires lifted for the assault shift beyond this of the company's squads (ours). */
 const LIFTED_CLEAR_M = 300;
-/** The plan's frontage: its centre and this far to either side (the browser tool's). */
-const PLAN_SPREAD_M = 90;
 
 /**
  * Give a side's forces a cell of the force-quality matrix (rules decision 83,
@@ -271,7 +225,9 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const objective = opts.fire.planningError > 0
     ? estimateFrom(new Rng(unitSeed(g.seed, "#planning-error")), startLine, truth, opts.fire.planningError)
     : truth;
-  const planned = [objective, { x: objective.x - PLAN_SPREAD_M, y: objective.y }, { x: objective.x + PLAN_SPREAD_M, y: objective.y }];
+  // The plan: the points the mortars register and the points the scouts
+  // look for (`attackerPlan`, shared with the computer the browser plays).
+  const { planned, suspected } = attackerPlan(objective);
 
   // Mission planning: the attacker registers its plan; the defender its
   // targets on the dead ground in front of it.
@@ -284,10 +240,6 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       : [];
   for (const t of defenderTargets) g.registerTarget(defender, MORTAR, t);
 
-  // The company commander: where the plan puts the enemy is what its scouts
-  // look for, what its observation points must see and what its waiting
-  // squads must be out of sight of — the plan's frontage and depth.
-  const suspected = [...planned, { x: objective.x, y: objective.y - 80 }, { x: objective.x, y: objective.y + 80 }];
   const ask = opts.decide;
   const mortarLeft = () => (g.mayCall(attacker, MORTAR) ? g.fireMissionsLeft(attacker, MORTAR) ?? null : null);
   // What the attacker's mortars did since it was last asked, as its forces saw it.
@@ -373,12 +325,24 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   };
   const ignore = (_: MoraleReport[] | undefined) => {};
 
+  // What the attacker has fired, which its own fire policy reads (the
+  // plan's points are taken in turn by the count, and the smoke allowance
+  // is spent against it). Nothing else touches the attacker's two
+  // counters, so mirroring them into the result after each call leaves
+  // the tables exactly as they were.
+  const attackerFire: AttackerFireTally = { missions: 0, smoke: 0 };
   g.beginTurn();
   for (let turn = 1; turn <= maxTurns; turn++) {
     result.turns = turn;
     heard(g.advanceToPhase("targeting").resolved);
-    if (ask) askAttackerFire(g, attacker, company, result, question);
-    else callAttackerFire(g, attacker, planned, objective, opts.fire, company, result);
+    if (ask) {
+      // The asked commander counts its own missions straight into the result.
+      askAttackerFire(g, attacker, company, result, question);
+    } else {
+      callAttackerFire(g, attacker, planned, objective, opts.fire, company, attackerFire);
+      result.missions[attacker] = attackerFire.missions;
+      result.smoke[attacker] = attackerFire.smoke;
+    }
     const defenderCall = callDefenderFire(g, defender, defenderTargets);
     if (defenderCall) result.missions[defender]++;
     if (defenderCall === "plan") result.defenderPlanned++;
@@ -939,74 +903,6 @@ function askAttackerFire(
   }
   const target = marks.find((u) => u.id === a)!;
   g.callForFire(side, MORTAR, target.position, { method: "effect" });
-  result.missions[side]++;
-}
-
-/**
- * The attacking commander's fire (the browser tool's rule): fire for effect
- * on the plan, in turn, while no squad of its own is within danger close of
- * the point — or, waiting for contact, on what the side has seen nearest the
- * objective, if it is sure enough of it.
- */
-function callAttackerFire(
-  g: Game,
-  side: Side,
-  planned: readonly Point[],
-  objective: Point,
-  plan: FirePlanChoices,
-  company: ScriptedCompany,
-  result: ScenarioBattleResult,
-): void {
-  if (!mortarFree(g, side)) return;
-  const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
-  if (!squads.length) return;
-  // Danger close is a risk it takes (decision 63, S4): its fire stays on
-  // until its squads are LIFT_AT_M from the mark.
-  const safe = (p: Point) => squads.every((u) => distance(u.position, p) > LIFT_AT_M);
-  const going = company.released !== undefined;
-  // Smoke while it crosses: a screen on the enemy it knows of nearest its
-  // squads, else on the plan, kept up as each one clears (two turns).
-  const lead = Math.min(...squads.map((u) => distance(u.position, objective)));
-  if (going && lead <= SCREEN_FROM_M && lead > LIFT_AT_M && result.smoke[side] < (plan.smokeMissions ?? 0)) {
-    const screened = (p: Point) =>
-      g.smoke.some((s) => distance(s.center, p) < s.radius) ||
-      g.pendingSmoke.some((m) => m.side === side && distance(m.target, p) < m.radius);
-    const nearestOwn = (p: Point) => Math.min(...squads.map((u) => distance(u.position, p)));
-    const marks = sideView(g, side).units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered).map((u) => u.position);
-    const screen = (marks.length ? marks : [...planned])
-      .filter(safe)
-      .sort((a, b) => nearestOwn(a) - nearestOwn(b))
-      .find((p) => !screened(p));
-    if (screen) {
-      g.deploySmoke(MORTAR, side, screen);
-      result.smoke[side]++;
-      return;
-    }
-  }
-  let aim: Point | undefined;
-  if (plan.waitForContact) {
-    const view = sideView(g, side);
-    const sure = (id: string) => plan.aimWithin === undefined || (view.spreads.get(id) ?? 0) * CE_PER_SIGMA <= plan.aimWithin;
-    // Fresh: seen this turn or last. The guns are called before this turn's
-    // looking is done (on the way into the fire phase), so last turn's report
-    // is the newest there is — the drill's own test for holding a contact.
-    const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
-    const rank = (u: Unit) =>
-      plan.targetFirst === "squads" ? (u.kind === "command" ? 1 : 0) : plan.targetFirst === "command" ? (u.kind === "command" ? 0 : 1) : 0;
-    aim = view.units
-      .filter((u) => u.side !== side && !u.neutralized && fresh(u.id) && sure(u.id) && safe(u.position))
-      .sort((a, b) => rank(a) - rank(b) || distance(a.position, objective) - distance(b.position, objective))[0]?.position;
-  } else {
-    const open = planned.filter(safe);
-    aim = open[result.missions[side] % Math.max(1, open.length)];
-  }
-  // Nothing sure to fire on: once it goes, keep the defence under fire on the plan.
-  if (!aim && plan.prepFires && going) {
-    const open = planned.filter(safe);
-    aim = open[result.missions[side] % Math.max(1, open.length)];
-  }
-  if (!aim) return;
-  g.callForFire(side, MORTAR, aim, { method: "effect" });
   result.missions[side]++;
 }
 

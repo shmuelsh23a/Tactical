@@ -85,7 +85,8 @@ import {
 } from "./hotseat.js";
 import { MapView, orderOverlay } from "./components/MapView.js";
 import { SQUAD_GRENADIERS, fireGrenadiers, type DrillReport } from "./drill.js";
-import { ComputerDefender } from "./computerSide.js";
+import { ComputerAttacker, ComputerDefender } from "./computerSide.js";
+import { briefedObjective } from "./planning.js";
 import { SESSION_FORMAT, SESSION_VERSION, clearStoredSession, storeSession, type ResumedBattle } from "./session.js";
 import { Debrief } from "./Debrief.js";
 import { readRecording } from "./recordingFile.js";
@@ -140,12 +141,15 @@ interface AppProps {
   /** Back to the scenario picker; the battle in progress is dropped. */
   onLeave: () => void;
   /**
-   * Single-player: the computer takes the side that is not attacking
-   * (`game.attackers`; RED when nobody is) and holds its position by the
-   * harness's defender (`computerSide.ts`). It acts on its own activations
-   * at once, and the screen never leaves the player's side. Off: hotseat.
+   * Single-player: which side the computer takes, by the harness's own
+   * play (`computerSide.ts`). `"defend"` gives it the side that is not
+   * attacking (`game.attackers`; RED when nobody is) and it holds its
+   * position; `"attack"` gives it the attacking side and it comes on by
+   * the scripted company, the player holding. Either way it acts on its
+   * own activations at once and the screen never leaves the player's side.
+   * Absent: hotseat.
    */
-  vsComputer?: boolean;
+  vsComputer?: ComputerRole;
   /**
    * A saved battle to pick up where it stopped, already rebuilt and checked
    * (`resumeBattle`): play goes on from the activation it was saved in.
@@ -155,6 +159,12 @@ interface AppProps {
   /** Called once the battle has first been saved, so a reload knows to come back to it. */
   onSaved?: () => void;
 }
+
+/** Which side the computer takes in single-player. */
+export type ComputerRole = "defend" | "attack";
+
+/** The computer, whichever side it plays. */
+type ComputerSide = ComputerDefender | ComputerAttacker;
 
 /**
  * A `?seed=` in the address plays the battle on other dice — for testing the
@@ -172,7 +182,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   // Choosing another battle remounts this component rather than rebuilding it.
   // The first turn is not begun here: the battle opens on mission planning
   // (rules decision 38), and begins when both sides have planned.
-  const initRef = useRef<{ scn: Scenario; ai: ComputerDefender | null } | null>(null);
+  const initRef = useRef<{ scn: Scenario; ai: ComputerSide | null } | null>(null);
   if (!initRef.current && resumed) {
     // The engine's state is the recording; the extent and title are the scenario's.
     initRef.current = {
@@ -183,7 +193,13 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   if (!initRef.current) {
     const built = scenario.build(seedFromUrl());
     const attacker = built.game.attackers[0] ?? "BLUE";
-    const ai = vsComputer ? new ComputerDefender(built.game, attacker === "RED" ? "BLUE" : "RED", built) : null;
+    const defender = attacker === "RED" ? "BLUE" : "RED";
+    const ai =
+      vsComputer === "defend"
+        ? new ComputerDefender(built.game, defender, built)
+        : vsComputer === "attack"
+          ? new ComputerAttacker(built.game, attacker, briefedObjective(built.game, attacker, defender), built)
+          : null;
     // The computer plans before the player does; its plan is drawn only on its own map.
     ai?.plan(built.game);
     initRef.current = { scn: built, ai };
@@ -1385,7 +1401,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
    * be told to the computer: what landed on the player's forces and what the
    * player's forces could see — never its plan.
    */
-  function playComputer(side: ComputerDefender, phase: ActivationPhase) {
+  function playComputer(side: ComputerSide, phase: ActivationPhase) {
     // The drill aims at its side's picture of the enemy — a copy taken before
     // the shot — so whether a force went down is read off the live unit, once,
     // when the computer's phase is over (a rifle volley and its grenadiers are
@@ -1457,7 +1473,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
         reported: [...reported.current],
         toldDown: [...toldDown.current],
       },
-      ...(ai ? { computer: ai.snapshot() } : {}),
+      ...(ai instanceof ComputerDefender ? { computer: ai.snapshot() } : {}),
+      ...(ai instanceof ComputerAttacker ? { computerAttacker: ai.snapshot() } : {}),
     });
     if (first && kept.current) onSaved?.();
     // The game is mutated in place: `tick` is its change.

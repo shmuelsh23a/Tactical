@@ -5,8 +5,7 @@ import {
   ECHELON_RANK,
   LOCATION_ERROR,
   Rng,
-  locationSigma,
-  unitSeed,
+    unitSeed,
   FIRE_SUPPORT_MIN_ECHELON,
   Game,
   distance,
@@ -254,26 +253,11 @@ export function scaledRecon(echelon: Echelon): CompanyPlan | undefined {
   return scouts ? { recon: { scouts, lookTurns: STANDARD_LOOK_TURNS } } : undefined;
 }
 
-/** A standard normal draw (Box–Muller). */
-function normal(rng: Rng): number {
-  return Math.sqrt(-2 * Math.log(1 - rng.next())) * Math.cos(2 * Math.PI * rng.next());
-}
-
-/**
- * Where an observer at `from` would put a force at `truth` (rules decision
- * 51's figures, an eye's): off along the sight line by a fifth of the range
- * and across it by the compass. The harness's pre-battle intelligence, drawn
- * from its own stream so the game's rolls do not move.
- */
-export function estimateFrom(rng: Rng, from: Point, truth: Point, rangeShare: number = LOCATION_ERROR.eye.rangeShare): Point {
-  const range = distance(from, truth);
-  const s = locationSigma(range, { ...LOCATION_ERROR.eye, rangeShare });
-  const along = normal(rng) * s.along;
-  const across = normal(rng) * s.across;
-  const ux = range > 0 ? (truth.x - from.x) / range : 1;
-  const uy = range > 0 ? (truth.y - from.y) / range : 0;
-  return { x: truth.x + along * ux - across * uy, y: truth.y + along * uy + across * ux };
-}
+// The pre-battle estimate and its normal draw live in the app layer
+// (app/planning.ts), shared with the computer the browser plays
+// against; re-exported here because this module was their home.
+export { estimateFrom, normal } from "../app/planning.js";
+import { estimateFrom, normal } from "../app/planning.js";
 
 /**
  * Whether a commander at `echelon` may call `weapon` (rules decision 37): the

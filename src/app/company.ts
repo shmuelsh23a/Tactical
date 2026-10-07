@@ -179,7 +179,7 @@ export class ScriptedCompany {
   private support = false;
   private readonly tasks = new Map<string, PlatoonTask>();
   private readonly platoonOfSquad = new Map<string, string>();
-  private readonly home: Point;
+  private home: Point;
   private bounding = false;
   private holdingShort = false;
   /** The commander has lifted the company's fires for the assault: no more missions near it. */
@@ -191,7 +191,37 @@ export class ScriptedCompany {
   private readonly ground: CompanyGround;
   private readonly suspected: readonly Point[];
 
-  constructor(game: Game, side: Side, objective: Point, suspected: readonly Point[], plan: CompanyPlan, ground: CompanyGround) {
+  /**
+   * A commander put back on a replayed game from its own snapshot, instead
+   * of built afresh. Choosing scouts again here would both pick different
+   * squads — they are chosen by nearness at the start, and the company has
+   * moved since — and journal `setScouting` a second time onto a recording
+   * that already carries it, which is a different battle.
+   */
+  static restored(
+    game: Game,
+    side: Side,
+    objective: Point,
+    suspected: readonly Point[],
+    plan: CompanyPlan,
+    ground: CompanyGround,
+    snap: CompanySnapshot,
+  ): ScriptedCompany {
+    const company = new ScriptedCompany(game, side, objective, suspected, plan, ground, true);
+    company.restoreFrom(snap);
+    return company;
+  }
+
+  constructor(
+    game: Game,
+    side: Side,
+    objective: Point,
+    suspected: readonly Point[],
+    plan: CompanyPlan,
+    ground: CompanyGround,
+    /** Building for a {@link restored} commander: leave the plan's setup to the snapshot. */
+    restoring = false,
+  ) {
     this.side = side;
     this.objective = { ...objective };
     this.plan = plan;
@@ -202,6 +232,7 @@ export class ScriptedCompany {
     this.home = own.length
       ? { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length }
       : { ...objective };
+    if (restoring) return;
     const recon = plan.recon;
     if (!recon || recon.scouts <= 0) {
       this.released = 0;
@@ -245,6 +276,54 @@ export class ScriptedCompany {
         if (at) this.waitAt.set(u.id, at);
       }
     }
+  }
+
+  /**
+   * What the commander carries, as plain data, so a battle saved mid-attack
+   * resumes with the same company (`session.ts`). Everything here is either
+   * decided at the start from positions that have since moved — the scouts,
+   * where the rest wait, the company's start line — or built up turn by
+   * turn; rebuilding it from the brief instead would quietly choose
+   * differently once the forces have gone forward.
+   */
+  snapshot(): CompanySnapshot {
+    return {
+      scouts: [...this.scouts].map(([id, at]) => [id, at ? { ...at } : null]),
+      waitAt: [...this.waitAt].map(([id, at]) => [id, { ...at }]),
+      tasks: [...this.tasks],
+      home: { ...this.home },
+      lookedTurns: this.lookedTurns,
+      support: this.support,
+      bounding: this.bounding,
+      holdingShort: this.holdingShort,
+      firesLifted: this.firesLifted,
+      movedUp: this.movedUp,
+      ...(this.via ? { via: { ...this.via } } : {}),
+      ...(this.released !== undefined ? { released: this.released } : {}),
+    };
+  }
+
+  /**
+   * Put a saved commander's memory back. Nothing is told to the game: the
+   * replay already carries every order the commander gave, `setScouting`
+   * among them.
+   */
+  private restoreFrom(snap: CompanySnapshot): void {
+    this.scouts.clear();
+    for (const [id, at] of snap.scouts) this.scouts.set(id, at ? { ...at } : null);
+    this.waitAt.clear();
+    for (const [id, at] of snap.waitAt) this.waitAt.set(id, { ...at });
+    this.tasks.clear();
+    for (const [key, task] of snap.tasks) this.tasks.set(key, task);
+    this.home = { ...snap.home };
+    this.lookedTurns = snap.lookedTurns;
+    this.support = snap.support;
+    this.bounding = snap.bounding;
+    this.holdingShort = snap.holdingShort;
+    this.firesLifted = snap.firesLifted;
+    this.movedUp = snap.movedUp;
+    this.via = snap.via ? { ...snap.via } : undefined;
+    this.released = snap.released;
   }
 
   /**
@@ -339,6 +418,25 @@ export class ScriptedCompany {
         if (this.lookedTurns > (this.plan.recon?.lookTurns ?? 0) || live.length === 0 || there) this.released = game.turn;
       }
     }
+    return this.currentOrders(game, { holding, asked: decided !== undefined });
+  }
+
+  /**
+   * The orders as they stand, deciding nothing — `orders` without the part
+   * that lets the company go.
+   *
+   * It exists because the two phases read the orders at different moments:
+   * the movement phase puts them on the task, and the combat phase reads
+   * `scouts`, `scoutsFire` and `hold` back off it to keep a scout from
+   * giving itself away (decision 52). A battle saved between the two has
+   * to put them back, and must not reach for `orders` to do it — that
+   * would count another turn of looking and could let the company go a
+   * turn early. Those three fields depend only on what the commander has
+   * decided, never on what it can see this moment, so a resume gets them
+   * exactly right.
+   */
+  currentOrders(game: Game, at: { holding?: boolean; asked?: boolean } = {}): CompanyOrders {
+    const holding = at.holding ?? this.holdingInSight(game);
     return {
       scouts: this.scouts,
       scoutsLieUp: holding || this.released !== undefined,
@@ -346,7 +444,7 @@ export class ScriptedCompany {
       waitAt: this.waitAt,
       ...(this.via ? { attackVia: this.via } : {}),
       ...(this.support ? { scoutsFire: true } : {}),
-      ...(decided ? { scoutsStay: true } : {}),
+      ...(at.asked ? { scoutsStay: true } : {}),
       platoonOf: this.platoonOfSquad,
       ...(this.tasks.size ? { platoonTasks: this.tasks } : {}),
       ...(this.bounding ? { boundByPlatoon: true } : {}),
@@ -446,4 +544,25 @@ export class ScriptedCompany {
         (game.contactFor(this.side, e.id)?.lastSeenTurn ?? -Infinity) >= game.turn - 1,
     );
   }
+}
+
+/** {@link ScriptedCompany} as plain data, for a saved battle. */
+export interface CompanySnapshot {
+  /** Each scout and where it watches from (null: toward the objective). */
+  scouts: [string, Point | null][];
+  /** Where each holding force waits. */
+  waitAt: [string, Point][];
+  /** What each platoon does once the company goes. */
+  tasks: [string, PlatoonTask][];
+  /** The company's start line, where a platoon pulled back goes. */
+  home: Point;
+  lookedTurns: number;
+  support: boolean;
+  bounding: boolean;
+  holdingShort: boolean;
+  firesLifted: boolean;
+  movedUp: boolean;
+  via?: Point;
+  /** The turn the rest were let go; absent while they hold. */
+  released?: number;
 }

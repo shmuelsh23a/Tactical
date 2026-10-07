@@ -1,5 +1,6 @@
 import { replayGame, stateDigest, type Game, type GameRecording, type Side } from "../engine/index.js";
-import { ComputerDefender, type ComputerSnapshot } from "./computerSide.js";
+import { ComputerAttacker, ComputerDefender, type AttackerSnapshot, type ComputerSnapshot } from "./computerSide.js";
+import type { PlatoonTask } from "./company.js";
 import type { Activation, LogEntry } from "./hotseat.js";
 
 /**
@@ -25,8 +26,14 @@ export interface Session {
    */
   digest: string;
   ui: SessionUi;
-  /** Single-player: the computer's side and memory. Absent in hotseat. */
+  /** Single-player, the computer holding: its side and memory. Absent otherwise. */
   computer?: ComputerSnapshot;
+  /**
+   * Single-player, the computer attacking: its side, its brief and its
+   * memory. Absent otherwise. A battle has at most one of the two — the
+   * computer plays one side — and neither in hotseat.
+   */
+  computerAttacker?: AttackerSnapshot;
 }
 
 export interface SessionUi {
@@ -77,7 +84,11 @@ const isCount = (v: unknown): boolean => Number.isFinite(v);
 function isComputerSnapshot(c: unknown): boolean {
   if (!isObject(c) || !SIDE_SET.has(c.side as string) || !isPoint(c.objective)) return false;
   if (!isStringArray(c.reserves) || !Array.isArray(c.targets) || !c.targets.every(isPoint)) return false;
-  const d = c.drill;
+  return isDrillSnapshot(c.drill);
+}
+
+/** The drill's memory, every field `DrillState.restore` reads. */
+function isDrillSnapshot(d: unknown): boolean {
   return (
     isObject(d) &&
     isPairs(d.strength, isCount) &&
@@ -91,6 +102,33 @@ function isComputerSnapshot(c: unknown): boolean {
     isPairs(d.levelWaits, (v) => isObject(v) && isCount(v.turn) && isCount(v.count))
   );
 }
+/** The attacking computer's memory, every field its restore reads (`ComputerAttacker.restore`). */
+function isAttackerSnapshot(c: unknown): boolean {
+  if (!isObject(c) || !SIDE_SET.has(c.side as string) || !isPoint(c.objective)) return false;
+  const f = c.fire;
+  if (!isObject(f) || !isCount(f.missions) || !isCount(f.smoke)) return false;
+  return isCompanySnapshot(c.company) && isDrillSnapshot(c.drill);
+}
+
+/** The company commander's memory, every field `ScriptedCompany.restoreFrom` reads. */
+function isCompanySnapshot(c: unknown): boolean {
+  return (
+    isObject(c) &&
+    isPairs(c.scouts, (v) => v === null || isPoint(v)) &&
+    isPairs(c.waitAt, isPoint) &&
+    isPairs(c.tasks, (v) => PLATOON_TASKS.has(v as string)) &&
+    isPoint(c.home) &&
+    isCount(c.lookedTurns) &&
+    typeof c.support === "boolean" &&
+    typeof c.bounding === "boolean" &&
+    typeof c.holdingShort === "boolean" &&
+    typeof c.firesLifted === "boolean" &&
+    typeof c.movedUp === "boolean" &&
+    (c.via === undefined || isPoint(c.via)) &&
+    (c.released === undefined || isCount(c.released))
+  );
+}
+const PLATOON_TASKS: ReadonlySet<string> = new Set<PlatoonTask>(["assault", "support", "reserve", "halt", "withdraw"]);
 const KINDS: ReadonlySet<string> = new Set(["info", "move", "fire", "casualty", "phase"]);
 
 /**
@@ -148,7 +186,10 @@ export function parseSession(text: string): Session {
     Object.values(ui.missionsUsed).every((n) => typeof n === "number") &&
     isStringArray(ui.reported) &&
     isStringArray(ui.toldDown) &&
-    (raw.computer === undefined || isComputerSnapshot(raw.computer));
+    (raw.computer === undefined || isComputerSnapshot(raw.computer)) &&
+    (raw.computerAttacker === undefined || isAttackerSnapshot(raw.computerAttacker)) &&
+    // The computer plays one side: a save naming both is not one of ours.
+    !(raw.computer !== undefined && raw.computerAttacker !== undefined);
   if (!ok) throw new SessionError("notASession");
   return raw as unknown as Session;
 }
@@ -157,7 +198,8 @@ export function parseSession(text: string): Session {
 export interface ResumedBattle {
   session: Session;
   game: Game;
-  ai: ComputerDefender | null;
+  /** The computer, whichever side it plays; null in hotseat. */
+  ai: ComputerDefender | ComputerAttacker | null;
 }
 
 /**
@@ -169,10 +211,14 @@ export interface ResumedBattle {
  */
 export function resumeBattle(session: Session, ground: { mapWidth: number; mapHeight: number }): ResumedBattle {
   let game: Game;
-  let ai: ComputerDefender | null;
+  let ai: ComputerDefender | ComputerAttacker | null;
   try {
     game = replayGame(session.recording);
-    ai = session.computer ? ComputerDefender.restore(game, session.computer, ground) : null;
+    ai = session.computer
+      ? ComputerDefender.restore(game, session.computer, ground)
+      : session.computerAttacker
+        ? ComputerAttacker.restore(game, session.computerAttacker, ground)
+        : null;
   } catch {
     throw new SessionError("doesNotReplay");
   }

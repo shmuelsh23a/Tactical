@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { ScenarioListing } from "../scenario.js";
+import type { ComputerRole } from "../App.js";
 
 interface ScenarioPickerProps {
   scenarios: readonly ScenarioListing[];
-  /** The battle, and whether it is played against the computer rather than by two at one screen. */
-  onPick: (scenario: ScenarioListing, vsComputer: boolean) => void;
+  /** The battle, and which side the computer takes; absent for two at one screen. */
+  onPick: (scenario: ScenarioListing, vsComputer?: ComputerRole) => void;
   /** The battle in progress saved in this browser, to pick up again; null when there is none. */
-  saved: { title: string; turn: number; vsComputer: boolean } | null;
+  saved: { title: string; turn: number; vsComputer?: ComputerRole } | null;
   onResume: () => void;
   /** Why the battle saved here could not be picked up, in Hebrew; null when nothing went wrong. */
   savedProblem: string | null;
@@ -30,13 +31,14 @@ function extent(width: number, height: number): string {
  * the ground, and no more.
  *
  * Who plays is chosen here too: two players passing one screen, or one
- * against the computer, which takes the side that is not attacking.
+ * against the computer — which takes either side, so the player may attack
+ * a position the computer holds or hold one the computer comes on against.
  *
  * A recording needs no battle picked first: it carries its own ground, and
  * the debrief chooses whose eyes to read it through.
  */
 export function ScenarioPicker({ scenarios, onPick, saved, onResume, savedProblem, onLoadRecording, loadError }: ScenarioPickerProps) {
-  const [vsComputer, setVsComputer] = useState(false);
+  const [vsComputer, setVsComputer] = useState<ComputerRole | undefined>(undefined);
   return (
     <div className="picker">
       <h1>בחירת תרחיש</h1>
@@ -45,18 +47,21 @@ export function ScenarioPicker({ scenarios, onPick, saved, onResume, savedProble
           <h2>המשך קרב שמור</h2>
           <p>
             {saved.title} — {saved.turn > 0 ? `תור ${saved.turn}` : "תכנון משימה"}
-            {saved.vsComputer ? " · מול המחשב" : " · שני שחקנים"}
+            {saved.vsComputer === "defend" ? " · מול המחשב, אתה התוקף" : saved.vsComputer === "attack" ? " · מול המחשב, אתה המגן" : " · שני שחקנים"}
           </p>
         </button>
       )}
       {saved && <p className="picker-note">נשמר קרב אחד: קרב חדש יחליף אותו ברגע שיתחיל.</p>}
       {savedProblem && <p className="picker-error">{savedProblem}</p>}
       <div className="picker-mode seg">
-        <button className={vsComputer ? "" : "on"} onClick={() => setVsComputer(false)}>
+        <button className={vsComputer === undefined ? "on" : ""} onClick={() => setVsComputer(undefined)}>
           שני שחקנים במחשב אחד
         </button>
-        <button className={vsComputer ? "on" : ""} onClick={() => setVsComputer(true)}>
+        <button className={vsComputer === "defend" ? "on" : ""} onClick={() => setVsComputer("defend")}>
           מול המחשב (אתה התוקף)
+        </button>
+        <button className={vsComputer === "attack" ? "on" : ""} onClick={() => setVsComputer("attack")}>
+          מול המחשב (אתה המגן)
         </button>
       </div>
       <ul className="picker-list">

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { GameRecording } from "../engine/index.js";
-import { App } from "./App.js";
+import { App, type ComputerRole } from "./App.js";
 import { Debrief } from "./Debrief.js";
 import { recordingLoadFailed, sessionProblemHe } from "./debriefText.js";
 import { readRecording } from "./recordingFile.js";
@@ -18,8 +18,16 @@ import {
 } from "./session.js";
 
 const PARAM = "scenario";
-/** `?vs=computer`: the battle is played against the computer (single-player). */
+/**
+ * `?vs=computer`: the battle is played against the computer, which holds the
+ * position; `?vs=attacker`: against the computer attacking, the player
+ * holding. Absent: hotseat. The first spelling is the one the single-player
+ * cut shipped with and still means the same battle.
+ */
 const VS = "vs";
+/** What each `?vs=` spelling means, and what to write for each role. */
+const VS_ROLE: Readonly<Record<string, ComputerRole>> = { computer: "defend", attacker: "attack" };
+const VS_PARAM: Readonly<Record<ComputerRole, string>> = { defend: "computer", attack: "attacker" };
 /**
  * `&saved=1`: this tab's battle has been saved, so a reload comes back to it.
  * Set by the game once it has first saved, never by a pick — a battle picked
@@ -33,11 +41,11 @@ const SAVED = "saved";
  * than pushed on purpose: a Back button that returned to the picker would drop
  * the battle without the header button's second click.
  */
-function remember(id: string | null, vsComputer = false, saved = false) {
+function remember(id: string | null, vsComputer?: ComputerRole, saved = false) {
   const url = new URL(window.location.href);
   if (id) url.searchParams.set(PARAM, id);
   else url.searchParams.delete(PARAM);
-  if (id && vsComputer) url.searchParams.set(VS, "computer");
+  if (id && vsComputer) url.searchParams.set(VS, VS_PARAM[vsComputer] ?? "computer");
   else url.searchParams.delete(VS);
   if (id && saved) url.searchParams.set(SAVED, "1");
   else url.searchParams.delete(SAVED);
@@ -88,10 +96,16 @@ function resumeStored(): { resumed: ResumedBattle; listing: ScenarioListing } | 
   }
 }
 
+/** Which side the computer takes in a battle picked up from a save. */
+function roleOf(resumed: ResumedBattle): ComputerRole | undefined {
+  return resumed.session.computer ? "defend" : resumed.session.computerAttacker ? "attack" : undefined;
+}
+
 interface Picked {
   listing: ScenarioListing;
   round: number;
-  vsComputer: boolean;
+  /** Which side the computer takes, if it plays at all. */
+  vsComputer?: ComputerRole;
   resume?: ResumedBattle;
 }
 
@@ -115,11 +129,11 @@ export function Root() {
     const params = new URL(window.location.href).searchParams;
     const listing = findScenario(params.get(PARAM));
     if (!listing) return { picked: null, notice: null };
-    const vsComputer = params.get(VS) === "computer";
+    const vsComputer = VS_ROLE[params.get(VS) ?? ""];
     if (params.get(SAVED) !== "1") return { picked: { listing, round: 0, vsComputer }, notice: null };
     // A reload of a saved battle comes back to it, if it is still the one saved here.
     const back = resumeStored();
-    if (back && "resumed" in back && back.listing.id === listing.id && Boolean(back.resumed.ai) === vsComputer) {
+    if (back && "resumed" in back && back.listing.id === listing.id && roleOf(back.resumed) === vsComputer) {
       return { picked: { listing, round: 0, vsComputer, resume: back.resumed }, notice: null };
     }
     remember(null);
@@ -153,7 +167,7 @@ export function Root() {
             ? {
                 title: saved.listing.title,
                 turn: Math.max(0, ...saved.session.ui.log.map((e) => e.turn)),
-                vsComputer: Boolean(saved.session.computer),
+                vsComputer: saved.session.computer ? "defend" : saved.session.computerAttacker ? "attack" : undefined,
               }
             : null
         }
@@ -166,7 +180,7 @@ export function Root() {
             setNotice(back.problem);
             return;
           }
-          const vsComputer = Boolean(back.resumed.ai);
+          const vsComputer = roleOf(back.resumed);
           remember(back.listing.id, vsComputer, true);
           setLoadError(null);
           setNotice(null);
@@ -191,7 +205,7 @@ export function Root() {
     <App
       key={`${picked.listing.id}-${picked.round}`}
       scenario={picked.listing}
-      vsComputer={picked.vsComputer}
+      {...(picked.vsComputer ? { vsComputer: picked.vsComputer } : {})}
       {...(picked.resume ? { resume: picked.resume } : {})}
       onSaved={markSaved}
       onLeave={() => {
