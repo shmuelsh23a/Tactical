@@ -158,12 +158,17 @@ one it is in your reply, too.
   commander (dead ground, observation points) live in
   [`deadGround.ts`](src/app/deadGround.ts) and read the ground with the
   engine's own sight test.
-- **The computer opponent and the harness play one defender.**
-  [`computerSide.ts`](src/app/computerSide.ts) holds the defending side's
-  fire plan, fire calls and the `ComputerDefender` the browser plays
-  against; `src/sim/scenarioBattle.ts` imports the same functions. Change
-  the defender there and both move, and the harness's tables with them: rerun
-  the standard measurement (docs/balance.md) and compare. A `DrillReport`
+- **The computer opponent and the harness play one attacker and one
+  defender.** [`computerSide.ts`](src/app/computerSide.ts) holds both
+  sides' fire plans and fire calls, the `ComputerDefender` and the
+  `ComputerAttacker` the browser plays against, and the plan's frontage
+  (`attackerPlan`); [`planning.ts`](src/app/planning.ts) holds the
+  pre-battle estimate (`estimateFrom`, `briefedObjective`) that decides how
+  wrong a commander's brief is. `src/sim/scenarioBattle.ts` and
+  `src/sim/balance.ts` import the same functions — the arrow runs from
+  `sim` to `app`, never back. Change either side there and both the game
+  and the harness move, and the harness's tables with them: rerun the
+  standard measurement (docs/balance.md) and compare. A `DrillReport`
   passed to the drill must only *read* — `computerSide.test.ts` checks a
   battle's recording is the same with and without one.
 - **Posture drives both being seen and being hit.** `stationaryTurns`, `cover`

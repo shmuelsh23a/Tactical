@@ -4298,6 +4298,46 @@ the 20 m band), and the plain scripted attack does not search for it — the
 battles run to time. The surprise is there to be used; the script does not
 use it, as it does not use a flank. A player's raid is the test.
 
+## What the browser's attacking computer is given, 2026-10-07
+
+Rules decision 88. Not a balance round — no rule moved, and the standard
+measurement is unchanged. What is recorded here is the measurement that
+chose the options the browser hands its attacker (`BROWSER_ATTACK_PLAN` /
+`BROWSER_ATTACK_FIRE` in `app/computerSide.ts`), so the choice can be
+re-derived rather than taken on trust.
+
+60 battles a scenario from seed 1000, plain script:
+
+| Attacker's options | telAzekaAssault | telAzekaAssault2 |
+|---|---|---|
+| The harness's bare defaults | **0%** | **0%** |
+| Waiting for contact, no scouts | **0%** (17% of its men down, median 9 turns) | — |
+| Two scouts on vantage points, guns held for a mark sure to 40 m, smoke, prep fires | **10%** | **15%** |
+
+```bash
+npm run scenario-sim -- --n 60                      # the bare defaults
+npm run scenario-sim -- --scenario telAzekaAssault --n 40 --wait-for-contact --aim 40
+npm run scenario-sim -- --n 60 --recon 2 --watch 1 --look 4 --wait-for-contact   --aim 40 --scout-from vantage --wait-in dead-ground --smoke 4 --prep-fires
+```
+
+- **The bare defaults are not an opponent.** They fire on the plan's
+  registered points from turn 1 with nobody looking, and the company walks
+  into its own danger-close rounds (decision 63, S4). Driven in the browser
+  on `telAzekaAssault`, the attack broke on **turn 16** against a player who
+  gave no order at all — RED never fired a shot.
+- **Waiting for contact alone is worse, not better.** With no scouts the
+  company walks blind onto the position: still 0%, but 17% of its men down
+  against 5%, and the median battle 9 turns instead of 15. The scouts are
+  what make the fire policy worth having; the two go together.
+- **Driven in the browser** with the chosen options: the computer took the
+  position on **turn 29** against a passive defender, laying three smoke
+  screens on the way in. A battle saved mid-attack at turn 10 and reloaded
+  released its company on turn 14 and ended on the same turn 29.
+- ⚠️ Ours. The author has not seen these options; they are the harness's
+  own competent attacker carried over, not a tuned opponent. The obvious
+  next question is whether the browser should offer a difficulty at all,
+  and what a weaker setting would take away.
+
 ## How the engine scales, 2026-09-23
 
 The same scripted mirror as the harness, grown by the company, timed per turn

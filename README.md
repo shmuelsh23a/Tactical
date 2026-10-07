@@ -2746,6 +2746,39 @@ on the stated reasoning, still awaiting the author's word.
       shot are the sight inside houses, left for the urban combat work
       (backlog 23).
 
+88. ⚠️ **The attacking computer plays a competent plan, not the harness's
+    bare defaults** (2026-10-07, **ours — the author has not seen it**).
+    `BROWSER_ATTACK_PLAN` / `BROWSER_ATTACK_FIRE` in
+    [`computerSide.ts`](src/app/computerSide.ts): two scouts to observation
+    points that overlook the objective (`scoutFrom: "vantage"`), the rest
+    waiting in dead ground, the guns held until a scout has a mark it is
+    sure of to 40 m, four smoke missions to screen the crossing, and the
+    plan kept under fire when nothing is sure.
+    - **Why not the defaults.** `DEFAULT_FIRE_CHOICES` fires on the plan's
+      registered points from turn 1 with nobody looking. The company then
+      walks into its own danger-close rounds (decision 63, S4) and breaks
+      without the defender firing a shot — driven in the browser on
+      `telAzekaAssault`, the attack broke on turn 16 against a player who
+      gave no order at all, and the harness measures the same choices at
+      **0% attacker wins**. That is not an opponent.
+    - **Nor is waiting for contact enough on its own**: with no scouts the
+      company walks blind onto the position and is measured worse still —
+      0% wins, 17% of its men down against 5%, the median battle 9 turns.
+      The scouts are what make the fire policy worth having.
+    - **Measured**: the same choices give **10%** on `telAzekaAssault` and
+      15% on `telAzekaAssault2` (60 battles from seed 1000). Driven in the
+      browser, the computer took the position on turn 29 against a passive
+      defender, laying three smoke screens on the way in.
+    - The figures are the harness's, carried over; no new balance round,
+      and the standard measurement is unchanged. This changes only which
+      options the *browser* hands its attacker, never the rules — which is
+      why it is a ⚠️ to be confirmed rather than a rule to be measured.
+      Recorded on [balance.md](docs/balance.md), *What the browser's
+      attacking computer is given*, with the commands that reproduce it.
+    - **Open for the author**: whether single-player should offer a
+      difficulty at all, and what a weaker setting would take away —
+      fewer scouts, no smoke, or the bare defaults as an "easy".
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -2842,12 +2875,24 @@ Still modelled by reasonable assumption (flag if you want them changed):
   only its own side's picture, as the drill always has. Its activations play
   out at once with no handoff, and what it does reaches the player's log
   through the same wording as a player's own fire (`DrillReport` in
-  `drill.ts`). Not yet: the computer as the attacker, and a choice of side.
+  `drill.ts`).
+
+  **The computer as the attacker (2026-10-07):** the picker's third choice,
+  *מול המחשב (אתה המגן)* (`?vs=attacker`). The player holds the position and
+  the computer comes on against it as the harness's attacker does: a
+  `ScriptedCompany` ([`company.ts`](src/app/company.ts)) deciding the
+  company's business — which squads scout, from where, where the rest wait, when they go — and the squad drill
+  carrying it out, with the company's mortars fired by the policy the tables
+  measure. It is briefed on where the defence is, not told: the position's
+  centre spoilt by an observer's error (decision 51), drawn from the same
+  planning stream the harness uses, so the plan is wrong in the same way a
+  measured battle's is. See decision 88 for which plan it is given and why.
 
   **Save and resume (2026-10-05):** a battle in progress is kept in the
   browser after every change ([`session.ts`](src/app/session.ts)): its
   recording, where play stands in the turn, the live log, and the
-  computer's drill memory. The picker offers it as *המשך קרב שמור*, and a
+  computer's memory — its drill, and, when it attacks, its company
+  commander and what it has fired. The picker offers it as *המשך קרב שמור*, and a
   reload comes back to it; a hotseat battle resumes behind the handoff
   screen for the side to act. Resumed mid-turn, a battle goes on exactly as
   if it had never stopped — `computerSide.test.ts` pins it, and it was driven
