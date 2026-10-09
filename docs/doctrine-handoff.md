@@ -55,20 +55,46 @@ wrong — and that is a decision for the author, made on the numbers.
 
   ⚠️ **This brief's "(its battle drills)" was wrong about where they are.**
   ATP 3-21.8's Appendix E only *names* the drills with their task numbers
-  — Battle Drill 1 React to Direct Fire Contact (07-PLT-D9501), 1A the
-  squad's, 2 Conduct a Platoon Assault (07-PLT-D9514), 2A the squad's, 3
-  Break Contact (07-PLT-D9505), 3A the squad's — and refers the reader to
-  the Army Training Network, which is not in the corpus and which the
-  cloud proxy would refuse anyway. So the drill work draws on:
+  and refers the reader to the Army Training Network, which is not in the
+  corpus and which the cloud proxy would refuse anyway.
 
-  - **TC 3-21.76** *Ranger Handbook* (**2025-09-19**, 380 pp) — Appendix A
-    carries the steps in executable form, down to which team acts
-    *without* orders and which waits on the squad leader. This is the
-    closest thing in the corpus to what `drill.ts` already is, and is
-    where the drill rewrite should start.
+  **The drills themselves are in TC 3-21.76 (Ranger Handbook, 2025-09-19),
+  Chapter 8 — all six that ATP 3-21.8 names, and four more.** They are in
+  the official task-step format, numbered, with **leader performance steps
+  marked by an asterisk** and a *Conditions* paragraph each. Found
+  2026-10-09; pages are the PDF's:
+
+  | Task | Drill | p. |
+  |---|---|---|
+  | 07-PLT-D9501 | React to Direct Fire Contact — Platoon | 169 |
+  | 07-SQD-D9501 | React to Direct Fire Contact — Squad | 172 |
+  | 07-PLT-D9514 | Conduct a Platoon Assault | 175 |
+  | 07-SQD-D9515 | Conduct a Squad Assault | 178 |
+  | 07-PLT-D9505 | Break Contact — Platoon | 181 |
+  | 07-SQD-D9505 | Break Contact — Squad | 185 |
+  | 07-PLT-D9502 | React to Ambush (Dismounted) — Platoon | 189 |
+  | 07-SQD-D9502 | React to Ambush (Dismounted) — Squad | 193 |
+  | 07-SQD-D9509 | Enter and Clear a Room — Squad | 197 |
+  | 07-PLT-D9504 / 07-SQD-D9504 | React to Indirect Fire While Dismounted | 201–202 |
+
+  This is the closest thing in the corpus to what [`drill.ts`](../src/app/drill.ts)
+  already is, and it is where the drill rewrite starts. The asterisked
+  leader steps matter for the game's own layer split: an asterisked step is
+  a *decision*, which belongs to the commander (`company.ts`, or the
+  player); an unasterisked one is the drill carrying it out.
+
+  Read one whole before planning the work:
+
+  ```bash
+  PYTHONUTF8=1 py tools/doctrine.py --find "Conduct a Squad Assault" --doc 3-21.76 --full
+  ```
+
   - **ATP 3-21.8** chapters 3–5 — the reasoning and the standards behind
     the steps: base-of-fire and bounding elements, formations, movement
     techniques, the offense and the defense.
+  - **Enter and Clear a Room (07-SQD-D9509)** is a bonus the brief did not
+    ask for: it is the urban drill backlog 23 will want, already in the
+    same format.
 
   One finding already worth carrying into the work: **ATP 3-21.8 (2024),
   para 3-102** — "Platoon leaders normally designate a general location for

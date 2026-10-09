@@ -119,15 +119,29 @@ Four things that will otherwise cost you an hour each:
 - **`PYTHONUTF8=1` or the manuals come out mojibake** on a Windows console
   — the data is clean UTF-8; the terminal is not.
 - **The battle drills are not in ATP 3-21.8.** Its Appendix E only *names*
-  them with task numbers and points at the Army Training Network. The
-  executable steps are in the **Ranger Handbook (TC 3-21.76, 2025),
-  Appendix A**; the reasoning is in ATP 3-21.8's chapters 3–5.
-- **Retrieval is literal text search**, not semantic: the corpus stores a
-  `voyage-context-4` vector per chunk, but querying it needs a
-  `VOYAGE_API_KEY` that this machine does not have. Search the doctrine's
-  own defined terms ("base of fire", "bounding overwatch"), not ours
-  ("covering fire", "leapfrogging") — doctrine repeats its terms verbatim,
-  which is what makes this work.
+  them with task numbers and points at the Army Training Network. The full
+  task steps are in the **Ranger Handbook (TC 3-21.76, 2025), Chapter 8**,
+  pp. 169–203 — all six drills ATP 3-21.8 names, in the official format
+  with leader steps asterisked. The reasoning behind them is in ATP
+  3-21.8's chapters 3–5. The table is in
+  [docs/doctrine-handoff.md](docs/doctrine-handoff.md).
+- **Text search is the proof; `--semantic` is only a way in.** An exact hit
+  on doctrine's own term settles a question; a cosine score ranks. Prefer
+  the doctrine's wording ("base of fire", "bounding overwatch") over ours
+  ("covering fire", "leapfrogging") — doctrine repeats its defined terms
+  verbatim, which is what makes literal search work at all. Use
+  `--semantic` when you have our words and not theirs, then **confirm the
+  term it surfaces with a text search** before quoting anything.
+- **`--semantic` ranks loosely, and this is structural.** The index's
+  vectors are *contextualized*: each chunk was embedded in a group with its
+  neighbours, so a chunk's own `embed_text` re-embedded alone scores only
+  **0.73** against its stored vector (measured 2026-10-09). Query vectors
+  therefore land in a different part of the space than the documents', and
+  scores compress into 0.3–0.55 with the ranking only roughly ordered — a
+  near-verbatim query put its own target third. Treat the top hit as a
+  neighbourhood, not an answer. Do not "fix" this by embedding queries as
+  documents; that is a worse match (0.67), and the 1.0 self-similarity you
+  might expect is not reachable one chunk at a time.
 - **A chunk count is not a measurement.** The corpus manifest says so:
   it is a retrieval index, not a unit set, and "81 chunks mention X" is an
   artefact of an 1,800-character chunker. Quote paragraphs.

@@ -51,6 +51,17 @@ Two ways to search, and they answer different questions:
   about 15 seconds; after that a query is roughly a second plus the API
   call. Scores are cosine, printed before the citation.
 
+  **It ranks loosely, and that is structural.** The index's vectors are
+  *contextualized*: each chunk was embedded in a group with its neighbours,
+  so re-embedding a chunk's own embed_text alone scores about 0.73 against
+  its stored vector, not 1.0. Query vectors sit in a different part of the
+  space again, so scores compress into roughly 0.3-0.55 and the order is
+  only approximate -- a near-verbatim query put its own target third, under
+  two chunks that were merely adjacent in subject. So use --semantic to
+  find out what doctrine *calls* a thing, then prove it with a text search
+  and quote that. Do not embed queries as documents to "fix" the scores:
+  measured, that is worse (0.67).
+
 **Chunk counts are not a measurement.** The manifest says so outright: this
 is a retrieval index, not a unit set. "81 chunks mention X" is an artefact
 of an 1,800-character chunker, not a fact about doctrine. Quote paragraphs,

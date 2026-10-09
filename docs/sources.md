@@ -110,15 +110,18 @@ gitignored, so it is fetched, not versioned.
 **Three cautions, each paid for once:**
 
 - **The battle drills are not in ATP 3-21.8.** Appendix E only *names* them
-  with their task numbers (Battle Drill 1: React to Direct Fire Contact,
-  07-PLT-D9501; 2: Conduct a Platoon Assault; 3: Break Contact) and points
-  at the Army Training Network. The executable steps are in the **Ranger
-  Handbook's Appendix A**, and the reasoning behind them in ATP 3-21.8's
-  chapters 3–5. Do not go looking for a drill appendix that is not there.
-- **Search the doctrine's words, not ours.** Retrieval is literal text
-  search: there is no `VOYAGE_API_KEY` on this machine, so the corpus's
-  stored embeddings cannot be queried. "base of fire" and "support by
-  fire" hit; "covering fire" does not.
+  with their task numbers and points at the Army Training Network. The full
+  task steps are in the **Ranger Handbook, Chapter 8** (TC 3-21.76, 2025,
+  pp. 169–203), and the reasoning behind them in ATP 3-21.8's chapters 3–5.
+  The drill-by-drill table is in
+  [doctrine-handoff.md](doctrine-handoff.md).
+- **Search the doctrine's words, not ours.** `--semantic` exists (it needs
+  `VOYAGE_API_KEY` in `.env`) but ranks only roughly: the index's vectors
+  are contextualized over chunk groups, so a query vector is never a close
+  match — scores sit at 0.3–0.55 and a near-verbatim query put its own
+  target third. Use it to find doctrine's term, then quote from a text
+  search. "base of fire" and "support by fire" hit; "covering fire" does
+  not.
 - **Chunk counts are not measurements.** The manifest says so itself: it is
   a retrieval index, not a unit set. Quote paragraphs, never "N chunks say".
 
