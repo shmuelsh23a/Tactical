@@ -12,3 +12,11 @@ __pycache__/
 
 # Jev battles played by tools/jev-sim.ts --jev: answers and call logs
 jev-runs/
+
+# The doctrine corpus in docs/Doctrine: the chunk index carries a 1024-dim
+# embedding per chunk and runs to hundreds of MB, well past what GitHub will
+# take. The manifest and documents.csv beside it stay tracked, so the repo
+# still records which corpus a finding was read from (its sha256, the parse
+# and the embedding model) even though the index itself is fetched, not
+# versioned. Rebuild or re-publish the release to get it back.
+docs/Doctrine/**/chunks.parquet

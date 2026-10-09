@@ -40,6 +40,7 @@ npm run jev-sim -- --rule --seed 1000 --n 20   # the scripted commander's choice
 npm run jev-probe -- --runs jev-runs            # re-ask Jev's recorded questions in other framings, to tune the question set
 npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20 --parallel 4  # a Claude model in Jev's place (needs ANTHROPIC_API_KEY and api.anthropic.com)
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
+PYTHONUTF8=1 py tools/doctrine.py --find "base-of-fire element" --doc 3-21.8   # search the doctrine corpus (see below)
 ```
 
 Node **24** — pinned in `.nvmrc`, declared in `engines`, and read from that same
@@ -89,6 +90,52 @@ this file:
 Prefer adding a check to adding a paragraph. A rule a machine can state is worth
 more than a rule a reader has to remember, and it works on assistants that never
 read this file at all.
+
+## The doctrine corpus is the authority on drills
+
+`docs/Doctrine` holds the author's doctrine library: **426 US Army
+publications, 77,597 pages**, parsed and chunked for retrieval. It is the
+material backlog 21 (the doctrine engine) was waiting for, and the layer
+split it serves is in [docs/doctrine-handoff.md](docs/doctrine-handoff.md)
+— **rules** are tuned to real outcomes, **drills come from the manuals and
+stay fixed**, plans are the players'. So a drill question is answered by
+retrieval and a citation, not by judgement.
+
+Search it with [`tools/doctrine.py`](tools/doctrine.py) (`--help` for the
+rest); a full scan takes about a second, so there is no index to build:
+
+```bash
+PYTHONUTF8=1 py tools/doctrine.py --list 3-21                     # which manuals
+PYTHONUTF8=1 py tools/doctrine.py --find "support by fire" --doc 3-21.8 --full
+PYTHONUTF8=1 py tools/doctrine.py --find "rate of fire" --tables  # planning figures
+```
+
+Every chunk carries its **doctrine paragraph numbers**, so a finding is
+quotable as *ATP 3-21.8 (2024), para 3-102* — record it in
+[docs/sources.md](docs/sources.md) that way, as every other figure is.
+
+Four things that will otherwise cost you an hour each:
+
+- **`PYTHONUTF8=1` or the manuals come out mojibake** on a Windows console
+  — the data is clean UTF-8; the terminal is not.
+- **The battle drills are not in ATP 3-21.8.** Its Appendix E only *names*
+  them with task numbers and points at the Army Training Network. The
+  executable steps are in the **Ranger Handbook (TC 3-21.76, 2025),
+  Appendix A**; the reasoning is in ATP 3-21.8's chapters 3–5.
+- **Retrieval is literal text search**, not semantic: the corpus stores a
+  `voyage-context-4` vector per chunk, but querying it needs a
+  `VOYAGE_API_KEY` that this machine does not have. Search the doctrine's
+  own defined terms ("base of fire", "bounding overwatch"), not ours
+  ("covering fire", "leapfrogging") — doctrine repeats its terms verbatim,
+  which is what makes this work.
+- **A chunk count is not a measurement.** The corpus manifest says so:
+  it is a retrieval index, not a unit set, and "81 chunks mention X" is an
+  artefact of an 1,800-character chunker. Quote paragraphs.
+
+The chunk index is **gitignored** (hundreds of MB, past GitHub's limit);
+the `manifest.json` and `documents.csv` beside it are tracked, so the repo
+records which corpus a finding came from — its sha256, its parse and its
+embedding model — even though the index is fetched rather than versioned.
 
 ## The rules document is the authority
 

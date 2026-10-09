@@ -1,15 +1,23 @@
 # Doctrine handoff — the drills from the manuals (backlog 21)
 
 The brief for the session that replaces the game's drills with doctrine.
-**It waits for the author's manuals** (author, 2026-10-02): a good number of
-open-source manuals collected over the years, kept on the author's computer
-and to be embedded alongside the ones named below — so the work starts when
-the author brings them into a session. It is **commercial-edition work
-and belongs in this public repository**: the commercial edition is built on
-open-source manuals only. (The 2026-10-01 note that it was local work, with
-the author's material in a private package, is superseded.) The cloud
-sessions' proxy refuses most military sites (handoff.md, *Traps*), so the
-manuals arrive as files, not downloads. The cloud handoff is
+
+**The manuals have arrived (2026-10-09) — this is no longer blocked.** The
+author's library is in `docs/Doctrine`: **426 US Army publications, 77,597
+pages**, parsed and chunked for retrieval, searched with
+[`tools/doctrine.py`](../tools/doctrine.py). How to use it, and the four
+traps it carries, are in [AGENTS.md](../AGENTS.md), *The doctrine corpus is
+the authority on drills*; its provenance is in
+[sources.md](sources.md), *Doctrine: the manuals, as a corpus*. The three
+manuals this brief named are all there, current editions recorded below.
+
+It is **commercial-edition work and belongs in this public repository**: the
+commercial edition is built on open-source manuals only, and every
+publication in the corpus is Distribution A from armypubs.army.mil. (The
+2026-10-01 note that it was local work, with the author's material in a
+private package, is superseded.) The cloud sessions' proxy refuses most
+military sites (handoff.md, *Traps*), which is why the corpus is a local
+index rather than something a session fetches. The cloud handoff is
 [handoff.md](handoff.md); read its *Start here* first.
 
 ## Why
@@ -33,9 +41,42 @@ wrong — and that is a decision for the author, made on the numbers.
 
 - **Civilian (commercial) edition: US doctrine in open sources**
   (Distribution A, public domain): **ATP 3-21.8** *Infantry Platoon and
-  Squad* (its battle drills), **ATP 3-21.10** *Infantry Rifle Company*,
-  **FM 3-90** *Tactics* (forms of manoeuvre, hasty and deliberate attack, the
-  defence). Check the current edition of each and record it.
+  Squad*, **ATP 3-21.10** *Infantry Rifle Company*, **FM 3-90** *Tactics*
+  (forms of manoeuvre, hasty and deliberate attack, the defence).
+
+  **The current editions, checked in the corpus 2026-10-09** (as this brief
+  asked):
+
+  | Manual | Edition | Pages |
+  |---|---|---|
+  | ATP 3-21.8 | **2024-01-11** (ARN44065) | 598 |
+  | ATP 3-21.10 | **2026-06-01** (ARN46667) | 296 |
+  | FM 3-90 | **2023-05-01** (ARN38160) | 480 |
+
+  ⚠️ **This brief's "(its battle drills)" was wrong about where they are.**
+  ATP 3-21.8's Appendix E only *names* the drills with their task numbers
+  — Battle Drill 1 React to Direct Fire Contact (07-PLT-D9501), 1A the
+  squad's, 2 Conduct a Platoon Assault (07-PLT-D9514), 2A the squad's, 3
+  Break Contact (07-PLT-D9505), 3A the squad's — and refers the reader to
+  the Army Training Network, which is not in the corpus and which the
+  cloud proxy would refuse anyway. So the drill work draws on:
+
+  - **TC 3-21.76** *Ranger Handbook* (**2025-09-19**, 380 pp) — Appendix A
+    carries the steps in executable form, down to which team acts
+    *without* orders and which waits on the squad leader. This is the
+    closest thing in the corpus to what `drill.ts` already is, and is
+    where the drill rewrite should start.
+  - **ATP 3-21.8** chapters 3–5 — the reasoning and the standards behind
+    the steps: base-of-fire and bounding elements, formations, movement
+    techniques, the offense and the defense.
+
+  One finding already worth carrying into the work: **ATP 3-21.8 (2024),
+  para 3-102** — "Platoon leaders normally designate a general location for
+  the base of fire, and the element leader selects the exact location."
+  That is the game's own layer split stated in doctrine: the general
+  location is a `CompanyOrders` field, the exact position is the squad
+  drill's. It settles how the base of fire (backlog 21) divides between
+  `company.ts` and `drill.ts` without a judgement call from us.
 - **Institutional edition: the doctrine engine adapted to the customer's
   doctrine and material** (business-plan.md, *Editions*).
 - **Every manual embedded must be cleared for public release** — for US

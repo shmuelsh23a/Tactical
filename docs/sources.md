@@ -71,6 +71,57 @@ the 155 mm lethal areas standing and prone (971 / 346 m²) and for the
 105 mm's 271–290 m² on impact. Its author derives them from BRL 530 and
 Mott's formulas, since JMEM is classified.
 
+## Doctrine: the manuals, as a corpus (2026-10-09)
+
+The author's doctrine library, in `docs/Doctrine` — **426 US Army
+publications, 77,597 pages**, parsed and chunked for retrieval
+(`docs/Doctrine/US/doctrine_current/<timestamp>/`). This is the material
+backlog 21 was waiting for; the brief is
+[doctrine-handoff.md](doctrine-handoff.md).
+
+Search it with **[`tools/doctrine.py`](../tools/doctrine.py)**; a full scan
+takes about a second, so there is nothing to build and nothing to go stale:
+
+```bash
+PYTHONUTF8=1 py tools/doctrine.py --list 3-21
+PYTHONUTF8=1 py tools/doctrine.py --find "base-of-fire element" --doc 3-21.8
+```
+
+Every chunk carries its **doctrine paragraph numbers**, so a finding is
+quotable the way this file wants one: *ATP 3-21.8 (2024), para 3-102*.
+
+| Manual | Edition in the corpus | What it gives |
+|---|---|---|
+| **ATP 3-21.8** *Infantry Platoon and Squad* | 2024-01-11, 598 pp (ARN44065) | The body of squad and platoon tactics: base-of-fire and bounding elements, formations, movement techniques, offense, defense |
+| **ATP 3-21.10** *Infantry Rifle Company* | **2026-06-01**, 296 pp (ARN46667) | The company level: the layer `company.ts` stands in for |
+| **FM 3-90** *Tactics* | 2023-05-01, 480 pp (ARN38160) | Forms of manoeuvre, hasty and deliberate attack, the defence |
+| **TC 3-21.76** *Ranger Handbook* | 2025-09-19, 380 pp (ARN45113) | **The drill steps themselves**, as a quick-reference (App. A) — see the caveat below |
+| **ATP 3-21.90** *Tactical Employment of Mortars* | 2019-10-09, 208 pp | The current edition of the **FM 7-90** this file reads above from a third-party mirror |
+| **ATP 3-06** *Urban Operations* | 2022-07-21, 278 pp | The current edition behind the **FM 3-06.11** chapter read above; for backlog 23 |
+| **ATP 3-21.51** *Subterranean Operations* | 2019-11-01, 228 pp | For backlog 5 |
+| **FM 5-0** *Planning and Orders Production* | 2024-11-04, 412 pp | For the OPORD rewrite (`sim/opord.ts`) |
+
+All are Distribution A from armypubs.army.mil, which is what the commercial
+edition requires (business-plan.md, *Editions*). The documents.csv beside
+the index carries each one's source URL, date and sha256, and is tracked in
+git; **the chunk index itself is not** — it runs to hundreds of MB and is
+gitignored, so it is fetched, not versioned.
+
+**Three cautions, each paid for once:**
+
+- **The battle drills are not in ATP 3-21.8.** Appendix E only *names* them
+  with their task numbers (Battle Drill 1: React to Direct Fire Contact,
+  07-PLT-D9501; 2: Conduct a Platoon Assault; 3: Break Contact) and points
+  at the Army Training Network. The executable steps are in the **Ranger
+  Handbook's Appendix A**, and the reasoning behind them in ATP 3-21.8's
+  chapters 3–5. Do not go looking for a drill appendix that is not there.
+- **Search the doctrine's words, not ours.** Retrieval is literal text
+  search: there is no `VOYAGE_API_KEY` on this machine, so the corpus's
+  stored embeddings cannot be queried. "base of fire" and "support by
+  fire" hit; "covering fire" does not.
+- **Chunk counts are not measurements.** The manifest says so itself: it is
+  a retrieval index, not a unit set. Quote paragraphs, never "N chunks say".
+
 ## Not yet read, worth reading
 
 - DTIC was down for maintenance all of 2026-10-03:

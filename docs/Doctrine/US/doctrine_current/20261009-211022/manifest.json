@@ -1,0 +1,47 @@
+{
+  "corpus": "doctrine_current",
+  "label": "US Army doctrine (current)",
+  "published_at": "2026-10-09T18:10:39+00:00",
+  "code_commit": "531792d",
+  "purpose": "Retrieval index. Not a measurement unit set - code and count on corpus_qc paragraph units, not on these chunks.",
+  "embedding": {
+    "provider": "Voyage AI",
+    "endpoint": "contextualizedembeddings",
+    "model": "voyage-context-4",
+    "dimensions": 1024,
+    "api_dtype": "float",
+    "stored_dtype": "float16",
+    "input_type": "document",
+    "query_input_type": "query",
+    "group_token_budget_est": 24000,
+    "tokens_used": 52887968
+  },
+  "parse": {
+    "provider": "LlamaParse v2",
+    "windows_by_tier": {
+      "agentic": 2147
+    },
+    "version": "2026-09-29",
+    "credits": 513584.0,
+    "windows_with_estimated_credits": 0
+  },
+  "chunking": {
+    "target_chars": 1800,
+    "hard_chars": 3600,
+    "min_chars": 300,
+    "overlap": 0,
+    "made_at": "2026-10-09T17:07:39+00:00"
+  },
+  "embed_text_format": "<corpus label>: <title> (<year>)\\n<heading path>\\n\\n<text>",
+  "counts": {
+    "chunks": 223039,
+    "chunks_missing_vectors": 0,
+    "documents_by_status": {
+      "parsed": 426
+    }
+  },
+  "files": {
+    "chunks.parquet": "984c1b615e3e0335beb9f7e6d32de96b74d6850f2a04afab08d38310765803b3",
+    "documents.csv": "aef0101741bd9563f76c31e28364259ce4174fa657eb9bcf8dbedf10a39f2cb3"
+  }
+}
