@@ -33,13 +33,23 @@ A full scan of the corpus takes about a second, so there is no index to
 build and no cache to go stale. On Windows set PYTHONUTF8=1, or the console
 mangles the manuals' quotes and dashes.
 
-**Semantic search is not wired up.** The corpus stores a voyage-context-4
-embedding per chunk, but querying it needs a VOYAGE_API_KEY to embed the
-query, and there is none on this machine. Everything here is literal or
-regex text search. That is usually enough, because doctrine repeats its
-defined terms verbatim -- but it will miss a paraphrase, so search the
-*doctrine's* wording ("base of fire", "support by fire", "bounding
-overwatch"), not ours ("covering fire", "leapfrogging").
+Two ways to search, and they answer different questions:
+
+- **Text search** (the default) is literal or regex. Use it when you know
+  doctrine's own term -- "base of fire", "bounding overwatch" -- because
+  doctrine repeats its defined terms verbatim and an exact hit is proof.
+  It will miss a paraphrase: "covering fire" finds nothing.
+- **`--semantic`** ranks by meaning, using the corpus's stored
+  voyage-context-4 vectors. Use it when you have our words and not
+  doctrine's, or a question rather than a term:
+
+      py tools/doctrine.py --semantic --find "when does a squad stop firing and move"
+
+  It needs a VOYAGE_API_KEY (in `.env` at the repo root; `.env.example`
+  shows the name) to embed the query with the same model that embedded the
+  chunks. The first run builds a cached vector matrix beside the index,
+  about 15 seconds; after that a query is roughly a second plus the API
+  call. Scores are cosine, printed before the citation.
 
 **Chunk counts are not a measurement.** The manifest says so outright: this
 is a retrieval index, not a unit set. "81 chunks mention X" is an artefact
@@ -49,6 +59,7 @@ never counts.
 import argparse
 import csv
 import io
+import json
 import os
 import re
 import sys
@@ -123,6 +134,141 @@ def scan(release, match, doc=None, heading=None, tables=False, columns=None):
                 yield row
 
 
+# ---------------------------------------------------------------- semantic
+
+#: The corpus's own model. A query must be embedded by the *same* model that
+#: embedded the chunks, or the vectors are not comparable at all.
+MODEL = "voyage-context-4"
+VOYAGE_URL = "https://api.voyageai.com/v1/contextualizedembeddings"
+
+
+def load_env(repo=REPO):
+    """
+    Read `.env` into os.environ without a dependency, and without
+    overwriting anything already set in the shell. Values are not logged:
+    the file is gitignored and stays unprinted.
+    """
+    path = os.path.join(repo, ".env")
+    if not os.path.exists(path):
+        return
+    with io.open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and v and k not in os.environ:
+                os.environ[k] = v
+
+
+def embed_query(text, model=MODEL, dim=1024):
+    """
+    One query vector from Voyage. `input_type="query"` matters: it is what
+    the corpus's manifest records as the query side of the same embedding,
+    and it makes Voyage prepend its retrieval prompt.
+    """
+    import urllib.error
+    import urllib.request
+
+    key = os.environ.get("VOYAGE_API_KEY")
+    if not key:
+        sys.exit(
+            "No VOYAGE_API_KEY. Put it in .env at the repo root -- copy "
+            ".env.example to .env and fill in the value -- or set it in the "
+            "shell. Without it, drop --semantic and search text instead."
+        )
+    body = json.dumps({
+        "inputs": [[text]],
+        "model": model,
+        "input_type": "query",
+        "output_dimension": dim,
+        "output_dtype": "float",
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        VOYAGE_URL, data=body,
+        headers={"Authorization": "Bearer " + key, "content-type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            payload = json.load(resp)
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")[:400]
+        sys.exit("Voyage refused the query (HTTP %s): %s" % (e.code, detail))
+    except urllib.error.URLError as e:
+        sys.exit("Could not reach Voyage: %s" % e.reason)
+    # data[i].data[j].embedding -- one input, one chunk in it.
+    return payload["data"][0]["data"][0]["embedding"]
+
+
+def vectors(release, rebuild=False):
+    """
+    Every chunk vector as one (N, 1024) matrix, L2-normalised, with the
+    chunk ids in the same order.
+
+    Pulling them out of the parquet takes about ten seconds, so the matrix
+    is cached beside it as .npy and memory-mapped after that. It is kept in
+    float16, as the index stores it -- 457 MB rather than the 913 MB
+    float32 would cost -- and scored in blocks, so neither the cache nor a
+    query has to be held in memory whole. The cache is gitignored, like the
+    index it comes from.
+    """
+    import numpy as np
+    import pyarrow.parquet as pq
+
+    mat_p = os.path.join(release, "vectors.f16.npy")
+    ids_p = os.path.join(release, "vectors.ids.json")
+    if not rebuild and os.path.exists(mat_p) and os.path.exists(ids_p):
+        with io.open(ids_p, encoding="utf-8") as fh:
+            return np.load(mat_p, mmap_mode="r"), json.load(fh)
+
+    sys.stderr.write("building the vector cache (once, ~15s)\n")
+    pf = pq.ParquetFile(os.path.join(release, "chunks.parquet"))
+    blocks, ids = [], []
+    for batch in pf.iter_batches(batch_size=8000, columns=["chunk_id", "embedding"]):
+        col = batch.column("embedding")
+        a = col.flatten().to_numpy(zero_copy_only=False).reshape(len(col), -1).astype(np.float32)
+        blocks.append(a)
+        ids.extend(batch.column("chunk_id").to_pylist())
+    mat = np.concatenate(blocks)
+    mat /= np.clip(np.linalg.norm(mat, axis=1, keepdims=True), 1e-12, None)
+    mat = mat.astype(np.float16)
+    np.save(mat_p, mat)
+    with io.open(ids_p, "w", encoding="utf-8") as fh:
+        json.dump(ids, fh)
+    return mat, ids
+
+
+def semantic(release, query, limit, doc=None, heading=None, tables=False, rebuild=False):
+    """The `limit` chunks nearest the query, each with its score."""
+    import numpy as np
+
+    q = np.asarray(embed_query(query), dtype=np.float32)
+    q /= max(float(np.linalg.norm(q)), 1e-12)
+    mat, ids = vectors(release, rebuild=rebuild)
+    # Blocked, so a 457 MB float16 memmap never becomes a float32 temporary
+    # of twice the size just to be multiplied by one vector.
+    sims = np.empty(mat.shape[0], dtype=np.float32)
+    step = 32768
+    for i in range(0, mat.shape[0], step):
+        block = np.asarray(mat[i:i + step], dtype=np.float32)
+        sims[i:i + block.shape[0]] = block @ q
+    # Over-fetch, because the filters below are applied after scoring.
+    take = min(len(sims), max(limit * 40, 400) if (doc or heading or tables) else limit)
+    top = np.argpartition(-sims, take - 1)[:take]
+    top = top[np.argsort(-sims[top])]
+    want = dict((ids[i], float(sims[i])) for i in top)
+
+    rows = []
+    for r in scan(release, lambda t: 1, doc=doc, heading=heading, tables=tables):
+        sc = want.get(r["chunk_id"])
+        if sc is not None:
+            r["_score"] = sc
+            rows.append(r)
+    rows.sort(key=lambda r: -r["_score"])
+    return rows[:limit]
+
+
 def main():
     ap = argparse.ArgumentParser(description="Search the US doctrine corpus.")
     ap.add_argument("--find", metavar="PHRASE", help="literal phrase (case-insensitive), or a regex with --regex")
@@ -136,8 +282,13 @@ def main():
     ap.add_argument("--chars", type=int, default=320, help="extract length around the match (default 320)")
     ap.add_argument("-n", "--limit", type=int, default=12, help="most hits to print (default 12; 0 for all)")
     ap.add_argument("--release", help="a specific dated release instead of the newest")
+    ap.add_argument("--semantic", action="store_true",
+                    help="rank by meaning, not wording (needs VOYAGE_API_KEY in .env)")
+    ap.add_argument("--rebuild-vectors", action="store_true",
+                    help="rebuild the cached vector matrix --semantic uses")
     args = ap.parse_args()
 
+    load_env()
     release = args.release or newest_release()
 
     if args.list is not None:
@@ -168,24 +319,32 @@ def main():
         ap.print_help()
         return
 
-    if args.regex:
-        rx = re.compile(args.find, re.I | re.S)
-        match = lambda t: len(rx.findall(t))
-        show_re = rx
-    else:
-        needle = args.find.lower()
-        match = lambda t: t.lower().count(needle)
+    if args.semantic:
+        # Ranked by meaning, so the order is the scores' and nothing else:
+        # re-sorting by year here would throw away what was asked for.
         show_re = re.compile(re.escape(args.find), re.I)
+        shown = semantic(release, args.find, max(1, args.limit or 12),
+                         doc=args.doc, heading=args.heading, tables=args.tables,
+                         rebuild=args.rebuild_vectors)
+        rows = shown
+    else:
+        if args.regex:
+            rx = re.compile(args.find, re.I | re.S)
+            match = lambda t: len(rx.findall(t))
+            show_re = rx
+        else:
+            needle = args.find.lower()
+            match = lambda t: t.lower().count(needle)
+            show_re = re.compile(re.escape(args.find), re.I)
 
-    rows = list(scan(release, match, doc=args.doc, heading=args.heading, tables=args.tables))
-    # Newest doctrine first -- a 2026 manual supersedes a 2017 one -- then by
-    # how much the chunk is about the phrase, then in reading order.
-    rows.sort(key=lambda r: (-int(r["year"] or 0), -r["_hits"], r["designator"], r["seq"]))
-
-    shown = rows if args.limit == 0 else rows[: args.limit]
+        rows = list(scan(release, match, doc=args.doc, heading=args.heading, tables=args.tables))
+        # Newest doctrine first -- a 2026 manual supersedes a 2017 one -- then
+        # by how much the chunk is about the phrase, then in reading order.
+        rows.sort(key=lambda r: (-int(r["year"] or 0), -r["_hits"], r["designator"], r["seq"]))
+        shown = rows if args.limit == 0 else rows[: args.limit]
     for r in shown:
         print("=" * 78)
-        print(cite(r))
+        print((("%.3f  " % r["_score"]) if "_score" in r else "") + cite(r))
         print(r["heading_path"] or "(no heading)")
         print("(%s)" % r["chunk_id"])
         print()
@@ -199,8 +358,12 @@ def main():
             hi = min(len(r["text"]), at + half)
             print(("…" if lo else "") + r["text"][lo:hi].strip() + ("…" if hi < len(r["text"]) else ""))
         print()
-    kinds = len(set(r["designator"] for r in rows))
-    print("%d chunk(s) in %d manual(s); showed %d." % (len(rows), kinds, len(shown)))
+    kinds = len(set(r["designator"] for r in shown))
+    if args.semantic:
+        print("%d chunk(s) nearest the query, in %d manual(s)." % (len(shown), kinds))
+    else:
+        print("%d chunk(s) in %d manual(s); showed %d."
+              % (len(rows), len(set(r["designator"] for r in rows)), len(shown)))
     print("Chunk counts are a chunker artefact, not a measurement — quote paragraphs.")
 
 

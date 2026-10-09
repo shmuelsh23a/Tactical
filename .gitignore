@@ -20,3 +20,15 @@ jev-runs/
 # and the embedding model) even though the index itself is fetched, not
 # versioned. Rebuild or re-publish the release to get it back.
 docs/Doctrine/**/chunks.parquet
+
+# Secrets. Keys live only here, never in a settings file, a command line or
+# a committed default. .env.example records the NAMES a tool looks for and
+# is the only one of these that is tracked.
+.env
+.env.*
+!.env.example
+
+# The vector matrix tools/doctrine.py --semantic caches beside the doctrine
+# index: derived from chunks.parquet, the same hundreds of MB, and rebuilt
+# in about fifteen seconds with --rebuild-vectors.
+docs/Doctrine/**/vectors.*

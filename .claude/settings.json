@@ -21,7 +21,11 @@
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
-      "Bash(rm -rf *)"
+      "Bash(rm -rf *)",
+      "Read(.env)",
+      "Read(**/.env)",
+      "Read(.env.local)",
+      "Read(**/.env.local)"
     ]
   },
   "hooks": {
