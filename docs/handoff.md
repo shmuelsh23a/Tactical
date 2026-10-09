@@ -1,6 +1,12 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-09: the doctrine manuals have arrived and are searchable — `docs/Doctrine`, 426 US Army publications and 77,597 pages, parsed and chunked, searched with `tools/doctrine.py` in about a second a query (AGENTS.md, *The doctrine corpus is the authority on drills*; provenance in sources.md; the brief in doctrine-handoff.md). **Backlog 21 is unblocked.** Three things found in the reading: the drills are *not* in ATP 3-21.8 (its Appendix E only names them and points at the Army Training Network) but in the Ranger Handbook's Appendix A, in executable form; retrieval is literal text search, not semantic, because there is no VOYAGE_API_KEY here, so search doctrine's own terms; and ATP 3-21.8 (2024) para 3-102 already settles how the base of fire divides between `company.ts` and `drill.ts` — the commander names a general location, the element leader picks the exact one. The chunk index is gitignored (530 MB); its manifest and documents.csv are tracked. Before that, 2026-10-07: the computer plays the attacker (README decision 88): the picker's third choice, *מול המחשב (אתה המגן)* (`?vs=attacker`) — the player holds and the scripted company comes on against him, briefed on a position spoilt by an observer's error as the harness's attacker is. It is given a competent plan, not the harness's bare defaults: those fire on the plan from turn 1 with nobody looking, walk into their own danger-close rounds and break without the defender firing a shot (driven: the attack broke on turn 16 against a player who gave no order; measured at 0% wins). With two scouts on vantage points, the guns held for a mark sure to 40 m and smoke on the crossing, it is the harness's 10% attacker; driven in the browser it took the position on turn 29, and a battle saved mid-attack and reloaded went on to the same turn-29 result. The attacker's fire plan, its fire calls and the pre-battle estimate now live with the defender's in `app/computerSide.ts` and `app/planning.ts`, imported back by `sim/`; both standard measurements are byte-identical across the move. Before that, 2026-10-06: the raid diagnosed (balance.md, *The raid, diagnosed*): a command-group NaN fixed; half the raids end with no shot because a force deep in a house can neither see out nor be seen — urban combat as a whole is backlog 23, for a later session. Quality beyond small arms built (README decision 87): the quality gap on rifle grenades, the breakpoint by force type; the raid wins 26% (from 10%), the standard measurement unchanged (sixty-third round). Before that: readiness built (README decision 86): three levels a force, set by the scenario, raised by what it sees; unaware forces are caught unready from any side, alert ones from outside their arc, stood-to ones never; recovery from surprise halves with each step of experience; an unaware force spots at half, one stood to a little better. Standard measurement unchanged within noise; the scripted raid does worse against an unaware militia, which stays hidden (balance.md, sixty-second round). Before that, the same day: directional cover built (README decision 85): a position has a front, cover counts by direction, fire from outside the watched arc catches a force unready; the standard measurement does not move, and the scripted flank plans do not either, because about nine in ten of their shots still come from the defenders' front (balance.md, sixty-first round). Before that, 2026-10-05: a designed scenario for force quality, `yokneamRaid` — an elite raid inserted into the town against an irregular militia nearly twice its size, no support weapons; the harness's scripted attack cannot judge it (it stalls in the town), so it waits for the author's play (balance.md, sixtieth round); and save and resume — a battle in progress is kept in the browser after every change and resumed from the picker or by a reload, mid-turn included, replaying exactly (`src/app/session.ts`; pinned in `computerSide.test.ts`, driven in the browser both ways). Before that, the same day: single-player, first cut — the picker's *מול המחשב* plays the attack against the computer, which defends as the harness's defender does (`src/app/computerSide.ts`, shared with `scenarioBattle.ts`; the harness's standard measurement byte-identical after the move); driven in the browser to a RED win at the 2:1 on turn 6. Before that, 2026-10-04: the quality gap built (README decision 84): small arms and the assault, ×1 between equals, ×3 at the widest, on the normal curve turned over; elite against irregular wins 85% with mortars, 100% without, and the other way 4% and 0% (balance.md, fifty-ninth round). Before that: the force-quality matrix built (README decision 83), mapped onto `motivation` / `experience` as the author asked. ⚠️ The mapping is ours. Measured on the tel at 3:1, 400 battles a cell: attacker cells 32–53%, defender cells 14.5–65.5% for the attacker, every row and column ordered, and the baseline unchanged at 40% (balance.md, fifty-eighth round). Before that, 2026-10-03: the traits built (README decision 82: decisions 69, 71, 72; a force rushes at its slowest man's pace, walking is the gait's own, by the author's ruling on the measurement). Standard measurement: tel 3:1 41%, 2:1 33%, urban 18%; the eight reference plans' 3:1 median about 30% with the traits or without (200 battles a plan; under its 40–55%; the fall came with decisions 75–81), and the plan that "beat the deliberate one" turned out to be fire and movement with full reconnaissance, renamed by the author; history's hasty attack (one scout) wins 29% at 3:1, inside history's 15–35% (balance.md, fifty-fourth to fifty-seventh rounds). Before that: PR #16 merged; the author's rulings on the open questions (README decision 81: explosives 60–80%, 2:1 accepted, direct HE bombards, house types and a force-quality matrix to come, traits go-ahead after merge). Before that: the urban test bed (`yokneamUrban`), the figures checked against the sources (decision 79) and ARES's indirect-fire figures (decision 80). Then: tel 3:1 41%, 2:1 36% (accepted), explosives' share 64% (inside 60–80%), urban 18%. Before that: direct-fire HE on the shell's rules (README decision 75); buildings that take damage, critical hits through windows, slits and roofs, and armour by weapon, class and facing (76–78). Before that, 2026-10-02: the author's rulings on every open question (below, *Rulings of 2026-10-02*; README decisions 69–70); the doctrine engine is public, commercial-edition work and waits for the author's manuals. Before that, 2026-10-01: PR #12 merged (balance rounds 34–47, rules decisions 67–68); the balance is judged by closeness to real-life outcomes on a set of reasonable plans, and meets the small-unit targets; the AI commanders compared; the doctrine engine (backlog 21) is next ([doctrine-handoff.md](doctrine-handoff.md)). Before that: decisions 60–66 (2026-09-30), 51–59 (PR #10), 40–50 (PR #9), 36–39 (2026-09-23); the business plan (2026-09-24): [business-plan.md](business-plan.md).** This is the working note for whoever
+**Current as of 2026-10-09: the doctrine manuals have arrived, and **backlog 21 is unblocked.** `docs/Doctrine` holds 426 US Army publications and 77,597 pages, parsed and chunked, searched with `tools/doctrine.py` — text search in about a second, or `--semantic` with the author's `VOYAGE_API_KEY` in `.env` (AGENTS.md, *The doctrine corpus is the authority on drills*, has the traps; provenance in sources.md; the brief, with the drill-by-drill table, in doctrine-handoff.md). Three things the reading settled. **The battle drills are in TC 3-21.76 (Ranger Handbook, 2025) chapter 8, pp. 169–203** — all six ATP 3-21.8 names and four more, in the official task-step format; ATP 3-21.8's own Appendix E merely names them and points at the Army Training Network. An **asterisk in those steps marks a leader performance step**, which is the game's layer split already drawn for us: asterisked is a decision (the commander's, or the player's), unasterisked is the drill executing. And **ATP 3-21.8 (2024) para 3-102** settles the base of fire — the platoon leader designates a general location, the element leader selects the exact one, so the general location is a `CompanyOrders` field and the exact position is the drill's. On the search itself: `--semantic` works but ranks loosely, for a structural reason recorded under *Do not re-derive* — use it to learn what doctrine calls a thing, then quote a literal hit. The chunk index and its vector cache are gitignored (530 MB and 436 MB); the manifest and documents.csv beside them are tracked, so the repo still records which corpus a finding came from. Before that, 2026-10-07: the computer plays the attacker (README decision 88): the picker's third choice, *מול המחשב (אתה המגן)* (`?vs=attacker`) — the player holds and the scripted company comes on against him, briefed on a position spoilt by an observer's error as the harness's attacker is. It is given a competent plan, not the harness's bare defaults: those fire on the plan from turn 1 with nobody looking, walk into their own danger-close rounds and break without the defender firing a shot (driven: the attack broke on turn 16 against a player who gave no order; measured at 0% wins). With two scouts on vantage points, the guns held for a mark sure to 40 m and smoke on the crossing, it is the harness's 10% attacker; driven in the browser it took the position on turn 29, and a battle saved mid-attack and reloaded went on to the same turn-29 result. The attacker's fire plan, its fire calls and the pre-battle estimate now live with the defender's in `app/computerSide.ts` and `app/planning.ts`, imported back by `sim/`; both standard measurements are byte-identical across the move.
+
+Older entries, 2026-10-06 and back, are in
+[handoff-archive.md](handoff-archive.md), *Where the header used to
+run*.**
+
+This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
 what I would take next. It is **current state only** — history lives in
 [handoff-archive.md](handoff-archive.md), and anything durable has been moved
@@ -26,7 +32,7 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of this commit
+## Green as of `6fbb6cd` (2026-10-09)
 
 ```
 npm run check       lint + typecheck clean, 935 tests, 60 files
@@ -35,7 +41,12 @@ npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
                     a scripted attacker plays a scenario in the browser
                     (dev server on :5199 first; SEED=n for other dice)
+PYTHONUTF8=1 py tools/doctrine.py --find "base of fire" --doc 3-21.8
+                    the doctrine corpus; --semantic needs VOYAGE_API_KEY
+                    in .env (AGENTS.md has the traps)
 ```
+
+Working tree clean and pushed to `origin/main` at that commit.
 
 The app opens on a **scenario picker** (Yokneam, Tel Azeka, a company
 battle on Tel Azeka, and a company (3:1) and two platoons (2:1) assaulting a
@@ -45,9 +56,16 @@ address plays one on other dice. A battle opens on **mission
 planning** before turn 1, and the demo plays end to end in the browser,
 including the debrief. The two platoon battles have **no indirect fire** any
 more (rules decision 37); the company battle is where fire is planned and
-called. The
-rule is that nothing is called done on tests alone: if a player can see it, it
-gets driven in the actual game first.
+called.
+
+Each battle is played one of **three** ways, chosen on the picker: two
+players at one screen, *מול המחשב (אתה התוקף)* with the computer holding
+(`?vs=computer`), or *מול המחשב (אתה המגן)* with the computer attacking
+(`?vs=attacker`, decision 88). A battle in progress is kept in the browser
+and resumes from the picker or a reload, mid-turn included.
+
+The rule is that nothing is called done on tests alone: if a player can see
+it, it gets driven in the actual game first.
 
 ## How this repo expects to be worked on
 
@@ -65,7 +83,7 @@ call the project's npm scripts and a reviewer that reads
 [review-checklist.md](review-checklist.md). Any assistant should be able to work
 here from AGENTS.md alone.
 
-## Start here (2026-10-01, end of the day)
+## Start here: what governs the next step (2026-10-01, still current)
 
 **Everything is merged to `main`** (PR #12; this handoff, PR #13). Two
 things changed the course of the project in the last two days, and both
@@ -284,6 +302,22 @@ between windows. See balance.md, just above *How the engine scales*.
 `npm run balance` takes `--seed <first>` now; rerun a lean on a fresh window
 before chasing it.
 
+**Added 2026-10-09:**
+
+- **Rules decision 88 is ⚠️ and unseen**: the browser hands its attacking
+  computer a competent plan (two scouts on vantage points, guns held for a
+  mark sure to 40 m, smoke on the crossing) rather than the harness's bare
+  defaults, which beat themselves. The open question with it: **should
+  single-player offer a difficulty at all**, and what would a weaker
+  setting take away — fewer scouts, no smoke, or the bare defaults as an
+  "easy"? The measurement that chose it is on balance.md, *What the
+  browser's attacking computer is given*.
+- **Should a player defending face an attacker whose plan is wrong?**
+  The computer attacker is briefed with decision 51's observer error, the
+  same as the harness's. That is defensible and symmetrical, but it has not
+  been played by a person, and it is the kind of thing that feels different
+  from the defending side.
+
 **Still open, and his:**
 - **The company battle's layout** (above). The rest of the artillery waits for battalion.
 - **The Western drill's numbers**: all ours.
@@ -423,20 +457,105 @@ Measurements that cost real time and are already recorded:
   documentation site was unreachable from a sandboxed session, so the SDK source
   on GitHub is the reference that can actually be read.
 
+- **The doctrine corpus is contextualized, so semantic scores run low**
+  (measured 2026-10-09). Re-embedding a chunk's own `embed_text` alone
+  scores **0.73** against its stored vector, not 1.0, because each chunk
+  was embedded in a group with its neighbours. Embedding a query as a
+  `document` instead of a `query` is worse: **0.67**. Query scores
+  therefore sit at **0.3–0.55** and the ranking is only approximate — a
+  near-verbatim query put its own target **third**, under two chunks merely
+  adjacent in subject. `--semantic` is a way in, not a proof; quote a
+  literal hit. Do not spend another API budget rediscovering this.
+- **The move of the attacker's fire plan out of `sim/` changed nothing**
+  (2026-10-07). Both standard measurements came out byte-identical, checked
+  by `git stash`ing the change and rerunning: `scenario-sim --n 60` gives
+  0% / 0%, medians 15 / 14, and the full scouts-and-smoke run gives
+  **10% / 15%**, medians 33 / 33. Those two tables are the before-and-after
+  for any further move of that code.
+- **The browser's attacker needs scouts, and waiting for contact alone is
+  worse than nothing** (2026-10-07, 40–60 battles a row, seed 1000,
+  `telAzekaAssault`): the harness's bare defaults win **0%** and break
+  themselves on their own danger-close fire; `--wait-for-contact` with no
+  scouts also wins 0% but loses **17%** of its men against 5% and dies in a
+  median 9 turns instead of 15; the two scouts plus held guns plus smoke
+  win **10%**. The middle option looks like a half-measure and is a
+  regression — do not reach for it.
+- **The ComputerAttacker resume hole is latent, not observed**
+  (2026-10-07). `task.company` is genuinely unset on a resume and genuinely
+  read by `drillCombat`, and the fix (`currentOrders`) is in — but a scan of
+  **every** save point across four seeds (~700 resumes) produced **no**
+  divergence, because the scouts never have a target in that window on this
+  scenario. If it ever needs reproducing, it wants a scenario where a scout
+  can see something early.
+
 ## What I would pick up next
 
-*Start here*'s **Open** list is the order. While the manuals are not
-here, toward a browser beta (the assessment of 2026-10-05): **play-testing
-single-player** (the author, `?vs=computer` and now `?vs=attacker`), then a **designed scenario** that uses force quality (an elite
-raid on an irregular-held position, no mortars), and house types for the urban
-work (decision 81). The **computer as the attacker** is built (decision 88). The force-quality
-matrix is built (decision 83) and waits on the author's view of its
-spread. Mission and victory conditions (backlog 18) and the **base of
-fire** (machine guns a commander pulls out to form it; README backlog 21)
-are to come from doctrine.
+**The drill rewrite from doctrine (backlog 21).** It was blocked on the
+author's manuals for a week; they arrived 2026-10-09 and it is the largest
+piece of work the project has queued. The brief is
+[doctrine-handoff.md](doctrine-handoff.md), and it now names the exact
+source: **TC 3-21.76 (Ranger Handbook, 2025) chapter 8, pp. 169–203**, which
+carries all six battle drills ATP 3-21.8 names plus four more, in the
+official task-step format.
+
+The first step is not code. Read the two assault drills whole —
+
+```bash
+PYTHONUTF8=1 py tools/doctrine.py --find "Conduct a Squad Assault" --doc 3-21.76 --full
+```
+
+— and write a **gap list** against [`drill.ts`](../src/app/drill.ts): what
+doctrine's steps do that ours do not, and what ours invent. Only then
+decide what changes. Two things to carry into it:
+
+- **An asterisk in the manual marks a leader performance step**, which is
+  the game's own layer split already drawn: an asterisked step is a
+  *decision* and belongs to the commander (`company.ts`, or the player); an
+  unasterisked one is the drill executing. Use the manual's marks rather
+  than re-adjudicating the boundary.
+- **ATP 3-21.8 (2024) para 3-102** settles the base of fire (the other half
+  of backlog 21): "Platoon leaders normally designate a general location for
+  the base of fire, and the element leader selects the exact location." The
+  general location is a `CompanyOrders` field; the exact position is the
+  drill's.
+
+Expect the reference plans to need remeasuring once the drills change — that
+is the point of the exercise (the layer table at the top of
+doctrine-handoff.md), and it is what the author's 2026-10-02 ruling on the
+hasty attack and the flank plan was waiting for.
+
+**Smaller, and ready:** `Enter and Clear a Room` (07-SQD-D9509, p. 197) is
+in the same format and is the urban drill backlog 23 wants. And
+**play-testing single-player** is still the author's, now both ways
+(`?vs=computer` and `?vs=attacker`).
 
 ## Traps that cost real time
 
+- **`git checkout -- <file>` as a fallback in a `||` chain destroyed a
+  file's work.** `cmd 2>/dev/null || py -c "revert..."` ran the *first*
+  branch, which succeeded, so the fallback never fired — and the first
+  branch was a checkout that reverted `scenarioBattle.ts` to HEAD, losing
+  an hour of edits (recovered, because the moved code lived in another
+  file). Never put `git checkout --` in a one-liner next to anything else.
+  To undo a temporary edit, reverse the exact string with a script.
+- **`PYTHONUTF8=1` for anything touching the doctrine corpus**, not just
+  Hebrew. Without it a Windows console turns the manuals' quotes and en
+  dashes into `?`, and a designator reads `ADP 1 ? The Army`. The data is
+  clean UTF-8; the terminal is not.
+- **A long Python heredoc through Bash mangles `
+` inside string
+  literals.** Writing `tools/doctrine.py` that way produced real newlines
+  inside `"..."` and a syntax error twice. Write a file that size with the
+  Write tool, or keep the escapes out of it.
+- **A deny rule of `Read(.env.*)` also blocks `.env.example`**, which is a
+  tracked template with no values in it and wants to stay readable. The
+  rules in `.claude/settings.json` name the real secret files instead:
+  `.env`, `.env.local`, and `**/` of each.
+- **The six-offset resume test needs `i >= from`, not `i > from`.** A save
+  landing exactly on a turn boundary (an activation index divisible by six)
+  leaves the unbroken run having closed that turn and the resumed one not,
+  which looks like a product divergence and is the test harness. See
+  `computerAttacker.test.ts`.
 - **A pull that lands new dependencies leaves `npm run check` broken.**
   `git pull` does not install. After 2026-10-07's sync of 133 commits,
   `@anthropic-ai/sdk` and `@typesafe-ai/sdk` were declared in
