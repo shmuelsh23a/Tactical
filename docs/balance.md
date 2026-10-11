@@ -21,6 +21,68 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## The reference plans, re-run: the balance meets its targets, 2026-10-11
+
+The eight reference plans on the corrected baseline — the first full set
+since the line-of-sight targeting fix, the re-base, and the doctrine work.
+`--rule` variants of `npm run jev-sim`, **100 seeds a cell from 1000**,
+both tel assaults, four jobs at a time, about twelve minutes.
+
+| Plan | `--rule` | 3:1 | 2:1 |
+|---|---|---|---|
+| A calibrated | *(none)* | **57%** | 43% |
+| A + flank | `flank` | 40% | 45% |
+| B deliberate | `basefire,bound,holdshort` | 45% | 23% |
+| E fire-heavy | `holdshort,prep` | 46% | 38% |
+| D flank | `basefire,holdshort,flank` | 29% | 19% |
+| A + move up | `moveup` | 29% | 23% |
+| B + move up | `basefire,bound,holdshort,moveup` | 26% | 21% |
+| C hasty | `rush` | 43% | 35% |
+| **Median** | | **41.5%** | **29%** |
+| **Target (decision 68)** | | **40–55%** | **20–35%** |
+
+**Both medians are inside their targets, for the first time.** The
+project's own definition of balance is that *reasonable plans* land in the
+targets (the author's guideline, 2026-10-01), and on that definition the
+small-unit balance now holds. The previous full set had a 3:1 median of
+about **30%**, under its band; the handoff has carried "under its 40–55%"
+since 2026-10-03.
+
+This is the clearest evidence yet that the recent run of pessimistic
+conclusions was measuring the targeting bug and not the rules. Everything
+built since then — the suppression gate, the firing position, fire teams,
+the machine gun — was measured against a drill that could not shoot, and
+the rules it was blaming were not at fault.
+
+**What is worth reading, and what is not:**
+
+- **The medians, not the cells.** At p ≈ 0.45 and 100 seeds a cell is
+  worth **±10 points** at 95%. So 29% and 26% are not distinguishable,
+  and neither are 43%, 45% and 46%. The median across eight plans is the
+  robust number; a single row is a hint.
+- **A calibrated at 57% is just over the top of the 3:1 band** (40–55).
+  One cell, ±10, so it may be nothing — but it is the row to re-run at 200
+  seeds before anyone tunes on it.
+- **The plan ordering has changed.** The plain calibrated attack (A, 57%)
+  now beats the deliberate one (B, 45%), and **both flanking plans are the
+  weakest at 3:1** (A + flank 40%, D flank 29%). Before the fix, the plan
+  that "beat the deliberate one" was fire and movement with full
+  reconnaissance. Flanking costs turns, and a force that can now actually
+  shoot gains less from going round than it loses in time.
+- **Moving up is now the worst thing in the set** (A + move up 29%, B +
+  move up 26%). Worth a look: `moveup` takes the company to an assault
+  position before the firefight, which with working direct fire means
+  closing into a defence that can shoot back before anything has suppressed
+  it.
+- ⚠️ `C hasty` here is `rush` with the rule's three scouts, **not** the
+  one-scout hasty attack whose 29% was checked against history's 15–35%
+  (the fifty-seventh round). The two are not comparable; the historical
+  check needs its own re-run.
+
+Not re-run yet, and now stale: the urban test bed, the force-quality
+matrix, the AI commanders, and the raid. All of them predate the targeting
+fix.
+
 ## The drill was aiming at a hillside, 2026-10-11
 
 The two fixes the suppression work called for, made and measured — and a
