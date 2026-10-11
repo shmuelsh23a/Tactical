@@ -16,7 +16,7 @@ import {
 } from "../engine/index.js";
 import { sideView } from "./hotseat.js";
 import { HOLD_SHORT_M, platoonKey, type CompanyOrders } from "./company.js";
-import { isDeadGround } from "./deadGround.js";
+import { bestVantages, isDeadGround } from "./deadGround.js";
 
 /**
  * The squad drill (backlog 15 and 20): how a simulated subordinate carries out
@@ -248,6 +248,25 @@ export interface SquadDrill {
    */
   machineGuns?: { range: number };
   /**
+   * A base of fire needs a **field of fire**, not only cover (ATP 3-21.8
+   * (2024) para **3-102**: the base-of-fire element "occupies positions
+   * that afford the best possible cover and concealment, **a clear view,
+   * and clear fields of fire**").
+   *
+   * Without this, a supporting platoon halts as soon as it is within
+   * `attackFireRange` of the enemy and fires from wherever it happens to
+   * be — which, when its company waited in dead ground, is ground chosen
+   * for having *no* line of sight to the objective. Measured: zero of
+   * fourteen forces firing, turn after turn, with three to six of them in
+   * range and unable to see (docs/balance.md, *Does suppression pay?*).
+   *
+   * With it, a supporting force that cannot see the enemy it knows of
+   * moves to the nearest position that can (`bestVantages`, the same
+   * finder the scouts' observation points use), no closer than
+   * `minRange` to it.
+   */
+  baseOfFirePosition?: { minRange: number };
+  /**
    * How a squad scouts, when its company sends it ahead (rules decisions
    * 52–54; which squads, from where and for how long are the company's, in
    * `company.ts`). A scout walks, looks harder and holds its fire, so what
@@ -362,12 +381,19 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   screeningSmoke: { screens: 4 },
   fireTeams: { splitAt: 300, minMen: 6 },
   machineGuns: { range: 800 },
+  baseOfFirePosition: { minRange: 150 },
 };
 
 /** What one side has been told to do: attack towards a point, or hold facing one. */
 export interface DrillTask {
   side: Side;
   attacking: boolean;
+  /**
+   * The map's extent, for the drill's own position-finding — a base of fire
+   * looking for a field of fire (`baseOfFirePosition`). Absent: it makes do
+   * with where it stands.
+   */
+  extent?: { width: number; height: number };
   /** For an attacker, where it is going; for a defender, where the threat comes from. */
   objective: Point;
   /**
@@ -558,13 +584,32 @@ function pickTarget(
   drill: SquadDrill,
   reach: number,
   hurting?: ReadonlyMap<string, number>,
+  game?: Game,
 ): Unit | undefined {
   // Whoever is hurting us most, then the nearest: the drill's priority
   // (`returnFire`) if it has one, else ours, which is nearest-first.
   const weight = (e: Unit) => hurting?.get(e.id) ?? 0;
-  const inReach = enemies
+  let inReach = enemies
     .filter((e) => distance(u.position, e.position) <= reach)
     .sort((a, b) => weight(b) - weight(a) || distance(u.position, a.position) - distance(u.position, b.position));
+  // **Something it can actually shoot at.** A mark on the map is not a
+  // target: the drill used to take the nearest enemy its side knew of
+  // whether or not this force could see it, and on broken ground against a
+  // dug-in defence the nearest is usually the one it cannot see. The
+  // engine then refused the shot — `fired: false`, silently — and the
+  // force stood there aiming at a hillside. Measured before the fix: zero
+  // of fourteen forces firing, turn after turn, with line of sight to
+  // something the whole time (docs/balance.md).
+  if (game) {
+    const seen = inReach.filter((e) => {
+      try {
+        return game.hasLineOfSight(u, game.getUnit(e.id));
+      } catch {
+        return false;
+      }
+    });
+    if (seen.length) inReach = seen;
+  }
   const inSector = inReach.find(
     (e) => drill.sectorWidth >= 360 || angleBetween(bearingDegrees(u.position, e.position), axis) <= drill.sectorWidth / 2,
   );
@@ -915,9 +960,31 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       else stay();
       return;
     }
-    if (company && job === "support" && nearest && distance(u.position, nearest.position) <= drill.attackFireRange) {
-      stay(); // in reach: a base of fire, halted, firing in the fire phase
-      return;
+    if (company && job === "support" && nearest) {
+      const gun = u.mediumMg && drill.machineGuns ? Math.max(drill.attackFireRange, drill.machineGuns.range) : drill.attackFireRange;
+      const canSee = freshEnemies(game, side, enemies).some((e) => game.hasLineOfSight(u, e));
+      if (distance(u.position, nearest.position) <= gun && (canSee || !drill.baseOfFirePosition)) {
+        stay(); // in reach, with something to shoot at: a base of fire
+        return;
+      }
+      // In reach and blind: a firing position is the whole job (para 3-102).
+      if (drill.baseOfFirePosition && game.terrain && task.extent) {
+        const post = bestVantages(
+          {
+            terrain: game.terrain,
+            targets: enemies.map((e) => e.position),
+            minRange: drill.baseOfFirePosition.minRange,
+            maxRange: gun,
+          },
+          u.position,
+          1,
+          { width: task.extent.width, height: task.extent.height, step: 20 },
+        )[0];
+        if (post && distance(u.position, post) > 10) {
+          game.setStandingOrder(u.id, { gait: "normal", destination: { ...post } });
+          return;
+        }
+      }
     }
     // Consolidation (Battle Drill 2 step 14): the objective is taken and
     // nothing is known to be near it, so hold it facing outward rather
@@ -1111,7 +1178,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const target =
       foe && distance(u.position, foe.position) <= reach
         ? foe
-        : pickTarget(u, mine, axisOf(u, task), drill, reach, hurting);
+        : pickTarget(u, mine, axisOf(u, task), drill, reach, hurting, game);
     if (!target) {
       // A consolidating attacker covers its new sector too (step 14h), not
       // only a defender in its own position.

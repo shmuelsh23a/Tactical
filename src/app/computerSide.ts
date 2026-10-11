@@ -434,7 +434,7 @@ export class ComputerAttacker {
     this.company = restoreWith
       ? ScriptedCompany.restored(g, side, objective, suspected, plan, terrain, restoreWith)
       : new ScriptedCompany(g, side, objective, suspected, plan, terrain);
-    this.task = { side, attacking: true, objective };
+    this.task = { side, attacking: true, objective, extent: { width: ground.mapWidth, height: ground.mapHeight } };
   }
 
   /**

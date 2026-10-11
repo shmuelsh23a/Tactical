@@ -49,6 +49,8 @@ const defenderDrill: SquadDrill = args.includes("--no-counterattack") ? { ...dri
 // How a scout bounds and looks is the drill's; which squads scout, from where,
 // and when the rest go are the company commander's (src/app/company.ts).
 if (value("--watch")) drill.scouting = { watchTurns: Number(value("--watch")) };
+// To isolate the base-of-fire firing position (ATP 3-21.8 para 3-102).
+if (args.includes("--no-firing-position")) delete drill.baseOfFirePosition;
 const recon = value("--recon");
 const company: CompanyPlan = {
   ...(recon
@@ -64,6 +66,7 @@ const company: CompanyPlan = {
   // The doctrinal gate on the assault (Battle Drill 2 steps 11-13).
   // --gate alone takes the defaults below; the four numbers are ours.
   ...(args.includes("--rear-security") ? { rearSecurity: true } : {}),
+  ...(args.includes("--scouts-support") ? { scoutsSupport: true } : {}),
   ...(args.includes("--gate")
     ? {
         suppressionGate: {

@@ -291,7 +291,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   stage = () => companyStage(g, company);
 
   const tasks: Record<Side, DrillTask> = {
-    [attacker]: { side: attacker, attacking: true, objective },
+    [attacker]: { side: attacker, attacking: true, objective, extent: { width: mapWidth, height: mapHeight } },
     [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []) },
   } as Record<Side, DrillTask>;
   const state = new DrillState();

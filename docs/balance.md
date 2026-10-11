@@ -21,6 +21,62 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## The drill was aiming at a hillside, 2026-10-11
+
+The two fixes the suppression work called for, made and measured — and a
+third found while testing them, which turned out to be the one that
+mattered.
+
+**The bug: `pickTarget` never checked line of sight.** It took the nearest
+enemy its *side* knew of, whether or not *this* force could see it. On
+broken ground against a dug-in defence the nearest mark is usually the one
+behind a fold, so `game.fire` refused the shot — `fired: false`, returned
+and discarded — and the force stood there aiming at a hillside. Every
+turn. The diagnosis came from printing, for one force at one turn:
+
+```
+BLUE-2-MG1  mg=y nearestKnown=312m reach=800 inReach=y los=y fired=n supp=23
+```
+
+In reach, line of sight, barely suppressed, and not firing. A force now
+prefers a target it can actually see, and only falls back to the nearest
+mark when it can see none.
+
+### What each fix is worth
+
+`telAzekaAssault`, 60 battles from seed 1000, the competent attacker's fire
+and reconnaissance throughout:
+
+| Configuration | Wins | Attacker down |
+|---|---|---|
+| **Plain script** — the new baseline, with the targeting fix | **17%** (was 10%) | 14% |
+| Doctrinal, no gate | 13% | 9% |
+| Doctrinal + gate, **with** the base-of-fire firing position | **15%** | 9% |
+| Doctrinal + gate, without it | 10% | 10% |
+| Rung A entire (the above plus rear security) | 7% | 9% |
+
+- **Aiming at what you can see is worth 7 points to every drill** (10% →
+  17% on the plain script). It is not a doctrine change at all; it is a
+  bug that doctrine's instrumentation found.
+- **A base of fire placed for fields of fire is worth 5 points** (15% vs
+  10%), and only bites once a platoon is actually tasked `support` — which
+  the scripted company does only under the suppression gate. ATP 3-21.8
+  para 3-102 earns its place.
+- **`scoutsSupport` measured as no change at all.** The scouts hold their
+  fire while the company holds, and by the time it is released they are
+  not what is binding. The field is implemented and off; it is not wrong,
+  it is just not the lever.
+- **Rear security still costs 8 points** (15% → 7%), for the reason
+  already recorded: it withholds a platoon against a threat the game does
+  not model.
+
+**Where this leaves the doctrinal attack**: 15% against the plain script's
+17%, where before these fixes it was 5% against 10%. Doctrine is now within
+noise of our own tuned drill instead of half its worth — which is the first
+time that has been true. Decision 68's target is still 40–55%, so the
+distance left is a rules question; but it is no longer being measured
+through a drill that could not shoot.
+
 ## Does suppression pay? Yes — and the attacker never fires, 2026-10-11
 
 The open question from the doctrine work, measured in isolation rather than

@@ -171,6 +171,21 @@ export interface CompanyPlan {
    * Absent: every platoon faces the objective, which is ours.
    */
   rearSecurity?: boolean;
+  /**
+   * The scouts give a base of fire once the company goes in (Battle Drill
+   * 2 step 13: the base-of-fire element must be "in position and providing
+   * suppressive fires" before the assault is led in; ATP 3-21.8 para 3-102
+   * wants it where it has a clear view, which is exactly where a scout
+   * already is).
+   *
+   * Until now `CompanyOrders.scoutsFire` existed for this and nothing set
+   * it, so the only forces that could see the enemy were the two that hold
+   * their fire by decision 52 — and the attack went in having fired almost
+   * nothing (docs/balance.md, *Does suppression pay?*). It costs the
+   * scouts' concealment, which is the trade: from the moment they fire,
+   * the defence knows where they are.
+   */
+  scoutsSupport?: boolean;
 }
 
 /**
@@ -550,6 +565,8 @@ export class ScriptedCompany {
         this.securityGiven = true;
       }
     }
+    // Step 13: once the company has gone, its eyes become its base of fire.
+    if (this.plan.scoutsSupport && this.released !== undefined) this.support = true;
     const gate = this.plan.suppressionGate;
     if (gate && this.released !== undefined) {
       this.gateHolding = !this.assaultMayGo(game, gate);
