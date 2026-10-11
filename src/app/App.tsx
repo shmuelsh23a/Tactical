@@ -126,7 +126,7 @@ const phaseLabelHe: Record<ActivationPhase, string> = {
 
 const tubeHe: Record<Tube, string> = { mortar: "מרגמה", artillery: "ארטילריה" };
 /** The echelon a side's player commands, as the fire-support note names it (rules decision 37). */
-const echelonHe: Record<Echelon, string> = { squad: "כיתה", platoon: "מחלקה", company: "פלוגה", battalion: "גדוד", brigade: "חטיבה" };
+const echelonHe: Record<Echelon, string> = { team: "חוליה", squad: "כיתה", platoon: "מחלקה", company: "פלוגה", battalion: "גדוד", brigade: "חטיבה" };
 
 /** Smoke by delivery means, in the document's own words (the עשן table). */
 const smokeSourceHe: Record<SmokeSource, string> = {

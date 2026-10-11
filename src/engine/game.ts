@@ -790,6 +790,13 @@ export class Game {
   private readonly presetTargets: number;
   /** Alternate positions prepared in mission planning (rules decision 38). */
   private readonly prepared: PreparedPosition[] = [];
+  /**
+   * How many teams have been detached from each force, so the next one's
+   * default id is predictable (`detachTeam`). Not part of the state a
+   * recording replays — every id is journalled explicitly — but it has to
+   * be rebuilt on replay so a later default id does not collide.
+   */
+  private readonly teamsDetached = new Map<string, number>();
   /** Alternate positions prepared in mission planning — copies. */
   get preparedPositions(): PreparedPosition[] {
     return cloneForRecord(this.prepared);
@@ -1525,6 +1532,89 @@ export class Game {
     this.prepared.push(position);
     this.journal({ kind: "prepareAlternatePosition", unitId, at: { ...position.at } });
     return cloneForRecord(position);
+  }
+
+  /**
+   * **Make a fire team out of part of a force** (rules decision 89, the
+   * author 2026-10-11: "a commander should be able to build fire teams out
+   * of his forces, including on the fly — then it becomes a force just as
+   * any other").
+   *
+   * The named men leave their force and become a force of their own, at
+   * the same place, with the same protection, carrying their own wounds,
+   * fatigue and morale with them. From that moment nothing treats it
+   * specially: it is detected, shot at, suppressed, broken and ordered like
+   * any other infantry force, which is what the ruling asks for. It is how
+   * Battle Drill 2A works at all — "the fire team not in contact becomes
+   * the assault team" — and how a weapons squad's machine gun teams are
+   * pulled out to form a base of fire.
+   *
+   * What it deliberately does **not** buy:
+   *
+   * - **An extra action.** The team inherits `firedThisTurn`,
+   *   `movedThisTurn` and `ranThisTurn` from its parent, so splitting is
+   *   never a way to act twice in a turn. Without that, splitting would be
+   *   free and therefore always right, which is no choice at all.
+   * - **Fresh concealment.** It inherits `stationaryTurns` and
+   *   `camouflageTurns`: men who have been lying still are still lying
+   *   still, and men who have just run have just run.
+   *
+   * What it costs, which is the trade, and it is worth being exact about
+   * which thresholds move and which do not:
+   *
+   * - **A force goes out of action sooner.** Neutralisation by attrition is
+   *   a share of a force's own strength, so a four-man team is finished by
+   *   its second casualty where an eight-man squad takes four. Split, parts
+   *   of a squad stop fighting at casualty counts that would have left it
+   *   whole.
+   * - **The side's breakpoint does not move.** `sideBroken` counts *men*,
+   *   not forces, so splitting neither hastens nor delays the side giving
+   *   up (decision 19).
+   * - **Each team is found, suppressed and tested on its own.** More, and
+   *   smaller, things to be detected and to have their nerve tried.
+   *
+   * `leader` follows the men: doctrine sends the squad leader with one team
+   * and leaves the other to its team leader, so if none of the detached men
+   * is a leader the first of them becomes one. ⚠️ Ours — the first rather
+   * than the best, because there is no seniority to read and a roll here
+   * would move every later die.
+   */
+  detachTeam(unitId: string, soldierIds: readonly string[], opts: { id?: string; name?: string; echelon?: Echelon } = {}): Unit {
+    if (this.phase === "combat") throw new Error("a force is split in planning or movement, not in the middle of a firefight");
+    const parent = this.getUnit(unitId);
+    if (parent.kind !== "infantry") throw new Error(`${unitId} is not infantry: only infantry splits into teams`);
+    const refusal = this.moraleRefusal(parent);
+    if (refusal) throw new Error(refusal);
+    const men = parent.soldiers ?? [];
+    const wanted = [...new Set(soldierIds)];
+    if (!wanted.length) throw new Error("a team of nobody");
+    const taking = wanted.map((id) => {
+      const m = men.find((s) => s.id === id);
+      if (!m) throw new Error(`${id} is not one of ${unitId}'s men`);
+      return m;
+    });
+    if (taking.length >= men.length) throw new Error(`${unitId} cannot detach all of its men: that is a rename, not a team`);
+    const id = opts.id ?? `${unitId}/t${this.teamsDetached.get(unitId) ?? 1}`;
+    if (this.units.some((u) => u.id === id)) throw new Error(`${id} already exists`);
+
+    parent.soldiers = men.filter((s) => !taking.includes(s));
+    if (!taking.some((s) => s.leader)) taking[0]!.leader = true;
+    const team: Unit = {
+      ...cloneForRecord(parent),
+      id,
+      name: opts.name ?? id,
+      echelon: opts.echelon ?? "team",
+      soldiers: taking.map((s) => cloneForRecord(s)),
+      // Its own fight from here: nothing of the parent's posture that is
+      // about *this* force rather than about the ground it stands on.
+      covering: undefined,
+      layingCharge: undefined,
+      observationPost: false,
+    };
+    this.units.push(team);
+    this.teamsDetached.set(unitId, (this.teamsDetached.get(unitId) ?? 1) + 1);
+    this.journal({ kind: "detachTeam", unitId, soldierIds: [...wanted], opts: { id, ...(opts.name ? { name: opts.name } : {}), ...(opts.echelon ? { echelon: opts.echelon } : {}) } });
+    return cloneForRecord(team);
   }
 
   /** The alternate position prepared for `unitId`, if any — a copy. */

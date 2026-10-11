@@ -132,6 +132,10 @@ export function outcomeVisibleTo(
     // observation post is found the way any force is, by being looked for.
     case "designateObservationPost":
     case "prepareAlternatePosition":
+    // Splitting a force is a reorganisation among one's own men (decision
+    // 89). The enemy does not watch the order being given; it meets the new
+    // force the way it meets any force, by finding it.
+    case "detachTeam":
       return own(action.unitId);
     case "executeStandingOrders":
       // Its own step whole; the enemy's only where something inside it reached
@@ -231,6 +235,10 @@ export function actionVisibleTo(
     // observation post is found the way any force is, by being looked for.
     case "designateObservationPost":
     case "prepareAlternatePosition":
+    // Splitting a force is a reorganisation among one's own men (decision
+    // 89). The enemy does not watch the order being given; it meets the new
+    // force the way it meets any force, by finding it.
+    case "detachTeam":
       return own(action.unitId);
     case "executeStandingOrders":
       // The enemy's own step is shown only when something inside it was seen;

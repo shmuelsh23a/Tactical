@@ -46,8 +46,17 @@ export function orderInterval(force: Echelon, distance: number): number | null {
   return lookupBand(profile.bands, distance)?.value ?? null;
 }
 
-/** Echelons in order of command, squad lowest. */
-export const ECHELON_RANK: Readonly<Record<Echelon, number>> = { squad: 0, platoon: 1, company: 2, battalion: 3, brigade: 4 };
+/**
+ * Echelons in order of command, the fire team lowest.
+ *
+ * A `team` is below a squad because that is where it sits in an order of
+ * battle (decision 89). `C2_TABLE` has no profile of its own for it, so
+ * `orderInterval` returns null for a team and the C2 rules leave it alone —
+ * which is the right answer rather than a gap: a fire team is commanded by
+ * its team leader, who is inside it, so there is no distance from a command
+ * element for the table to look up.
+ */
+export const ECHELON_RANK: Readonly<Record<Echelon, number>> = { team: -1, squad: 0, platoon: 1, company: 2, battalion: 3, brigade: 4 };
 
 /**
  * Command succession (rules decision 55, ⚠️ ours: author 2026-09-29,

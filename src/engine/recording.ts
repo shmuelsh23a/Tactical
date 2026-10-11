@@ -81,6 +81,12 @@ export type RecordedAction =
   | { kind: "registerTarget"; side: Side; weapon: string; at: Point }
   | { kind: "designateObservationPost"; unitId: string }
   | { kind: "prepareAlternatePosition"; unitId: string; at: Point }
+  /**
+   * A commander made a fire team out of part of a force (rules decision
+   * 89). The new force's id is recorded rather than derived, so a replay
+   * cannot drift from it.
+   */
+  | { kind: "detachTeam"; unitId: string; soldierIds: string[]; opts: { id: string; name?: string; echelon?: Echelon } }
   | { kind: "moveUnit"; unitId: string; to: Point; mode: MovementMode }
   | { kind: "fire"; attackerId: string; targetId: string; opts: DirectFireOptions }
   | {
@@ -824,6 +830,10 @@ export function replayWithOutcomes(
           kind: "executeStandingOrders",
           executions: game.executeStandingOrders(action.side),
         };
+        break;
+      case "detachTeam":
+        game.detachTeam(action.unitId, action.soldierIds, { ...action.opts });
+        outcome = { kind: "setup" };
         break;
       default: {
         // Exhaustiveness: a new action kind must be handled here.

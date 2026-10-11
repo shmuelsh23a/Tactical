@@ -580,6 +580,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return action.sector
         ? `${who(action.unitId)} — גזרת תצפית: ${describeSector(action.sector)}`
         : `${who(action.unitId)} — תצפית מעגלית`;
+    case "detachTeam":
+      return `${who(action.unitId)} — הוקמה חוליה ${action.opts.name ?? action.opts.id} (${action.soldierIds.length} לוחמים)`;
     default: {
       // Exhaustiveness: a new RecordedAction must be given Hebrew narration
       // rather than falling through and printing its raw object at a player.

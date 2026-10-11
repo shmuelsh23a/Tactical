@@ -8,7 +8,14 @@ import type { CoverState } from "./data/directFire.js";
 export type Side = "RED" | "BLUE";
 
 /** Echelon levels referenced by the command-and-control table (פו"ש). */
-export type Echelon = "squad" | "platoon" | "company" | "battalion" | "brigade";
+/**
+ * `team` is a fire team: a force a commander has made out of part of
+ * another one (`Game.detachTeam`, rules decision 89), which from that
+ * moment is a force like any other. It is below `squad` because that is
+ * where it sits in an order of battle, not because anything treats it
+ * specially.
+ */
+export type Echelon = "team" | "squad" | "platoon" | "company" | "battalion" | "brigade";
 
 /** Movement gait chosen for a unit's move action. */
 export type MovementMode = "normal" | "run";
