@@ -213,6 +213,13 @@ export interface Unit {
   /** Protection it holds without digging — terrain, or a prepared position. */
   baseCover: CoverState;
   /** True while the force is working on its camouflage (הסוואה). */
+  /**
+   * The force is a machine gun team: it carries a crew-served **medium
+   * machine gun** and fires `MEDIUM_MG_BANDS` out to the published 800 m
+   * (rules decision 90), where a rifle squad stops at 400 m. Absent: it
+   * fires נק"ל\u05deקלעים like any other infantry.
+   */
+  mediumMg?: boolean;
   camouflaging: boolean;
   /** True while the force is scouting (סיור): looks better, walks only. */
   scouting: boolean;

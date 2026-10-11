@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { boundCost, makeInfantry } from "../../engine/index.js";
+import { boundCost, distance, makeInfantry } from "../../engine/index.js";
 import { buildTelAzekaScenario, buildTelAzekaTerrain } from "./telAzeka.js";
 
 /**
@@ -30,8 +30,15 @@ describe("the Elah valley scenario on Tel Azeka", () => {
     for (const x of [900, 800]) {
       expect(seenBy(x, 350), `east face at x=${x}`).toEqual([]);
     }
-    // …until near the top, where the northern spur picks a climber up.
-    expect(seenBy(700, 350)).toEqual(["RED-3"]);
+    // …until near the top, where the northern spur picks a climber up — and
+    // only from the one position, whatever is standing on it. The invariant
+    // is the ground's, so it is stated about the position: since the weapons
+    // squads arrived (decision 90) a machine gun team stands beside RED-3,
+    // and it sees what its position sees.
+    const spur = game.getUnit("RED-3").position;
+    const onTheSpur = reds.filter((r) => distance(r.position, spur) <= 25).map((r) => r.id);
+    expect(onTheSpur.length).toBeGreaterThan(0);
+    expect(seenBy(700, 350).sort()).toEqual(onTheSpur.sort());
   });
 
   it("charges the climber five metres of bound for every metre of height", () => {

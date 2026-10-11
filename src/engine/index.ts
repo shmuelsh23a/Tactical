@@ -56,6 +56,7 @@ export {
   applyComponentDamage,
   selectHitSoldier,
   makeInfantry,
+  makeMachineGunTeam,
   makeVehicle,
   makeCommandGroup,
 } from "./units.js";

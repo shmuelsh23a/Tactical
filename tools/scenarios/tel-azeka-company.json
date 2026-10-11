@@ -2,14 +2,32 @@
   "slug": "telAzekaCompany",
   "title": "עמק האלה — פלוגה על תל עזקה",
   "brief": "כחול: פלוגה תופסת את תל עזקה מדרום. אדום: פלוגה מחזיקה בתל. לפני הקרב כל צד מתכנן את משימתו: מטרות רשומות, תצפיות ועמדות חלופיות.",
-  "attackers": ["BLUE"],
+  "attackers": [
+    "BLUE"
+  ],
   "seed": 1949,
   "timeLimit": 45,
   "trackIntel": true,
   "enforceC2": true,
   "morale": true,
-  "commandEchelon": {"BLUE": "company", "RED": "company"},
-  "fireSupport": {"BLUE": [{"weapon": "mortar", "missions": 12}], "RED": [{"weapon": "mortar", "missions": 12}]},
+  "commandEchelon": {
+    "BLUE": "company",
+    "RED": "company"
+  },
+  "fireSupport": {
+    "BLUE": [
+      {
+        "weapon": "mortar",
+        "missions": 12
+      }
+    ],
+    "RED": [
+      {
+        "weapon": "mortar",
+        "missions": 12
+      }
+    ]
+  },
   "window": {
     "lat": 31.6985,
     "lon": 34.9355,
@@ -45,32 +63,432 @@
     "platoon battle's."
   ],
   "forces": [
-    {"id": "BLUE-COY", "name": "חפ\"ק מ\"פ", "side": "BLUE", "kind": "command", "echelon": "company", "personnel": 5, "at": [600, 990]},
-    {"id": "BLUE-1-HQ", "name": "חפ\"ק מ\"מ 1", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [430, 975]},
-    {"id": "BLUE-1-1", "name": "כיתה 1/1", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [360, 940]},
-    {"id": "BLUE-1-2", "name": "כיתה 1/2", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [430, 930]},
-    {"id": "BLUE-1-3", "name": "כיתה 1/3", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [500, 940]},
-    {"id": "BLUE-2-HQ", "name": "חפ\"ק מ\"מ 2", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [640, 975]},
-    {"id": "BLUE-2-1", "name": "כיתה 2/1", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [580, 930]},
-    {"id": "BLUE-2-2", "name": "כיתה 2/2", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [650, 925]},
-    {"id": "BLUE-2-3", "name": "כיתה 2/3", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [720, 935]},
-    {"id": "BLUE-3-HQ", "name": "חפ\"ק מ\"מ 3", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [850, 975]},
-    {"id": "BLUE-3-1", "name": "כיתה 3/1", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [790, 935]},
-    {"id": "BLUE-3-2", "name": "כיתה 3/2", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [860, 925]},
-    {"id": "BLUE-3-3", "name": "כיתה 3/3", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [920, 940], "note": "The right-hand squad, in the low ground: the eastern face's dead ground is its way up."},
-    {"id": "RED-COY", "name": "חפ\"ק מ\"פ", "side": "RED", "kind": "command", "echelon": "company", "personnel": 5, "at": [600, 200], "note": "Behind the summit, on its northern side."},
-    {"id": "RED-A-HQ", "name": "חפ\"ק מ\"מ א'", "side": "RED", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [570, 430]},
-    {"id": "RED-A-1", "facing": 81, "name": "מחלקה א'/1", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [570, 460], "baseCover": "full", "reserve": true, "note": "The platoon's reserve (decision 60): dug in behind the shoulder, 100-112 m from each forward position."},
-    {"id": "RED-A-2", "facing": 91, "name": "מחלקה א'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [650, 520], "baseCover": "full"},
-    {"id": "RED-A-3", "facing": 67, "name": "מחלקה א'/3", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [470, 510], "baseCover": "full"},
-    {"id": "RED-B-HQ", "name": "חפ\"ק מ\"מ ב'", "side": "RED", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [650, 300]},
-    {"id": "RED-B-1", "name": "מחלקה ב'/1", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [620, 350], "note": "On the summit."},
-    {"id": "RED-B-2", "name": "מחלקה ב'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 6, "at": [700, 250], "note": "On the northern spur."},
-    {"id": "RED-B-3", "name": "מחלקה ב'/3", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [760, 430], "note": "On the eastern face, watching the valley."}
+    {
+      "id": "BLUE-COY",
+      "name": "חפ\"ק מ\"פ",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "company",
+      "personnel": 5,
+      "at": [
+        600,
+        990
+      ]
+    },
+    {
+      "id": "BLUE-1-HQ",
+      "name": "חפ\"ק מ\"מ 1",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        430,
+        975
+      ]
+    },
+    {
+      "id": "BLUE-1-1",
+      "name": "כיתה 1/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        360,
+        940
+      ]
+    },
+    {
+      "id": "BLUE-1-2",
+      "name": "כיתה 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        430,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-1-3",
+      "name": "כיתה 1/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        500,
+        940
+      ]
+    },
+    {
+      "id": "BLUE-1-MG1",
+      "name": "חולית מקלע 1/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        380,
+        940
+      ]
+    },
+    {
+      "id": "BLUE-1-MG2",
+      "name": "חולית מקלע 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        480,
+        940
+      ]
+    },
+    {
+      "id": "BLUE-2-HQ",
+      "name": "חפ\"ק מ\"מ 2",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        640,
+        975
+      ]
+    },
+    {
+      "id": "BLUE-2-1",
+      "name": "כיתה 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        580,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-2-2",
+      "name": "כיתה 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        650,
+        925
+      ]
+    },
+    {
+      "id": "BLUE-2-3",
+      "name": "כיתה 2/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        720,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-2-MG1",
+      "name": "חולית מקלע 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        600,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-2-MG2",
+      "name": "חולית מקלע 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        700,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-3-HQ",
+      "name": "חפ\"ק מ\"מ 3",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        850,
+        975
+      ]
+    },
+    {
+      "id": "BLUE-3-1",
+      "name": "כיתה 3/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        790,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-3-2",
+      "name": "כיתה 3/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        860,
+        925
+      ]
+    },
+    {
+      "id": "BLUE-3-3",
+      "name": "כיתה 3/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        920,
+        940
+      ],
+      "note": "The right-hand squad, in the low ground: the eastern face's dead ground is its way up."
+    },
+    {
+      "id": "BLUE-3-MG1",
+      "name": "חולית מקלע 1/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        810,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-3-MG2",
+      "name": "חולית מקלע 2/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        900,
+        940
+      ]
+    },
+    {
+      "id": "RED-COY",
+      "name": "חפ\"ק מ\"פ",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "company",
+      "personnel": 5,
+      "at": [
+        600,
+        200
+      ],
+      "note": "Behind the summit, on its northern side."
+    },
+    {
+      "id": "RED-A-HQ",
+      "name": "חפ\"ק מ\"מ א'",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        570,
+        430
+      ]
+    },
+    {
+      "id": "RED-A-1",
+      "facing": 81,
+      "name": "מחלקה א'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        570,
+        460
+      ],
+      "baseCover": "full",
+      "reserve": true,
+      "note": "The platoon's reserve (decision 60): dug in behind the shoulder, 100-112 m from each forward position."
+    },
+    {
+      "id": "RED-A-2",
+      "facing": 91,
+      "name": "מחלקה א'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        650,
+        520
+      ],
+      "baseCover": "full"
+    },
+    {
+      "id": "RED-A-3",
+      "facing": 68,
+      "name": "מחלקה א'/3",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        470,
+        510
+      ],
+      "baseCover": "full"
+    },
+    {
+      "id": "RED-A-MG1",
+      "name": "חולית מקלע 1/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        590,
+        460
+      ],
+      "baseCover": "full",
+      "facing": 83
+    },
+    {
+      "id": "RED-A-MG2",
+      "name": "חולית מקלע 2/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        450,
+        510
+      ],
+      "baseCover": "full",
+      "facing": 65
+    },
+    {
+      "id": "RED-B-HQ",
+      "name": "חפ\"ק מ\"מ ב'",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        650,
+        300
+      ]
+    },
+    {
+      "id": "RED-B-1",
+      "name": "מחלקה ב'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        620,
+        350
+      ],
+      "note": "On the summit."
+    },
+    {
+      "id": "RED-B-2",
+      "name": "מחלקה ב'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 6,
+      "at": [
+        700,
+        250
+      ],
+      "note": "On the northern spur."
+    },
+    {
+      "id": "RED-B-3",
+      "name": "מחלקה ב'/3",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        760,
+        430
+      ],
+      "note": "On the eastern face, watching the valley."
+    },
+    {
+      "id": "RED-B-MG1",
+      "name": "חולית מקלע 1/B",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        640,
+        350
+      ]
+    },
+    {
+      "id": "RED-B-MG2",
+      "name": "חולית מקלע 2/B",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        740,
+        430
+      ]
+    }
   ],
   "charges": [
-    {"side": "RED", "type": "antiPersonnel", "at": [600, 450]},
-    {"side": "RED", "type": "antiPersonnel", "at": [625, 460]},
-    {"side": "RED", "type": "antiPersonnel", "at": [590, 490]}
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        600,
+        450
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        625,
+        460
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        590,
+        490
+      ]
+    }
   ]
 }

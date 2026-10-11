@@ -116,6 +116,30 @@
       ]
     },
     {
+      "id": "BLUE-1-MG1",
+      "name": "חולית מקלע 1/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        380,
+        940
+      ]
+    },
+    {
+      "id": "BLUE-1-MG2",
+      "name": "חולית מקלע 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        480,
+        940
+      ]
+    },
+    {
       "id": "BLUE-2-HQ",
       "name": "חפ\"ק מ\"מ 2",
       "side": "BLUE",
@@ -160,6 +184,30 @@
       "soldiers": 8,
       "at": [
         720,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-2-MG1",
+      "name": "חולית מקלע 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        600,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-2-MG2",
+      "name": "חולית מקלע 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        700,
         935
       ]
     },
@@ -213,6 +261,30 @@
       "note": "The right-hand squad, in the low ground: the eastern face's dead ground is its way up."
     },
     {
+      "id": "BLUE-3-MG1",
+      "name": "חולית מקלע 1/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        810,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-3-MG2",
+      "name": "חולית מקלע 2/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        900,
+        940
+      ]
+    },
+    {
       "id": "RED-COY",
       "name": "חפ\"ק מ\"פ",
       "side": "RED",
@@ -238,7 +310,8 @@
       ]
     },
     {
-      "id": "RED-A-1", "facing": 81,
+      "id": "RED-A-1",
+      "facing": 81,
       "name": "מחלקה א'/1",
       "side": "RED",
       "kind": "infantry",
@@ -253,7 +326,8 @@
       "reserve": true
     },
     {
-      "id": "RED-A-2", "facing": 91,
+      "id": "RED-A-2",
+      "facing": 91,
       "name": "מחלקה א'/2",
       "side": "RED",
       "kind": "infantry",
@@ -266,7 +340,8 @@
       "baseCover": "full"
     },
     {
-      "id": "RED-A-3", "facing": 67,
+      "id": "RED-A-3",
+      "facing": 68,
       "name": "מחלקה א'/3",
       "side": "RED",
       "kind": "infantry",
@@ -277,6 +352,34 @@
         510
       ],
       "baseCover": "full"
+    },
+    {
+      "id": "RED-A-MG1",
+      "name": "חולית מקלע 1/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        590,
+        460
+      ],
+      "baseCover": "full",
+      "facing": 83
+    },
+    {
+      "id": "RED-A-MG2",
+      "name": "חולית מקלע 2/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        450,
+        510
+      ],
+      "baseCover": "full",
+      "facing": 65
     }
   ],
   "charges": [

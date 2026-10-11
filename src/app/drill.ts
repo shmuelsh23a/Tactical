@@ -237,6 +237,17 @@ export interface SquadDrill {
    */
   fireTeams?: { splitAt: number; minMen: number };
   /**
+   * How far a machine gun team engages (rules decision 90, ATP 3-21.8
+   * para C-119 and its Appendix C table: the M240-series reaches an area
+   * target at **800 m** on its bipod). A force carrying a medium machine
+   * gun (`Unit.mediumMg`) shoots this far instead of the drill's rifle
+   * ranges, which is the point of having one in a base of fire.
+   *
+   * Absent: a machine gun team engages at `attackFireRange` /
+   * `openFireRange` like everything else.
+   */
+  machineGuns?: { range: number };
+  /**
    * How a squad scouts, when its company sends it ahead (rules decisions
    * 52–54; which squads, from where and for how long are the company's, in
    * `company.ts`). A scout walks, looks harder and holds its fire, so what
@@ -350,6 +361,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   consolidate: { nothingWithin: 100, arc: 120 },
   screeningSmoke: { screens: 4 },
   fireTeams: { splitAt: 300, minMen: 6 },
+  machineGuns: { range: 800 },
 };
 
 /** What one side has been told to do: attack towards a point, or hold facing one. */
@@ -1052,7 +1064,15 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
   // Still forces first, then the quicker (rules decision 72).
   for (const u of game.firingOrder(side).filter(inPlay)) {
     const tank = heavy !== undefined && u.kind === "vehicle" && (u.vehicle?.vehicleClass ?? "mbt") === "mbt";
-    const reach = tank ? Math.max(baseReach, heavy.tankGunRange) : baseReach;
+    // A machine gun team shoots as far as its gun reaches (decision 90):
+    // the drill's engagement range is written for rifles, and the whole
+    // point of a crew-served gun in a base of fire is that it outranges
+    // them (ATP 3-21.8 para C-119).
+    const reach = tank
+      ? Math.max(baseReach, heavy.tankGunRange)
+      : u.mediumMg && drill.machineGuns
+        ? Math.max(baseReach, drill.machineGuns.range)
+        : baseReach;
     // A scout watches and reports; it does not give itself away (decision 52)
     // — unless the company has gone in and told it to give a base of fire.
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;

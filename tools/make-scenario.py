@@ -64,6 +64,8 @@ The spec, in full — everything not marked optional is required:
       "forces": [
         { "id": "BLUE-1", "name": "...", "side": "BLUE", "kind": "infantry",
           "echelon": "squad", "soldiers": 8, "at": [250, 80] },
+        { "id": "BLUE-1-MG", "side": "BLUE", "kind": "infantry",
+          "mediumMg": true, "soldiers": 3, "at": [250, 80] },
         { "id": "RED-TANK", "side": "RED", "kind": "vehicle", "at": [520, 500],
           "facing": 270 },
         { "id": "RED-HQ", "side": "RED", "kind": "command", "echelon": "platoon",
@@ -177,6 +179,7 @@ WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing", "vehicleClass",
     "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
+    "mediumMg",
     "motivation", "experience", "quality", "readiness",
 }
 MOTIVATIONS = {"poor", "low", "normal", "high", "fanatic"}
@@ -200,14 +203,16 @@ KINDS = {"infantry", "vehicle", "command"}
 # which is the same silent failure the unknown-key check exists to stop.
 KIND_KEYS = {
     # `facing` is a vehicle's hull, or the way any other force's position faces (decision 85).
-    "infantry": {"echelon", "soldiers", "reserve", "facing"},
+    # `mediumMg` makes it a machine gun team: a crew-served medium machine
+    # gun, firing to the published 800 m (rules decision 90).
+    "infantry": {"echelon", "soldiers", "reserve", "facing", "mediumMg"},
     "command": {"echelon", "personnel", "facing"},
     "vehicle": {"facing", "vehicleClass"},
 }
 DEFAULT_ECHELON = {"infantry": "squad", "command": "platoon", "vehicle": "squad"}
 SLUG = re.compile(r"[A-Za-z][A-Za-z0-9]*$")
 SIDES = {"RED", "BLUE"}
-ECHELONS = {"squad", "platoon", "company", "battalion", "brigade"}
+ECHELONS = {"team", "squad", "platoon", "company", "battalion", "brigade"}
 COVER = {"none", "partial", "full"}
 CHARGE_TYPES = {"antiPersonnel", "antiTank"}
 # What kind of vehicle (rules decision 78); absent, a main battle tank.
@@ -525,6 +530,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     name = pascal(spec["slug"])
 
     imports = ["Game", "makeCommandGroup", "makeInfantry", "makeVehicle"]
+    if any(f.get("mediumMg") for f in spec.get("forces", [])):
+        imports.append("makeMachineGunTeam")
     listing = spec["slug"] + "Listing"
     if any(f.get("camouflaged") is True for f in forces):
         imports.insert(0, "CAMOUFLAGE_TURNS_AT_MAX")
@@ -616,8 +623,13 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             args = [ts(f["id"]), ts(f["side"]), ts(f.get("echelon", DEFAULT_ECHELON["command"])), at, num(f.get("personnel", 3))]
             call = "makeCommandGroup(" + ", ".join(args + given_name) + ")"
         else:
-            args = [ts(f["id"]), ts(f["side"]), ts(f.get("echelon", DEFAULT_ECHELON["infantry"])), at, num(f.get("soldiers", 8))]
-            call = "makeInfantry(" + ", ".join(args + given_name) + ")"
+            if f.get("mediumMg"):
+                # A machine gun team carries its echelon in the maker.
+                args = [ts(f["id"]), ts(f["side"]), at, num(f.get("soldiers", 3))]
+                call = "makeMachineGunTeam(" + ", ".join(args + given_name) + ")"
+            else:
+                args = [ts(f["id"]), ts(f["side"]), ts(f.get("echelon", DEFAULT_ECHELON["infantry"])), at, num(f.get("soldiers", 8))]
+                call = "makeInfantry(" + ", ".join(args + given_name) + ")"
 
         dressing: list[str] = []
         # Statements that name the force themselves, rather than set one field on it.

@@ -227,6 +227,26 @@ export function makeInfantry(
 }
 
 /**
+ * A **machine gun team**: a crew-served medium machine gun and its crew
+ * (rules decision 90). Infantry like any other force, at the `team`
+ * echelon, except that it fires `MEDIUM_MG_BANDS` out to the published
+ * 800 m instead of the infantry table's 400 (ATP 3-21.8, App. C).
+ *
+ * This is what a weapons squad's commander pulls out to form a base of
+ * fire — "the weapons squad leader positions and controls the fires of all
+ * medium machine guns in the element" (ATP 3-21.8 para C-119).
+ */
+export function makeMachineGunTeam(
+  id: string,
+  side: Unit["side"],
+  position: Unit["position"],
+  soldierCount: number,
+  name = id,
+): Unit {
+  return { ...makeInfantry(id, side, "team", position, soldierCount, name), mediumMg: true };
+}
+
+/**
  * Convenience constructor for a command group (חפ"ק). It carries a small
  * number of personnel so it can be targeted and take casualties, and its
  * `echelon` is the level it commands (e.g. a platoon HQ commanding squads).

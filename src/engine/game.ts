@@ -502,6 +502,14 @@ export interface GameOptions {
    */
   directHeBombards?: boolean;
   /**
+   * A machine gun team's own table and reach (rules decision 90): a force
+   * carrying a medium machine gun (`Unit.mediumMg`) fires out to the
+   * published 800 m, not the infantry table's 400. On by default; a
+   * recording made before it reads it as off, so a battle fought when a
+   * machine gun team was just another squad replays as it was.
+   */
+  mediumMg?: boolean;
+  /**
    * The quality gap between two forces acts on small arms and the assault
    * (rules decision 84): nothing between equals, much at the extremes. On by
    * default; a recording made before it reads it as off.
@@ -727,6 +735,7 @@ export class Game {
   readonly checkedFigures: boolean;
   readonly aresFigures: boolean;
   readonly directHeBombards: boolean;
+  readonly mediumMg: boolean;
   readonly qualityGap: boolean;
   readonly directionalCover: boolean;
   readonly readiness: boolean;
@@ -1050,6 +1059,7 @@ export class Game {
     this.checkedFigures = opts.checkedFigures ?? true;
     this.aresFigures = opts.aresFigures ?? true;
     this.directHeBombards = opts.directHeBombards ?? true;
+    this.mediumMg = opts.mediumMg ?? true;
     this.qualityGap = opts.qualityGap ?? true;
     this.directionalCover = opts.directionalCover ?? true;
     this.readiness = opts.readiness ?? true;
@@ -1197,6 +1207,7 @@ export class Game {
       ...(this.checkedFigures ? { checkedFigures: true } : {}),
       ...(this.aresFigures ? { aresFigures: true } : {}),
       ...(this.directHeBombards ? { directHeBombards: true } : {}),
+      ...(this.mediumMg ? { mediumMg: true } : {}),
       ...(this.qualityGap ? { qualityGap: true } : {}),
       ...(this.directionalCover ? { directionalCover: true } : {}),
       ...(this.readiness ? { readiness: true } : {}),
@@ -2598,6 +2609,7 @@ export class Game {
         const result = resolveDirectFire(this.rng, coverer, actor, {
           weapon: posture.weapon,
           lethality: this.lethality,
+          ...(this.mediumMg ? { mediumMg: true } : {}),
           turn: this.turn,
           cover: actor.cover,
           // Its cover by the side the fire comes from (decision 85): the hole
@@ -2869,6 +2881,7 @@ export class Game {
     const fireResult = resolveDirectFire(this.rng, attacker, target, {
       turn: this.turn,
       lethality: this.lethality,
+      ...(this.mediumMg ? { mediumMg: true } : {}),
       // A target that moved is easier or harder to hit (decision 22), and one
       // that fired from full cover keeps −30% (decision 23).
       ...this.movementTerms(target, target.movedThisTurn > 0),

@@ -2,7 +2,9 @@
   "slug": "telAzeka",
   "title": "עמק האלה — תפיסת תל עזקה",
   "brief": "כחול: תופס את תל עזקה מדרום. אדום: מחזיק בתל. אין בשטח מבנים — כל מחסה הוא מחסה של הקרקע.",
-  "attackers": ["BLUE"],
+  "attackers": [
+    "BLUE"
+  ],
   "seed": 1948,
   "timeLimit": 45,
   "trackIntel": true,
@@ -47,19 +49,182 @@
     "so a feint east is worth something."
   ],
   "forces": [
-    { "id": "BLUE-1", "name": "כיתה 1", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [450, 950] },
-    { "id": "BLUE-2", "name": "כיתה 2", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [520, 930] },
-    { "id": "BLUE-3", "name": "כיתה 3", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [390, 900], "note": "The left-hand squad, from which the valley is reachable if the player would rather feint east than climb." },
-    { "id": "BLUE-HQ", "name": "חפ\"ק מ\"מ", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [470, 980] },
-
-    { "id": "RED-1", "name": "מחלקה ב'/1", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [620, 350], "note": "On the summit: it sees the whole southern ridge and none of its own eastern face." },
-    { "id": "RED-2", "facing": 106, "name": "מחלקה ב'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [560, 560], "baseCover": "full", "note": "On the shoulder above the ridge, in a position prepared before the battle: it covers the southern approach from 750 m in." },
-    { "id": "RED-3", "name": "מחלקה ב'/3", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 6, "at": [700, 250], "note": "On the northern spur, the only RED force that sees the valley floor — and, if BLUE comes up the ridge, the one watching the wrong ground." },
-    { "id": "RED-HQ", "name": "חפ\"ק מ\"מ", "side": "RED", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [560, 280], "note": "Behind the summit, within 300 m of all three squads: this platoon is in contact every turn, which the attacker's will not be for long." }
+    {
+      "id": "BLUE-1",
+      "name": "כיתה 1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        450,
+        950
+      ]
+    },
+    {
+      "id": "BLUE-2",
+      "name": "כיתה 2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        520,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-3",
+      "name": "כיתה 3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        390,
+        900
+      ],
+      "note": "The left-hand squad, from which the valley is reachable if the player would rather feint east than climb."
+    },
+    {
+      "id": "BLUE-MG1",
+      "name": "חולית מקלע 1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        470,
+        950
+      ]
+    },
+    {
+      "id": "BLUE-MG2",
+      "name": "חולית מקלע 2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        370,
+        900
+      ]
+    },
+    {
+      "id": "BLUE-HQ",
+      "name": "חפ\"ק מ\"מ",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        470,
+        980
+      ]
+    },
+    {
+      "id": "RED-1",
+      "name": "מחלקה ב'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        620,
+        350
+      ],
+      "note": "On the summit: it sees the whole southern ridge and none of its own eastern face."
+    },
+    {
+      "id": "RED-2",
+      "facing": 108,
+      "name": "מחלקה ב'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        560,
+        560
+      ],
+      "baseCover": "full",
+      "note": "On the shoulder above the ridge, in a position prepared before the battle: it covers the southern approach from 750 m in."
+    },
+    {
+      "id": "RED-3",
+      "name": "מחלקה ב'/3",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 6,
+      "at": [
+        700,
+        250
+      ],
+      "note": "On the northern spur, the only RED force that sees the valley floor — and, if BLUE comes up the ridge, the one watching the wrong ground."
+    },
+    {
+      "id": "RED-MG1",
+      "name": "חולית מקלע 1",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        640,
+        350
+      ]
+    },
+    {
+      "id": "RED-MG2",
+      "name": "חולית מקלע 2",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        680,
+        250
+      ]
+    },
+    {
+      "id": "RED-HQ",
+      "name": "חפ\"ק מ\"מ",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        560,
+        280
+      ],
+      "note": "Behind the summit, within 300 m of all three squads: this platoon is in contact every turn, which the attacker's will not be for long."
+    }
   ],
   "charges": [
-    { "side": "RED", "type": "antiPersonnel", "at": [600, 450] },
-    { "side": "RED", "type": "antiPersonnel", "at": [625, 460] },
-    { "side": "RED", "type": "antiPersonnel", "at": [590, 490] }
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        600,
+        450
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        625,
+        460
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        590,
+        490
+      ]
+    }
   ]
 }

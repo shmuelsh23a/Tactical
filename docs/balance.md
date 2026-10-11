@@ -21,6 +21,74 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## ⚠️ RE-BASED 2026-10-11: every table below this is on the old order of battle
+
+Rules decision 90 gave each platoon its **weapons squad** — two machine gun
+teams of three men, firing to the published 800 m (ATP 3-21.8, App. C).
+The scenario specs were changed and regenerated, so **every measurement
+recorded before this line was taken on an order of battle that no longer
+exists** and must not be compared with one taken after it.
+
+Both sides gained them at the doctrinal rate, which is why the ratios the
+scenarios are named for survive exactly:
+
+| Scenario | Fighting men before | After | Ratio |
+|---|---|---|---|
+| `telAzekaAssault` | 72 v 24 | **90 v 30** | 3.00, unchanged |
+| `telAzekaAssault2` (2:1) | 48 v 24 | **60 v 30** | 2.00, unchanged |
+| `telAzekaCompany` | 72 v 46 | 90 v 58 | 1.57 → 1.55 |
+| `telAzeka` | 24 v 22 | 30 v 28 | 1.09 → 1.07 |
+| `yokneamIllit` | 24 v 14 | 30 v 20 | 1.71 → 1.50 |
+| `yokneamUrban` | 72 v 24 | **90 v 30** | 3.00, unchanged |
+
+**`yokneamRaid` was deliberately left alone.** Its brief is a special force
+raiding *בלי סיוע אש*, without fire support, against a militia; neither a
+special-operations element nor an irregular militia carries a doctrinal
+weapons squad, so giving it one would have contradicted the scenario.
+
+Two things the re-base forced, and both were caught by the suite rather
+than noticed:
+
+- **Every prepared defender's facing had to be recomputed.** `facing` is
+  the bearing from a position to the attacker's start line, and the start
+  line is the mean of the attacker's forces — which moved when BLUE gained
+  machine gun teams. `scenarioFacing.test.ts` failed on four scenarios
+  until the specs were recomputed.
+- **A machine gun team placed at a platoon's centre broke the Tel Azeka
+  layout.** The saddle is deliberately dead to every RED position, and a
+  team at the centroid could see it. They are placed 20 m from a squad of
+  their own platoon instead, so they share that squad's sight lines.
+
+### The re-based standard measurement
+
+60 battles a scenario from seed 1000:
+
+| Attacker | telAzekaAssault | telAzekaAssault2 | Out by HE | Down while waiting |
+|---|---|---|---|---|
+| Bare defaults | 0% | 2% | 56 / 53% | 0 |
+| **Plain script** (the new baseline) | **10%** | **12%** | 60 / 61% | 0 |
+| Doctrinal: fire teams + machine guns | 7% | 2% | 84 / 83% | **3 / 2** |
+| Rung A entire (+ gate, + rear security) | 5% | 0% | 86 / 88% | 3 / 2 |
+
+**The machine gun helps the defence more than the attack, which is the
+machine gun's whole history.** Three readings, all pointing the same way:
+
+- The attacker now loses a median **3 and 2 men before it even goes in**,
+  where it lost none before. A prepared defender with an 800 m gun reaches
+  the whole approach.
+- The defender's own losses rose under the plain script (11% → 14%) and its
+  share of losses to explosives *fell* (74% → 60%): both sides are killing
+  more with bullets, and the defence does it better from a hole.
+- Battles are shorter — median 33 → 29 turns under the doctrinal drill.
+  They are decided sooner, and against the attacker.
+
+So the 3:1 attack sits at **5–10%** against decision 68's target of
+**40–55%**, and the gap has widened rather than closed. The three rules
+candidates recorded below are unchanged and now matter more; a fourth
+joins them: **a prepared defence with machine guns may simply be too
+strong at range**, which is testable by measuring the approach's cost
+against `machineGuns.range`.
+
 ## Detection and concealment (rules decision 12)
 
 [`src/engine/data/concealment.ts`](../src/engine/data/concealment.ts)

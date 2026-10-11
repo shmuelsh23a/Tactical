@@ -3,6 +3,7 @@ import { distance, lookupBand } from "../geometry.js";
 import type { Unit } from "../types.js";
 import {
   SMALL_ARMS_BANDS,
+  MEDIUM_MG_BANDS,
   SUSTAINED_MG_BANDS,
   COVER_MODIFIERS,
   type CoverState,
@@ -33,6 +34,13 @@ function coaxialGunners(vehicle: Unit): number[] {
 
 export interface DirectFireOptions {
   weapon: WeaponClass;
+  /**
+   * The medium machine gun's rule is on (rules decision 90). With it, a
+   * force carrying one (`Unit.mediumMg`) fires `MEDIUM_MG_BANDS` out to
+   * 800 m. Off — and off for every recording made before it — a machine
+   * gun team fires the infantry table like any other force.
+   */
+  mediumMg?: boolean;
   /** Whose figures (rules decision 43): on `research`, small arms hit a third as often. The document's unless given. */
   lethality?: Lethality;
   /** Cover state of the target; scales the hit chance (full cover halves it). */
@@ -93,7 +101,14 @@ export function resolveDirectFire(
   opts: DirectFireOptions,
 ): DirectFireResult {
   const range = distance(attacker.position, target.position);
-  const bands = opts.weapon === "sustainedMg" ? SUSTAINED_MG_BANDS : SMALL_ARMS_BANDS;
+  // A machine gun team's own table (decision 90), else the coaxial's for a
+  // vehicle and נק"ל\u05deקלעים for everyone else (decision 25).
+  const bands =
+    opts.mediumMg && attacker.mediumMg && opts.weapon !== "sustainedMg"
+      ? MEDIUM_MG_BANDS
+      : opts.weapon === "sustainedMg"
+        ? SUSTAINED_MG_BANDS
+        : SMALL_ARMS_BANDS;
   const band = lookupBand(bands, range);
 
   const base: DirectFireResult = {

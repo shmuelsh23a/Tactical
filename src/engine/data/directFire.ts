@@ -24,6 +24,42 @@ export const SMALL_ARMS_BANDS: readonly RangeBand[] = [
  * is נק"ל\מקלעים, machine guns included. The key stays `sustainedMg`, the name
  * it was first read under, so recordings made since still load.
  */
+/**
+ * **The dismounted medium machine gun** (rules decision 90, the author
+ * 2026-10-11: "doctrine and real life (high fidelity) data > our rule, and
+ * in that case we adjust our rules").
+ *
+ * The conflict it settles: ATP 3-21.8 (2024) para **C-119** has medium
+ * machine guns in a base-of-fire element "firing at targets within a range
+ * of **800 meters**", and its Appendix C *Technical Data* table gives the
+ * M240-series **bipod/area 800 m**, bipod/point 600 m, tripod/area
+ * 1,100 m, grazing 600 m, sustained 100 rounds a minute. Our infantry
+ * table stops at **400 m**, so a doctrinal machine gun team could not
+ * reach where doctrine employs it.
+ *
+ * The figures are the document's own machine-gun table — the three bands
+ * below, transcribed, which is what that table describes — with one
+ * research-sourced tail band carrying it to the published 800 m.
+ *
+ * **Decision 25 is not reversed.** ירי מקביל remains a vehicle's
+ * coaxial gun, and a *rifle squad* still fires נק"ל\u05deקלעים only: what
+ * decision 25 refused was giving every squad's rifles machine-gun chances.
+ * A crew-served medium machine gun is the weapon that table was always
+ * describing, and only a force that carries one (`Unit.mediumMg`) fires
+ * these bands.
+ *
+ * ⚠️ Ours: the 701–800 m band's 10%. The document stops at 700 m and
+ * gives no value beyond it; doctrine gives the reach but no hit chance.
+ * Halving the last band is the assumption, and it is the row to revisit
+ * if long-range machine-gun fire turns out to decide battles.
+ */
+export const MEDIUM_MG_BANDS: readonly RangeBand[] = [
+  { maxRange: 300, value: 0.7 },
+  { maxRange: 499, value: 0.5 },
+  { maxRange: 700, value: 0.2 },
+  { maxRange: 800, value: 0.1 },
+];
+
 export const SUSTAINED_MG_BANDS: readonly RangeBand[] = [
   { maxRange: 300, value: 0.7 },
   { maxRange: 499, value: 0.5 },

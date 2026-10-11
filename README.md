@@ -2779,6 +2779,61 @@ on the stated reasoning, still awaiting the author's word.
       difficulty at all, and what a weaker setting would take away —
       fewer scouts, no smoke, or the bare defaults as an "easy".
 
+89. ✅ **A commander makes fire teams out of his own forces** (2026-10-11,
+    the author: "a commander should be able to build fire teams out of his
+    forces, including on the fly — then it becomes a force just as any
+    other"). `Game.detachTeam` takes named men out of a force and makes
+    them a force at the same place, with the same protection, carrying
+    their wounds, fatigue and morale. `Echelon` gains `team`.
+    - **Nothing treats it specially** afterwards: it is found, shot at,
+      suppressed, broken and ordered like any other infantry — which is
+      what the ruling asks for.
+    - **It buys no extra action**: the team inherits `firedThisTurn`,
+      `movedThisTurn` and `ranThisTurn`, and inherits `stationaryTurns`
+      and `camouflageTurns` so it gains no fresh concealment either.
+      Without that, splitting would be free and so always right.
+    - **What it costs**: a force is neutralised by a share of its own
+      strength, so a four-man team is finished by its second casualty
+      where a squad takes four. The *side's* breakpoint does not move —
+      `sideBroken` counts men, not forces.
+    - ⚠️ A team with no leader among its men makes its first man one: ours,
+      because there is no seniority to read and a roll would move every
+      later die.
+    - **It is what makes Battle Drill 2A playable at all**
+      (`SquadDrill.fireTeams`), and that is the one doctrinal element that
+      pays: `telAzekaAssault` 5% → 12% on the old order of battle, with
+      fewer losses (docs/balance.md).
+
+90. ✅ **The dismounted medium machine gun, at doctrine's reach**
+    (2026-10-11, the author: "doctrine and real life (high fidelity) data >
+    our rule, and in that case we adjust our rules").
+    - **The conflict**: ATP 3-21.8 (2024) para **C-119** has medium machine
+      guns in a base of fire engaging to **800 m**, and its Appendix C
+      table gives the M240-series bipod/area 800 m, bipod/point 600 m,
+      tripod/area 1,100 m, grazing 600 m. Our infantry table stops at
+      **400 m**.
+    - **The adjustment**: a force carrying one (`Unit.mediumMg`,
+      `makeMachineGunTeam`) fires `MEDIUM_MG_BANDS` — the document's own
+      machine-gun table, transcribed, plus one band carrying it to the
+      published 800 m. `GameOptions.mediumMg`, on for a new game and off
+      for a recording made before it.
+    - **Decision 25 is not reversed.** ירי מקביל is still a vehicle's
+      coaxial gun, and a *rifle squad* still fires נק"ל\מקלעים only. What
+      decision 25 refused was giving every squad's rifles machine-gun
+      chances; a crew-served medium machine gun is the weapon that table
+      was always describing.
+    - ⚠️ Ours: the 701–800 m band's 10%. The document stops at 700 m and
+      gives no value past it; doctrine gives the reach but no hit chance.
+    - **Every platoon now has a weapons squad** of two such teams, and the
+      scenarios were **re-based** on it (the author: "re-base"). The
+      ratios the scenarios are named for survive exactly, because both
+      sides gained them at the doctrinal rate. The raid is left alone: a
+      special force without fire support, against a militia.
+    - **Measured**: the machine gun helps the defence more than the
+      attack — the attacker now loses a median 3 men before it goes in,
+      where it lost none. The 3:1 attack is at 5–10% against decision 68's
+      40–55%, and the gap has widened (balance.md, *RE-BASED*).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

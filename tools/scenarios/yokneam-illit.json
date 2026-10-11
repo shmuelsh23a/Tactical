@@ -2,7 +2,9 @@
   "slug": "yokneamIllit",
   "title": "תרגיל הדגמה — מגע ראשון",
   "brief": "כחול: תוקף מהשטח הנמוך בצפון. אדום: מחזיק עמדה בשולי יקנעם עילית, על הגבעה בדרום.",
-  "attackers": ["BLUE"],
+  "attackers": [
+    "BLUE"
+  ],
   "seed": 2026,
   "timeLimit": 40,
   "trackIntel": true,
@@ -49,21 +51,196 @@
     "rather than only tested. One line to delete when force types land."
   ],
   "forces": [
-    { "id": "BLUE-1", "name": "כיתה 1", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [250, 80] },
-    { "id": "BLUE-2", "name": "כיתה 2", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [400, 60] },
-    { "id": "BLUE-3", "name": "כיתה 3", "side": "BLUE", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [460, 70] },
-    { "id": "BLUE-HQ", "name": "חפ\"ק מ\"מ", "side": "BLUE", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [400, 20] },
-
-    { "id": "RED-1", "name": "מחלקה א'/1", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 6, "at": [380, 336], "camouflaged": true, "canLayCharges": true },
-    { "id": "RED-2", "name": "מחלקה א'/2", "side": "RED", "kind": "infantry", "echelon": "squad", "soldiers": 8, "at": [700, 260], "note": "The second squad holds the ridge coming down from the north-east, on the flank of the axis." },
-    { "id": "RED-TANK", "name": "טנק", "side": "RED", "kind": "vehicle", "at": [520, 500], "facing": 270, "note": "In a street on the hilltop behind the crest. It stands 4.6 m from the nearest house — outside the 3 m cover reach on purpose, since full cover would drop its eye to 0.5 m and switch the far-low-ground lesson off (src/app/scenario.test.ts pins it)." },
-    { "id": "RED-HQ", "name": "חפ\"ק מ\"מ", "side": "RED", "kind": "command", "echelon": "platoon", "personnel": 3, "at": [436, 599], "note": "In one of the houses on the reverse slope: it sees none of the shoulder." }
+    {
+      "id": "BLUE-1",
+      "name": "כיתה 1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        250,
+        80
+      ]
+    },
+    {
+      "id": "BLUE-2",
+      "name": "כיתה 2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        400,
+        60
+      ]
+    },
+    {
+      "id": "BLUE-3",
+      "name": "כיתה 3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        460,
+        70
+      ]
+    },
+    {
+      "id": "BLUE-MG1",
+      "name": "חולית מקלע 1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        270,
+        80
+      ]
+    },
+    {
+      "id": "BLUE-MG2",
+      "name": "חולית מקלע 2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        440,
+        70
+      ]
+    },
+    {
+      "id": "BLUE-HQ",
+      "name": "חפ\"ק מ\"מ",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        400,
+        20
+      ]
+    },
+    {
+      "id": "RED-1",
+      "name": "מחלקה א'/1",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 6,
+      "at": [
+        380,
+        336
+      ],
+      "camouflaged": true,
+      "canLayCharges": true
+    },
+    {
+      "id": "RED-2",
+      "name": "מחלקה א'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        700,
+        260
+      ],
+      "note": "The second squad holds the ridge coming down from the north-east, on the flank of the axis."
+    },
+    {
+      "id": "RED-MG1",
+      "name": "חולית מקלע 1",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        400,
+        336
+      ],
+      "camouflaged": true
+    },
+    {
+      "id": "RED-MG2",
+      "name": "חולית מקלע 2",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        680,
+        260
+      ]
+    },
+    {
+      "id": "RED-TANK",
+      "name": "טנק",
+      "side": "RED",
+      "kind": "vehicle",
+      "at": [
+        520,
+        500
+      ],
+      "facing": 270,
+      "note": "In a street on the hilltop behind the crest. It stands 4.6 m from the nearest house — outside the 3 m cover reach on purpose, since full cover would drop its eye to 0.5 m and switch the far-low-ground lesson off (src/app/scenario.test.ts pins it)."
+    },
+    {
+      "id": "RED-HQ",
+      "name": "חפ\"ק מ\"מ",
+      "side": "RED",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        436,
+        599
+      ],
+      "note": "In one of the houses on the reverse slope: it sees none of the shoulder."
+    }
   ],
   "charges": [
-    { "side": "RED", "type": "antiPersonnel", "at": [330, 240] },
-    { "side": "RED", "type": "antiPersonnel", "at": [400, 230] },
-    { "side": "RED", "type": "antiPersonnel", "at": [470, 250] },
-    { "side": "RED", "type": "antiPersonnel", "at": [560, 230] },
-    { "side": "RED", "type": "antiTank", "at": [450, 300] }
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        330,
+        240
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        400,
+        230
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        470,
+        250
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiPersonnel",
+      "at": [
+        560,
+        230
+      ]
+    },
+    {
+      "side": "RED",
+      "type": "antiTank",
+      "at": [
+        450,
+        300
+      ]
+    }
   ]
 }

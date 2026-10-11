@@ -120,6 +120,30 @@
       ]
     },
     {
+      "id": "BLUE-1-MG1",
+      "name": "חולית מקלע 1/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        300,
+        70
+      ]
+    },
+    {
+      "id": "BLUE-1-MG2",
+      "name": "חולית מקלע 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        360,
+        75
+      ]
+    },
+    {
       "id": "BLUE-2-HQ",
       "name": "חפ\"ק מ\"מ 2",
       "side": "BLUE",
@@ -168,6 +192,30 @@
       ]
     },
     {
+      "id": "BLUE-2-MG1",
+      "name": "חולית מקלע 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        450,
+        85
+      ]
+    },
+    {
+      "id": "BLUE-2-MG2",
+      "name": "חולית מקלע 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        510,
+        85
+      ]
+    },
+    {
       "id": "BLUE-3-HQ",
       "name": "חפ\"ק מ\"מ 3",
       "side": "BLUE",
@@ -212,6 +260,30 @@
       "soldiers": 8,
       "at": [
         680,
+        95
+      ]
+    },
+    {
+      "id": "BLUE-3-MG1",
+      "name": "חולית מקלע 1/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        600,
+        95
+      ]
+    },
+    {
+      "id": "BLUE-3-MG2",
+      "name": "חולית מקלע 2/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        660,
         95
       ]
     },
@@ -288,7 +360,8 @@
       ]
     },
     {
-      "id": "RED-A-1", "facing": 258,
+      "id": "RED-A-1",
+      "facing": 258,
       "name": "מחלקה א'/1",
       "side": "RED",
       "kind": "infantry",
@@ -303,7 +376,8 @@
       "note": "The reserve, in a house behind the edge."
     },
     {
-      "id": "RED-A-2", "facing": 268,
+      "id": "RED-A-2",
+      "facing": 267,
       "name": "מחלקה א'/2",
       "side": "RED",
       "kind": "infantry",
@@ -317,7 +391,8 @@
       "note": "At the north face of the edge house that sees most of the low ground."
     },
     {
-      "id": "RED-A-3", "facing": 262,
+      "id": "RED-A-3",
+      "facing": 262,
       "name": "מחלקה א'/3",
       "side": "RED",
       "kind": "infantry",
@@ -328,6 +403,34 @@
         494
       ],
       "baseCover": "full"
+    },
+    {
+      "id": "RED-A-MG1",
+      "name": "חולית מקלע 1/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        614,
+        546
+      ],
+      "baseCover": "full",
+      "facing": 255
+    },
+    {
+      "id": "RED-A-MG2",
+      "name": "חולית מקלע 2/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        532,
+        494
+      ],
+      "baseCover": "full",
+      "facing": 264
     }
   ],
   "charges": [

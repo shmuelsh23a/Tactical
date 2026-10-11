@@ -116,6 +116,30 @@
       ]
     },
     {
+      "id": "BLUE-1-MG1",
+      "name": "חולית מקלע 1/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        380,
+        940
+      ]
+    },
+    {
+      "id": "BLUE-1-MG2",
+      "name": "חולית מקלע 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        480,
+        940
+      ]
+    },
+    {
       "id": "BLUE-2-HQ",
       "name": "חפ\"ק מ\"מ 2",
       "side": "BLUE",
@@ -164,6 +188,30 @@
       ]
     },
     {
+      "id": "BLUE-2-MG1",
+      "name": "חולית מקלע 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        600,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-2-MG2",
+      "name": "חולית מקלע 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        700,
+        935
+      ]
+    },
+    {
       "id": "RED-COY",
       "name": "חפ\"ק מ\"פ",
       "side": "RED",
@@ -189,7 +237,8 @@
       ]
     },
     {
-      "id": "RED-A-1", "facing": 94,
+      "id": "RED-A-1",
+      "facing": 94,
       "name": "מחלקה א'/1",
       "side": "RED",
       "kind": "infantry",
@@ -204,7 +253,8 @@
       "reserve": true
     },
     {
-      "id": "RED-A-2", "facing": 105,
+      "id": "RED-A-2",
+      "facing": 105,
       "name": "מחלקה א'/2",
       "side": "RED",
       "kind": "infantry",
@@ -217,7 +267,8 @@
       "baseCover": "full"
     },
     {
-      "id": "RED-A-3", "facing": 81,
+      "id": "RED-A-3",
+      "facing": 81,
       "name": "מחלקה א'/3",
       "side": "RED",
       "kind": "infantry",
@@ -228,6 +279,34 @@
         510
       ],
       "baseCover": "full"
+    },
+    {
+      "id": "RED-A-MG1",
+      "name": "חולית מקלע 1/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        590,
+        460
+      ],
+      "baseCover": "full",
+      "facing": 96
+    },
+    {
+      "id": "RED-A-MG2",
+      "name": "חולית מקלע 2/A",
+      "side": "RED",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        450,
+        510
+      ],
+      "baseCover": "full",
+      "facing": 78
     }
   ],
   "charges": [
