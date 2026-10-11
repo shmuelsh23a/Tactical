@@ -1,5 +1,7 @@
 # Handoff — where the project stands
 
+**Tomorrow, in one line: the balance numbers are out of band on the attacker's side, and that is a ruling for the author before any more code.** Read *The stale tables re-run* on balance.md, then *What I would pick up next* below. Nothing is half-finished — the tree is clean, every test passes, and the last three days of work are measured and recorded.
+
 **Current as of 2026-10-11: the stale tables are re-run, and the attack is now too strong.** With the line-of-sight targeting fix in, the standard measurement gives **3:1 at 56%** (band 40–55), **2:1 at 40%** (band 20–35), and **explosives at 46%** of losses against a 60–80% band — the author's own 75%-of-casualties principle. The reference plan *A calibrated* re-run at 200 seeds gives **61%**, so the earlier 57% was not noise. Three bands are out, all the same way: **the rules need tuning down for the attacker**, which is the opposite of what every entry before this was reaching for (balance.md, *The stale tables re-run*).
 
 Two tables barely moved and are **not** invalidated: `yokneamUrban` went 18% → 14% with a 97% explosives share, and the raid is **26%**, unchanged to the point. Both are fought at close range among houses, where the targeting fix buys an attacker little — so decisions 75–78 and 87 stand. History's hasty attack is **22% at 3:1**, still inside history's 15–35%, but now about forty points under the calibrated plan where history has the gap at 20–35.
@@ -40,7 +42,7 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `8f53f00` (2026-10-11)
+## Green as of `15dc62d` (2026-10-11, end of the day)
 
 ```
 npm run check       lint + typecheck clean, 953 tests, 63 files
@@ -261,6 +263,49 @@ How the last two days went, round by round, is in
    **ammunition** (backlog 12) — for battalion battles.
 
 ## Waiting on the author
+
+### The one that blocks work (2026-10-11)
+
+**Three balance numbers are out of band, all on the attacker's side, and
+the next step is a ruling rather than code.**
+
+| | Measured | Target | Source of the target |
+|---|---|---|---|
+| 2:1 attack | **40%** | 20–35% | decision 68 |
+| Explosives' share of losses | **46%** | 60–80% | the author's 75%-of-casualties principle |
+| Hasty vs deliberate gap | **~40 points** | 20–35 | validation.md, history |
+| *(3:1 attack)* | *56%* | *40–55%* | *on the edge at ±7* |
+
+The likeliest single cause is that **direct fire is now too effective at
+the ranges a 3:1 attack brings to bear** — the targeting fix made every
+force shoot at what it can see, and the firefight now goes the attacker's
+way. Two levers would move all three together:
+
+1. **The small-arms table's *application*** — never its figures, which are
+   transcribed (decision 7's rule: change how a value is applied, in
+   `engine/combat/`, not the value).
+2. **The suppression a burst delivers**, which is `SUPPRESSION.directFire
+   = 10` flat, "hit or not", with only the 5-a-hit part reduced by cover —
+   so **a man in a hole is suppressed almost as easily as one in the
+   open** (balance.md, *Does suppression pay?*, part 3). That is the one
+   figure in the chain that is plainly unrealistic, and it is ours.
+
+Nothing should be tuned before the author rules: these are *his*
+definition of balance, and three of them are now out on the side nobody
+was expecting.
+
+**Two smaller ones, both cheap to answer:**
+
+- **Running the AI commanders costs real API spend.** They are no longer
+  blocked (`tools/env.ts` lets the Node tools read `.env`, and all three
+  keys are set), but starting them is his call.
+- **The force-quality matrix** (decision 83) has been waiting on his view
+  of its spread since 2026-10-05. It is deliberately *not* re-run: 18
+  cells at 400 battles each, and reading them against a baseline that is
+  itself out of band would mean measuring it twice. The tuning ruling
+  comes first.
+
+### The older queue
 
 **The artillery, as the 2026-09-23 sessions left it.** Decisions
 36–39 are ✅ and built (README):
@@ -547,6 +592,21 @@ Measurements that cost real time and are already recorded:
   bites once a platoon is tasked `support` — which the scripted company
   does only under the suppression gate.
 
+- **The re-run of every stale table** (2026-10-11, about twenty minutes of
+  runs, four jobs at a time). Standard measurement at **200** battles,
+  `--recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from
+  vantage --wait-in dead-ground --target-first squads`: 3:1 **56%**, 2:1
+  **40%**, urban **14%**, explosives **46% / 48%**, attacker down 8%,
+  defender down 22%. `yokneamRaid` **26%** (out of time 49%). Hasty with
+  one scout (`--rule onescout,rush`) **22%** at 3:1 and **32%** at 2:1.
+  *A calibrated* at 200 seeds **61%**. A 200-battle cell is worth ±7
+  points at 95%, a 100-battle cell ±9.
+- **Which tables the targeting fix did *not* move**: `yokneamUrban`
+  (18% → 14%, explosives 97%) and the raid (26%, unchanged). Both are
+  fought at close range among houses, so decisions 75–78 and 87 do not
+  need revisiting on this account. Do not re-run them again looking for a
+  change.
+
 ## What I would pick up next
 
 **Tune the attacker down — and get the author's ruling first.** Three
@@ -602,6 +662,17 @@ matrix will be measured twice.
   leaves the unbroken run having closed that turn and the resumed one not,
   which looks like a product divergence and is the test harness. See
   `computerAttacker.test.ts`.
+- **A measurement can be wrong in *direction*, not just in value, and
+  nothing warns you.** Three days of tables, and the conclusions drawn
+  from them, were taken through a drill whose forces never fired: the
+  harness reported win rates, losses and explosive shares throughout, all
+  internally consistent, all wrong. What caught it was instrumenting one
+  turn of one battle and printing per force whether it was in range, had
+  line of sight, and had fired — four columns that took ten minutes to
+  add. **When a table is surprising, print what the forces are actually
+  doing before reasoning about the rules.** The suppression work
+  (`npm run suppression-pays`) is the shape to copy: measure the
+  mechanism in isolation first, then look for it in a battle.
 - **An exhaustive `Record` catches a new enum member; a `switch` with a
   `default` swallows it.** Adding the `team` echelon (decision 89) broke
   `symbols.ts`, which mapped echelons with a `switch`/`default`, so every
