@@ -4298,6 +4298,50 @@ the 20 m band), and the plain scripted attack does not search for it — the
 battles run to time. The surprise is there to be used; the script does not
 use it, as it does not use a flank. A player's raid is the test.
 
+## Fire teams pay, and they were the missing piece, 2026-10-11
+
+Rules decision 89 let a commander make a fire team out of his own men, so
+**Battle Drill 2A (Conduct a Squad Assault) could be played at all** for
+the first time: a squad in contact divides, the part being shot at holds as
+the support-by-fire team, the part that is not goes on as the assault team.
+Until then our atom was the squad, and there was no such thing as half of
+it firing while the other half moved.
+
+Same 60 battles a scenario from seed 1000, same attacker's fire and
+reconnaissance, varying only what the squads can do:
+
+| Drill | telAzekaAssault | telAzekaAssault2 | Attacker down |
+|---|---|---|---|
+| Plain script (every table before the doctrine work) | 10% | **15%** | 15 / 15% |
+| Doctrinal, **no** fire teams | 5% | 5% | 14 / 17% |
+| **Doctrinal with fire teams** | **12%** | 5% | **13 / 16%** |
+| With the gate and rear security too | 8% | 2% | 12 / 15% |
+
+**This is the first doctrinal element that helps**, and it helps twice
+over: `telAzekaAssault` goes 5% → 12%, back above the plain script's 10%,
+and the attacker loses fewer men doing it. It is also the element the
+drills care most about — fire and movement inside the squad is the whole
+of 2A, and most of 2 — so the earlier conclusion needs correcting rather
+than repeating:
+
+> **Doctrine measured badly partly because the most important doctrinal
+> mechanism was not expressible.** Seven gaps that reorganise *around* the
+> squad cost the attacker; the one that reaches *inside* it pays for
+> itself. The rules may be less wrong than the eight-gap table suggested;
+> what was wrong was asking them to carry a drill the unit model could not
+> hold.
+
+What has not changed: the suppression gate and rear security still cost
+(12% → 8%, 5% → 2%), and the three rules candidates below still stand. Out
+of time rises with fire teams (17%, and 27% with the gate) — more and
+smaller forces advance more slowly, which is worth watching if the clock
+starts deciding battles.
+
+⚠️ `fireTeams: { splitAt: 300, minMen: 6 }` is ours: the drill says a squad
+divides on contact, not at what range, and does not forbid a weak squad
+dividing. 2A's own split is even, two fire teams of four, which is the
+shape used here.
+
 ## Rung A measured: every step toward doctrine costs the attacker, 2026-10-11
 
 All eight gaps of docs/doctrine-gap.md built (rung A), then measured as one

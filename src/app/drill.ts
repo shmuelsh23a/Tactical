@@ -213,6 +213,30 @@ export interface SquadDrill {
    */
   screeningSmoke?: { screens: number };
   /**
+   * Fight as fire teams (**Battle Drill 2A**, Conduct a Squad Assault,
+   * 07-SQD-D9515). A squad that comes into contact splits itself: the part
+   * being shot at stays where it is and becomes the **support by fire**
+   * team (step 6b), and the part that is not in contact becomes the
+   * **assault** team (the note at step 7) and goes on.
+   *
+   * This is the drill that could not be expressed at all until a commander
+   * could make a team out of his own men (`Game.detachTeam`, decision 89):
+   * with a squad as one token there is no such thing as half of it firing
+   * while the other half moves.
+   *
+   * - `splitAt`: how near a known enemy a squad has to be before it
+   *   divides — contact, in the drill's terms ("the drill begins when the
+   *   enemy initiates direct fire contact").
+   * - `minMen`: a squad below this strength does not divide. Two men
+   *   fighting as two forces of one is not a fire team, and each would be
+   *   finished by its first casualty.
+   *
+   * ⚠️ Both numbers are ours, and so is the even split: a NATO squad is
+   * two fire teams of four, so half the men is the doctrinal shape, but
+   * which half is a leader's choice the drill does not standardise.
+   */
+  fireTeams?: { splitAt: number; minMen: number };
+  /**
    * How a squad scouts, when its company sends it ahead (rules decisions
    * 52–54; which squads, from where and for how long are the company's, in
    * `company.ts`). A scout walks, looks harder and holds its fire, so what
@@ -325,6 +349,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   leaderForward: { behind: 50 },
   consolidate: { nothingWithin: 100, arc: 120 },
   screeningSmoke: { screens: 4 },
+  fireTeams: { splitAt: 300, minMen: 6 },
 };
 
 /** What one side has been told to do: attack towards a point, or hold facing one. */
@@ -393,6 +418,10 @@ export class DrillState {
   readonly levelWaits = new Map<string, { turn: number; count: number }>();
   /** Grenade screens the company has laid (`screeningSmoke`). */
   screens = 0;
+  /** Squads already divided into fire teams (`fireTeams`), so each divides once. */
+  readonly divided = new Set<string>();
+  /** Forces holding as the support-by-fire team of a divided squad. */
+  readonly baseOfFire = new Set<string>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -416,6 +445,8 @@ export class DrillState {
       counterattacking: [...this.counterattacking],
       levelWaits: [...this.levelWaits],
       screens: this.screens,
+      divided: [...this.divided],
+      baseOfFire: [...this.baseOfFire],
     };
   }
 
@@ -433,6 +464,8 @@ export class DrillState {
     fill(s.counterattacking, snap.counterattacking);
     fill(s.levelWaits, snap.levelWaits);
     s.screens = snap.screens ?? 0;
+    (snap.divided ?? []).forEach((id) => s.divided.add(id));
+    (snap.baseOfFire ?? []).forEach((id) => s.baseOfFire.add(id));
     return s;
   }
 }
@@ -444,6 +477,9 @@ export interface DrillStateSnapshot {
   displaced: string[];
   /** Grenade screens laid by the drill (`screeningSmoke`). */
   screens?: number;
+  /** Squads divided into fire teams, and the teams holding as a base of fire. */
+  divided?: string[];
+  baseOfFire?: string[];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -668,6 +704,36 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
   }
 
+  // Battle Drill 2A: a squad that has come into contact divides into two
+  // fire teams, the part in contact holding as the support-by-fire team
+  // and the part that is not going on as the assault team. Done before
+  // the orders are executed, so the new team is on the map from this turn
+  // — it cannot move until the next one anyway, because it inherits its
+  // parent's spent movement.
+  if (drill.fireTeams && task.attacking) {
+    for (const u of forces) {
+      if (u.kind !== "infantry" || u.echelon !== "squad" || !inPlay(u)) continue;
+      if (state.divided.has(u.id) || scouts.has(u.id)) continue;
+      const men = (u.soldiers ?? []).filter((m) => !m.neutralized);
+      if (men.length < drill.fireTeams.minMen) continue;
+      const near = enemies.some((e) => distance(u.position, e.position) <= drill.fireTeams!.splitAt);
+      if (!near) continue;
+      // The second half goes forward; which half is a leader's choice the
+      // drill does not standardise, so it is taken in order and stays
+      // deterministic.
+      const going = men.slice(Math.ceil(men.length / 2)).map((m) => m.id);
+      if (!going.length) continue;
+      try {
+        game.detachTeam(u.id, going);
+        state.divided.add(u.id);
+        // The force already in contact is the one that stays and shoots.
+        state.baseOfFire.add(u.id);
+      } catch {
+        // A force that cannot divide (its nerve gone, the wrong phase)
+        // simply fights on whole.
+      }
+    }
+  }
   // How near each assaulting platoon's leading squad is to the enemy it knows of, for the platoons to arrive together.
   const leads = new Map<string, number>();
   if (company && company.arriveTogether !== false && enemies.length) {
@@ -802,6 +868,13 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         const going = game.standingOrderFor(u.id);
         if (!going?.withdraw) game.setStandingOrder(u.id, { gait: "normal", destination: { ...home }, withdraw: true });
       } else stay();
+      return;
+    }
+    // The support-by-fire team of a divided squad holds where it is and
+    // shoots (Battle Drill 2A step 6: it "becomes the support by fire
+    // team" and keeps a sustained rate with no lulls).
+    if (state.baseOfFire.has(u.id)) {
+      stay();
       return;
     }
     if (company && job === "security") {
