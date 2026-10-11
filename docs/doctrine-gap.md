@@ -205,7 +205,59 @@ balance disturbance. They are not alternatives so much as a ladder.
 | **B. A weapons squad and its machine gun teams** | The base of fire as doctrine actually forms it — the platoon leader pulling out machine guns (README backlog 21's own words). Steps 6, 11b and 12a(1) all move machine gun teams independently of rifle squads | Every scenario's order of battle changes, so **every balance table moves**; needs a new unit kind and a weapons-squad drill |
 | **C. Fire teams** | Battle Drill 2A at all, and the inside of the assault at squad level (2A steps 6–10) | The engine's atom changes from 8 men to 4; `Unit` gains sub-structure, and detection, cover, morale and succession all currently assume the squad |
 
-**A is the recommendation**, and not only because it is cheapest: it is the
+### Where each rung stands (2026-10-11)
+
+**A is built.** All eight gaps, each a switch citing its numbered step, each
+off unless asked for; `DOCTRINAL_DRILL` turns the set on and
+`--drill doctrinal --gate --rear-security` is rung A entire. Gap 1's
+measurement is on balance.md and is a rules finding, not a drill one.
+
+**B is blocked on two decisions, both the author's.** The behaviour it needs
+is small — machine gun teams tasked as the base of fire, which
+`PlatoonTask: "support"` already expresses. What it cannot do without a
+ruling:
+
+1. **Doctrine's machine guns outrange our rules.** ATP 3-21.8 (2024) para
+   **C-119**: medium machine guns in the base-of-fire element "may find
+   themselves firing at targets within a range of **800 meters**". Our
+   small-arms table stops at **400 m**, and **rules decision 25** (✅, the
+   author, 2026-09-23) explicitly refuses infantry the 700 m coaxial
+   table — infantry fire נק"ל\מקלעים "only", because that heading already
+   includes machine guns. Data tables are transcribed verbatim and are not
+   to be edited (AGENTS.md). So a doctrinal machine gun team cannot reach
+   where doctrine employs it, and the three ways out are all the author's:
+   an exception to decision 25 for a dismounted medium MG; accepting 800 m
+   as unreachable in our rules; or a new transcribed band for it. **Not to
+   be decided here** — decision 25 is recorded and must not be silently
+   reversed.
+2. **A weapons squad changes the force ratio.** The scenarios are built to
+   **3:1 and 2:1 by force count**, and are *generated* from JSON specs
+   (`tools/scenarios/*.json`, "do not edit by hand"). Adding a four-man
+   weapons squad to each of three platoons changes the ratio, so
+   `telAzekaAssault` stops being the 3:1 it is named for and every table
+   keyed to that ratio becomes incomparable — not merely moved. The choice
+   is between **new scenario variants** carrying weapons squads (existing
+   tables stay valid, more specs to maintain) and **changing the existing
+   specs** (one set of scenarios, every table re-based at once).
+
+**C needs the engine's unit model changed, and is a session of its own.**
+There is no team level to put a fire team at: `Echelon` is
+`squad | platoon | company | battalion | brigade`, and `Unit` carries a
+flat `soldiers[]`. Two designs, neither cheap:
+
+- **A fire team as its own Unit** of four men. Needs a new echelon and a
+  convention pairing two teams into a squad (as `platoonKey` pairs squads
+  into platoons today). Everything that counts squads — detection, cover,
+  morale, succession, the breakpoint, every scenario spec, every balance
+  table — then counts twice as many smaller things.
+- **`Unit` gains sub-structure**, teams inside the squad. Smaller blast
+  radius in the scenarios, but every consumer of `soldiers` must then say
+  *which* team it means, and there are many.
+
+Either way the squad stops being a token and becomes a formation, which is
+the thing the ladder's top rung was always going to cost.
+
+**A was the recommendation**, and not only because it was cheapest: it is the
 only one of the three that can be measured against the existing tables
 rather than invalidating them. Gap 1 alone (the suppression gates) changes
 how every scripted attack behaves, and we would want to see that in

@@ -4298,6 +4298,75 @@ the 20 m band), and the plain scripted attack does not search for it — the
 battles run to time. The surprise is there to be used; the script does not
 use it, as it does not use a flank. A player's raid is the test.
 
+## Rung A measured: every step toward doctrine costs the attacker, 2026-10-11
+
+All eight gaps of docs/doctrine-gap.md built (rung A), then measured as one
+thing. 60 battles a scenario from seed 1000, the competent attacker's fire
+and reconnaissance throughout (`--recon 2 --watch 1 --look 4
+--wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground
+--smoke 4 --prep-fires`), varying only the drill:
+
+| Drill | telAzekaAssault | telAzekaAssault2 | Out by HE | Turns (median) |
+|---|---|---|---|---|
+| Plain script (every table above) | **10%** | **15%** | 74 / 69% | 33 / 33 |
+| Western drill | 8% | 3% | 78 / 84% | 36 / 34 |
+| **Doctrinal**, no gate | 5% | 5% | 81 / 83% | 36 / 34 |
+| **Rung A entire** (+ gate, + rear security) | **3%** | **0%** | 85 / 88% | 37 / 33 |
+| Rung A without rear security | 5% | 7% | 81 / 85% | 36 / 34 |
+
+```bash
+npm run scenario-sim -- --n 60 --recon 2 --watch 1 --look 4   --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground   --smoke 4 --prep-fires --drill doctrinal --gate --gate-contact 250   --gate-giveup 4 --rear-security
+```
+
+**The result is monotonic: the more doctrinal the drill, the worse the
+attack does.** Not one gap, and not one threshold — eight independent
+steps, each taken from a numbered line of a battle drill, each costing
+something. The gate's own isolated measurement (below) said the same, and
+this generalises it.
+
+Two readings worth separating:
+
+- **Rear security costs 2–7 points on its own** (compare the last two
+  rows). That one is honest arithmetic rather than a puzzle: step 12b
+  withholds a platoon from the attack, and a platoon withheld is rifles
+  not firing. Doctrine pays it to avoid being flanked, and nothing in the
+  game yet threatens an attacker's flank or rear — no counterattack comes
+  from behind, and the defender's reserve retakes the position in front
+  (decision 60). So we are paying the premium and insuring nothing. **It
+  is not evidence against the drill; it is evidence that the threat the
+  drill exists for is not modelled.**
+- **Explosives' share of the attacker's losses climbs, 74% → 85–88%.**
+  The doctrinal attacker defers the small-arms fight — holds short, waits
+  on suppression, shifts fire off the assault's front — and so spends
+  longer under shellfire with its own rifles quieter. That is the
+  mechanism of the cost, and it points where to look.
+
+**This is a rules finding, and it is now the project's largest open
+question.** The layer table in doctrine-handoff.md is explicit: drills come
+from the manuals and stay fixed, and if doctrinal drills do not give real
+outcomes, the **rules** are wrong. Eight drills from the current US Army
+battle drills, measured against a defender in prepared positions, give an
+attacker 0–3% at better than 3:1 where decision 68's target is **40–55%**.
+Either our rules make a prepared defence far too strong, or they fail to
+reward the things doctrine does — suppression, screening, flank security —
+with any advantage worth their cost.
+
+Three candidates, in the order I would test them:
+
+1. **`HOLD_SHORT_M` is 200 m and ours** — the gate's own finding below. A
+   company that stops there parks in the defender's best band, where
+   doctrine's assault position is the last *covered* ground before the
+   objective, chosen off the terrain (`deadGround.ts` already finds it).
+2. **Suppression may not pay.** If assaulting a suppressed defender is
+   little cheaper than assaulting an alert one, every drill built on
+   winning the firefight first is a drill built on nothing. This is
+   measurable directly: the cost of an assault against `suppressionLevel`
+   "none" / "suppressed" / "pinned".
+3. **Nothing threatens an attacker's flank or rear**, so step 12b's
+   insurance has no risk to cover. Until a counterattack can come from
+   somewhere other than the front, rear security will always measure as
+   dead weight.
+
 ## The doctrinal gate on an assault, 2026-10-11 — and what it says about the rules
 
 The first of the doctrine gaps built (docs/doctrine-gap.md, gap 1): the
