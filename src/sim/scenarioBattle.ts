@@ -725,6 +725,7 @@ const PLATOON_TASK_CARRY_ON: Record<PlatoonTask, string> = {
   reserve: "stay in reserve, out of the fight",
   halt: "stay halted, gone to ground",
   withdraw: "keep pulling back",
+  security: "keep watching the flanks and rear",
 };
 
 /** The company's stage in the commander's picture: not gone in yet, or gone in and what each platoon was ordered. */
@@ -749,6 +750,7 @@ const PLATOON_TASK_WORDS: Record<PlatoonTask, string> = {
   reserve: "in reserve",
   halt: "halted, gone to ground",
   withdraw: "pulling back",
+  security: "on flank and rear security",
 };
 
 

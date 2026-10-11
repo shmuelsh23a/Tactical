@@ -116,6 +116,103 @@ export interface SquadDrill {
    */
   counterattack: { lostWithin: number; gait: MovementMode } | null;
   /**
+   * Shoot back at what is shooting at you (Battle Drill 2 step 11a(1): the
+   * squad in contact "destroys or suppresses enemy weapons that are firing
+   * most effectively against it"; 2A step 6c(2) puts crew-served weapons
+   * first). `since` is how many turns of incoming fire to weigh.
+   *
+   * Without it a force shoots at the **nearest** enemy in its sector,
+   * which is ours and is not a doctrinal rule at all.
+   *
+   * It reads `Game.fireReceived`, the umpire's record of who fired on this
+   * force — and only counts a firer the side actually holds a mark on, so
+   * a force does not learn where an unseen enemy is by being shot by it.
+   */
+  returnFire?: { since: number };
+  /**
+   * Flank and rear security (Battle Drill 2 step 10: the squads not in
+   * contact observe "to the flanks and rear of the platoon"; step 12b
+   * deploys the last squad to it). A platoon the company puts on
+   * `security` holds where it stands and watches the reverse of the axis
+   * to the objective, in an arc this wide — the one direction the rest of
+   * the company has its back to. Absent: a security platoon still holds,
+   * but watches all round like anything else.
+   */
+  security?: { arc: number };
+  /**
+   * The base of fire shifts rather than stops (Battle Drill 2 step 13b(3):
+   * "the prearranged signal for the base-of-fire element to lift **or
+   * shift** direct fires to the **opposite flank** of the enemy position",
+   * with the warning that "the assault element MUST pick up and maintain
+   * effective fires throughout the assault — handover of responsibility
+   * for direct fires ... is critical"; step 13b(5) adds that the base of
+   * fire "must be able to identify the **near flank** of the assaulting
+   * squad(s)").
+   *
+   * So once the assault is in, a supporting force keeps firing, but takes
+   * its targets from the far side of the objective: the enemy further than
+   * `clear` metres from the nearest assaulting squad, so its fire falls
+   * away from the men going in rather than across their front. With
+   * nothing that far out it holds its fire rather than shoot into the
+   * assault — which is the handover.
+   *
+   * Absent: a base of fire shoots at whatever its sector gives it, assault
+   * or no assault, which is ours and is how every table before 2026-10-11
+   * was measured.
+   */
+  shiftToFarFlank?: { clear: number };
+  /**
+   * The leader goes forward (Battle Drill 2 step 4). An attacking command
+   * group follows `behind` metres back from whichever of its own forces is
+   * nearest the enemy, instead of `commandGroupBehind` from the centre of
+   * all of them — so it closes on the contact as the fight develops. It is
+   * not free: a command group further forward is a command group that can
+   * be lost (decision 55).
+   *
+   * Absent: it keeps station on the centre, which is ours.
+   */
+  leaderForward?: { behind: number };
+  /**
+   * Consolidate on the objective (Battle Drill 2 step 14; 2A step 12). A
+   * force that has taken its objective — on it, with no enemy it knows of
+   * within `nothingWithin` metres — does not simply stand there:
+   *
+   * - it takes a **sector of fire** `arc` degrees wide, facing on past the
+   *   objective, which is where a counterattack comes from (step 14c, "the
+   *   platoon leader assigns sectors of fire for each squad"; step 14d puts
+   *   the key weapons on the most dangerous approach);
+   * - it **holds** where it is instead of wandering on; and
+   * - it **covers** that arc rather than hunting a target (step 14h, the
+   *   observation posts "to warn of enemy counterattacks").
+   *
+   * Not yet the digging. Step 14f has the men take hasty defensive
+   * positions, and the engine only prepares a position in the planning
+   * phase (`prepareAlternatePosition`), so a force that has just taken an
+   * objective cannot improve its cover there. That is the one part of
+   * consolidation still missing, and it is the part that would most help
+   * against the counterattack.
+   *
+   * Absent: a force that has taken a position stands on it in the open,
+   * facing the way it came — which is ours, and is the asymmetry the
+   * defender's reserve has been counterattacking into (decision 60).
+   */
+  consolidate?: { nothingWithin: number; arc: number };
+  /**
+   * Screening smoke from the squad's own launchers (Battle Drill 2 step
+   * 11a(3): the squad in contact "places **screening smoke** (M203 and
+   * M320) to prevent the enemy from seeing the manoeuvre element"; 2A step
+   * 6c(3) the same). A supporting force whose company has gone in puts a
+   * grenade screen on the enemy position it can reach, up to `screens` of
+   * them a battle, and not on one already screened.
+   *
+   * The doctrinal purpose is worth keeping in view: it is there to break
+   * the enemy's **sight** of the assault, not to hurt him. Our grenadiers
+   * fire HE only (`grenadiers`), and smoke has so far been a mortar
+   * mission the company calls — so a squad has had no way to screen its
+   * own manoeuvre. Grenade smoke costs no fire mission (decision 56).
+   */
+  screeningSmoke?: { screens: number };
+  /**
    * How a squad scouts, when its company sends it ahead (rules decisions
    * 52–54; which squads, from where and for how long are the company's, in
    * `company.ts`). A scout walks, looks harder and holds its fire, so what
@@ -197,6 +294,39 @@ export const WESTERN_DRILL: SquadDrill = {
   counterattack: { lostWithin: 50, gait: "run" },
 };
 
+/**
+ * The doctrinal drill: the western drill with every gap from
+ * docs/doctrine-gap.md that lives at squad level turned on, so the set can
+ * be measured as one thing (rung A of the ladder in that file).
+ *
+ * The numbers are still ours — the drills give the steps and their order,
+ * not thresholds — but each switch now does what a numbered step says
+ * rather than what we invented. Cited by option, in `SquadDrill` above.
+ *
+ * ⚠️ Not yet doctrinal, and deliberately so:
+ * - **`breakContact`** stays ours. The Break Contact drill (07-PLT-D9505)
+ *   starts "on orders", with no casualty trigger: it is a decision, not a
+ *   reflex at half strength. Making it one needs a commander to take it.
+ * - **`bound.metres`** stays a fixed distance where the drills give the
+ *   leader a distance and direction per bound.
+ * - **`holdShort`** (the fire plan's, in `company.ts`) is **against** the
+ *   drill: the note at step 12 says the platoon leader "does not wait for
+ *   indirect fires before continuing". The author ruled on 2026-10-11 that
+ *   doctrine wins, so it is no longer a default here — the suppression
+ *   gate is the doctrinal reason to hold, and waiting on our own shells is
+ *   a recorded variant.
+ */
+export const DOCTRINAL_DRILL: SquadDrill = {
+  ...WESTERN_DRILL,
+  name: "doctrinal (rung A)",
+  returnFire: { since: 2 },
+  security: { arc: 120 },
+  shiftToFarFlank: { clear: 100 },
+  leaderForward: { behind: 50 },
+  consolidate: { nothingWithin: 100, arc: 120 },
+  screeningSmoke: { screens: 4 },
+};
+
 /** What one side has been told to do: attack towards a point, or hold facing one. */
 export interface DrillTask {
   side: Side;
@@ -261,6 +391,8 @@ export class DrillState {
   readonly counterattacking = new Map<string, Point>();
   /** Turns each attacking platoon has waited at the last cover for the others to come level. */
   readonly levelWaits = new Map<string, { turn: number; count: number }>();
+  /** Grenade screens the company has laid (`screeningSmoke`). */
+  screens = 0;
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -283,6 +415,7 @@ export class DrillState {
       posts: [...this.posts],
       counterattacking: [...this.counterattacking],
       levelWaits: [...this.levelWaits],
+      screens: this.screens,
     };
   }
 
@@ -299,6 +432,7 @@ export class DrillState {
     fill(s.posts, snap.posts);
     fill(s.counterattacking, snap.counterattacking);
     fill(s.levelWaits, snap.levelWaits);
+    s.screens = snap.screens ?? 0;
     return s;
   }
 }
@@ -308,6 +442,8 @@ export interface DrillStateSnapshot {
   strength: [string, number][];
   fellBack: string[];
   displaced: string[];
+  /** Grenade screens laid by the drill (`screeningSmoke`). */
+  screens?: number;
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -367,14 +503,86 @@ function knownEnemies(game: Game, side: Side): Unit[] {
  * The enemy a force should shoot at: the nearest known one inside its sector
  * and in reach, else — if the drill allows — the nearest in reach anywhere.
  */
-function pickTarget(u: Unit, enemies: Unit[], axis: number, drill: SquadDrill, reach: number): Unit | undefined {
+function pickTarget(
+  u: Unit,
+  enemies: Unit[],
+  axis: number,
+  drill: SquadDrill,
+  reach: number,
+  hurting?: ReadonlyMap<string, number>,
+): Unit | undefined {
+  // Whoever is hurting us most, then the nearest: the drill's priority
+  // (`returnFire`) if it has one, else ours, which is nearest-first.
+  const weight = (e: Unit) => hurting?.get(e.id) ?? 0;
   const inReach = enemies
     .filter((e) => distance(u.position, e.position) <= reach)
-    .sort((a, b) => distance(u.position, a.position) - distance(u.position, b.position));
+    .sort((a, b) => weight(b) - weight(a) || distance(u.position, a.position) - distance(u.position, b.position));
   const inSector = inReach.find(
     (e) => drill.sectorWidth >= 360 || angleBetween(bearingDegrees(u.position, e.position), axis) <= drill.sectorWidth / 2,
   );
   return inSector ?? (drill.engageOutsideSector ? inReach[0] : undefined);
+}
+
+/** The position of whichever of our own forces is nearest an enemy we know of. */
+function nearestOwnToEnemy(own: readonly Unit[], enemies: readonly Unit[]): Point | undefined {
+  let best: Point | undefined;
+  let bd = Infinity;
+  for (const u of own) {
+    for (const e of enemies) {
+      const d = distance(u.position, e.position);
+      if (d < bd) {
+        bd = d;
+        best = u.position;
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * The enemy a supporting force may shoot at once the assault has gone in:
+ * only those well clear of the nearest assaulting squad (Battle Drill 2
+ * step 13b(3), fires shifted "to the opposite flank of the enemy
+ * position", and 13b(5), the base of fire "must be able to identify the
+ * near flank of the assaulting squad(s)").
+ *
+ * Returns the enemy unchanged unless this force really is supporting an
+ * assault that has gone in — before that there is no near flank to keep
+ * clear of. An empty list is the handover: with nothing on the far side,
+ * the base of fire stops rather than shoot across its own men.
+ */
+function farFlankOnly(game: Game, u: Unit, task: DrillTask, enemies: Unit[], clear: number): Unit[] {
+  const company = task.company;
+  if (!company || company.hold) return enemies;
+  const platoon = company.platoonOf?.get(u.id);
+  if (((platoon && company.platoonTasks?.get(platoon)) ?? "assault") !== "support") return enemies;
+  // Where our own assault is. A side knows where its own forces are, so
+  // this is read off the live units and not through `sideView`.
+  const assaulting = game.units.filter((o) => {
+    if (o.side !== u.side || o.id === u.id || !inPlay(o)) return false;
+    const key = company.platoonOf?.get(o.id);
+    return ((key && company.platoonTasks?.get(key)) ?? "assault") === "assault";
+  });
+  if (!assaulting.length) return enemies;
+  return enemies.filter((e) => assaulting.every((o) => distance(o.position, e.position) > clear));
+}
+
+/**
+ * Who has been firing on `u`, by how many times, as far as this side can
+ * tell: the umpire's record (`Game.fireReceived`) keeps a firer's id only
+ * where there is one on the map, and this counts only firers the side
+ * holds a mark on — so being shot at by an enemy nobody has seen teaches
+ * the force nothing about where it is.
+ */
+function hurtingUs(game: Game, side: Side, u: Unit, known: readonly Unit[], since: number): Map<string, number> {
+  const out = new Map<string, number>();
+  if (since <= 0) return out;
+  const seen = new Set(known.map((e) => e.id));
+  for (const f of game.fireReceived(u.id, game.turn - since)) {
+    if (!f.firerId || !seen.has(f.firerId)) continue;
+    out.set(f.firerId, (out.get(f.firerId) ?? 0) + 1);
+  }
+  return out;
 }
 
 function axisOf(u: Unit, task: DrillTask): number {
@@ -596,6 +804,25 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       } else stay();
       return;
     }
+    if (company && job === "security") {
+      // Flank and rear security (Battle Drill 2 steps 10 and 12b): hold
+      // where you stand, in cover, and watch the way nobody else is
+      // looking — away from the objective. The arc is an absolute bearing,
+      // so it keeps pointing back even if the force shifts.
+      if (drill.security) {
+        const away = (axisOf(u, task) + 180) % 360;
+        const now = u.observationSector;
+        if (!now || Math.abs(now.bearing - away) > 1 || now.width !== drill.security.arc) {
+          try {
+            game.setObservationSector(u.id, { bearing: away, width: drill.security.arc });
+          } catch {
+            // A force that cannot be given an arc (broken, surrendered) just holds.
+          }
+        }
+      }
+      stay();
+      return;
+    }
     if (company && (job === "halt" || job === "reserve")) {
       // Halt: go to ground where it is. Reserve: hold where it waited, out of the fight until committed.
       const at = job === "reserve" ? company.waitAt.get(u.id) : undefined;
@@ -606,6 +833,25 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     if (company && job === "support" && nearest && distance(u.position, nearest.position) <= drill.attackFireRange) {
       stay(); // in reach: a base of fire, halted, firing in the fire phase
       return;
+    }
+    // Consolidation (Battle Drill 2 step 14): the objective is taken and
+    // nothing is known to be near it, so hold it facing outward rather
+    // than press on past it.
+    if (drill.consolidate && task.attacking && job === "assault" && distance(u.position, task.objective) <= drill.consolidate.nothingWithin) {
+      const near = enemies.filter((e) => distance(u.position, e.position) <= drill.consolidate!.nothingWithin);
+      if (!near.length) {
+        const onward = axisOf(u, task);
+        const now = u.observationSector;
+        if (!now || Math.abs(now.bearing - onward) > 1 || now.width !== drill.consolidate.arc) {
+          try {
+            game.setObservationSector(u.id, { bearing: onward, width: drill.consolidate.arc });
+          } catch {
+            // A force that cannot be given an arc just holds the ground.
+          }
+        }
+        stay();
+        return;
+      }
     }
     if (company && job === "assault") {
       // Waiting for the fires to lift: stop short of the enemy until they do.
@@ -681,7 +927,17 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   if (live.length === 0) return;
   const cx = live.reduce((s, u) => s + u.position.x, 0) / live.length;
   const cy = live.reduce((s, u) => s + u.position.y, 0) / live.length;
-  const behind = toward({ x: cx, y: cy }, task.objective, -drill.commandGroupBehind);
+  // Where a command group follows. Doctrine has the leader close on the
+  // point of contact rather than keep a fixed distance (Battle Drill 2 step
+  // 4: the platoon leader, RTO, FO, the next squad's leader and a machine
+  // gun team "move forward to link up with the squad leader of the squad or
+  // section in contact") — which buys him the assessments of steps 8, 11
+  // and 12, and exposes him for it (decision 55).
+  const lead = drill.leaderForward && task.attacking && enemies.length ? nearestOwnToEnemy(live, enemies) : undefined;
+  const behind =
+    lead && drill.leaderForward
+      ? toward(lead, task.objective, -drill.leaderForward.behind)
+      : toward({ x: cx, y: cy }, task.objective, -drill.commandGroupBehind);
   for (const hq of game.units.filter((u) => u.side === side && u.kind === "command" && inPlay(u))) {
     // A defending command group keeps the squads' fire discipline: without it
     // its covering fire springs the ambush at the edge of small-arms reach on
@@ -729,9 +985,48 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
     const retaking = task.attacking || !drill.counterattack ? undefined : state?.counterattacking.get(u.id);
     const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
-    const target = foe && distance(u.position, foe.position) <= reach ? foe : pickTarget(u, enemies, axisOf(u, task), drill, reach);
+    // Screening smoke (Battle Drill 2 step 11a(3)): a supporting force
+    // whose company has gone in blinds the position to the assault.
+    if (
+      drill.screeningSmoke &&
+      drill.grenadiers &&
+      state &&
+      task.attacking &&
+      task.company &&
+      !task.company.hold &&
+      u.kind === "infantry" &&
+      state.screens < drill.screeningSmoke.screens
+    ) {
+      const key = task.company.platoonOf?.get(u.id);
+      const job2 = (key && task.company.platoonTasks?.get(key)) ?? "assault";
+      const mark = enemies
+        .filter((e) => distance(u.position, e.position) <= RIFLE_GRENADE_RANGE)
+        .find((e) => !game.smoke.some((sm) => distance(sm.center, e.position) < sm.radius));
+      if (job2 === "support" && mark) {
+        try {
+          game.deploySmoke("grenade", side, { ...mark.position });
+          state.screens += 1;
+        } catch {
+          // No launcher, wrong phase, or the side may not: it just fires.
+        }
+      }
+    }
+    const hurting = drill.returnFire ? hurtingUs(game, side, u, enemies, drill.returnFire.since) : undefined;
+    // A force giving a base of fire while the assault is in shoots at the
+    // far side of the objective, not across the assault's front.
+    const mine = drill.shiftToFarFlank && task.attacking ? farFlankOnly(game, u, task, enemies, drill.shiftToFarFlank.clear) : enemies;
+    const target =
+      foe && distance(u.position, foe.position) <= reach
+        ? foe
+        : pickTarget(u, mine, axisOf(u, task), drill, reach, hurting);
     if (!target) {
-      if (!task.attacking && drill.coverWhenIdle && !u.covering && !u.firedThisTurn && u.kind !== "vehicle") {
+      // A consolidating attacker covers its new sector too (step 14h), not
+      // only a defender in its own position.
+      const consolidating =
+        !!drill.consolidate &&
+        task.attacking &&
+        distance(u.position, task.objective) <= drill.consolidate.nothingWithin;
+      if ((!task.attacking || consolidating) && drill.coverWhenIdle && !u.covering && !u.firedThisTurn && u.kind !== "vehicle") {
         try {
           game.setCovering(u.id, true);
         } catch {

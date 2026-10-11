@@ -99,7 +99,8 @@ function isDrillSnapshot(d: unknown): boolean {
     isStringArray(d.passedVia) &&
     isPairs(d.posts, isPoint) &&
     isPairs(d.counterattacking, isPoint) &&
-    isPairs(d.levelWaits, (v) => isObject(v) && isCount(v.turn) && isCount(v.count))
+    isPairs(d.levelWaits, (v) => isObject(v) && isCount(v.turn) && isCount(v.count)) &&
+    (d.screens === undefined || isCount(d.screens))
   );
 }
 /** The attacking computer's memory, every field its restore reads (`ComputerAttacker.restore`). */
@@ -123,6 +124,7 @@ function isCompanySnapshot(c: unknown): boolean {
     (c.reinforced === undefined || isStringArray(c.reinforced)) &&
     (c.gaveUp === undefined || typeof c.gaveUp === "boolean") &&
     (c.gateHolding === undefined || typeof c.gateHolding === "boolean") &&
+    (c.securityGiven === undefined || typeof c.securityGiven === "boolean") &&
     typeof c.support === "boolean" &&
     typeof c.bounding === "boolean" &&
     typeof c.holdingShort === "boolean" &&
@@ -132,7 +134,7 @@ function isCompanySnapshot(c: unknown): boolean {
     (c.released === undefined || isCount(c.released))
   );
 }
-const PLATOON_TASKS: ReadonlySet<string> = new Set<PlatoonTask>(["assault", "support", "reserve", "halt", "withdraw"]);
+const PLATOON_TASKS: ReadonlySet<string> = new Set<PlatoonTask>(["assault", "support", "reserve", "halt", "withdraw", "security"]);
 const KINDS: ReadonlySet<string> = new Set(["info", "move", "fire", "casualty", "phase"]);
 
 /**

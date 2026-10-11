@@ -8,6 +8,7 @@
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --aim 40   # a scout first (decisions 52-54)
  *   npm run scenario-sim -- --recon 2 --watch 1 --look 4 --wait-for-contact --scout-from vantage   # two scouts, each from an observation point
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --wait-in dead-ground   # the company waits out of sight
+ *   npm run scenario-sim -- --drill doctrinal … --gate --rear-security   # rung A of the doctrine work, all of it
  *   npm run scenario-sim -- … --gate                 # assault only once the firefight is won (Battle Drill 2 steps 11-13)
  *   npm run scenario-sim -- … --gate --gate-held 0.5 --gate-reinforce 2 --gate-giveup 8   # the gate's four numbers
  *   npm run scenario-sim -- … --scout-from vantage  # the scouts watch from the spot that sees the objective from 350-550 m
@@ -24,7 +25,7 @@
  * lives in src/sim, where the suite runs it.
  */
 import { SCENARIOS } from "../src/app/scenario.js";
-import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
+import { DOCTRINAL_DRILL, PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenario, type FirePlanChoices } from "../src/sim/scenarioBattle.js";
 import type { CompanyPlan } from "../src/app/company.js";
 import type { CombatExperience, ForceQuality, ForceType, Side } from "../src/engine/index.js";
@@ -37,7 +38,7 @@ const value = (flag: string) => {
 const ids = (value("--scenario") ?? "telAzekaAssault,telAzekaAssault2").split(",");
 const n = Number(value("--n") ?? 100);
 const first = Number(value("--seed") ?? 1000);
-const drills = { plain: PLAIN_SCRIPT, western: { ...WESTERN_DRILL } } as const;
+const drills = { plain: PLAIN_SCRIPT, western: { ...WESTERN_DRILL }, doctrinal: { ...DOCTRINAL_DRILL } } as const;
 const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
 const base = drills[drillName];
 if (!base) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
@@ -62,6 +63,7 @@ const company: CompanyPlan = {
   ...(value("--wait-in") === "dead-ground" ? { waitIn: "deadGround" as const } : {}),
   // The doctrinal gate on the assault (Battle Drill 2 steps 11-13).
   // --gate alone takes the defaults below; the four numbers are ours.
+  ...(args.includes("--rear-security") ? { rearSecurity: true } : {}),
   ...(args.includes("--gate")
     ? {
         suppressionGate: {

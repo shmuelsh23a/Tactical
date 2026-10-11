@@ -69,7 +69,17 @@ export interface CompanyOrders {
  * stay back in reserve; halt and go to ground where it is; or pull back to
  * the start line.
  */
-export type PlatoonTask = "assault" | "support" | "reserve" | "halt" | "withdraw";
+/**
+ * What a platoon does once the company has gone.
+ *
+ * `security` is the drill's own (Battle Drill 2 step 10: the squads not in
+ * contact "take up covered and concealed positions **in place** and observe
+ * to the **flanks and rear** of the platoon"; step 12b deploys the last
+ * squad "to provide flank and rear security"). It holds where it stands and
+ * watches *away* from the objective, which is the one direction nothing
+ * else in the company is looking.
+ */
+export type PlatoonTask = "assault" | "support" | "reserve" | "halt" | "withdraw" | "security";
 
 /**
  * How close an assault waiting for the fires to lift comes before it stops,
@@ -150,6 +160,17 @@ export interface CompanyPlan {
    * 2026-10-11.
    */
   suppressionGate?: SuppressionGate;
+  /**
+   * Flank and rear security (Battle Drill 2 step 12b: the platoon leader
+   * "deploys the last squad to provide flank and rear security"). Once the
+   * company goes in, its rearmost platoon holds where it stands and
+   * watches the way back instead of joining the attack — so the company
+   * is not flanked while it is busy to the front. It costs a platoon's
+   * worth of rifles, which is the trade.
+   *
+   * Absent: every platoon faces the objective, which is ours.
+   */
+  rearSecurity?: boolean;
 }
 
 /**
@@ -249,6 +270,8 @@ export class ScriptedCompany {
    * from strict to trivial measured the same 8% (balance.md).
    */
   private gateHolding = false;
+  /** The rearmost platoon has been put on flank and rear security (step 12b). */
+  private securityGiven = false;
   private via: Point | undefined;
   private support = false;
   private readonly tasks = new Map<string, PlatoonTask>();
@@ -371,6 +394,7 @@ export class ScriptedCompany {
       reinforced: [...this.reinforced],
       gaveUp: this.gaveUp,
       gateHolding: this.gateHolding,
+      securityGiven: this.securityGiven,
       support: this.support,
       bounding: this.bounding,
       holdingShort: this.holdingShort,
@@ -400,6 +424,7 @@ export class ScriptedCompany {
     this.reinforced.push(...(snap.reinforced ?? []));
     this.gaveUp = snap.gaveUp ?? false;
     this.gateHolding = snap.gateHolding ?? false;
+    this.securityGiven = snap.securityGiven ?? false;
     this.support = snap.support;
     this.bounding = snap.bounding;
     this.holdingShort = snap.holdingShort;
@@ -512,6 +537,19 @@ export class ScriptedCompany {
     // holding area, so the question "have we won the firefight" has no
     // answer yet and the gate only ever timed out. Measured at 0-3% wins
     // against 10%, 30% of battles out of time (balance.md).
+    // Step 12b: the rearmost platoon takes flank and rear security once
+    // the company goes in. Assigned once, on release, so it is not
+    // re-chosen every turn as the platoons move.
+    if (this.plan.rearSecurity && this.released !== undefined && !this.securityGiven) {
+      const byFar = [...this.platoons(game)]
+        .filter(([key]) => this.platoonTask(key) === "assault")
+        .sort((a, b) => this.platoonRange(b[1]) - this.platoonRange(a[1]));
+      // Never the only platoon left: something has to do the attacking.
+      if (byFar.length > 1) {
+        this.tasks.set(byFar[0]![0], "security");
+        this.securityGiven = true;
+      }
+    }
     const gate = this.plan.suppressionGate;
     if (gate && this.released !== undefined) {
       this.gateHolding = !this.assaultMayGo(game, gate);
@@ -769,6 +807,7 @@ export interface CompanySnapshot {
   reinforced?: string[];
   gaveUp?: boolean;
   gateHolding?: boolean;
+  securityGiven?: boolean;
   support: boolean;
   bounding: boolean;
   holdingShort: boolean;
