@@ -207,55 +207,35 @@ balance disturbance. They are not alternatives so much as a ladder.
 
 ### Where each rung stands (2026-10-11)
 
-**A is built.** All eight gaps, each a switch citing its numbered step, each
-off unless asked for; `DOCTRINAL_DRILL` turns the set on and
-`--drill doctrinal --gate --rear-security` is rung A entire. Gap 1's
-measurement is on balance.md and is a rules finding, not a drill one.
+**All three rungs are built (2026-10-11).** The ladder below was written
+when it looked like a ladder; it turned out the author took all three at
+once, and the top rung was the one that paid.
 
-**B is blocked on two decisions, both the author's.** The behaviour it needs
-is small — machine gun teams tasked as the base of fire, which
-`PlatoonTask: "support"` already expresses. What it cannot do without a
-ruling:
+**A** — all eight gaps, each a switch citing its numbered step, each off
+unless asked for; `DOCTRINAL_DRILL` turns the set on and
+`--drill doctrinal --gate --rear-security` is rung A entire.
 
-1. **Doctrine's machine guns outrange our rules.** ATP 3-21.8 (2024) para
-   **C-119**: medium machine guns in the base-of-fire element "may find
-   themselves firing at targets within a range of **800 meters**". Our
-   small-arms table stops at **400 m**, and **rules decision 25** (✅, the
-   author, 2026-09-23) explicitly refuses infantry the 700 m coaxial
-   table — infantry fire נק"ל\מקלעים "only", because that heading already
-   includes machine guns. Data tables are transcribed verbatim and are not
-   to be edited (AGENTS.md). So a doctrinal machine gun team cannot reach
-   where doctrine employs it, and the three ways out are all the author's:
-   an exception to decision 25 for a dismounted medium MG; accepting 800 m
-   as unreachable in our rules; or a new transcribed band for it. **Not to
-   be decided here** — decision 25 is recorded and must not be silently
-   reversed.
-2. **A weapons squad changes the force ratio.** The scenarios are built to
-   **3:1 and 2:1 by force count**, and are *generated* from JSON specs
-   (`tools/scenarios/*.json`, "do not edit by hand"). Adding a four-man
-   weapons squad to each of three platoons changes the ratio, so
-   `telAzekaAssault` stops being the 3:1 it is named for and every table
-   keyed to that ratio becomes incomparable — not merely moved. The choice
-   is between **new scenario variants** carrying weapons squads (existing
-   tables stay valid, more specs to maintain) and **changing the existing
-   specs** (one set of scenarios, every table re-based at once).
+**B** — **rules decision 90**. The two blockers below were resolved by the
+author's ruling of 2026-10-11, "doctrine and real life (high fidelity)
+data > our rule, and in that case we adjust our rules": a dismounted
+medium machine gun fires `MEDIUM_MG_BANDS` out to ATP 3-21.8's published
+800 m, which **does not reverse decision 25** (ירי מקביל is still a
+vehicle's coaxial, and a rifle squad still fires נק"ל\מקלעים only). Every
+platoon has a weapons squad and every scenario was **re-based** on it; the
+named ratios survive exactly, because both sides gained them at the
+doctrinal rate. The raid was left alone — a special force without fire
+support against a militia.
 
-**C needs the engine's unit model changed, and is a session of its own.**
-There is no team level to put a fire team at: `Echelon` is
-`squad | platoon | company | battalion | brigade`, and `Unit` carries a
-flat `soldiers[]`. Two designs, neither cheap:
+**C** — **rules decision 89**. `Game.detachTeam` makes a fire team out of
+a force's own men, `Echelon` gained `team`, and from that moment nothing
+treats it specially. It is what made **Battle Drill 2A playable at all**,
+and 2A is the one doctrinal element that clearly pays. A **player** can do
+it too (`חלק לחוליות`, in the movement phase); a fire team does not divide
+again.
 
-- **A fire team as its own Unit** of four men. Needs a new echelon and a
-  convention pairing two teams into a squad (as `platoonKey` pairs squads
-  into platoons today). Everything that counts squads — detection, cover,
-  morale, succession, the breakpoint, every scenario spec, every balance
-  table — then counts twice as many smaller things.
-- **`Unit` gains sub-structure**, teams inside the squad. Smaller blast
-  radius in the scenarios, but every consumer of `soldiers` must then say
-  *which* team it means, and there are many.
-
-Either way the squad stops being a token and becomes a formation, which is
-the thing the ladder's top rung was always going to cost.
+What the two decisions cost in balance, and the measurement that followed
+them, are on docs/balance.md. The reasoning that follows is kept because
+it is still the record of *why* each rung looked the way it did.
 
 **A was the recommendation**, and not only because it was cheapest: it is the
 only one of the three that can be measured against the existing tables

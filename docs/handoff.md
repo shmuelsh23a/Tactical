@@ -1,12 +1,12 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-11: the balance meets decision 68's small-unit targets for the first time.** The eight reference plans re-run on the corrected baseline (100 seeds a cell, both tel assaults) give a **3:1 median of 41.5%** against a target of 40–55%, and a **2:1 median of 29%** against 20–35% (balance.md, *The reference plans, re-run*). The previous set's 3:1 median was about 30%, under its band.
+**Current as of 2026-10-11: the balance meets decision 68's small-unit targets for the first time, and the doctrine is integrated.** The eight reference plans re-run on the corrected baseline (100 seeds a cell, both tel assaults) give a **3:1 median of 41.5%** against a target of 40–55%, and a **2:1 median of 29%** against 20–35% (balance.md, *The reference plans, re-run*). The previous set's 3:1 median was about 30%, under its band.
 
-What moved it was a bug, not a rule: **`pickTarget` never checked line of sight**, so a force aimed at the nearest enemy its *side* knew of whether or not *it* could see it, the engine refused the shot, and the drill discarded the refusal — zero of fourteen forces firing, turn after turn. Fixing it is worth 7 points to every drill. **Every pessimistic conclusion of the last three days was measuring that bug**, including "the rules make a prepared defence too strong"; they are withdrawn. A base of fire placed for fields of fire (ATP 3-21.8 para 3-102) is worth another 5, and `scoutsSupport` measured as nothing at all.
+What moved it was a bug, not a rule: **`pickTarget` never checked line of sight**, so a force aimed at the nearest enemy its *side* knew of whether or not *it* could see it, the engine refused the shot, and the drill discarded the refusal — zero of fourteen forces firing, turn after turn. Fixing it is worth 7 points to every drill. **Every pessimistic conclusion of 2026-10-09 to 11 was measuring that bug**, including "the rules make a prepared defence too strong"; they are withdrawn, and the three rules candidates they produced are not needed to explain anything. A base of fire placed for fields of fire (ATP 3-21.8 para 3-102) is worth another 5; `scoutsSupport` measured as nothing at all.
 
-Before that, the doctrine work: the manuals arrived and were integrated — rung A (eight gaps, each a switch citing its numbered battle-drill step, `DOCTRINAL_DRILL`), decision 89 (a commander makes fire teams out of his own men, which is what made Battle Drill 2A playable and is the one doctrinal element that clearly pays), and decision 90 (the dismounted medium machine gun at ATP 3-21.8's published 800 m, with every platoon given a weapons squad and **every scenario re-based** on it — the named ratios survive exactly). Suppression was measured and it pays: pinning cuts a defender's fire to a quarter, two squads can impose it, and at 3:1 the attacker pins the defence while staying unsuppressed itself (`npm run suppression-pays`).
+**The doctrine work, in one paragraph.** The manuals arrived (`docs/Doctrine`, 426 publications; `tools/doctrine.py`) and `docs/doctrine-gap.md` is the gap list that drove everything after. Rung A: eight gaps, each a switch on `SquadDrill`/`CompanyPlan` citing its numbered battle-drill step, all off unless asked for, `DOCTRINAL_DRILL` turning them on. Decision 89: **a commander makes fire teams out of his own men** (`Game.detachTeam`), which is what made Battle Drill 2A playable and is the one doctrinal element that clearly pays — and which a **player can now do too** (`חלק לחוליות`). Decision 90: the **dismounted medium machine gun** at ATP 3-21.8's published 800 m, with every platoon given a weapons squad and **every scenario re-based** on it; the named ratios survive exactly because both sides gained them at the doctrinal rate. Suppression was measured and it pays (`npm run suppression-pays`): pinning cuts a defender's fire to a quarter, two squads impose it, and at 3:1 the attacker pins the defence while staying unsuppressed itself.
 
-Stale and needing a re-run on the corrected baseline: the urban test bed, the force-quality matrix, the AI commanders, the raid, and the one-scout hasty attack whose 29% was checked against history. Before that, 2026-10-09: the doctrine manuals have arrived, and **backlog 21 is unblocked.** `docs/Doctrine` holds 426 US Army publications and 77,597 pages, parsed and chunked, searched with `tools/doctrine.py` — text search in about a second, or `--semantic` with the author's `VOYAGE_API_KEY` in `.env` (AGENTS.md, *The doctrine corpus is the authority on drills*, has the traps; provenance in sources.md; the brief, with the drill-by-drill table, in doctrine-handoff.md). Three things the reading settled. **The battle drills are in TC 3-21.76 (Ranger Handbook, 2025) chapter 8, pp. 169–203** — all six ATP 3-21.8 names and four more, in the official task-step format; ATP 3-21.8's own Appendix E merely names them and points at the Army Training Network. An **asterisk in those steps marks a leader performance step**, which is the game's layer split already drawn for us: asterisked is a decision (the commander's, or the player's), unasterisked is the drill executing. And **ATP 3-21.8 (2024) para 3-102** settles the base of fire — the platoon leader designates a general location, the element leader selects the exact one, so the general location is a `CompanyOrders` field and the exact position is the drill's. On the search itself: `--semantic` works but ranks loosely, for a structural reason recorded under *Do not re-derive* — use it to learn what doctrine calls a thing, then quote a literal hit. The chunk index and its vector cache are gitignored (530 MB and 436 MB); the manifest and documents.csv beside them are tracked, so the repo still records which corpus a finding came from. Before that, 2026-10-07: the computer plays the attacker (README decision 88): the picker's third choice, *מול המחשב (אתה המגן)* (`?vs=attacker`) — the player holds and the scripted company comes on against him, briefed on a position spoilt by an observer's error as the harness's attacker is. It is given a competent plan, not the harness's bare defaults: those fire on the plan from turn 1 with nobody looking, walk into their own danger-close rounds and break without the defender firing a shot (driven: the attack broke on turn 16 against a player who gave no order; measured at 0% wins). With two scouts on vantage points, the guns held for a mark sure to 40 m and smoke on the crossing, it is the harness's 10% attacker; driven in the browser it took the position on turn 29, and a battle saved mid-attack and reloaded went on to the same turn-29 result. The attacker's fire plan, its fire calls and the pre-battle estimate now live with the defender's in `app/computerSide.ts` and `app/planning.ts`, imported back by `sim/`; both standard measurements are byte-identical across the move.
+**Stale, and needing a re-run on the corrected baseline**: the urban test bed, the force-quality matrix, the AI commanders, the raid, and the one-scout hasty attack whose 29% was checked against history's 15–35%. All predate the targeting fix. Before that, 2026-10-09:Before that, 2026-10-09: the doctrine manuals have arrived, and **backlog 21 is unblocked.** `docs/Doctrine` holds 426 US Army publications and 77,597 pages, parsed and chunked, searched with `tools/doctrine.py` — text search in about a second, or `--semantic` with the author's `VOYAGE_API_KEY` in `.env` (AGENTS.md, *The doctrine corpus is the authority on drills*, has the traps; provenance in sources.md; the brief, with the drill-by-drill table, in doctrine-handoff.md). Three things the reading settled. **The battle drills are in TC 3-21.76 (Ranger Handbook, 2025) chapter 8, pp. 169–203** — all six ATP 3-21.8 names and four more, in the official task-step format; ATP 3-21.8's own Appendix E merely names them and points at the Army Training Network. An **asterisk in those steps marks a leader performance step**, which is the game's layer split already drawn for us: asterisked is a decision (the commander's, or the player's), unasterisked is the drill executing. And **ATP 3-21.8 (2024) para 3-102** settles the base of fire — the platoon leader designates a general location, the element leader selects the exact one, so the general location is a `CompanyOrders` field and the exact position is the drill's. On the search itself: `--semantic` works but ranks loosely, for a structural reason recorded under *Do not re-derive* — use it to learn what doctrine calls a thing, then quote a literal hit. The chunk index and its vector cache are gitignored (530 MB and 436 MB); the manifest and documents.csv beside them are tracked, so the repo still records which corpus a finding came from. Before that, 2026-10-07: the computer plays the attacker (README decision 88): the picker's third choice, *מול המחשב (אתה המגן)* (`?vs=attacker`) — the player holds and the scripted company comes on against him, briefed on a position spoilt by an observer's error as the harness's attacker is. It is given a competent plan, not the harness's bare defaults: those fire on the plan from turn 1 with nobody looking, walk into their own danger-close rounds and break without the defender firing a shot (driven: the attack broke on turn 16 against a player who gave no order; measured at 0% wins). With two scouts on vantage points, the guns held for a mark sure to 40 m and smoke on the crossing, it is the harness's 10% attacker; driven in the browser it took the position on turn 29, and a battle saved mid-attack and reloaded went on to the same turn-29 result. The attacker's fire plan, its fire calls and the pre-battle estimate now live with the defender's in `app/computerSide.ts` and `app/planning.ts`, imported back by `sim/`; both standard measurements are byte-identical across the move.
 
 Older entries, 2026-10-06 and back, are in
 [handoff-archive.md](handoff-archive.md), *Where the header used to
@@ -38,10 +38,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `6fbb6cd` (2026-10-09)
+## Green as of `8f53f00` (2026-10-11)
 
 ```
-npm run check       lint + typecheck clean, 952 tests, 63 files
+npm run check       lint + typecheck clean, 953 tests, 63 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -50,6 +50,12 @@ node tools/smart-attacker.mjs [scenario] [turns]
 PYTHONUTF8=1 py tools/doctrine.py --find "base of fire" --doc 3-21.8
                     the doctrine corpus; --semantic needs VOYAGE_API_KEY
                     in .env (AGENTS.md has the traps)
+npm run suppression-pays
+                    does suppression pay, and can an attacker get it
+npm run scenario-sim -- --drill doctrinal --gate --rear-security
+                    the doctrine work (rung A) in the harness
+npm run jev-sim -- --rule --scenario telAzekaAssault --seed 1000 --n 100
+                    one reference plan; eight of them are the balance
 ```
 
 Working tree clean and pushed to `origin/main` at that commit.
@@ -70,8 +76,14 @@ players at one screen, *מול המחשב (אתה התוקף)* with the computer
 (`?vs=attacker`, decision 88). A battle in progress is kept in the browser
 and resumes from the picker or a reload, mid-turn included.
 
+A player commanding a squad can **divide it into two fire teams**
+(`חלק לחוליות`, rules decision 89) in the movement phase; the new team is a
+force like any other from that moment, and does not divide again.
+
 The rule is that nothing is called done on tests alone: if a player can see
-it, it gets driven in the actual game first.
+it, it gets driven in the actual game first. It was not kept during the
+doctrine work and driving the browser afterwards found three player-visible
+faults in an hour — see *Traps*.
 
 ## How this repo expects to be worked on
 
@@ -308,6 +320,26 @@ between windows. See balance.md, just above *How the engine scales*.
 `npm run balance` takes `--seed <first>` now; rerun a lean on a fresh window
 before chasing it.
 
+**Added 2026-10-11, and these have piled up:**
+
+- **The force-quality matrix's spread** (decision 83) has been waiting
+  since 2026-10-05 — and should now wait a little longer, because its
+  numbers predate the targeting fix and a ruling on them would be a ruling
+  on an artefact. Re-run first, then ask.
+- **Decision 90's ⚠️ tail band**: a dismounted medium machine gun's
+  701–800 m hit chance is **10%, and ours**. The document stops at 700 m
+  and ATP 3-21.8 gives the reach without a hit chance. It is the one
+  invented number in the machine gun.
+- **Flanking and moving up now measure as mistakes** (see *What I would
+  pick up next*). Before anyone tunes the ground to fix that, it is worth
+  saying whether a flank *should* pay on a tel like this one, or whether
+  40% against a frontal 57% is the right answer and our instinct is wrong.
+- **Should the browser's computer fight doctrinally?** It fights by
+  `PLAIN_SCRIPT` today, so none of rung A reaches the game — no fire teams,
+  no 800 m machine guns, no consolidation. On current evidence making it
+  doctrinal would make it *weaker* (17% against 13% in `scenario-sim`),
+  which argues for leaving it until the doctrinal drill measures level.
+
 **Added 2026-10-09:**
 
 - **Rules decision 88 is ⚠️ and unseen**: the browser hands its attacking
@@ -494,46 +526,56 @@ Measurements that cost real time and are already recorded:
   scenario. If it ever needs reproducing, it wants a scenario where a scout
   can see something early.
 
+- **The reference plans on the corrected baseline** (2026-10-11, 100 seeds
+  a cell): A calibrated 57/43, A + flank 40/45, B deliberate 45/23, E
+  fire-heavy 46/38, D flank 29/19, A + move up 29/23, B + move up 26/21, C
+  hasty 43/35; medians **41.5%** and **29%**. Sixteen cells, about twelve
+  minutes four at a time. A cell is worth ±10 points at 95%, so read the
+  medians.
+- **Suppression, measured in isolation** (`npm run suppression-pays`):
+  pinning cuts a defender's fire to **×0.24** at 200 m; one rifle squad
+  suppresses and **two pin**; two machine gun teams pin from 600 m, where
+  rifles cannot reach; at equal numbers the firefight is symmetric
+  (×1.03–1.11), and **at 3:1 the attacker pins while staying unsuppressed**
+  (6 against 65). Suppression halves every turn, so a sustained input of X
+  settles at about 2X.
+- **What the targeting fix is worth**: +7 points to every drill (the plain
+  script's 3:1 went 10% → 17% in `scenario-sim`). The base-of-fire firing
+  position is worth +5, isolated with `--no-firing-position`, and only
+  bites once a platoon is tasked `support` — which the scripted company
+  does only under the suppression gate.
+
 ## What I would pick up next
 
-**The drill rewrite from doctrine (backlog 21).** It was blocked on the
-author's manuals for a week; they arrived 2026-10-09 and it is the largest
-piece of work the project has queued. The brief is
-[doctrine-handoff.md](doctrine-handoff.md), and it now names the exact
-source: **TC 3-21.76 (Ranger Handbook, 2025) chapter 8, pp. 169–203**, which
-carries all six battle drills ATP 3-21.8 names plus four more, in the
-official task-step format.
+**Re-run what the targeting fix invalidated.** Every table taken before
+`74a2dbc` was measured through a drill that aimed at marks it could not
+see, so the following are not merely stale, they may be wrong in
+direction: the **urban test bed** (decisions 75–78's whole basis), the
+**force-quality matrix** (decision 83, and the author has not ruled on its
+spread yet — ruling on bad numbers would be worse than not ruling), the
+**AI commanders** (Jev and Haiku at 15%/5%), the **raid** (decision 87's
+26%), and the **one-scout hasty attack** whose 29% was checked against
+history's 15–35%. The reference plans are already done and are the model
+for the rest: 100 seeds a cell, four jobs at a time, about twelve minutes
+for sixteen cells.
 
-The first step is not code. Read the two assault drills whole —
+**Confirm A calibrated at 200 seeds.** 57% at 3:1 is just over the top of
+decision 68's band, on a cell worth ±10 points. It is the only number in
+the new table that might ask for tuning, and it runs unattended.
 
-```bash
-PYTHONUTF8=1 py tools/doctrine.py --find "Conduct a Squad Assault" --doc 3-21.76 --full
-```
+**Then the open question the new table raises**: flanking and moving up now
+measure as *mistakes* (A + flank 40%, D flank 29%, A + move up 29%, B +
+move up 26%, against a plain calibrated attack's 57%). That is a change in
+what the game teaches, and it is worth knowing whether it is real before it
+hardens into received wisdom. A flank that costs turns and gains nothing
+may mean the ground is not rewarding dead ground and covered approaches as
+it should — which is a *rules* question, and the first one since the
+targeting fix that is not explained away by it.
 
-— and write a **gap list** against [`drill.ts`](../src/app/drill.ts): what
-doctrine's steps do that ours do not, and what ours invent. Only then
-decide what changes. Two things to carry into it:
-
-- **An asterisk in the manual marks a leader performance step**, which is
-  the game's own layer split already drawn: an asterisked step is a
-  *decision* and belongs to the commander (`company.ts`, or the player); an
-  unasterisked one is the drill executing. Use the manual's marks rather
-  than re-adjudicating the boundary.
-- **ATP 3-21.8 (2024) para 3-102** settles the base of fire (the other half
-  of backlog 21): "Platoon leaders normally designate a general location for
-  the base of fire, and the element leader selects the exact location." The
-  general location is a `CompanyOrders` field; the exact position is the
-  drill's.
-
-Expect the reference plans to need remeasuring once the drills change — that
-is the point of the exercise (the layer table at the top of
-doctrine-handoff.md), and it is what the author's 2026-10-02 ruling on the
-hasty attack and the flank plan was waiting for.
-
-**Smaller, and ready:** `Enter and Clear a Room` (07-SQD-D9509, p. 197) is
-in the same format and is the urban drill backlog 23 wants. And
-**play-testing single-player** is still the author's, now both ways
-(`?vs=computer` and `?vs=attacker`).
+**Not before the above**: more doctrine. Rung A's switches are built but
+only measured as a set; the gap list's remaining items (the Ranger
+Handbook's other eight drills, the urban drill 07-SQD-D9509 for backlog 23)
+will measure badly or well for reasons the stale tables are hiding.
 
 ## Traps that cost real time
 
@@ -562,6 +604,25 @@ in the same format and is the urban drill backlog 23 wants. And
   leaves the unbroken run having closed that turn and the resumed one not,
   which looks like a product divergence and is the test harness. See
   `computerAttacker.test.ts`.
+- **An exhaustive `Record` catches a new enum member; a `switch` with a
+  `default` swallows it.** Adding the `team` echelon (decision 89) broke
+  `symbols.ts`, which mapped echelons with a `switch`/`default`, so every
+  fire team and machine gun team drew with **no echelon amplifier** — and
+  nothing failed. The three other places that map an echelon are
+  `Record<Echelon, …>` and the compiler named all three. Prefer the
+  `Record`.
+- **Drive the browser as you go, not at the end.** Three days of doctrine
+  work went in without once opening the game; the first hour of driving
+  afterwards found the symbol fault above, machine gun teams named
+  `חולית מקלע 1/A` in a roster that reads `מחלקה א'/1` everywhere else, and
+  that **the player had no way to form a fire team at all** — the thing the
+  author had actually asked for. None of it was visible from the harness.
+- **`xargs` collapses an empty field and silently mis-groups every later
+  job.** A queue of `name|rules|scenario` piped through `tr '|' ' '` and
+  `xargs -n 3` put the *next* job's token into the empty `rules` slot, and
+  sixteen reference-plan runs came out scrambled and fast enough to look
+  fine. Pass the whole job as one argument (`xargs -I LINE`) and split it
+  inside the worker.
 - **A pull that lands new dependencies leaves `npm run check` broken.**
   `git pull` does not install. After 2026-10-07's sync of 133 commits,
   `@anthropic-ai/sdk` and `@typesafe-ai/sdk` were declared in
