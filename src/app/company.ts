@@ -1,6 +1,6 @@
-import { distance, type Game, type Point, type Side, type Terrain, type Unit } from "../engine/index.js";
+import { distance, suppressionLevel, type Game, type Point, type Side, type Terrain, type Unit } from "../engine/index.js";
 import { bestVantages, nearestDeadGround } from "./deadGround.js";
-import { sideView } from "./hotseat.js";
+import { hasEyesOn, sideView } from "./hotseat.js";
 
 /**
  * The company commander's orders to its squads for the turn (rules decision
@@ -143,6 +143,63 @@ export interface CompanyPlan {
   arriveTogether?: boolean;
   /** Where the rest wait while the scouts look: where they stand, or the nearest dead ground. */
   waitIn?: "place" | "deadGround";
+  /**
+   * Assault only once the company has gained suppressive fire
+   * ({@link SuppressionGate}, Battle Drill 2 steps 11–13). Absent: the
+   * assault goes when the scouts are done, which is every table before
+   * 2026-10-11.
+   */
+  suppressionGate?: SuppressionGate;
+}
+
+/**
+ * The doctrinal gate on an assault (TC 3-21.76, Battle Drill 2, steps 11,
+ * 12 and 13; ATP 3-21.8 ch. 4). The platoon leader asks three times whether
+ * his element in contact "can gain suppressive fire against the enemy
+ * **based on the volume and accuracy of the enemy's return fire**", commits
+ * more force to the base of fire while the answer is no, and sends the
+ * assault in only once the answer is yes.
+ *
+ * It is judged off **our own** forces, never the enemy's state: the volume
+ * and accuracy of the enemy's return fire is what our own men in contact
+ * are feeling, which is the one thing a commander really can read. That is
+ * both what the drill says and what keeps this inside the rule that a drill
+ * sees only what its side sees.
+ *
+ * ⚠️ The four numbers are ours — the drill gives the question and the
+ * order of the steps, not a threshold. They are on docs/balance.md.
+ */
+export interface SuppressionGate {
+  /**
+   * The assault waits while more than this share of the forces in contact
+   * are themselves suppressed or pinned: the enemy's fire is still
+   * effective, so ours has not won the firefight.
+   */
+  heldWhileShare: number;
+  /** A force this near an enemy it knows of counts as in contact. */
+  contactWithin: number;
+  /**
+   * How much of the enemy the company can *watch* must be suppressed or
+   * pinned before its fire counts as telling. Watching a position go
+   * heads-down is observable (`hasEyesOn`); an enemy nobody can see is
+   * not counted at all.
+   */
+  enemyHeldShare: number;
+  /**
+   * Commit another platoon to the base of fire after this many turns of not
+   * gaining suppression (step 11b: "deploys another squad ... to suppress
+   * the enemy position"; step 12a: a second platoon joins it).
+   */
+  reinforceAfter: number;
+  /**
+   * Stop waiting after this many turns and assault anyway, onto an enemy
+   * the company never suppressed (step 12b-c: the platoon reports it
+   * cannot gain suppressive fire and "responds to orders from the company
+   * commander" — and we are that commander). Not a halt: holding here
+   * instead merely ran the clock out, 57% of battles out of time against
+   * 2% (balance.md, the gate's first measurement).
+   */
+  giveUpAfter: number;
 }
 
 /**
@@ -175,6 +232,23 @@ export class ScriptedCompany {
   private readonly scouts = new Map<string, Point | null>();
   private readonly waitAt = new Map<string, Point>();
   private lookedTurns = 0;
+  /** Turns the company has been trying to gain suppressive fire and has not (the gate). */
+  private tryingTurns = 0;
+  /** Platoons committed to the base of fire because suppression was not gained, in order. */
+  private readonly reinforced: string[] = [];
+  /** The gate ran out of patience and sent the assault in unsuppressed (step 12b-c). */
+  private gaveUp = false;
+  /**
+   * The assault is stopped short because the firefight is not won yet (the
+   * suppression gate). Kept apart from {@link holdingShort}, which is the
+   * fire plan's hold — waiting for *our own* shells to lift — because the
+   * two are held for different reasons and lifted by different things. The
+   * harness lifts a fire-plan hold as soon as the mortars are spent
+   * (scenarioBattle.ts); that must not open a gate that is waiting on
+   * suppression, and conflating them made the gate inert: every threshold
+   * from strict to trivial measured the same 8% (balance.md).
+   */
+  private gateHolding = false;
   private via: Point | undefined;
   private support = false;
   private readonly tasks = new Map<string, PlatoonTask>();
@@ -293,6 +367,10 @@ export class ScriptedCompany {
       tasks: [...this.tasks],
       home: { ...this.home },
       lookedTurns: this.lookedTurns,
+      tryingTurns: this.tryingTurns,
+      reinforced: [...this.reinforced],
+      gaveUp: this.gaveUp,
+      gateHolding: this.gateHolding,
       support: this.support,
       bounding: this.bounding,
       holdingShort: this.holdingShort,
@@ -317,6 +395,11 @@ export class ScriptedCompany {
     for (const [key, task] of snap.tasks) this.tasks.set(key, task);
     this.home = { ...snap.home };
     this.lookedTurns = snap.lookedTurns;
+    this.tryingTurns = snap.tryingTurns ?? 0;
+    this.reinforced.length = 0;
+    this.reinforced.push(...(snap.reinforced ?? []));
+    this.gaveUp = snap.gaveUp ?? false;
+    this.gateHolding = snap.gateHolding ?? false;
     this.support = snap.support;
     this.bounding = snap.bounding;
     this.holdingShort = snap.holdingShort;
@@ -418,7 +501,126 @@ export class ScriptedCompany {
         if (this.lookedTurns > (this.plan.recon?.lookTurns ?? 0) || live.length === 0 || there) this.released = game.turn;
       }
     }
+    // The gate is on the **assault**, not on the advance (Battle Drill 2
+    // step 13: the base of fire must be in position and suppressing before
+    // the platoon leader leads the assaulting squads in). So the company
+    // approaches as it always did, its assaulting squads stop short of the
+    // enemy, and the hold is lifted when the firefight is won.
+    //
+    // It was first written as a gate on `released` instead, which cannot
+    // work: nothing is in contact while the company is still in its
+    // holding area, so the question "have we won the firefight" has no
+    // answer yet and the gate only ever timed out. Measured at 0-3% wins
+    // against 10%, 30% of battles out of time (balance.md).
+    const gate = this.plan.suppressionGate;
+    if (gate && this.released !== undefined) {
+      this.gateHolding = !this.assaultMayGo(game, gate);
+    }
     return this.currentOrders(game, { holding, asked: decided !== undefined });
+  }
+
+  /**
+   * The company's own forces trading fire: its squads, not its scouts,
+   * within `contactWithin` of an enemy it knows of. This is the "element in
+   * contact" the drill's steps 11 and 12 are about.
+   */
+  private inContact(game: Game, gate: SuppressionGate): Unit[] {
+    const view = sideView(game, this.side);
+    const foes = view.units.filter((u) => u.side !== this.side && !u.neutralized && !u.surrendered);
+    return view.units.filter(
+      (u) =>
+        u.side === this.side &&
+        u.kind === "infantry" &&
+        !u.neutralized &&
+        !this.scouts.has(u.id) &&
+        foes.some((f) => distance(u.position, f.position) <= gate.contactWithin),
+    );
+  }
+
+  /**
+   * Whether the company has gained suppressive fire: the drill's question
+   * at steps 11 and 12, which has two halves and needs both.
+   *
+   * - **Our fire is telling.** Of the enemy the company can actually
+   *   *watch* — `hasEyesOn`, a thing seen happening rather than searched
+   *   out — at least `enemyHeldShare` is suppressed or pinned. Watching a
+   *   position go heads-down is what a commander really can observe; it is
+   *   not read off an enemy nobody can see.
+   * - **Their fire is not stopping us.** No more than `heldWhileShare` of
+   *   our own forces in contact are suppressed or pinned — "the volume and
+   *   accuracy of the enemy's return fire", felt where it lands.
+   *
+   * Forces out scouting count on neither side of it: a scout holds its
+   * fire and is not part of the base of fire (decision 52).
+   */
+  private gainedSuppression(game: Game, gate: SuppressionGate): boolean {
+    const view = sideView(game, this.side);
+    const foes = view.units.filter((u) => u.side !== this.side && !u.neutralized && !u.surrendered);
+    if (!foes.length) return true;
+    const own = this.inContact(game, gate);
+    // Nobody in contact yet: there is no firefight to have won.
+    if (!own.length) return false;
+    const held = own.filter((u) => suppressionLevel(u) !== "none").length;
+    if (held / own.length > gate.heldWhileShare) return false;
+    // Is our fire telling on them? Only the enemy we can watch counts.
+    const watched = foes
+      .map((f) => {
+        try {
+          return game.getUnit(f.id);
+        } catch {
+          return undefined;
+        }
+      })
+      .filter((u): u is Unit => !!u && hasEyesOn(game, this.side, u));
+    if (!watched.length) return false;
+    const down = watched.filter((u) => suppressionLevel(u) !== "none").length;
+    return down / watched.length >= gate.enemyHeldShare;
+  }
+
+  /**
+   * The gate, run once a turn while the company still holds: it decides
+   * whether the assault may go, and commits another platoon to the base of
+   * fire for each `reinforceAfter` turns it has not gained suppression
+   * (steps 11b and 12a). Returns whether the assault may go.
+   */
+  private assaultMayGo(game: Game, gate: SuppressionGate): boolean {
+    if (this.gainedSuppression(game, gate)) return true;
+    // Patience is only spent once there is a firefight to win: a company
+    // still closing on the enemy is not failing to suppress it.
+    if (!this.inContact(game, gate)) return false;
+    this.tryingTurns += 1;
+    // Another platoon onto the base of fire, the one furthest from the
+    // objective first so the leading platoons stay the manoeuvre element.
+    const want = Math.floor(this.tryingTurns / Math.max(1, gate.reinforceAfter));
+    if (want > this.reinforced.length) {
+      const byFar = [...this.platoons(game)]
+        .filter(([key]) => !this.reinforced.includes(key) && this.platoonTask(key) === "assault")
+        .sort((a, b) => this.platoonRange(b[1]) - this.platoonRange(a[1]));
+      // The last platoon is never committed to fire: it is the manoeuvre
+      // element, or the flank and rear security of step 12b.
+      if (byFar.length > 1) {
+        const [key] = byFar[0]!;
+        this.tasks.set(key, "support");
+        this.reinforced.push(key);
+      }
+    }
+    if (this.tryingTurns >= gate.giveUpAfter) {
+      // Step 12b-c: the platoon reports that it cannot gain suppressive
+      // fire and "responds to orders from the company commander". We *are*
+      // the company commander, and an attacker under orders to take a
+      // position eventually goes in: so the assault goes, later than it
+      // wanted and onto an enemy it never suppressed, and pays for it.
+      // Holding here instead simply ran the clock out — measured at 57%
+      // out of time, which is a worse model than going in (balance.md).
+      this.gaveUp = true;
+      return true;
+    }
+    return false;
+  }
+
+  /** How far a platoon's nearest squad is from where the plan puts the enemy. */
+  private platoonRange(squads: readonly Unit[]): number {
+    return Math.min(...squads.map((u) => distance(u.position, this.objective)));
   }
 
   /**
@@ -448,7 +650,7 @@ export class ScriptedCompany {
       platoonOf: this.platoonOfSquad,
       ...(this.tasks.size ? { platoonTasks: this.tasks } : {}),
       ...(this.bounding ? { boundByPlatoon: true } : {}),
-      ...(this.holdingShort ? { holdShort: true } : {}),
+      ...(this.holdingShort || this.gateHolding ? { holdShort: true } : {}),
       fallBackTo: this.home,
       ...(this.plan.coveredRoutes === false ? { coveredRoutes: false } : {}),
       ...(this.plan.arriveTogether === false ? { arriveTogether: false } : {}),
@@ -557,6 +759,16 @@ export interface CompanySnapshot {
   /** The company's start line, where a platoon pulled back goes. */
   home: Point;
   lookedTurns: number;
+  /**
+   * The suppression gate's memory: turns spent not gaining suppressive
+   * fire, the platoons committed to the base of fire because of it, and
+   * whether it gave up. Optional, so a battle saved before 2026-10-11
+   * still reads.
+   */
+  tryingTurns?: number;
+  reinforced?: string[];
+  gaveUp?: boolean;
+  gateHolding?: boolean;
   support: boolean;
   bounding: boolean;
   holdingShort: boolean;

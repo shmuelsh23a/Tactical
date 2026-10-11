@@ -8,6 +8,8 @@
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --aim 40   # a scout first (decisions 52-54)
  *   npm run scenario-sim -- --recon 2 --watch 1 --look 4 --wait-for-contact --scout-from vantage   # two scouts, each from an observation point
  *   npm run scenario-sim -- --recon 1 --watch 1 --look 4 --wait-for-contact --wait-in dead-ground   # the company waits out of sight
+ *   npm run scenario-sim -- … --gate                 # assault only once the firefight is won (Battle Drill 2 steps 11-13)
+ *   npm run scenario-sim -- … --gate --gate-held 0.5 --gate-reinforce 2 --gate-giveup 8   # the gate's four numbers
  *   npm run scenario-sim -- … --scout-from vantage  # the scouts watch from the spot that sees the objective from 350-550 m
  *   npm run scenario-sim -- … --target-first squads # the guns take squads before command groups (or: command)
  *   npm run scenario-sim -- --planning-error 0      # the plan on the truth, as before decision 51
@@ -58,6 +60,19 @@ const company: CompanyPlan = {
       }
     : {}),
   ...(value("--wait-in") === "dead-ground" ? { waitIn: "deadGround" as const } : {}),
+  // The doctrinal gate on the assault (Battle Drill 2 steps 11-13).
+  // --gate alone takes the defaults below; the four numbers are ours.
+  ...(args.includes("--gate")
+    ? {
+        suppressionGate: {
+          heldWhileShare: Number(value("--gate-held") ?? 0.34),
+          enemyHeldShare: Number(value("--gate-enemy") ?? 0.5),
+          contactWithin: Number(value("--gate-contact") ?? 400),
+          reinforceAfter: Number(value("--gate-reinforce") ?? 3),
+          giveUpAfter: Number(value("--gate-giveup") ?? 12),
+        },
+      }
+    : {}),
 };
 const fire: FirePlanChoices = {
   ...DEFAULT_FIRE_CHOICES,

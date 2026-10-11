@@ -119,6 +119,10 @@ function isCompanySnapshot(c: unknown): boolean {
     isPairs(c.tasks, (v) => PLATOON_TASKS.has(v as string)) &&
     isPoint(c.home) &&
     isCount(c.lookedTurns) &&
+    (c.tryingTurns === undefined || isCount(c.tryingTurns)) &&
+    (c.reinforced === undefined || isStringArray(c.reinforced)) &&
+    (c.gaveUp === undefined || typeof c.gaveUp === "boolean") &&
+    (c.gateHolding === undefined || typeof c.gateHolding === "boolean") &&
     typeof c.support === "boolean" &&
     typeof c.bounding === "boolean" &&
     typeof c.holdingShort === "boolean" &&

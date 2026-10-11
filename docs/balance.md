@@ -4298,6 +4298,69 @@ the 20 m band), and the plain scripted attack does not search for it — the
 battles run to time. The surprise is there to be used; the script does not
 use it, as it does not use a flank. A player's raid is the test.
 
+## The doctrinal gate on an assault, 2026-10-11 — and what it says about the rules
+
+The first of the doctrine gaps built (docs/doctrine-gap.md, gap 1): the
+platoon leader's question at Battle Drill 2 steps 11–13, "can the element
+in contact gain suppressive fire against the enemy, **based on the volume
+and accuracy of the enemy's return fire**", asked each turn, with the
+assault stopped short of the objective until the answer is yes.
+
+Implemented as `CompanyPlan.suppressionGate`, **off unless asked for**, so
+every table above still reproduces (checked: both standard measurements
+byte-identical with it off). Judged from the company's own side — its
+forces in contact not themselves suppressed, and the enemy it can *watch*
+(`hasEyesOn`) suppressed or pinned. ⚠️ The five numbers are ours; the drill
+gives the question and the order of the steps, not a threshold.
+
+`telAzekaAssault`, 40 battles from seed 1000, the competent attacker's
+options (`--recon 2 --watch 1 --look 4 --wait-for-contact --aim 40
+--scout-from vantage --wait-in dead-ground --smoke 4 --prep-fires`), plus
+`--gate --gate-contact 250`:
+
+| Attacker | Wins | Out of time | Turns (median) | Attacker down |
+|---|---|---|---|---|
+| **No gate** | **13%** | 3% | 33 | 14% |
+| Gate, criterion made trivial (`--gate-held 0.9 --gate-enemy 0.1`) | 8% | 8% | 33 | 15% |
+| Gate, strict, patience 4 (`--gate-giveup 4`) | 10% | 8% | 33 | 14% |
+| Gate, strict, patience 8 | 8% | 8% | 33 | 15% |
+| Gate, strict, patience never (`--gate-giveup 999`) | **5%** | 8% | 33 | 15% |
+
+**The gate costs win rate monotonically: the longer it holds, the worse the
+attack does.** And the trivial criterion still loses five points, which is
+the telling row — that version barely waits at all, so what it measures is
+the cost of *having* a hold-short line rather than the cost of waiting at
+it.
+
+**This is a rules finding, not a drill one**, which is what the layer table
+in doctrine-handoff.md says to do with it: if a doctrinal drill does not
+give real outcomes, the rules are what is wrong, and that is the author's
+decision on the numbers. Every real army fights the firefight before
+assaulting; our rules presently reward walking straight in.
+
+The likeliest cause, and the next thing to measure: **`HOLD_SHORT_M` is 200
+m and ours.** A company that stops there parks in the defender's best band
+— `openFireRange` is 200 m in the western drill — whereas doctrine's
+assault position is "the last covered position before the objective",
+chosen off the ground, not a fixed radius. The hold may be costing what the
+ground should be paying for. Testing that means picking the hold-short
+position by cover (`deadGround.ts` already finds it) instead of by
+distance.
+
+Two dead ends recorded so they are not re-walked:
+
+- **The gate cannot sit on the company's release.** Written there first, it
+  asked "have we won the firefight" while the company was still in its
+  holding area with nothing in contact, so it never opened and merely timed
+  out: 0–3% wins, and **30–57% of battles out of time** against 2%. The
+  drill puts it at step 13, after contact, on the assault — not at the
+  start of the advance.
+- **It cannot reuse the fire plan's hold-short.** The harness lifts that
+  one as soon as the mortars are spent (scenarioBattle.ts), which silently
+  opened the gate too: every threshold from strict to trivial then measured
+  the same 8%, the giveaway that nothing was binding. The two holds are
+  held for different reasons and are now separate fields.
+
 ## What the browser's attacking computer is given, 2026-10-07
 
 Rules decision 88. Not a balance round — no rule moved, and the standard
