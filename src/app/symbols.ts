@@ -2,22 +2,28 @@ import ms from "milsymbol";
 import type { Echelon, Unit } from "../engine/index.js";
 import { fitSoldiers, fullStrength } from "../engine/index.js";
 
-/** APP-6/2525C echelon code (SIDC position 11). */
+/**
+ * APP-6/2525C echelon code (SIDC position 11).
+ *
+ * A `Record`, not a `switch` with a default: when the `team` echelon
+ * arrived with the fire teams (rules decision 89) the default quietly
+ * swallowed it and every fire team and machine gun team drew with **no
+ * echelon amplifier**, indistinguishable from an unsized force. The three
+ * other places that map an echelon are `Record`s and the compiler caught
+ * all of them; this one was the exception and so was the one that broke.
+ */
+const ECHELON_CODE: Readonly<Record<Echelon, string>> = {
+  /** APP-6: a team or crew — a fire team, a machine gun team. */
+  team: "A",
+  squad: "B",
+  platoon: "D",
+  company: "E",
+  battalion: "F",
+  brigade: "H",
+};
+
 function echelonCode(echelon: Echelon): string {
-  switch (echelon) {
-    case "squad":
-      return "B";
-    case "platoon":
-      return "D";
-    case "company":
-      return "E";
-    case "battalion":
-      return "F";
-    case "brigade":
-      return "H";
-    default:
-      return "-";
-  }
+  return ECHELON_CODE[echelon] ?? "-";
 }
 
 /**

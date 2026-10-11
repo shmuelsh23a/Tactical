@@ -363,7 +363,7 @@
     },
     {
       "id": "RED-A-MG1",
-      "name": "חולית מקלע 1/A",
+      "name": "חולית מקלע 1/א'",
       "side": "RED",
       "kind": "infantry",
       "mediumMg": true,
@@ -377,7 +377,7 @@
     },
     {
       "id": "RED-A-MG2",
-      "name": "חולית מקלע 2/A",
+      "name": "חולית מקלע 2/א'",
       "side": "RED",
       "kind": "infantry",
       "mediumMg": true,
@@ -442,7 +442,7 @@
     },
     {
       "id": "RED-B-MG1",
-      "name": "חולית מקלע 1/B",
+      "name": "חולית מקלע 1/ב'",
       "side": "RED",
       "kind": "infantry",
       "mediumMg": true,
@@ -454,7 +454,7 @@
     },
     {
       "id": "RED-B-MG2",
-      "name": "חולית מקלע 2/B",
+      "name": "חולית מקלע 2/ב'",
       "side": "RED",
       "kind": "infantry",
       "mediumMg": true,

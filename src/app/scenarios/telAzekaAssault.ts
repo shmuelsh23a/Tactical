@@ -90,11 +90,11 @@ export function buildTelAzekaAssaultScenario(seed = 1967): Scenario {
   reda3.baseCover = "full";
   reda3.front = 68;
   game.addUnit(reda3);
-  const redamg1 = makeMachineGunTeam("RED-A-MG1", "RED", { x: 590, y: 460 }, 3, "חולית מקלע 1/A");
+  const redamg1 = makeMachineGunTeam("RED-A-MG1", "RED", { x: 590, y: 460 }, 3, "חולית מקלע 1/א'");
   redamg1.baseCover = "full";
   redamg1.front = 83;
   game.addUnit(redamg1);
-  const redamg2 = makeMachineGunTeam("RED-A-MG2", "RED", { x: 450, y: 510 }, 3, "חולית מקלע 2/A");
+  const redamg2 = makeMachineGunTeam("RED-A-MG2", "RED", { x: 450, y: 510 }, 3, "חולית מקלע 2/א'");
   redamg2.baseCover = "full";
   redamg2.front = 65;
   game.addUnit(redamg2);

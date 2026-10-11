@@ -110,4 +110,15 @@ describe("a stale mark (rules decision 57)", () => {
     expect(buildSidc(u, true)[3]).toBe("A");
     expect(renderUnitSymbol(u, 30, true).dataUrl).not.toBe(renderUnitSymbol(u, 30).dataUrl);
   });
+
+  it("gives a fire team its own echelon amplifier", () => {
+    // APP-6 position 11 (index 10): A is a team or crew. Until the fire teams
+    // arrived (decision 89) this fell through a default and every team
+    // drew as an unsized force.
+    const team = makeInfantry("BLUE-1-1/t1", "BLUE", "team", { x: 0, y: 0 }, 4, "חוליה");
+    const squad = makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 0 }, 8, "כיתה");
+    expect(buildSidc(team)[10]).toBe("A");
+    expect(buildSidc(squad)[10]).toBe("B");
+    expect(buildSidc(team)).not.toBe(buildSidc(squad));
+  });
 });

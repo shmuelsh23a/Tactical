@@ -99,11 +99,11 @@ export function buildYokneamUrbanScenario(seed = 2027): Scenario {
   reda3.baseCover = "full";
   reda3.front = 262;
   game.addUnit(reda3);
-  const redamg1 = makeMachineGunTeam("RED-A-MG1", "RED", { x: 614, y: 546 }, 3, "חולית מקלע 1/A");
+  const redamg1 = makeMachineGunTeam("RED-A-MG1", "RED", { x: 614, y: 546 }, 3, "חולית מקלע 1/א'");
   redamg1.baseCover = "full";
   redamg1.front = 255;
   game.addUnit(redamg1);
-  const redamg2 = makeMachineGunTeam("RED-A-MG2", "RED", { x: 532, y: 494 }, 3, "חולית מקלע 2/A");
+  const redamg2 = makeMachineGunTeam("RED-A-MG2", "RED", { x: 532, y: 494 }, 3, "חולית מקלע 2/א'");
   redamg2.baseCover = "full";
   redamg2.front = 264;
   game.addUnit(redamg2);

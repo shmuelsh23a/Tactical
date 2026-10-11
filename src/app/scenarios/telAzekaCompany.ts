@@ -98,11 +98,11 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
   reda3.baseCover = "full";
   reda3.front = 68;
   game.addUnit(reda3);
-  const redamg1 = makeMachineGunTeam("RED-A-MG1", "RED", { x: 590, y: 460 }, 3, "חולית מקלע 1/A");
+  const redamg1 = makeMachineGunTeam("RED-A-MG1", "RED", { x: 590, y: 460 }, 3, "חולית מקלע 1/א'");
   redamg1.baseCover = "full";
   redamg1.front = 83;
   game.addUnit(redamg1);
-  const redamg2 = makeMachineGunTeam("RED-A-MG2", "RED", { x: 450, y: 510 }, 3, "חולית מקלע 2/A");
+  const redamg2 = makeMachineGunTeam("RED-A-MG2", "RED", { x: 450, y: 510 }, 3, "חולית מקלע 2/א'");
   redamg2.baseCover = "full";
   redamg2.front = 65;
   game.addUnit(redamg2);
@@ -113,8 +113,8 @@ export function buildTelAzekaCompanyScenario(seed = 1949): Scenario {
   game.addUnit(makeInfantry("RED-B-2", "RED", "squad", { x: 700, y: 250 }, 6, "מחלקה ב'/2"));
   // On the eastern face, watching the valley.
   game.addUnit(makeInfantry("RED-B-3", "RED", "squad", { x: 760, y: 430 }, 8, "מחלקה ב'/3"));
-  game.addUnit(makeMachineGunTeam("RED-B-MG1", "RED", { x: 640, y: 350 }, 3, "חולית מקלע 1/B"));
-  game.addUnit(makeMachineGunTeam("RED-B-MG2", "RED", { x: 740, y: 430 }, 3, "חולית מקלע 2/B"));
+  game.addUnit(makeMachineGunTeam("RED-B-MG1", "RED", { x: 640, y: 350 }, 3, "חולית מקלע 1/ב'"));
+  game.addUnit(makeMachineGunTeam("RED-B-MG2", "RED", { x: 740, y: 430 }, 3, "חולית מקלע 2/ב'"));
 
   // Emplaced in setup, which is the only time a charge is placed rather
   // than laid by a force during the battle (rules decision 16).

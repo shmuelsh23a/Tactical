@@ -406,7 +406,7 @@
     },
     {
       "id": "RED-A-MG1",
-      "name": "חולית מקלע 1/A",
+      "name": "חולית מקלע 1/א'",
       "side": "RED",
       "kind": "infantry",
       "mediumMg": true,
@@ -420,7 +420,7 @@
     },
     {
       "id": "RED-A-MG2",
-      "name": "חולית מקלע 2/A",
+      "name": "חולית מקלע 2/א'",
       "side": "RED",
       "kind": "infantry",
       "mediumMg": true,
