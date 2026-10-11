@@ -21,6 +21,106 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## Does suppression pay? Yes — and the attacker never fires, 2026-10-11
+
+The open question from the doctrine work, measured in isolation rather than
+through a battle: `npm run suppression-pays` (tools/suppression-pays.ts).
+Four parts, and the answer turns over between the third and the fourth.
+
+**1. Suppression pays.** A dug-in squad firing at eight men in the open,
+300 rounds a cell, research figures — what its fire costs the attacker:
+
+| Range | Unsuppressed | Suppressed | Pinned |
+|---|---|---|---|
+| 100 m | 0.493 men a turn | 0.350 (×0.71) | 0.257 (**×0.52**) |
+| 200 m | 0.313 | 0.257 (×0.82) | 0.077 (**×0.24**) |
+| 300 m | 0.140 | 0.113 (×0.81) | 0.057 (**×0.40**) |
+
+Pinning a defender cuts its fire to a quarter or a half. The bet every
+doctrinal drill makes is a good one.
+
+**2. The attacker can impose it.** Suppression halves every turn
+(`resolveMorale`, step 8), so a sustained input of X settles at about 2X,
+and pinned is 40. Suppression held on one dug-in squad, 60 seeds:
+
+| Base of fire | 200 m | 400 m | 600 m |
+|---|---|---|---|
+| 1 rifle squad | 21 suppressed | 20 suppressed | 0 |
+| 2 rifle squads | **44 pinned** | **41 pinned** | 0 |
+| 3 rifle squads | **65 pinned** | **62 pinned** | 0 |
+| 2 machine gun teams | **45 pinned** | **43 pinned** | **41 pinned** |
+
+Two squads pin. Machine guns pin from 600 m, where rifles cannot reach at
+all — decision 90 earning its place.
+
+**3. At equal numbers the firefight is symmetric**, which is as it should
+be: one side dug in, one in the open, both firing, and the attacker comes
+out only ×1.03–1.11 worse. (Worth knowing why it is so close:
+`SUPPRESSION.directFire` is a flat 10 for a burst "hit or not", and only
+the 5-a-hit part is reduced by cover, so **cover barely protects against
+suppression**.)
+
+**4. And the odds buy it decisively.** The same exchange at real odds:
+
+| Odds | Range | Attacker's suppression | Defender's |
+|---|---|---|---|
+| 1:1 | 200 m | 22 | 21 |
+| 2:1 | 200 m | 10 | **42 pinned** |
+| **3:1** | 200 m | **6 none** | **65 pinned** |
+| 3:1 | 400 m | 7 none | **62 pinned** |
+| 9:3 | 200 m | 6 none | **65 pinned** |
+
+At 3:1 the attacker pins the defence while staying unsuppressed itself.
+**Every part of the mechanism works.**
+
+### So why does the doctrinal attack lose?
+
+Because it never fires. Instrumented through a real `telAzekaAssault`
+battle, the doctrinal drill, counting BLUE's 14–15 live forces each turn:
+
+```
+t 8 lead 334m | BLUE firing  0/15 canSee 4 inRange 6 suppressed 0 | RED pinned 0
+t15 lead 349m | BLUE firing  0/14 canSee 3 inRange 5 suppressed 6 | RED pinned 4
+t19 lead 365m | BLUE firing  0/14 canSee 2 inRange 5 suppressed 5 | RED pinned 0
+```
+
+**Zero of fourteen forces fire, turn after turn**, and the lead force never
+closes — it sits at 350 m and drifts *back* to 365. The suppression RED
+does take is from mortars, and it decays. Meanwhile four to six BLUE forces
+are suppressed, by a defence whose machine guns now reach 800 m.
+
+The two halves of the cause, and neither is a rules defect:
+
+1. **The base of fire is sitting where it cannot see.** `waitIn:
+   "deadGround"` sends the waiting platoons to `nearestDeadGround`, which
+   optimises for concealment — and dead ground is *by definition* ground
+   with no line of sight to the objective. Three to six forces are in
+   range and cannot see; the drill never gives them a target. ATP 3-21.8
+   para **3-102** is explicit about what a base of fire needs: "positions
+   that afford the best possible cover and concealment, **a clear view, and
+   clear fields of fire**". We are choosing on the first half and ignoring
+   the second.
+2. **The only forces that can see are the scouts, and scouts hold their
+   fire** (decision 52). `CompanyOrders.scoutsFire` exists for exactly this
+   — the scouts give a base of fire once the company goes in — and the
+   scripted company never sets it.
+
+So the attacker is blind where it is armed and disarmed where it can see,
+and a defender with an 800 m gun shoots it to a standstill at 350 m, which
+is outside the attacker's own 300 m `attackFireRange`.
+
+**This is a drill fault, not a rules fault**, and it is the best news the
+doctrine work has produced: the three rules candidates recorded below are
+not needed to explain the result. The two fixes to try, in order:
+
+- Place a supporting platoon for **fields of fire** rather than
+  concealment. `bestVantages` in `deadGround.ts` already finds positions
+  that see a target — it is what the scouts' observation points use.
+- Set **`scoutsFire`** once the company is released, as the field it was
+  written for intends.
+
+Neither has been measured yet. Both are small.
+
 ## ⚠️ RE-BASED 2026-10-11: every table below this is on the old order of battle
 
 Rules decision 90 gave each platoon its **weapons squad** — two machine gun

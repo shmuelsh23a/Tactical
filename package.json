@@ -22,7 +22,8 @@
     "scenario-sim": "vite-node tools/scenario-sim.ts",
     "jev-sim": "vite-node tools/jev-sim.ts",
     "jev-probe": "vite-node tools/jev-probe.ts",
-    "scout-probe": "vite-node tools/scout-probe.ts"
+    "scout-probe": "vite-node tools/scout-probe.ts",
+    "suppression-pays": "vite-node tools/suppression-pays.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

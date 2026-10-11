@@ -41,6 +41,7 @@ npm run jev-probe -- --runs jev-runs            # re-ask Jev's recorded question
 npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20 --parallel 4  # a Claude model in Jev's place (needs ANTHROPIC_API_KEY and api.anthropic.com)
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
 PYTHONUTF8=1 py tools/doctrine.py --find "base-of-fire element" --doc 3-21.8   # search the doctrine corpus (see below)
+npm run suppression-pays  # does suppression pay, and can the attacker get it (not part of check)
 ```
 
 Node **24** — pinned in `.nvmrc`, declared in `engines`, and read from that same
