@@ -83,6 +83,15 @@ wrong — and that is a decision for the author, made on the numbers.
   a *decision*, which belongs to the commander (`company.ts`, or the
   player); an unasterisked one is the drill carrying it out.
 
+  **The gap list is done (2026-10-11):**
+  [doctrine-gap.md](doctrine-gap.md) — the two assault drills against
+  `drill.ts` and `company.ts`, eight gaps, and the structural finding that
+  Battle Drill 2 maps onto our squads while 2A cannot, because 2A is built
+  on fire teams and our atom is the squad. It ends in a three-step ladder
+  (the platoon drill on today's units; then a weapons squad; then fire
+  teams) with A recommended, because it is the only step that can be
+  measured against the existing tables instead of invalidating them.
+
   Read one whole before planning the work:
 
   ```bash
