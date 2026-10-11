@@ -9,6 +9,7 @@
  *
  * Needs TYPESAFE_API_KEY (Jev) and JEV_ANTHROPIC_API_KEY (Claude).
  */
+import "./env.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";

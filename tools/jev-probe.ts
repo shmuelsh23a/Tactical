@@ -12,6 +12,7 @@
  * A question is recovered by replaying its battle's answers up to it, so the
  * probe sees exactly the view Jev saw. Nothing here changes a battle.
  */
+import "./env.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";

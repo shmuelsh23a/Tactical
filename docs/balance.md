@@ -21,6 +21,93 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## The stale tables re-run: the attack is now too strong, 2026-10-11
+
+Everything measured before the line-of-sight targeting fix (`74a2dbc`) was
+taken through a drill that aimed at marks it could not see. Re-run on the
+corrected baseline, with the commands the entries themselves record.
+
+### The standard measurement (200 battles, `--recon 3 … --target-first squads`)
+
+| | Before | **Now** | Target |
+|---|---|---|---|
+| telAzekaAssault (3:1) | 41% | **56%** | 40–55% |
+| telAzekaAssault2 (2:1) | 33% | **40%** | 20–35% |
+| yokneamUrban | 18% | **14%** | — |
+| Attacker down, 3:1 | 11% | **8%** | — |
+| Defender down, 3:1 | 18% | **22%** | — |
+| **Explosives' share of losses** | 66% / 65% | **46% / 48%** | **60–80%** |
+
+At 200 battles a cell is worth ±7 points at 95%.
+
+**Two bands are now broken the other way, and they are the finding:**
+
+1. **The attack succeeds too often.** 3:1 is at 56% against a 40–55% band
+   — on the edge at ±7 — and 2:1 at **40%** against 20–35%, which is over
+   it. Independently, the reference plan *A calibrated* re-run at **200**
+   seeds gives **61%** (it was 57% at 100, so that was not noise). Three
+   months of work have been spent on an attack that could not reach its
+   target; it now overshoots.
+2. **Explosives have fallen out of their band**, 66% → **46%** against
+   60–80%. This is the author's own guiding principle — explosives cause
+   about **75%** of casualties in modern war (balance.md, *Fifth round*) —
+   and it is the clearest signal of what the targeting fix changed: with
+   direct fire actually working, rifles and machine guns do far more of
+   the killing, and the shells' share falls.
+
+The two are the same fact seen twice. The attacker's losses fell (11% →
+8%) while the defender's rose (18% → 22%): the firefight now goes the
+attacker's way, because a 3:1 attacker that can shoot wins a firefight at
+3:1 — which parts 1–4 of *Does suppression pay?* predicted exactly.
+
+### The urban test bed fell instead of rising
+
+`yokneamUrban` went **18% → 14%**, the only measurement to move against
+the attacker, and its explosives share is **97%** — almost untouched. A
+fight among houses is decided by what comes through a window, and the
+targeting fix buys an attacker little there: the lines of sight are short
+and already known. Decisions 75–78 rest on this scenario and are **not**
+invalidated by the fix; they are the one set that reads much as it did.
+Its "down while waiting" is now **9 men**, against 2 and 3 on the tel —
+worth a look on its own.
+
+### The raid is unmoved, and the hasty attack is still where history puts it
+
+| | Before | Now |
+|---|---|---|
+| `yokneamRaid` (decision 87) | 26% | **26%**, out of time 49% |
+| Hasty, one scout (`onescout,rush`), 3:1 | 29% | **22%** |
+| Hasty, one scout, 2:1 | 17% | **32%** |
+
+The raid is **unchanged to the point**, which makes sense for the same
+reason the urban test bed barely moved: it is fought inside houses at
+close range. Decision 87's 26% stands.
+
+History's hasty attack is **22% at 3:1 against history's 15–35%** — still
+inside, and now further under the calibrated plan (61%) than the ten
+points the fifty-seventh round recorded. The gap between a hasty attack
+and a prepared one has widened to about forty points where history has it
+at 20–35. **That is the third band now out**, and it points the same way
+as the first two: reconnaissance and preparation are worth more than they
+should be, because the firefight they set up is now decisive.
+
+### What this asks of the author
+
+The rules need tuning **down** for the attacker, not up — the opposite of
+what every entry above this one was reaching for. The three bands out are
+the 2:1 win rate, the explosives' share, and the hasty-to-deliberate gap,
+and the most likely single cause is that **direct fire is now too
+effective at the ranges a 3:1 attack can bring to bear**. The one lever
+that would move all three together is the small-arms table's application
+(never its figures — decision 7's rule), or the suppression a burst
+delivers regardless of cover, which parts 3 and 4 of *Does suppression
+pay?* already flagged as nearly cover-blind.
+
+**Not re-run, and still stale**: the AI commanders (Jev 15%/5%, Haiku
+5%/5%). The keys are in `.env` but no Node tool loads it, and running
+them costs real API spend — the author's call, not a thing to start
+unasked.
+
 ## The reference plans, re-run: the balance meets its targets, 2026-10-11
 
 The eight reference plans on the corrected baseline — the first full set

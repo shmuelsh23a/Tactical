@@ -55,6 +55,7 @@
  *   npm run jev-sim -- --claude claude-opus-5-5 --order --plan --memory --seed 1000 --n 20
  *   npm run jev-sim -- --jev --framing order --seed 1000 --n 20
  */
+import "./env.js";
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import { TypeSafeClient } from "@typesafe-ai/sdk";

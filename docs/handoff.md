@@ -1,8 +1,10 @@
 # Handoff — where the project stands
 
-**Current as of 2026-10-11: the balance meets decision 68's small-unit targets for the first time, and the doctrine is integrated.** The eight reference plans re-run on the corrected baseline (100 seeds a cell, both tel assaults) give a **3:1 median of 41.5%** against a target of 40–55%, and a **2:1 median of 29%** against 20–35% (balance.md, *The reference plans, re-run*). The previous set's 3:1 median was about 30%, under its band.
+**Current as of 2026-10-11: the stale tables are re-run, and the attack is now too strong.** With the line-of-sight targeting fix in, the standard measurement gives **3:1 at 56%** (band 40–55), **2:1 at 40%** (band 20–35), and **explosives at 46%** of losses against a 60–80% band — the author's own 75%-of-casualties principle. The reference plan *A calibrated* re-run at 200 seeds gives **61%**, so the earlier 57% was not noise. Three bands are out, all the same way: **the rules need tuning down for the attacker**, which is the opposite of what every entry before this was reaching for (balance.md, *The stale tables re-run*).
 
-What moved it was a bug, not a rule: **`pickTarget` never checked line of sight**, so a force aimed at the nearest enemy its *side* knew of whether or not *it* could see it, the engine refused the shot, and the drill discarded the refusal — zero of fourteen forces firing, turn after turn. Fixing it is worth 7 points to every drill. **Every pessimistic conclusion of 2026-10-09 to 11 was measuring that bug**, including "the rules make a prepared defence too strong"; they are withdrawn, and the three rules candidates they produced are not needed to explain anything. A base of fire placed for fields of fire (ATP 3-21.8 para 3-102) is worth another 5; `scoutsSupport` measured as nothing at all.
+Two tables barely moved and are **not** invalidated: `yokneamUrban` went 18% → 14% with a 97% explosives share, and the raid is **26%**, unchanged to the point. Both are fought at close range among houses, where the targeting fix buys an attacker little — so decisions 75–78 and 87 stand. History's hasty attack is **22% at 3:1**, still inside history's 15–35%, but now about forty points under the calibrated plan where history has the gap at 20–35.
+
+Before that, the balance had just come *into* its targets on the reference plans (3:1 median 41.5%, 2:1 29%); the 200-seed re-runs above supersede that reading. What moved everything was a bug, not a rule: **`pickTarget` never checked line of sight**, so a force aimed at the nearest enemy its *side* knew of whether or not *it* could see it, the engine refused the shot, and the drill discarded the refusal — zero of fourteen forces firing, turn after turn. **Every pessimistic conclusion of 2026-10-09 to 11 was measuring that bug**; they are withdrawn.
 
 **The doctrine work, in one paragraph.** The manuals arrived (`docs/Doctrine`, 426 publications; `tools/doctrine.py`) and `docs/doctrine-gap.md` is the gap list that drove everything after. Rung A: eight gaps, each a switch on `SquadDrill`/`CompanyPlan` citing its numbered battle-drill step, all off unless asked for, `DOCTRINAL_DRILL` turning them on. Decision 89: **a commander makes fire teams out of his own men** (`Game.detachTeam`), which is what made Battle Drill 2A playable and is the one doctrinal element that clearly pays — and which a **player can now do too** (`חלק לחוליות`). Decision 90: the **dismounted medium machine gun** at ATP 3-21.8's published 800 m, with every platoon given a weapons squad and **every scenario re-based** on it; the named ratios survive exactly because both sides gained them at the doctrinal rate. Suppression was measured and it pays (`npm run suppression-pays`): pinning cuts a defender's fire to a quarter, two squads impose it, and at 3:1 the attacker pins the defence while staying unsuppressed itself.
 
@@ -547,35 +549,31 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Re-run what the targeting fix invalidated.** Every table taken before
-`74a2dbc` was measured through a drill that aimed at marks it could not
-see, so the following are not merely stale, they may be wrong in
-direction: the **urban test bed** (decisions 75–78's whole basis), the
-**force-quality matrix** (decision 83, and the author has not ruled on its
-spread yet — ruling on bad numbers would be worse than not ruling), the
-**AI commanders** (Jev and Haiku at 15%/5%), the **raid** (decision 87's
-26%), and the **one-scout hasty attack** whose 29% was checked against
-history's 15–35%. The reference plans are already done and are the model
-for the rest: 100 seeds a cell, four jobs at a time, about twelve minutes
-for sixteen cells.
+**Tune the attacker down — and get the author's ruling first.** Three
+bands are out the same way (2:1 at 40% against 20–35, explosives at 46%
+against 60–80, the hasty-to-deliberate gap at about forty points against
+history's 20–35). The most likely single cause is that **direct fire is
+now too effective at the ranges a 3:1 attack brings to bear**, and the two
+levers that would move all three together are the small-arms table's
+*application* (never its figures — decision 7's rule) and the suppression
+a burst delivers, which parts 3 and 4 of *Does suppression pay?* already
+measured as nearly cover-blind: a flat 10 a burst, hit or not, so a man in
+a hole is suppressed almost as easily as one in the open.
 
-**Confirm A calibrated at 200 seeds.** 57% at 3:1 is just over the top of
-decision 68's band, on a cell worth ±10 points. It is the only number in
-the new table that might ask for tuning, and it runs unattended.
+Do not start tuning before the author rules. The numbers are his
+definition of balance and three of them are now out on the other side.
 
-**Then the open question the new table raises**: flanking and moving up now
-measure as *mistakes* (A + flank 40%, D flank 29%, A + move up 29%, B +
-move up 26%, against a plain calibrated attack's 57%). That is a change in
-what the game teaches, and it is worth knowing whether it is real before it
-hardens into received wisdom. A flank that costs turns and gains nothing
-may mean the ground is not rewarding dead ground and covered approaches as
-it should — which is a *rules* question, and the first one since the
-targeting fix that is not explained away by it.
+**Re-run the AI commanders** (Jev 15%/5%, Haiku 5%/5%). They were blocked
+by plumbing rather than keys — all three keys are in `.env` and no Node
+tool loaded it; `tools/env.ts` fixes that now. **It costs real API
+spend**, so it is the author's call to start, not a thing to kick off
+unasked.
 
-**Not before the above**: more doctrine. Rung A's switches are built but
-only measured as a set; the gap list's remaining items (the Ranger
-Handbook's other eight drills, the urban drill 07-SQD-D9509 for backlog 23)
-will measure badly or well for reasons the stale tables are hiding.
+**Still not re-run**: the force-quality matrix (decision 83). It is 18
+cells at 400 battles each and the author has been waiting on its spread
+since 2026-10-05 — but its numbers would now be read against a baseline
+that is itself out of band, so the tuning ruling above comes first or the
+matrix will be measured twice.
 
 ## Traps that cost real time
 
