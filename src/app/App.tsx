@@ -432,6 +432,25 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
 
   /** A scouting force walks, so the range ring must show the walk. */
   const scoutingSelected = selectedOwn?.scouting ?? false;
+  /** Fit men in the selected force, for the fire-team split (decision 89). */
+  const splitFrom = (selectedOwn?.soldiers ?? []).filter((m) => !m.neutralized).length;
+  /**
+   * Whether the split is a real choice.
+   *
+   * Infantry, in the movement phase, with enough men that both halves are
+   * a force rather than a man alone — and **not a fire team already**. A
+   * squad divides into two fire teams; a fire team is the bottom of the
+   * manoeuvre structure and does not divide again. The engine would allow
+   * it, and the result would be two forces of two, each finished by its
+   * first casualty: an option that can only ever cost, which is no choice
+   * at all.
+   */
+  const canSplit =
+    !!selectedOwn &&
+    selectedOwn.kind === "infantry" &&
+    selectedOwn.echelon !== "team" &&
+    enginePhase === "movement" &&
+    splitFrom >= 4;
   const effectiveGait: Gait = scoutingSelected ? "normal" : gait;
   // The engine's own budget: under fire, a rush at its slowest man's pace, tired men (decisions 69, 71, 82).
   const moveCap =
@@ -851,6 +870,38 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       onlyFor(viewingSide),
     );
     force();
+  }
+
+  /**
+   * **Split the selected force into two fire teams** (rules decision 89,
+   * the author: "a commander should be able to build fire teams out of his
+   * forces, including on the fly — then it becomes a force just as any
+   * other").
+   *
+   * Half the men, the second half, leave and become a force of their own
+   * where they stand. That is the doctrinal shape — a NATO squad is two
+   * fire teams — and which half is a leader's choice no drill
+   * standardises, so it is taken in order and stays the same every time.
+   *
+   * The engine holds the rules and this does not restate them: it refuses
+   * a split in the middle of a firefight, a force that is not infantry,
+   * and one that cannot spare the men, and the new team inherits whether
+   * its parent has already moved or fired so splitting never buys a turn.
+   * What the button adds is only that it cannot be *reached* outside the
+   * movement phase, which is where a player reorganises.
+   */
+  function handleSplit() {
+    if (!selectedOwn || enginePhase !== "movement") return;
+    const men = (selectedOwn.soldiers ?? []).filter((m) => !m.neutralized);
+    const going = men.slice(Math.ceil(men.length / 2)).map((m) => m.id);
+    try {
+      const team = game.detachTeam(selectedOwn.id, going, { name: `${selectedOwn.name} — חוליה ב'` });
+      pushLog(`${selectedOwn.name} התפצל: ${team.name} — ${going.length} לוחמים`, "info", onlyFor(viewingSide));
+      setSelectedId(team.id);
+      force();
+    } catch (err) {
+      pushLog(`${selectedOwn.name}: ${(err as Error).message}`, "info", onlyFor(viewingSide));
+    }
   }
 
   /**
@@ -1971,6 +2022,24 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                     title={`סיור: +${Math.round(SCOUTING.detectionBonus * 100)}% לגילוי, תנועה בהליכה בלבד.`}
                   >
                     {scoutingSelected ? "חזור מסיור" : "צא לסיור"}
+                  </button>
+
+                  {/* Fire teams (decision 89): a commander makes one out of
+                      his own men. Offered only where it is a real choice —
+                      infantry, in the movement phase, with men to spare. */}
+                  <button
+                    className="btn-ghost"
+                    disabled={!canSplit}
+                    onClick={handleSplit}
+                    title={
+                      canSplit
+                        ? `חלוקה לשתי חוליות: ${Math.floor(splitFrom / 2)} ו-${Math.ceil(splitFrom / 2)} לוחמים. החוליה החדשה יורשת תנועה וירי של הכוח — חלוקה אינה מקנה תור נוסף.`
+                        : selectedOwn?.echelon === "team"
+                          ? "חוליה אינה מתחלקת שוב — זו הרמה הנמוכה ביותר של תמרון"
+                          : "חלוקה לחוליות: רק כוח רגלים, בשלב התנועה, עם מספיק לוחמים"
+                    }
+                  >
+                    חלק לחוליות
                   </button>
 
                   {/* Where the force is told to look. An arc, not a bearing:
