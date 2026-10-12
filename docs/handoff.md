@@ -290,6 +290,13 @@ way. Two levers would move all three together:
    open** (balance.md, *Does suppression pay?*, part 3). That is the one
    figure in the chain that is plainly unrealistic, and it is ours.
 
+**2026-10-12: the review is done and a proposal is with him.**
+[small-arms-suppression.md](small-arms-suppression.md) has doctrine, the
+CDEC suppression experiments and a survey of other games: volume drives
+suppression and cover cuts it, more against rifles than machine guns.
+The proposal replaces the flat 10 with one scaled by the men firing, the
+weapon and the target's cover — lever 2 — and leaves the hit side alone.
+
 Nothing should be tuned before the author rules: these are *his*
 definition of balance, and three of them are now out on the side nobody
 was expecting.

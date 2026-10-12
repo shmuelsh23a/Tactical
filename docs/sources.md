@@ -20,6 +20,12 @@ See validation.md, *second pass*, for how that was done.
 | **ARES Special Report No. 3**, *Indirect Fire: A Technical Analysis of the Employment, Accuracy, and Effects of Indirect-fire Artillery Weapons* — Dullum, Fish, Jenzen-Jones et al., Armament Research Services, Jan. 2017, 93 pp. | armamentresearch.com/wp-content/uploads/2017/01/ARES-Special-Report-Indirect-Fire_web.pdf | Projectile and mortar specifications and lethal areas (Tables 1.1–1.5); 155 mm CEP by range (Table 3.1); error as a share of range (Table 3.3); adjust fire, suppression, time on target; fuzes and buildings; dud rates | In full, 2026-10-03 |
 | **GICHD**, *Explosive Weapon Effects – Final Report*, Geneva, Feb. 2017, 145 pp., ISBN 978-2-940369-61-4 | gichd.org/fileadmin/uploads/gichd/Publications/Explosive_weapon_effects_web.pdf | What a lethal area is; incapacitation by distance (Table 6); open against enclosed (Table 7); 155 mm injuries by distance (Table 8); explosive fill (Table 9); risk estimate distances (Table 10); Mk 82 bombs and guided variants; tank HE's "more limited lethal area" | Main chapters, 2026-10-03. Annexes C (mortars), D (tank guns) and E (Mk 82) were on characterisationexplosiveweapons.org, which no longer answers |
 | **FM 3-06.11**, *Combined Arms Operations in Urban Terrain*, ch. 7, US Army | globalsecurity.org/military/library/policy/army/fm/3-06-11/ch7.htm | Weapon effects on buildings: a tank HEAT round breaches a wall; a shaped charge through a window is wasted; M203 window accuracy; mortar and artillery against roofs; rubble as cover; 25% of HE glancing off hard surfaces | In full, 2026-10-03 |
+| *Fort Sill Fire Suppression Symposium Report*, 24–25 July 1979, ADA081134 — annex III-C summarises CDEC's SASE II (1976) and SUPEX (1977) | archive.org/details/DTIC_ADA081134 (OCR; apps.dtic.mil refuses automated fetches) | Rounds a minute on a 100 m front to suppress foxhole defenders 50% / 90% (Table II); burst interval matters, burst length does not; frontal-parapet foxholes less suppressed; men alone 43–115% more | Annex III-C read, 2026-10-12 |
+| Kubala & Warnick, *A Further Look at the Prediction of Weapons Effectiveness in Suppressive Fire*, ARI TR-79-A19, 1979, ADA071116 | archive.org/details/DTIC_ADA071116 | M60 probability of suppression by miss distance (p. 2-9); kinetic energy explains the weapons' differences | Read, 2026-10-12 |
+| Kushnick & Duffy, *Objective Relationships between Small Arms Fire Characteristics and Effectiveness of Suppressive Fire*, Litton-Mellonics for ARPA, 1972, AD0519874 | archive.org/details/DTIC_AD0519874 | Perceived danger by weapon, in foxholes and in the assault (pp. 3-18/19); first reactions to fire (p. 3-9) | Read, 2026-10-12 |
+| Mueller & Pietsch, *Human Factors in Field Experimentation: Design and Analysis of an Analytical Suppression Model*, NPS, 1978, ADA061417 | archive.org/details/DTIC_ADA061417 | Time down per HE round, SUPEX II (pp. 80–81) | Read, 2026-10-12 |
+| Hitchman, *Operational Requirements for an Infantry Hand Weapon*, ORO-T-160, 1952, AD0000346 | archive.org/details/DTIC_AD0000346 | Trials hit probability of aimed rifle fire by range (Table 1); engagement ranges | Read, 2026-10-12 |
+| Millikan, Wong & Grieger, MODSIM 2013 (DSTO), a suppression model like the UK CAEn's | mssanz.org.au/modsim2013/D1/millikan.pdf | +4 per near miss, ×0.1 prone or behind cover, −2 a second | Read, 2026-10-12 |
 | **FM 7-90**, *Tactical Employment of Mortars*, App. B, US Army | globalsecurity.org/military/library/policy/army/fm/7-90/Appb.htm | Suppression radii by mortar (B-7); standing against prone (B-5a); overhead cover | Read, 2026-10-03 |
 | USMC TBS, *Principles of Fire Support* (B2C2437) | trngcmd.marines.mil (PDF) | Rates of fire (M777A2 2 sustained, 5 maximum); estimated casualty radii (81 mm 35 m, 120 mm 45 m, 155 mm about 50 m) | Read |
 | Grau, *Russian-Manufactured Armored Vehicle Vulnerability in Urban Combat: The Chechnya Experience*, FMSO, 1997 | man.fas.org/dod-101/sys/land/row/rusav.htm | 3–6 lethal hits for each armoured vehicle destroyed at Grozny | Read |
@@ -129,9 +135,11 @@ gitignored, so it is fetched, not versioned.
 
 - DTIC was down for maintenance all of 2026-10-03:
   - ADA374995, *Heavy Artillery in MOUT* (rounds to bring a building down);
-  - ADA206606, Frame 1989, WWII suppression data;
+  - ADA206606, Frame 1989, WWII suppression data — read 2026-10-12: 54
+    British actions, all bombardment, judged "inadequate" for modelling suppression;
   - ADA182415, BRL tank-gun accuracy;
-  - DTIC 519874, Kushnick & Duffy (going to ground under fire).
+  - BRL Report 761, *A Study of the Variation of Weapon Effectiveness With
+    Foxhole Cover* (1954) — the one source for how much a hole cuts hits.
 - Rowland, *The Stress of Battle*, and Rowland 1987 and 1991 in *JORS*
   (combat degradation; the urban battle).
 - WO 291/946 (British WWII: morale under bombardment, open against
