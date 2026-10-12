@@ -48,6 +48,10 @@ export const ADJUSTMENT_RADIUS_M = 100;
 export const INDIRECT_ACCURACY: Readonly<Record<string, { firstM: number; capM: number }>> = {
   artillery: { firstM: 270, capM: 50 },
   mortar: { firstM: 100, capM: 25 },
+  // Rules decision 93: the 60 and 120 mm as the 81 mm (⚠️ ours; the 120 mm's
+  // 76–136 m unadjusted is what the mortar's 100 m was read from).
+  lightMortar: { firstM: 100, capM: 25 },
+  heavyMortar: { firstM: 100, capM: 25 },
 };
 
 /**
@@ -105,9 +109,11 @@ export const BURST_HEIGHT_M = 3;
  * otherwise, by weapon (rules decisions 34 and 36). The author's, 2026-09-23,
  * after the tenth round: **6 for artillery**, a 6-gun battery's single volley,
  * and **12 for a mortar**, four bombs a tube from a 3-tube section. Doctrine
- * asks more of mortars — "seldom less than five rounds for each mortar" (FM
- * 7-90) — and in balance 6 left a company's 2:1 attack at 20%, where 12 gives
- * it 47–56% (balance.md, tenth and eleventh rounds).
+ * asks more of mortars — "a light mortar section's FFE should seldom consist
+ * of any less than five rounds for each mortar, and often will require more"
+ * (FM 7-90, 1992, App. B, p. B-9) — and in balance 6 left a company's 2:1
+ * attack at 20%, where 12 gives it 47–56% (balance.md, tenth and eleventh
+ * rounds).
  */
 export const DEFAULT_ROUNDS_FOR_EFFECT: Readonly<Record<string, number>> = { artillery: 6, mortar: 12 };
 
@@ -126,7 +132,14 @@ export function defaultRoundsForEffect(weapon: string): number {
  * platoon battle. Who may *call* a weapon, not whether its guns are on the map
  * — that is decision 35.
  */
-export const FIRE_SUPPORT_MIN_ECHELON: Readonly<Record<string, Echelon>> = { mortar: "company", artillery: "battalion" };
+export const FIRE_SUPPORT_MIN_ECHELON: Readonly<Record<string, Echelon>> = {
+  mortar: "company",
+  artillery: "battalion",
+  // Rules decision 93: the company's 60 mm, and the battalion's 120 mm called
+  // by the company it gives priority of fires to (ATP 3-21.90 2-38).
+  lightMortar: "company",
+  heavyMortar: "company",
+};
 
 /**
  * Adjusting rounds before a mission fires for effect whatever the fall of

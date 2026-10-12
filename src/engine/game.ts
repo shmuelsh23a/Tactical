@@ -29,7 +29,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { ARES_AIRBURST, EXPLOSIVES, MORTAR_DOWN_CHECKED, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
-import { FIRE_UNIT_TUBES, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
+import { DOCTRINE_MORTARS, FIRE_UNIT_TUBES, explosiveEntry, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -202,6 +202,10 @@ type MarkEntry = RegisteredTarget;
 
 /** An indirect-fire weapon's key — its own, not one an object inherits ("constructor"). */
 const isIndirect = (weapon: string): boolean => Object.hasOwn(INDIRECT_ACCURACY, weapon);
+/** The mortars: the document's 81 mm and decision 93's 60 and 120 mm. */
+const MORTARS: ReadonlySet<string> = new Set(["mortar", "lightMortar", "heavyMortar"]);
+/** The most tubes an allotment's fire unit may name (decision 93): a battery's six. */
+const MAX_FIRE_UNIT_TUBES = 6;
 
 /**
  * An alternate position a side prepared in mission planning (rules decision
@@ -225,6 +229,12 @@ export interface FireAllotment {
   weapon: string;
   missions: number;
   roundsForEffect?: number;
+  /**
+   * The tubes of the fire unit that answers its missions (rules decision 93):
+   * a section's two, a platoon's four. Absent: `FIRE_UNIT_TUBES`, which keeps
+   * the 81 mm at decision 36's three for every recording made before it.
+   */
+  tubes?: number;
 }
 
 /** A fire mission called in (rules decision 34): adjusting, then fired for effect. */
@@ -962,7 +972,8 @@ export class Game {
     let table = shellVsMen(this.shellCover);
     // An air burst covers ×1.15 the impact's area, not ×1.28 (decision 80).
     if (this.checked === "ares") table = { ...table, airburst: { ...table.airburst, ...ARES_AIRBURST } };
-    if (!this.checked || weapon !== "mortar") return table;
+    // Every mortar's bomb, the 60 and 120 mm too (decision 93): B-5a is said of mortar fire.
+    if (!this.checked || !MORTARS.has(weapon)) return table;
     return { ...table, impact: { ...table.impact, down: MORTAR_DOWN_CHECKED } };
   }
 
@@ -1151,9 +1162,14 @@ export class Game {
           a.missions < 0 ||
           !Number.isInteger(rounds) ||
           rounds < 1 ||
-          rounds > MAX_ROUNDS_PER_MISSION
+          rounds > MAX_ROUNDS_PER_MISSION ||
+          (a.tubes !== undefined && (!Number.isInteger(a.tubes) || a.tubes < 1 || a.tubes > MAX_FIRE_UNIT_TUBES))
         ) {
           throw new Error(`fireSupport.${side}: cannot read ${JSON.stringify(a)} (one entry a weapon)`);
+        }
+        // The 60 and 120 mm are research figures only (decision 93).
+        if (DOCTRINE_MORTARS[a.weapon] && this.lethality !== "research") {
+          throw new Error(`fireSupport.${side}: ${a.weapon} is played on the research figures only`);
         }
         weapons.add(a.weapon);
         // Written in, so the recording carries the number it was played with
@@ -1809,7 +1825,8 @@ export class Game {
    */
   private volleysFor(side: Side, weapon: string, rounds: number): number[] {
     const rof = RATE_OF_FIRE[weapon];
-    const tubes = FIRE_UNIT_TUBES[weapon];
+    // The allotment's own fire unit (decision 93), else the weapon's.
+    const tubes = this.fireSupport[side]?.find((a) => a.weapon === weapon)?.tubes ?? FIRE_UNIT_TUBES[weapon];
     if (this.lethality !== "research" || !rof || !tubes) return [rounds];
     const key = `${side}:${weapon}`;
     const volleys: number[] = [];
@@ -1880,7 +1897,7 @@ export class Game {
     } = {},
   ): PendingFireMission {
     this.requirePhase("targeting");
-    const weapon = EXPLOSIVES[weaponKey];
+    const weapon = explosiveEntry(weaponKey);
     if (!weapon || weapon.delivery !== "indirectFire" || !isIndirect(weaponKey)) {
       throw new Error(`${weaponKey} is not an indirect-fire weapon`);
     }

@@ -51,6 +51,9 @@ export const STRUCTURE_DAMAGE: Readonly<Record<string, number>> = {
   artillery: 15,
   tankRound: 10,
   mortar: 4,
+  // Rules decision 93, ⚠️ ours: the 60 mm half the 81 mm's, the 120 mm twice.
+  lightMortar: 2,
+  heavyMortar: 8,
   rpgVsInfantry: 3,
   rpgVsArmor: 3,
 };
@@ -118,6 +121,10 @@ export const ROOF_PENETRATION: Readonly<Record<string, number>> = {
   // rooftops, even with a delay setting"; the 81 mm does "with a delay
   // setting" on light buildings. Superquick, rarer still: 2% (was 5%).
   mortar: 0.02,
+  // Rules decision 93: the 60 mm "cannot penetrate most rooftops" (FM
+  // 3-06.11); the 120 mm with delay "can penetrate deep" — superquick, ⚠️ ours.
+  lightMortar: 0,
+  heavyMortar: 0.1,
   artillery: 0.3,
 };
 

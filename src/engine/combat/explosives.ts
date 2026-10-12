@@ -2,10 +2,10 @@ import { Rng } from "../rng.js";
 import { roll } from "../dice.js";
 import { distance, lookupBand, type Point } from "../geometry.js";
 import type { Unit } from "../types.js";
-import { EXPLOSIVES } from "../data/explosives.js";
 import {
   CHECKED_VEHICLE_BANDS,
   RATE_OF_FIRE,
+  explosiveEntry,
   explosiveForChecked,
   freshness,
   type Checked,
@@ -95,8 +95,8 @@ export function resolveBlast(
     const plainHe = !weapon.usesArmorTable && !weapon.damageDiceVsArmor;
     const vehicleBands =
       checked && lethality === "research"
-        ? (CHECKED_VEHICLE_BANDS[weaponKey] ?? (plainHe ? weapon.blastBands : EXPLOSIVES[weaponKey]!.blastBands))
-        : EXPLOSIVES[weaponKey]!.blastBands;
+        ? (CHECKED_VEHICLE_BANDS[weaponKey] ?? (plainHe ? weapon.blastBands : explosiveEntry(weaponKey)!.blastBands))
+        : explosiveEntry(weaponKey)!.blastBands;
     const bands = unit.kind === "infantry" ? weapon.blastBands : vehicleBands;
     const band = lookupBand(bands, dist);
     if (!band) continue; // outside the lethal radius

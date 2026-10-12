@@ -1,8 +1,8 @@
 import { Rng } from "../rng.js";
 import type { Point } from "../geometry.js";
 import type { Side, Unit } from "../types.js";
-import { EXPLOSIVES, SHELL_VS_MEN, type Fuze, type ShellVsMen } from "../data/explosives.js";
-import type { Checked, Lethality } from "../data/lethality.js";
+import { SHELL_VS_MEN, type Fuze, type ShellVsMen } from "../data/explosives.js";
+import { explosiveEntry, type Checked, type Lethality } from "../data/lethality.js";
 import type { ArmourFigures } from "../data/armor.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
@@ -63,7 +63,7 @@ export function resolveIndirectFire(
     checked?: Checked;
   } = {},
 ): IndirectFireResult {
-  const weapon = EXPLOSIVES[weaponKey];
+  const weapon = explosiveEntry(weaponKey);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
   if (weapon.delivery !== "indirectFire") {
     throw new Error(`${weaponKey} is not an indirect-fire weapon`);

@@ -452,6 +452,10 @@ export const SUPPRESSION_REACH_81MM = { full: 30, half: 75 } as const;
  */
 export const CHECKED_SUPPRESSION_REACH: Readonly<Record<string, { full: number; half: number; little: number }>> = {
   mortar: { full: 30, half: 75, little: 125 },
+  // Rules decision 93: the same paragraph's 60 mm (FM 7-90 B-7; ATP 3-21.8,
+  // 2024, para B-42) and its proximity-fuzed heavy mortar, the 120 mm.
+  lightMortar: { full: 20, half: 35, little: 50 },
+  heavyMortar: { full: 65, half: 125, little: 200 },
   artillery: { full: 65, half: 125, little: 200 },
 };
 

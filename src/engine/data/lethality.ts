@@ -68,10 +68,15 @@ export const INCAPACITATED_PER_HIT = (10 - WOUND_SEVERITY.light) / 10;
  * - `grenade`: **79 m²**, a 5 m radius — the M67 hand grenade's published
  *   killing radius (its casualty radius is 15 m), taken on the same criterion
  *   as the 40 mm's 5 m so the two compare (rules decision 46).
+ * - `lightMortar` (60 mm) **150 m²** and `heavyMortar` (120 mm) **650 m²**:
+ *   ARES Special Report No. 3 (2017), Tables 1.1–1.2, the only figures there
+ *   are for them, so the same on every set (rules decision 93).
  */
 export const LETHAL_AREA_M2: Readonly<Record<string, number>> = {
   artillery: 971,
   mortar: 476,
+  lightMortar: 150,
+  heavyMortar: 650,
   tankRound: 390,
   rifleGrenade: 79,
   rpgVsInfantry: 154,
@@ -138,6 +143,11 @@ export interface RateOfFire {
 
 export const RATE_OF_FIRE: Readonly<Record<string, RateOfFire>> = {
   mortar: { low: 3, high: 30 },
+  // Rules decision 93. TC 3-22.91 Tables 3-4 and 3-6: the 60 mm 30 a minute
+  // at most (20 sustained), as the 81 mm; the 120 mm 16 at most, 4 sustained
+  // — its low rate the 81 mm's scaled by the sustained rates (⚠️ ours).
+  lightMortar: { low: 3, high: 30 },
+  heavyMortar: { low: 1, high: 16 },
   artillery: { low: 2, high: 5 }, // M777A2: sustained 2, maximum 5 a minute (USMC TBS, 2026-10-03; was 4)
   tankRound: { low: 1, high: 7 },
   rifleGrenade: { low: 1, high: 7 },
@@ -206,18 +216,28 @@ export const SMALL_ARMS_COMBAT_FACTOR = 1 / 3;
 /**
  * Rounds a mission fires for effect unless its allotment says otherwise, on
  * the research figures (rules decision 43): **24 for a mortar**, 8 bombs a
- * tube from a 3-tube section — doctrine asks "seldom less than five rounds for
- * each mortar" (FM 7-90) — and **6 for artillery**, as decision 36. The
- * document's figures (`DEFAULT_ROUNDS_FOR_EFFECT`: 12 and 6) play under
- * `document`.
+ * tube from a 3-tube section — "a light mortar section's FFE should seldom
+ * consist of any less than five rounds for each mortar, and often will
+ * require more" (FM 7-90, 1992, App. B, p. B-9) — and **6 for artillery**, as
+ * decision 36. The document's figures (`DEFAULT_ROUNDS_FOR_EFFECT`: 12 and 6)
+ * play under `document`. Rules decision 93: **10** for the 60 mm, that
+ * sentence's five a tube from its section's two (TC 3-22.91, Table 6-4,
+ * needs 8 to cover a squad's 100 m); **8** for the 120 mm, two a tube from a
+ * platoon of four.
  */
-export const RESEARCH_ROUNDS_FOR_EFFECT: Readonly<Record<string, number>> = { mortar: 24, artillery: 6 };
+export const RESEARCH_ROUNDS_FOR_EFFECT: Readonly<Record<string, number>> = { mortar: 24, artillery: 6, lightMortar: 10, heavyMortar: 8 };
 
 /**
- * Tubes in the fire unit that answers a mission (rules decision 36's own
- * reading): a **3-tube** mortar section and a **6-gun** battery.
+ * Tubes in the fire unit that answers a mission unless its allotment names
+ * them (`FireAllotment.tubes`): a **3-tube** mortar section (rules decision
+ * 36's reading, kept for every recording made before decision 93) and a
+ * **6-gun** battery. Doctrine's section is **two** tubes and its platoon
+ * four — "Each mortar section has two squads and each mortar platoon has two
+ * sections" (ATP 3-21.90, 2019, para 1-65) — so the 60 mm, a company's own
+ * section, is two (ATP 3-21.10, 2026, para 1-25), and the 120 mm, the
+ * battalion's platoon, four (ATP 3-21.90 1-71).
  */
-export const FIRE_UNIT_TUBES: Readonly<Record<string, number>> = { mortar: 3, artillery: 6 };
+export const FIRE_UNIT_TUBES: Readonly<Record<string, number>> = { mortar: 3, artillery: 6, lightMortar: 2, heavyMortar: 4 };
 
 /** The width of one derived band. */
 const BAND_STEP_M = 10;
@@ -268,9 +288,44 @@ export function blastBandsFromLethalArea(lethalAreaM2: number): RangeBand[] {
   return bands;
 }
 
+/**
+ * The mortars the rules document does not have (rules decision 93; the
+ * author, 2026-10-12, on docs/mortar-allotment.md): the **60 mm**, a rifle
+ * company's own (ATP 3-21.10, 2026, para 1-25), and the **120 mm**, the
+ * battalion's (ATP 3-21.90, 2019, para 1-71). The document's `mortar` is the
+ * 81 mm. Kept beside its table, not in it, and played on the research
+ * figures only: their blast is their lethal area's, under every set. A
+ * game on the document's figures has no such weapon.
+ */
+export const DOCTRINE_MORTARS: Readonly<Record<string, ExplosiveWeapon>> = {
+  lightMortar: {
+    ...EXPLOSIVES.mortar!,
+    key: "lightMortar",
+    name: "מרגמה 60",
+    blastBands: blastBandsFromLethalArea(LETHAL_AREA_M2.lightMortar!),
+    notes: "60 mm, a company's own (decision 93).",
+  },
+  heavyMortar: {
+    ...EXPLOSIVES.mortar!,
+    key: "heavyMortar",
+    name: "מרגמה 120",
+    blastBands: blastBandsFromLethalArea(LETHAL_AREA_M2.heavyMortar!),
+    notes: "120 mm, the battalion's (decision 93).",
+  },
+};
+
+/**
+ * An explosive weapon's entry by key: the document's table, then the
+ * mortars beside it (decision 93). What a key *is* — its delivery, its
+ * delay — not how hard it hits; {@link explosiveFor} gives that.
+ */
+export function explosiveEntry(key: string): ExplosiveWeapon | undefined {
+  return EXPLOSIVES[key] ?? DOCTRINE_MORTARS[key];
+}
+
 /** Each weapon's entry as the research figures change it. Built once. */
 const RESEARCH_EXPLOSIVES: Readonly<Record<string, ExplosiveWeapon>> = Object.fromEntries(
-  Object.entries(EXPLOSIVES).map(([key, w]) => {
+  Object.entries({ ...EXPLOSIVES, ...DOCTRINE_MORTARS }).map(([key, w]) => {
     const area = LETHAL_AREA_M2[key];
     return [
       key,
