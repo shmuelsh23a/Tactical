@@ -73,6 +73,7 @@ import {
   READINESS_SPOTTING,
   SMALL_ARMS_BANDS,
   SUSTAINED_MG_BANDS,
+  COVER_MODIFIERS,
   type CoverState,
 } from "./data/directFire.js";
 import { IntelLedger, type Contact, type ContactSource } from "./intel.js";
@@ -138,6 +139,7 @@ import {
   sideBroken,
   snapshotSoldiers,
   suppressionLevel,
+  volumeSuppression,
   roundSuppression,
   hasMorale,
   nerveUnderAssault,
@@ -673,6 +675,13 @@ export interface GameOptions {
    */
   keepStaleMarks?: boolean;
   /**
+   * A burst of small arms suppresses by its volume (rules decision 91): the
+   * men firing it, a machine gun's worth, and the target's cover
+   * (`VOLUME_SUPPRESSION`), in place of a flat `SUPPRESSION.directFire`. On
+   * by default; a recording made before it reads it as off.
+   */
+  suppressionByVolume?: boolean;
+  /**
    * The mission's deadline (rules decision 58, author 2026-09-29: "mission
    * will have time limit in briefing"): the attackers must take their
    * objective by the end of this turn, or the attack has failed. Absent: no
@@ -769,6 +778,8 @@ export class Game {
   readonly smokeCostsMission: boolean;
   /** Whether a mark stays where it was last seen (rules decision 57). */
   readonly keepStaleMarks: boolean;
+  /** Whether a burst suppresses by its volume (rules decision 91). Set it before the first turn only: a recording keeps one value. */
+  suppressionByVolume: boolean;
   /** The last turn the attackers have to win in (rules decision 58); undefined: none. */
   readonly timeLimit: number | undefined;
   /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
@@ -1089,6 +1100,7 @@ export class Game {
     this.commandSuccession = opts.commandSuccession ?? false;
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
+    this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.timeLimit = opts.timeLimit;
     if (this.timeLimit !== undefined && !(Number.isInteger(this.timeLimit) && this.timeLimit > 0)) {
       throw new Error(`timeLimit: cannot read ${JSON.stringify(opts.timeLimit)}`);
@@ -1231,6 +1243,7 @@ export class Game {
       ...(this.commandSuccession ? { commandSuccession: true } : {}),
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
+      ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
@@ -2637,6 +2650,9 @@ export class Game {
           })(),
               hasLineOfSight: true,
         });
+        // What it was behind against this fire, as the hit read it, for the
+        // suppression the burst puts on it (decision 91): before its cover is put back.
+        const suppressionCover = this.suppressionCover(actor, coverer.position, { position: !from });
         actor.cover = wasCover;
         actor.position = destination;
 
@@ -2644,7 +2660,7 @@ export class Game {
         if (unready) this.surprise(actor);
         delete coverer.covering;
         // Where it was caught, not where the bound ended (flanking reads it).
-        this.noteFire(actor, "direct", this.directSuppression(posture.weapon, result.hits), coverer.position, at, coverer.id);
+        this.noteFire(actor, "direct", this.burstSuppression(posture.weapon, coverer, result, suppressionCover), coverer.position, at, coverer.id);
         this.stress.credit(coverer, result.newCasualties, result.targetNeutralized && !wasNeutralized);
         // The contact is where the shot was taken, not where the bound ended:
         // the coverer saw the force it engaged, and by construction may not be
@@ -2903,7 +2919,8 @@ export class Game {
       if (unready) this.surprise(target);
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
-      this.noteFire(target, "direct", this.directSuppression(opts.weapon, fireResult.hits), attacker.position, undefined, attacker.id);
+      const cover = opts.cover ? COVER_MODIFIERS[opts.cover] : this.suppressionCover(target, attacker.position);
+      this.noteFire(target, "direct", this.burstSuppression(opts.weapon, attacker, fireResult, cover), attacker.position, undefined, attacker.id);
       this.stress.credit(attacker, fireResult.newCasualties, target.neutralized && !targetWasNeutralized);
     }
     this.journal({ kind: "fire", attackerId, targetId, opts });
@@ -3156,7 +3173,12 @@ export class Game {
       this.exchangeContact(attacker, defender);
       this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position, undefined, attacker.id);
       if (result.reply) {
-        this.noteFire(attacker, "direct", this.directSuppression("smallArms", result.reply.hits), defender.position, undefined, defender.id);
+        // The reply is the defender's rifles at the assault's range, whatever it
+        // carries, on men who have left their cover to go in: no cover, as its hits read none.
+        const reply = this.suppressionByVolume
+          ? volumeSuppression(false, result.reply.shooters, 0, result.reply.hits)
+          : this.directSuppression("smallArms", result.reply.hits);
+        this.noteFire(attacker, "direct", reply, defender.position, undefined, defender.id);
         this.stress.credit(defender, result.reply.casualties, attacker.neutralized);
       }
       this.stress.credit(attacker, result.defenderCasualties, defender.neutralized && !defenderWasNeutralized);
@@ -3718,6 +3740,31 @@ export class Game {
     if (kind === "explosive" && this.directHeBombards) note.bombards = true;
     this.stress.firedOn(target, note);
     addSuppression(target, suppression);
+  }
+
+  /**
+   * What a burst of small arms puts on its target: by its volume under
+   * rules decision 91, the flat burst before it. `cover` is the target's
+   * cover against this fire as the hit table reads it ({@link suppressionCover}).
+   */
+  private burstSuppression(weapon: WeaponClass, firer: Unit, result: { shooters: number; hits: number }, cover: number): number {
+    if (!this.suppressionByVolume) return this.directSuppression(weapon, result.hits);
+    // A machine gun is the coaxial, or a team's gun where it fired its own table (decision 90).
+    const machineGun = weapon === "sustainedMg" || (this.mediumMg && !!firer.mediumMg);
+    return volumeSuppression(machineGun, result.shooters, cover, result.hits);
+  }
+
+  /**
+   * A force's cover against fire from `from`, as a cover modifier (≤ 0):
+   * by the side the fire comes from under directional cover (decision 85),
+   * and as cover alone — firing from it costs hits (decision 23), not nerve.
+   */
+  private suppressionCover(target: Unit, from: Point, opts: { position?: boolean } = {}): number {
+    if (this.directionalCover) {
+      return directionalCoverModifier(target, from, this.terrain, this.lethality, { ...opts, ignoreFired: true });
+    }
+    // Its own cover, not `coverAgainst`'s: that drops a force that fired from full cover to partial.
+    return COVER_MODIFIERS[target.cover];
   }
 
   /** What a burst of direct fire suppresses: more for every hit, more again from a machine gun. */

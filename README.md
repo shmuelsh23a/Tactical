@@ -2833,6 +2833,37 @@ on the stated reasoning, still awaiting the author's word.
       attack — the attacker now loses a median 3 men before it goes in,
       where it lost none. The 3:1 attack is at 5–10% against decision 68's
       40–55%, and the gap has widened (balance.md, *RE-BASED*).
+91. ✅ **A burst of small arms suppresses by its volume** (2026-10-12, the
+    author: "yes to all three, implement and measure", on the review in
+    [docs/small-arms-suppression.md](docs/small-arms-suppression.md)).
+    - **Before**: a flat `SUPPRESSION.directFire` 10 a burst, hit or not,
+      whoever fired it, at whatever cover — so a two-man team suppressed
+      as much as a squad, and a hole spared a man about 12% of the
+      suppression against half the casualties.
+    - **Now** (`VOLUME_SUPPRESSION`): 1.7 a man firing — a machine gun,
+      a team's or a coaxial, counts as nine — × the target's cover factor,
+      + 5 a hit as before. Cover factor at full cover 0.5 against rifles,
+      0.75 against a machine gun; at partial 0.75 and 0.9; in a straight
+      line between, so a dug-in position's flank or rear (decision 85)
+      spares less. Firing from the hole costs hits (decision 23), not
+      this. An assault's reply (the trial variant) meets men who have
+      left their cover, so it reads none, as its hits do. Calibrated on CDEC's SASE II/SUPEX: one squad keeps about half
+      a line of foxholes down, three keep nine in ten.
+    - ⚠️ Ours: the four cover factors, `perRifleman`, and the machine gun's
+      nine. The data gives the volumes and the direction, not the ratios.
+    - **Unchanged on the author's ruling**: the hit side (no source gives a
+      hole's cut in hits — BRL Report 761 was not found), and the halving
+      every turn (the lifting-of-fires question).
+    - `GameOptions.suppressionByVolume`, on for a new game, off for a
+      recording made before it; `scenario-sim --flat-suppression` plays the
+      old rule.
+    - **Measured** (balance.md, *Suppression by volume*): exactly as
+      calibrated in isolation — one squad suppresses a dug-in squad, two
+      still only suppress, three pin — and **almost nothing in the
+      battles**: 3:1 56% → 54%, 2:1 40% → 36%, explosives 46% → 46%, all
+      within ±7. The defence is pinned in about 60% of its turns in
+      contact, under either rule, and two-thirds of that is the attacker's
+      shells alone; small arms alone pin it in 1–3%.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

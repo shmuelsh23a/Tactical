@@ -366,6 +366,46 @@ export const SUPPRESSION = {
 } as const;
 
 /**
+ * **Suppression by the volume of fire** (rules decision 91; the author,
+ * 2026-10-12). Under it a burst of small arms suppresses by how many men
+ * fire it, what they fire, and what the target is behind, in place of
+ * {@link SUPPRESSION.directFire}'s flat 10:
+ *
+ *   burst = perRifleman × (men firing, or `mgEquivalent` for a machine gun)
+ *           × the target's cover factor + {@link SUPPRESSION.perHit} × hits
+ *
+ * The evidence is in docs/small-arms-suppression.md. CDEC's SASE II and
+ * SUPEX (Fort Sill symposium, 1979, Table II): 68–128 rifle rounds a minute
+ * on a 100 m front kept half of a line of foxhole defenders down, 293–413
+ * kept nine in ten — about one squad's sustained fire, and about three
+ * squads'. `perRifleman` is set so one squad on a dug-in squad settles at
+ * about 20 (suppressed) and three at about 55 (pinned). ⚠️ Ours, from that.
+ *
+ * `mgEquivalent`: a machine gun — a medium machine gun team's, or a
+ * vehicle's coaxial — counts as nine riflemen: 100 rounds a minute
+ * sustained (ATP 3-21.8, Table C-8) against a squad's 108–135, the crew's
+ * own rifles not added. ⚠️ Ours, and conservative: per round a 7.62 mm is
+ * the more suppressive (Kubala & Warnick 1979).
+ *
+ * `cover`: the factor at partial and at full cover; between and below them
+ * it follows, in a straight line, the cover the fire actually meets (a
+ * flank, a rear: decision 85). Cover spares a man more against rifles than
+ * against a machine gun — men in foxholes rated the M16 at 10 and the M60
+ * at 66, men in the assault 37 and 82 (Kushnick & Duffy 1972) — and
+ * frontal-parapet foxholes were "significantly less suppressed" (SASE II).
+ * Firing from the hole costs a force hits (decision 23), not this.
+ * ⚠️ All four factors ours.
+ */
+export const VOLUME_SUPPRESSION = {
+  perRifleman: 1.7,
+  mgEquivalent: 9,
+  cover: {
+    rifle: { partial: 0.75, full: 0.5 },
+    machineGun: { partial: 0.9, full: 0.75 },
+  },
+} as const;
+
+/**
  * How far a shell or a bomb suppresses (rules decision 63, S1; author,
  * 2026-09-30). Suppression reaches further than death: FM 7-90 (App. B-7)
  * puts an 81 mm bomb's suppression as probable within **30 m** of the burst

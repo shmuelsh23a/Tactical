@@ -17,12 +17,15 @@ import {
   shooterAccuracy,
   sideBroken,
   snapshotSoldiers,
+  suppressionCoverFactor,
   suppressionLevel,
+  volumeSuppression,
   type MoraleContext,
 } from "./morale.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
 import { FLAT_GROUND } from "./terrain.js";
-import { ATTACKER_BREAK_BEFORE_66, EXPERIENCE, FORCE_QUALITY, HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, NERVE_IN_OPEN_BEFORE_66, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION } from "./data/morale.js";
+import { ATTACKER_BREAK_BEFORE_66, EXPERIENCE, FORCE_QUALITY, HEROIC, LEADER_BONUS, MOTIVATION_FLOOR, NERVE_BY_COVER, NERVE_IN_OPEN_BEFORE_66, PREPARED, RALLY, SIDE_BREAK_BY_POSTURE, SUPPRESSION, VOLUME_SUPPRESSION } from "./data/morale.js";
+import { COVER_MODIFIERS } from "./data/directFire.js";
 import { resolveDirectExplosive } from "./combat/explosives.js";
 
 /** An rng whose d100s are scripted, so a test says exactly how a roll went. */
@@ -284,16 +287,16 @@ describe("the live leader bonus", () => {
 });
 
 describe("suppression", () => {
-  function contact(seed = 5) {
-    const g = new Game({ seed, morale: true, enforceC2: false });
+  function contact(seed = 5, opts: { suppressionByVolume?: boolean } = {}) {
+    const g = new Game({ seed, morale: true, enforceC2: false, ...opts });
     const blue = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 8));
     g.beginTurn();
     return { g, blue, red };
   }
 
-  it("lands with the fire, and a machine gun suppresses harder", () => {
-    const { g, blue, red } = contact();
+  it("lands with the fire, and a machine gun suppresses harder (before decision 91: a flat burst)", () => {
+    const { g, blue, red } = contact(5, { suppressionByVolume: false });
     g.advanceToPhase("combat");
     const shot = g.fire(red.id, blue.id, { weapon: "smallArms" });
     expect(blue.suppression).toBe(SUPPRESSION.directFire + SUPPRESSION.perHit * shot.hits);
@@ -306,6 +309,69 @@ describe("suppression", () => {
     expect(blue.suppression! - before).toBe(
       Math.round((SUPPRESSION.directFire + SUPPRESSION.perHit * burst.hits) * SUPPRESSION.sustainedMgFactor),
     );
+  });
+
+  it("by its volume (decision 91): the men firing, in the open", () => {
+    const { g, blue, red } = contact();
+    expect(g.suppressionByVolume).toBe(true);
+    g.advanceToPhase("combat");
+    const shot = g.fire(red.id, blue.id, { weapon: "smallArms" });
+    expect(shot.shooters).toBe(8);
+    expect(blue.suppression).toBe(Math.round(VOLUME_SUPPRESSION.perRifleman * 8 + SUPPRESSION.perHit * shot.hits));
+  });
+
+  it("by its volume: two men suppress a quarter of what eight do, before their hits", () => {
+    const { g, blue, red } = contact();
+    g.advanceToPhase("combat");
+    const shot = g.fire(red.id, blue.id, { weapon: "smallArms", shooters: 2 });
+    expect(shot.shooters).toBe(2);
+    expect(blue.suppression).toBe(Math.round(VOLUME_SUPPRESSION.perRifleman * 2 + SUPPRESSION.perHit * shot.hits));
+  });
+
+  it("by its volume: a coaxial gun counts as a machine gun's worth of riflemen", () => {
+    const { g, blue } = contact();
+    g.advanceToPhase("combat");
+    const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 150 }));
+    const burst = g.fire(tank.id, blue.id, { weapon: "sustainedMg" });
+    expect(burst.fired).toBe(true);
+    expect(blue.suppression).toBe(Math.round(VOLUME_SUPPRESSION.perRifleman * VOLUME_SUPPRESSION.mgEquivalent + SUPPRESSION.perHit * burst.hits));
+  });
+
+  it("by its volume: full cover halves a rifle burst, and firing from it does not undo that", () => {
+    const { g, blue, red } = contact();
+    blue.cover = "full";
+    // It fired this turn: its hits are taken at decision 23's -30%, but its nerve is behind the parapet still.
+    blue.firedThisTurn = true;
+    g.advanceToPhase("combat");
+    const shot = g.fire(red.id, blue.id, { weapon: "smallArms" });
+    expect(blue.suppression).toBe(Math.round(VOLUME_SUPPRESSION.perRifleman * 8 * 0.5 + SUPPRESSION.perHit * shot.hits));
+  });
+
+  it("by its volume: cover spares a man more against rifles than against a machine gun, and follows the cover between", () => {
+    const { rifle, machineGun } = VOLUME_SUPPRESSION.cover;
+    expect(suppressionCoverFactor(false, 0)).toBe(1);
+    expect(suppressionCoverFactor(false, COVER_MODIFIERS.partial)).toBeCloseTo(rifle.partial);
+    expect(suppressionCoverFactor(false, COVER_MODIFIERS.full)).toBeCloseTo(rifle.full);
+    expect(suppressionCoverFactor(true, COVER_MODIFIERS.full)).toBeCloseTo(machineGun.full);
+    // A dug-in position's flank (decision 85: 0.6 of full cover) lies between partial and full.
+    const flank = suppressionCoverFactor(false, COVER_MODIFIERS.full * 0.6);
+    expect(flank).toBeLessThan(rifle.partial);
+    expect(flank).toBeGreaterThan(rifle.full);
+    for (const m of [0, -0.05, -0.1, -0.3, -0.5]) {
+      expect(suppressionCoverFactor(false, m)).toBeLessThanOrEqual(suppressionCoverFactor(true, m));
+    }
+    expect(volumeSuppression(false, 9, COVER_MODIFIERS.full, 0)).toBeCloseTo(VOLUME_SUPPRESSION.perRifleman * 9 * rifle.full);
+  });
+
+  it("by its volume: a recording made before it replays with the flat burst", () => {
+    const { g, blue, red } = contact();
+    g.advanceToPhase("combat");
+    g.fire(red.id, blue.id, { weapon: "smallArms" });
+    const rec = g.toRecording();
+    expect(rec.suppressionByVolume).toBe(true);
+    const { suppressionByVolume: _dropped, ...before } = rec;
+    expect(replayGame(before).suppressionByVolume).toBe(false);
+    expect(replayGame(rec).suppressionByVolume).toBe(true);
   });
 
   it("halves at the end of every turn", () => {

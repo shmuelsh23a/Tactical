@@ -241,6 +241,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
   if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
+  if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.timeLimit !== undefined && !(Number.isInteger(r.timeLimit) && (r.timeLimit as number) > 0)) throw malformed("timeLimit");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
@@ -457,6 +458,8 @@ export interface GameRecording {
   smokeCostsMission?: boolean;
   /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
   keepStaleMarks?: boolean;
+  /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
+  suppressionByVolume?: boolean;
   /** The mission's deadline, a turn (rules decision 58). Absent: none, as every battle before it. */
   timeLimit?: number;
   /**
@@ -648,6 +651,7 @@ export function replayWithOutcomes(
     ...(recording.commandSuccession ? { commandSuccession: true } : {}),
     smokeCostsMission: recording.smokeCostsMission ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
+    suppressionByVolume: recording.suppressionByVolume ?? false,
     ...(recording.timeLimit !== undefined ? { timeLimit: recording.timeLimit } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });

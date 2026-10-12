@@ -33,6 +33,7 @@ import {
   SUPPRESSION,
   SUPPRESSION_EFFECT,
   SUPPRESSION_REACH_81MM,
+  VOLUME_SUPPRESSION,
   CHECKED_SUPPRESSION_REACH,
   ASSAULT_NERVE,
   NERVE_BY_COVER,
@@ -44,6 +45,7 @@ import {
 } from "./data/morale.js";
 import { FORCE_FOOTPRINT_RADIUS_M, LETHAL_AREA_M2, lethalAreas, type Checked } from "./data/lethality.js";
 import { aimFactor } from "./traits.js";
+import { COVER_MODIFIERS } from "./data/directFire.js";
 
 /**
  * Morale (מורל) — rules decision 19.
@@ -256,6 +258,34 @@ export function addSuppression(target: Unit, amount: number): void {
     SUPPRESSION.max,
     (target.suppression ?? 0) + Math.round(amount * factor),
   );
+}
+
+/**
+ * A burst of small arms by its volume (rules decision 91,
+ * {@link VOLUME_SUPPRESSION}): `shooters` men firing it, or a machine gun,
+ * at a target whose cover against this fire is `coverModifier` (the hit
+ * table's, ≤ 0; full cover −0.5) — before the target's experience, which
+ * {@link addSuppression} applies.
+ */
+export function volumeSuppression(machineGun: boolean, shooters: number, coverModifier: number, hits: number): number {
+  const v = VOLUME_SUPPRESSION;
+  const volume = machineGun ? v.mgEquivalent : shooters;
+  return v.perRifleman * volume * suppressionCoverFactor(machineGun, coverModifier) + SUPPRESSION.perHit * hits;
+}
+
+/**
+ * The share of a burst's suppression that reaches a force behind cover
+ * worth `coverModifier` to the hit chance: 1 in the open, the table's at
+ * partial and full cover, and in a straight line between (rules decision 91).
+ */
+export function suppressionCoverFactor(machineGun: boolean, coverModifier: number): number {
+  const f = VOLUME_SUPPRESSION.cover[machineGun ? "machineGun" : "rifle"];
+  const m = Math.min(0, coverModifier);
+  const partial = COVER_MODIFIERS.partial;
+  const full = COVER_MODIFIERS.full;
+  if (m >= partial) return 1 + (m / partial) * (f.partial - 1);
+  if (m >= full) return f.partial + ((m - partial) / (full - partial)) * (f.full - f.partial);
+  return f.full;
 }
 
 // ---------------------------------------------------------------------------
