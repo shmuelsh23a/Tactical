@@ -21,6 +21,40 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## Artillery for the 2:1, 2026-10-12
+
+Rules decision 95: a company calls what its superior echelon allots it; the
+2:1 attacker is given a 155 mm battery (priority target first, lifted at
+300 m). Two allotments measured, the 3:1 untouched as the control (50%,
+exactly as before):
+
+| 2:1 | No artillery | 4 missions of 6 | **12 missions of 6** |
+|---|---|---|---|
+| Standard measurement, 200 battles | 25% | 21% | **31%** |
+| Reference plans, median, 100 a cell | 8% | 13.5% | **15.5%** |
+| A calibrated | 13% | 14% | 19% |
+| A + flank | 12% | 15% | 21% |
+| B deliberate | 7% | 7% | 12% |
+| E fire-heavy | 29% | 28% | 40% |
+| D flank | 8% | 3% | 16% |
+| A + move up | 8% | 10% | 15% |
+| B + move up | 6% | 14% | 3% |
+| C hasty | 7% | 13% | 9% |
+| Hasty, one scout | 17% | 24% | 27% |
+
+The twelve-mission column is after a review's fixes: the guns lift at 300 m
+*at landing* (400 m at the call for the squads that close; 300 m for a
+scout standing at its post), on every path, and the fire question tells
+the commander what the guns are. A first run with them lifted at 300 m at
+the call read 29% and 15.5%; the 4-mission column was taken before the
+fixes. The 3:1, given no guns, read 50% before and after.
+
+The author took twelve. The returns diminish: the plans that are built on
+fire or go round a flank reach the band; those that move up to an assault
+position or go in deliberately stay at 6–13% whatever fire they are given,
+so the reference median is now held by their structure at two to one, not
+by fire.
+
 ## The fire question by doctrine: the 2:1 reference plans stay low, 2026-10-12
 
 The author: "extend the fire question to doctrine". The typed questions

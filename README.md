@@ -1459,7 +1459,9 @@ on the stated reasoning, still awaiting the author's word.
       this decision carries no number, and replays at the 6 it was played
       with.
 37. ✅ **Who may call fire: mortars at company and above, artillery at
-    battalion and above** (author, 2026-09-23, after the eleventh round).
+    battalion and above** (author, 2026-09-23, after the eleventh round;
+    *amended by decision 95: a company calls what its superior echelon
+    allots it*).
     Below that a fight has no indirect fire, and no smoke from the tubes: a
     grenade's smoke is the squad's own. It is who may *call* a weapon, not
     whether its guns are on the map (decision 35).
@@ -2978,6 +2980,31 @@ on the stated reasoning, still awaiting the author's word.
       tel's attacker now (decision 93), never by default.
     - The company bands that stand: 3:1 40–55% and 2:1 20–35% (decision
       68), now 50% and 25%.
+95. ✅ **Artillery allotted to a company by its superior echelon** (the
+    author, 2026-10-12: "give the attacker more fire", after decision 94;
+    twelve missions his choice of the measured points).
+    - **Calling**: a company calls a weapon its superior echelon allots it,
+      though decision 37 puts that weapon at battalion and above. Below
+      company there is still no indirect fire at all (37), and a commander
+      must be in control to call (55).
+    - **`telAzekaAssault2`** (the 2:1): BLUE is allotted a **155 mm battery,
+      twelve missions of six**. As its heaviest tube the guns carry the
+      priority target's four held missions (decision 93), the rest free for
+      planned targets. The 3:1 is given none — it is in band without.
+    - **The guns' distances** (⚠️ ours): called for the priority target from
+      600 m, the mortars' 400 m plus two turns' walk, since they land two
+      turns after the call; lifted at **300 m**, the 155 mm's risk-estimate
+      distance for 0.1% incapacitation at a third of its range (TC 3-21.76,
+      2025, Table 3-3), held **at landing** — the call needs 400 m, two
+      turns' walk more — for the squads that close; a force that stands
+      still, a scout at its post, needs the 300 m. The mortars lift at 100 m
+      at the call, from the moving squads, as before. Every path holds it:
+      the scripted plans, the legacy plan, the fire question (a mark no tube
+      may fire on is not offered).
+    - **Measured** (balance.md, *Artillery for the 2:1*): standard 2:1 25% →
+      **31%**; reference plans' 2:1 median 8% → **15.5%** (4 missions:
+      21% and 13.5%). The fire and flank plans reach the band; the move-up
+      and deliberate plans stay at 6–13% whatever fire they are given.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
