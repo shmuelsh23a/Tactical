@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the attack is still too strong after decision 91 (suppression by volume), because the defence is pinned by shells, not rifles — indirect fire's suppression is the next ruling for the author.** Read *The stale tables re-run* on balance.md, then *What I would pick up next* below. Nothing is half-finished — the tree is clean, every test passes, and the last three days of work are measured and recorded.
+**Next, in one line: decisions 91 and 92 are in; the 3:1 is in band (45%), the 2:1 (36%) and the explosives share (49%) are not, and the defence is pinned by the sheer volume of the attacker's twelve mortar missions — whether that volume is right is the author's next call.**
 
 **Current as of 2026-10-11: the stale tables are re-run, and the attack is now too strong.** With the line-of-sight targeting fix in, the standard measurement gives **3:1 at 56%** (band 40–55), **2:1 at 40%** (band 20–35), and **explosives at 46%** of losses against a 60–80% band — the author's own 75%-of-casualties principle. The reference plan *A calibrated* re-run at 200 seeds gives **61%**, so the earlier 57% was not noise. Three bands are out, all the same way: **the rules need tuning down for the attacker**, which is the opposite of what every entry before this was reaching for (balance.md, *The stale tables re-run*).
 
@@ -289,6 +289,15 @@ way. Two levers would move all three together:
    so **a man in a hole is suppressed almost as easily as one in the
    open** (balance.md, *Does suppression pay?*, part 3). That is the one
    figure in the chain that is plainly unrealistic, and it is ours.
+
+**2026-10-12, end: decision 92 is in, and the 3:1 is in band.** A shell's
+suppression is a chance (FM 7-90's radii read as probabilities, combined
+per mission-turn, half of what is left added). 3:1 54% → **45%** (band
+40–55), 2:1 **36%** unmoved (band 20–35), explosives 49% (band 60–80).
+The defence is still pinned 53% of its contact turns by shells, because
+twelve missions keep them falling most turns — the attacker's *volume*
+of fire, not a rule. Next for the author: the 2:1 and the explosives
+share, and whether the scenarios' twelve missions a side are right.
 
 **2026-10-12, latest: the indirect-fire review is done and a proposal is
 with him** ([indirect-suppression.md](indirect-suppression.md)). FM 7-90's

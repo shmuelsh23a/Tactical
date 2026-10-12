@@ -21,6 +21,37 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## A shell's suppression as a chance: the 3:1 comes into band, 2026-10-12
+
+Rules decision 92 ([indirect-suppression.md](indirect-suppression.md)):
+FM 7-90's radii read as chances (0.9 / 0.5 / 0.1), a turn's rounds of a
+mission combined as 1 − Π(1 − p), adding 0.5 × P × (100 − S). Standard
+measurement, 200 battles, the same flags as below; the control is
+`--shell-amounts`, which reproduces decision 91's figures exactly:
+
+| | Amounts (control) | **Chances** | Target |
+|---|---|---|---|
+| telAzekaAssault (3:1) | 54% | **45%** | 40–55% |
+| telAzekaAssault2 (2:1) | 36% | **36%** | 20–35% |
+| yokneamUrban | 13% | **16%** | — |
+| Explosives' share, 3:1 / 2:1 | 46% / 49% | **49% / 52%** | 60–80% |
+| Attacker / defender down, 3:1 | 8% / 22% | **11% / 22%** | — |
+
+A cell is worth ±7. **The 3:1 moved by 9 and is in its band**; the 2:1
+did not move; urban and explosives moved within the noise.
+
+Instrumented as before (40 battles, a scratch script, deleted): the 3:1
+defence is pinned in **53%** of its contact turns (60% before), suppressed
+in 12% (7%); of its pins, 805 by shells alone, 475 by shells and small
+arms, 21 by small arms alone. **Shells still do the pinning, because
+they keep coming**: twelve missions of a turn or two each land on most
+turns of a 28-turn battle, and fire without end settles near 67 —
+pinned — under the new rule as it should ("they only last as long as the
+fires continue", ATP 3-21.90 1-12). What is left is the attacker's
+*volume* of fire — the twelve missions and how the scripted company spends
+them — not how a round counts. That is a scenario and fire-plan question,
+not a rules one.
+
 ## Suppression by volume: right on the evidence, and not the lever, 2026-10-12
 
 Rules decision 91 (the review: [small-arms-suppression.md](small-arms-suppression.md)).
