@@ -21,6 +21,72 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## The stale tables on the new baseline, 2026-10-12
+
+After decisions 91–94: the reference plans, the hasty attack and the raid,
+each with the command its own entry records.
+
+### The reference plans
+
+`npm run jev-sim -- --scenario <id> --rule <variant> --seed 1000 --n 100`,
+both tel assaults (A at 3:1 with `--n 200`), four jobs at a time.
+
+| Plan | `--rule` | 3:1 now (2026-10-11) | 2:1 now (2026-10-11) |
+|---|---|---|---|
+| A calibrated | *(none)* | **65%** (57; 61 at 200) | **12%** (43) |
+| A + flank | `flank` | 51% (40) | 16% (45) |
+| B deliberate | `basefire,bound,holdshort` | 45% (45) | 6% (23) |
+| E fire-heavy | `holdshort,prep` | **72%** (46) | 32% (38) |
+| D flank | `basefire,holdshort,flank` | 31% (29) | 8% (19) |
+| A + move up | `moveup` | 45% (29) | 14% (23) |
+| B + move up | `basefire,bound,holdshort,moveup` | 34% (26) | 11% (21) |
+| C hasty | `rush` | 41% (43) | 14% (35) |
+| **Median** | | **45%** (41.5) | **13%** (29) |
+| **Target (decision 68)** | | 40–55% | 20–35% |
+
+The 3:1 median is in its band; **the 2:1 median is under it** (13%),
+though the standard measurement's 2:1 is 25%. The difference is the
+attacker's fire. **These plans' attacker is the rule commander answering
+the typed fire question** (`askAttackerFire`): a mission on the best mark
+offered whenever its mortars are free — the old policy, now with a third
+of the rounds. The question set has no priority target and no reserve, so
+decision 93's attacker plan cannot be expressed through it; the defender
+here does fire by doctrine. So this table is "new allotment, old attacker
+fire" — the cell that gave 9% at 2:1 in the standard measurement too —
+and the 2:1's fall is that, not the rules. Bringing the fire question to
+doctrine (a priority target, rounds held back) is a change to what Jev is
+asked: a question for the author.
+
+E fire-heavy at 72% is over the 3:1 band: holding short under fire and
+firing most missions first is the plan the new rules reward most.
+
+### The hasty attack
+
+| | 3:1 now (2026-10-11) | 2:1 now (2026-10-11) | History |
+|---|---|---|---|
+| Hasty, one scout (`onescout,rush`) | **50%** (22) | **25%** (32) | 15–35% |
+
+At 3:1 the hasty attack is **over** history's 15–35%, and the gap to the
+deliberate attack (A calibrated, 65%) is **15 points** against history's
+20–35 — where it was about forty over. The same caveat: these are rule
+commanders through the questions.
+
+### The raid
+
+`npm run scenario-sim -- --n 100 --scenario yokneamRaid`: **3%** (26% on
+2026-10-11), **93% out of time**. Bisected: with decisions 91–93 all off
+(`--flat-suppression --shell-amounts --legacy-fire-plan`) it is 26%,
+exactly; the old fire plan alone gives 15%. Instrumented, 20 raids a
+side: the raiders fire no rifle shot in either case (they fight by
+grenade and assault inside the houses); on the old plan the militia
+company — unrationed — fired **82** mortar missions at the nearest raider,
+among its own houses, and the battles ended; on the doctrinal plan it
+fires **19**, and 18 of 20 run out the clock. **The raid's 26% came
+largely from the defender shelling the raid where it stood.** Without
+that, what is left is backlog 23 — men in houses do not see each other —
+which already left half the raids out of time before. Decision 87's 26%
+is not reproducible on the new baseline; the raid waits on backlog 23.
+
 ## The explosives' share is a battalion figure, 2026-10-12
 
 Rules decision 94 (the author): the 75% — decision 81's 60–80% band — is a

@@ -1,10 +1,10 @@
 # Handoff — where the project stands
 
-**Next, in one line: both attack bands are met (3:1 50%, 2:1 25%) after decisions 91–94; re-run the stale tables (raid, hasty attack) on the new baseline, and ask the author about urban's jump to 56%.**
+**Next, in one line: the attack bands are met in the standard measurement (3:1 50%, 2:1 25%); the re-run stale tables leave three questions for the author — the typed fire question can't express doctrine's fire plan (reference 2:1 median 13%), the raid's 26% was the old defender shelling its own houses (now 3%, waits on backlog 23), and urban's 56%.**
 
 **Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
 
-**What is still stale on the new baseline**: urban jumped to 56% on the new fire plans (decisions 75–78 were measured on the old ones — waiting on the author), and the raid, the hasty-attack table, the force-quality matrix and the AI commanders all predate decisions 91–93.
+**The stale tables, re-run** (balance.md, *The stale tables on the new baseline*): reference plans 3:1 median **45%** (in band), 2:1 median **13%** (under — their attacker fires through the typed question, which cannot hold a reserve, so it is the old attacker policy on the new allotment); hasty one-scout **50% / 25%** (3:1 over history's 15–35); the raid **3%**, 93% out of time — its 26% came from the old defender shelling the raid among its own houses, and it now waits on backlog 23. Still stale: the force-quality matrix and the AI commanders.
 
 Older entries, 2026-10-06 and back, are in
 [handoff-archive.md](handoff-archive.md), *Where the header used to
@@ -260,6 +260,13 @@ How the last two days went, round by round, is in
 
 ### Open (2026-10-12)
 
+- **The fire question for the reference plans and Jev** cannot express
+  decision 93's attacker plan (a priority target, rounds held back), so
+  those tables play the old attacker fire on the new allotment — the
+  reference 2:1 median is 13%. Extend the question set to doctrine?
+- **The raid at 3%**: its 26% was the old defender shelling the raid
+  among its own houses. It now waits on backlog 23 (sight inside houses);
+  is that the next thing to build, or is decision 87 re-ruled?
 - **Urban at 56%** (16% before decision 93's fire plans; its allotment did
   not change). The defender no longer fires a mission on every attacker it
   sees, which in the houses broke the attack in eleven turns. Do decisions
@@ -557,6 +564,13 @@ Measurements that cost real time and are already recorded:
   bites once a platoon is tasked `support` — which the scripted company
   does only under the suppression gate.
 
+- **The stale tables on the 91–94 baseline** (2026-10-12, about forty
+  minutes four jobs at a time): reference plans with `jev-sim --rule
+  <variant> --seed 1000 --n 100` (A at 3:1 `--n 200`); the raid with
+  `scenario-sim --n 100 --scenario yokneamRaid` — **not** the standard
+  measurement's company flags, which send three scouts out of a platoon
+  and give 0%. Results on balance.md. The raid's control at 9696f48
+  reproduces 26% exactly.
 - **The re-run of every stale table** (2026-10-11, about twenty minutes of
   runs, four jobs at a time). Standard measurement at **200** battles,
   `--recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from
@@ -574,12 +588,8 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Re-run the stale tables on the new baseline** — the raid
-(`yokneamRaid`, decision 87), the one-scout hasty attack against history's
-15–35% and its gap to the deliberate one (validation.md), and *A
-calibrated*. Each is a scenario-sim or balance run with the commands its
-own balance.md entry records; none needs a ruling, and the urban question
-above may well be answered by them.
+**The open questions above first** — the fire question's doctrine, the
+raid and backlog 23, urban. The stale tables were re-run on 2026-10-12.
 
 **Then the force-quality matrix and the AI commanders**, once the author
 says go — both are long or cost money.

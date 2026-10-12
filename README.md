@@ -2947,6 +2947,9 @@ on the stated reasoning, still awaiting the author's word.
       with only 60 mm — the defender on the tel — lays none from its tubes.
     - A browser battle saved before this resumes on the new fire plan, its
       six old targets read as FPF, priority target and plan.
+    - **The raid** (decision 87) falls to 3%: its 26% came largely from
+      the old defender's missions on the raid among its own houses
+      (balance.md, *The stale tables on the new baseline*).
     - **Measured** (balance.md, *Mortars by doctrine*): 3:1 **50%** and
       2:1 **25%**, both in band; explosives **23% / 25%**, far below 60–80
       (no artillery in the company battles); urban **56%** (16% before —
