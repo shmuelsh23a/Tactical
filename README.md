@@ -2951,6 +2951,24 @@ on the stated reasoning, still awaiting the author's word.
       2:1 **25%**, both in band; explosives **23% / 25%**, far below 60–80
       (no artillery in the company battles); urban **56%** (16% before —
       the fire plans, not the allotment, which it kept).
+94. ✅ **The 75% is a whole-war figure, for battalion and above** (the
+    author, 2026-10-12: "We will treat the 75% casualty rates as a whole
+    war figure that will mainly be relevant for battalion and above. When
+    we get there, we will add artillery and air support, which will be
+    available for company on a scenario by scenario basis according to
+    allotment by superior echelon.")
+    - **Amends decisions 43 and 81**: the explosives' share of losses
+      (60–80%) is **no longer a target for a company battle**. It is
+      reported, not tuned to. A company fights with the mortars doctrine
+      gives it (decision 93); the 23–25% it now measures is what that fire
+      does, not a fault.
+    - **It becomes a target at battalion and above**, when artillery and
+      air support arrive (backlog 10 and echelon scaling).
+    - **A company gets artillery or air only by scenario**, as its
+      superior echelon allots it — as the battalion's 81 mm reach the
+      tel's attacker now (decision 93), never by default.
+    - The company bands that stand: 3:1 40–55% and 2:1 20–35% (decision
+      68), now 50% and 25%.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

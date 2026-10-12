@@ -21,6 +21,15 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## The explosives' share is a battalion figure, 2026-10-12
+
+Rules decision 94 (the author): the 75% — decision 81's 60–80% band — is a
+whole-war figure, relevant at battalion and above, where artillery and air
+support will be added. **A company battle is no longer tuned to it**; its
+explosives' share is reported only. The company targets are the two
+attack bands, now both met (3:1 50%, 2:1 25%; below). Every "Target"
+column of 60–80% on this page before this entry is that older reading.
+
 ## Mortars by doctrine: both attacks in band, explosives far below, 2026-10-12
 
 Rules decision 93 ([mortar-allotment.md](mortar-allotment.md)): the 60 and
@@ -52,10 +61,9 @@ to 25% is mostly that.) Read across:
    the assault and put on planned targets beats fire spent on every
    sighting, and a defender that keeps its FPF and priority rounds for
    them fires less at the approach.
-3. **The explosives' share is now far from its band** (23–25% against
-   60–80%). The company battles have no artillery; the 75% is a whole-war
-   figure, and a main-effort company in a real attack has the brigade's
-   guns too. The next question for the author.
+3. **The explosives' share falls to 23–25%.** The company battles have no
+   artillery; the author has since ruled the 75% a battalion-and-above
+   figure (decision 94, above), so this is reported, not a miss.
 4. **The urban test bed changed with the plans, not the allotment** (16%
    on the old policy either way; 56% on the new). The defender no longer
    fires a mission on every attacker it sees, which in the houses broke

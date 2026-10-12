@@ -12,6 +12,150 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-10-11 to 12 — the attack out of band, and three reviews by doctrine
+
+Moved from the handoff on 2026-10-12, after decision 94, verbatim.
+
+### The header as it ran
+
+**Current as of 2026-10-11: the stale tables are re-run, and the attack is now too strong.** With the line-of-sight targeting fix in, the standard measurement gives **3:1 at 56%** (band 40–55), **2:1 at 40%** (band 20–35), and **explosives at 46%** of losses against a 60–80% band — the author's own 75%-of-casualties principle. The reference plan *A calibrated* re-run at 200 seeds gives **61%**, so the earlier 57% was not noise. Three bands are out, all the same way: **the rules need tuning down for the attacker**, which is the opposite of what every entry before this was reaching for (balance.md, *The stale tables re-run*).
+
+Two tables barely moved and are **not** invalidated: `yokneamUrban` went 18% → 14% with a 97% explosives share, and the raid is **26%**, unchanged to the point. Both are fought at close range among houses, where the targeting fix buys an attacker little — so decisions 75–78 and 87 stand. History's hasty attack is **22% at 3:1**, still inside history's 15–35%, but now about forty points under the calibrated plan where history has the gap at 20–35.
+
+Before that, the balance had just come *into* its targets on the reference plans (3:1 median 41.5%, 2:1 29%); the 200-seed re-runs above supersede that reading. What moved everything was a bug, not a rule: **`pickTarget` never checked line of sight**, so a force aimed at the nearest enemy its *side* knew of whether or not *it* could see it, the engine refused the shot, and the drill discarded the refusal — zero of fourteen forces firing, turn after turn. **Every pessimistic conclusion of 2026-10-09 to 11 was measuring that bug**; they are withdrawn.
+
+**The doctrine work, in one paragraph.** The manuals arrived (`docs/Doctrine`, 426 publications; `tools/doctrine.py`) and `docs/doctrine-gap.md` is the gap list that drove everything after. Rung A: eight gaps, each a switch on `SquadDrill`/`CompanyPlan` citing its numbered battle-drill step, all off unless asked for, `DOCTRINAL_DRILL` turning them on. Decision 89: **a commander makes fire teams out of his own men** (`Game.detachTeam`), which is what made Battle Drill 2A playable and is the one doctrinal element that clearly pays — and which a **player can now do too** (`חלק לחוליות`). Decision 90: the **dismounted medium machine gun** at ATP 3-21.8's published 800 m, with every platoon given a weapons squad and **every scenario re-based** on it; the named ratios survive exactly because both sides gained them at the doctrinal rate. Suppression was measured and it pays (`npm run suppression-pays`): pinning cuts a defender's fire to a quarter, two squads impose it, and at 3:1 the attacker pins the defence while staying unsuppressed itself.
+
+**Stale, and needing a re-run on the corrected baseline**: the urban test bed, the force-quality matrix, the AI commanders, the raid, and the one-scout hasty attack whose 29% was checked against history's 15–35%. All predate the targeting fix. Before that, 2026-10-09:Before that, 2026-10-09: the doctrine manuals have arrived, and **backlog 21 is unblocked.** `docs/Doctrine` holds 426 US Army publications and 77,597 pages, parsed and chunked, searched with `tools/doctrine.py` — text search in about a second, or `--semantic` with the author's `VOYAGE_API_KEY` in `.env` (AGENTS.md, *The doctrine corpus is the authority on drills*, has the traps; provenance in sources.md; the brief, with the drill-by-drill table, in doctrine-handoff.md). Three things the reading settled. **The battle drills are in TC 3-21.76 (Ranger Handbook, 2025) chapter 8, pp. 169–203** — all six ATP 3-21.8 names and four more, in the official task-step format; ATP 3-21.8's own Appendix E merely names them and points at the Army Training Network. An **asterisk in those steps marks a leader performance step**, which is the game's layer split already drawn for us: asterisked is a decision (the commander's, or the player's), unasterisked is the drill executing. And **ATP 3-21.8 (2024) para 3-102** settles the base of fire — the platoon leader designates a general location, the element leader selects the exact one, so the general location is a `CompanyOrders` field and the exact position is the drill's. On the search itself: `--semantic` works but ranks loosely, for a structural reason recorded under *Do not re-derive* — use it to learn what doctrine calls a thing, then quote a literal hit. The chunk index and its vector cache are gitignored (530 MB and 436 MB); the manifest and documents.csv beside them are tracked, so the repo still records which corpus a finding came from. Before that, 2026-10-07: the computer plays the attacker (README decision 88): the picker's third choice, *מול המחשב (אתה המגן)* (`?vs=attacker`) — the player holds and the scripted company comes on against him, briefed on a position spoilt by an observer's error as the harness's attacker is. It is given a competent plan, not the harness's bare defaults: those fire on the plan from turn 1 with nobody looking, walk into their own danger-close rounds and break without the defender firing a shot (driven: the attack broke on turn 16 against a player who gave no order; measured at 0% wins). With two scouts on vantage points, the guns held for a mark sure to 40 m and smoke on the crossing, it is the harness's 10% attacker; driven in the browser it took the position on turn 29, and a battle saved mid-attack and reloaded went on to the same turn-29 result. The attacker's fire plan, its fire calls and the pre-battle estimate now live with the defender's in `app/computerSide.ts` and `app/planning.ts`, imported back by `sim/`; both standard measurements are byte-identical across the move.
+
+
+### The blocking section, and the day's notes under it
+
+### The one that blocks work (2026-10-11)
+
+**Three balance numbers are out of band, all on the attacker's side, and
+the next step is a ruling rather than code.**
+
+| | Measured | Target | Source of the target |
+|---|---|---|---|
+| 2:1 attack | **40%** | 20–35% | decision 68 |
+| Explosives' share of losses | **46%** | 60–80% | the author's 75%-of-casualties principle |
+| Hasty vs deliberate gap | **~40 points** | 20–35 | validation.md, history |
+| *(3:1 attack)* | *56%* | *40–55%* | *on the edge at ±7* |
+
+The likeliest single cause is that **direct fire is now too effective at
+the ranges a 3:1 attack brings to bear** — the targeting fix made every
+force shoot at what it can see, and the firefight now goes the attacker's
+way. Two levers would move all three together:
+
+1. **The small-arms table's *application*** — never its figures, which are
+   transcribed (decision 7's rule: change how a value is applied, in
+   `engine/combat/`, not the value).
+2. **The suppression a burst delivers**, which is `SUPPRESSION.directFire
+   = 10` flat, "hit or not", with only the 5-a-hit part reduced by cover —
+   so **a man in a hole is suppressed almost as easily as one in the
+   open** (balance.md, *Does suppression pay?*, part 3). That is the one
+   figure in the chain that is plainly unrealistic, and it is ours.
+
+**2026-10-12, last: decision 93 is in — mortars by doctrine.** 3:1 **50%**
+and 2:1 **25%**, both in band; explosives **23–25%**, far below 60–80;
+urban **56%** (was 16%; the fire plans moved it, not the allotment). The
+company battles have no artillery at all, the likeliest reason explosives
+are so far off — for the author: does a main-effort company get the
+brigade's guns? And do decisions 75–78 want re-reading on the new urban
+figure? (balance.md, *Mortars by doctrine*). A browser battle saved
+before 93 resumes on the new fire plan.
+
+**2026-10-12, after 92: the mortar allotment review is with him**
+([mortar-allotment.md](mortar-allotment.md)). Doctrine: a rifle company owns
+two 60 mm, the battalion's 81/120 mm come by priority of fires, a section is
+two tubes, three to five targets, one priority target, one FPF, rounds set
+aside. The game gives each side a three-tube 81 mm section and 288 bombs,
+spent on any sighting. Proposed: the 60 and 120 mm, two-tube sections,
+ammunition in rounds, and doctrinal fire plans for both scripted sides.
+Ruled and built as decision 93 (below). The "seldom … five rounds for
+each mortar" quote, first reported as not in FM 7-90, *is* in it (App. B,
+p. B-9, worded "should seldom consist of any less than five rounds"); it
+stays, exactly quoted.
+
+**2026-10-12, end: decision 92 is in, and the 3:1 is in band.** A shell's
+suppression is a chance (FM 7-90's radii read as probabilities, combined
+per mission-turn, half of what is left added). 3:1 54% → **45%** (band
+40–55), 2:1 **36%** unmoved (band 20–35), explosives 49% (band 60–80).
+The defence is still pinned 53% of its contact turns by shells, because
+twelve missions keep them falling most turns — the attacker's *volume*
+of fire, not a rule. Next for the author: the 2:1 and the explosives
+share, and whether the scenarios' twelve missions a side are right.
+
+**2026-10-12, latest: the indirect-fire review is done and a proposal is
+with him** ([indirect-suppression.md](indirect-suppression.md)). FM 7-90's
+radii are *probabilities* of suppression and the game adds them as
+amounts, so one mission saturates a force at 100. Proposed: combine a
+turn's rounds as 1 − Π(1 − p), add half of what is left; halving, radii
+and the roof unchanged. Waiting on his ruling.
+
+**2026-10-12, later: decision 91 is in, and it is not the lever.** The
+author ruled yes to the proposal, the hit side left alone, and the halving
+kept. Measured (balance.md, *Suppression by volume*): 3:1 56% → 54%, 2:1
+40% → 36%, explosives unmoved — all noise. Instrumented, the defence is
+pinned in 60% of its contact turns and **two-thirds of that is the
+attacker's shells alone**; small arms alone pin it 1–3% of the time. The
+next lever is indirect fire's suppression (B-36: it lessens as fire
+continues) — **a ruling for the author before any code**.
+
+**2026-10-12: the review is done and a proposal is with him.**
+[small-arms-suppression.md](small-arms-suppression.md) has doctrine, the
+CDEC suppression experiments and a survey of other games: volume drives
+suppression and cover cuts it, more against rifles than machine guns.
+The proposal replaces the flat 10 with one scaled by the men firing, the
+weapon and the target's cover — lever 2 — and leaves the hit side alone.
+
+Nothing should be tuned before the author rules: these are *his*
+definition of balance, and three of them are now out on the side nobody
+was expecting.
+
+**Two smaller ones, both cheap to answer:**
+
+- **Running the AI commanders costs real API spend.** They are no longer
+  blocked (`tools/env.ts` lets the Node tools read `.env`, and all three
+  keys are set), but starting them is his call.
+- **The force-quality matrix** (decision 83) has been waiting on his view
+  of its spread since 2026-10-05. It is deliberately *not* re-run: 18
+  cells at 400 battles each, and reading them against a baseline that is
+  itself out of band would mean measuring it twice. The tuning ruling
+  comes first.
+
+
+### What I would have picked up next
+
+
+**Tune the attacker down — and get the author's ruling first.** Three
+bands are out the same way (2:1 at 40% against 20–35, explosives at 46%
+against 60–80, the hasty-to-deliberate gap at about forty points against
+history's 20–35). The most likely single cause is that **direct fire is
+now too effective at the ranges a 3:1 attack brings to bear**, and the two
+levers that would move all three together are the small-arms table's
+*application* (never its figures — decision 7's rule) and the suppression
+a burst delivers, which parts 3 and 4 of *Does suppression pay?* already
+measured as nearly cover-blind: a flat 10 a burst, hit or not, so a man in
+a hole is suppressed almost as easily as one in the open.
+
+Do not start tuning before the author rules. The numbers are his
+definition of balance and three of them are now out on the other side.
+
+**Re-run the AI commanders** (Jev 15%/5%, Haiku 5%/5%). They were blocked
+by plumbing rather than keys — all three keys are in `.env` and no Node
+tool loaded it; `tools/env.ts` fixes that now. **It costs real API
+spend**, so it is the author's call to start, not a thing to kick off
+unasked.
+
+**Still not re-run**: the force-quality matrix (decision 83). It is 18
+cells at 400 battles each and the author has been waiting on its spread
+since 2026-10-05 — but its numbers would now be read against a baseline
+that is itself out of band, so the tuning ruling above comes first or the
+matrix will be measured twice.
+
+
 ## Where the header used to run (to 2026-10-06)
 
 The handoff's opening paragraph grew into a chain of fifteen "before that"
