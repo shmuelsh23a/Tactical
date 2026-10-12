@@ -99,6 +99,8 @@ export interface ScenarioBattleOptions {
   attackerBreakpoint?: number;
   /** Suppression by volume (`GameOptions.suppressionByVolume`, rules decision 91), set before the first turn. Absent: the game's own. */
   suppressionByVolume?: boolean;
+  /** A shell's suppression as a chance (`GameOptions.suppressionByChance`, rules decision 92), set before the first turn. Absent: the game's own. */
+  suppressionByChance?: boolean;
   /**
    * A side's force quality (rules decision 83), for every force of it that
    * carries morale; a side not named keeps the scenario's. Set after the
@@ -210,6 +212,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
   if (opts.attackerBreakpoint !== undefined) g.attackerBreakpoint = opts.attackerBreakpoint;
   if (opts.suppressionByVolume !== undefined) g.suppressionByVolume = opts.suppressionByVolume;
+  if (opts.suppressionByChance !== undefined) g.suppressionByChance = opts.suppressionByChance;
   if (opts.quality) dressQuality(g, opts.quality);
   if (opts.fireSupport === false) for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
   const attacker: Side = g.attackers[0] ?? "BLUE";

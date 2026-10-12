@@ -2864,6 +2864,46 @@ on the stated reasoning, still awaiting the author's word.
       within ±7. The defence is pinned in about 60% of its turns in
       contact, under either rule, and two-thirds of that is the attacker's
       shells alone; small arms alone pin it in 1–3%.
+92. ✅ **A shell's suppression is a chance, not an amount** (2026-10-12,
+    the author: "yes to all three, implement and measure", on the review
+    in [docs/indirect-suppression.md](docs/indirect-suppression.md)).
+    - **Before**: every round near a force added 25 / 12.5 / 6.25 by
+      FM 7-90's radii, the first or the twentieth alike, so one 24-bomb
+      mission put a force at the cap of 100 — two turns pinned and a third
+      suppressed for every mission.
+    - **The reading**: FM 7-90 B-7 states those radii as *probabilities* —
+      "probably" within 30 m, "a 50 percent chance" within 75 m,
+      "little" beyond 125 m.
+    - **Now** (`SUPPRESSION_CHANCE`): each round a chance of 0.9 / 0.5 /
+      0.1 by band (1 inside its blast); a turn's rounds of one mission
+      combine as P = 1 − Π(1 − p); the force takes 0.5 × P × (100 − its
+      suppression). One sure mission on a fresh force gives 50 — pinned
+      that turn, suppressed the next, clear the third, as British WWII
+      OR's 3–5 minutes say; one bomb within 30 m pins; fire without end
+      settles near 67. Every round still counts as shelling for the nerve
+      and the fire log.
+    - ⚠️ Ours: the 0.5 share, and "little" read as 0.1.
+    - **Direct HE fired as a shell stays on decision 75**: one round in its
+      own fire action, weighted as a direct-fire round, with no 24-round sum
+      to saturate. The same FM 7-90 bands are read as chances for shells and
+      as scaled amounts for direct HE, on purpose — change it only on a ruling.
+    - The chances combine **per mission**: two missions on one force in a
+      turn add 50 + 25. With fire assigned as missions (every scenario) the
+      second costs a mission, which is the tradeoff; a sandbox side with
+      unlimited fire could split it into one-round calls and saturate a
+      force again, as it always could.
+    - **Unchanged on the author's ruling**: the radii, the roof's half,
+      the halving every turn; no factor for an open hole (SUPEX IIIA found
+      none for the 81 mm) and none for a burst behind a force.
+    - `GameOptions.suppressionByChance`, on for a new game, off for a
+      recording made before it; `scenario-sim --shell-amounts` plays the
+      old rule.
+    - **Measured** (balance.md, *A shell's suppression as a chance*): 3:1
+      **54% → 45%**, into its 40–55% band, the attacker's losses 8% → 11%;
+      2:1 **36%, unmoved**, still just over 20–35%; explosives 46% → 49%;
+      urban 13% → 16%. The defence is still pinned in about 53% of its
+      contact turns, by shells: twelve missions keep fire on it most
+      turns, and continuous fire still pins — as doctrine says it should.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

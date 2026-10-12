@@ -140,6 +140,8 @@ import {
   snapshotSoldiers,
   suppressionLevel,
   volumeSuppression,
+  roundSuppressionChance,
+  shellingSuppression,
   roundSuppression,
   hasMorale,
   nerveUnderAssault,
@@ -151,7 +153,7 @@ import {
 } from "./morale.js";
 import { firingOrder, rushFactor, tracePace, updateFatigue } from "./traits.js";
 import { BEST_VISUAL_FIX_SIGMA_M, LOCATION_ERROR, UAV_LOCATION_ERROR_M, locationSigma } from "./data/locationError.js";
-import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION } from "./data/morale.js";
+import { HEADS_DOWN, ROOF_SUPPRESSION_FACTOR, SUPPRESSION, SUPPRESSION_CHANCE } from "./data/morale.js";
 import { type RuleVariants } from "./data/variants.js";
 import { LEADER_REACH_M, NERVE_BY_COVER, PREPARED, QUALITY_BREAK_SHIFT, QUALITY_GAP_EXPLOSIVES, SIDE_BREAK_BY_POSTURE } from "./data/morale.js";
 import { ASSAULT } from "./data/casualties.js";
@@ -682,6 +684,13 @@ export interface GameOptions {
    */
   suppressionByVolume?: boolean;
   /**
+   * A shell's suppression is a chance (rules decision 92): a turn's rounds of
+   * a mission combine as P = 1 − Π(1 − p) by FM 7-90's probabilities and add
+   * `SUPPRESSION_CHANCE.share` of what is left below the cap, in place of an
+   * amount a round. On by default; a recording made before it reads it as off.
+   */
+  suppressionByChance?: boolean;
+  /**
    * The mission's deadline (rules decision 58, author 2026-09-29: "mission
    * will have time limit in briefing"): the attackers must take their
    * objective by the end of this turn, or the attack has failed. Absent: no
@@ -780,6 +789,8 @@ export class Game {
   readonly keepStaleMarks: boolean;
   /** Whether a burst suppresses by its volume (rules decision 91). Set it before the first turn only: a recording keeps one value. */
   suppressionByVolume: boolean;
+  /** Whether a shell's suppression is a chance (rules decision 92). Set it before the first turn only: a recording keeps one value. */
+  suppressionByChance: boolean;
   /** The last turn the attackers have to win in (rules decision 58); undefined: none. */
   readonly timeLimit: number | undefined;
   /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
@@ -1101,6 +1112,7 @@ export class Game {
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
+    this.suppressionByChance = opts.suppressionByChance ?? true;
     this.timeLimit = opts.timeLimit;
     if (this.timeLimit !== undefined && !(Number.isInteger(this.timeLimit) && this.timeLimit > 0)) {
       throw new Error(`timeLimit: cannot read ${JSON.stringify(opts.timeLimit)}`);
@@ -1244,6 +1256,7 @@ export class Game {
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
+      ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
@@ -2049,6 +2062,9 @@ export class Game {
       }
       // Everyone the rounds came down on was shelled, caught or not.
       const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
+      // Under decision 92 a round's suppression is a chance: the mission's
+      // rounds this turn combine per force, P = 1 − Π(1 − p), added once below.
+      const missChance = new Map<Unit, number>();
       for (const round of fired) {
         const reached = new Set(round.blast.targets.map((t) => t.unitId));
         for (const hit of round.blast.targets) {
@@ -2061,11 +2077,27 @@ export class Game {
           ? this.units.filter((u) => !u.neutralized && !u.surrendered && (reached.has(u.id) || roundSuppression(round.weapon, distance(u.position, round.dispersion.impact), this.checked) > 0))
           : this.units.filter((u) => reached.has(u.id));
         for (const unit of suppressed) {
+          if (this.suppressionByChance) {
+            const p = reached.has(unit.id)
+              ? SUPPRESSION_CHANCE.blast
+              : roundSuppressionChance(round.weapon, distance(unit.position, round.dispersion.impact), this.checked);
+            missChance.set(unit, (missChance.get(unit) ?? 1) * (1 - p));
+            // Shelled all the same, for the nerve and the fire log: the suppression comes below.
+            this.noteFire(unit, "indirect", 0);
+            continue;
+          }
           let amount = reached.has(unit.id)
             ? SUPPRESSION.indirect
             : roundSuppression(round.weapon, distance(unit.position, round.dispersion.impact), this.checked);
           if (this.roofsDampSuppression && roofed(unit)) amount *= ROOF_SUPPRESSION_FACTOR;
           this.noteFire(unit, "indirect", amount);
+        }
+      }
+      if (this.morale) {
+        for (const [unit, miss] of missChance) {
+          let amount = shellingSuppression(miss, unit.suppression ?? 0);
+          if (this.roofsDampSuppression && roofed(unit)) amount *= ROOF_SUPPRESSION_FACTOR;
+          addSuppression(unit, amount);
         }
       }
       // Shells landing near a force are an indication of the enemy (decision

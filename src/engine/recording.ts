@@ -242,6 +242,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
+  if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
   if (r.timeLimit !== undefined && !(Number.isInteger(r.timeLimit) && (r.timeLimit as number) > 0)) throw malformed("timeLimit");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
@@ -460,6 +461,8 @@ export interface GameRecording {
   keepStaleMarks?: boolean;
   /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
   suppressionByVolume?: boolean;
+  /** Whether a shell's suppression was a chance (rules decision 92). Read as **off** when absent. */
+  suppressionByChance?: boolean;
   /** The mission's deadline, a turn (rules decision 58). Absent: none, as every battle before it. */
   timeLimit?: number;
   /**
@@ -652,6 +655,7 @@ export function replayWithOutcomes(
     smokeCostsMission: recording.smokeCostsMission ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
     suppressionByVolume: recording.suppressionByVolume ?? false,
+    suppressionByChance: recording.suppressionByChance ?? false,
     ...(recording.timeLimit !== undefined ? { timeLimit: recording.timeLimit } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });

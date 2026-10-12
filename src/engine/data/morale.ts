@@ -406,6 +406,27 @@ export const VOLUME_SUPPRESSION = {
 } as const;
 
 /**
+ * **A shell's suppression is a chance, not an amount** (rules decision 92;
+ * the author, 2026-10-12). FM 7-90 B-7 gives its radii as probabilities —
+ * an 81 mm bomb within 30 m "will probably" suppress, within 75 m "there is
+ * a 50 percent chance", beyond 125 m "little" — and the game had added them
+ * as 25 / 12.5 / 6.25 a round, so one 24-bomb mission saturated a force.
+ *
+ * Under the rule each round has the chance `full` / `half` / `little` by
+ * the band it falls in (`blast` for a force its blast reached), a turn's
+ * rounds of one mission combine as P = 1 − Π(1 − p), and the force takes
+ * `share` × P × (`SUPPRESSION.max` − what it has): one sure mission on a
+ * fresh force gives 50 — pinned that turn, suppressed the next, clear the
+ * third, which is the 3–5 minutes British WWII OR found defenders took to
+ * come back up (docs/indirect-suppression.md). The roof's half (decision
+ * 63, S3) and the halving every turn are unchanged.
+ *
+ * The three chances are FM 7-90's words, "little" read as 0.1 (its figure
+ * shades it at ≤10%). ⚠️ `share` is ours.
+ */
+export const SUPPRESSION_CHANCE = { blast: 1, full: 0.9, half: 0.5, little: 0.1, share: 0.5 } as const;
+
+/**
  * How far a shell or a bomb suppresses (rules decision 63, S1; author,
  * 2026-09-30). Suppression reaches further than death: FM 7-90 (App. B-7)
  * puts an 81 mm bomb's suppression as probable within **30 m** of the burst

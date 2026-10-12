@@ -34,6 +34,7 @@ import {
   SUPPRESSION_EFFECT,
   SUPPRESSION_REACH_81MM,
   VOLUME_SUPPRESSION,
+  SUPPRESSION_CHANCE,
   CHECKED_SUPPRESSION_REACH,
   ASSAULT_NERVE,
   NERVE_BY_COVER,
@@ -213,6 +214,29 @@ export function roundSuppression(weapon: string, range: number, checked: Checked
   if (nearestMan <= SUPPRESSION_REACH_81MM.full * scale) return SUPPRESSION.indirect;
   if (nearestMan <= SUPPRESSION_REACH_81MM.half * scale) return SUPPRESSION.indirect / 2;
   return 0;
+}
+
+/**
+ * The chance a round at `range` suppresses a force (rules decision 92): its
+ * suppression band read as FM 7-90 states it — probable, even, little —
+ * rather than as an amount. {@link roundSuppression} finds the band.
+ */
+export function roundSuppressionChance(weapon: string, range: number, checked: Checked = false): number {
+  const share = roundSuppression(weapon, range, checked) / SUPPRESSION.indirect;
+  if (share >= 1) return SUPPRESSION_CHANCE.full;
+  if (share >= 0.5) return SUPPRESSION_CHANCE.half;
+  return share > 0 ? SUPPRESSION_CHANCE.little : 0;
+}
+
+/**
+ * What a turn's rounds of one mission add to a force at `current`
+ * suppression (rules decision 92): `share` of what is left below the cap,
+ * by the chance P = 1 − Π(1 − pᵢ) that they suppress it. `missChance` is
+ * Π(1 − pᵢ). Before experience and the roof.
+ */
+export function shellingSuppression(missChance: number, current: number): number {
+  const p = 1 - missChance;
+  return SUPPRESSION_CHANCE.share * p * Math.max(0, SUPPRESSION.max - current);
 }
 
 export type SuppressionLevel = "none" | "suppressed" | "pinned";

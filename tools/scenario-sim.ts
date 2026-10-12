@@ -20,6 +20,7 @@
  *   npm run scenario-sim -- --no-defender-plan      # the defender registers no targets (every table before the twenty-eighth round)
  *   npm run scenario-sim -- --no-fire-support      # no side calls a mortar or a gun: a small-arms fight
  *   npm run scenario-sim -- --flat-suppression     # a burst suppresses a flat 10, as before rules decision 91
+ *   npm run scenario-sim -- --shell-amounts        # every round adds its suppression in full, as before rules decision 92
  *   npm run scenario-sim -- --quality BLUE=irregular/inexperienced   # a side's force quality (decision 83); RED=… too, comma-separated
  *
  * Kept thin on purpose, like tools/balance-sim.ts: what is worth checking
@@ -107,7 +108,7 @@ for (const part of value("--quality")?.split(",") ?? []) {
   quality[side] = { type: type as ForceType, experience: experience as CombatExperience };
 }
 
-console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}\n`);
+console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}\n`);
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
 const urban: string[] = [];
@@ -115,7 +116,7 @@ for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
   const seeds = Array.from({ length: n }, (_, i) => first + i);
-  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}) });
+  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}) });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);
