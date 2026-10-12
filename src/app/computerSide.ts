@@ -61,7 +61,7 @@ export function mortarFree(g: Game, side: Side): boolean {
  */
 export const FIRE_RESERVE = { fpf: 3, defenderPriority: 2, attackerPriority: 4 } as const;
 /** The attacker fires its priority target once its lead squad is this close to it (⚠️ ours). */
-const PRIORITY_CALL_M = 400;
+export const PRIORITY_CALL_M = 400;
 
 /**
  * Missions of `weapon` that `side` has called on the point `at` itself — a
@@ -77,10 +77,18 @@ function firedAt(g: Game, side: Side, weapon: string, at: Point): number {
  * The attacker's reserve (decision 93): its heaviest tube, and the missions
  * of it still held for its priority target, the plan's first point.
  */
-function attackerReserve(g: Game, side: Side, planned: readonly Point[]): { tube?: string; held: number } {
+export function attackerReserve(g: Game, side: Side, planned: readonly Point[]): { tube?: string; held: number } {
+  return priorityReserve(g, side, planned[0]);
+}
+
+/**
+ * The reserve held for a priority target at `priority` (decision 93): on the
+ * side's heaviest tube, {@link FIRE_RESERVE}'s missions less those fired on it.
+ * No priority target, no reserve.
+ */
+export function priorityReserve(g: Game, side: Side, priority: Point | undefined): { tube?: string; held: number } {
   const tubes = tubesOf(g, side);
   const tube = tubes[tubes.length - 1];
-  const priority = planned[0];
   if (!tube || !priority) return { held: 0 };
   return { tube, held: Math.max(0, FIRE_RESERVE.attackerPriority - firedAt(g, side, tube, priority)) };
 }
@@ -93,7 +101,7 @@ function smokeSpare(g: Game, side: Side, reserve: { tube?: string; held: number 
 }
 
 /** The ids of the enemy forces that fired on any of `side`'s since last turn: the marks immediate suppression answers. */
-function firingOnUs(g: Game, side: Side): Set<string> {
+export function firingOnUs(g: Game, side: Side): Set<string> {
   const ids = new Set<string>();
   for (const u of g.units) {
     if (u.side !== side) continue;
@@ -358,7 +366,7 @@ export interface ComputerSnapshot {
  * defender is free three turns after the fire stops, so the fire has to
  * stay on until the assault is nearly there.
  */
-const LIFT_AT_M = 100;
+export const LIFT_AT_M = 100;
 /** The scripted company screens its crossing from this far out (ours; decision 63's pinned defender sees little inside it anyway). */
 const SCREEN_FROM_M = 450;
 

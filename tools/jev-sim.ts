@@ -66,6 +66,7 @@ import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
 import { claudeCommander, type ClaudeAskerOptions } from "../src/sim/claude.js";
 import { ORDERS } from "../src/sim/opord.js";
+import { LIFT_AT_M, PRIORITY_CALL_M } from "../src/app/computerSide.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -256,6 +257,15 @@ try {
  * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once;
  * "twoscouts" sends two; "posts-p1-p2-straight" sets where each scout watches;
  * "earlyup" moves up at the first chance, the enemy found or not.
+ *
+ * Fire (decision 93, in the questions): by doctrine unless told — the
+ * plan's centre as the priority target, called once the company has gone
+ * and its nearest squad is within PRIORITY_CALL_M (and beyond LIFT_AT_M);
+ * else a sure mark on a planned target, else a firer in sight, never one
+ * within LIFT_AT_M of its squads. "oldfire" names no priority target and
+ * fires on any sure mark, squads first — every table before 2026-10-12.1;
+ * "opportunity" keeps the priority target and fires on any sure mark
+ * otherwise (ATP 3-21.8 B-23's "targets of opportunity").
  */
 function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
@@ -294,13 +304,38 @@ function ruleAsker(extra: Set<string>): Asker {
       if (q.id.startsWith("go.bound")) return extra.has("bound") ? "yes" : "no";
       if (q.id.startsWith("go.lift")) return extra.has("holdshort") ? "yes" : "no";
       if (q.id.startsWith("lift")) return "yes";
+      // The priority target (decision 93): the plan's centre; none with "oldfire".
+      // "anyfire" is undiscriminating by design: it names none either.
+      if (q.id === "plan.priority") return extra.has("oldfire") || extra.has("anyfire") ? "none" : "t1";
       if (q.id.startsWith("fire.")) {
         if (extra.has("holdfire") && /has not gone in/.test(q.view)) return "hold";
         // "anyfire": the first mark offered, whatever it is.
-        if (extra.has("anyfire")) return q.options.find((o) => o.id !== "hold" && !o.id.startsWith("smoke:"))?.id ?? "hold";
-        // Squads first, then anything, each sure to 40 m and in sight.
-        const fit = q.options.filter((o) => /in sight/.test(o.label) && Number(/±(\d+) m/.exec(o.label)?.[1] ?? 999) <= 40 && !o.id.startsWith("smoke:"));
-        return (fit.find((o) => /infantry/.test(o.label)) ?? fit[0])?.id ?? "hold";
+        if (extra.has("anyfire")) return q.options.find((o) => o.id !== "hold" && !o.id.startsWith("smoke:") && o.id !== "priority")?.id ?? "hold";
+        const sure = (o: { label: string }) => /in sight/.test(o.label) && Number(/±(\d+) m/.exec(o.label)?.[1] ?? 999) <= 40;
+        const marks = q.options.filter((o) => !o.id.startsWith("smoke:") && o.id !== "priority" && o.id !== "hold");
+        // "oldfire", every table before decision 93 in the questions: squads first, then anything, each sure to 40 m and in sight.
+        if (extra.has("oldfire")) {
+          const fit = marks.filter(sure);
+          return (fit.find((o) => /infantry/.test(o.label)) ?? fit[0])?.id ?? "hold";
+        }
+        // Doctrine (decision 93): the priority target as the assault closes,
+        // from 400 m; else a sure mark on a planned target; else a firer on
+        // the squads, in sight; nothing else.
+        const p = q.options.find((o) => o.id === "priority");
+        const near = Number(/nearest squad is (\d+) m/.exec(p?.label ?? "")?.[1] ?? Infinity);
+        if (p && !/has not gone in/.test(q.view) && near <= PRIORITY_CALL_M) return "priority";
+        // "opportunity": the priority target's reserve kept, and every other
+        // mission free for targets of opportunity, as "oldfire" chooses them
+        // (ATP 3-21.8, 2024, para B-23: "planned targets and targets of opportunity").
+        if (extra.has("opportunity")) {
+          const fit = marks.filter(sure);
+          return (fit.find((o) => /infantry/.test(o.label)) ?? fit[0])?.id ?? "hold";
+        }
+        // Not on its own squads: a mark within the lift distance of them is left alone, as the scripted commander's.
+        const clear = (o: { label: string }) => Number(/nearest squad is (\d+) m from it/.exec(o.label)?.[1] ?? Infinity) > LIFT_AT_M;
+        const planned = marks.filter((o) => sure(o) && clear(o) && /on your planned target/.test(o.label));
+        if (planned.length) return (planned.find((o) => /infantry/.test(o.label)) ?? planned[0])!.id;
+        return marks.find((o) => /FIRING ON YOUR SQUADS/.test(o.label) && /in sight/.test(o.label) && clear(o))?.id ?? "hold";
       }
       return has("on") ? "on" : q.options[0]!.id;
     };

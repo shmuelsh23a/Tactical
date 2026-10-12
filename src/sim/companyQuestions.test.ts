@@ -37,9 +37,46 @@ describe("the company's questions", () => {
     expect(q.view).not.toMatch(/RED-/);
   });
 
-  it("ask where each scout watches from, then where the rest wait", () => {
+  it("ask where each scout watches from, then where the rest wait, then the priority target", () => {
     const ids = [nextQuestion(["2"]).id, nextQuestion(["2", "straight"]).id, nextQuestion(["2", "straight", "straight"]).id];
     expect(ids).toEqual(["plan.post.1", "plan.post.2", "plan.wait"]);
+    // Decision 93 in the questions: one of the plan's three registered points, or none.
+    const q = nextQuestion(["2", "straight", "straight", "deadGround"]);
+    expect(q.id).toBe("plan.priority");
+    expect(q.options.map((o) => o.id)).toEqual(["t1", "t2", "t3", "none"]);
+  });
+
+  it("offer the priority target with the missions held for it, and fire them on its registered point (decision 93)", () => {
+    // Plan: two scouts, dead ground, the plan's centre the priority target;
+    // then send the company at once and hold fire until the priority target
+    // is offered with a squad's distance on it, and call it.
+    const answers = ["2", "p1", "p1", "deadGround", "t1"];
+    for (let i = 0; i < 200; i++) {
+      const q = nextQuestion(answers);
+      if (q.id.startsWith("fire.")) {
+        const p = q.options.find((o) => o.id === "priority");
+        expect(p?.label).toMatch(/one of the 4 missions held for it/);
+        expect(q.ask).toMatch(/4 held back for your priority target, the plan's centre/);
+        if (/nearest squad is (\d+) m/.test(p!.label)) {
+          // Called: a mission of the heaviest tube, on the registered point itself.
+          answers.push("priority");
+          let game: Game | undefined;
+          try {
+            runScenarioBattle(telAzekaAssaultListing, 11, { drill, fire: DEFAULT_FIRE_CHOICES, decide: fromAnswers(answers), onTurn: (g) => (game = g) });
+          } catch (e) {
+            if (!(e instanceof NeedAnswer)) throw e;
+          }
+          const centre = game!.registeredTargets.find((t) => t.side === "BLUE")!.at;
+          const fired = game!.fireMissions.filter((m) => m.side === "BLUE");
+          expect(fired.at(-1)).toMatchObject({ weapon: "mortar", target: centre });
+          return;
+        }
+        answers.push("hold");
+        continue;
+      }
+      answers.push(q.id.startsWith("go.") ? "yes" : q.id.startsWith("scout.") ? "on" : q.kind === "noul" ? "no" : q.options[0]!.id);
+    }
+    throw new Error("never offered the priority target");
   });
 
   it("play a battle to its end from its answers, the same way every time", () => {
@@ -98,7 +135,7 @@ describe("the company's questions", () => {
   it("after 'go', ask which way the company goes and whether the scouts give a base of fire", () => {
     // Two scouts to the first observation point, the company in dead ground,
     // then go at the first chance: the next two questions are the axis and support.
-    const answers = ["2", "p1", "p1", "deadGround"];
+    const answers = ["2", "p1", "p1", "deadGround", "t1"];
     for (let i = 0; i < 80; i++) {
       const q = nextQuestion(answers);
       if (q.id.startsWith("go.axis")) {
@@ -117,7 +154,7 @@ describe("the company's questions", () => {
     // Seed 12: since decision 63 the holding company on seed 11 is shelled
     // out of the fight before a scout has sat long enough to be asked.
     const seed = 12;
-    const answers = ["2", "p1", "p1", "deadGround"];
+    const answers = ["2", "p1", "p1", "deadGround", "t1"];
     const where = (q: Question, id: string) => q.view.split("\n").find((l) => l.trim().startsWith(id + " "))!;
     for (let i = 0; i < 60; i++) {
       const q = nextQuestion(answers, seed);
@@ -158,7 +195,7 @@ describe("the company's questions", () => {
   });
 
   it("after 'go', ask each platoon's task, whether to bound by platoon, and whether to wait for the fires to lift (item 2)", () => {
-    const answers = ["2", "p1", "p1", "deadGround"];
+    const answers = ["2", "p1", "p1", "deadGround", "t1"];
     const asked: string[] = [];
     for (let i = 0; i < 120; i++) {
       const q = nextQuestion(answers);
