@@ -113,3 +113,76 @@ describe("the scripted company commander", () => {
     expect(company.orders(g).platoonTasks?.get("BLUE-1")).toBe("support");
   });
 });
+
+describe("an assault that is spent (2026-10-12)", () => {
+  // Two platoons: the first a base of fire, the second the assault, held short.
+  function company(decided: boolean) {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 0 }, 9));
+    g.addUnit(makeInfantry("BLUE-1-2", "BLUE", "squad", { x: 60, y: 0 }, 9));
+    const lone = g.addUnit(makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 120, y: 300 }, 9));
+    const c = new ScriptedCompany(g, "BLUE", objective, [objective], {}, { terrain: flat, width: 1000, height: 1000 });
+    g.beginTurn();
+    c.orders(g, decided ? { go: true } : undefined);
+    c.setPlatoonTask("BLUE-1", "support");
+    c.setHoldShort(true);
+    return { g, c, lone };
+  }
+
+  it("is not spent while a squad of an assaulting platoon still fights", () => {
+    const { g, c } = company(false);
+    expect(c.assaultSpent(g)).toBe(false);
+    c.orders(g);
+    expect(c.platoonTask("BLUE-1")).toBe("support");
+    expect(c.holdsShort).toBe(true);
+  });
+
+  it("commits the base of fire and lifts the fires once it is, when the commander is scripted", () => {
+    const { g, c, lone } = company(false);
+    lone.neutralized = true;
+    expect(c.assaultSpent(g)).toBe(true);
+    c.orders(g);
+    expect(c.platoonTask("BLUE-1")).toBe("assault");
+    expect(c.holdsShort).toBe(false);
+    expect(c.firesLifted).toBe(true);
+  });
+
+  it("lifts the fires only when the assault was held short for them", () => {
+    const { g, c, lone } = company(false);
+    c.setHoldShort(false);
+    lone.neutralized = true;
+    c.orders(g);
+    expect(c.platoonTask("BLUE-1")).toBe("assault");
+    expect(c.firesLifted).toBe(false);
+  });
+
+  it("commits the base of fire only: rear security keeps its task", () => {
+    const { g, c, lone } = company(false);
+    g.addUnit(makeInfantry("BLUE-3-1", "BLUE", "squad", { x: 0, y: -200 }, 9));
+    c.setPlatoonTask("BLUE-3", "security");
+    lone.neutralized = true;
+    c.orders(g);
+    expect(c.platoonTask("BLUE-1")).toBe("assault");
+    expect(c.platoonTask("BLUE-3")).toBe("security");
+  });
+
+  it("is not spent when no platoon was given the assault, nor once the commander has said no", () => {
+    const { g, c, lone } = company(true);
+    c.setPlatoonTask("BLUE-2", "support");
+    expect(c.assaultSpent(g)).toBe(false);
+    c.setPlatoonTask("BLUE-2", "assault");
+    lone.neutralized = true;
+    expect(c.assaultSpent(g)).toBe(true);
+    c.declineRecommit();
+    expect(c.assaultSpent(g)).toBe(false);
+    expect(c.snapshot().recommitDeclined).toBe(true);
+  });
+
+  it("leaves it to a commander who is asked", () => {
+    const { g, c, lone } = company(true);
+    lone.routing = true;
+    c.orders(g, { go: true });
+    expect(c.platoonTask("BLUE-1")).toBe("support");
+    expect(c.assaultSpent(g)).toBe(true);
+  });
+});

@@ -272,8 +272,19 @@ function ruleAsker(extra: Set<string>): Asker {
   return async (q) => {
     const has = (id: string) => q.options.some((o) => o.id === id);
     const pick = (): string => {
-      if (q.id === "plan.scouts")
-        return extra.has("noscout") ? "0" : extra.has("onescout") ? "1" : extra.has("twoscouts") ? "2" : Math.max(...q.options.map((o) => Number(o.id))).toString();
+      if (q.id === "plan.scouts") {
+        if (extra.has("noscout")) return "0";
+        if (extra.has("onescout")) return "1";
+        if (extra.has("twoscouts")) return "2";
+        // "maxscouts", every table before 2026-10-12: as many as offered.
+        const most = Math.max(...q.options.map((o) => Number(o.id)));
+        if (extra.has("maxscouts")) return most.toString();
+        // One a platoon (2026-10-12, the author): a company of two sends two,
+        // not three out of its second platoon. Its platoons are read off its
+        // own forces in the view ("  BLUE-2-1 (infantry, squad) …").
+        const platoons = new Set([...q.view.matchAll(/^\s+([A-Z]+-\d+)-[A-Z0-9]+ \(infantry/gm)].map((m) => m[1]));
+        return Math.max(1, Math.min(most, platoons.size)).toString();
+      }
       if (q.id.startsWith("plan.post.")) {
         const i = Number(q.id.slice("plan.post.".length));
         // "posts-p1-p2-straight": where each scout watches, in turn.
@@ -305,6 +316,8 @@ function ruleAsker(extra: Set<string>): Asker {
       if (q.id.startsWith("go.bound")) return extra.has("bound") ? "yes" : "no";
       if (q.id.startsWith("go.lift")) return extra.has("holdshort") ? "yes" : "no";
       if (q.id.startsWith("lift")) return "yes";
+      // The assault spent, the rest go in.
+      if (q.id.startsWith("recommit")) return "yes";
       // The priority target (decision 93): the plan's centre; none with "oldfire".
       // "anyfire" is undiscriminating by design: it names none either.
       if (q.id === "plan.priority") return extra.has("oldfire") || extra.has("anyfire") ? "none" : "t1";

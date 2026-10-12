@@ -764,6 +764,25 @@ function askPlatoons(
     });
     if (a !== "on") company.setPlatoonTask(key, a as PlatoonTask);
   }
+  // The assault element is spent and a platoon is still fighting elsewhere:
+  // send it in? Unasked, a company would wait out the clock for an assault
+  // that no longer exists (balance.md, *Why the 2:1 plans fail*).
+  if (company.assaultSpent(g)) {
+    const rest = company.baseOfFire(g);
+    const a = question({
+      id: `recommit.${g.turn}`,
+      kind: "noul",
+      ask:
+        `Your assault is out of the fight: no squad of an assaulting platoon is still fighting. ` +
+        `Send your base of fire, ${rest.join(" and ")}, in to assault${company.holdsShort ? ", lifting your fires" : ""}?`,
+      options: [
+        { id: "yes", label: "yes: the base of fire goes in" },
+        { id: "no", label: "no: it stays where it is (you will not be asked again)" },
+      ],
+    });
+    if (a === "yes") company.recommit(g);
+    else company.declineRecommit();
+  }
   // The fires are spent: there is nothing left to lift, and the assault goes in.
   if (company.holdsShort && (missionsLeft(g, side) ?? 0) === 0) company.liftFires();
   // The assault held short, under the fires: lift them now?

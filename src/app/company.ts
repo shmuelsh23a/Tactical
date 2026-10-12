@@ -285,6 +285,8 @@ export class ScriptedCompany {
    * from strict to trivial measured the same 8% (balance.md).
    */
   private gateHolding = false;
+  /** The commander declined to commit the base of fire when the assault was spent. */
+  private recommitDeclined = false;
   /** The rearmost platoon has been put on flank and rear security (step 12b). */
   private securityGiven = false;
   private via: Point | undefined;
@@ -410,6 +412,7 @@ export class ScriptedCompany {
       gaveUp: this.gaveUp,
       gateHolding: this.gateHolding,
       securityGiven: this.securityGiven,
+      ...(this.recommitDeclined ? { recommitDeclined: true } : {}),
       support: this.support,
       bounding: this.bounding,
       holdingShort: this.holdingShort,
@@ -439,6 +442,7 @@ export class ScriptedCompany {
     this.reinforced.push(...(snap.reinforced ?? []));
     this.gaveUp = snap.gaveUp ?? false;
     this.gateHolding = snap.gateHolding ?? false;
+    this.recommitDeclined = snap.recommitDeclined ?? false;
     this.securityGiven = snap.securityGiven ?? false;
     this.support = snap.support;
     this.bounding = snap.bounding;
@@ -567,6 +571,9 @@ export class ScriptedCompany {
     }
     // Step 13: once the company has gone, its eyes become its base of fire.
     if (this.plan.scoutsSupport && this.released !== undefined) this.support = true;
+    // Its assault spent, the scripted commander sends in the rest; one asked
+    // is asked instead (`recommit` in src/sim/scenarioBattle.ts).
+    if (!decided && this.assaultSpent(game)) this.recommit(game);
     const gate = this.plan.suppressionGate;
     if (gate && this.released !== undefined) {
       this.gateHolding = !this.assaultMayGo(game, gate);
@@ -777,6 +784,47 @@ export class ScriptedCompany {
     this.holdingShort = false;
   }
 
+  /**
+   * The assault element is spent (2026-10-12, the author: "do both"): some
+   * platoon was given the assault, no squad of any assaulting platoon is
+   * still fighting (its scouts aside), and a base of fire — a platoon on
+   * "support" — still is. Without this a company holding short waited for
+   * an assault that no longer existed — its fires never lifted, its base of
+   * fire never went in — and the battle ran out of time (balance.md, *Why the
+   * 2:1 plans fail*). Not once the commander has declined to commit it.
+   */
+  assaultSpent(game: Game): boolean {
+    if (this.released === undefined || this.recommitDeclined) return false;
+    const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered && !this.scouts.has(u.id);
+    const platoons = [...this.platoons(game)];
+    const assault = platoons.filter(([key]) => this.platoonTask(key) === "assault");
+    return assault.length > 0 && !assault.some(([, us]) => us.some(fighting)) && this.baseOfFire(game).length > 0;
+  }
+
+  /** The platoons on "support" with a squad still fighting: what a spent assault can commit. */
+  baseOfFire(game: Game): string[] {
+    const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered && !this.scouts.has(u.id);
+    return [...this.platoons(game)].filter(([key, us]) => this.platoonTask(key) === "support" && us.some(fighting)).map(([key]) => key);
+  }
+
+  /**
+   * Commit the base of fire (Battle Drill 2 step 12: reinforce the assault):
+   * its platoons go in, and fires held for an assault held short lift. Rear
+   * security, a reserve and a platoon told to halt or withdraw keep their
+   * tasks; a suppression gate gives up waiting.
+   */
+  recommit(game: Game): void {
+    for (const key of this.baseOfFire(game)) this.tasks.set(key, "assault");
+    if (this.holdingShort) this.liftFires();
+    this.gaveUp = true;
+    this.gateHolding = false;
+  }
+
+  /** The commander was asked to commit the base of fire, and said no: not asked again. */
+  declineRecommit(): void {
+    this.recommitDeclined = true;
+  }
+
   /** The scouts still in the fight. */
   liveScouts(game: Game): Unit[] {
     return [...this.scouts.keys()]
@@ -825,6 +873,8 @@ export interface CompanySnapshot {
   gaveUp?: boolean;
   gateHolding?: boolean;
   securityGiven?: boolean;
+  /** Whether the commander declined to commit the base of fire (2026-10-12); absent: no. */
+  recommitDeclined?: boolean;
   support: boolean;
   bounding: boolean;
   holdingShort: boolean;
