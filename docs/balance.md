@@ -21,6 +21,66 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## Suppression by volume: right on the evidence, and not the lever, 2026-10-12
+
+Rules decision 91 (the review: [small-arms-suppression.md](small-arms-suppression.md)).
+A burst now suppresses 1.7 a man firing — a machine gun nine men's worth —
+× the target's cover factor (full: 0.5 against rifles, 0.75 against a
+machine gun), + 5 a hit, in place of a flat 10.
+
+**In isolation it does exactly what it was calibrated to** (`npm run
+suppression-pays`, 60 seeds, one dug-in squad):
+
+| Base of fire, 200 m | Before | **Now** | CDEC |
+|---|---|---|---|
+| 1 rifle squad | 21 suppressed | **15** suppressed | ≈ 50% |
+| 2 rifle squads | 44 pinned | **32** suppressed | |
+| 3 rifle squads | 65 pinned | **48 pinned** | ≈ 90% |
+| 2 machine gun teams | 45 pinned | **49 pinned** | |
+| Equal squads, open against dug in | ×1.03–1.11 | **×2.2** the attacker worse off | |
+| 2:1 on dug in, defender | 42 pinned | **29** suppressed | |
+| 3:1 on dug in, defender | 65 pinned | **47** pinned | |
+
+**In the battles it moves almost nothing.** Standard measurement, 200
+battles, `--recon 3 --watch 1 --look 4 --wait-for-contact --aim 40
+--scout-from vantage --wait-in dead-ground --target-first squads`; the
+control is the same run with `--flat-suppression`, and it reproduces
+2026-10-11's figures exactly, so nothing else drifted:
+
+| | Flat (control) | **By volume** | Target |
+|---|---|---|---|
+| telAzekaAssault (3:1) | 56% | **54%** | 40–55% |
+| telAzekaAssault2 (2:1) | 40% | **36%** | 20–35% |
+| yokneamUrban | 14% | **13%** | — |
+| Explosives' share, 3:1 / 2:1 | 46% / 48% | **46% / 49%** | 60–80% |
+| Attacker / defender down, 3:1 | 8% / 22% | 8% / 22% | — |
+
+All within ±7. **Why** — instrumented over 40 battles of the 3:1, every
+turn either side was under direct fire (a scratch script, deleted):
+
+| The defence (RED), in contact | Flat | By volume |
+|---|---|---|
+| Pinned | 58% of force-turns | 60% |
+| Suppression notes received, indirect / direct | 46,488 / 1,346 | 47,866 / 1,386 |
+| Pinned forces under shells alone (last two turns) | 900 | 948 |
+| …under shells and small arms | 435 | 491 |
+| …under small arms alone | 41 | **18** |
+
+**The defence is pinned by the attacker's shells**, and the small-arms
+rule only decides the 1–3% of pins that come from rifles alone — which it
+does cut by half. The attacker is in the open in 99% of its turns in
+contact and pinned in about 10%, mostly by the defender's shells too.
+
+So the attack's edge does not come through small-arms suppression. The
+picture it leaves: the guns keep the defence's heads down most of the
+time, kill few of its men (it is dug in), and the attacker's rifles do
+the killing on a pinned defence — which is the explosives share falling
+and the attack succeeding together. **The next lever is indirect fire's
+suppression**, which doctrine already says something about (ATP 3-21.9
+B-36: "most effective when mortar fires first fall; as they continue,
+their suppressive effects lessen"; FM 6-30: it "usually lasts only as long
+as the fires are continued"). That is a ruling for the author.
+
 ## The stale tables re-run: the attack is now too strong, 2026-10-11
 
 Everything measured before the line-of-sight targeting fix (`74a2dbc`) was

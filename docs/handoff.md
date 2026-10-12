@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Tomorrow, in one line: the balance numbers are out of band on the attacker's side, and that is a ruling for the author before any more code.** Read *The stale tables re-run* on balance.md, then *What I would pick up next* below. Nothing is half-finished — the tree is clean, every test passes, and the last three days of work are measured and recorded.
+**Next, in one line: the attack is still too strong after decision 91 (suppression by volume), because the defence is pinned by shells, not rifles — indirect fire's suppression is the next ruling for the author.** Read *The stale tables re-run* on balance.md, then *What I would pick up next* below. Nothing is half-finished — the tree is clean, every test passes, and the last three days of work are measured and recorded.
 
 **Current as of 2026-10-11: the stale tables are re-run, and the attack is now too strong.** With the line-of-sight targeting fix in, the standard measurement gives **3:1 at 56%** (band 40–55), **2:1 at 40%** (band 20–35), and **explosives at 46%** of losses against a 60–80% band — the author's own 75%-of-casualties principle. The reference plan *A calibrated* re-run at 200 seeds gives **61%**, so the earlier 57% was not noise. Three bands are out, all the same way: **the rules need tuning down for the attacker**, which is the opposite of what every entry before this was reaching for (balance.md, *The stale tables re-run*).
 
@@ -289,6 +289,15 @@ way. Two levers would move all three together:
    so **a man in a hole is suppressed almost as easily as one in the
    open** (balance.md, *Does suppression pay?*, part 3). That is the one
    figure in the chain that is plainly unrealistic, and it is ours.
+
+**2026-10-12, later: decision 91 is in, and it is not the lever.** The
+author ruled yes to the proposal, the hit side left alone, and the halving
+kept. Measured (balance.md, *Suppression by volume*): 3:1 56% → 54%, 2:1
+40% → 36%, explosives unmoved — all noise. Instrumented, the defence is
+pinned in 60% of its contact turns and **two-thirds of that is the
+attacker's shells alone**; small arms alone pin it 1–3% of the time. The
+next lever is indirect fire's suppression (B-36: it lessens as fire
+continues) — **a ruling for the author before any code**.
 
 **2026-10-12: the review is done and a proposal is with him.**
 [small-arms-suppression.md](small-arms-suppression.md) has doctrine, the
