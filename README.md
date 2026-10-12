@@ -2947,6 +2947,12 @@ on the stated reasoning, still awaiting the author's word.
       with only 60 mm — the defender on the tel — lays none from its tubes.
     - A browser battle saved before this resumes on the new fire plan, its
       six old targets read as FPF, priority target and plan.
+    - **The typed questions** (Jev, Claude and the rule commander) ask a
+      priority target in planning, hold its missions back, and offer it in
+      every fire question; each mark says if it is on a planned target or
+      firing on the squads (question set 2026-10-12.1). The reference
+      plans' 2:1 median stays low under every fire policy (balance.md, *The
+      fire question by doctrine*).
     - **The raid** (decision 87) falls to 3%: its 26% came largely from
       the old defender's missions on the raid among its own houses
       (balance.md, *The stale tables on the new baseline*).
@@ -3125,6 +3131,44 @@ Still modelled by reasonable assumption (flag if you want them changed):
     2026-09-24; it used to name files). What remains is keeping the promise it
     makes: the attribution the map already draws has to survive into the
     native UI, and has to be written into every exported file.
+
+- **Urban warfare — a design of its own, before any more code** (the
+  author, 2026-10-12: "We will deal with urban warfare separately. We need
+  to design a whole thing around it. It's a big chunk."). Backlog 23 is its
+  seed; this is what it has grown into, and it is designed as a whole, not
+  fixed piece by piece — the one piecemeal fix tried (seeing out of a house
+  at any depth, 2026-10-06) ended the stalemate and broke the raid 89 times
+  in 100, and was not kept.
+
+  **What is known going in:**
+  - **The stalemate**: a force sees out through its own walls only within
+    `OWN_OBJECT_SIGHT_M` (6 m), and the scenarios stand their forces 6–7.5 m
+    inside their houses, so a force in a house neither sees nor is seen
+    (balance.md, *The raid, diagnosed*).
+  - **The raid** (decision 87) is at **3%**, 93% out of time, since decision
+    93: its old 26% came from the defender shelling the raid among its own
+    houses. It waits on this design.
+  - **`yokneamUrban`** went 16% → **56%** on decision 93's fire plans alone;
+    decisions 75–78 (structures, criticals through windows and roofs, the
+    urban test bed) were measured on the old plans and are to be re-read
+    inside this design, not before it.
+  - **What the engine already has**: buildings as objects with cover
+    (decision 76's damage states and rubble), rounds through windows and
+    roofs (77), roofs damping a shell's suppression (63 S3), directional
+    cover (85), the 60 mm's "cannot penetrate most rooftops" (93).
+
+  **What it has to settle** (backlog 23's list, and what the work since has
+  added): windows and floors; where in a house a force stands, and what it
+  sees and is seen from there; moving house to house — through walls,
+  across streets — and clearing a house (the battle drill "enter and clear
+  a room", TC 3-21.76, 2025, ch. 8); what the scripted drill and company do
+  in a town (today the drill walks to the enemy's centre and stops); fire
+  plans in a town (mortars and danger close among houses, direct HE on
+  walls); and the scenarios' measures of success there.
+
+  **Sources to start from**: ATP 3-06 (2022) *Urban Operations*, ATP 3-06.11
+  (2024) *BCT Urban Operations*, the room-clearing drill in TC 3-21.76, and
+  FM 3-06.11's weapon effects already in validation.md.
 
 ### Later development iterations (unordered backlog)
 
@@ -3639,7 +3683,9 @@ Each is intended to be an independent, toggleable module:
       matter (going in, lifting the fires); (3) the full loop, the executor
       narrating.
 23. **Urban combat, as a whole** (the author, 2026-10-06: "we will have to
-    solve urban combat as a whole, at a later session"). Found in the raid
+    solve urban combat as a whole, at a later session"). **Promoted
+    2026-10-12** to the roadmap's *Urban warfare* entry, to be designed as
+    a whole. Found in the raid
     (docs/balance.md, *The raid, diagnosed*): a force sees out through its
     own walls only within 6 m of them (`OWN_OBJECT_SIGHT_M`), and the
     scenarios stand their forces 6–7.5 m inside their houses, so a force in

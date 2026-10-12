@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the attack bands are met in the standard measurement (3:1 50%, 2:1 25%); the re-run stale tables leave three questions for the author — the typed fire question can't express doctrine's fire plan (reference 2:1 median 13%), the raid's 26% was the old defender shelling its own houses (now 3%, waits on backlog 23), and urban's 56%.**
+**Next, in one line: decisions 91–94 are in and the standard measurement is in band (3:1 50%, 2:1 25%); the fire question now follows doctrine, but the reference plans' 2:1 median is 8–13% under every fire policy — the doctrinal allotment at 2:1, a question for the author. Urban (and the raid) wait on the urban design, now a roadmap entry.**
 
 **Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
 
@@ -260,17 +260,17 @@ How the last two days went, round by round, is in
 
 ### Open (2026-10-12)
 
-- **The fire question for the reference plans and Jev** cannot express
-  decision 93's attacker plan (a priority target, rounds held back), so
-  those tables play the old attacker fire on the new allotment — the
-  reference 2:1 median is 13%. Extend the question set to doctrine?
-- **The raid at 3%**: its 26% was the old defender shelling the raid
-  among its own houses. It now waits on backlog 23 (sight inside houses);
-  is that the next thing to build, or is decision 87 re-ruled?
-- **Urban at 56%** (16% before decision 93's fire plans; its allotment did
-  not change). The defender no longer fires a mission on every attacker it
-  sees, which in the houses broke the attack in eleven turns. Do decisions
-  75–78, measured on the old plans, want re-reading against it?
+- **The reference plans' 2:1 is 8–13%** under every fire policy through
+  the questions (old, doctrine, doctrine + targets of opportunity), where
+  the standard measurement's scripted company gives 25%. It is the
+  doctrinal allotment at two to one (balance.md, *The fire question by
+  doctrine*). Accept, or change the 2:1's fire (the battalion's priority
+  of fires is the attacker's already), or revisit decision 68's 20–35% for
+  a doctrinal 2:1?
+- **Urban warfare is designed first** (the author, 2026-10-12): backlog 23
+  is the roadmap's *Urban warfare* entry; the raid (3%) and urban (56%)
+  wait on it, and decisions 75–78 are re-read inside it. Nothing built
+  until then.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
 - **The force-quality matrix** (decision 83) has waited on his view of its
@@ -588,8 +588,8 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The open questions above first** — the fire question's doctrine, the
-raid and backlog 23, urban. The stale tables were re-run on 2026-10-12.
+**The 2:1 question above first.** The fire question was brought to
+doctrine on 2026-10-12, and urban is designed before it is built.
 
 **Then the force-quality matrix and the AI commanders**, once the author
 says go — both are long or cost money.

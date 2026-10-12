@@ -21,6 +21,51 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## The fire question by doctrine: the 2:1 reference plans stay low, 2026-10-12
+
+The author: "extend the fire question to doctrine". The typed questions
+(`QUESTION_SET_VERSION` 2026-10-12.1) now ask a **priority target** in
+planning (`plan.priority`: one of the plan's three registered points, or
+none), hold its four missions back on the heaviest tube, and offer it in
+every fire question (`priority`, with the nearest squad's distance); each
+mark says whether it is on a planned target and whether it is firing on
+the squads. The rule commander answers by doctrine as ruled for decision
+93: the priority target once its squads are within 400 m and the company
+has gone, else a sure mark on a planned target, else a firer in sight;
+nothing else. `--rule oldfire` keeps the old answers and reproduces the
+morning's table exactly (65% / 12%, A calibrated); `--rule opportunity`
+keeps the reserve and fires on any sure mark otherwise — ATP 3-21.8 (2024)
+para B-23 speaks of "planned targets and targets of opportunity".
+
+| Plan | 3:1 old / doctrine / + opportunity | 2:1 old / doctrine / + opportunity |
+|---|---|---|
+| A calibrated | 65 / 50 / 56 | 12 / 13 / 14 |
+| A + flank | 51 / 53 / 59 | 16 / 12 / 16 |
+| B deliberate | 45 / 44 / 46 | 6 / 7 / 8 |
+| E fire-heavy | 72 / 65 / 70 | 32 / 29 / 34 |
+| D flank | 31 / 30 / 32 | 8 / 8 / 12 |
+| A + move up | 45 / 40 / 44 | 14 / 8 / 9 |
+| B + move up | 34 / 28 / 25 | 11 / 6 / 8 |
+| C hasty | 41 / 51 / 54 | 14 / 7 / 9 |
+| **Median** | **45 / 47 / 50** | **13 / 8 / 10.5** |
+| Hasty, one scout (`onescout,rush`) | 50 / 50 / — | 25 / 17 / — |
+
+(A first run, before a review fix, let the rule commander call the
+priority target after the fires lifted and onto squads within 100 m; it
+read 45.5 / 7.5 and 49 / 10. Now the priority target is offered only
+before the lift with every squad beyond `LIFT_AT_M`, and the doctrine
+answers leave marks within 100 m of the squads alone, as the scripted
+commander does. The `oldfire` control reproduced the morning both times.)
+
+100 seeds a cell (±9). **The fire policy is not what holds the 2:1 down**:
+all three are at 8–13%, where the old policy on the old allotment gave 29%.
+It is the doctrinal allotment — a third of the rounds — at two to one, when
+the attack is played through the questions. The scripted company's
+standard measurement on the same allotment gives 25%; its plan (three
+scouts, the company in dead ground, the doctrinal fire policy in code)
+differs from the reference plans', not its fire rules. The 3:1 median is
+in band under every policy.
+
 ## The stale tables on the new baseline, 2026-10-12
 
 After decisions 91–94: the reference plans, the hasty attack and the raid,
