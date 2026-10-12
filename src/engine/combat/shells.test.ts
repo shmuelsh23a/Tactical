@@ -437,9 +437,16 @@ describe("who may call fire (decisions 36–37)", () => {
   });
 
   it("refuses an allotment or a registered target a declared echelon may not call", () => {
+    // Since rules decision 95 a company calls the artillery its superior echelon allots it…
+    const allotted = new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "company" }, fireSupport: { BLUE: [{ weapon: "artillery", missions: 1 }] } });
+    expect(allotted.mayCall("BLUE", "artillery")).toBe(true);
+    // …and nothing it was not given; and a platoon is given no indirect fire at all (decision 37).
     expect(
-      () => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "company" }, fireSupport: { BLUE: [{ weapon: "artillery", missions: 1 }] } }),
+      () => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "company" }, registeredTargets: [{ side: "BLUE", weapon: "artillery", at: { x: 0, y: 0 } }] }),
     ).toThrow(/battalion and above/);
+    expect(
+      () => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "platoon" }, fireSupport: { BLUE: [{ weapon: "mortar", missions: 1 }] } }),
+    ).toThrow(/company and above/);
     expect(
       () => new Game({ lethality: "document", seed: 1, commandEchelon: { BLUE: "platoon" }, registeredTargets: [{ side: "BLUE", weapon: "mortar", at: { x: 0, y: 0 } }] }),
     ).toThrow(/company and above/);

@@ -29,7 +29,10 @@ export function buildTelAzekaAssault2Terrain(): Terrain {
  * effort, has its own two 60 mm (eight missions of 10, 80 rounds) and the
  * battalion's four 81 mm with priority of fires (twenty of 8, 160 rounds);
  * RED's platoon has its company's two 60 mm, 80 rounds, by its FPF and a
- * priority target. The rounds are ours; doctrine gives none.
+ * priority target. The rounds are ours; doctrine gives none. At two to one
+ * its superior echelon also allots BLUE a 155 mm battery, twelve missions
+ * of six — four held for its priority target, eight for its planned
+ * targets (rules decision 95, the author's twelve).
  *
  * ⚠️ The layout is ours, not the author's: the company battle's with RED's
  * second platoon taken away. The mines in the saddle are the platoon battle's.
@@ -49,7 +52,7 @@ export function buildTelAzekaAssault2Scenario(seed = 1967): Scenario {
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "company", RED: "company" },
     fireSupport: {
-      BLUE: [{ weapon: "lightMortar", missions: 8, roundsForEffect: 10, tubes: 2 }, { weapon: "mortar", missions: 20, roundsForEffect: 8, tubes: 4 }],
+      BLUE: [{ weapon: "lightMortar", missions: 8, roundsForEffect: 10, tubes: 2 }, { weapon: "mortar", missions: 20, roundsForEffect: 8, tubes: 4 }, { weapon: "artillery", missions: 12, roundsForEffect: 6, tubes: 6 }],
       RED: [{ weapon: "lightMortar", missions: 8, roundsForEffect: 10, tubes: 2 }],
     },
     terrain: buildTelAzekaAssault2Terrain(),

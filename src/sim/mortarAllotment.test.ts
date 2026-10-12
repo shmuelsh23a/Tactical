@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
+import { telAzekaAssault2Listing } from "../app/scenarios/telAzekaAssault2.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
-import { FIRE_RESERVE, tubesOf } from "../app/computerSide.js";
+import { ARTILLERY_LIFT_M, FIRE_RESERVE, tubesOf } from "../app/computerSide.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
 import { Game, distance, explosiveFor, makeCommandGroup, makeInfantry, replayGame, type Side } from "../engine/index.js";
 import { CHECKED_SUPPRESSION_REACH } from "../engine/data/morale.js";
@@ -102,5 +103,54 @@ describe("fire plans that set missions aside (decision 93)", () => {
     }
     // The defender's check is not vacuous: in some of these the FPF was never fired.
     expect(firedFpf.some((n) => n === 0)).toBe(true);
+  });
+});
+
+describe("artillery allotted to a company (decision 95)", () => {
+  it("the 2:1 attacker's battery fires its priority target, and within its allotment", () => {
+    const opts = {
+      drill: { ...PLAIN_SCRIPT, scouting: { watchTurns: 1 } },
+      company: { recon: { scouts: 3, lookTurns: 4, scoutFrom: "vantage" as const }, waitIn: "deadGround" as const },
+      fire: { ...DEFAULT_FIRE_CHOICES, waitForContact: true, aimWithin: 40, targetFirst: "squads" as const },
+    };
+    let fired = 0;
+    // The standard measurement's first seeds; each closes on the objective, so each calls the guns.
+    for (const seed of [1000, 1001, 1002]) {
+      let game: Game | undefined;
+      // Where the squads stood on each turn, to check every call of the guns against them.
+      const stood = new Map<number, { x: number; y: number }[]>();
+      runScenarioBattle(telAzekaAssault2Listing, seed, {
+        ...opts,
+        onTurn: (g) => {
+          game = g;
+          stood.set(g.turn, g.units.filter((u) => u.side === "BLUE" && u.kind === "infantry" && !u.neutralized).map((u) => ({ ...u.position })));
+        },
+      });
+      const g = game!;
+      expect(g.mayCall("BLUE", "artillery")).toBe(true);
+      expect(tubesOf(g, "BLUE").at(-1)).toBe("artillery");
+      const priority = g.registeredTargets.find((t) => t.side === "BLUE" && t.weapon === "artillery")!.at;
+      const guns = g.fireMissions.filter((m) => m.side === "BLUE" && m.weapon === "artillery");
+      const allotted = g.fireSupport.BLUE!.find((a) => a.weapon === "artillery")!.missions;
+      expect(guns.length).toBeLessThanOrEqual(allotted);
+      // All of it on the priority target when the allotment is no more than its reserve;
+      // beyond it, the rest is free for planned targets (decision 93's plan).
+      if (allotted <= FIRE_RESERVE.attackerPriority) for (const m of guns) expect(m.target).toEqual(priority);
+      fired += guns.filter((m) => m.target.x === priority.x && m.target.y === priority.y).length;
+      // Never called within 300 m of any of its forces where they stood at the
+      // call — the end of the turn before (onTurn runs at a turn's end). The
+      // moving squads are held to 400 m there (two turns' walk more); scouts,
+      // still, to the 300 m they must have at landing.
+      let checked = 0;
+      for (const m of guns) {
+        const at = stood.get((m.forEffectOnTurn ?? 0) - 1);
+        if (!at) continue;
+        expect(Math.min(...at.map((p) => distance(p, m.target)))).toBeGreaterThan(ARTILLERY_LIFT_M);
+        checked++;
+      }
+      expect(checked).toBe(guns.length);
+    }
+    // And it does fire the priority target: these attacks close on the objective.
+    expect(fired).toBeGreaterThan(0);
   });
 });

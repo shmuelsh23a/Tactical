@@ -66,7 +66,7 @@ import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
 import { claudeCommander, type ClaudeAskerOptions } from "../src/sim/claude.js";
 import { ORDERS } from "../src/sim/opord.js";
-import { LIFT_AT_M, PRIORITY_CALL_M } from "../src/app/computerSide.js";
+import { LIFT_AT_M, PRIORITY_CALL_M, priorityCallFor } from "../src/app/computerSide.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -260,7 +260,8 @@ try {
  *
  * Fire (decision 93, in the questions): by doctrine unless told — the
  * plan's centre as the priority target, called once the company has gone
- * and its nearest squad is within PRIORITY_CALL_M (and beyond LIFT_AT_M);
+ * and its nearest squad is within its tube's call distance — PRIORITY_CALL_M,
+ * or priorityCallFor the guns — and beyond its lift (offered only then);
  * else a sure mark on a planned target, else a firer in sight, never one
  * within LIFT_AT_M of its squads. "oldfire" names no priority target and
  * fires on any sure mark, squads first — every table before 2026-10-12.1;
@@ -323,7 +324,9 @@ function ruleAsker(extra: Set<string>): Asker {
         // the squads, in sight; nothing else.
         const p = q.options.find((o) => o.id === "priority");
         const near = Number(/nearest squad is (\d+) m/.exec(p?.label ?? "")?.[1] ?? Infinity);
-        if (p && !/has not gone in/.test(q.view) && near <= PRIORITY_CALL_M) return "priority";
+        // The guns land two turns after the call, so they are called further out (decision 95).
+        const callAt = /artillery/.test(p?.label ?? "") ? priorityCallFor("artillery") : PRIORITY_CALL_M;
+        if (p && !/has not gone in/.test(q.view) && near <= callAt) return "priority";
         // "opportunity": the priority target's reserve kept, and every other
         // mission free for targets of opportunity, as "oldfire" chooses them
         // (ATP 3-21.8, 2024, para B-23: "planned targets and targets of opportunity").

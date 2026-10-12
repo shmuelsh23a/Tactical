@@ -32,6 +32,8 @@ import {
   DOCTRINAL_DEFENDER_TARGETS,
   FIRE_RESERVE,
   LIFT_AT_M,
+  liftFor,
+  ownClearOf,
   firingOnUs,
   priorityReserve,
   mortarFree,
@@ -268,10 +270,18 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const ask = opts.decide;
   /** The asked commander's priority target, once named (decision 93). */
   let priority: Point | undefined;
-  // The missions free to fire: a priority target's held missions are not (decision 93).
+  // The mortars' missions free to fire: a priority target's held missions are
+  // not (decision 93); the guns are counted on their own line (decision 95).
   const mortarLeft = () => {
-    const left = missionsLeft(g, attacker);
-    return left == null ? null : left - priorityReserve(g, attacker, priority).held;
+    const left = missionsLeft(g, attacker, true);
+    const reserve = priorityReserve(g, attacker, priority);
+    return left == null ? null : left - (reserve.tube !== "artillery" ? reserve.held : 0);
+  };
+  const gunsLeft = () => {
+    const n = g.mayCall(attacker, "artillery") ? g.fireMissionsLeft(attacker, "artillery") : undefined;
+    if (n === undefined) return undefined;
+    const reserve = priorityReserve(g, attacker, priority);
+    return { left: n, held: reserve.tube === "artillery" ? reserve.held : 0 };
   };
   // What the attacker's mortars did since it was last asked, as its forces saw it.
   const seenHits = new Map<string, number>();
@@ -298,7 +308,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     ask!({
       ...q,
       turn: g.turn,
-      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), brief: listing.brief, startLine, reports: reports(), stage: stage() }),
+      view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), gunsLeft: gunsLeft(), brief: listing.brief, startLine, reports: reports(), stage: stage() }),
     });
   const companyPlan = ask ? askPlan(g, attacker, objective, suspected, mapWidth, mapHeight, question) : opts.company ?? {};
   // The asked commander names its priority target (decision 93's fire plan, in the questions).
@@ -768,7 +778,7 @@ function askPlatoons(
         kind: "noul",
         ask:
           `${at.map((u) => u.id).join(", ")} ${at.length === 1 ? "is" : "are"} at the hold-short line, ${HOLD_SHORT_M} m from the enemy, waiting for the fires to lift. ` +
-          `Lift the fires and go in now? (Mortar missions left: ${missionsLeft(g, side)}.)`,
+          `Lift the fires and go in now? (Fire missions left: ${missionsLeft(g, side)}.)`,
         options: [
           { id: "yes", label: "yes: lift the fires, the assault goes in" },
           { id: "no", label: "no: keep the fires on and hold short" },
@@ -921,12 +931,15 @@ function askAttackerFire(
   const tubes = tubesOf(g, side);
   const free = tubes.filter((w) => tubeFree(g, side, w));
   const spare = free.filter((w) => (g.fireMissionsLeft(side, w) ?? Infinity) > (w === reserve.tube ? reserve.held : 0));
-  // Before the fires lift, and with every squad beyond the lift distance from
-  // it, as the scripted commander's (decision 93; LIFT_AT_M).
-  const clear = !priority || squadsClearOf(g, side, company, priority);
+  // Before the fires lift, and with every squad beyond the reserve tube's lift
+  // from it, as the scripted commander's (decisions 93, 95; liftFor).
+  const clear = !priority || !reserve.tube || squadsClearOf(g, side, company, priority, reserve.tube);
   const canPriority = !!priority && !!reserve.tube && reserve.held > 0 && free.includes(reserve.tube) && !company.firesLifted && clear;
   if (!spare.length && !canPriority) return;
-  const tube = spare[spare.length - 1];
+  // The mortar a mark is fired with — the heaviest with a mission to spare —
+  // and the guns, which fire only on a mark beyond their lift (decision 95).
+  const tube = [...spare].reverse().find((w) => w !== "artillery");
+  const guns = spare.includes("artillery");
   const bombs = tube ? g.fireSupport[side]?.find((a) => a.weapon === tube)?.roundsForEffect : undefined;
   const kills = (tube && TUBE_KILL_RADIUS[tube]) ?? "about 9 m";
   // Smoke is the 81 mm's, from a mission it has to spare (decision 93: the 60 mm lays none).
@@ -939,8 +952,12 @@ function askAttackerFire(
   // 63, S4). Once he lifts the fires for the assault they shift to depth:
   // nothing within LIFTED_CLEAR_M of the company's squads.
   const nearestOwn = (p: Point) => Math.min(...squads.map((s) => distance(s.position, p)));
+  // Which tube a mark is fired with: the heaviest that may fire there.
+  const tubeFor = (p: Point) => [...spare].reverse().find((w) => w !== "artillery" || squadsClearOf(g, side, company, p, w));
   const marks = spare.length
-    ? view.units.filter((u) => u.side !== side && !u.neutralized && (!company.firesLifted || nearestOwn(u.position) > LIFTED_CLEAR_M))
+    ? view.units.filter(
+        (u) => u.side !== side && !u.neutralized && (!company.firesLifted || nearestOwn(u.position) > LIFTED_CLEAR_M) && tubeFor(u.position),
+      )
     : [];
   if (!marks.length && !canPriority) return;
   const firing = firingOnUs(g, side);
@@ -958,7 +975,11 @@ function askAttackerFire(
       (priority ? ` and ${reserve.held} held back for your priority target, ${priorityName}` : "") +
       ". " +
       (tube
-        ? `A free mission fires ${bombs ? `${bombs} bombs` : "its bombs"} for effect at once; a bomb kills within ${kills}, less against men dug in with overhead cover. `
+        ? `A free mortar mission fires ${bombs ? `${bombs} bombs` : "its bombs"} for effect at once; a bomb kills within ${kills}, less against men dug in with overhead cover. `
+        : "") +
+      (guns
+        ? `Your battalion's guns fire a free mission on a mark more than ${liftFor("artillery")} m from your squads: ` +
+          `${g.fireSupport[side]?.find((a) => a.weapon === "artillery")?.roundsForEffect ?? 6} shells, landing two turns after the call; a shell kills within ${TUBE_KILL_RADIUS.artillery}. `
         : "") +
       `A mark within ${DANGER_CLOSE_M} m of your own squads is DANGER CLOSE: the bombs can hit and pin your own men too. ` +
       "A position stays pinned only while the fire lasts and a turn or two after, so the assault has to arrive before you lift. Fire on which?",
@@ -985,6 +1006,7 @@ function askAttackerFire(
               id: "priority",
               label:
                 `your priority target, ${priorityName}: one of the ${reserve.held} missions held for it, on its registered data` +
+                (reserve.tube === "artillery" ? ", by the battalion's artillery, landing two turns after the call" : "") +
                 (lead !== undefined ? `; your nearest squad is ${lead} m from it` : "") +
                 (lead !== undefined && lead <= DANGER_CLOSE_M ? " — DANGER CLOSE" : ""),
             },
@@ -1013,24 +1035,25 @@ function askAttackerFire(
     return;
   }
   const target = marks.find((u) => u.id === a)!;
-  // The heaviest tube with a mission to spare, as before decision 93's questions.
-  g.callForFire(side, tube!, target.position, { method: "effect" });
+  // The heaviest tube with a mission to spare, as before decision 93's
+  // questions — never the guns within their lift of the squads (decision 95):
+  // a mark with no tube to fire it is not offered.
+  g.callForFire(side, tubeFor(target.position)!, target.position, { method: "effect" });
   result.missions[side]++;
 }
 
 /** Whether every squad of `side` but its scouts is beyond the lift distance of `p` (decision 63 S4's LIFT_AT_M). */
-function squadsClearOf(g: Game, side: Side, company: ScriptedCompany, p: Point): boolean {
-  return g.units
-    .filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u))
-    .every((u) => distance(u.position, p) > LIFT_AT_M);
+function squadsClearOf(g: Game, side: Side, company: ScriptedCompany, p: Point, weapon: string): boolean {
+  const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
+  return ownClearOf(g, side, squads, p, weapon);
 }
 
 /** A bomb's lethal radius by tube, as a commander is told it: √(area/π) of ARES's lethal areas (decision 93). */
-const TUBE_KILL_RADIUS: Readonly<Record<string, string>> = { lightMortar: "about 7 m", mortar: "about 9 m", heavyMortar: "about 14 m" };
+const TUBE_KILL_RADIUS: Readonly<Record<string, string>> = { lightMortar: "about 7 m", mortar: "about 9 m", heavyMortar: "about 14 m", artillery: "about 15 m" };
 
-/** The missions a side has left over all its tubes (decision 93); null when it may call none, undefined when it is not rationed. */
-function missionsLeft(g: Game, side: Side): number | null | undefined {
-  const tubes = tubesOf(g, side);
+/** The missions a side has left over all its tubes (decision 93) — or its mortars only; null when it may call none, undefined when it is not rationed. */
+function missionsLeft(g: Game, side: Side, mortarsOnly = false): number | null | undefined {
+  const tubes = tubesOf(g, side).filter((w) => !mortarsOnly || w !== "artillery");
   if (!tubes.length) return null;
   let left = 0;
   for (const w of tubes) {

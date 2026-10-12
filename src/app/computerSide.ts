@@ -28,16 +28,57 @@ const mean = (us: readonly Unit[]): Point => ({
   y: us.reduce((t, u) => t + u.position.y, 0) / us.length,
 });
 
-/** The mortars, lightest first (rules decision 93 adds the 60 and 120 mm to the 81 mm). */
-const TUBE_ORDER = ["lightMortar", "mortar", "heavyMortar"] as const;
+/**
+ * The tubes, lightest first: the mortars (rules decision 93 adds the 60 and
+ * 120 mm to the 81 mm), then the guns — a side's only when allotted to it
+ * (decision 95), as `tubesOf` reads them.
+ */
+const TUBE_ORDER = ["lightMortar", "mortar", "heavyMortar", "artillery"] as const;
 
 /**
- * The mortars `side` fires (rules decision 93): those it was allotted,
- * lightest first; a side not on missions, the 81 mm as before.
+ * The tubes `side` fires (rules decisions 93 and 95): those it was allotted,
+ * lightest first, the guns last; a side not on missions, the 81 mm as before.
  */
 export function tubesOf(g: Game, side: Side): string[] {
   const allotted = g.fireSupport[side]?.map((a) => a.weapon);
   return TUBE_ORDER.filter((w) => (allotted ? allotted.includes(w) : w === MORTAR) && g.mayCall(side, w));
+}
+
+/**
+ * How near its own squads a tube may be called (decision 63 S4: danger
+ * close accepted), measured at the call: the mortars at {@link LIFT_AT_M};
+ * the 155 mm at its risk-estimate distance for 0.1% incapacitation at a
+ * third of its range, 300 m (TC 3-21.76, 2025, Table 3-3; decision 95),
+ * **at landing** — two turns after the call, so two turns' walk (100 m) is
+ * added at the call. ⚠️ The guns' choice of row ours.
+ */
+export function liftFor(weapon: string): number {
+  return weapon === "artillery" ? ARTILLERY_LIFT_M + ARTILLERY_CLOSING_M : LIFT_AT_M;
+}
+export const ARTILLERY_LIFT_M = 300;
+
+/**
+ * Whether `side`'s own forces are clear of a round of `weapon` at `p`
+ * (decisions 63 S4, 95): its moving squads beyond the tube's lift at the
+ * call ({@link liftFor}); for the guns, every other force of it too —
+ * scouts at their posts, command groups — beyond the 300 m it must have at
+ * landing, since a force that stands still does not close.
+ */
+export function ownClearOf(g: Game, side: Side, squads: readonly Unit[], p: Point, weapon: string): boolean {
+  if (!squads.every((u) => distance(u.position, p) > liftFor(weapon))) return false;
+  if (weapon !== "artillery") return true;
+  return g.units.filter((u) => u.side === side && !u.neutralized).every((u) => distance(u.position, p) > ARTILLERY_LIFT_M);
+}
+/** What the squads may close in the two turns the guns' rounds take to land: two turns' walk. */
+const ARTILLERY_CLOSING_M = 100;
+
+/**
+ * How far out the attacker calls its priority target with a tube: the
+ * mortars at {@link PRIORITY_CALL_M}; the guns, whose rounds land two turns
+ * after the call, from 600 m (⚠️ ours: 400 m plus two turns' walk).
+ */
+export function priorityCallFor(weapon: string): number {
+  return weapon === "artillery" ? 600 : PRIORITY_CALL_M;
 }
 
 /** Whether `side` may call `weapon` now: allowed, missions left, and none of it still adjusting. */
@@ -47,7 +88,7 @@ export function tubeFree(g: Game, side: Side, weapon: string): boolean {
   return !g.fireMissions.some((m) => m.side === side && m.weapon === weapon && m.status === "adjusting");
 }
 
-/** Whether `side` may call any of its mortars now. */
+/** Whether `side` may call any of its tubes now. */
 export function mortarFree(g: Game, side: Side): boolean {
   return tubesOf(g, side).some((w) => tubeFree(g, side, w));
 }
@@ -450,8 +491,8 @@ export function callAttackerFire(
 ): void {
   if (!mortarFree(g, side)) return;
   const tubes = tubesOf(g, side);
-  // Before decision 93: one tube, the heaviest free.
-  const legacyTube = [...tubes].reverse().find((w) => tubeFree(g, side, w));
+  // Before decision 93: one tube, the heaviest free — the guns only where their lift allows (decision 95).
+  const legacyTube = (at: Point) => [...tubes].reverse().find((w) => tubeFree(g, side, w) && ownClearOf(g, side, squads, at, w));
   const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   if (!squads.length) return;
   // Danger close is a risk it takes (decision 63, S4): its fire stays on
@@ -505,8 +546,9 @@ export function callAttackerFire(
     const open = planned.filter(safe);
     aim = open[tally.missions % Math.max(1, open.length)];
   }
-  if (!aim || !legacyTube) return;
-  g.callForFire(side, legacyTube, aim, { method: "effect" });
+  const tube = aim && legacyTube(aim);
+  if (!aim || !tube) return;
+  g.callForFire(side, tube, aim, { method: "effect" });
   tally.missions++;
 }
 
@@ -516,8 +558,8 @@ export function callAttackerFire(
  * missions of its heaviest tube held back ({@link FIRE_RESERVE}) and fired
  * as the assault closes — "short, violent preparations targeted against
  * forward defenses … lifted or shifted at the last possible moment" (ATP
- * 3-21.90 3-71) — from {@link PRIORITY_CALL_M} until its squads are
- * {@link LIFT_AT_M} from it. Otherwise it fires on a mark it is sure of
+ * 3-21.90 3-71) — from its tube's call distance ({@link priorityCallFor})
+ * until its squads are within the tube's lift ({@link liftFor}). Otherwise it fires on a mark it is sure of
  * within the on-the-mark radius of a planned target (heaviest tube first),
  * on a mark firing on its squads (immediate suppression, lightest first),
  * or on its plan while it crosses with `prepFires`; nothing else.
@@ -541,8 +583,17 @@ function callDoctrinalAttackerFire(
     g.callForFire(side, w, p, { method: "effect" });
     tally.missions++;
   };
-  // The priority target as the assault closes.
-  if (priority && reserveTube && at.going && at.lead <= PRIORITY_CALL_M && at.safe(priority) && free.includes(reserveTube) && held(reserveTube) > 0) {
+  // The priority target as the assault closes, by its tube's call and lift distances.
+  const clearOf = (p: Point, w: string) => ownClearOf(g, side, at.squads, p, w);
+  if (
+    priority &&
+    reserveTube &&
+    at.going &&
+    at.lead <= priorityCallFor(reserveTube) &&
+    clearOf(priority, reserveTube) &&
+    free.includes(reserveTube) &&
+    held(reserveTube) > 0
+  ) {
     call(reserveTube, priority);
     return;
   }
@@ -555,8 +606,10 @@ function callDoctrinalAttackerFire(
   const onPlan = marks
     .filter((u) => planned.some((p) => distance(p, u.position) <= ADJUSTMENT_RADIUS_M))
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
-  if (onPlan) {
-    call(spare[spare.length - 1]!, onPlan.position);
+  // The heaviest spare tube that may fire there: the guns not within their lift distance of the squads.
+  const tubeFor = (p: Point) => [...spare].reverse().find((w) => clearOf(p, w));
+  if (onPlan && tubeFor(onPlan.position)) {
+    call(tubeFor(onPlan.position)!, onPlan.position);
     return;
   }
   // Immediate suppression is area fire on a firer the squads know of: it
@@ -565,15 +618,15 @@ function callDoctrinalAttackerFire(
   const shooter = view.units
     .filter((u) => u.side !== side && !u.neutralized && !u.surrendered && fresh(u.id) && at.safe(u.position) && firing.has(u.id))
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
-  if (shooter) {
-    call(spare[0]!, shooter.position);
+  if (shooter && spare.find((w) => clearOf(shooter.position, w))) {
+    call(spare.find((w) => clearOf(shooter.position, w))!, shooter.position);
     return;
   }
   if (plan.prepFires && at.going) {
     // Not on the priority target while its reserve is held: that is the reserve's.
     const open = planned.filter((p) => at.safe(p) && (p !== priority || reserve.held === 0));
     const aim = open[tally.missions % Math.max(1, open.length)];
-    if (aim) call(spare[spare.length - 1]!, aim);
+    if (aim && tubeFor(aim)) call(tubeFor(aim)!, aim);
   }
 }
 

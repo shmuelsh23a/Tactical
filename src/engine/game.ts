@@ -1136,6 +1136,9 @@ export class Game {
     this.locationRng = new Rng(unitSeed(opts.seed, LOCATION_ERROR_STREAM));
     if (this.attackers.some((s) => !this.sides.includes(s))) throw new Error(`attackers: cannot read ${JSON.stringify(opts.attackers)}`);
     if (!LETHALITIES.includes(this.lethality)) throw new Error(`lethality: cannot read ${JSON.stringify(opts.lethality)}`);
+    // The allotments first: an allotment grants its weapon's call (decision 95),
+    // so a registered target for it is read against it.
+    this.fireSupport = cloneForRecord(opts.fireSupport ?? {});
     for (const t of opts.registeredTargets ?? []) {
       if (!this.sides.includes(t.side) || !isIndirect(t.weapon) || !Number.isFinite(t.at?.x) || !Number.isFinite(t.at?.y)) {
         throw new Error(`registeredTargets: cannot read ${JSON.stringify(t)}`);
@@ -1147,7 +1150,6 @@ export class Game {
     }
     this.onTheMark.push(...this.registeredTargets);
     this.presetTargets = this.registeredTargets.length;
-    this.fireSupport = cloneForRecord(opts.fireSupport ?? {});
     for (const [side, list] of Object.entries(this.fireSupport)) {
       if (!this.sides.includes(side as Side) || !Array.isArray(list)) {
         throw new Error(`fireSupport: cannot read ${side}: ${JSON.stringify(list)}`);
@@ -1196,15 +1198,21 @@ export class Game {
 
   /**
    * Whether `side` may call `weapon` at all (rules decision 37): mortars at
-   * company and above, artillery at battalion and above. A weapon with no
+   * company and above, artillery at battalion and above — or at company, when
+   * its superior echelon allots it missions (decision 95). A weapon with no
    * floor — a grenade's smoke — anybody may use.
    */
   mayCall(side: Side, weapon: string): boolean {
     // Somebody has to call it (rules decision 55): not while command changes hands.
     if (FIRE_SUPPORT_MIN_ECHELON[weapon] && !this.hasFireControl(side)) return false;
     if (!this.fireSupportByEchelon) return true;
+    const rank = ECHELON_RANK[this.commandEchelonOf(side)];
+    // Allotted by its superior echelon, scenario by scenario (rules decision
+    // 95, after 94): a company calls the artillery it is given. Below company
+    // there is still no indirect fire at all (decision 37).
+    if (rank >= ECHELON_RANK.company && this.fireSupport[side]?.some((a) => a.weapon === weapon && a.missions > 0)) return true;
     const floor = FIRE_SUPPORT_MIN_ECHELON[weapon];
-    return !floor || ECHELON_RANK[this.commandEchelonOf(side)] >= ECHELON_RANK[floor];
+    return !floor || rank >= ECHELON_RANK[floor];
   }
 
   private requireMayCall(side: Side, weapon: string): void {
