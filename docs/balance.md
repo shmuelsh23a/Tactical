@@ -21,6 +21,64 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## Why the 2:1 plans fail, and two fixes, 2026-10-12
+
+The author: "look into why the move-up and deliberate plans fail", then
+"do both". Two failure modes at two to one, found in the reference plans'
+own logs and by replaying their battles from the saved answers:
+
+1. **The stall** (B deliberate 70% of battles out of time, D 58%, B + move
+   up 47%). At 2:1 the company has two platoons; the rule commander sent
+   the most scouts offered, three, all out of the second platoon, and
+   `basefire` made the first the base of fire — so the assault was **one
+   squad and a machine gun team**. Holding short, the assault stops 200 m
+   short until the fires lift, and the lift is asked only when an
+   assaulting squad is at that line; the lone squad went in and was lost,
+   nobody else ever reached the line, the fires never lifted, and the base
+   of fire never went in. Traced on seed 1000: the scouts sat at their posts
+   440 m out from turn 26 to 45, the mortars firing on one mark all along.
+2. **Shot up** (move-up and hasty plans break at the attacker's 30%). The
+   defence is suppressed or pinned in 85–97% of cases when the first two
+   squads come within 250 m, in every plan alike; what differs is that only
+   11–14 men arrive. With one scout instead of three the stall mostly goes
+   (out of time 70% → 23% for B) but those battles then end in the same way.
+
+**Fixed** (both ruled): a company whose assault element is spent — some
+platoon was given the assault, none of its squads is still fighting, its
+scouts aside — commits its base of fire (the platoons on "support"; rear
+security, a reserve, a halt or a withdrawal keep their tasks) and lifts
+fires it was holding short for (`ScriptedCompany.assaultSpent`,
+`recommit`; asked once as `recommit.N` of a commander who is asked, and
+not again after a no; question set 2026-10-12.3); and the rule commander
+sends **as many scouts as it has platoons** — two at 2:1, where it sent
+the most offered, three (`--rule maxscouts` keeps the old). The scouts are
+still the squads nearest the objective, so at 2:1 both may come from the
+second platoon; the count, not the choice, is what changed. Measured, 100
+seeds a cell (twice: before and after a review's fixes to the recommit —
+it lifted fires that were not held, re-tasked rear security, and could be
+asked again every turn — identical cell for cell); the standard
+measurement, whose company has no other tasks, is unchanged (3:1 50%, 2:1
+31%):
+
+| Plan | 3:1 before → now | 2:1 before → now | 2:1 out of time before → now |
+|---|---|---|---|
+| A calibrated | 50 → 48 | 19 → **32** | 0 → 2 |
+| A + flank | 53 → 53 | 21 → 18 | — → 10 |
+| B deliberate | 44 → 44 | 12 → 13 | 70 → **15** |
+| E fire-heavy | 65 → 65 | 40 → 43 | — → 3 |
+| D flank | 30 → 30 | 16 → 13 | 58 → **22** |
+| A + move up | 40 → 40 | 15 → 19 | 0 → 0 |
+| B + move up | 28 → 28 | 3 → 8 | 47 → **3** |
+| C hasty | 51 → 51 | 9 → **23** | 0 → 0 |
+| **Median** | **47 → 46** | **15.5 → 18.5** | |
+| Hasty, one scout | 50 → 50 | 27 → 27 | |
+
+The stall is gone; the plans that split the company at two to one — a
+base of fire and an assault — still fail, now by being shot up rather than
+by the clock: half a company assaulting a dug-in platoon is about one to
+one at the point of assault, where doctrine asks three. That is decision
+68's "a 2:1 attack usually fails", and it is left as it is.
+
 ## Artillery for the 2:1, 2026-10-12
 
 Rules decision 95: a company calls what its superior echelon allots it; the

@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 91–95 are in; the standard measurement is in band (3:1 50%, 2:1 31% with the battalion's guns); the reference plans' 2:1 median is 15.5%, held down by the move-up and deliberate plans; urban waits on its design.**
+**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; urban waits on its design; the force-quality matrix and AI commanders wait on the author's go.**
 
 **Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
 
@@ -260,11 +260,12 @@ How the last two days went, round by round, is in
 
 ### Open (2026-10-12)
 
-- **The reference plans' 2:1 median is 15.5%** with decision 95's guns
-  (standard measurement 31%, in band). Fire and flank plans reach the
-  band; move-up and deliberate plans stay at 3–15% whatever fire they get
-  — their structure at two to one (balance.md, *Artillery for the 2:1*).
-  Accept, or look at those plans?
+- **The reference plans' 2:1 median is 18.5%**, just under 20 (standard
+  measurement 31%). The stall is fixed (an assault that is spent commits
+  the rest and lifts the fires; one scout a platoon); what is left is the
+  plans that split the company at two to one being shot up — doctrine's
+  three to one at the point of assault, and decision 68's "usually fails".
+  Accept?
 - **Urban warfare is designed first** (the author, 2026-10-12): backlog 23
   is the roadmap's *Urban warfare* entry; the raid (3%) and urban (56%)
   wait on it, and decisions 75–78 are re-read inside it. Nothing built
