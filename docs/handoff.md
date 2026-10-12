@@ -290,6 +290,13 @@ way. Two levers would move all three together:
    open** (balance.md, *Does suppression pay?*, part 3). That is the one
    figure in the chain that is plainly unrealistic, and it is ours.
 
+**2026-10-12, latest: the indirect-fire review is done and a proposal is
+with him** ([indirect-suppression.md](indirect-suppression.md)). FM 7-90's
+radii are *probabilities* of suppression and the game adds them as
+amounts, so one mission saturates a force at 100. Proposed: combine a
+turn's rounds as 1 − Π(1 − p), add half of what is left; halving, radii
+and the roof unchanged. Waiting on his ruling.
+
 **2026-10-12, later: decision 91 is in, and it is not the lever.** The
 author ruled yes to the proposal, the hit side left alone, and the halving
 kept. Measured (balance.md, *Suppression by volume*): 3:1 56% → 54%, 2:1
