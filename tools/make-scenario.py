@@ -191,11 +191,11 @@ SPEC_KEYS = {
     "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers", "readiness",
 }
-ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect"}
+ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect", "tubes"}
 # The indirect-fire weapons a side can be allotted. Whether its echelon may
 # call them is a rule (decision 37), and the engine refuses that when the
 # battle is built: `scenarioCatalogue.test.ts` builds every battle.
-FIRE_WEAPONS = {"mortar", "artillery"}
+FIRE_WEAPONS = {"mortar", "artillery", "lightMortar", "heavyMortar"}
 KINDS = {"infantry", "vehicle", "command"}
 # What each kind may carry beyond the common keys. A key spelt correctly but
 # given to the wrong kind is refused rather than dropped: `soldiers` on a
@@ -354,6 +354,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
             require("missions" in a, f"{where}: missing missions")
             require_int(a, "missions", where, 0, 100)
             require_int(a, "roundsForEffect", where, 1, 100)
+            require_int(a, "tubes", where, 1, 6)
     window = spec["window"]
     check_keys("window", window, WINDOW_KEYS)
     for key in ("lat", "lon", "width", "height", "heightfield", "objects", "constant"):
@@ -598,7 +599,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         for side, allotments in sorted(spec["fireSupport"].items()):
             items = ", ".join(
                 "{ weapon: \"" + a["weapon"] + "\", missions: " + str(a["missions"])
-                + (", roundsForEffect: " + str(a["roundsForEffect"]) if "roundsForEffect" in a else "") + " }"
+                + (", roundsForEffect: " + str(a["roundsForEffect"]) if "roundsForEffect" in a else "")
+                + (", tubes: " + str(a["tubes"]) if "tubes" in a else "") + " }"
                 for a in allotments
             )
             lines.append(f"      {side}: [{items}],")

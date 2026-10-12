@@ -26,6 +26,9 @@ import {
   attackerPlan,
   callAttackerFire,
   callDefenderFire,
+  tubeFree,
+  tubesOf,
+  DOCTRINAL_DEFENDER_TARGETS,
   mortarFree,
   planDefenderFires,
   type AttackerFireTally,
@@ -237,17 +240,28 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
 
   // Mission planning: the attacker registers its plan; the defender its
   // targets on the dead ground in front of it.
-  if (opts.fire.register && g.mayCall(attacker, MORTAR)) {
-    for (const t of planned) g.registerTarget(attacker, MORTAR, t);
+  // Every tube a side has registers the same points (decision 93: a side may
+  // have its own 60 mm and the battalion's 81 mm).
+  if (opts.fire.register) {
+    for (const w of tubesOf(g, attacker)) for (const t of planned) g.registerTarget(attacker, w, t);
   }
+  const legacyFire = opts.fire.legacyFirePlan ?? false;
   const defenderTargets =
-    opts.defenderFirePlan !== false && g.mayCall(defender, MORTAR)
-      ? planDefenderFires(g, defender, startLine, mapWidth, mapHeight, opts.defenderFirePlan === "open" ? "open" : "deadGround")
+    opts.defenderFirePlan !== false && tubesOf(g, defender).length
+      ? planDefenderFires(
+          g,
+          defender,
+          startLine,
+          mapWidth,
+          mapHeight,
+          opts.defenderFirePlan === "open" ? "open" : "deadGround",
+          legacyFire ? undefined : DOCTRINAL_DEFENDER_TARGETS,
+        )
       : [];
-  for (const t of defenderTargets) g.registerTarget(defender, MORTAR, t);
+  for (const w of tubesOf(g, defender)) for (const t of defenderTargets) g.registerTarget(defender, w, t);
 
   const ask = opts.decide;
-  const mortarLeft = () => (g.mayCall(attacker, MORTAR) ? g.fireMissionsLeft(attacker, MORTAR) ?? null : null);
+  const mortarLeft = () => missionsLeft(g, attacker) ?? null;
   // What the attacker's mortars did since it was last asked, as its forces saw it.
   const seenHits = new Map<string, number>();
   const heard = (res: IndirectFireResult[] | undefined) => {
@@ -349,9 +363,10 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       result.missions[attacker] = attackerFire.missions;
       result.smoke[attacker] = attackerFire.smoke;
     }
-    const defenderCall = callDefenderFire(g, defender, defenderTargets);
+    const defenderCall = callDefenderFire(g, defender, defenderTargets, legacyFire);
     if (defenderCall) result.missions[defender]++;
-    if (defenderCall === "plan") result.defenderPlanned++;
+    // On its plan: a registered target, the FPF and the priority target among them (decision 93).
+    if (defenderCall === "plan" || defenderCall === "fpf" || defenderCall === "priority") result.defenderPlanned++;
 
     const moving = g.advanceToPhase("movement");
     heard(moving.resolved);
@@ -615,7 +630,7 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
       }) === "yes",
     );
   }
-  if ((g.fireMissionsLeft(company.side, MORTAR) ?? 0) > 0) {
+  if ((missionsLeft(g, company.side) ?? 0) > 0) {
     company.setHoldShort(
       question({
         id: `go.lift.${turn}`,
@@ -701,7 +716,7 @@ function askPlatoons(
     if (a !== "on") company.setPlatoonTask(key, a as PlatoonTask);
   }
   // The fires are spent: there is nothing left to lift, and the assault goes in.
-  if (company.holdsShort && (g.fireMissionsLeft(side, MORTAR) ?? 0) === 0) company.liftFires();
+  if (company.holdsShort && (missionsLeft(g, side) ?? 0) === 0) company.liftFires();
   // The assault held short, under the fires: lift them now?
   if (company.holdsShort) {
     const at = [...company.platoons(g)]
@@ -714,7 +729,7 @@ function askPlatoons(
         kind: "noul",
         ask:
           `${at.map((u) => u.id).join(", ")} ${at.length === 1 ? "is" : "are"} at the hold-short line, ${HOLD_SHORT_M} m from the enemy, waiting for the fires to lift. ` +
-          `Lift the fires and go in now? (Mortar missions left: ${g.fireMissionsLeft(side, MORTAR)}.)`,
+          `Lift the fires and go in now? (Mortar missions left: ${missionsLeft(g, side)}.)`,
         options: [
           { id: "yes", label: "yes: lift the fires, the assault goes in" },
           { id: "no", label: "no: keep the fires on and hold short" },
@@ -859,6 +874,12 @@ function askAttackerFire(
   question: (q: Omit<Question, "turn" | "view">) => string,
 ): void {
   if (!mortarFree(g, side)) return;
+  // Its heaviest free tube (decision 93: the battalion's before its own).
+  const tube = [...tubesOf(g, side)].reverse().find((w) => tubeFree(g, side, w))!;
+  const bombs = g.fireSupport[side]?.find((a) => a.weapon === tube)?.roundsForEffect;
+  const kills = TUBE_KILL_RADIUS[tube] ?? "about 9 m";
+  // Smoke is the 81 mm's, with a mission left (decision 93: the 60 mm lays none).
+  const canSmoke = g.mayCall(side, MORTAR) && (g.fireMissionsLeft(side, MORTAR) ?? 1) > 0;
   const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   const view = sideView(g, side);
   // Every mark the side holds — in sight or last seen. Firing on a
@@ -875,7 +896,8 @@ function askAttackerFire(
     id: `fire.${g.turn}`,
     kind: "choice",
     ask:
-      "Your mortar section is free. Fire a mission (12 bombs, for effect at once; a bomb kills within about 12 m, less against men dug in with overhead cover) on which mark? " +
+      `Your mortars are free. Fire a mission (${bombs ? `${bombs} bombs` : "its bombs"}, for effect at once; a bomb kills within ${kills}, ` +
+      "less against men dug in with overhead cover) on which mark? " +
       `A mark within ${DANGER_CLOSE_M} m of your own squads is DANGER CLOSE: the bombs can hit and pin your own men too. ` +
       "A position stays pinned only while the fire lasts and a turn or two after, so the assault has to arrive before you lift.",
     options: [
@@ -893,7 +915,7 @@ function askAttackerFire(
         };
       }),
       // Smoke once the company is moving: a screen on a mark blinds it while the squads close.
-      ...(company.released !== undefined
+      ...(company.released !== undefined && canSmoke
         ? marks.map((u) => ({ id: `smoke:${u.id}`, label: `lay mortar smoke on ${u.id}'s mark, to screen your squads from it (costs one of your missions)` }))
         : []),
       // Bare, on purpose: worded "save the mission for when your assault is closing", Jev held every
@@ -910,8 +932,24 @@ function askAttackerFire(
     return;
   }
   const target = marks.find((u) => u.id === a)!;
-  g.callForFire(side, MORTAR, target.position, { method: "effect" });
+  g.callForFire(side, tube, target.position, { method: "effect" });
   result.missions[side]++;
+}
+
+/** A bomb's lethal radius by tube, as a commander is told it: √(area/π) of ARES's lethal areas (decision 93). */
+const TUBE_KILL_RADIUS: Readonly<Record<string, string>> = { lightMortar: "about 7 m", mortar: "about 9 m", heavyMortar: "about 14 m" };
+
+/** The missions a side has left over all its tubes (decision 93); null when it may call none, undefined when it is not rationed. */
+function missionsLeft(g: Game, side: Side): number | null | undefined {
+  const tubes = tubesOf(g, side);
+  if (!tubes.length) return null;
+  let left = 0;
+  for (const w of tubes) {
+    const n = g.fireMissionsLeft(side, w);
+    if (n === undefined) return undefined;
+    left += n;
+  }
+  return left;
 }
 
 /** What a set of battles came to. */

@@ -17,14 +17,24 @@
   "fireSupport": {
     "BLUE": [
       {
+        "weapon": "lightMortar",
+        "missions": 8,
+        "roundsForEffect": 10,
+        "tubes": 2
+      },
+      {
         "weapon": "mortar",
-        "missions": 12
+        "missions": 20,
+        "roundsForEffect": 8,
+        "tubes": 4
       }
     ],
     "RED": [
       {
-        "weapon": "mortar",
-        "missions": 12
+        "weapon": "lightMortar",
+        "missions": 8,
+        "roundsForEffect": 10,
+        "tubes": 2
       }
     ]
   },
@@ -48,8 +58,11 @@
     "position by the drill (rules decision 60, author 2026-09-30); its",
     "company command group is behind the summit and calls the company's",
     "mortars for it. BLUE comes up from the south with three platoons abreast.",
-    "Both sides have the company mortar section on call all battle — twelve",
-    "missions a side, the fire rules decision 43 was calibrated on.",
+    "Mortars by doctrine (rules decision 93): BLUE, the battalion's main",
+    "effort, has its own two 60 mm (eight missions of 10, 80 rounds) and the",
+    "battalion's four 81 mm with priority of fires (twenty of 8, 160 rounds);",
+    "RED's platoon has its company's two 60 mm, 80 rounds, by its FPF and a",
+    "priority target. The rounds are ours; doctrine gives none.",
     "",
     "⚠️ The layout is ours, not the author's: the company battle's with RED's",
     "second platoon taken away. The mines in the saddle are the platoon battle's."

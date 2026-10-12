@@ -42,7 +42,11 @@ describe("the computer attacking a position (single-player)", () => {
     const { game, planned } = play(1000, 0);
     // The plan's three points: its centre and either flank (`attackerPlan`).
     expect(planned).toHaveLength(3);
-    expect(game.registeredTargets.filter((t) => t.side === "BLUE")).toHaveLength(3);
+    // Each for every tube it has (decision 93): its own 60 mm and the battalion's 81 mm.
+    const blue = game.registeredTargets.filter((t) => t.side === "BLUE");
+    expect(new Set(blue.map((t) => t.weapon))).toEqual(new Set(["lightMortar", "mortar"]));
+    expect(blue).toHaveLength(3 * 2);
+    expect(new Set(blue.map((t) => `${t.at.x},${t.at.y}`)).size).toBe(3);
     expect(game.registeredTargets.filter((t) => t.side === "RED")).toHaveLength(0);
   });
 

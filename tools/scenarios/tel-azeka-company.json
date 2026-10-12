@@ -17,14 +17,24 @@
   "fireSupport": {
     "BLUE": [
       {
+        "weapon": "lightMortar",
+        "missions": 8,
+        "roundsForEffect": 10,
+        "tubes": 2
+      },
+      {
         "weapon": "mortar",
-        "missions": 12
+        "missions": 20,
+        "roundsForEffect": 8,
+        "tubes": 4
       }
     ],
     "RED": [
       {
-        "weapon": "mortar",
-        "missions": 12
+        "weapon": "lightMortar",
+        "missions": 8,
+        "roundsForEffect": 10,
+        "tubes": 2
       }
     ]
   },
@@ -42,9 +52,10 @@
   "about": [
     "The Tel Azeka ground at the next echelon up: a BLUE company taking the tel",
     "from the south against a RED company holding it, each commanded at company",
-    "level, so each has its company mortars (rules decision 37) as fire missions",
-    "(decision 34) — twelve a side, the mortar section on call all battle that",
-    "rules decision 43 was calibrated on (author, 2026-09-28). It is the",
+    "level, so each calls mortars (rules decision 37) as fire missions",
+    "(decision 34) — by doctrine since decision 93: BLUE, the main effort, its",
+    "own two 60 mm and the battalion's four 81 mm with priority of fires; RED",
+    "its own two 60 mm (80, 160 and 80 rounds; ours, doctrine gives none). It is the",
     "battle the planning stage (decision 38) and the call-for-fire control are",
     "played on: both demo platoon battles have no indirect fire at all.",
     "",

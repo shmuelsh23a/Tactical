@@ -37,10 +37,18 @@ const phaseHe: Record<string, string> = {
   summary: "סיכום",
 };
 
+/** A weapon's Hebrew name, as the log and the debrief word it. */
+export function weaponName(key: string): string {
+  return term(weaponHe, key);
+}
+
 const weaponHe: Record<string, string> = {
   smallArms: 'נק"ל',
   sustainedMg: "מקלע מקביל",
-  mortar: "מרגמה",
+  // The 81 mm named by its calibre beside the 60 and 120 mm (rules decision 93).
+  mortar: "מרגמה 81",
+  lightMortar: "מרגמה 60",
+  heavyMortar: "מרגמה 120",
   artillery: "ארטילריה",
   tankRound: "פגז טנק",
   grenade: "רימון",

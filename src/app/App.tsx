@@ -66,6 +66,7 @@ import {
   recordingDriftNote,
   recordingLoadFailed,
   sectorWorthHe,
+  weaponName,
 } from "./debriefText.js";
 import type { Scenario, ScenarioListing } from "./scenario.js";
 import {
@@ -106,7 +107,9 @@ type Stage = "planning" | "initiative" | "activation" | "gameover";
  */
 type PlanTool = "target" | "alternate" | "post";
 /** Indirect-fire tube the player is marking with. */
-type Tube = "mortar" | "artillery";
+type Tube = "lightMortar" | "mortar" | "heavyMortar" | "artillery";
+/** Every tube, lightest first (rules decision 93 adds the 60 and 120 mm). */
+const TUBES: readonly Tube[] = ["lightMortar", "mortar", "heavyMortar", "artillery"];
 /** What the marked point is for: high explosive, or a smoke screen. */
 type Mission = "he" | "smoke";
 /** What a force does in the fire phase: shoot, or go in. */
@@ -124,7 +127,7 @@ const phaseLabelHe: Record<ActivationPhase, string> = {
   combat: "שלב ירי",
 };
 
-const tubeHe: Record<Tube, string> = { mortar: "מרגמה", artillery: "ארטילריה" };
+const tubeHe = Object.fromEntries(TUBES.map((t) => [t, weaponName(t)])) as Record<Tube, string>;
 /** The echelon a side's player commands, as the fire-support note names it (rules decision 37). */
 const echelonHe: Record<Echelon, string> = { team: "חוליה", squad: "כיתה", platoon: "מחלקה", company: "פלוגה", battalion: "גדוד", brigade: "חטיבה" };
 
@@ -361,9 +364,20 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
 
   // What the side's commander may call at all (rules decision 37): a platoon
   // has no mortars or artillery, and only a grenade's smoke.
-  const callableTubes = (side: Side) => (["mortar", "artillery"] as Tube[]).filter((t) => game.mayCall(side, t));
-  const callableSmoke = (side: Side) =>
-    (["grenade", "mortar", "artillery"] as SmokeSource[]).filter((s) => game.mayCall(side, s));
+  // A side on missions has the tubes it was allotted (decision 34); one that
+  // is not is offered the document's two, as before decision 93.
+  const callableTubes = (side: Side) => {
+    const allotted = game.fireSupport[side]?.map((a) => a.weapon);
+    return TUBES.filter((t) => game.mayCall(side, t) && (allotted ? allotted.includes(t) : t === "mortar" || t === "artillery"));
+  };
+  // Tube smoke as tube HE: from what the side was allotted (decision 93: the
+  // 60 and 120 mm lay none — not modelled).
+  const callableSmoke = (side: Side) => {
+    const allotted = game.fireSupport[side]?.map((a) => a.weapon);
+    return (["grenade", "mortar", "artillery"] as SmokeSource[]).filter(
+      (s) => game.mayCall(side, s) && (s === "grenade" || !allotted || allotted.includes(s)),
+    );
+  };
 
   const currentActivation =
     stage === "activation" && actIndex < activations.length ? activations[actIndex] : null;
@@ -1818,7 +1832,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                           ? "בתיקון, המשימה יורה פגז אחר פגז עד שכוח שלך רואה אחד נוחת על המטרה, ואז את פגזי האפקט בבת אחת — מדויק, אבל איטי מול מטרה בתנועה."
                           : "אש לאפקט מייד: כל הפגזים בבת אחת, בדיוק שיש לתותחים שם — מהיר, אבל בלי תיקון הפיזור רחב."}{" "}
                         על מטרה רשומה — אש לאפקט מייד בכל מקרה. פגז נוחת כעבור{" "}
-                        {activeTube === "mortar" ? "תור" : "שני תורות"}.
+                        {activeTube === "artillery" ? "שני תורות" : "תור"}.
                       </>
                     ) : (
                       <>

@@ -21,6 +21,7 @@
  *   npm run scenario-sim -- --no-fire-support      # no side calls a mortar or a gun: a small-arms fight
  *   npm run scenario-sim -- --flat-suppression     # a burst suppresses a flat 10, as before rules decision 91
  *   npm run scenario-sim -- --shell-amounts        # every round adds its suppression in full, as before rules decision 92
+ *   npm run scenario-sim -- --legacy-fire-plan     # both sides fire a mission on any sure mark until the missions are gone, as before rules decision 93
  *   npm run scenario-sim -- --quality BLUE=irregular/inexperienced   # a side's force quality (decision 83); RED=… too, comma-separated
  *
  * Kept thin on purpose, like tools/balance-sim.ts: what is worth checking
@@ -89,6 +90,7 @@ const fire: FirePlanChoices = {
   ...(value("--aim") ? { aimWithin: Number(value("--aim")) } : {}),
   ...(value("--smoke") ? { smokeMissions: Number(value("--smoke")) } : {}),
   ...(args.includes("--prep-fires") ? { prepFires: true } : {}),
+  ...(args.includes("--legacy-fire-plan") ? { legacyFirePlan: true } : {}),
   ...(value("--target-first") === "squads" || value("--target-first") === "command"
     ? { targetFirst: value("--target-first") as "squads" | "command" }
     : {}),

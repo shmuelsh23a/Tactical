@@ -28,15 +28,88 @@ const mean = (us: readonly Unit[]): Point => ({
   y: us.reduce((t, u) => t + u.position.y, 0) / us.length,
 });
 
-/** Whether `side` may call its mortars now: allowed, missions left, and none still adjusting. */
+/** The mortars, lightest first (rules decision 93 adds the 60 and 120 mm to the 81 mm). */
+const TUBE_ORDER = ["lightMortar", "mortar", "heavyMortar"] as const;
+
+/**
+ * The mortars `side` fires (rules decision 93): those it was allotted,
+ * lightest first; a side not on missions, the 81 mm as before.
+ */
+export function tubesOf(g: Game, side: Side): string[] {
+  const allotted = g.fireSupport[side]?.map((a) => a.weapon);
+  return TUBE_ORDER.filter((w) => (allotted ? allotted.includes(w) : w === MORTAR) && g.mayCall(side, w));
+}
+
+/** Whether `side` may call `weapon` now: allowed, missions left, and none of it still adjusting. */
+export function tubeFree(g: Game, side: Side, weapon: string): boolean {
+  if (!g.mayCall(side, weapon)) return false;
+  if ((g.fireMissionsLeft(side, weapon) ?? 1) <= 0) return false;
+  return !g.fireMissions.some((m) => m.side === side && m.weapon === weapon && m.status === "adjusting");
+}
+
+/** Whether `side` may call any of its mortars now. */
 export function mortarFree(g: Game, side: Side): boolean {
+  return tubesOf(g, side).some((w) => tubeFree(g, side, w));
+}
+
+/**
+ * Missions held back for the fires doctrine sets ammunition aside for
+ * (rules decision 93; ⚠️ the counts are ours — doctrine says "a specific
+ * amount of ammunition is always designated, prepared, and set aside", ATP
+ * 3-21.10 D-24, and gives no amount): the defender's final protective fire
+ * and its priority target, and the attacker's priority target.
+ */
+export const FIRE_RESERVE = { fpf: 3, defenderPriority: 2, attackerPriority: 4 } as const;
+/** The attacker fires its priority target once its lead squad is this close to it (⚠️ ours). */
+const PRIORITY_CALL_M = 400;
+
+/**
+ * Missions of `weapon` that `side` has called on the point `at` itself — a
+ * reserved target's own data, not a mark that happened to be near it: what a
+ * reserve held for it has spent. Read off the game, so a saved battle resumes
+ * with the same reserve.
+ */
+function firedAt(g: Game, side: Side, weapon: string, at: Point): number {
+  return g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) < 1).length;
+}
+
+/**
+ * The attacker's reserve (decision 93): its heaviest tube, and the missions
+ * of it still held for its priority target, the plan's first point.
+ */
+function attackerReserve(g: Game, side: Side, planned: readonly Point[]): { tube?: string; held: number } {
+  const tubes = tubesOf(g, side);
+  const tube = tubes[tubes.length - 1];
+  const priority = planned[0];
+  if (!tube || !priority) return { held: 0 };
+  return { tube, held: Math.max(0, FIRE_RESERVE.attackerPriority - firedAt(g, side, tube, priority)) };
+}
+
+/** Whether `side` may lay a mortar screen: the 81 mm allotted with a mission to spare — beyond a reserve held on it. */
+function smokeSpare(g: Game, side: Side, reserve: { tube?: string; held: number }): boolean {
   if (!g.mayCall(side, MORTAR)) return false;
-  if ((g.fireMissionsLeft(side, MORTAR) ?? 1) <= 0) return false;
-  return !g.fireMissions.some((m) => m.side === side && m.weapon === MORTAR && m.status === "adjusting");
+  const left = g.fireMissionsLeft(side, MORTAR) ?? Infinity;
+  return left > (reserve.tube === MORTAR ? reserve.held : 0);
+}
+
+/** The ids of the enemy forces that fired on any of `side`'s since last turn: the marks immediate suppression answers. */
+function firingOnUs(g: Game, side: Side): Set<string> {
+  const ids = new Set<string>();
+  for (const u of g.units) {
+    if (u.side !== side) continue;
+    for (const f of g.fireReceived(u.id, g.turn - 1)) if (f.firerId && f.kind !== "indirect") ids.add(f.firerId);
+  }
+  return ids;
 }
 
 /** Registered targets the defending company plans (decision 38 allows six a weapon). */
 const DEFENDER_TARGETS = 6;
+/**
+ * The same under doctrine (rules decision 93): "not more than three to five
+ * targets" (ATP 3-21.10, 2026, note at D-20) — the first its final protective
+ * fire, the second its priority target.
+ */
+export const DOCTRINAL_DEFENDER_TARGETS = 5;
 /** Where it looks for them: this far in front of its positions (ours). */
 const DEFENDER_PLAN_BAND_M = { near: 100, far: 400 } as const;
 /** No two closer than this: each covers its 100 m on-the-mark radius (ours). */
@@ -59,6 +132,7 @@ export function planDefenderFires(
   width: number,
   height: number,
   prefer: "deadGround" | "open" = "deadGround",
+  count = DEFENDER_TARGETS,
 ): Point[] {
   const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
   if (!own.length || !g.terrain) return [];
@@ -90,20 +164,34 @@ export function planDefenderFires(
   );
   const chosen: Point[] = [];
   for (const c of candidates) {
-    if (chosen.length >= DEFENDER_TARGETS) break;
+    if (chosen.length >= count) break;
     if (chosen.every((p) => distance(p, c.at) >= DEFENDER_TARGET_SPACING_M)) chosen.push(c.at);
   }
   return chosen;
 }
 
+/** What the defender's fire went on: its FPF, its priority target, a planned target, a mark firing on it, or (before decision 93) the nearest. */
+export type DefenderCall = "fpf" | "priority" | "plan" | "suppress" | "nearest";
+
 /**
- * The defender's fire: for effect on an attacker it has seen this turn or
- * last within the on-the-mark radius of one of its registered targets — the
- * one nearest its own forces — which lands at the weapon's best without an
- * observer; else on the nearest attacker it knows of, from its own forces.
+ * The defender's fire. Under doctrine (rules decision 93; the author,
+ * 2026-10-12): its registered targets are its plan — the first its final
+ * protective fire, the second its priority target, each with missions of its
+ * lightest tube held back for it ({@link FIRE_RESERVE}) — and it fires, for
+ * effect, on a mark it saw this turn or last within the on-the-mark radius
+ * of its FPF (on the FPF, "until … ammunition is exhausted", ATP 3-21.10
+ * D-25), of its priority target, or of a planned target; and otherwise only
+ * on a mark firing on its forces (immediate suppression, TC 3-22.91 4-11).
+ * Nothing else: no mission on a sighting off its plan.
+ *
+ * `legacy`, every table before decision 93: the nearest planned target with
+ * a fresh mark on it, else the nearest attacker it knows of, until the
+ * missions are gone.
  */
-export function callDefenderFire(g: Game, side: Side, registered: readonly Point[] = []): "plan" | "nearest" | undefined {
+export function callDefenderFire(g: Game, side: Side, registered: readonly Point[] = [], legacy = false): DefenderCall | undefined {
   if (!mortarFree(g, side)) return undefined;
+  if (!legacy) return callDoctrinalDefenderFire(g, side, registered);
+  const tube = tubesOf(g, side).find((w) => tubeFree(g, side, w))!;
   const view = sideView(g, side);
   const own = view.units.filter((u) => u.side === side && u.kind !== "command" && !u.neutralized);
   const foes = view.units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered);
@@ -113,7 +201,7 @@ export function callDefenderFire(g: Game, side: Side, registered: readonly Point
     .filter((f) => fresh(f.id) && registered.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M))
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
   if (onPlan && own.length) {
-    g.callForFire(side, MORTAR, onPlan.position, { method: "effect" });
+    g.callForFire(side, tube, onPlan.position, { method: "effect" });
     return "plan";
   }
   let best: Point | undefined;
@@ -128,8 +216,57 @@ export function callDefenderFire(g: Game, side: Side, registered: readonly Point
     }
   }
   if (!best) return undefined;
-  g.callForFire(side, MORTAR, best, { method: "effect" });
+  g.callForFire(side, tube, best, { method: "effect" });
   return "nearest";
+}
+
+function callDoctrinalDefenderFire(g: Game, side: Side, registered: readonly Point[]): DefenderCall | undefined {
+  const tubes = tubesOf(g, side);
+  const [fpf, priority, ...planned] = registered;
+  // The reserves are held on its lightest tube: the company's own section.
+  const reserveTube = tubes[0];
+  const held = (w: string): number =>
+    w !== reserveTube
+      ? 0
+      : (fpf ? Math.max(0, FIRE_RESERVE.fpf - firedAt(g, side, w, fpf)) : 0) +
+        (priority ? Math.max(0, FIRE_RESERVE.defenderPriority - firedAt(g, side, w, priority)) : 0);
+  const free = tubes.filter((w) => tubeFree(g, side, w));
+  const spare = free.filter((w) => (g.fireMissionsLeft(side, w) ?? Infinity) > held(w));
+  const view = sideView(g, side);
+  const own = view.units.filter((u) => u.side === side && u.kind !== "command" && !u.neutralized);
+  const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
+  const foes = view.units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered && fresh(u.id));
+  if (!foes.length || !own.length) return undefined;
+  const on = (p: Point) => foes.some((f) => distance(f.position, p) <= ADJUSTMENT_RADIUS_M);
+  const nearestOwn = (p: Point) => Math.min(...own.map((u) => distance(u.position, p)));
+  // The FPF on the assault reaching it, from any tube, until the rounds run out.
+  if (fpf && on(fpf) && free.length) {
+    g.callForFire(side, free.includes(reserveTube!) ? reserveTube! : free[0]!, fpf, { method: "effect" });
+    return "fpf";
+  }
+  if (priority && on(priority)) {
+    const tube = reserveTube && free.includes(reserveTube) && firedAt(g, side, reserveTube, priority) < FIRE_RESERVE.defenderPriority ? reserveTube : spare[0];
+    if (tube) {
+      g.callForFire(side, tube, priority, { method: "effect" });
+      return "priority";
+    }
+  }
+  const tube = spare[0];
+  if (!tube) return undefined;
+  const onPlan = foes
+    .filter((f) => planned.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M))
+    .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
+  if (onPlan) {
+    g.callForFire(side, tube, onPlan.position, { method: "effect" });
+    return "plan";
+  }
+  const firing = firingOnUs(g, side);
+  const shooter = foes.filter((f) => firing.has(f.id)).sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
+  if (shooter) {
+    g.callForFire(side, tube, shooter.position, { method: "effect" });
+    return "suppress";
+  }
+  return undefined;
 }
 
 
@@ -185,14 +322,15 @@ export class ComputerDefender {
 
   /** Mission planning (decision 38): its mortar targets, registered; returns them. */
   plan(g: Game): readonly Point[] {
-    if (!g.mayCall(this.side, MORTAR)) return [];
-    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight);
-    for (const t of this.targets) g.registerTarget(this.side, MORTAR, t);
+    const tubes = tubesOf(g, this.side);
+    if (!tubes.length) return [];
+    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS);
+    for (const w of tubes) for (const t of this.targets) g.registerTarget(this.side, w, t);
     return this.targets;
   }
 
-  /** The targeting phase: a mortar mission, if it has one to call. */
-  targeting(g: Game): "plan" | "nearest" | undefined {
+  /** The targeting phase: a mortar mission, if it has one to call (doctrine's, decision 93). */
+  targeting(g: Game): DefenderCall | undefined {
     return callDefenderFire(g, this.side, this.targets);
   }
 
@@ -265,6 +403,14 @@ export interface FirePlanChoices {
    * crosses, until its squads are {@link LIFT_AT_M} from them.
    */
   prepFires?: boolean;
+  /**
+   * The fire policy every table before rules decision 93 was taken with: a
+   * full mission on any mark it is sure of, until the missions are gone.
+   * Absent: doctrine's — a priority target with missions held back for it,
+   * the planned targets, and immediate suppression of a mark firing on its
+   * squads ({@link callAttackerFire}).
+   */
+  legacyFirePlan?: boolean;
 }
 
 export const DEFAULT_FIRE_CHOICES: FirePlanChoices = {
@@ -295,6 +441,9 @@ export function callAttackerFire(
   tally: AttackerFireTally,
 ): void {
   if (!mortarFree(g, side)) return;
+  const tubes = tubesOf(g, side);
+  // Before decision 93: one tube, the heaviest free.
+  const legacyTube = [...tubes].reverse().find((w) => tubeFree(g, side, w));
   const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && !u.neutralized && !company.isScout(u));
   if (!squads.length) return;
   // Danger close is a risk it takes (decision 63, S4): its fire stays on
@@ -304,7 +453,9 @@ export function callAttackerFire(
   // Smoke while it crosses: a screen on the enemy it knows of nearest its
   // squads, else on the plan, kept up as each one clears (two turns).
   const lead = Math.min(...squads.map((u) => distance(u.position, objective)));
-  if (going && lead <= SCREEN_FROM_M && lead > LIFT_AT_M && tally.smoke < (plan.smokeMissions ?? 0)) {
+  // Smoke is the 81 mm's (the 60 mm's is not modelled), and never from the priority target's reserve.
+  const reserve = plan.legacyFirePlan ? { held: 0 } : attackerReserve(g, side, planned);
+  if (going && lead <= SCREEN_FROM_M && lead > LIFT_AT_M && tally.smoke < (plan.smokeMissions ?? 0) && smokeSpare(g, side, reserve)) {
     const screened = (p: Point) =>
       g.smoke.some((s) => distance(s.center, p) < s.radius) ||
       g.pendingSmoke.some((m) => m.side === side && distance(m.target, p) < m.radius);
@@ -319,6 +470,10 @@ export function callAttackerFire(
       tally.smoke++;
       return;
     }
+  }
+  if (!plan.legacyFirePlan) {
+    callDoctrinalAttackerFire(g, side, planned, plan, tally, { squads, safe, going, lead: Math.min(...squads.map((u) => distance(u.position, planned[0] ?? objective))) });
+    return;
   }
   let aim: Point | undefined;
   if (plan.waitForContact) {
@@ -342,9 +497,76 @@ export function callAttackerFire(
     const open = planned.filter(safe);
     aim = open[tally.missions % Math.max(1, open.length)];
   }
-  if (!aim) return;
-  g.callForFire(side, MORTAR, aim, { method: "effect" });
+  if (!aim || !legacyTube) return;
+  g.callForFire(side, legacyTube, aim, { method: "effect" });
   tally.missions++;
+}
+
+/**
+ * The attacker's fire under doctrine (rules decision 93; the author,
+ * 2026-10-12). Its plan's first point is its **priority target**, with
+ * missions of its heaviest tube held back ({@link FIRE_RESERVE}) and fired
+ * as the assault closes — "short, violent preparations targeted against
+ * forward defenses … lifted or shifted at the last possible moment" (ATP
+ * 3-21.90 3-71) — from {@link PRIORITY_CALL_M} until its squads are
+ * {@link LIFT_AT_M} from it. Otherwise it fires on a mark it is sure of
+ * within the on-the-mark radius of a planned target (heaviest tube first),
+ * on a mark firing on its squads (immediate suppression, lightest first),
+ * or on its plan while it crosses with `prepFires`; nothing else.
+ */
+function callDoctrinalAttackerFire(
+  g: Game,
+  side: Side,
+  planned: readonly Point[],
+  plan: FirePlanChoices,
+  tally: AttackerFireTally,
+  at: { squads: readonly Unit[]; safe: (p: Point) => boolean; going: boolean; lead: number },
+): void {
+  const tubes = tubesOf(g, side);
+  const priority = planned[0];
+  const reserve = attackerReserve(g, side, planned);
+  const reserveTube = reserve.tube;
+  const held = (w: string) => (w === reserveTube ? reserve.held : 0);
+  const free = tubes.filter((w) => tubeFree(g, side, w));
+  const spare = free.filter((w) => (g.fireMissionsLeft(side, w) ?? Infinity) > held(w));
+  const call = (w: string, p: Point) => {
+    g.callForFire(side, w, p, { method: "effect" });
+    tally.missions++;
+  };
+  // The priority target as the assault closes.
+  if (priority && reserveTube && at.going && at.lead <= PRIORITY_CALL_M && at.safe(priority) && free.includes(reserveTube) && held(reserveTube) > 0) {
+    call(reserveTube, priority);
+    return;
+  }
+  if (!spare.length) return;
+  const view = sideView(g, side);
+  const sure = (id: string) => plan.aimWithin === undefined || (view.spreads.get(id) ?? 0) * CE_PER_SIGMA <= plan.aimWithin;
+  const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
+  const marks = view.units.filter((u) => u.side !== side && !u.neutralized && !u.surrendered && fresh(u.id) && sure(u.id) && at.safe(u.position));
+  const nearestOwn = (p: Point) => Math.min(...at.squads.map((u) => distance(u.position, p)));
+  const onPlan = marks
+    .filter((u) => planned.some((p) => distance(p, u.position) <= ADJUSTMENT_RADIUS_M))
+    .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
+  if (onPlan) {
+    call(spare[spare.length - 1]!, onPlan.position);
+    return;
+  }
+  // Immediate suppression is area fire on a firer the squads know of: it
+  // asks a fresh mark, not one sure to `aimWithin` (TC 3-22.91 4-11).
+  const firing = firingOnUs(g, side);
+  const shooter = view.units
+    .filter((u) => u.side !== side && !u.neutralized && !u.surrendered && fresh(u.id) && at.safe(u.position) && firing.has(u.id))
+    .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
+  if (shooter) {
+    call(spare[0]!, shooter.position);
+    return;
+  }
+  if (plan.prepFires && at.going) {
+    // Not on the priority target while its reserve is held: that is the reserve's.
+    const open = planned.filter((p) => at.safe(p) && (p !== priority || reserve.held === 0));
+    const aim = open[tally.missions % Math.max(1, open.length)];
+    if (aim) call(spare[spare.length - 1]!, aim);
+  }
 }
 
 
@@ -482,8 +704,9 @@ export class ComputerAttacker {
 
   /** Mission planning (decision 38): its plan's points, registered; returns them. */
   plan(g: Game): readonly Point[] {
-    if (!this.choices.register || !g.mayCall(this.side, MORTAR)) return [];
-    for (const t of this.planned) g.registerTarget(this.side, MORTAR, t);
+    const tubes = tubesOf(g, this.side);
+    if (!this.choices.register || !tubes.length) return [];
+    for (const w of tubes) for (const t of this.planned) g.registerTarget(this.side, w, t);
     return this.planned;
   }
 

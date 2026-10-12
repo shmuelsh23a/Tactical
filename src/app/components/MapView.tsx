@@ -15,6 +15,7 @@ import type {
 import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, MOVEMENT_PROFILES, reachFan, watchingAsPost } from "../../engine/index.js";
 import type { ActivationPhase } from "../hotseat.js";
 import { renderUnitSymbol } from "../symbols.js";
+import { weaponName } from "../debriefText.js";
 import { Relief, Roads, TerrainObjects } from "./Relief.js";
 
 /**
@@ -278,7 +279,7 @@ export function MapView(props: MapViewProps) {
           <line x1={t.at.x - 14} y1={t.at.y - 14} x2={t.at.x + 14} y2={t.at.y + 14} />
           <line x1={t.at.x - 14} y1={t.at.y + 14} x2={t.at.x + 14} y2={t.at.y - 14} />
           <text x={t.at.x + 18} y={t.at.y - 10}>
-            {t.weapon === "mortar" ? "מרגמה" : "ארטילריה"} {i + 1}
+            {weaponName(t.weapon)} {i + 1}
           </text>
         </g>
       ))}

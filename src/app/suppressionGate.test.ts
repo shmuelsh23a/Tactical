@@ -51,8 +51,11 @@ describe("the doctrinal gate on an assault", () => {
     // it gives up waiting — and the drill's answer to that is to assault
     // anyway (step 12b–c), not to hold. Holding instead measured 57% of
     // battles out of time against 2% (balance.md).
-    const impatient = play({ ...RECON, suppressionGate: { ...GATE, reinforceAfter: 1, giveUpAfter: 2 } });
-    const patient = play({ ...RECON, suppressionGate: { ...GATE, giveUpAfter: 40 } });
+    // Seed 1001: since decision 93's mortars, seed 1000's impatient attack
+    // runs out of time on either fire plan (4 seeds in 20 do, 1000-1019);
+    // 1001's goes in and is decided.
+    const impatient = play({ ...RECON, suppressionGate: { ...GATE, reinforceAfter: 1, giveUpAfter: 2 } }, 1001);
+    const patient = play({ ...RECON, suppressionGate: { ...GATE, giveUpAfter: 40 } }, 1001);
     // The impatient company is let go, and sooner than the patient one.
     expect(impatient.released).toBeDefined();
     expect(impatient.released!).toBeLessThanOrEqual(patient.released ?? Infinity);

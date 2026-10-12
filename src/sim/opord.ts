@@ -33,12 +33,13 @@ function telAssaultOrder(platoons: number): Order {
     "a. Enemy. One infantry platoon, about 30 men (three squads of eight and a command group), holds the shoulder of Tel Azeka south of the summit, " +
       "in positions it prepared before the battle: dug in, with overhead cover. Expect one of its squads to be held back behind the forward positions, " +
       "to retake a position it loses. Expect mines on the approaches to the shoulder. Its company command post, behind the summit, " +
-      "calls the enemy company's mortars (about 12 missions) and has registered them on the approaches. " +
+      "calls its company's two 60 mm mortars (about 8 missions), with a final protective fire and a priority target registered on the approaches. " +
       "Men dug in and still are hard to find: through binoculars within about 600 m, more easily the closer.",
     "b. Ground. The tel's summit is at 345 m, the shoulder about 320 m. Your start line is on the ridge south of it, at about 290 m, " +
       "some 350-450 m from the shoulder. The approach has dead ground in it, and low ground on the east.",
     `c. Friendly. ${force}, about ${men} men: each platoon three squads of eight and a command group, and your company command group. ` +
-      "The company mortar section is on call to you all battle: 12 missions of 12 bombs. A bomb kills within about 12 m, less against men dug in with overhead cover; " +
+      "Your company's two 60 mm mortars are on call to you all battle (8 missions of 10 bombs; a bomb kills within about 7 m), and the battalion's " +
+      "four 81 mm with priority of fires to you (20 missions of 8; about 9 m) — less against men dug in with overhead cover; " +
       "a position under fire is pinned while it lasts and a turn or two after.",
     "2. MISSION. " +
       `${force[0]!.toUpperCase() + force.slice(1)} attacks from the south and seizes the shoulder of Tel Azeka by the end of turn 45, ` +
