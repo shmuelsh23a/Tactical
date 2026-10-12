@@ -21,6 +21,47 @@ reproduces them; without the flag the harness plays the research figures. What
 the change moved, and why explosives now fall short of the 75% principle, is on
 [validation.md](validation.md).
 
+## Mortars by doctrine: both attacks in band, explosives far below, 2026-10-12
+
+Rules decision 93 ([mortar-allotment.md](mortar-allotment.md)): the 60 and
+120 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm,
+eight missions of 10, and the battalion's 4 × 81 mm, twenty of 8;
+defender 2 × 60 mm, eight of 10 — 80 / 160 / 80 rounds), and doctrinal
+fire plans for both scripted sides. Standard measurement, 200 battles,
+the same flags; the middle column isolates the allotment by playing the
+old fire policy on it (`--legacy-fire-plan`):
+
+| | Before (decision 92) | New allotment, old plans | **New allotment, doctrinal plans** | Target |
+|---|---|---|---|---|
+| telAzekaAssault (3:1) | 45% | 30% | **50%** | 40–55% |
+| telAzekaAssault2 (2:1) | 36% | 9% | **25%** | 20–35% |
+| yokneamUrban | 16% | 16% | **56%** | — |
+| Explosives' share, 3:1 / 2:1 | 49% / 52% | 37% / 40% | **23% / 25%** | 60–80% |
+| Attacker / defender down, 3:1 | 11% / 22% | 14% / 20% | **13% / 25%** | — |
+| Turns (median), 3:1 / urban | 28 / 11 | 29 / 11 | **32 / 30** | — |
+
+A cell is worth ±7. (A first run with the 60 mm at eight missions of 8
+gave 45% / 9% on the doctrinal plans; FM 7-90's "seldom … any less than
+five rounds for each mortar" set it at ten, which also leaves the
+defender only three missions beyond its five held back — the 2:1's rise
+to 25% is mostly that.) Read across:
+
+1. **The allotment alone cuts the attack** — a third of the rounds, a
+   lighter bomb: 3:1 30%, 2:1 9% on the old plans.
+2. **Doctrinal plans give it back, and put both in band**: fire held for
+   the assault and put on planned targets beats fire spent on every
+   sighting, and a defender that keeps its FPF and priority rounds for
+   them fires less at the approach.
+3. **The explosives' share is now far from its band** (23–25% against
+   60–80%). The company battles have no artillery; the 75% is a whole-war
+   figure, and a main-effort company in a real attack has the brigade's
+   guns too. The next question for the author.
+4. **The urban test bed changed with the plans, not the allotment** (16%
+   on the old policy either way; 56% on the new). The defender no longer
+   fires a mission on every attacker it sees, which in the houses broke
+   the attack in eleven turns; now the battle runs thirty. Decisions 75–78
+   were measured on the old policy; this table is theirs to re-read.
+
 ## A shell's suppression as a chance: the 3:1 comes into band, 2026-10-12
 
 Rules decision 92 ([indirect-suppression.md](indirect-suppression.md)):

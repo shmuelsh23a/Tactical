@@ -189,8 +189,9 @@ cell, morale on (temporary edits, not committed):
   1987](https://consensus.app/papers/details/5fabd2f5d0d45bb58de007b49cad2b81/?utm_source=claude_desktop)).
   ⅓ is the smallest factor that reaches the target, and the table's figures
   are not trial figures either.
-- A mortar mission fires 24 bombs for effect: 8 a tube, where FM 7-90 asks
-  "seldom less than five rounds for each mortar".
+- A mortar mission fires 24 bombs for effect: 8 a tube, where FM 7-90 (1992,
+  App. B, p. B-9) says a light mortar section's FFE "should seldom consist of
+  any less than five rounds for each mortar".
 - The fire it was calibrated on is `CALIBRATED_FIRE_PLAN`: twelve missions a
   side, fired for effect at once.
 

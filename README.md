@@ -1447,8 +1447,8 @@ on the stated reasoning, still awaiting the author's word.
 36. ✅ **Rounds for effect by weapon: 6 for artillery, 12 for a mortar**
     (author, 2026-09-23, after the tenth round). Artillery's 6 is a 6-gun
     battery's single volley. A mortar's 12 is four bombs a tube from a 3-tube
-    section, nearer doctrine's "seldom less than five rounds for each mortar"
-    (FM 7-90). In balance, a company's 2:1 attack with mortars at 6 won 20%;
+    section, nearer FM 7-90's "should seldom consist of any less than five
+    rounds for each mortar" (1992, App. B, p. B-9). In balance, a company's 2:1 attack with mortars at 6 won 20%;
     at 12 it wins 47–56%, in the 30–70% target band (balance.md, *Tenth* and
     *Eleventh round*).
     - An allotment may still set its own (`FireAllotment.roundsForEffect`).
@@ -1624,8 +1624,9 @@ on the stated reasoning, still awaiting the author's word.
       smallest factor that reaches the target, the table's figures not being
       trial figures either. The coaxial gun and the assault keep their tables.
     - **A mortar mission fires 24 bombs for effect** (`RESEARCH_ROUNDS_FOR_EFFECT`),
-      8 a tube from a 3-tube section, where decision 36 gave 12 — doctrine
-      asks "seldom less than five rounds for each mortar". Artillery stays 6.
+      8 a tube from a 3-tube section, where decision 36 gave 12 — FM 7-90
+      asks a light section's FFE to "seldom consist of any less than five
+      rounds for each mortar". Artillery stays 6.
     - **The fire it was calibrated on** is a company's mortar section on
       call all battle: twelve missions a side, fired for effect at once
       (`CALIBRATED_FIRE_PLAN`, `npm run balance -- --fires calibrated
@@ -1633,7 +1634,8 @@ on the stated reasoning, still awaiting the author's word.
       attack) and **77%** (2:1) of the men, and the 2:1 attacker wins
       **63%**, inside its 30–70% planning target.
     - **The company battle on Tel Azeka plays it**: twelve mortar missions a
-      side (author, 2026-09-28; it had 4 and 3).
+      side (author, 2026-09-28; it had 4 and 3) — until decision 93 re-based
+      the tel's battles on doctrine's mortars.
     - **Where it does not reach 75%**: a battle with little fire — the
       harness's default of one bomb a turn (19–21%) — and every platoon
       battle, which has no indirect fire (decision 37); its explosives are
@@ -2904,6 +2906,51 @@ on the stated reasoning, still awaiting the author's word.
       urban 13% → 16%. The defence is still pinned in about 53% of its
       contact turns, by shells: twelve missions keep fire on it most
       turns, and continuous fire still pins — as doctrine says it should.
+93. ✅ **Mortars by doctrine: the weapons, the allotment, the fire plans**
+    (2026-10-12, the author: "yes to all three, implement and measure", on
+    [docs/mortar-allotment.md](docs/mortar-allotment.md)).
+    - **Weapons** (`DOCTRINE_MORTARS`, beside the document's table, research
+      figures only): the **60 mm** (`lightMortar`, a company's own, ATP
+      3-21.10 1-25; ARES 150 m²; suppression 20 / 35 / 50 m; 30 a minute)
+      and the **120 mm** (`heavyMortar`, the battalion's; ARES 650 m²;
+      65 / 125 / 200 m; 16 a minute). The document's `mortar` is the 81 mm,
+      named so in the UI now ("מרגמה 81").
+    - **Tubes** (`FireAllotment.tubes`): a section two, a platoon four
+      (ATP 3-21.90 1-65). Absent, the old figure — the 81 mm's three — so
+      every recording replays.
+    - **Allotment** on the three company battles on the tel: the attacker,
+      the main effort, its own **2 × 60 mm** (eight missions of 10, 80 rounds)
+      and the battalion's **4 × 81 mm** with priority of fires (twenty of
+      8, 160 rounds); the defender its company's **2 × 60 mm** (80 rounds).
+      ⚠️ The rounds are ours — doctrine gives no basic load; the anchors are
+      a company Stryker's 77 rounds of 60 mm and the 320-round task-force
+      example. `yokneamUrban` keeps its allotment.
+    - **Fire plans** (`callAttackerFire`, `callDefenderFire`; both sides,
+      the browser's and the harness's): three to five planned targets; a
+      **priority target** with missions held back (`FIRE_RESERVE`, ⚠️ the
+      counts ours) — the attacker's on its heaviest tube, fired as the
+      assault closes from 400 m and lifted at 100 m; the defender's **FPF**
+      (its first registered target, 100–400 m out on the line of attack)
+      fired when an attacker reaches it, until the rounds run out; and
+      otherwise fire only on a planned target or, as **immediate
+      suppression**, on a firer of its own squads. No mission on a sighting
+      off the plan. `scenario-sim --legacy-fire-plan` plays the old policy.
+    - FM 7-90's "should seldom consist of any less than five rounds for
+      each mortar" (1992, App. B, p. B-9) is genuine — the corpus lacks the
+      superseded FM 7-90, and the code had paraphrased it — so it stays,
+      quoted exactly. It is said of the 60 mm section, which is why its FFE
+      is **10**, five a tube.
+    - ⚠️ Also ours: the 120 mm's low rate (1), its roof penetration (0.1)
+      and building damage (8), the 60 mm's (2; 0 through a roof, FM
+      3-06.11's "cannot penetrate most rooftops"), the attacker's 400 m to
+      call its priority target. **Tube smoke stays the 81 mm's**: a side
+      with only 60 mm — the defender on the tel — lays none from its tubes.
+    - A browser battle saved before this resumes on the new fire plan, its
+      six old targets read as FPF, priority target and plan.
+    - **Measured** (balance.md, *Mortars by doctrine*): 3:1 **50%** and
+      2:1 **25%**, both in band; explosives **23% / 25%**, far below 60–80
+      (no artillery in the company battles); urban **56%** (16% before —
+      the fire plans, not the allotment, which it kept).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

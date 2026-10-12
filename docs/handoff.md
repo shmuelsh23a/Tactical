@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 91 and 92 are in; the 3:1 is in band (45%), the 2:1 (36%) and the explosives share (49%) are not, and the defence is pinned by the sheer volume of the attacker's twelve mortar missions — whether that volume is right is the author's next call.**
+**Next, in one line: decisions 91–93 are in and both attacks are in band (3:1 50%, 2:1 25%); explosives are at 23–25% against 60–80% with no artillery in the company battles, and urban jumped to 56% on the doctrinal fire plans — two rulings for the author.**
 
 **Current as of 2026-10-11: the stale tables are re-run, and the attack is now too strong.** With the line-of-sight targeting fix in, the standard measurement gives **3:1 at 56%** (band 40–55), **2:1 at 40%** (band 20–35), and **explosives at 46%** of losses against a 60–80% band — the author's own 75%-of-casualties principle. The reference plan *A calibrated* re-run at 200 seeds gives **61%**, so the earlier 57% was not noise. Three bands are out, all the same way: **the rules need tuning down for the attacker**, which is the opposite of what every entry before this was reaching for (balance.md, *The stale tables re-run*).
 
@@ -290,6 +290,15 @@ way. Two levers would move all three together:
    open** (balance.md, *Does suppression pay?*, part 3). That is the one
    figure in the chain that is plainly unrealistic, and it is ours.
 
+**2026-10-12, last: decision 93 is in — mortars by doctrine.** 3:1 **50%**
+and 2:1 **25%**, both in band; explosives **23–25%**, far below 60–80;
+urban **56%** (was 16%; the fire plans moved it, not the allotment). The
+company battles have no artillery at all, the likeliest reason explosives
+are so far off — for the author: does a main-effort company get the
+brigade's guns? And do decisions 75–78 want re-reading on the new urban
+figure? (balance.md, *Mortars by doctrine*). A browser battle saved
+before 93 resumes on the new fire plan.
+
 **2026-10-12, after 92: the mortar allotment review is with him**
 ([mortar-allotment.md](mortar-allotment.md)). Doctrine: a rifle company owns
 two 60 mm, the battalion's 81/120 mm come by priority of fires, a section is
@@ -297,9 +306,10 @@ two tubes, three to five targets, one priority target, one FPF, rounds set
 aside. The game gives each side a three-tube 81 mm section and 288 bombs,
 spent on any sighting. Proposed: the 60 and 120 mm, two-tube sections,
 ammunition in rounds, and doctrinal fire plans for both scripted sides.
-Waiting on his ruling. Also found: the "seldom less than five rounds for
-each mortar" that `RESEARCH_ROUNDS_FOR_EFFECT` cites to FM 7-90 is not in
-FM 7-90.
+Ruled and built as decision 93 (below). The "seldom … five rounds for
+each mortar" quote, first reported as not in FM 7-90, *is* in it (App. B,
+p. B-9, worded "should seldom consist of any less than five rounds"); it
+stays, exactly quoted.
 
 **2026-10-12, end: decision 92 is in, and the 3:1 is in band.** A shell's
 suppression is a chance (FM 7-90's radii read as probabilities, combined

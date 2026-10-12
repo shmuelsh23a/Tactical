@@ -24,10 +24,13 @@ game does. **Nothing has changed yet.** All quotes are from the corpus
   registered targets in the dead ground 100–400 m in front; then a full
   mission on any fresh mark — a registered target's first, else the
   nearest. Nothing is held back.
-- The `RESEARCH_ROUNDS_FOR_EFFECT` comment cites FM 7-90 for "seldom less
-  than five rounds for each mortar". **That line is in neither FM 7-90's
-  text nor anywhere in the corpus** — the comment needs correcting
-  whatever is ruled.
+- The `RESEARCH_ROUNDS_FOR_EFFECT` comment cited FM 7-90 for "seldom less
+  than five rounds for each mortar". *Corrected 2026-10-12, after the
+  ruling:* the sentence is genuine, worded "a light mortar section's FFE
+  should seldom consist of any less than five rounds for each mortar, and
+  often will require more" (FM 7-90, 1992, App. B, p. B-9); the paraphrase
+  hid it from a search, and the corpus lacks the superseded FM 7-90. It now
+  sets the 60 mm's FFE at ten.
 
 ## What doctrine says
 
