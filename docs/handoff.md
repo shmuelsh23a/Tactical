@@ -272,10 +272,10 @@ How the last two days went, round by round, is in
   soldiers act by doctrine's drill, the fight advances in ticks inside the
   turn, it has its own screen at squad and platoon level and runs headless
   at company and up. The author said **not to start building** until he
-  is back. Still open for him: clearing time against scenario length
-  (40–60 min a house is 40–60 turns), the urban target band (doctrine's
-  9:1–15:1 against `yokneamUrban`'s 56% at about 3:1), and how much of
-  the plan the attacker knows.
+  is back. His answers on the open points: scenario time limits wait for
+  the new engine; the urban target band comes from the research
+  (urban-doctrine.md, *Research on outcomes*); the attacker knows only
+  what can be seen from outside; special operations are a separate topic.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
 - **The force-quality matrix** (decision 83) has waited on his view of its

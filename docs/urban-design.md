@@ -92,9 +92,12 @@ defender is seen where he actually stands at a window.
   construction ⚠️ ours, to be set against local building types when we
   build it. A scenario may draw a feature building by hand.
 - **Who knows the plan**: the defender, because it is his house. The
-  attacker knows only the rooms his men have seen into, which is the same
-  ledger as outside (`contactsFor`). What scouting or knowledge of local
-  construction tells him is a later question.
+  attacker knows **only what is reasonable to know from the outside**
+  (the author, 2026-10-15): the outline, the storeys, and the doors and
+  windows his men have seen. The rooms become known as they are seen
+  into, which is the same ledger as outside (`contactsFor`). Special
+  operations, planned on intelligence of the inside, are a separate
+  topic.
 
 ## The commander plans; the soldiers act by doctrine
 
@@ -232,14 +235,18 @@ after houses.
    platoon.
 6. **Trenches and tunnels.**
 
-## Still open, for the author
+## The author's answers on the open points (2026-10-15)
 
-- **Clearing time against scenario length.** Taken literally, doctrine's
-  40–60 minutes for a house is 40–60 turns, longer than the raid (30) or
-  the urban test bed (45). Should the resolver be measured first, before
-  the scenarios are re-cut?
-- **The target band for an urban attack.** Doctrine gives 9:1–15:1
-  against a prepared position in a town (ATP 3-06 (2022), Table 5-1).
-  `yokneamUrban`, at about 3:1 with armour, wins 56% today. Should the
-  band be set once the resolver measures?
-- **How much of the floor plan the attacker knows** before he enters.
+- **Clearing time against scenario length: wait for the new engine.**
+  The town scenarios' time limits stay as they are until the resolver
+  measures how long a house takes. Doctrine's 40–60 minutes (40–60
+  turns) is what that measurement is checked against.
+- **The target band for an urban attack: from the research**, not from
+  doctrine's force ratios alone. The research is gathered in
+  [urban-doctrine.md](urban-doctrine.md), *Research on outcomes*.
+- **What the attacker knows of a floor plan: only what is reasonable to
+  know from the outside.** That covers the outline, the storeys, and the
+  doors and windows he can see from where his men have looked. The rooms
+  behind them are unknown until seen into. **Special operations are a
+  separate topic**: a raid planned on intelligence of the inside, which
+  is the case for `yokneamRaid`, is to be designed on its own.

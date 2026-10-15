@@ -3034,6 +3034,13 @@ on the stated reasoning, still awaiting the author's word.
       determinism*).
     - Supersedes `OWN_OBJECT_SIGHT_M` for a force inside a building, and
       the first draft's postures (at the windows, back in the room).
+    - **The attacker knows of a house only what is reasonable to know
+      from the outside**: its outline, storeys, and the doors and windows
+      his men have seen. Special operations planned on intelligence of
+      the inside are a separate topic. The scenarios' time limits wait
+      for the resolver to measure a clearance, and the urban target band
+      is to come from the research (all three answers by the author,
+      2026-10-15).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
