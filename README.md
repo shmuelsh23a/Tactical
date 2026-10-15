@@ -3197,6 +3197,12 @@ Still modelled by reasonable assumption (flag if you want them changed):
   (2024) *BCT Urban Operations*, the room-clearing drill in TC 3-21.76, and
   FM 3-06.11's weapon effects already in validation.md.
 
+  **The design is drafted (2026-10-15)**:
+  [docs/urban-design.md](docs/urban-design.md), six stages (U1–U6) and seven
+  questions for the author, on the doctrine gathered in
+  [docs/urban-doctrine.md](docs/urban-doctrine.md). Nothing is built until
+  it is ruled.
+
 ### Later development iterations (unordered backlog)
 
 Each is intended to be an independent, toggleable module:
