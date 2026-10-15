@@ -274,7 +274,13 @@ How the last two days went, round by round, is in
   at company and up. The author said **not to start building** until he
   is back. His answers on the open points: scenario time limits wait for
   the new engine; the urban target band comes from the research
-  (urban-doctrine.md, *Research on outcomes*); the attacker knows only
+  (urban-doctrine.md, *Research on outcomes*). The research is in, and
+  **a proposal waits on his ruling** (urban-design.md, *The urban
+  band*): keep decision 68's 40–55% / 20–35% for an urban attack, put
+  the urban cost in time (about 2× longer) rather than outcome, and
+  treat doctrine's 9:1–15:1 as planning advice, since two historical
+  studies (TDI 2002, Dstl 2023) find attackers win *more* often in
+  towns. The attacker knows only
   what can be seen from outside; special operations are a separate topic.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.

@@ -32,6 +32,8 @@ See validation.md, *second pass*, for how that was done.
 | **FM 7-90**, *Tactical Employment of Mortars*, App. B, US Army | globalsecurity.org/military/library/policy/army/fm/7-90/Appb.htm | Suppression radii by mortar (B-7); standing against prone (B-5a); overhead cover | Read, 2026-10-03 |
 | USMC TBS, *Principles of Fire Support* (B2C2437) | trngcmd.marines.mil (PDF) | Rates of fire (M777A2 2 sustained, 5 maximum); estimated casualty radii (81 mm 35 m, 120 mm 45 m, 155 mm about 50 m) | Read |
 | Grau, *Russian-Manufactured Armored Vehicle Vulnerability in Urban Combat: The Chechnya Experience*, FMSO, 1997 | man.fas.org/dod-101/sys/land/row/rusav.htm | 3–6 lethal hits for each armoured vehicle destroyed at Grozny | Read |
+| **Lawrence & Anderson**, *Measuring the Effects of Combat in Cities, Phase I*, The Dupuy Institute for CAA, 11 Jan 2002 | dupuyinstitute.org/pdf/urbanwar.pdf | 137 division engagements, ETO 1944, urban against open: attacker wins, losses per day, advance rates; outcome by force ratio (pp. 49–50) | In full (agent), 2026-10-15 |
+| **Syms**, Dstl, ISMOR 2023 slides | (conference slides) | 145 battles 1943–2008, brigade to company: attacker wins 88% urban against 59% open; losses per day; duration | Read (agent), 2026-10-15 |
 | Matthews, *Operation AL FAJR* (Fallujah), Combat Studies Institute | armyupress.army.mil (PDF) | No rounds-per-building figure; one Bradley penetrated | Searched in full text |
 
 ## Combat records

@@ -605,3 +605,223 @@ sustainment figure.
 (defers to TM 3-34.82 / TC 3-34.85); rooms per hour or rooms per squad; casualty-rate multiple vs open terrain; urban
 danger-close / minimum safe distances (defers to ATP 3-09.32, not in corpus); a quantitative "objective cleared"
 threshold.
+
+---
+
+## Research on outcomes (not doctrine), 2026-10-15
+
+Gathered for the urban target band (the author: "let's check what the research says"). Headings below are demoted one level from the research notes.
+
+
+Research date 2026-10-15. Provenance tags:
+- **[READ]**: I read the primary document text or table myself.
+- **[BLOG]**: I read the author's own blog page, which is secondary to their report.
+- **[SEARCH]**: the claim comes only from a search-engine summary or excerpt. Treat these as unverified.
+
+DTIC (apps.dtic.mil) was down for maintenance during this session, so the Yazilitas thesis and the McLaurin 1987 report could not be read.
+
+---
+
+#### 0. Bottom line first
+
+Two independent historical-analysis programmes compared urban attacks with open-terrain attacks using matched data: The Dupuy Institute (TDI) for the US Army's Center for Army Analysis (CAA), 2002–04, and Dstl (UK), 2023, which also re-confirms 1980s UK DOAC/DOAE work. **Neither finds that urban terrain lowers the attacker's chance of success. Both find that urban terrain slows the attack and lengthens it.** On casualties, both find that urban fighting is *no worse* for the attacker per day, and if anything better.
+
+The doctrinal 9:1–15:1 figure (ATP 3-06 Table 5-1) is a planning table "adapted from ATP 2-01.3, Table B-16" (from this repo's own `docs/urban-doctrine.md`). I found no historical dataset behind it.
+
+Important caveat for all of this data: attackers **chose** which towns to attack and with what force. The historical urban attacks were typically made at favourable ratios against encircled or isolated defenders, so the success rates are conditioned on that selection.
+
+---
+
+#### 1. Success rates by force ratio, urban vs open
+
+#### 1a. TDI, *Measuring the Effects of Combat in Cities, Phase I* (Lawrence & Anderson, The Dupuy Institute, 11 Jan 2002, contract DASW01-98-D-0058, for CAA) [READ, the full PDF from dupuyinstitute.org/pdf/urbanwar.pdf]
+
+Division-level engagements, ETO 1944: 46 urban/conurban engagements vs 91 non-urban (137 in all).
+
+Aggregated data, pp. 11–12:
+
+| Data set | n | Avg force ratio (weighted) | % attacker wins | Attacker % loss/day (avg) | Defender % loss/day (avg) | Advance km/day |
+|---|---|---|---|---|---|---|
+| Urban: Channel Ports, Brest, Paris | 25 | 8.01 (4.33) | **84.00** | 0.45 | 44.13 | see note |
+| Non-urban: Normandy, Breakout & Pursuit | 21 | 3.55 (2.02) | **71.43** | 1.49 | 9.63 | see note |
+| Urban: Aachen | 21 | 2.43 (2.29) | **95.24** | 0.57 | 5.58 | 0.96 |
+| Non-urban: Westwall, Lorraine, Ardennes | 70 | 2.13 (1.69) | **58.57** | 0.97 | 3.99 | 2.81 |
+
+Note: the advance rates for the Channel Ports rows come from the p. 51 table: 2.49 vs 2.59 raw, or 1.49 vs 2.43 when capped at 10 km.
+
+Outcome by force ratio, p. 49 (outcomes III–V only):
+- No urban attack failed. The lowest urban attack ratio was 1.72:1.
+- "No attacks, Urban or Non-urban, executed with a ratio above 2.56-to-one, failed."
+- The report's derived rule (p. 50): 0.55–1.01:1 attack fails; 1.15–2.56:1 attack may succeed; 2.71:1 and higher attack advances.
+- In the 1.15–2.56:1 band:
+
+  | Terrain | Cases | Attack fails |
+  |---|---|---|
+  | Non-urban | 55 | 12 (21.82%) |
+  | Urban | 14 | 0 |
+  | Rolling | 25 | 6 (24.00%) |
+  | Rugged | 30 | 6 (20.00%) |
+
+  This is reproduced in Lawrence, *War by Numbers* (2017), ch. 16 "Urban Legends", Tables 16.5–16.6 [BLOG, TDI 2022-08-11].
+
+TDI's own conclusions:
+- p. 50: "the terrain ... has no significantly measurable influence on the outcome of battle."
+- p. 49: terrain could still shift combat power "by 20 to 30 percent" without being detectable in this sample.
+- p. 12: the high urban success rates are "probably driven by the circumstances in those campaigns, and is not indicative of the nature of urban combat." Many defenders were encircled.
+
+Definition caveat: a "win" here is the analyst's judgement of mission success at division level, for a day-long engagement. It is not "the position fell".
+
+#### 1b. TDI Phases II and III [BLOG: Lawrence, TDI blog, 11 and 20 Jun 2018]
+
+- Phase II: Kharkov 1943, 51 urban vs Kursk 65 (or 49) non-urban.
+- Phase III: Manila 1945, 53 urban vs 41 non-urban.
+- The series overall covered 304 urban and 319 non-urban cases, 1942–2003, at division and battalion level.
+- Conclusions as stated on the blog: urban combat "did not significantly influence the Mission Accomplishment (Outcome)" nor "the Force Ratio required to achieve success."
+- Phase II adds: "a tendency for urban engagements not to generate penetrations."
+- I did not see per-phase win percentages on these pages.
+
+#### 1c. Syms (Dstl), "Historical analysis of urban combat casualties and loss rates", 40th ISMOR, 20 Jul 2023, DSTL/CP150990/1.0 [READ, slide PDF and embedded tables]
+
+145 battles (213 forces), 1943–2008, at brigade, battalion and company level. 43 urban vs 102 rural; NW Europe and the Middle East. The sources include the Helmbold CDB91 database and the TDI data.
+
+Slide 9, "Probability of attacker winning", draw = 0.5:
+
+| Terrain | n | Wins / Draws / Losses | P(attacker wins) |
+|---|---|---|---|
+| Urban | 43 | 35 / 6 / 2 | **88.4%** |
+| Rural | 102 | 55 / 10 / 37 | **58.8%** |
+
+- The difference is significant at the 0.1% level (chi-squared). It holds for WWII and post-WWII data taken separately.
+- Conclusion slide: "Urban terrain favours the attacker" and "UK forces should not seek to avoid attacking into urban areas."
+- **No force ratios are given** in the slides, so this cannot be read as success at a given ratio.
+
+#### 1d. McLaurin, Jureidini, McDonald & Sellers, *Modern Experience in City Combat*, USAHEL Technical Memorandum 5-87 (Abbott Associates), March 1987, DTIC ADA180999 [SEARCH only; DTIC was down]
+
+This is a case study of about 20+ post-1940 city battles. Excerpts surfaced by two separate searches:
+- "odds favoring an ultimate attacker victory do not materially increase" once the force advantage exceeds 2:1.
+- More force only shortens the time needed to take the city.
+- At 4:1 or better in personnel, "even major cities did not consume more than two weeks" on average.
+- "Defense in a built-up area does not appear to be a better risk than defense on other terrain".
+
+**Verify before citing.**
+
+#### 1e. Modern single battles: no success-rate statistics exist
+
+These battles were all eventual attacker wins at operational level, at roughly 3.5–5:1 overall. The figures are [SEARCH], from Wikipedia and Britannica summaries:
+- **Second Fallujah 2004:** about 13,000–15,500 coalition troops vs about 3,700–4,000 insurgents. Coalition losses about 95–110 KIA and about 600 WIA.
+- **Jenin 2002:** about 1 brigade plus 2 battalions vs about 200 armed men. 23 IDF killed.
+
+I found **no published dataset** giving a success rate by force ratio for company or platoon assaults on houses: not for Israeli (1967/73/2002/2006/2014/2023–24), Grozny, Mariupol or Bakhmut operations, nor anywhere else. Spencer and Geroux's MWI Urban Warfare Project case studies are narrative and give no ratio statistics [SEARCH]. Winton's dissertation (Grozny, Fallujah, Gaza) is qualitative, about technology [SEARCH].
+
+---
+
+#### 2. Casualty rates and exchange ratios, urban vs open
+
+**TDI Phase I [READ]:**
+- p. 12: attacker casualty rates in urban are "about one-half of those found in Non-urban engagements". Defender rates are higher.
+- p. 51: "any way the data is sectioned, the attacker casualties in the Urban engagements are less ... and the casualty exchange ratio favors the attacker".
+- By outcome IV ("attack advances"), attacker %/day was:
+  - Channel Ports 0.53 vs Normandy 0.87
+  - Aachen 0.57 vs Ardennes 0.90
+- Armor, p. 56: attacker daily tank loss was 2.74% at Aachen vs 6.23% in the Ardennes. Armor losses urban are "the same as, or lower than" non-urban.
+
+**Yazilitas, H., "Analyzing the Effects of Urban Combat on Daily Casualty Rates", NPS MS thesis, June 2004 (DTIC ADA424898)** [BLOG/SEARCH, abstract only]:
+- 253 ETO division engagements, 96 of them urban.
+- "attacker's daily casualty rate is, on average, lower in urban operations"
+- Terrain and force ratio are the main drivers.
+- No figures obtained.
+
+**Syms / Dstl 2023 [READ]:**
+- 1980s UK work found attacking "easier in FIBUA", with "approximately a factor of two" difference in loss-exchange ratio.
+- Brigade daily loss %, mean (median):
+  - urban attacks 3.8% (1.5%) vs rural attacks 7.6% (3.6%)
+  - urban defences 7.0% (7.2%) vs rural defences 9.1% (4.6%)
+- Wounded:killed ratio, mean: urban attacks 4.39 vs rural attacks 2.37; urban defences 1.49 vs rural defences 2.25.
+- Urban defenders lose a median 32% of their losses as POWs, vs 8% for rural defenders.
+
+**Rowland, D., "The Effect of Combat Degradation on the Urban Battle", J. Oper. Res. Soc. 42(7):543–553, 1991** [SEARCH, abstract only]:
+- Historical data plus field trials.
+- No numbers obtained. It is cited by Syms as part of the UK 1980s–90s base.
+
+**Counter-evidence (case-level only):**
+- Hue 1968 close-quarters phases ran 37.9–44.4 wounded per 1,000 per day, vs 5.8 in mop-up [SEARCH; source not identified].
+- Suez City 1973 and Grozny 1995 are cited as high armour-loss cases. TDI (p. 55) argues they are atypical.
+
+**"1 defender = 5–10 attackers" / "defender advantage 3–5×":**
+- I found no research source for these.
+- Spencer cites "five attackers for every defender" as **US Army doctrine** [SEARCH]. That is doctrine, not research.
+- The DiMarco (MWI, 20 Jun 2022) "6:1" figure is likewise attributed to doctrine writers [READ]. TDI rebuts it [BLOG].
+
+---
+
+#### 3. Rates of advance
+
+**TDI Phase I, pp. 51–53 [READ]:**
+- Urban advance rates are one-half to one-third of non-urban.
+
+  | Comparison | Urban km/day | Non-urban km/day | Ratio |
+  |---|---|---|---|
+  | Aachen vs Ardennes | 0.96 | 2.81 | 0.34 |
+  | Outcome IV attacks | 0.96 | 3.02 | 0.32 |
+  | Low-ratio attacks | 1.23 | 2.59 | 0.47 |
+  | High-ratio attacks | 0.94 | 3.55 | 0.26 |
+
+- 67% of urban cases advanced less than 1 km/day, vs 36% of non-urban cases.
+- Caveats: Phase II (Kharkov) showed "no strong evidence" of a reduction. Phase III (Manila) showed "strong evidence" [BLOG].
+
+**Syms / Dstl 2023 [READ]:** battle duration in days, mean (median), urban vs rural:
+
+| Echelon | Urban | Rural |
+|---|---|---|
+| Brigade | 6.8 (5.0) | 2.9 (2.0) |
+| Battalion | 4.2 (2.0) | 1.4 (1.0) |
+| Company | 1.2 (1.0) | 1.0 (1.0) |
+
+The company-level samples are small: n = 6 urban and 21 rural.
+
+**ATP 3-06 Tables 5-3/5-4:** sourced to Dupuy via ATP 5-0.2-1 (repo notes). Their data rows were not recoverable here; irp.fas.org was blocked from the shell.
+
+---
+
+#### 4. Defender multiplier for urban terrain (quantitative)
+
+**Dupuy QJM, *Numbers, Predictions and War* (1985 ed.)** [BLOG: Lawrence, TDI, 16 Aug 2022]
+- Terrain factor (Table 1, p. 228): **Urban 1.4**; Rolling-Mixed 1.3; Rugged-Mixed 1.5.
+- Posture factors (Table 5, p. 230): hasty 1.3, **prepared 1.5**, fortified 1.6.
+- Prepared defence in urban terrain therefore comes to 1.5 × 1.4 = **2.1** (range 1.82–2.24).
+- So urban terrain is treated as **about the same as rolling or rugged mixed terrain**.
+- Lawrence calls the QJM value "a game construct", not validated against urban engagements.
+
+**TDI empirical:**
+- No defensive multiplier could be measured. Any effect is under about 20–30% (Phase I, pp. 49–50).
+- Lawrence 2022: the defensive value of urban terrain "clearly was not massive" [BLOG].
+
+**Dupuy attrition verity:** in difficult terrain, casualty rates for both sides "decline markedly" [SEARCH].
+
+**Nothing found:**
+- no research-based multiplier of 3–5× or higher for urban defence;
+- no TNDM urban factor distinct from the QJM 1.4.
+
+---
+
+### Implications for a target band
+
+What the sources support jointly is listed below; I have not added a band beyond them.
+
+| # | Candidate figure | Source | Strength |
+|---|---|---|---|
+| 1 | Attacker success is **not lower** in urban terrain at the same force ratio. In the 1.15–2.56:1 band: 0/14 urban attacks failed vs 12/55 (22%) non-urban. | TDI Phase I 2002, pp. 49–50 [READ] | Moderate: 137 division-level WWII cases; small urban n; selection bias (encircled defenders) |
+| 2 | P(attacker win) urban 88% vs rural 59%, ratio not controlled | Syms/Dstl 2023, slide 9 [READ] | Moderate on direction (p<0.001, 145 battles, brigade to company); weak as a ratio-specific number |
+| 3 | Urban terrain's defensive effect is at most about 20–30% of combat power (undetectable) | TDI Phase I, p. 49 [READ] | Moderate |
+| 4 | Prepared urban defence ×2.1 (QJM 1.4 × 1.5), comparable to rugged terrain | Dupuy 1985 via TDI blog [BLOG] | Weak: model construct, not validated on urban data |
+| 5 | More than 2:1 does not raise the odds of eventual attacker victory, only speed | McLaurin et al. 1987 [SEARCH] | Unverified |
+| 6 | Attacker daily casualties urban are about ½ of open; loss-exchange about 2× better for the attacker | TDI 2002 [READ]; Syms 2023 / UK 1980s [READ]; Yazilitas 2004 [abstract] | Moderate to strong: three datasets agree |
+| 7 | Urban advance is ½ to ⅓ of open; battles 2–3× longer at brigade and battalion, about equal at company | TDI 2002 [READ]; Syms 2023 [READ] | Strong on direction |
+| 8 | 9:1–15:1 needed against a prepared urban position | ATP 3-06 Table 5-1 (doctrine; derived from ATP 2-01.3 B-16) | No historical basis found; contradicted by items 1–3 |
+
+What these jointly suggest:
+- The research gives **no support for urban attack success being much lower than open-terrain attack success at the same ratio**. The open-terrain band the game uses (3:1 vs prepared, 40–55%) is the best-supported reference, and nothing found argues for going far below it.
+- Item 4, taken at face value, puts a prepared urban defence at roughly the same multiplier as rugged ground. That implies at most a modest shift down. It does not support the doctrine's three-fold-plus penalty.
+- A game result of **56% at 3:1 is consistent with the historical data**: TDI found no failures above 2.56:1, and Dstl found urban attackers won more often.
+- What urban terrain *should* cost the attacker, per all sources, is **time and tempo**, not outcome or casualties: slower advance, longer engagements, fewer penetrations or breakthroughs, and more defenders captured rather than escaping.
+- Caveat: every dataset is at division or brigade level, with at most 6 company-level urban cases (Dstl). **No published research gives a company-vs-platoon-in-houses success rate.** Any company-level band is an extrapolation from division and brigade data.

@@ -243,7 +243,52 @@ after houses.
   turns) is what that measurement is checked against.
 - **The target band for an urban attack: from the research**, not from
   doctrine's force ratios alone. The research is gathered in
-  [urban-doctrine.md](urban-doctrine.md), *Research on outcomes*.
+  [urban-doctrine.md](urban-doctrine.md), *Research on outcomes*. What
+  it found and what it suggests is below, under *The urban band*.
+
+## The urban band: what the research says (proposal, not ruled)
+
+**The research contradicts doctrine's planning table.** Two matched
+historical studies, read on the page, compare urban and open attacks:
+
+- **The Dupuy Institute for CAA** (Lawrence & Anderson 2002), 137
+  division engagements in 1944: attackers won **84% against 71%**
+  (Channel Ports against Normandy) and **95% against 59%** (Aachen
+  against the Westwall and Ardennes). Between 1.15:1 and 2.56:1, **no
+  urban attack failed (0 of 14)**, against 12 of 55 in the open. The
+  authors' verdict is that terrain has "no significantly measurable
+  influence on the outcome".
+- **Dstl** (Syms 2023), 145 battles from 1943 to 2008, brigade to
+  company: attackers won **88% in towns against 59% in the open**, with
+  no control for force ratio.
+- **Attacker losses a day in towns are about half** of the open rate in
+  both studies, and in a third study (Yazilitas 2004, abstract only).
+- **What a town does cost is time.** The advance is ½ to ⅓ of the open
+  rate, and battles last 2–3× longer at brigade and battalion level.
+- I found **no historical basis for ATP 3-06's 9:1–15:1**. It is a
+  planning table adapted from ATP 2-01.3.
+- **The caveats:** the urban attacks were chosen, often against
+  encircled defenders. The data is division and brigade level, with only
+  6 urban cases at company level. No study gives a rate for a company
+  attacking a platoon in houses.
+
+**Proposal** (⚠️ for the author to rule):
+
+1. Keep **decision 68's band for an urban attack**: 3:1 against a
+   prepared position **40–55%**, 2:1 **20–35%**. The research gives no
+   reason to set it lower, and its direction would set it higher; the
+   selection bias is why I'd not raise it.
+2. Put the urban cost **in time, not outcome**: an urban attack should
+   take markedly longer than the same attack on open ground, about 2× ⚠️
+   (the brigade figure, extrapolated). This becomes a measured target
+   once the resolver exists, alongside the 40–60 minutes a house.
+3. Losses: an urban attacker should **not** lose more per turn than an
+   open-ground one.
+4. Doctrine's 9:1–15:1 is recorded as doctrine's planning advice, not a
+   target the rules are tuned to.
+
+On this proposal, `yokneamUrban`'s 56% at about 3:1 is at the top of the
+band. It is not the outlier it looked like against doctrine's table.
 - **What the attacker knows of a floor plan: only what is reasonable to
   know from the outside.** That covers the outline, the storeys, and the
   doors and windows he can see from where his men have looked. The rooms
