@@ -3006,6 +3006,35 @@ on the stated reasoning, still awaiting the author's word.
       21% and 13.5%). The fire and flank plans reach the band; the move-up
       and deliberate plans stay at 6–13% whatever fire they are given.
 
+96. ✅ **Closed terrain is fought soldier by soldier, on a plan** (the
+    author, 2026-10-15: "Fighting in closed terrain (trenches, houses,
+    under ground) should be simulated to the soldier level … in a manner
+    similar to 'Door Kickers 2'"). **Designed, not built**:
+    [docs/urban-design.md](docs/urban-design.md).
+    - **Two layers.** The tactical map is unchanged. Inside a house, a
+      trench or a tunnel, soldiers are individuals on a grid of their
+      own. The two are coupled: a soldier at a window fires out and is
+      seen through it, and a round through a window, a roof or a breach
+      lands in a room.
+    - **Floor plans are randomised**, generated from the footprint and
+      seeded from the game's seed and the building's id, so a replay and
+      both sides get the same house.
+    - **Commanders plan; soldiers act by doctrine.** On both sides,
+      inside as outside, nobody moves a soldier. The attacker plans
+      entry, order and grenades. The defender plans rooms held,
+      loopholes and fallback. The drill is TC 3-21.76's Enter and Clear
+      a Room. The interior advances in plan-then-execute ticks inside
+      the 60 s turn, not in real time.
+    - **One resolver, two modes.** Squad and platoon played by hand
+      open a separate planning and playback screen. Company and above
+      resolve the same fights headless, without graphics.
+    - **Where it runs**: on the PC itself. A phone may hand it to a
+      server, which is why the resolver must stay bit-identical across
+      devices, using basic arithmetic only (urban-design.md, *Cost and
+      determinism*).
+    - Supersedes `OWN_OBJECT_SIGHT_M` for a force inside a building, and
+      the first draft's postures (at the windows, back in the room).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -3197,11 +3226,13 @@ Still modelled by reasonable assumption (flag if you want them changed):
   (2024) *BCT Urban Operations*, the room-clearing drill in TC 3-21.76, and
   FM 3-06.11's weapon effects already in validation.md.
 
-  **The design is drafted (2026-10-15)**:
-  [docs/urban-design.md](docs/urban-design.md), six stages (U1–U6) and seven
-  questions for the author, on the doctrine gathered in
-  [docs/urban-doctrine.md](docs/urban-doctrine.md). Nothing is built until
-  it is ruled.
+  **Ruled and designed (2026-10-15), rules decision 96**: closed terrain
+  is fought soldier by soldier in a Door Kickers–style interior, planned
+  by commanders and carried out by doctrine's drill, played on its own
+  screen at squad and platoon level and headless at company and up.
+  [docs/urban-design.md](docs/urban-design.md) has the design and the
+  order of work; [docs/urban-doctrine.md](docs/urban-doctrine.md) has the
+  evidence. Nothing is built yet.
 
 ### Later development iterations (unordered backlog)
 

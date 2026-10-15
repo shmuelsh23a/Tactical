@@ -1,259 +1,245 @@
-# Urban warfare: the design (draft, 2026-10-15)
+# Urban warfare: the design (2026-10-15)
 
 The roadmap's *Urban warfare* entry, designed as a whole before any code,
-as the author asked on 2026-10-12: "We need to design a whole thing around
-it. It's a big chunk." **Nothing here is built, and nothing here is
-ruled.** It is a proposal. The questions for the author are at the end,
-and each one has a recommendation. The doctrine behind it, quoted and
-cited, is in [urban-doctrine.md](urban-doctrine.md).
+as the author asked on 2026-10-12. Its shape is **the author's, ruled
+2026-10-15** (README, rules decision 96). The figures are still open, and
+each one is marked ⚠️ where it is ours. **Nothing is built yet.** The
+doctrine behind the design, quoted and cited, is in
+[urban-doctrine.md](urban-doctrine.md).
 
-## Why piecemeal fixes failed
+## The ruling
 
-The game models a building as one thing: a footprint with a height, which
-gives full cover to anything within 3 m of it and blocks sight lines.
-**A force is a point.** These figures were measured on the map's 249
-houses (Yokneam, OpenStreetMap) on 2026-10-15:
+The author, 2026-10-15:
 
-| | Value |
-|---|---|
-| Footprint, median (25th to 75th percentile) | **208 m²** (186 to 240) |
-| Narrow side, median | **16 m** |
-| Houses with a height or storey count in the data | **0 of 249**, so every house defaults to 6 m |
-| Distance from a house's centre to its nearest wall | about **8 m** |
-| How far a force sees out through its own walls (`OWN_OBJECT_SIGHT_M`) | **6 m** |
+> Fighting in closed terrain (trenches, houses, under ground) should be
+> simulated to the soldier level. It should be done in a manner similar
+> to "Door Kickers 2", with individual soldiers' movement and fire. When
+> we do squad and platoon combat manually, the player will go into a
+> separate screen when the force is going into a house/trench. When we do
+> company and above, the system will build these houses and calculate
+> movements without generating the graphics.
 
-A force placed in the middle of a house is therefore blind, and it can't
-be seen either. Half the raids end with no shot fired for that reason
-(balance.md, *The raid, diagnosed*). On 2026-10-06 we tried letting a
-force see out through its walls at any depth. That fixed the blindness
-but turned every house into a pillbox with a view on all sides, and the
-raid broke 89 times in 100. Both failures come from the same cause: **a
-point has no idea which window it is at.** Doctrine fights in a house
-from particular apertures, on a particular floor, with a sector that
-narrows the further back the firer stands. ATP 3-06.11 (2024), para 4-53:
-"The farther back into a structure a Soldier is, the better the
-protection and the smaller the weapon signature. However, the sector of
-fire is more limited."
+His answers to the follow-up questions, the same day:
 
-## The constraint: it has to scale to a brigade
+1. **Floor plans are randomised.**
+2. **Inside, the commander only plans.** Soldiers act by doctrine. "We
+   don't move individual units around like other RTS/TBS do." Plan-then-
+   execute ticks, not real time with pause.
+3. **The defender is the same.** Each commander plans his side of the
+   fight, and neither controls the soldiers.
+4. **Inside and outside are coupled.** A soldier at a window fires out,
+   and a round through a window lands in a room.
+5. **Where it runs**: on the computer itself when played on a PC. Phones
+   may have to send it to a server (see *Cost and determinism*).
 
-The game runs from a squad up to a brigade, at metre resolution, and
-`scaling.test.ts` caps a turn's cost by the number of forces, not the
-number of men. So **no rooms, corridors or interior geometry.** The map
-doesn't have them anyway: OpenStreetMap gives an outline and nothing
-inside it. A brigade fighting in a town of thousands of buildings can't
-afford pathfinding inside each house. The proposal below adds state to a
-building and to a force. It adds no geometry, and it never adds a sight
-line for each soldier.
+## Why the earlier draft was dropped
 
-## The proposal
+The first draft (the same day, in this file's history) kept a force as a
+point and gave it a face of the building and a posture. That model
+couldn't represent the room fight, which is where doctrine says urban
+combat is decided. About 90% of urban engagements happen within 50 m
+(ATP 3-06.11 (2024), para B-15), and room fights within 10 m and a few
+seconds (TC 3-21.76 (2025), para 11-20). Room clearing is a four-man team
+taking a room's corners, its points of domination (ATP 3-06.11, paras
+C-32, C-66, C-67). Doctrine fights inside at **soldier scale**, and the
+game already draws every man individually, with his own traits.
 
-### U1. A force is *in* a building, at a face
+The draft's questions are answered or superseded as follows:
 
-A force that enters a building is **in it**: it stores the building's id
-and is no longer a free point inside the outline. It holds one of **two
-postures**:
+- **Superseded.** The two postures (at the windows, or back in the room)
+  are no longer a rule. They follow from where each soldier stands inside.
+  Close quarters and clearing become the interior fight.
+- **Still in.** Floors, fires in a town, objectives, time limits, and the
+  target band, below.
 
-- **At the apertures** (`windows`). It sees and fires out of every face
-  on the side it watches, from the wall line. Its sector is wide, the arc
-  it is ordered to watch, as anywhere else. Anyone who can see that face
-  can see it. Against fire coming through that face it has the building's
-  full cover, with decision 77's window criticals.
-- **Back in the room** (`deep`). It sees and fires only through a narrow
-  cone, about ±20° ⚠️ ours, centred on its sector. Its signature is small:
-  it is spotted as a hidden force within 20 m, and otherwise only when it
-  fires, at about half the chance ⚠️ ours. It is shielded from window
-  criticals coming from outside its cone.
+## Two layers
 
-Sight lines in both postures are drawn **from the wall**, not from the
-centre of the footprint. One line still connects a pair of forces, as
-`scaling.test.ts` requires. Only the line's end point changes. **This is
-the fix for the stalemate**, and it differs from the 2026-10-06 attempt in
-two ways: a force sees out only on the side it watches, and only through
-the cone its posture allows.
+- **The outside (the tactical map)**: forces as today. A street, a
+  garden and the open ground between houses are fought there, under the
+  rules as they stand.
+- **The inside (closed terrain)**: a house, a trench, a tunnel. It has
+  its own grid, and soldiers are individuals on it. It starts when a
+  force goes into closed terrain and ends when the fight inside ends,
+  either because one side is gone or because it is cleared.
 
-Each posture has a cost, so neither can be the default that always wins:
-`windows` trades signature for sector, and `deep` trades sector for
-staying hidden. A defender that picks `deep` everywhere can be flanked
-from outside its cones, and decision 85's *caught unready* makes that
-hurt.
+The two layers exchange effects:
 
-A building **can hold forces of both sides** (a foothold, U3). Two forces
-inside the same building ignore the outside sight rules between them and
-fight under the close-quarters rule.
+| From | To | What crosses |
+|---|---|---|
+| Inside | Outside | A soldier at a window or loophole fires out, and is seen from outside, through **that** aperture only |
+| Outside | Inside | A round that hits a building lands in a **room**: through a window (decision 77), through the roof into the top floor, or through a breached wall (decision 76) |
+| Outside | Inside | A force that enters, through a door, a breach or the roof |
+| Inside | Outside | A force that leaves, a building cleared, a building lost |
 
-### U2. Floors
+This replaces `OWN_OBJECT_SIGHT_M` for a force inside a building, and it
+removes the stalemate (balance.md, *The raid, diagnosed*) at its root. A
+defender is seen where he actually stands at a window.
 
-Each building gets a number of **storeys**. Where OpenStreetMap gives
-`building:levels` or `height`, that value is used. Otherwise the default
-is **2** ⚠️ ours, matching today's 6 m. A force in a building stands on
-**one floor**: ground, an upper floor, or the roof. Basements wait until
-a map records them.
+## Floor plans, randomised
 
-- **Eye height** is `floor × 3 m + 1.5 m`. An upper floor sees over walls
-  and lower houses, and is seen from farther away on the same lines.
-  ATP 3-06.11 (2024), para 2-44: a tall structure "can provide line of
-  sight across a great distance".
-- **Tank main gun**: −10° to +20° (para B-96). A tank can't engage a floor
-  that sits above +20° from it, which works out to roughly 10 m of height
-  within about 25 m. This is geometry, not a new number.
-- **Indirect fire**: a floor with storeys above it is protected by them.
-  The roof-penetration rule of decision 77 applies only to the **top**
-  floor (para B-168: "additional penetration is rare since each additional
-  floor is also concrete"). The **roof** is open to every shell and
-  airburst (para 4-61).
-- **Who wants which floor**: the second floor is doctrine's default for a
-  machine gun (para B-29). The ground floor is the quickest to leave and
-  to counterattack from. The roof is for observers only. Upper floors buy
-  sight and safety from the tank, and pay for it by being seen farther
-  and taking longer to come down.
+- **Generated from the outline**: OpenStreetMap gives the footprint and
+  nothing inside it. A generator splits the footprint into rooms,
+  corridors, a stairwell, doors and windows, floor by floor.
+- **Seeded from the game's seed and the building's id**, so a replay and
+  both sides get the same house, and the recording carries no plan. The
+  generator's draws come from their own stream, never from `game.rng`, in
+  the same way as a force's men (decision 19). The plan exists whether or
+  not the house is ever entered.
+- **Storeys**: from `building:levels` or `height` where the map has them.
+  Otherwise the default is 2 ⚠️ ours, which matches today's 6 m. Every
+  house in Yokneam lacks the tag.
+- **Plausible, not real**: room sizes and window spacing come from typical
+  construction ⚠️ ours, to be set against local building types when we
+  build it. A scenario may draw a feature building by hand.
+- **Who knows the plan**: the defender, because it is his house. The
+  attacker knows only the rooms his men have seen into, which is the same
+  ledger as outside (`contactsFor`). What scouting or knowledge of local
+  construction tells him is a later question.
 
-Changing floors costs a turn ⚠️ ours.
+## The commander plans; the soldiers act by doctrine
 
-### U3. Moving and clearing
+This is the layer split that holds everywhere else (backlog 21): **plans
+are the players', and drills come from the manuals and stay fixed.**
+Nobody moves a soldier.
 
-- **Between buildings**: across open ground, under today's rules. A street
-  is ground with no cover, which matches doctrine's "natural kill zones"
-  (TC 3-21.75, para 8-1). Smoke and bounding already exist for crossing
-  it.
-- **Into a building the enemy holds**: an assault (decision 11, 25 m)
-  that ends **inside**. It produces a **foothold**: both sides are now in
-  one building.
-- **Close quarters**: while both sides are in one building, each turn they
-  fight by the assault rule: fire, grenades, and the quality gap of
-  decision 84. Nothing else can see in. The side with the footing is the
-  one that holds the floor it is on. **Top-down** gives the attacker the
-  edge (ATTP 3-06.11 (2011), para 7-148: "grenades are easier to throw
-  down a stairwell than up"). How big that edge is, is ⚠️ ours.
-- **Clearing takes time.** A building counts as *cleared* only when no
-  enemy is left in it and a force of the attacker's has been in it for
-  **N turns per floor** without contact. Doctrine's planning figure is
-  40–60 minutes for a supported platoon to clear a one-floor building
-  with a basement, and 90 without support (ATP 3-06.11 (2024), para 3-8).
-  With a 60 s turn (decision 40), **taken literally that is 40 to 90
-  turns a house** (see question 4).
-- **Through the wall** (mouse-holing): a force adjacent to a building can
-  breach into it rather than use a door, which is decision 16's laid
-  charge again: it takes turns to set, and the explosion can be heard.
-  Doctrine gives no charge size, and the turn count is ⚠️ ours. A tank
-  round already breaches the wall it hits (decision 76).
-- **Rubble** slows movement as well as covering it (para B-151: "a severe
-  obstacle to vehicular movement"). Rubble is impassable to vehicles,
-  ⚠️ ours, and costs infantry as climbing does (decision 61).
+**The attacker's plan** (the squad or platoon commander):
+- the entry: a door, a breach (decision 16's laid charge, in turns) or
+  the roof;
+- top-down or ground floor. Doctrine prefers top-down (TC 3-21.75 (2013),
+  para 8-12) and notes that most entries are by the ground floor (ATTP
+  3-06.11 (2011), para 7-149);
+- which team goes first, and the order of rooms or floors;
+- grenades before entry or not (the drill's "FRAG OUT", subject to the
+  rules of engagement);
+- where the support element stands, and the security left outside.
 
-### U4. The drill and the company in a town
+**The defender's plan**:
+- which rooms and floors are held, and by whom;
+- loopholes and barricades, prepared before the battle. Doctrine says to
+  barricade ground-floor openings and keep "two or three firing ports" in
+  each (ATP 3-06.11 (2024), paras 4-54, 4-55);
+- mouseholes between rooms or into the next house (para 4-52);
+- the fallback route, and which rooms to give up.
 
-Today the scripted drill walks to the enemy's centre and stops. The
-doctrinal sequence comes from ATTP 3-06.11 (2011), para 2-70, and the
-battle drill from TC 3-21.76 (2025), ch. 8, 07-SQD-D9509:
+**The soldiers' behaviour is the drill**: Enter and Clear a Room
+(TC 3-21.76 (2025), ch. 8, 07-SQD-D9509). The four-man stack, #1 and #2
+to opposite corners, #3 and #4 opposite them, "CLEAR", security posted,
+the next room. The defender's soldiers hold their sectors from their
+positions, fire on what they see, and fall back when the plan says to.
+The steps are doctrine's. Figures doctrine doesn't give, such as reaction
+times and accuracy at close range, come from the rules we already have
+wherever possible, and are marked ⚠️ otherwise.
 
-1. **Isolate**: a base of fire (support by fire) in buildings that
-   overlook the objective building. Armour does this when there is any
-   (para 3-79).
-2. **Foothold**: the nearest objective building, assaulted from the side
-   the base of fire covers, top-down where a roof or upper floor can be
-   reached.
-3. **Clear**: **at least one squad per floor** (para C-3). The assault
-   force is bigger than usual and the support force smaller.
-4. **Consolidate**: hold the building against the counterattack (the
-   drill's standard) before the next bound.
+### Time: plan-then-execute ticks
 
-The company picks **objective buildings**, not a centroid. It bypasses
-houses only where there is open ground between them, and accepts the
-flank risk that comes with it (paras 5-93, 5-94). The defender occupies
-**mutually supporting buildings in depth**. Against an infantry attacker
-that means the depth of the village, and against armour its leading edge
-(para 6-53). It keeps a counterattack force, as the reserve of decision
-60 does today.
+The outside turn is 60 s (decision 40), but a room fight lasts seconds.
+The interior advances in **ticks** of about 1 s ⚠️, played out inside the
+outside turn. Both sides plan, the ticks run, and the plans stand until a
+commander changes them at the next outside turn. Every draw comes from
+`Rng` and every plan is journaled, so a recording replays the interior
+fight bit-for-bit. No real time and no pause.
 
-### U5. Fires in a town
+## Two modes, one resolver
 
-- **Dead space behind buildings**: about 5× the building's height for
-  low-angle fire, and ½× for high-angle fire (para B-165). This decides
-  whether a shell can land in a given street. It can be computed from the
-  building's height and the direction the fire comes from, so the number
-  is doctrine's own.
-- **Duds**: up to 25% of impact-fuzed rounds fail to detonate when they
-  strike hard surfaces at a glancing angle (para B-19). It is a single
-  roll per round that lands on a building, but it **adds draws to the
-  rng**, so it goes behind a `GameOptions` flag like everything else.
-- **Mortars over artillery**, as doctrine says (ATP 3-21.90, para 4-162).
-  The 60 mm already can't get through a roof (decision 93).
-- **Danger close in a town**: doctrine refers this to ATP 3-09.32, which
-  is **not in the corpus**. It stays as decision 63 S4 until the author
-  brings that manual.
+- **Squad and platoon, played by hand**: when a force goes inside, the
+  player gets a **separate screen** with the floor plan, as much of it as
+  his side knows, and his soldiers. He plans there and watches the ticks
+  play out. It is a planning and playback screen, not a control screen.
+- **Company and above**: the same resolver runs **headless**. It builds
+  the houses and resolves the fights without drawing them. The balance
+  harness runs this way too.
 
-### U6. What counts as success, and the scenarios
+**The resolver is one engine module and the screen only draws it**, so
+the hand-played fight and the auto-resolved one can't disagree. The
+resolver goes in `src/engine/` (DOM-free, `Rng` only), and the screen goes
+in the app.
 
-- The objective of an urban attack is **buildings cleared** (FM 3-90's
-  *clear*: "eliminates all enemy forces within an assigned area").
-  Defeating the enemy force is not enough. This becomes the first
-  concrete case of backlog 18 (victory conditions).
-- **Doctrine changes the target band.** ATP 3-06 (2022), Table 5-1, gives
-  an attack on a prepared position **9:1 to 15:1** in a town, against
-  3:1 in the open, and ATP 3-06.11 (2024), para 3-22, says "three to five
-  times" the normal force. On doctrine's own figures, `yokneamUrban`, a
-  company with armour against a platoon, about 3:1, should mostly
-  **fail**. It currently wins 56%. Decision 68's 40–55% is an open-ground
-  band and was never meant for a town (see question 5).
-- **Time limits**: the raid's 30 turns and the urban test bed's 45 can't
-  hold a clearance that takes doctrine's 40 minutes or more per house
-  (see question 4).
+## Cost and determinism
 
-### Decisions 75–78, re-read in this light
+**Cost** (an estimate to prove, not a measurement):
+- A floor of about 200 m² on a 0.5 m grid is about 800 cells.
+- With about 16 soldiers, the sight test each tick is about 128 lines of
+  about 40 cells, roughly 5,000 steps. Over a 60 s turn that is about
+  300,000 steps, around **3 ms a house** on a PC.
+- Fifty houses fighting in one brigade turn come to about **150 ms**.
+- A phone is 3–5× slower, still under a second.
 
-- **76** (damage, rubble, a tank round breaching): consistent. MPAT
-  "creates a breach hole" (para B-103), and rubble is "a stronger
-  position" (para B-5). Under U2 the breach opens **the floor the round
-  struck**, not the whole building.
-- **77** (critical hits through windows): now applies only to a force
-  `windows`, or to a `deep` force inside the firer's cone. The roof
-  penetration applies to the top floor only.
-- **75** (direct HE as a shell): unchanged.
-- **78** (armour): unchanged, apart from the tank's elevation limit in U2.
+So **yes on a PC**, and probably on a phone too. A server is likely to be
+needed for networked play and the AI commanders rather than for this
+calculation. `scaling.test.ts` caps a turn's cost by the number of
+forces. The interior gets its own budget, by soldiers inside, pinned the
+same way.
 
-## Order of work, once ruled
+**Determinism across devices** is the real constraint for phones and
+servers. If a phone and a server both compute a fight, they must get the
+same bits. Basic arithmetic (`+ − × ÷`) is exact under IEEE 754 in
+every JavaScript engine. **The `Math` functions (`sin`, `cos`, `atan2`,
+`exp`, `pow`) are only "implementation-approximated" in the language
+standard, so they aren't guaranteed to match.** `Math.sqrt` is
+correctly rounded on every engine we know of; confirm that before
+relying on it. The
+resolver uses only basic arithmetic and our own versions of anything
+else, and a lint rule enforces that. The rest of the engine gets the same
+audit before phones.
 
-Each stage is measured on the raid and on `yokneamUrban` before the next
-one starts, and each stage is a `GameOptions` flag so that older
-recordings still replay.
+## What carries over from the draft
 
-1. **U1** (in a building, posture, sight from the wall). The stalemate
-   should go without the raid collapsing. If it collapses, the cone and
-   the signature are what to look at.
-2. **U2** floors.
-3. **U3** foothold, close quarters, clearing, breaching, rubble.
-4. **U4** the urban drill and company, in the harness and then in the
-   browser's computer.
-5. **U5** dead space and duds.
-6. **U6** scenario objectives, time limits, and the target band.
+- **Floors**: eye height `floor × 3 m + 1.5 m`. A tank can't elevate its
+  gun above +20° (ATP 3-06.11, para B-96). Only the top floor is open to
+  a round through the roof (para B-168), and the roof is open to every
+  shell (para 4-61).
+- **Fires in a town**: dead space behind a building is about 5× its
+  height for low-angle fire and ½× for high-angle fire (para B-165). Up
+  to 25% of impact-fuzed rounds fail to detonate on hard surfaces
+  (para B-19), behind a `GameOptions` flag because it adds rng draws.
+  Danger close waits for ATP 3-09.32, which is not in the corpus.
+- **Rubble** slows movement (para B-151): impassable to vehicles ⚠️, and
+  climbing for infantry.
+- **The company in a town**: isolate, foothold, clear, consolidate (ATTP
+  3-06.11 (2011), para 2-70), **one squad a floor** (ATP 3-06.11, para
+  C-3), and objective buildings rather than a centroid. The defender
+  holds mutually supporting buildings in depth (ATTP 3-06.11, para 6-53).
+- **Success** is buildings **cleared** (FM 3-90 (2023), para B-16), which
+  is the first concrete case of backlog 18.
+- **Decisions 75–78** are re-read against the coupling table above. A
+  window critical (77) lands in a room, and a breach (76) opens a room on
+  one floor.
 
-## Questions for the author
+## Trenches and tunnels
 
-1. **The shape: a force in a building, at a face, with two postures and
-   floors, and no rooms** (U1, U2)? *Recommended.* The alternatives are
-   real interiors (rooms from a generator, since OpenStreetMap has none),
-   which won't scale to a brigade, or keeping forces as points and
-   tuning the 6 m, which is what failed on 2026-10-06.
-2. **Storeys where the map says nothing: 2?** Every house in Yokneam
-   lacks the tag. The other option is to set storeys per building in the
-   scenario spec.
-3. **The posture figures**: a ±20° cone and half the spotting chance for
-   `deep`. Both are ours. Doctrine says "back from the windows in the
-   shadows of the room" and gives no number.
-4. **Clearing time.** Doctrine's 40–60 minutes for a house would be 40–60
-   turns, longer than either town scenario. Options:
-   (a) take doctrine literally and lengthen the town scenarios;
-   (b) treat the 40–60 minutes as including the methodical search, and
-   count a house of the game's size as cleared after a few turns without
-   contact, ⚠️ ours, *recommended for now*;
-   (c) make a turn longer in a town (this touches decision 40 for
-   everything).
-5. **The target band for an urban attack.** Doctrine's 9:1–15:1 implies
-   that a 3:1 attack on a prepared position in a town usually fails.
-   Should urban scenarios get their own band? If so, what should it be,
-   or should it be measured first once U1–U3 are in?
-6. **Mouse-holing as a laid charge** (decision 16's turns), or not at
-   this stage?
-7. **Is the order U1 to U6 right?** Each stage is measured before the
-   next. The alternative is to build U1 to U3 together and measure once.
+The same resolver handles them, on a different generator. A trench is a
+line with its own cross-section, and a tunnel is a graph of passages.
+Neither is on OpenStreetMap, so a scenario spec draws them. They come
+after houses.
+
+## Order of work
+
+1. **A throwaway prototype** of the cost estimate above, timed on a PC.
+   It is deleted afterwards, and the figure goes here and on balance.md.
+2. **The floor-plan generator**: deterministic, seeded, with storeys, and
+   tests that the same seed and building give the same plan.
+3. **The headless resolver**: the coupling, the attacker's and the
+   defender's plans as data, and the drill from TC 3-21.76. It is
+   measured against doctrine before anyone plays it:
+   - 40–60 minutes for a supported platoon to clear a one-floor house,
+     90 minutes unsupported (ATP 3-06.11, para 3-8);
+   - top-down beating the ground floor;
+   - grenades as the most-used explosive (para B-35);
+   - casualties higher than in the open (para C-8).
+4. **The company and the harness** on it: the town scenarios
+   (`yokneamRaid`, `yokneamUrban`) re-measured.
+5. **The screen**: planning and playback for a hand-played squad or
+   platoon.
+6. **Trenches and tunnels.**
+
+## Still open, for the author
+
+- **Clearing time against scenario length.** Taken literally, doctrine's
+  40–60 minutes for a house is 40–60 turns, longer than the raid (30) or
+  the urban test bed (45). Should the resolver be measured first, before
+  the scenarios are re-cut?
+- **The target band for an urban attack.** Doctrine gives 9:1–15:1
+  against a prepared position in a town (ATP 3-06 (2022), Table 5-1).
+  `yokneamUrban`, at about 3:1 with armour, wins 56% today. Should the
+  band be set once the resolver measures?
+- **How much of the floor plan the attacker knows** before he enters.

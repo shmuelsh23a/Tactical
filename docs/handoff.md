@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; the urban design is drafted (docs/urban-design.md) and waits on his seven answers; the force-quality matrix and AI commanders wait on the author's go.**
+**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; urban is ruled (decision 96, soldier-level closed terrain) and designed in docs/urban-design.md, and its first step, the cost prototype, waits on his go; the force-quality matrix and AI commanders wait on the author's go.**
 
 **Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
 
@@ -266,15 +266,16 @@ How the last two days went, round by round, is in
   plans that split the company at two to one being shot up — doctrine's
   three to one at the point of assault, and decision 68's "usually fails".
   Accept?
-- **Urban warfare: the design is drafted, seven questions wait on him**
-  (2026-10-15): [urban-design.md](urban-design.md), on the doctrine in
-  [urban-doctrine.md](urban-doctrine.md). The heart of it: a force is *in*
-  a building at a face, with two postures (at the apertures / back in the
-  room) and floors, no rooms — so it scales. Two doctrine findings he
-  should see first: clearing a house is 40–60 min (40–60 turns), longer
-  than either town scenario, and a prepared urban position wants 9:1–15:1,
-  so `yokneamUrban`'s 56% at about 3:1 is far above what doctrine expects.
-  Nothing built until ruled.
+- **Urban warfare is ruled (decision 96) and designed; nothing is built**
+  (2026-10-15): [urban-design.md](urban-design.md). Closed terrain is
+  fought soldier by soldier on randomised floor plans. Commanders plan,
+  soldiers act by doctrine's drill, the fight advances in ticks inside the
+  turn, it has its own screen at squad and platoon level and runs headless
+  at company and up. The author said **not to start building** until he
+  is back. Still open for him: clearing time against scenario length
+  (40–60 min a house is 40–60 turns), the urban target band (doctrine's
+  9:1–15:1 against `yokneamUrban`'s 56% at about 3:1), and how much of
+  the plan the attacker knows.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
 - **The force-quality matrix** (decision 83) has waited on his view of its
