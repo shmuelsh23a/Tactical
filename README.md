@@ -2182,7 +2182,8 @@ on the stated reasoning, still awaiting the author's word.
     the sources (docs/validation.md, *Loss exchange in attacks*). Where it
     stands at decision 67: the standard measurement 49% and 27%, the
     reasonable plans' median 42% and 24% (docs/balance.md, fortieth round).
-    `TARGETS` in `src/sim/balance.ts`.
+    `TARGETS` in `src/sim/balance.ts`. **The same bands hold for an attack
+    in a town** (decision 96, 2026-10-15).
 69. ✅ **What the traits do beyond morale** (author, 2026-10-02 — the
     traits session decision 19 left open). **Built 2026-10-03 (decision 82).** Each
     effect applies **per soldier**, to his own actions, and is worth up to
@@ -3038,9 +3039,23 @@ on the stated reasoning, still awaiting the author's word.
       from the outside**: its outline, storeys, and the doors and windows
       his men have seen. Special operations planned on intelligence of
       the inside are a separate topic. The scenarios' time limits wait
-      for the resolver to measure a clearance, and the urban target band
-      is to come from the research (all three answers by the author,
-      2026-10-15).
+      for the resolver to measure a clearance (both answers by the
+      author, 2026-10-15).
+    - **The urban target band is decision 68's** (the author, 2026-10-15,
+      accepting the proposal from the research): 3:1 against a prepared
+      position 40–55%, 2:1 20–35%. **A town costs the attacker time, not
+      outcome**: an urban attack should take about **2×** as long as the
+      same attack on open ground (⚠️ the brigade figure, extrapolated to a
+      company), and should not cost more losses per turn. ATP 3-06's
+      9:1–15:1 (Table 5-1) is doctrine's planning advice, not a target
+      the rules are tuned to. Evidence: The Dupuy Institute's *Combat in
+      Cities* (2002), 137 division battles of 1944, no urban attack
+      failing between 1.15:1 and 2.56:1 (0 of 14, against 12 of 55 in the
+      open); Dstl (Syms 2023), 145 battles, attackers winning 88% in
+      towns against 59% in the open; both at about half the attacker's
+      daily loss, and the advance at ½–⅓ of the open rate. Neither has
+      more than a handful of company-level cases (urban-design.md, *The
+      urban band*).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
