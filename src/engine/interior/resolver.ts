@@ -422,7 +422,8 @@ export class InteriorFight {
     if (inside && onPoints && enemies.length > 0) team.searching = true;
     if (inside && enemies.length === 0) {
       team.phase = "consolidate";
-      team.until = this.second + CLOSE_QUARTERS.consolidateSeconds;
+      const area = this.plan.storeys[team.storey]!.rooms[team.room]!.areaM2;
+      team.until = this.second + CLOSE_QUARTERS.consolidateSeconds + area * CLOSE_QUARTERS.searchSecondsPerM2;
     }
   }
 

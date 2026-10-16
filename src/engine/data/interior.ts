@@ -110,6 +110,19 @@ export const CLOSE_QUARTERS = {
    * (TC 3-21.76 (2025), 07-SQD-D9509, steps 7–9). Ours.
    */
   consolidateSeconds: 20, // ours (⚠️)
+  /**
+   * The methodical search of a room taken, by its floor area: caches,
+   * crawl spaces, the back-clearing doctrine asks for ("UO building
+   * clearing is not fast", ATP 3-06.11 (2024), para 3-8). **The author's
+   * ruling, 2026-10-16**: sized so a lightly held two-storey house takes a
+   * squad **about 20 minutes**, with the fighting adding to it — the low
+   * end of the real data (Fallujah's "80 to 100 houses a day with a
+   * platoon or a company-sized element", 1SG Smith, *Eyewitness to War*
+   * Vol. II, pp. 199–200; an ARL Ranger squad about 30 minutes a 3–4 room
+   * section). The figure itself is ours, set by `npm run interior-sim`
+   * (docs/balance.md).
+   */
+  searchSecondsPerM2: 3.5, // ours (⚠️), calibrated 2026-10-16: 20.4 min, the demo map's median house, 8 against 1
   /** The longest a fight inside runs before it is called a standoff, in seconds. */
   maxSeconds: 3 * 60 * 60, // ours — three hours, past doctrine's 90 minutes unsupported
 } as const;

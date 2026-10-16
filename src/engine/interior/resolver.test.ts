@@ -36,8 +36,12 @@ describe("the fight inside a building (decision 96)", () => {
     expect(r.outcome).toBe("cleared");
     expect(r.roomsCleared).toBe(r.rooms);
     expect(r.attackers.out).toBe(0);
-    // Two teams, a room each at a time: never faster than half the rooms' consolidation.
-    expect(r.seconds).toBeGreaterThanOrEqual((r.rooms * CLOSE_QUARTERS.consolidateSeconds) / 2);
+    // Two teams, a room each at a time: never faster than half of every
+    // room's consolidation and methodical search.
+    const plan = generateFloorPlan(house("h3", 16, 12), 3);
+    let held = 0;
+    for (const s of plan.storeys) for (const room of s.rooms) held += CLOSE_QUARTERS.consolidateSeconds + room.areaM2 * CLOSE_QUARTERS.searchSecondsPerM2;
+    expect(r.seconds).toBeGreaterThanOrEqual(held / 2);
   });
 
   it("always ends — cleared or repulsed, never stuck — whichever way in", () => {

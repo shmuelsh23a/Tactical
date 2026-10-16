@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CELL_KIND, ROOM, generateFloorPlan, type FloorPlan } from "../engine/index.js";
+import { CELL_KIND, ROOM, Rng, defaultDefence, generateFloorPlan, resolveInteriorFight, type FloorPlan } from "../engine/index.js";
 import { RAMAT_MENASHE_OBJECTS } from "./maps/ramatMenasheObjects.js";
 
 /**
@@ -71,5 +71,23 @@ describe("floor plans of the demo map's houses", () => {
   it("puts windows in every storey's outside wall", () => {
     for (const plan of plans)
       for (const storey of plan.storeys) expect(storey.cells.includes(CELL_KIND.window), plan.buildingId).toBe(true);
+  });
+});
+
+describe("a squad clearing the demo map's houses (decision 96)", () => {
+  it("takes about 20 minutes over a lightly held house, as the author ruled (2026-10-16)", () => {
+    // 8 attackers by the front door against 1 defender, every 6th house of
+    // the map. The full map gives 20.4 minutes (docs/balance.md); a sample
+    // keeps the suite quick.
+    const minutes = HOUSES.filter((_, k) => k % 6 === 0).map((h, k) => {
+      const plan = generateFloorPlan(h, 1000);
+      const rng = new Rng(1000 * 7919 + k);
+      const defence = defaultDefence(plan, ["d1"], rng);
+      const r = resolveInteriorFight({ plan, attack: { entry: "door", grenades: false, teams: [["a1", "a2", "a3", "a4"], ["a5", "a6", "a7", "a8"]] }, defence }, rng);
+      return r.seconds / 60;
+    }).sort((a, b) => a - b);
+    const median = minutes[Math.floor(minutes.length / 2)]!;
+    expect(median).toBeGreaterThan(15);
+    expect(median).toBeLessThan(25);
   });
 });

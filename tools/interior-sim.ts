@@ -27,6 +27,7 @@ const ATTACKERS = Number(value("--attackers") ?? 8);
 const DEFENDERS = Number(value("--defenders") ?? 3);
 const PREPARED = args.includes("--prepared");
 const STOREYS = value("--storeys");
+const ONLY = value("--only"); // e.g. "door-no": one row, for calibrating
 
 const houses: MapObject[] = RAMAT_MENASHE_OBJECTS.filter((o) => o.kind === "building")
   .slice(0, HOUSES)
@@ -49,6 +50,7 @@ console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (media
 console.log("|---|---|---|---|---|---|---|---|---|---|---|");
 for (const entry of ["door", "top"] as const) {
   for (const grenades of [false, true]) {
+    if (ONLY && ONLY !== `${entry}-${grenades ? "yes" : "no"}`) continue;
     const rows: InteriorResult[] = houses.flatMap((h, k) => {
       const plan = generateFloorPlan(h, SEED);
       if (entry === "top" && !plan.stairwell) return []; // no stairs to come down
