@@ -5253,6 +5253,62 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Top-down, built and measured, 2026-10-16
+
+The author approved all seven mechanisms of urban-design.md's *Top-down:
+what it gains and what it costs*. The figures are all ours (⚠️,
+`CLOSE_QUARTERS`):
+
+| Mechanism | Figure |
+|---|---|
+| 1. The defender watches only the way in he expects (from below by default); an enemy at another way into his room catches him unready | decision 85's ×1.5 to be hit, ×0.4 to his fire, for 2 s, once a man |
+| 2. A defender falls back from a room whose neighbour is taken: to the room farthest from those taken, else down and out (attack from above) or up and cornered (from below); he leaves his post's preparation behind | the default; the plan may say "hold" |
+| 3. Stairs by direction; a grenade thrown up | 6 s up, 3 s down (4 s before); its thrower hit ×2 |
+| 4. Getting onto the roof | 3 minutes |
+| 5. One team at a time through the hatch | the next 2 minutes after the one before, and not while the stair room is being taken |
+| 6. A man put out above floors not yet cleared | his team halted ×1.5 |
+| 7. Coming down the stairs is heard | every storey at and below turns to watch the stairs |
+
+Every demo house, 8 attackers in two teams, median minutes of those
+cleared, attackers out per fight:
+
+| Defenders | Way in | Grenades | Cleared | Minutes | Attackers out | Defenders withdrew |
+|---|---|---|---|---|---|---|
+| none | door / top | no | 100% / 100% | 20.4 / 23.2 | 0 / 0 | — |
+| 1 | door / top | no | 99% / 99% | 32.2 / 35.8 | 1.06 / 1.00 | 0 / 0.02 |
+| 3 prepared, fall back, expect below | door | no | 85% | 54.4 | 3.72 | 0 |
+| | top | no | 88% | 63.7 | 3.86 | 0.10 |
+| | door | yes | 89% | 52.0 | 3.56 | 0 |
+| | top | yes | **92%** | 57.1 | **3.14** | 0.07 |
+| 3 prepared, **hold to the last** | door | yes | 85% | 53.3 | 3.75 | — |
+| | top | yes | 85% | 60.3 | 3.81 | — |
+| 3 prepared, fall back, **expect above** | door | yes | 90% | 49.4 | 3.35 | 0 |
+| | top | yes | 92% | 57.9 | 3.18 | 0.07 |
+
+- **Top-down is now a choice with a price.** Against defenders who expect
+  the attack below and fall back, with grenades, it clears more (92%
+  against 89%) and costs fewer men (3.14 against 3.56, −12%). It is 5–9
+  minutes slower, for the roof and the hatch. Against defenders who hold
+  to the last it saves nothing and costs 7 minutes. That is doctrine's
+  "a determined enemy better able to halt and isolate an understrength
+  attacking force" (C-30). Neither way in dominates.
+- **The gain is smaller than doctrine's "much easier to clear".** Few
+  defenders are driven out: 0.07–0.10 a fight. Most are engaged when their
+  neighbour falls, and only a man with nobody in his sights falls back.
+  **For the author**: whether to let men under fire fall back too.
+- **The door-entry baseline moved a little**, because the defender now
+  watches one way in and falls back by default. Three prepared defenders
+  by the door: 85% cleared, 3.72 out, 54.4 minutes (was 81%, 4.14, 56.5).
+  The empty house is unchanged at 20.4. One defender is 32.2 minutes
+  (was 31.6).
+- Four bugs found in review and fixed before these figures:
+  - a first team put out on the roof left the next waiting for three
+    hours;
+  - a defender was caught "unready" by an enemy coming up to the very
+    doorway he watched;
+  - the stairs' noise turned only the stair room;
+  - a stalled retreat never looked again.
+
 ## What a firefight inside costs in time, 2026-10-16
 
 The author's ruling: "make a firefight inside cost time — reorganising after
@@ -5354,7 +5410,7 @@ like.
 | Against a prepared position | ×0.5 |
 | Reaction (first sight to first shot), unless watching that doorway | 1 s |
 | Walking pace | 1.5 m/s |
-| A flight of stairs | 4 s |
+| A flight of stairs | 4 s (since top-down: 6 s up, 3 s down) |
 | Grenade into a room | the document's 30% × decision 77's enclosed 2.5 = 75% a man; stun 2 s for those not hit; thrower 5% |
 | Grenade up a stairwell | ×0.5 (ATTP 3-06.11, para 7-148: "easier to throw down a stairwell than up") |
 | Grenades a man | 2 |

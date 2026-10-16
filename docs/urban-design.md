@@ -261,7 +261,11 @@ after houses.
    platoon.
 6. **Trenches and tunnels.**
 
-## Top-down: what it gains and what it costs (proposal, 2026-10-16)
+## Top-down: what it gains and what it costs (built 2026-10-16)
+
+**Approved as proposed and built the same day.** The measurement is in
+balance.md, *Top-down, built and measured*. The figures below are what
+was built.
 
 The author asked for a real advantage for top-down entry, from doctrine.
 Today the only top-down effect is a grenade thrown up a stairwell at half

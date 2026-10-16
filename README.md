@@ -3058,6 +3058,20 @@ on the stated reasoning, still awaiting the author's word.
         data's 20–60 (balance.md, *What a firefight inside costs in
         time*). The author accepted the anchor the same day: about 20
         minutes is a house nobody holds, and one defender takes about 32.
+      - **Top-down with its gains and its costs** (the author,
+        2026-10-16, from ATP 3-06.11 C-30 and C-103 and ATTP 3-06.11
+        7-146 to 7-148):
+        - Gains: the defender watches the way in he expects, and is
+          caught unready from behind. He falls back, down and out when
+          the attack comes from above, or up and cornered when it comes
+          from below. Stairs take 3 s down and 6 s up.
+        - Costs: 3 minutes to get onto the roof, one team at a time
+          through the hatch, casualties above uncleared floors halting
+          their team half as long again, and coming down the stairs is
+          heard.
+        - Result: against defenders who fall back it costs 12% fewer men
+          and 5–9 minutes more. Against defenders who hold it saves
+          nothing (balance.md, *Top-down, built and measured*).
 
       Figures in [`data/interior.ts`](src/engine/data/interior.ts), all
       ours (⚠️), listed on balance.md.
