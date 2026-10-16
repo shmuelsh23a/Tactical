@@ -167,6 +167,12 @@ in the app.
 - Fifty houses fighting in one brigade turn come to about **150 ms**.
 - A phone is 3–5× slower, still under a second.
 
+**Measured 2026-10-16** (balance.md, *What a fight inside a house
+costs*), on a throwaway prototype with real footprints and random plans:
+**1.2–1.7 ms a house-turn** with 8 a side, 3.3 ms with 30 a side, and
+**0.4 s** for all 249 Yokneam houses fighting in one turn. Floor plans
+take 0.2 ms a storey. That was on a PC; a phone is not measured yet.
+
 So **yes on a PC**, and probably on a phone too. A server is likely to be
 needed for networked play and the AI commanders rather than for this
 calculation. `scaling.test.ts` caps a turn's cost by the number of
@@ -217,8 +223,8 @@ after houses.
 
 ## Order of work
 
-1. **A throwaway prototype** of the cost estimate above, timed on a PC.
-   It is deleted afterwards, and the figure goes here and on balance.md.
+1. ~~**A throwaway prototype** of the cost estimate above~~ **Done
+   2026-10-16**: 1.2–1.7 ms a house-turn (balance.md).
 2. **The floor-plan generator**: deterministic, seeded, with storeys, and
    tests that the same seed and building give the same plan.
 3. **The headless resolver**: the coupling, the attacker's and the

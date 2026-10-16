@@ -5253,6 +5253,44 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## What a fight inside a house costs, 2026-10-16
+
+The first step of the urban order of work (urban-design.md, decision 96):
+a throwaway prototype, timed and then deleted. On the real Yokneam
+footprints it builds a random floor plan on a 0.5 m grid, two storeys,
+with rooms split recursively, a door in each internal wall and a window
+every 3 m of outside wall. It then fights 60 ticks of 1 s, one outside
+turn: every live soldier ray-casts to every enemy until he sees one,
+the attackers walk a breadth-first distance field toward the defenders,
+and the defenders hold. **It measures cost, not combat**: the kill
+chance is a placeholder and there is no drill. Node 24, AMD Ryzen 7
+8845HS, one thread, three runs agreeing within 4%.
+
+| Case (8 a side unless stated) | ms per house-turn | 50 houses at once, ms |
+|---|---|---|
+| Rooms, men dying (15% a sighting) | **1.2** | 62 |
+| Rooms, **nobody dies** (the worst case: every pair cast, all 60 ticks) | **1.7** | 87 |
+| Open plan, nobody dies (long sight lines, 13 cells a ray) | 1.7 | 85 |
+| A platoon a side (30), rooms, nobody dies | 3.3 | 163 |
+| 0.25 m grid, nobody dies | 5.3 | 267 |
+| **All 249 houses** fighting in one turn, nobody dies | 1.5 | **373** |
+| Floor plans alone, two storeys, all 249 houses | 0.45 | 113 |
+
+- **The estimate held, with room to spare**: 3 ms a house was guessed and
+  1.2–1.7 ms was measured. The whole town fighting at once, every house,
+  costs about **0.4 s a turn** on this PC. A phone 3–5× slower would take
+  1–2 s for that extreme, and well under a second for the tens of houses a
+  company or battalion fight actually enters. **Not measured on a phone.**
+- **The grid, not the men, is the expensive choice**: 0.5 m to 0.25 m
+  costs 3×, where 8 to 30 men a side costs 2×. A 0.5 m cell is a man's
+  width; finer buys nothing doctrine asks for.
+- **Plans are cheap enough to generate on demand**, 0.2 ms a storey, so
+  a house needs no plan until a force enters it.
+- **What the real resolver will add**: the drill's decisions, several
+  floors in play at once, and the coupling to the outside. None of it is
+  in this prototype, so these are floors on the cost, not ceilings.
+  `scaling.test.ts` is to get an interior budget measured the same way.
+
 ## Observations from play, for when the balance pass happens
 
 - **Casualties are rare in a short battle.** Hits accumulate damage points and a

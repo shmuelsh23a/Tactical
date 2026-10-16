@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; urban is ruled (decision 96, soldier-level closed terrain) and designed in docs/urban-design.md, and its first step, the cost prototype, waits on his go; the force-quality matrix and AI commanders wait on the author's go.**
+**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; urban is ruled (decision 96, soldier-level closed terrain) and designed in docs/urban-design.md, its cost prototype measured 1.2–1.7 ms a house-turn (2026-10-16), and the floor-plan generator is next; the force-quality matrix and AI commanders wait on the author's go.**
 
 **Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
 
@@ -490,6 +490,12 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **What a fight inside a house costs** (2026-10-16, throwaway prototype,
+  real Yokneam footprints, 0.5 m grid, two storeys, 60 ticks of 1 s):
+  **1.2–1.7 ms a house-turn** at 8 a side, 3.3 ms at 30 a side, 5.3 ms on a
+  0.25 m grid, **0.4 s** for all 249 houses at once; plans 0.2 ms a storey.
+  Ryzen 7 8845HS, Node 24. Table on balance.md.
 
 Measurements that cost real time and are already recorded:
 
