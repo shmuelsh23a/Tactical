@@ -28,6 +28,8 @@ const DEFENDERS = Number(value("--defenders") ?? 3);
 const PREPARED = args.includes("--prepared");
 const STOREYS = value("--storeys");
 const ONLY = value("--only"); // e.g. "door-no": one row, for calibrating
+const HOLD = args.includes("--hold"); // the defenders hold to the last rather than fall back
+const EXPECT_ABOVE = args.includes("--expect-above"); // the defenders expect the attack from above
 
 const houses: MapObject[] = RAMAT_MENASHE_OBJECTS.filter((o) => o.kind === "building")
   .slice(0, HOUSES)
@@ -44,10 +46,10 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const pct = (n: number, of: number) => `${Math.round((100 * n) / of)}%`;
 const mean = (xs: number[]) => (xs.reduce((s, x) => s + x, 0) / xs.length).toFixed(2);
 
-console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}`);
+console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}`);
 console.log("");
-console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Share of hits by grenade | Rooms (median) |");
-console.log("|---|---|---|---|---|---|---|---|---|---|---|");
+console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Defenders withdrew (mean) | Share of hits by grenade | Rooms (median) |");
+console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
 for (const entry of ["door", "top"] as const) {
   for (const grenades of [false, true]) {
     if (ONLY && ONLY !== `${entry}-${grenades ? "yes" : "no"}`) continue;
@@ -56,14 +58,14 @@ for (const entry of ["door", "top"] as const) {
       if (entry === "top" && !plan.stairwell) return []; // no stairs to come down
       const rng = new Rng(SEED * 7919 + k);
       const defence = defaultDefence(plan, defenders, rng, PREPARED);
-      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams }, defence }, rng)];
+      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
     });
     if (rows.length === 0) continue;
     const cleared = rows.filter((r) => r.outcome === "cleared");
     const grenadeHits = rows.reduce((s, r) => s + r.hits.grenade, 0);
     const allHits = rows.reduce((s, r) => s + r.hits.grenade + r.hits.fire, 0);
     console.log(
-      `| ${entry} | ${grenades ? "yes" : "no"} | ${pct(cleared.length, rows.length)} | ${pct(rows.filter((r) => r.outcome === "repulsed").length, rows.length)} | ${pct(rows.filter((r) => r.outcome === "standoff").length, rows.length)} | ${cleared.length ? (median(cleared.map((r) => r.seconds)) / 60).toFixed(1) : "—"} | ${mean(rows.map((r) => r.attackers.out))} | ${mean(rows.map((r) => r.attackers.killed))} | ${mean(rows.map((r) => r.defenders.out))} | ${allHits ? pct(grenadeHits, allHits) : "—"} | ${median(rows.map((r) => r.rooms))} |`,
+      `| ${entry} | ${grenades ? "yes" : "no"} | ${pct(cleared.length, rows.length)} | ${pct(rows.filter((r) => r.outcome === "repulsed").length, rows.length)} | ${pct(rows.filter((r) => r.outcome === "standoff").length, rows.length)} | ${cleared.length ? (median(cleared.map((r) => r.seconds)) / 60).toFixed(1) : "—"} | ${mean(rows.map((r) => r.attackers.out))} | ${mean(rows.map((r) => r.attackers.killed))} | ${mean(rows.map((r) => r.defenders.out))} | ${mean(rows.map((r) => r.defenders.withdrew))} | ${allHits ? pct(grenadeHits, allHits) : "—"} | ${median(rows.map((r) => r.rooms))} |`,
     );
   }
 }

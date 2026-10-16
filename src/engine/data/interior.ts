@@ -87,8 +87,14 @@ export const CLOSE_QUARTERS = {
   reactionSeconds: 1, // ours (⚠️)
   /** A brisk walk (ATP 3-06.11, para C-71), metres a second. Ours. */
   walkMps: 1.5, // ours (⚠️)
-  /** Seconds to take a flight of stairs, one storey. Ours. */
-  stairSeconds: 4, // ours (⚠️)
+  /**
+   * Seconds to take a flight of stairs, one storey, by direction (the
+   * author's top-down ruling, 2026-10-16): up "places heavy demands on
+   * Soldiers' muscular and cardiovascular endurance" (ATP 3-06.11 (2024),
+   * para C-103); down "is less physically demanding" (para C-30). Ours.
+   */
+  stairUpSeconds: 6, // ours (⚠️)
+  stairDownSeconds: 3, // ours (⚠️)
   /**
    * A grenade thrown into a room: each man in it is caught at the
    * document's 30% (הסתערות) times decision 77's enclosed-room factor, 2.5,
@@ -102,6 +108,8 @@ export const CLOSE_QUARTERS = {
    * 7-148). The half is ours.
    */
   grenadeUpstairsFactor: 0.5, // ours (⚠️)
+  /** …and its thrower is hit twice as often, since it is "likely to roll back down" (ATP 3-06.11, para C-103). Ours. */
+  grenadeUpstairsSelfHitFactor: 2, // ours (⚠️)
   /** Grenades a man carries into the building. Ours: the document leaves ammunition to backlog 12. */
   grenadesEach: 2, // ours (⚠️)
   /**
@@ -143,6 +151,29 @@ export const CLOSE_QUARTERS = {
    */
   reorganiseSeconds: 300, // ours (⚠️), 2026-10-16: three prepared defenders take a squad 56.5 min
   casualtySeconds: 600, // ours (⚠️), 2026-10-16: with the search, an empty house still 20 min
+  /**
+   * Top-down's costs (the author's ruling, 2026-10-16; ATP 3-06.11 (2024),
+   * para C-30: roof access is needed and "force size is more limited").
+   * Getting the first man onto the roof by an adjacent roof, a ladder or a
+   * vehicle; then one team at a time through the hatch, the next only once
+   * the stair room is held and this long after the last. Ours.
+   */
+  roofAccessSeconds: 180, // ours (⚠️)
+  roofTeamIntervalSeconds: 120, // ours (⚠️)
+  /**
+   * A man put out above floors not yet cleared is harder to get out: his
+   * team is halted this many times as long (C-30: "more difficult for the
+   * clearing element to get support from the outside"). Ours.
+   */
+  casualtyAboveUnclearedFactor: 1.5, // ours (⚠️)
+  /**
+   * How long a defender caught unready stays so, in seconds: the man who
+   * sees an enemy come through a way he was not watching. While unready he
+   * is hit and fires by decision 85's figures (`UNREADY`). Ours: the
+   * seconds — with the 1 s reaction he cannot fire the first, so the ×0.4
+   * falls on his first shot, and the ×1.5 on what he takes meanwhile.
+   */
+  unreadySeconds: 2, // ours (⚠️)
   /** The longest a fight inside runs before it is called a standoff, in seconds. */
   maxSeconds: 3 * 60 * 60, // ours — three hours, past doctrine's 90 minutes unsupported
 } as const;

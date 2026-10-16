@@ -119,6 +119,74 @@ describe("the fight inside a building (decision 96)", () => {
     expect(extra / n).toBeGreaterThanOrEqual(owed / n);
   });
 
+  const fightWith = (seed: number, entry: "door" | "top", opts: { expects?: "below" | "above"; fallback?: "fallBack" | "hold" }) => {
+    const plan = generateFloorPlan(house(`h${seed}`, 16, 12), seed);
+    const rng = new Rng(seed);
+    const defence = defaultDefence(plan, ["d0", "d1", "d2"], rng, true);
+    return resolveInteriorFight({ plan, attack: { entry, grenades: false, teams: squad }, defence, defenderExpects: opts.expects, defenderFallback: opts.fallback }, rng);
+  };
+
+  it("catches defenders from the rear when they expect the attack from below and it comes from above", () => {
+    // Holding to the last, so only who is watching which way differs.
+    const surprised = seeds.map((s) => fightWith(s, "top", { expects: "below", fallback: "hold" }));
+    const ready = seeds.map((s) => fightWith(s, "top", { expects: "above", fallback: "hold" }));
+    expect(total(surprised, (r) => r.attackers.out)).toBeLessThan(total(ready, (r) => r.attackers.out));
+  });
+
+  it("drives defenders who fall back down and out from above, and corners them from below", () => {
+    const fromAbove = seeds.map((s) => fightWith(s, "top", { fallback: "fallBack" }));
+    const fromBelow = seeds.map((s) => fightWith(s, "door", { fallback: "fallBack" }));
+    const holding = seeds.map((s) => fightWith(s, "top", { fallback: "hold" }));
+    expect(total(fromAbove, (r) => r.defenders.withdrew)).toBeGreaterThan(0);
+    expect(total(fromBelow, (r) => r.defenders.withdrew)).toBe(0); // up is no way out
+    expect(total(holding, (r) => r.defenders.withdrew)).toBe(0);
+  });
+
+  it("sends the next team through the hatch only its interval after the one before", () => {
+    const plan = generateFloorPlan(house("h", 16, 12), 2);
+    const teams = [["a1", "a2", "a3", "a4"], ["a5", "a6", "a7", "a8"], ["a9", "a10", "a11", "a12"]];
+    const f = new InteriorFight({ plan, attack: { entry: "top", grenades: false, teams }, defence: [] }, new Rng(2));
+    const inAt: number[] = [];
+    while (!f.finished && inAt.length < 3) {
+      f.tick();
+      const waiting = f.soldiers.filter((m) => m.waiting).length;
+      while (inAt.length < 3 - waiting / 4) inAt.push(f.second);
+    }
+    expect(inAt[0]).toBeGreaterThanOrEqual(CLOSE_QUARTERS.roofAccessSeconds);
+    expect(inAt[1]! - inAt[0]!).toBeGreaterThanOrEqual(CLOSE_QUARTERS.roofTeamIntervalSeconds);
+    expect(inAt[2]! - inAt[1]!).toBeGreaterThanOrEqual(CLOSE_QUARTERS.roofTeamIntervalSeconds);
+  });
+
+  it("sends the next team down to take the stair room when the first is put out there", () => {
+    // A lone man first through the hatch, against men holding the top floor:
+    // the fight must go on with the next team, not wait three hours.
+    let ended = 0;
+    for (const s of seeds.slice(0, 20)) {
+      const plan = generateFloorPlan(house(`h${s}`, 16, 12), s);
+      const rng = new Rng(s);
+      const top = plan.storeys.length - 1;
+      const posts = defaultDefence(plan, ["d0", "d1", "d2", "d3", "d4", "d5"], rng, true).map((p) => ({ ...p, storey: top, cell: p.storey === top ? p.cell : plan.stairwell!.y * plan.width + plan.stairwell!.x }));
+      const r = resolveInteriorFight({ plan, attack: { entry: "top", grenades: false, teams: [["a1"], ["a2", "a3", "a4", "a5"]] }, defence: posts, defenderFallback: "hold" }, rng);
+      if (r.seconds < CLOSE_QUARTERS.maxSeconds) ended++;
+    }
+    expect(ended).toBe(20);
+  });
+
+  it("leaves a defender's preparation behind when he falls back", () => {
+    let fellBack = 0;
+    for (const s of seeds) {
+      const plan = generateFloorPlan(house(`h${s}`, 16, 12), s);
+      const rng = new Rng(s);
+      const defence = defaultDefence(plan, ["d0", "d1", "d2"], rng, true);
+      const f = new InteriorFight({ plan, attack: { entry: "top", grenades: false, teams: squad }, defence }, rng);
+      while (!f.finished) {
+        f.tick();
+        for (const m of f.soldiers) if (m.retreat) { expect(m.prepared).toBe(false); fellBack++; }
+      }
+    }
+    expect(fellBack).toBeGreaterThan(0);
+  });
+
   it("stuns a man for exactly the stun's seconds", () => {
     const m = { stunnedUntil: 10 + CLOSE_QUARTERS.stunSeconds } as InteriorSoldier;
     expect(isStunned(m, 10)).toBe(true);
@@ -151,7 +219,12 @@ describe("the fight inside a building (decision 96)", () => {
   it("sends one grenade down the stairwell, not one a team, when the squad comes from the top", () => {
     const plan = generateFloorPlan(house("h", 16, 12), 2);
     const f = new InteriorFight({ plan, attack: { entry: "top", grenades: true, teams: squad }, defence: [] }, new Rng(2));
-    expect(f.result().grenadesThrown).toBe(1);
+    // Nobody is in, and nothing thrown, until the climb to the roof is done.
+    while (f.second < CLOSE_QUARTERS.roofAccessSeconds) f.tick();
+    expect(f.result().grenadesThrown).toBe(0);
+    f.tick();
+    expect(f.result().grenadesThrown).toBe(1); // the first team's, down the stairwell; the second waits its turn
+    expect(f.soldiers.filter((m) => m.waiting).length).toBe(4);
   });
 
   it("refuses to come down from the top of a house with no stairs", () => {
