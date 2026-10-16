@@ -219,6 +219,27 @@ export {
   type MapObjectKind,
 } from "./data/terrain.js";
 export {
+  CELL_KIND,
+  buildingStoreys,
+  floorPlanSeed,
+  generateFloorPlan,
+  type CellKind,
+  type FloorPlan,
+  type Room,
+  type Stairwell,
+  type Storey,
+} from "./interior/floorPlan.js";
+export {
+  DEFAULT_STOREYS,
+  INTERIOR_CELL_M,
+  MAX_STOREYS,
+  OUTSIDE_DOORS,
+  ROOM,
+  STAIRWELL_M,
+  STOREY_HEIGHT_M,
+  WINDOW_SPACING_M,
+} from "./data/interior.js";
+export {
   triggerMines,
   MINE_TRIGGER_RADIUS_M,
   type MineDetonation,

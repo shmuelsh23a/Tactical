@@ -123,6 +123,9 @@ export function distanceToSegment(p: Point, a: Point, b: Point): number {
  * True when `p` lies inside the simple polygon `points` (even-odd rule). A
  * point on an edge counts as inside often enough for a footprint test, which
  * is all this is for.
+ *
+ * Plain arithmetic only: the floor-plan generator builds on it, and a plan
+ * must be the same bits on every device (interior/floorPlan.ts).
  */
 export function pointInPolygon(p: Point, points: readonly Point[]): boolean {
   let inside = false;

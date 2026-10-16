@@ -77,6 +77,39 @@ export default [
   },
 
   {
+    // The interior of closed terrain (rules decision 96) must be the same
+    // bits on a phone and a server. The language standard leaves the Math
+    // functions "implementation-approximated", so they may differ between
+    // engines; + − × ÷ are IEEE-exact everywhere. Tests may compare against
+    // them freely — they decide nothing in a game.
+    files: ["src/engine/interior/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        { object: "Math", property: "random", message: "Draw from the seeded Rng, or replays diverge." },
+        { object: "Date", property: "now", message: "The engine has no clock; a turn is the only time there is." },
+        { object: "performance", property: "now", message: "The engine has no clock; a turn is the only time there is." },
+        ...["sqrt", "cbrt", "hypot", "pow", "exp", "expm1", "log", "log1p", "log2", "log10",
+          "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh"].map(
+          (property) => ({
+            object: "Math",
+            property,
+            message: "Not bit-identical across engines: use plain arithmetic (squareRoot, diamondAngle in interior/floorPlan.ts).",
+          }),
+        ),
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "BinaryExpression[operator='**'], AssignmentExpression[operator='**=']",
+          message: "`**` is Math.pow, which is not bit-identical across engines: multiply.",
+        },
+      ],
+    },
+  },
+
+  {
     // src/engine/index.ts is the engine's published surface. Deep imports bind
     // the app to internals that are free to move.
     files: ["src/app/**/*.ts", "src/app/**/*.tsx"],
