@@ -817,8 +817,9 @@ export class InteriorFight {
 
   /**
    * A defender falls back (decision 96's top-down ruling; ATTP 3-06.11
-   * (2011), para 7-148): when a room beside his is taken and nobody is in
-   * his sights, he moves to the room of his storey farthest from the rooms
+   * (2011), para 7-148): when a room beside his is taken — whether or not
+   * he is in a fight (the author, 2026-10-16) — he moves to the room of his
+   * storey farthest from the rooms
    * taken. With none farther, he goes the way the attack is not coming
    * from: down the stairs and at last out of the front door ("withdraw from
    * the building, thus exposing himself to friendly fires") when it comes
@@ -837,7 +838,9 @@ export class InteriorFight {
       m.lookedAt = undefined; // a new storey: look again
       return;
     }
-    if (isStunned(m, this.second) || m.aim) return;
+    // Under fire or not (the author, 2026-10-16): he falls back firing, and
+    // keeps shooting at what he sees as he goes. Only a stunned man stays put.
+    if (isStunned(m, this.second)) return;
     if (m.retreat) {
       // The way there closed — its room taken, or the way cut: think again.
       const goalRoom = this.plan.storeys[m.storey]!.roomOf[m.retreat.goal]!;
