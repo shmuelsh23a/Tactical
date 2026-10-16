@@ -327,7 +327,8 @@ band. It is not the outlier it looked like against doctrine's table.
   time, ruled the same day**: 5 minutes to reorganise a room taken under
   fire and 10 a casualty, so a house nobody holds takes 20 minutes and
   three prepared defenders 56 (balance.md, *What a firefight inside costs
-  in time*). The real data puts a squad clearing a defended two-storey
+  in time*). The author accepted that "about 20 minutes" is a house
+  nobody holds, and one defender about 32. The real data puts a squad clearing a defended two-storey
   house at **about 20–60 minutes** (the sources in urban-doctrine.md);
   the resolver took about 7 before the search. **The proposal as
   accepted:**

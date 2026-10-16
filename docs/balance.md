@@ -5287,8 +5287,9 @@ those cleared; losses per fight):
 - **"About 20 minutes" now means a house nobody holds.** The search was
   calibrated against one defender before the fight cost time. One
   defender puts about one attacker out, and a casualty halts a team for
-  10 minutes, so one defender now means 32 minutes. **For the author**,
-  as it moves his ruling's anchor.
+  10 minutes, so one defender now means 32 minutes. **Accepted by the
+  author, 2026-10-16**: "about 20 minutes means a house nobody holds; one
+  defender taking about 32 minutes is right".
 - **Grenades are now a choice, not a free win.** Grenading every room of
   an empty house puts 0.42 men out on the document's 5% self-hit, and costs
   3 minutes. Against defenders they still pay: fewer men out and a quicker

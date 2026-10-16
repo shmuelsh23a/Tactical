@@ -3056,7 +3056,8 @@ on the stated reasoning, still awaiting the author's word.
         steps without times). A house nobody holds takes a squad about
         20 minutes, three prepared defenders toward an hour: the real
         data's 20–60 (balance.md, *What a firefight inside costs in
-        time*).
+        time*). The author accepted the anchor the same day: about 20
+        minutes is a house nobody holds, and one defender takes about 32.
 
       Figures in [`data/interior.ts`](src/engine/data/interior.ts), all
       ours (⚠️), listed on balance.md.
