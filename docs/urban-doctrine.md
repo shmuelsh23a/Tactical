@@ -828,3 +828,132 @@ What these jointly suggest:
 - A game result of **56% at 3:1 is consistent with the historical data**: TDI found no failures above 2.56:1, and Dstl found urban attackers won more often.
 - What urban terrain *should* cost the attacker, per all sources, is **time and tempo**, not outcome or casualties: slower advance, longer engagements, fewer penetrations or breakthroughs, and more defenders captured rather than escaping.
 - Caveat: every dataset is at division or brigade level, with at most 6 company-level urban cases (Dstl). **No published research gives a company-vs-platoon-in-houses success rate.** Any company-level band is an extrapolation from division and brigade data.
+
+---
+
+## Research on clearing time (not doctrine), 2026-10-16
+
+Gathered after the author asked whether ATP 3-06.11's 40–60 minutes could be trusted, and for real data before a target is set. The Fallujah quote (1SG Smith, *Eyewitness to War* Vol. II, pp. 199–200) and TC 90-1's lane times were re-checked on the text. Headings below are demoted one level from the research notes.
+
+
+Research note, 2026-10-16. The question is how long infantry take to clear a room, a house and a block, with what force and against what opposition. The yardstick is the game's resolver: a ~200 m² two-storey house of ~19 rooms, cleared by an 8-man squad against 3 defenders in ~7 min (~20 s per room plus combat). A one-storey ~10-room house takes ~3.6 min.
+
+Tags: **[READ]** I read the primary text (local copy or full page). **[SECONDARY]** a secondary work quoting or summarising the primary. **[SEARCH]** a search-engine summary only, not verified.
+
+Bottom line first: **I found no open-literature study that times building clearing under controlled conditions** (time per room or per building against known opposition). Urban Warrior, Project Metropolis, the MOUT ACTD, Land Warrior / Objective Force Warrior, DBBL, Dstl/DERA, FOI, DSTO and TNO all came up empty. The usable evidence is:
+- drill-level timings in seconds (entry into one room);
+- one ARL live experiment that gives a duration for a scripted squad attack;
+- a handful of combat throughput figures (houses per day), mostly from Fallujah 2004;
+- doctrine and training-lane allotments.
+
+Everything above the room level is throughput (houses per unit per day). It includes movement between buildings, searching, consolidation and rest, so it gives an upper bound on time per house, not a measurement of it.
+
+---
+
+### 0. The repo's doctrine corpus
+
+Searched with `tools/doctrine.py --find` for "buildings per day", "per hour", "minutes per room", "minutes to clear", "hours to clear", "days to clear", "clear a building", "room clearing", "city blocks", "time to clear", and a regex for `(minutes|hours|days) to (clear|seize|secure)` / `(houses|buildings|rooms) (a|per) (day|hour)`.
+
+- **ATP 3-06.11 (2024), para 3-8, pdf p. 66** [READ]: the only timing statement on clearing in the whole corpus is "it may take a supported platoon 40-60-minutes to clear a one-floor building with a basement." It adds 90 min for an unsupported platoon and "days" for a multi-storey building. It gives no building size, no enemy and no source.
+- **ATP 3-06 (2022), Al Fajr vignette, pdf p. 59** [READ]: about 12,000 coalition troops took Fallujah. The penetration phase was done "in two days" against a planned five. Search-and-attack was completed "in two weeks", and city blocks were "cleared two additional times."
+- **TC 90-1 (2008), Training for Urban Operations** [READ]. These are training-lane time allotments, not measured clearing times; they include briefing and reset.
+  - Table 2-9 (pdf p. 64), Station 4 "Clear a Building": "2 Hours Crawl / 1 Hour Walk / 30 Minutes Run".
+  - Table 2-4 (pdf p. 36), "Enter and Clear a Room (Squad) / Clear a Stairwell / Clear a Hallway / Conduct a Breach": 10 min crawl, 20 min walk, 10 min run.
+  - Ch. 5 platoon STX (pdf p. 103): "Enter and Clear a Building (Drill)" is allotted 1 hour.
+- Nothing else in the corpus gives a clearing rate.
+
+### 1. Experimental and training data
+
+| Source | What was timed | Figure | Tag |
+|---|---|---|---|
+| Kaya RD, Rosenfeldt AB, et al., "Utilizing Augmented Reality to Evaluate Service Member Team Performance," *Military Medicine* 2024 (PMID 39160862), abstract | 110 soldiers (Fort Moore), one-room breach-and-clear with 3 avatar teammates (HoloLens 2, replica M4) | Time to enter room **2.36 s**. Time in the fatal funnel 2.58-3.31 s. **Total trial 7.46 s vs 8.41 s** (two scenarios). First shot 0.58-0.97 s. | [READ] (abstract via Europe PMC) |
+| Redden ES & Blackwell CL, *Situational Awareness and Communication Experiment for MOUT: Experiment I*, ARL-TR-2583, Oct 2001 (DTIC ADA396178), Table 2 and §4.1, p. 14-15 | Army Ranger squads at the McKenna MOUT site (Fort Benning). Scripted vignettes: squad attacks across an open danger area, then clears a building section of **3-4 rooms** (sometimes plus a hallway or stairwell). Opposition: **2-5 scripted OpFor** plus civilians and booby traps. 75 Phase I trials. | Each iteration took **"approximately 30 minutes"**. This covers the whole vignette, approach included, and vignettes "contained only the high intensity portions." No separate time for the interior clearance is reported. | [READ] |
+| Knerr BW, *Immersive Simulation Training for the Dismounted Soldier*, ARI Study Report 2007-01, p. 23 | Squads in immersive simulators | V-IMTS virtual exercises: **mean 16.7 min**. SAVE assessment (three building-clearing exercises among nine scenarios): **"Average scenario duration was about 30 minutes."** These are simulator scenarios, not live. | [READ] |
+| Harris-Thompson D & Wiggins SL (Klein Associates), *Using Cognitive Task Analysis to Develop Scenario-Based Training for House-Clearing Teams*, final report for DRDC Toronto, May 2006 (DTIC ADA521919), p. 35 | Police (RCMP) emergency-response team expert, describing a house entry done strictly by the book | By-the-book clearing, "by the time we get to the second floor... we have been in the house for **three minutes**". Unopposed, a team of about 4-8, a family house. This is an anecdote from interviews. | [READ] |
+| CALL / JRTC, "Streetfighting: The Rifle Platoon in MOUT" (CALL, c. 2000; DTIC ADA397936), p. 2 | JRTC rotations at Shughart-Gordon | No times. Casualty location: "Casualties of 70% outside buildings… are not uncommon"; "two to three out of every four casualties" are hit when not clearing or moving inside. | [READ] (OCR) |
+| Glaze GA (MAJ), *The Urban Warrior: What Are the Dismounted Infantry Skills Necessary…*, CGSC MMAS thesis, 2000 (DTIC ADA383819), p. 13 and later | Cites MOUT ACTD and RAND | "approximately 90 percent of the casualties occur outside" (attributed to ACTD/RAND). Elsewhere: "75 to 80 percent of casualties occurring outside the building." No times. | [READ] (OCR) |
+| Same thesis, as reported by search | Urban Warrior anecdote: a two-hour house-to-house fight in which one platoon lost 13 of 17 Marines | Not found in the OCR text, so unverified. | [SEARCH] |
+| Urban Warrior 1997-99 / Project Metropolis (MCWL) | | Secondary sources only: units that did not use combined arms took **up to 80% simulated casualties**. **No clearing times found.** | [SEARCH] |
+| ARI virtual room-clearing reports (Pleban RR 1754; Goldberg/Knerr), the Dismounted Warrior Network, the ARL AE3 MOUT demonstration (ADA338066), IDA D-2508 MOUT SA games | | **No clearing times** in the texts I read. IDA's simulation games ran about 20 min each, which is not relevant. | [READ] |
+| Koedijk M et al., "A virtual reality test to evaluate dismounted soldiers' cognitive and psychomotor performance," *Frontiers in Psychology* 2026 (16:1540936) | Dutch soldiers, solo VR, 1-2 rooms | Only visual reaction time (~0.7-1.2 s to first shot). **No room times.** | [READ] (via WebFetch summary) |
+| Blair JP, Martaindale MH, Sandel WL, "Peek or Push," *SAGE Open* 2019 | Active-shooter room entry | Suspect reaction 0.64-0.76 s. No team clearing time. | [SEARCH] |
+| Dstl (Urban Phalanx 2023, CUE2021), FOI, DSTO/DSTG, TNO | | **Nothing quantitative on clearing time found** in open sources. | [SEARCH] |
+
+**Shoot-house per-room times (item 4).** No study measures a 4-man team's time per room. The best measured figure is Kaya et al. (2024): about 2.4 s to get in and about 7.5-8.4 s to finish one room (single real participant, avatar teammates, no follow-on search). Training sites claim "all four inside in just over a second" without any measurement [SEARCH].
+
+### 2. After-action and historical
+
+| Battle | Force | Figure | Converted / derived | Tag |
+|---|---|---|---|---|
+| **Fallujah 2004 (Al Fajr)**: 1SG Peter Smith, A Co, TF 2-2 IN, interviewed in Gott KD (ed.), *Eyewitness to War Vol. II: The US Army in Operation AL FAJR*, CSI Press 2006 (DTIC ADA460457), pp. 199-200 | Mechanized company team, Bradley/Abrams fire before dismounts went in | **"clearing 80 to 100 houses a day with a platoon or a company-sized element."** Houses were "two to three story." About **8 men per house**: "you have eight people and that's your mission." | Assume a 10-12 h working day. As a platoon (3 squads): ~27-33 houses per squad-day, **≈20-25 squad-minutes per house**. As a company (~9 squads): **≈55-80 squad-minutes per house**. Most houses were empty or lightly held after vehicle fire. Includes movement and vehicle preparation. | [READ] |
+| Fallujah 2004: Bing West, *No True Glory* (2005), via press | One Marine platoon log | "70 or more buildings a day for more than a week", with ~3 firefights a day | About 23 per squad-day. With ~8-10 h of searching (see next row), **≈20-26 squad-minutes per building**. | [SEARCH] (book not seen) |
+| Fallujah 2004: Kilo Co Marine, via a podcast or series summary | | Door-to-door searching "five to six hours in the morning" plus "three or four in the evening" | Gives the length of the working day | [SEARCH] |
+| Fallujah 2004: Ballard JR, *Lessons Learned from Operation AL FAJR* (DTIC ADA463934), p. 21 | 1st MarDiv with 2 RCTs | "nearly 20,000 structures in the city" | My derivation, assuming about six US assault battalions (stated in ATP 3-06 as two RCTs with two Army battalions) and ~14 days: **on the order of 200+ structures per battalion-day**, about 70-80 per company-day. This agrees with Smith's figure. Order of magnitude only; ignores re-clears and Iraqi units. | [READ] + derivation |
+| Fallujah 2004: SSG David Bellavia, same volume, p. 259 | Squad, night of the "Hell House" | Says the press figure of 10 houses was wrong. No timing. | [READ] |
+| **Hue 1968**: Shulimson J et al., *U.S. Marines in Vietnam: The Defining Year 1968*, USMC History & Museums Division 1997, pp. 185-189 | 2/5 Marines (minus a company); 1/1 (two companies) | 2/5 AO "1 1 blocks wide and 8 to 9 blocks deep". The battalion had to take each building "one at a time". Company frontage about one block. On 5 Feb, 1/1 took 19 casualties and advanced "only 75 yards". Gravel: "We fought for two days over one building." G/2/5 secured the main hospital building "after a 90-minute firefight" with a tank, 106 mm recoilless rifles and 3.5-inch rockets. | Against a determined, entrenched enemy: **90 min to days per major building, with a company and supporting weapons.** | [READ] |
+| Hue 1968, unidentified first-hand account | 2/5 | "secured a total of sixteen city blocks within… nearly two weeks" | About 1+ block per battalion-day | [SEARCH] |
+| **Aachen 1944**: MacDonald CB, *The Siegfried Line Campaign*, CMH 1963, pp. 310-311 | 2/26 IN: one tank or tank destroyer per rifle platoon, artillery walked ahead "block by block" | Frontage "about 2,000 yards". "speed was less important than pertinacity". City assault 13-21 Oct with two battalions. **No houses-per-day figure.** | | [READ] |
+| Aachen 1944, wynninghistory.com (soldiers' letters) | | "at times as slow as half a dozen houses per day" | Unit size not stated | [SECONDARY], weak |
+| Aachen: CSI battle book ADA151631 | | Method only, no rates | | [READ] |
+| **Ortona 1943** | Loyal Edmonton Regiment and Seaforth Highlanders of Canada, with Three Rivers tanks | Town taken 21-28 Dec, about 7-8 days, by mouseholing. **No houses-per-day figure found.** | | [SEARCH] |
+| **Jenin 2002** | One reserve brigade, two regular battalions, commandos, 12 D9 bulldozers | Camp about 1 km²; 1-11 April; 23 IDF killed | No per-building rate | [SECONDARY] (Wikipedia) |
+| **Mosul 2016-17** | CTS, Rapid Response Division | West Mosul: "nearly half of western neighborhoods in its first 50 days" (CTC Sentinel). Old City took weeks. CTS casualties up to 60%. | No per-building rate | [SEARCH] |
+| **Marawi 2017** | Armed Forces of the Philippines | 154 days. In late June, "around 300 buildings" still to clear within 10 ha. | No per-building rate | [SEARCH] |
+| Gaza 2014 / 2023-24, Raqqa, Stalingrad, Grozny, Bakhmut, Sadr City, Ramadi, Manila 1945 (CSI battle book ADA165904 [READ]) | | **No building-per-day or time-per-building figures found** in the sources searched. | | |
+
+### 3. Simulation and analysis literature
+
+- **The Dupuy Institute, *Measuring the Effects of Combat in Cities, Phase I*, for CAA, 11 Jan 2002, p. 52** [READ]: "the average advance rate in urban combat should be one-half to one-third that of non-urban combat." This is division- and battalion-level, in km/day. **There is nothing per building or per small unit.** TDI's later phases stay at the same echelons [SEARCH].
+- **RAND** (Glenn, *Combat in Hell*, MR-780, 1996; *Denying the Widow-Maker*, RAND-DBBL conference, 1998, DTIC ADA360077 [READ OCR]): qualitative. There are casualty discussions but **no clearing-time calibration found**.
+- **NPS thesis, Loo BG, *Simulation of Dismounted Infantry Combat in Urban Terrain*, 1981 (ADA109550)** [READ]: a model that runs in seconds of battle. Its time parameters are user inputs, not calibrated to data.
+- **CAA, TRAC, OneSAF/JANUS clearing-time parameters**: not found in open sources.
+
+### 4. Summary of what exists and what does not
+
+- **Time per room exists only at drill level**: about 2-3 s to enter and about 7-8 s to finish one room with no follow-on search (Kaya 2024). No study times rooms inside a whole-house clearance.
+- **Time per house has no controlled measurement.** The closest are:
+  - a scripted Ranger-squad vignette on a 3-4-room section against 2-5 OpFor, about 30 min including the approach (ARL-TR-2583);
+  - an unopposed by-the-book police clear that reaches the 2nd floor in about 3 min (DRDC CTA);
+  - Fallujah throughput implying roughly 20-80 squad-minutes per house, mostly against light or no resistance after vehicle fires (derived);
+  - doctrine's 40-60 / 90 min per one-floor building per platoon (unsourced).
+- **Per block per day**: Hue, about one block per battalion-day against NVA in prepared positions (weak, [SEARCH]); Fallujah, of the order of 70-100 houses per company-day.
+- **Where casualties occur**: 70-90% outside the building (JRTC/CALL; MOUT ACTD via Glaze). A clearing-time model that charges most of its losses to the interior is off by this much.
+
+---
+
+### Implications for a clearing-time target
+
+| Candidate figure | Source | Force / opposition context | Strength of evidence |
+|---|---|---|---|
+| ~2.4 s to enter one room; ~7.5-8.4 s to finish one room | Kaya et al., *Mil Med* 2024 | One soldier plus 3 avatars, AR; no search; 0-1 threats | **Moderate** (measured, n=110), but drill only, not real combat |
+| ~3 min to reach the 2nd-floor bedroom by the book | Harris-Thompson & Wiggins 2006 (DRDC) | Police team, house, no resistance until contact | **Weak** (one expert anecdote) |
+| ~30 min per scripted iteration: open-ground approach plus clearing a 3-4-room section | Redden & Blackwell, ARL-TR-2583, 2001 | Ranger squad vs 2-5 scripted OpFor, McKenna site | **Weak-moderate** (live, repeated 75+ times, but the duration is approximate and includes the approach) |
+| 16.7 min / ~30 min mean scenario | Knerr, ARI 2007 | Squad, virtual building-clearing and urban scenarios | **Weak** (simulator, mixed tasks) |
+| 30 min "run" / 1 h walk / 2 h crawl for "Clear a Building"; 1 h platoon drill | TC 90-1 (2008) | Training lanes | **Very weak** as a clearing time (an allotment, not a measurement) |
+| 40-60 min (supported platoon) / 90 min (unsupported), one floor plus basement | ATP 3-06.11 (2024) para 3-8 | Platoon; size and enemy unstated | **Weak** (an unsourced example) |
+| 80-100 houses/day per platoon or company, ~8 men per house → **≈20-80 squad-minutes per house** | 1SG Smith, Eyewitness to War II, 2006, pp. 199-200 (derived) | Mech company team, 2-3 storey houses, mostly light opposition after Bradley/Abrams fire | **Moderate** for throughput (first-hand, specific); the conversion to time per house is mine |
+| 70+ buildings/day per platoon for >1 week, ~3 firefights/day → **≈20-26 squad-minutes per building** | Bing West, *No True Glory*, via press | Marine platoon, Fallujah | **Weak** (not verified in the book) |
+| ~200+ structures per battalion-day (order of magnitude) | Ballard (20,000 structures) plus ATP 3-06 (2 weeks) | Fallujah division | **Weak** (my aggregate derivation) |
+| 90 min firefight for one major building; "two days over one building"; 75 yards a day | Shulimson et al. 1997, Hue | Company or battalion with tank, recoilless rifles and rockets vs NVA in strongpoints | **Moderate** (official history), but large masonry buildings against a determined enemy |
+| ~6 houses/day | Aachen letters | Unit unstated | **Very weak** |
+| Urban advance rate 1/2 to 1/3 of non-urban | TDI 2002, p. 52 | Division/battalion | **Moderate**, but the wrong echelon for this question |
+
+**What these suggest together for a ~200 m², two-storey, ~19-room house cleared by an 8-man squad against ~3 defenders:**
+
+1. **Time to move through the rooms** (the resolver's ~20 s per room) agrees with the drill data. Entry plus domination of one room takes about 8 s in the lab. Allowing for corridors, stairs, marking and the next stack, 15-30 s per room is plausible. That gives ~5-10 min of pure movement for 19 rooms. No source contradicts this, and no source measures it directly.
+2. **No source supports ~7 min for the whole task** once defenders, searching and consolidation are included. Every figure above the drill level falls in the tens of minutes:
+   - ~30 min, scripted Ranger squad on a 3-4-room section against 2-5 OpFor;
+   - ~20-80 squad-minutes per Fallujah house, mostly light opposition, derived;
+   - 40-90 min for a one-floor building per platoon in doctrine;
+   - 30 min for the training lane at full speed.
+
+   The defended, two-storey case sits at or above the top of these. Hue-style strongpoints run from hours to days.
+3. **Most of the extra time is probably not in the room-entry drill.** It is in contact itself: the firefight with each defender, reorganising, casualty handling and resupply. It is also in search and consolidation (Fallujah houses were searched for caches; blocks were cleared up to three times), and in the approach, where 70-90% of casualties occur. A resolver that charges ~20 s per room plus the shots fired leaves all of this out.
+4. **A defensible target range**, with no invented figures, is **~20-60 min** for this house, squad and opposition. This puts it in the band where the derived Fallujah figures, the ARL squad vignette and doctrine's one-floor figure overlap. Toward the low end: weak or surprised defenders and fire support beforehand (the Fallujah pattern). Toward the high end, or beyond: alert defenders, booby traps, or heavy masonry. The 7 min the game gives today is about 3-8x faster than this band. Any single number inside the band remains **tentative and belongs on balance.md**: no source measures this house, this force and this opposition directly.
+5. **Gaps worth chasing if more precision is needed.** Each needs library or FOIA access:
+   - the full MOUT ACTD JE1/JE2 final reports;
+   - the MCWL Urban Warrior and Project Metropolis after-action reports;
+   - Matthews, *Operation AL FAJR* (CSI OP 20, DTIC ADA454930, downloaded but not yet searched for rates beyond the strings tried);
+   - Estes, *U.S. Marines in Battle: Fallujah* (usmcu.edu blocks downloads);
+   - Bing West's platoon log in *No True Glory*;
+   - Dstl/DERA and FOI urban trials reports.

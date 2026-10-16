@@ -5316,8 +5316,32 @@ instead of 2.63. Four attackers against four prepared defenders: cleared
     house of two storeys.
 
   It says clearing is slow and methodical, not how slow. A target needs
-  real data (after-action or training figures), not this sentence. **For
-  the author.**
+  real data (after-action or training figures), not this sentence.
+
+  **The real data, gathered the same day** (urban-doctrine.md, *Research on
+  clearing time*). No controlled study times building clearing against
+  known opposition, so everything above the single room is throughput or
+  anecdote. All of it lands in the tens of minutes a house:
+  - **Fallujah 2004, read on the page.** A mechanised company's first
+    sergeant: "we were clearing 80 to 100 houses a day with a platoon or a
+    company-sized element", in houses of "two or three story", with "eight
+    people" to a house (1SG Peter Smith, *Eyewitness to War* Vol. II, CSI
+    2006, pp. 199–200). Most houses were empty or lightly held after the
+    Bradleys and tanks had fired. That comes to about **20–80
+    squad-minutes a house** (the conversion is ours).
+  - **A Ranger squad against 2–5 scripted defenders** in a 3–4 room
+    section at the McKenna MOUT site: about **30 minutes** an iteration,
+    including the approach (ARL-TR-2583, 2001).
+  - **The room entry itself** is about **8 s** in a 2024 lab study
+    (Kaya et al., *Military Medicine*, n = 110). That supports the
+    resolver's pace through a room, not its total.
+
+  Together they suggest **about 20–60 minutes** for a squad clearing a
+  defended two-storey house. The resolver's 7 minutes is 3–8× faster.
+  What it leaves out is the fights' own length, casualty handling, the
+  search for caches and back-clearing, and the approach. **For the
+  author**: the target, and where the missing time goes (urban-design.md,
+  *Still open*).
 - **Top-down: barely better.** With grenades against prepared defenders,
   coming in from the top clears 94% against 90% through the door. Elsewhere
   the two are level. The only top-down effect modelled is the grenade up the

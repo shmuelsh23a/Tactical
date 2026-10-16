@@ -34,6 +34,9 @@ See validation.md, *second pass*, for how that was done.
 | Grau, *Russian-Manufactured Armored Vehicle Vulnerability in Urban Combat: The Chechnya Experience*, FMSO, 1997 | man.fas.org/dod-101/sys/land/row/rusav.htm | 3–6 lethal hits for each armoured vehicle destroyed at Grozny | Read |
 | **Lawrence & Anderson**, *Measuring the Effects of Combat in Cities, Phase I*, The Dupuy Institute for CAA, 11 Jan 2002 | dupuyinstitute.org/pdf/urbanwar.pdf | 137 division engagements, ETO 1944, urban against open: attacker wins, losses per day, advance rates; outcome by force ratio (pp. 49–50) | In full (agent), 2026-10-15 |
 | **Syms**, Dstl, ISMOR 2023 slides | (conference slides) | 145 battles 1943–2008, brigade to company: attacker wins 88% urban against 59% open; losses per day; duration | Read (agent), 2026-10-15 |
+| Gott (ed.), *Eyewitness to War* Vol. II: *The US Army in Operation AL FAJR*, CSI Press 2006, DTIC ADA460457 | archive.org/details/DTIC_ADA460457 | 1SG Peter Smith (A Co, TF 2-2 IN), pp. 199–200: "80 to 100 houses a day with a platoon or a company-sized element", two- and three-storey houses, eight men a house | The quote checked on the text, 2026-10-16 |
+| Redden & Blackwell, ARL-TR-2583, 2001 | (ARL technical report) | A Ranger squad against 2–5 OpFor at the McKenna MOUT site: about 30 min an iteration, approach included | Read (agent), 2026-10-16 |
+| Kaya et al., *Military Medicine*, 2024 | (journal) | Room entry about 2.4 s, a room finished in about 7.5–8.4 s, n = 110, augmented reality | Read (agent), 2026-10-16 |
 | Matthews, *Operation AL FAJR* (Fallujah), Combat Studies Institute | armyupress.army.mil (PDF) | No rounds-per-building figure; one Bradley penetrated | Searched in full text |
 
 ## Combat records

@@ -320,6 +320,20 @@ historical studies, read on the page, compare urban and open attacks:
 
 On this band, `yokneamUrban`'s 56% at about 3:1 is at the top of the
 band. It is not the outlier it looked like against doctrine's table.
+- **Clearing time** (still open, 2026-10-16). The real data puts a squad
+  clearing a defended two-storey house at **about 20–60 minutes**
+  (balance.md, *The fight inside, first measured*; the sources in
+  urban-doctrine.md). The resolver takes about 7. **Proposal** (⚠️, for
+  the author):
+  - Give each room a **methodical search** after its "CLEAR": the cache
+    search and back-clearing Fallujah describes. Its length would be set
+    so an empty or lightly held two-storey house takes **about 20
+    minutes**, the low end and Fallujah's platoon pace, with the fighting
+    adding to it.
+  - That is about 2 minutes a room, against today's 20 s of
+    consolidation.
+  - The approach between houses stays on the outside map, where it is
+    already paid for.
 - **What the attacker knows of a floor plan: only what is reasonable to
   know from the outside.** That covers the outline, the storeys, and the
   doors and windows he can see from where his men have looked. The rooms
