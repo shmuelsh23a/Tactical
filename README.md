@@ -3049,6 +3049,14 @@ on the stated reasoning, still awaiting the author's word.
         Fallujah's "80 to 100 houses a day with a platoon or a
         company-sized element" and an ARL Ranger squad's 30 minutes
         (urban-doctrine.md).
+      - **A firefight's own time** (the author, 2026-10-16): a room
+        taken under fire is held **5 minutes** longer to reorganise, and
+        each man put out halts his team **10 minutes** to see to him and
+        carry him out (⚠️ both ours, ATP 3-21.8 and ATP 3-06.11 name the
+        steps without times). A house nobody holds takes a squad about
+        20 minutes, three prepared defenders toward an hour: the real
+        data's 20–60 (balance.md, *What a firefight inside costs in
+        time*).
 
       Figures in [`data/interior.ts`](src/engine/data/interior.ts), all
       ours (⚠️), listed on balance.md.

@@ -323,9 +323,11 @@ band. It is not the outlier it looked like against doctrine's table.
 - **Clearing time: ruled 2026-10-16** — "a methodical search per room,
   sized so a lightly held two-storey house takes about 20 minutes, with
   the fighting adding to it". Built as `searchSecondsPerM2` = 3.5
-  (balance.md, *The methodical search, calibrated*). Still open: the
-  fighting adds under a minute, where the data has defended houses
-  toward 60. The real data puts a squad clearing a defended two-storey
+  (balance.md, *The methodical search, calibrated*). **The fighting's own
+  time, ruled the same day**: 5 minutes to reorganise a room taken under
+  fire and 10 a casualty, so a house nobody holds takes 20 minutes and
+  three prepared defenders 56 (balance.md, *What a firefight inside costs
+  in time*). The real data puts a squad clearing a defended two-storey
   house at **about 20–60 minutes** (the sources in urban-doctrine.md);
   the resolver took about 7 before the search. **The proposal as
   accepted:**

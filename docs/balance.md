@@ -5253,6 +5253,53 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## What a firefight inside costs in time, 2026-10-16
+
+The author's ruling: "make a firefight inside cost time — reorganising after
+contact and moving casualties out — so defended houses take longer, toward
+the 60 minutes the data shows". Doctrine names both steps and times
+neither. Both figures are ours (⚠️), set by sweeping `npm run interior-sim`:
+
+| Reorganise after contact | A casualty halts his team | 1 defender | 3 defenders | 3 prepared |
+|---|---|---|---|---|
+| 3 min | 5 min | 26.1 | 36.7 | 38.1 |
+| **5 min** | **10 min** | **31.6** | **51.9** | **56.5** |
+| 5 min | 15 min | 36.3 | 63.1 | 68.8 |
+
+**Set at 5 and 10 minutes.** All rows (8 attackers, median minutes of
+those cleared; losses per fight):
+
+| Defenders | Entry | Grenades | Cleared | Minutes | Attackers out | Defenders out |
+|---|---|---|---|---|---|---|
+| none | door | no | 100% | 20.4 | 0 | — |
+| none | door | yes | 100% | 23.2 | 0.42 | — |
+| 1 | door | no | 100% | 31.6 | 0.93 | 1.00 |
+| 3 | door | no | 95% | 51.9 | 2.83 | 2.95 |
+| 3 | door | yes | 96% | 47.4 | 2.55 | 2.96 |
+| 3 prepared | door | no | 81% | 56.5 | 4.14 | 2.75 |
+| 3 prepared | door | yes | 88% | 50.3 | 3.44 | 2.85 |
+| 3 prepared | top | yes | 88% | 51.2 | 3.61 | 2.87 |
+| 3, one storey | door | no | 94% | 42.0 | 2.97 | 2.90 |
+| 3, one storey | door | yes | 100% | 30.8 | 1.95 | 3.00 |
+
+- **The range now matches the data.** A house nobody holds takes 20
+  minutes and a prepared one toward an hour: the real data's 20–60.
+- **"About 20 minutes" now means a house nobody holds.** The search was
+  calibrated against one defender before the fight cost time. One
+  defender puts about one attacker out, and a casualty halts a team for
+  10 minutes, so one defender now means 32 minutes. **For the author**,
+  as it moves his ruling's anchor.
+- **Grenades are now a choice, not a free win.** Grenading every room of
+  an empty house puts 0.42 men out on the document's 5% self-hit, and costs
+  3 minutes. Against defenders they still pay: fewer men out and a quicker
+  clear. This is the trade-off a plan should face.
+- **About 1% of defended fights still end in a standoff.** This is a
+  resolver fault to find, not a result.
+- **Top-down still level with the door**, as before.
+- Two bugs found while calibrating, both fixed: the stall check counted a
+  long reorganisation as a stall, and a room taken reset the progress
+  clock behind a halt already booked.
+
 ## The methodical search, calibrated, 2026-10-16
 
 The author's ruling on clearing time: "a methodical search per room, sized
