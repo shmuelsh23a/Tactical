@@ -5295,7 +5295,32 @@ cleared, attackers out per fight:
 - **The gain is smaller than doctrine's "much easier to clear".** Few
   defenders are driven out: 0.07–0.10 a fight. Most are engaged when their
   neighbour falls, and only a man with nobody in his sights falls back.
-  **For the author**: whether to let men under fire fall back too.
+  **Ruled the same day: men under fire fall back too.** Re-measured below.
+
+**Falling back under fire** (the author, 2026-10-16), every demo house, 3
+prepared defenders who fall back and expect the attack from below:
+
+| Way in | Grenades | Cleared | Minutes | Attackers out | Withdrew |
+|---|---|---|---|---|---|
+| door | no | 81% (was 85%) | 58.4 | 4.26 (3.72) | 0 |
+| top | no | 84% (88%) | 65.3 | 4.13 (3.86) | 0.16 (0.10) |
+| door | yes | 88% (89%) | 52.7 | 3.59 (3.56) | 0 |
+| top | yes | 91% (92%) | 57.6 | **3.33** (3.14) | 0.12 (0.07) |
+
+- **Still few driven out: 0.12–0.16 a fight.** The reason is the plan, not
+  the rule. A generated house has **one stairwell**, and a top-down team
+  takes the stair room first. Every defender on that floor has his way
+  down cut, and he is cornered there. Doctrine's "an enemy who is forced
+  down to ground level may elect to withdraw" assumes another way down.
+  **For the author**: a second stair in larger houses, or a ground-floor
+  window as a way out, or leave it.
+- **Falling back under fire makes defenders harder to clear by the door.**
+  Men keep shooting as they go and fight again from the next room: 4.26
+  out against 3.72, and 81% cleared against 85%. Top-down's edge with
+  grenades is now 7% fewer men (3.33 against 3.59). Holding to the last is
+  unchanged (it does not fall back).
+- One defender: 33.7 minutes by the door (was 32.2). The empty house is
+  unchanged at 20.4.
 - **The door-entry baseline moved a little**, because the defender now
   watches one way in and falls back by default. Three prepared defenders
   by the door: 85% cleared, 3.72 out, 54.4 minutes (was 81%, 4.14, 56.5).
