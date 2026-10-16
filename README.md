@@ -3042,6 +3042,13 @@ on the stated reasoning, still awaiting the author's word.
         grenades and the d10 wounds, second by second. Measured with
         `npm run interior-sim` (balance.md, *The fight inside, first
         measured*).
+      - **A methodical search of each room taken** (the author,
+        2026-10-16): sized so a squad takes **about 20 minutes** over a
+        lightly held two-storey house, with the fighting adding to it.
+        3.5 s a square metre (⚠️ ours, by the ruling), from the real data:
+        Fallujah's "80 to 100 houses a day with a platoon or a
+        company-sized element" and an ARL Ranger squad's 30 minutes
+        (urban-doctrine.md).
 
       Figures in [`data/interior.ts`](src/engine/data/interior.ts), all
       ours (⚠️), listed on balance.md.

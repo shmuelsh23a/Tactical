@@ -5253,6 +5253,40 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The methodical search, calibrated, 2026-10-16
+
+The author's ruling on clearing time: "a methodical search per room, sized
+so a lightly held two-storey house takes about 20 minutes, with the
+fighting adding to it". It became `CLOSE_QUARTERS.searchSecondsPerM2`,
+seconds a square metre of each room taken, after the 20 s consolidation.
+
+Swept with `npm run interior-sim -- --defenders 1 --only door-no` (8
+attackers against 1 defender, every demo house, median minutes): 0 → 7.0,
+3 → 18.5, **3.5 → 20.4**, 4 → 22.2, 5 → 26.1. **Set at 3.5 s/m²** (⚠️ ours,
+by the ruling). That is about 2 minutes for a 30 m² room.
+`src/app/floorPlans.test.ts` pins the ruling at 15–25 minutes on a sample
+of the map.
+
+All rows again (median minutes of those cleared; losses per fight):
+
+| Defenders | Entry | Grenades | Cleared | Minutes | Attackers out | Defenders out |
+|---|---|---|---|---|---|---|
+| 1 | door | no | 100% | 20.4 | 0.89 | 1.00 |
+| 1 | top | no | 100% | 20.3 | 0.92 | 1.00 |
+| 3 | door | no | 98% | 20.6 | 2.73 | 2.98 |
+| 3 | door | yes | 98% | 20.4 | 2.26 | 2.98 |
+| 3 prepared | door | no | 87% | 21.0 | 3.97 | 2.84 |
+| 3 prepared | door | yes | 92% | 20.6 | 3.10 | 2.90 |
+| 3 prepared | top | yes | 91% | 20.1 | 3.15 | 2.89 |
+| 3, one storey | door | no | 98% | 10.2 | 2.68 | 2.98 |
+
+**The fighting does not yet add much time.** Three prepared defenders cost
+21.0 minutes against 20.4 for one: each fight lasts seconds, and the search
+is nearly all of the clock. The real data puts defended houses toward 60
+minutes. What a fight costs in time beyond its shots — reorganising after
+contact, moving the wounded out, resupply — is not modelled. **For the
+author**, before the coupling.
+
 ## The fight inside, first measured, 2026-10-16
 
 Decision 96's headless resolver (`interior/resolver.ts`), not yet coupled to

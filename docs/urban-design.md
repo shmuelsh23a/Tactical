@@ -320,11 +320,15 @@ historical studies, read on the page, compare urban and open attacks:
 
 On this band, `yokneamUrban`'s 56% at about 3:1 is at the top of the
 band. It is not the outlier it looked like against doctrine's table.
-- **Clearing time** (still open, 2026-10-16). The real data puts a squad
-  clearing a defended two-storey house at **about 20–60 minutes**
-  (balance.md, *The fight inside, first measured*; the sources in
-  urban-doctrine.md). The resolver takes about 7. **Proposal** (⚠️, for
-  the author):
+- **Clearing time: ruled 2026-10-16** — "a methodical search per room,
+  sized so a lightly held two-storey house takes about 20 minutes, with
+  the fighting adding to it". Built as `searchSecondsPerM2` = 3.5
+  (balance.md, *The methodical search, calibrated*). Still open: the
+  fighting adds under a minute, where the data has defended houses
+  toward 60. The real data puts a squad clearing a defended two-storey
+  house at **about 20–60 minutes** (the sources in urban-doctrine.md);
+  the resolver took about 7 before the search. **The proposal as
+  accepted:**
   - Give each room a **methodical search** after its "CLEAR": the cache
     search and back-clearing Fallujah describes. Its length would be set
     so an empty or lightly held two-storey house takes **about 20
