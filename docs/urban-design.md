@@ -261,6 +261,104 @@ after houses.
    platoon.
 6. **Trenches and tunnels.**
 
+## Top-down: what it gains and what it costs (proposal, 2026-10-16)
+
+The author asked for a real advantage for top-down entry, from doctrine.
+Today the only top-down effect is a grenade thrown up a stairwell at half
+its chance, and the two entries measure level (balance.md). **Nothing here
+is built.**
+
+### What doctrine says
+
+No controlled study compares the two directions (a web search on
+2026-10-16 found doctrine and anecdote only). Doctrine itself is specific,
+and it names **costs as well as gains**:
+
+- **Gains.**
+  - "the enemy will be expecting it" at the obvious entry (ATTP 3-06.11
+    (2011), para 7-146). Top-down "bypasses the expected ground floor
+    entry points that are often well defended and booby trapped" (para
+    7-147).
+  - A roof entry "can allow elements to approach defensive positions from
+    the rear, making them much easier to clear". It can "drive the enemy
+    out of the building where the support element can engage them" (ATP
+    3-06.11 (2024), para C-30).
+  - "a unit's momentum is greater clearing down than up; grenades are
+    easier to throw down a stairwell than up" (ATTP 3-06.11, para 7-148).
+  - "An enemy who is forced down to ground level may elect to withdraw
+    from the building, thus exposing himself to friendly fires" (para
+    7-148). Driven up instead, he "may be cornered and subsequently fight
+    desperately or escape over the roof" (same para).
+  - Clearing up "places heavy demands on Soldiers' muscular and
+    cardiovascular endurance"; throw grenades up and they are "likely to
+    roll back down" (ATP 3-06.11, para C-103). Top-down "is less
+    physically demanding" (para C-30).
+- **Costs.**
+  - It needs roof access: ladders, adjacent roofs, armoured vehicles,
+    helicopters (para C-30; ATTP para 7-147: "The exposure of Soldiers when
+    entering a higher level must be mitigated").
+  - "force size is more limited, and it is more difficult for the clearing
+    element to get support from the outside. This makes a determined enemy
+    better able to halt and isolate an understrength attacking force"
+    (para C-30).
+  - Clearing down "Soldiers make more noise... Enclosed stairways propagate
+    sound that can alert enemies across many floors" (para C-103).
+  - Anecdote, not doctrine: a casualty on a stairwell is hard to carry back
+    up (a Marine staff sergeant, NPR). A Marine scout-sniper platoon's
+    Fallujah AAR doubts top-down suits the infantry squad.
+
+### The proposal (⚠️ every figure ours, for the author)
+
+**Gains:**
+
+1. **The defender watches the way he expects the attack.** In his plan the
+   defender sets where he expects the attack from: the ground floor by
+   default, as doctrine says the enemy does. A man watches only the
+   doorways of his room that face that way, so he fires the second an
+   enemy fills them. An attacker coming in through any other doorway, or
+   down from the floor above, finds him **unready**: the 1 s reaction
+   applies to him, and decision 85's *caught unready* figures apply (hit at
+   ×1.5, fires at ×0.4 until the next second). This is "from the rear"
+   (C-30).
+2. **The defender falls back, and down leads out.** In the defender's plan,
+   "fall back" is the default; the other choice is "hold to the last". A
+   man whose room's neighbour is taken falls back to a room farther from
+   the attackers.
+   - With the attack coming down, falling back leads down the stairs and
+     out of the front door. He **withdraws** from the building, which ends
+     his part in this fight. The coupling will hand him to the outside map,
+     where the support element can engage him (7-148).
+   - With the attack coming up, he is driven up and **cornered** on the top
+     floor. There he fights where he stands; the roof escape waits for
+     roofs.
+3. **Stairs by direction.** A flight takes **6 s up and 3 s down** (4 s
+   today), from C-103 and C-30. A grenade thrown up keeps its half chance,
+   and its 5% self-hit **doubles**, because it rolls back down (C-103).
+
+**Costs:**
+
+4. **Getting onto the roof takes a means and time.** A top-down plan names
+   how: an adjacent roof, a ladder, or a vehicle. It costs **3 minutes**
+   before the first man is in; a helicopter is for battalion. Once coupled
+   to the outside map, the climb is fought there, exposed.
+5. **One team at a time through the hatch.** The second team can follow
+   only once the first has cleared the stair room, and then another team
+   after the next **2 minutes** (C-30, "force size is more limited").
+6. **Casualties from upstairs are harder to get out.** While the floors
+   below are not clear, a man put out above them halts his team **×1.5**
+   as long (15 minutes, not 10) (C-30, the NPR anecdote).
+7. **The noise down the stairs.** When attackers come down a flight, the
+   defenders on that storey turn to watch the stairs (C-103). This blunts
+   gain 1 on every storey after the first.
+
+### What it should measure like
+
+Against a determined, prepared defender who holds to the last, top-down
+should cost more than it saves: few men in, little support. Against one
+who falls back, it should clear faster and with fewer losses, driving him
+out. Its edge should be largest where the ground floor is the prepared
+part. A plan should face a real choice, and neither entry should dominate.
+
 ## The author's answers on the open points (2026-10-15)
 
 - **Clearing time against scenario length: wait for the new engine.**
