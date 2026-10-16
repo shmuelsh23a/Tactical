@@ -7,11 +7,12 @@
  *
  *   npm run interior-sim
  *   npm run interior-sim -- --houses 100 --attackers 8 --defenders 3 --prepared
- *   npm run interior-sim -- --storeys 1      # every house one storey, as doctrine's planning figure is
+ *   npm run interior-sim -- --storeys 1      # every house one storey, as doctrine's one example is
  *
- * What it is judged against (ATP 3-06.11 (2024)): "a supported platoon
- * 40-60-minutes to clear a one-floor building with a basement", 90 minutes
- * unsupported (para 3-8); top-down clearing is best (TC 3-21.75, para
+ * What it is judged against (ATP 3-06.11 (2024)): clearing is "a slow
+ * methodical process" (para 3-8, whose "40-60-minutes" for "a one-floor
+ * building with a basement" is one illustration with no size or source,
+ * not a target); top-down clearing is best (TC 3-21.75, para
  * 8-12); hand grenades the most-used explosive (para B-35); casualties
  * higher than in the open (para C-8).
  */

@@ -244,12 +244,14 @@ after houses.
    on its own; measured on balance.md, *The fight inside, first measured*.
    **Still to do: the coupling** to the outside turn (a fight run a turn's
    ticks at a time; windows firing out; rounds landing in rooms; the force
-   going in and coming out). Two findings wait on the author first:
-   clearing runs 11 to 17 times faster than doctrine's 40–60 minutes, and
-   top-down entry is barely better than the door. It is
+   going in and coming out). Two findings wait on the author first: a
+   house is cleared in minutes, where doctrine's one example says about an
+   hour (too weak to set a target; balance.md has why), and top-down entry
+   is barely better than the door. It is
    measured against doctrine before anyone plays it:
-   - 40–60 minutes for a supported platoon to clear a one-floor house,
-     90 minutes unsupported (ATP 3-06.11, para 3-8);
+   - clearing that is slow and methodical (ATP 3-06.11, para 3-8). The
+     paragraph's "40-60-minutes" is one illustration, not a planning
+     figure: a target needs real data;
    - top-down beating the ground floor;
    - grenades as the most-used explosive (para B-35);
    - casualties higher than in the open (para C-8).
@@ -263,8 +265,9 @@ after houses.
 
 - **Clearing time against scenario length: wait for the new engine.**
   The town scenarios' time limits stay as they are until the resolver
-  measures how long a house takes. Doctrine's 40–60 minutes (40–60
-  turns) is what that measurement is checked against.
+  measures how long a house takes. Doctrine's "40-60-minutes" was first
+  taken as the check; it is only an illustration (balance.md, *The fight
+  inside, first measured*), so the check still needs a source.
 - **The target band for an urban attack: from the research**, not from
   doctrine's force ratios alone. The research is gathered in
   [urban-doctrine.md](urban-doctrine.md), *Research on outcomes*. What
@@ -308,7 +311,8 @@ historical studies, read on the page, compare urban and open attacks:
 2. Put the urban cost **in time, not outcome**: an urban attack should
    take markedly longer than the same attack on open ground, about 2× ⚠️
    (the brigade figure, extrapolated). This becomes a measured target
-   once the resolver exists, alongside the 40–60 minutes a house.
+   once the resolver exists, alongside a clearing time per house once one
+   is sourced.
 3. Losses: an urban attacker should **not** lose more per turn than an
    open-ground one.
 4. Doctrine's 9:1–15:1 is recorded as doctrine's planning advice, not a

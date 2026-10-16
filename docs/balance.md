@@ -5299,12 +5299,25 @@ instead of 2.63. Four attackers against four prepared defenders: cleared
 
 **Against doctrine:**
 
-- **Clearing time: far too fast.** ATP 3-06.11 (2024), para 3-8, gives "a
-  supported platoon 40-60-minutes to clear a one-floor building with a
-  basement", and 90 unsupported. The resolver clears a one-storey house in
-  3.6 minutes with a squad, 11 to 17 times faster. It fights at combat pace,
-  and the methodical search doctrine plans for ("UO building clearing is not
-  fast") is only the 20 s of consolidation. **For the author.**
+- **Clearing time: faster than doctrine's one example, which is too weak
+  to measure against.** The resolver clears a one-storey house in 3.6
+  minutes with a squad. ATP 3-06.11 (2024), para 3-8, says "For example, it
+  may take a supported platoon 40-60-minutes to clear a one-floor building
+  with a basement", 90 unsupported and "days" for a multi-storey building.
+  *Corrected 2026-10-16, on the author's question:* this was first written
+  up as doctrine's planning figure and the resolver as "11 to 17 times too
+  fast". It is not a planning figure:
+  - It is an illustration in a paragraph about tempo, with no building
+    size, no enemy and no source.
+  - No other manual in the corpus gives a clearing time, the 2011 ATTP
+    included.
+  - Its building has a basement, which the game's houses lack.
+  - Its "days" for any multi-storey building cannot be squared with a
+    house of two storeys.
+
+  It says clearing is slow and methodical, not how slow. A target needs
+  real data (after-action or training figures), not this sentence. **For
+  the author.**
 - **Top-down: barely better.** With grenades against prepared defenders,
   coming in from the top clears 94% against 90% through the door. Elsewhere
   the two are level. The only top-down effect modelled is the grenade up the

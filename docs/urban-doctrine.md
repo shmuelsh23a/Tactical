@@ -202,7 +202,10 @@ reinforced concrete; M249 is identical to M16). Check against the PDF before you
 - Entry "should be made at the highest level possible" — TC 3-21.75 (2013), para 8-11. In high-threat situations, avoid
   ground-floor windows and doors "except as a last resort" — ATTP 3-06.11 (2011), para 7-16.
 
-**Time and manpower to clear: the planning figures doctrine gives:**
+**Time and manpower to clear: what doctrine gives.** The clearing times
+below are one illustrative sentence ("For example, it may take..."), with
+no building size, enemy or source, and in no other manual: not a planning
+figure (corrected 2026-10-16).
 - "it may take a supported platoon 40-60-minutes to clear a one-floor building with a basement. It may take 90-minutes
   to clear a one-floor building with no support and days to clear a multi-story building." — ATP 3-06.11 (2024),
   para 3-8.
