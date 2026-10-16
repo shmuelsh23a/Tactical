@@ -238,7 +238,15 @@ after houses.
    (median 15), none cut off. Pinned by a golden hash, and kept to plain
    arithmetic by a lint rule.
 3. **The headless resolver**: the coupling, the attacker's and the
-   defender's plans as data, and the drill from TC 3-21.76. It is
+   defender's plans as data, and the drill from TC 3-21.76. **First half
+   done 2026-10-16** (`src/engine/interior/resolver.ts`, `npm run
+   interior-sim`): the plans as data, the drill, fire, grenades and wounds,
+   on its own; measured on balance.md, *The fight inside, first measured*.
+   **Still to do: the coupling** to the outside turn (a fight run a turn's
+   ticks at a time; windows firing out; rounds landing in rooms; the force
+   going in and coming out). Two findings wait on the author first:
+   clearing runs 11 to 17 times faster than doctrine's 40–60 minutes, and
+   top-down entry is barely better than the door. It is
    measured against doctrine before anyone plays it:
    - 40–60 minutes for a supported platoon to clear a one-floor house,
      90 minutes unsupported (ATP 3-06.11, para 3-8);

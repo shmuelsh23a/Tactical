@@ -3033,11 +3033,18 @@ on the stated reasoning, still awaiting the author's word.
       server, which is why the resolver must stay bit-identical across
       devices, using basic arithmetic only (urban-design.md, *Cost and
       determinism*).
-    - **Built so far: the floor plans** (2026-10-16):
-      [`interior/floorPlan.ts`](src/engine/interior/floorPlan.ts), not yet
-      read by any rule. Figures in
-      [`data/interior.ts`](src/engine/data/interior.ts), all ours, listed
-      on balance.md.
+    - **Built so far** (2026-10-16), neither yet read by the game:
+      - the floor plans,
+        [`interior/floorPlan.ts`](src/engine/interior/floorPlan.ts);
+      - the headless fight inside,
+        [`interior/resolver.ts`](src/engine/interior/resolver.ts):
+        commanders' plans as data, the room-clearing drill, fire,
+        grenades and the d10 wounds, second by second. Measured with
+        `npm run interior-sim` (balance.md, *The fight inside, first
+        measured*).
+
+      Figures in [`data/interior.ts`](src/engine/data/interior.ts), all
+      ours (⚠️), listed on balance.md.
     - Supersedes `OWN_OBJECT_SIGHT_M` for a force inside a building, and
       the first draft's postures (at the windows, back in the room).
     - **The attacker knows of a house only what is reasonable to know

@@ -5253,6 +5253,73 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The fight inside, first measured, 2026-10-16
+
+Decision 96's headless resolver (`interior/resolver.ts`), not yet coupled to
+the outside map. A squad clears a generated house by the battle drill Enter
+and Clear a Room. Defenders are placed by `defaultDefence`, a man to a room
+at its back, and hold where they stand. Run with `npm run interior-sim`
+(flags in the tool), on all 249 Yokneam houses at seed 1000. Each house is
+fought the same way under all four entries, so the rows compare like for
+like.
+
+**The figures, all ours** (⚠️, `CLOSE_QUARTERS` in `data/interior.ts`):
+
+| Figure | Value |
+|---|---|
+| Tick | 1 s |
+| Hit chance a second, by distance | 50% to 5 m, 35% to 10 m, 20% to 20 m, 10% beyond |
+| Against a prepared position | ×0.5 |
+| Reaction (first sight to first shot), unless watching that doorway | 1 s |
+| Walking pace | 1.5 m/s |
+| A flight of stairs | 4 s |
+| Grenade into a room | the document's 30% × decision 77's enclosed 2.5 = 75% a man; stun 2 s for those not hit; thrower 5% |
+| Grenade up a stairwell | ×0.5 (ATTP 3-06.11, para 7-148: "easier to throw down a stairwell than up") |
+| Grenades a man | 2 |
+| Consolidating a room taken ("CLEAR", security, check, mark) | 20 s |
+| Wounds | the author's d10 (decision 26), floored as outside |
+
+**Two storeys, 19 rooms (median), 8 attackers against 3 defenders:**
+
+| Defenders | Entry | Grenades | Cleared | Minutes | Attackers out / killed | Defenders out | Share of hits by grenade |
+|---|---|---|---|---|---|---|---|
+| Unprepared | door | no | 98% | 7.0 | 2.70 / 0.96 | 2.99 | — |
+| Unprepared | door | yes | 98% | 7.1 | 2.33 / 0.81 | 2.97 | 22% |
+| Unprepared | top | no | 99% | 6.9 | 2.54 / 0.92 | 2.99 | — |
+| Unprepared | top | yes | 98% | 6.8 | 2.35 / 0.79 | 2.96 | 23% |
+| Prepared | door | no | 86% | 7.2 | 3.82 / 1.24 | 2.84 | — |
+| Prepared | door | yes | 90% | 7.1 | 3.19 / 1.05 | 2.90 | 19% |
+| Prepared | top | no | 89% | 7.1 | 3.83 / 1.23 | 2.87 | — |
+| Prepared | top | yes | 94% | 6.9 | 3.09 / 1.09 | 2.90 | 22% |
+
+One storey (10 rooms), unprepared, by the door: **3.6 minutes**, without
+grenades or with them. With grenades the attackers lose 1.77 men a fight
+instead of 2.63. Four attackers against four prepared defenders: cleared
+**20–33%**, repulsed the rest.
+
+**Against doctrine:**
+
+- **Clearing time: far too fast.** ATP 3-06.11 (2024), para 3-8, gives "a
+  supported platoon 40-60-minutes to clear a one-floor building with a
+  basement", and 90 unsupported. The resolver clears a one-storey house in
+  3.6 minutes with a squad, 11 to 17 times faster. It fights at combat pace,
+  and the methodical search doctrine plans for ("UO building clearing is not
+  fast") is only the 20 s of consolidation. **For the author.**
+- **Top-down: barely better.** With grenades against prepared defenders,
+  coming in from the top clears 94% against 90% through the door. Elsewhere
+  the two are level. The only top-down effect modelled is the grenade up the
+  stairs at half chance. Doctrine says top-down is best (TC 3-21.75, para
+  8-12), and the model does not yet earn that. **For the author.**
+- **Grenades pay, and are the explosive used.** They cut the attacker's
+  losses by 14–33% and win more fights, and they are the only explosive used
+  inside (ATP 3-06.11, para B-35: the most used).
+- **Clearing is costly and manpower-hungry, as doctrine says.**
+  - A squad loses 2.3–3.8 men of 8 to put out 3 defenders. On open ground
+    the standard measurement's attacker loses about 8% of his men (para
+    C-8: "Casualties are normally higher for building clearances").
+  - A single team of four against four prepared men fails two times in
+    three (para C-3: "at least one Infantry squad per floor").
+
 ## Floor plans: the generator's figures, 2026-10-16
 
 Decision 96's floor-plan generator (`data/interior.ts`). Doctrine gives
