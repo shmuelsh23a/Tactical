@@ -54,3 +54,62 @@ export const WINDOW_SPACING_M = 3; // ours (⚠️)
 
 /** Doors to the street on the ground floor: a front door. Ours. */
 export const OUTSIDE_DOORS = 1; // ours (⚠️)
+
+/**
+ * The fight inside (decision 96): figures for the resolver, `interior/resolver.ts`.
+ * Doctrine describes the room fight — "very close (within 10 meters) and very
+ * fast (with targets exposed for a few seconds only)", TC 3-21.76 (2025),
+ * para 11-20 — but gives no hit chance, reaction time or pace in numbers, so
+ * **every figure here is ours** (⚠️) and is what the measurement against
+ * doctrine's clearing times and casualties judges (docs/urban-design.md).
+ */
+export const CLOSE_QUARTERS = {
+  /** One tick, in seconds: a turn (decision 40) holds `TURN_SECONDS / tickSeconds` of them. */
+  tickSeconds: 1, // ours
+  /**
+   * A man's chance to hit, a second, by distance in metres: the document's
+   * small arms give 30% a minute at 100 m; a man in a room shoots a man he
+   * can see at a few metres. Ours (⚠️), the figure to measure first.
+   */
+  hitBySecond: [
+    { maxRangeM: 5, chance: 0.5 },
+    { maxRangeM: 10, chance: 0.35 },
+    { maxRangeM: 20, chance: 0.2 },
+    { maxRangeM: Infinity, chance: 0.1 },
+  ],
+  /** Against a man in a prepared position (a loophole, a barricade): the document's cover reading, halved. Ours. */
+  coverFactor: 0.5, // ours (⚠️)
+  /**
+   * Seconds from first seeing a man to firing at him, unless already
+   * watching the doorway he came through. The fatal funnel (ATP 3-06.11
+   * (2024), paras C-24, C-39) is this second. Ours.
+   */
+  reactionSeconds: 1, // ours (⚠️)
+  /** A brisk walk (ATP 3-06.11, para C-71), metres a second. Ours. */
+  walkMps: 1.5, // ours (⚠️)
+  /** Seconds to take a flight of stairs, one storey. Ours. */
+  stairSeconds: 4, // ours (⚠️)
+  /**
+   * A grenade thrown into a room: each man in it is caught at the
+   * document's 30% (הסתערות) times decision 77's enclosed-room factor, 2.5,
+   * and a man it does not hit is stunned for `stunSeconds`. The thrower is
+   * hit at the document's 5%. Ours: the stun and the multiplication.
+   */
+  stunSeconds: 2, // ours (⚠️)
+  /**
+   * A grenade thrown up a stairwell lands at half its chance: "grenades are
+   * easier to throw down a stairwell than up" (ATTP 3-06.11 (2011), para
+   * 7-148). The half is ours.
+   */
+  grenadeUpstairsFactor: 0.5, // ours (⚠️)
+  /** Grenades a man carries into the building. Ours: the document leaves ammunition to backlog 12. */
+  grenadesEach: 2, // ours (⚠️)
+  /**
+   * Seconds a team spends in a room it has taken before the next: the
+   * drill's "CLEAR", security posted, the leader's check and the marking
+   * (TC 3-21.76 (2025), 07-SQD-D9509, steps 7–9). Ours.
+   */
+  consolidateSeconds: 20, // ours (⚠️)
+  /** The longest a fight inside runs before it is called a standoff, in seconds. */
+  maxSeconds: 3 * 60 * 60, // ours — three hours, past doctrine's 90 minutes unsupported
+} as const;

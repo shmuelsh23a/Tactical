@@ -23,7 +23,8 @@
     "jev-sim": "vite-node tools/jev-sim.ts",
     "jev-probe": "vite-node tools/jev-probe.ts",
     "scout-probe": "vite-node tools/scout-probe.ts",
-    "suppression-pays": "vite-node tools/suppression-pays.ts"
+    "suppression-pays": "vite-node tools/suppression-pays.ts",
+    "interior-sim": "vite-node tools/interior-sim.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

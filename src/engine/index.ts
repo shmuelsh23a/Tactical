@@ -230,6 +230,18 @@ export {
   type Storey,
 } from "./interior/floorPlan.js";
 export {
+  InteriorFight,
+  defaultDefence,
+  resolveInteriorFight,
+  type AttackPlan,
+  type DefenderPost,
+  type InteriorFightInput,
+  type InteriorOutcome,
+  type InteriorResult,
+  type InteriorSoldier,
+} from "./interior/resolver.js";
+export {
+  CLOSE_QUARTERS,
   DEFAULT_STOREYS,
   INTERIOR_CELL_M,
   MAX_STOREYS,
