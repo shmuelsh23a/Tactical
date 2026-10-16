@@ -5253,6 +5253,28 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Floor plans: the generator's figures, 2026-10-16
+
+Decision 96's floor-plan generator (`data/interior.ts`). Doctrine gives
+none of these; **every one is ours** (⚠️), set from typical construction,
+and is to be checked against local building types when the resolver
+measures.
+
+| Figure | Value | Why |
+|---|---|---|
+| Grid cell | 0.5 m | A man's width; 0.25 m costs 3× for nothing doctrine asks (below) |
+| Storey | 3 m | As `tools/fetch-osm.py` turns `building:levels` into a height |
+| Storeys when the map gives no height | 2 | The building default's 6 m (decision 15) |
+| Most storeys | 30 | A tower block, not a skyscraper |
+| Room side | 3 to 6 m, on the floor | A dwelling's bedroom to its living room |
+| Stairwell | 2 × 3 m, else 2 × 2 m | A house's flight of stairs |
+| Window spacing | one every 3 m of outside wall | No source gives a spacing |
+| Doors to the street | 1 a house, and 1 for any wing the front door cannot reach | A front door |
+
+On the 249 Yokneam houses at seed 1000: about 9 rooms a storey, rooms of
+9 / 15 / 25 m² (10th, 50th and 90th percentiles), 14 of 5,614 rooms under
+2 m² (scraps of irregular outlines), no room cut off.
+
 ## What a fight inside a house costs, 2026-10-16
 
 The first step of the urban order of work (urban-design.md, decision 96):

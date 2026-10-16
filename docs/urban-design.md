@@ -79,7 +79,10 @@ defender is seen where he actually stands at a window.
 
 - **Generated from the outline**: OpenStreetMap gives the footprint and
   nothing inside it. A generator splits the footprint into rooms,
-  corridors, a stairwell, doors and windows, floor by floor.
+  a stairwell, doors and windows, floor by floor. **Corridors are not
+  generated yet**: rooms open into one another, as in a small dwelling.
+  A block of flats wants a corridor and stairs per wing; that waits for
+  the resolver to show it matters.
 - **Seeded from the game's seed and the building's id**, so a replay and
   both sides get the same house, and the recording carries no plan. The
   generator's draws come from their own stream, never from `game.rng`, in
@@ -225,8 +228,15 @@ after houses.
 
 1. ~~**A throwaway prototype** of the cost estimate above~~ **Done
    2026-10-16**: 1.2–1.7 ms a house-turn (balance.md).
-2. **The floor-plan generator**: deterministic, seeded, with storeys, and
-   tests that the same seed and building give the same plan.
+2. **The floor-plan generator**: **done 2026-10-16**
+   (`src/engine/interior/floorPlan.ts`, figures in `data/interior.ts`, all
+   ours and listed on balance.md). The grid lies along the longest wall.
+   Rooms are cut 3 to 6 m a side on the floor, a stairwell is shared by
+   every storey, and every room can be reached from the front door or the
+   stairs; a wing that can't be is given its own door or listed as cut off.
+   On the 249 Yokneam houses: 9 rooms a storey, rooms of 9 to 25 m²
+   (median 15), none cut off. Pinned by a golden hash, and kept to plain
+   arithmetic by a lint rule.
 3. **The headless resolver**: the coupling, the attacker's and the
    defender's plans as data, and the drill from TC 3-21.76. It is
    measured against doctrine before anyone plays it:
