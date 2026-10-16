@@ -104,6 +104,21 @@ describe("the fight inside a building (decision 96)", () => {
     expect(rows.filter((r) => r.outcome === "repulsed").length).toBeGreaterThan(15);
   });
 
+  it("charges a firefight's own time: reorganising after contact, and a halt for every man put out", () => {
+    let extra = 0, owed = 0, n = 0;
+    for (const s of seeds.slice(0, 30)) {
+      const empty = fight(s, {}, 0);
+      const held = fight(s, {}, 3, true);
+      if (held.outcome !== "cleared") continue;
+      n++;
+      extra += held.seconds - empty.seconds;
+      // At least one room taken under fire, and each casualty halting one of two teams working side by side.
+      owed += CLOSE_QUARTERS.reorganiseSeconds + (held.attackers.out * CLOSE_QUARTERS.casualtySeconds) / 2;
+    }
+    expect(n).toBeGreaterThan(15);
+    expect(extra / n).toBeGreaterThanOrEqual(owed / n);
+  });
+
   it("stuns a man for exactly the stun's seconds", () => {
     const m = { stunnedUntil: 10 + CLOSE_QUARTERS.stunSeconds } as InteriorSoldier;
     expect(isStunned(m, 10)).toBe(true);

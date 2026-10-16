@@ -120,6 +120,10 @@ interface Team {
   entered: number;
   /** On their points and the room still not clear: going round to the part they cannot see. */
   searching: boolean;
+  /** Shots fired by or at the team while taking this room: a room taken under fire is reorganised in. */
+  contact: boolean;
+  /** Halted until this second, seeing to its wounded. */
+  halted: number;
 }
 
 const { outside: OUTSIDE, floor: FLOOR, wall: WALL, window: WINDOW, door: DOOR, stair: STAIR } = CELL_KIND;
@@ -226,7 +230,7 @@ export class InteriorFight {
         this.soldiers.push(m);
         return m;
       });
-      this.teams.push({ members, storey: firstStorey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false });
+      this.teams.push({ members, storey: firstStorey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0 });
     }
     // Coming down from the roof, the first team takes the top storey's stair
     // room — a grenade down the stairwell first, if planned — and the rest
@@ -297,6 +301,7 @@ export class InteriorFight {
   private drill(team: Team): void {
     const men = team.members.filter((m) => !m.out);
     if (men.length === 0) { team.phase = "done"; return; }
+    if (this.second < team.halted) return; // seeing to the wounded: nobody moves, though all still fire
     switch (team.phase) {
       case "done":
         return;
@@ -310,7 +315,7 @@ export class InteriorFight {
         if (this.enemiesIn(team.storey, team.room).length > 0) { team.phase = "enter"; return; } // still a fight in it
         if (this.second >= team.until) {
           this.cleared[team.storey]![team.room] = 1;
-          this.lastProgress = this.second;
+          this.lastProgress = Math.max(this.lastProgress, this.second);
           team.phase = "pick";
         }
         return;
@@ -374,8 +379,9 @@ export class InteriorFight {
     team.points = this.pointsOfDomination(team.storey, room, approach);
     team.entered = 0;
     team.searching = false;
+    team.contact = false;
     team.phase = viaDoor ? "stack" : "enter";
-    this.lastProgress = this.second;
+    this.lastProgress = Math.max(this.lastProgress, this.second);
   }
 
   /** The stack: up to the near side of the door, then a grenade if planned, then in. */
@@ -423,7 +429,9 @@ export class InteriorFight {
     if (inside && enemies.length === 0) {
       team.phase = "consolidate";
       const area = this.plan.storeys[team.storey]!.rooms[team.room]!.areaM2;
-      team.until = this.second + CLOSE_QUARTERS.consolidateSeconds + area * CLOSE_QUARTERS.searchSecondsPerM2;
+      team.until = this.second + CLOSE_QUARTERS.consolidateSeconds + area * CLOSE_QUARTERS.searchSecondsPerM2 +
+        (team.contact ? CLOSE_QUARTERS.reorganiseSeconds : 0);
+      this.lastProgress = Math.max(this.lastProgress, team.until); // holding a room on the clock is not a stall
     }
   }
 
@@ -437,7 +445,7 @@ export class InteriorFight {
       if (this.rng.chance(chance)) { if (woundSoldier(enemy, this.rng)) this.hits.grenade++; }
       else enemy.stunnedUntil = this.second + CLOSE_QUARTERS.stunSeconds;
     }
-    if (this.rng.chance(ASSAULT.grenadeSelfHitChance) && woundSoldier(thrower, this.rng)) this.hits.grenade++;
+    if (this.rng.chance(ASSAULT.grenadeSelfHitChance) && woundSoldier(thrower, this.rng)) { this.hits.grenade++; this.casualty(thrower); }
   }
 
   /**
@@ -592,6 +600,8 @@ export class InteriorFight {
    */
   private fire(): void {
     const shots: { at: InteriorSoldier; chance: number }[] = [];
+    const teamOf = new Map<string, Team>();
+    for (const t of this.teams) for (const m of t.members) teamOf.set(m.id, t);
     const w = this.plan.width, cellM = this.plan.cellM;
     const byId = new Map(this.soldiers.map((s) => [s.id, s]));
     for (const m of this.soldiers) {
@@ -624,10 +634,21 @@ export class InteriorFight {
       }
       if (target.prepared) chance *= CLOSE_QUARTERS.coverFactor;
       shots.push({ at: target, chance });
+      const t = teamOf.get(m.id) ?? teamOf.get(target.id);
+      if (t) t.contact = true;
     }
     for (const shot of shots) {
-      if (this.rng.chance(shot.chance) && woundSoldier(shot.at, this.rng)) this.hits.fire++;
+      if (this.rng.chance(shot.chance) && woundSoldier(shot.at, this.rng)) { this.hits.fire++; this.casualty(shot.at); }
     }
+  }
+
+  /** An attacker put out halts his team while he is seen to and carried out; a wound he fights on with does not. */
+  private casualty(m: InteriorSoldier): void {
+    if (!m.out || m.side !== this.attackerSide) return;
+    const team = this.teams.find((t) => t.members.includes(m));
+    if (!team) return;
+    team.halted = Math.max(team.halted, this.second) + CLOSE_QUARTERS.casualtySeconds;
+    this.lastProgress = Math.max(this.lastProgress, team.halted); // a halt is not a stall
   }
 
   result(): InteriorResult {

@@ -75,19 +75,28 @@ describe("floor plans of the demo map's houses", () => {
 });
 
 describe("a squad clearing the demo map's houses (decision 96)", () => {
-  it("takes about 20 minutes over a lightly held house, as the author ruled (2026-10-16)", () => {
-    // 8 attackers by the front door against 1 defender, every 6th house of
-    // the map. The full map gives 20.4 minutes (docs/balance.md); a sample
-    // keeps the suite quick.
-    const minutes = HOUSES.filter((_, k) => k % 6 === 0).map((h, k) => {
+  // 8 attackers by the front door, every 6th house of the map: the full map
+  // gives the figures on docs/balance.md, and a sample keeps the suite quick.
+  const medianMinutes = (defenders: number, prepared: boolean) => {
+    const minutes = HOUSES.filter((_, k) => k % 6 === 0).flatMap((h, k) => {
       const plan = generateFloorPlan(h, 1000);
       const rng = new Rng(1000 * 7919 + k);
-      const defence = defaultDefence(plan, ["d1"], rng);
+      const defence = defaultDefence(plan, Array.from({ length: defenders }, (_, d) => `d${d}`), rng, prepared);
       const r = resolveInteriorFight({ plan, attack: { entry: "door", grenades: false, teams: [["a1", "a2", "a3", "a4"], ["a5", "a6", "a7", "a8"]] }, defence }, rng);
-      return r.seconds / 60;
+      return r.outcome === "cleared" ? [r.seconds / 60] : [];
     }).sort((a, b) => a - b);
-    const median = minutes[Math.floor(minutes.length / 2)]!;
-    expect(median).toBeGreaterThan(15);
-    expect(median).toBeLessThan(25);
+    return minutes[Math.floor(minutes.length / 2)]!;
+  };
+
+  it("takes about 20 minutes to search a house nobody holds, as the author ruled (2026-10-16)", () => {
+    const m = medianMinutes(0, false);
+    expect(m).toBeGreaterThan(15);
+    expect(m).toBeLessThan(25);
+  });
+
+  it("takes toward an hour against three prepared defenders, the fighting's own time added (2026-10-16)", () => {
+    const m = medianMinutes(3, true);
+    expect(m).toBeGreaterThan(45);
+    expect(m).toBeLessThan(70);
   });
 });

@@ -123,6 +123,25 @@ export const CLOSE_QUARTERS = {
    * (docs/balance.md).
    */
   searchSecondsPerM2: 3.5, // ours (⚠️), calibrated 2026-10-16: 20.4 min, the demo map's median house, 8 against 1
+  /**
+   * What a firefight inside costs in time beyond its shots (the author,
+   * 2026-10-16: "reorganising after contact and moving casualties out — so
+   * defended houses take longer, toward the 60 minutes the data shows").
+   * Doctrine names the steps — consolidate and reorganize after contact
+   * (ATP 3-21.8 (2024), paras 4-116, 4-117), casualties brought back to a
+   * casualty collection point (ATP 3-06.11 (2024), paras 4-36, 4-37) — and
+   * times neither. Both figures are ours, set by `npm run interior-sim`
+   * against the real data's 20–60 minutes (docs/balance.md).
+   *
+   * - `reorganiseSeconds`: a room taken under fire is held this much longer
+   *   than a quiet one — ammunition shared out, the men counted, the
+   *   leader's report.
+   * - `casualtySeconds`: each man of a team put out halts the team this
+   *   long — first aid where he fell, and carrying him back out of the
+   *   building.
+   */
+  reorganiseSeconds: 300, // ours (⚠️), 2026-10-16: three prepared defenders take a squad 56.5 min
+  casualtySeconds: 600, // ours (⚠️), 2026-10-16: with the search, an empty house still 20 min
   /** The longest a fight inside runs before it is called a standoff, in seconds. */
   maxSeconds: 3 * 60 * 60, // ours — three hours, past doctrine's 90 minutes unsupported
 } as const;
