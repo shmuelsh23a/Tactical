@@ -3072,6 +3072,10 @@ on the stated reasoning, still awaiting the author's word.
         - Result: against defenders who fall back it costs 12% fewer men
           and 5–9 minutes more. Against defenders who hold it saves
           nothing (balance.md, *Top-down, built and measured*).
+        - Defenders fall back under fire too. In a house of one
+          stairwell, a top-down team that holds the stairs corners the men
+          on each floor: few are driven out, and the author ruled that
+          realistic for a house (2026-10-16).
 
       Figures in [`data/interior.ts`](src/engine/data/interior.ts), all
       ours (⚠️), listed on balance.md.

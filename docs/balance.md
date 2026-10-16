@@ -5312,8 +5312,8 @@ prepared defenders who fall back and expect the attack from below:
   takes the stair room first. Every defender on that floor has his way
   down cut, and he is cornered there. Doctrine's "an enemy who is forced
   down to ground level may elect to withdraw" assumes another way down.
-  **For the author**: a second stair in larger houses, or a ground-floor
-  window as a way out, or leave it.
+  **Ruled the same day: leave it.** "With one stairwell held, defenders
+  are cornered, which is realistic for a house" (the author).
 - **Falling back under fire makes defenders harder to clear by the door.**
   Men keep shooting as they go and fight again from the next room: 4.26
   out against 3.72, and 81% cleared against 85%. Top-down's edge with
