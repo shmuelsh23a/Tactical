@@ -5254,6 +5254,50 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## What each lever of a plan inside is worth, 2026-10-20 (decision 101)
+
+The plan's levers, one at a time against the defaults. **The fight inside
+alone**, `interior-sim` (249 houses, 8 attackers against 3 defenders,
+falling back, seed 1000), with `--team-size`, `--hold-storeys`, `--hold`,
+`--expect-above`. Median minutes of those cleared / attackers out a fight:
+
+| Lever | Door, no grenades | Door, grenades | Roof, no grenades | Roof, grenades |
+|---|---|---|---|---|
+| Defaults (teams of 4, every storey, falling back) | 57.2 / 3.67 | 51.9 / 3.06 | 63.4 / 3.42 | 56.5 / 2.86 |
+| **Teams of 2** | 42.9 / 3.90 | **38.8 / 3.08** | 49.6 / 3.78 | **44.2 / 2.47** |
+| Defender holds the upper storey only | 50.3 / 3.33 | 49.8 / 3.41 | 61.6 / 3.18 | 58.4 / 2.68 |
+| Defender holds the ground floor only | 56.3 / 4.02 | 48.6 / 2.81 | 51.2 / 3.22 | 49.9 / 2.96 |
+| Defender holds to the last | 54.4 / 3.16 | 48.2 / 2.89 | 64.1 / 3.16 | 57.3 / 2.82 |
+| Defender expects the attack from above | 53.2 / 3.45 | 50.7 / 2.90 | 63.5 / 3.39 | 57.0 / 2.90 |
+
+Cleared 87–98% in every cell.
+
+**The raid**, `scenario-sim --n 100 --scenario yokneamRaid` with
+`--attack-plan` / `--defence-plan` (the defaults: 16%):
+
+| Plan | Attacker wins |
+|---|---|
+| Attack from the roof | 12% |
+| Attack without grenades | 15% |
+| Attack in teams of 2 | **7%** |
+| Defence holds the upper storey | 18% |
+| Defence back from the windows | 13% |
+| Defence holds to the last | 14% |
+| Defence expects the attack from above | 16% |
+
+- **Teams of 2 are a dominated option inside** — about a quarter quicker
+  for the same or fewer men out — because the resolver runs more teams at
+  once and charges a pair nothing for the corners it cannot dominate
+  (ATP 3-06.11 (2024), paras C-66, C-67: four points, four men). Put to
+  the author. In the raid the same lever reads 7%, nine points under the
+  defaults: at the edge of the noise, and not the same story.
+- Every other lever moves the raid within noise: it has few fights inside.
+  Inside, the defender's levers trade losses for time rather than winning
+  either; holding to the last costs the attacker fewer men (it does not
+  fall back firing, as measured on 2026-10-16).
+- From the roof stays slower by the door than in, as decision 96 measured;
+  it saves men only with grenades.
+
 ## Through the windows, 2026-10-20 (decision 98)
 
 The second slice of the coupling: a defender at a window facing the
