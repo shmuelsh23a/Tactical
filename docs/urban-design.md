@@ -242,9 +242,17 @@ after houses.
    done 2026-10-16** (`src/engine/interior/resolver.ts`, `npm run
    interior-sim`): the plans as data, the drill, fire, grenades and wounds,
    on its own; measured on balance.md, *The fight inside, first measured*.
-   **Still to do: the coupling** to the outside turn (a fight run a turn's
-   ticks at a time; windows firing out; rounds landing in rooms; the force
-   going in and coming out). Two findings wait on the author first: a
+   **The coupling's first slice, done 2026-10-20**
+   (`src/engine/interior/coupling.ts`, `GameOptions.closedTerrain`):
+   - A fight runs a turn's 60 ticks as the turn closes.
+   - Forces go in by reaching the walls or by assault, and come out by
+     withdrawing, routing or surrendering.
+   - Wounds go both ways between the map and the fight.
+   - Contacts are exchanged when a fight starts.
+
+   Measured on balance.md, *The fight inside, in the game*. **Still to do:**
+   windows firing out and being fired into, rounds landing in rooms,
+   joining a fight already going on, and the players' plans inside. Two findings wait on the author first: a
    house is cleared in minutes, where doctrine's one example says about an
    hour (too weak to set a target; balance.md has why), and top-down entry
    is barely better than the door. It is

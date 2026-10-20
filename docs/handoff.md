@@ -260,6 +260,14 @@ How the last two days went, round by round, is in
 
 ### Added 2026-10-20
 
+- **The fight inside is in the game** (decision 96, the coupling's first
+  slice, `closedTerrain`): the raid 3% → 22%, urban 60% → 59%, tel
+  unchanged. For him: whether reaching a building's walls should commit a
+  force to the fight inside, and the default plans inside (door and
+  grenades; `defaultDefence`) until players plan there. Next in the
+  coupling: windows firing out and in, rounds landing in rooms, joining a
+  fight in progress, players' plans inside.
+
 - **A serious UX/UI pass is scheduled with the OPORD and battle-chart
   control design** (backlog 13; the author). The findings from his played
   battle (Yokneam to turn 10) are listed there: orders accepted again and

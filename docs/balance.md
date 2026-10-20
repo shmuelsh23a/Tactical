@@ -5254,6 +5254,31 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The fight inside, in the game, 2026-10-20
+
+Rules decision 96's coupling, first slice (`GameOptions.closedTerrain`). A
+force at the walls of a building the enemy holds, or assaulting a force in
+one, fights it out room by room as the turn closes. `scenario-sim`, seed
+1000, before (`50711d4`) and after:
+
+| Scenario | Attacker wins before → after | Out of time | Attacker / defender down |
+|---|---|---|---|
+| `yokneamRaid` (`--n 100 --scenario yokneamRaid`) | **3% → 22%** | 93% → 67% | 8% / 9% → 8% / 5% |
+| `yokneamUrban` (standard flags, `--n 100`) | 60% → 59% | 25% → 26% | 8% / 36% → 8% / 36% |
+| Tel Azeka, both (standard flags, `--n 60`) | 50% / 35% → identical | — | identical |
+
+- **The raid's stalemate is broken.** Its forces stood inside houses, unable
+  to see out or be seen. They now fight their way in: 22% of raids take the
+  block, against 3%. Defenders down falls (9% → 5%) because a fight inside
+  ends with the house taken rather than with the militia shot from the
+  windows, and many militia withdraw out of the door.
+- **`yokneamUrban` does not move.** Its defenders hold the edge houses and
+  are worn down from outside by tanks and mortars (93% of losses to HE)
+  before anyone reaches a wall.
+- Its figures, all ours (⚠️, README decision 96): the 3 m trigger, the
+  front door and a grenade a room, teams of four, `defaultDefence`, the
+  longer in place defending.
+
 ## Top-down, built and measured, 2026-10-16
 
 The author approved all seven mechanisms of urban-design.md's *Top-down:

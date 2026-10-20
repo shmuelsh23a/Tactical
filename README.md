@@ -3010,8 +3010,9 @@ on the stated reasoning, still awaiting the author's word.
 96. ✅ **Closed terrain is fought soldier by soldier, on a plan** (the
     author, 2026-10-15: "Fighting in closed terrain (trenches, houses,
     under ground) should be simulated to the soldier level … in a manner
-    similar to 'Door Kickers 2'"). **Designed, not built**:
-    [docs/urban-design.md](docs/urban-design.md).
+    similar to 'Door Kickers 2'"). Designed in
+    [docs/urban-design.md](docs/urban-design.md); **in the game since
+    2026-10-20** (the coupling's first slice, below).
     - **Two layers.** The tactical map is unchanged. Inside a house, a
       trench or a tunnel, soldiers are individuals on a grid of their
       own. The two are coupled: a soldier at a window fires out and is
@@ -3033,7 +3034,39 @@ on the stated reasoning, still awaiting the author's word.
       server, which is why the resolver must stay bit-identical across
       devices, using basic arithmetic only (urban-design.md, *Cost and
       determinism*).
-    - **Built so far** (2026-10-16), neither yet read by the game:
+    - **In the game: the fight inside, coupled to the turn** (2026-10-20,
+      `GameOptions.closedTerrain`, on for a new game, off for a recording
+      made before it; [`interior/coupling.ts`](src/engine/interior/coupling.ts)).
+      - A force reaches the walls of a building the enemy holds (within the
+        3 m cover reach, decision 15), or assaults a force inside one, which
+        takes it to the front door. The two then fight it out room by room
+        on the building's floor plan, a minute a turn, as the turn closes
+        and before the morale step.
+      - While it lasts, neither force moves or fires outside. Wounds and
+        losses come back onto the men, and a force routed, given up or
+        spent leaves the fight. Defenders who withdraw come out of the front
+        door. Each side learns whom it is fighting, and the log names only
+        its own forces.
+      - The assault that goes in keeps an assault's rules: once a turn,
+        answered by covering fire, and only within the assault's 25 m of
+        the door.
+      - Measured, 100 battles from seed 1000: **the raid 3% → 22%**
+        attacker wins, out of time 93% → 67%, so the stalemate inside
+        houses is broken. `yokneamUrban` 60% → 59%: its defenders hold the
+        edge houses and are fought from outside. The tel is unchanged
+        (balance.md, *The fight inside, in the game*).
+      - **⚠️ Ours, for the author**, until the players plan inside:
+        - reaching the walls commits a force to the fight, whether either
+          side ordered it;
+        - the attacker goes in by the front door with a grenade into each
+          room, in teams of four;
+        - the defender holds the rooms `defaultDefence` gives him,
+          prepared if his force has a front;
+        - where both sides stand inside, the one longer in place defends.
+      - Not yet: windows firing out and being fired into, rounds landing
+        in a room, joining a fight already going on, and the players'
+        own plans inside.
+    - **Built before it** (2026-10-16):
       - the floor plans,
         [`interior/floorPlan.ts`](src/engine/interior/floorPlan.ts);
       - the headless fight inside,
