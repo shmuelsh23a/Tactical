@@ -3206,9 +3206,9 @@ on the stated reasoning, still awaiting the author's word.
       (`Game.spots`); two forces fighting each other inside see each other.
       So is the fall of a round watched (decision 33), and what a side is
       told it saw happen (decision 17). A hold-fire order's engagement
-      range chooses by `Game.canEngage`. **Not changed, asked:** morale's
-      seeing — armour fear, a friend breaking in sight, who watched a rout
-      — still reads the mark.
+      range chooses by `Game.canEngage`. **Morale's seeing too** (the
+      author, the same day): armour fear, a friend breaking in sight, and
+      who watched a rout.
     - **Rounds that get in go off in the room they strike.** A window
       critical (decision 77) bursts in the room of the man at that window;
       a round through the roof, in the top-storey room under where it

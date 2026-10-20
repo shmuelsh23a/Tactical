@@ -3972,7 +3972,8 @@ export class Game {
       stress: this.stress,
       snapshot: this.turnSnapshot,
       perceives: (side, unit) => !this.trackIntel || this.knows(side, unit.id),
-      sees: (observer, target) => this.hasLineOfSight(observer, target),
+      // Through the windows where either fights inside (the author, 2026-10-20, decision 98).
+      sees: (observer, target) => this.spots(observer, target),
       withdrawing: (unit) => this.standingOrders.get(unit.id)?.withdraw === true,
       prepared: {
         testBonus: this.variants.preparedTestBonus ?? PREPARED.testBonus,
@@ -3986,7 +3987,7 @@ export class Game {
       watching: (side, unit) =>
         this.trackIntel
           ? (this.contactFor(side, unit.id)?.lastSeenTurn ?? -1) >= this.turn
-          : this.units.some((u) => u.side === side && !u.neutralized && this.hasLineOfSight(u, unit)),
+          : this.units.some((u) => u.side === side && !u.neutralized && this.spots(u, unit)),
     });
     for (const { unitId, to } of step.routs) {
       const unit = this.getUnit(unitId);

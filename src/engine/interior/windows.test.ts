@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { Game } from "../game.js";
 import { Rng } from "../rng.js";
-import { makeInfantry } from "../units.js";
+import { makeInfantry, makeVehicle } from "../units.js";
 import { replayGame, sealRecording, verifyRecording } from "../recording.js";
 import { resolveDirectExplosive } from "../combat/explosives.js";
 import { resolveDirectFire } from "../combat/directFire.js";
@@ -26,7 +26,7 @@ const house: MapObject = {
 const centre = { x: 108, y: 106 };
 
 /** R-1 in the house, B-1 assaulting it, and B-2 standing off `metres` away at `angle` radians from its middle. */
-function battle(seed: number, angle: number, opts: { windowFire?: boolean; trackIntel?: boolean } = {}, metres = 40) {
+function battle(seed: number, angle: number, opts: { windowFire?: boolean; trackIntel?: boolean; morale?: boolean } = {}, metres = 40) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
   g.addUnit(makeInfantry("R-1", "RED", "squad", { ...centre }, 4));
   const door = g.interior.frontDoor(g, house)!;
@@ -297,6 +297,26 @@ describe("through the windows (decision 98)", () => {
       }
     }
     expect(differs).toBeGreaterThan(0);
+  });
+
+  it("lets morale see through the windows too: armour fear, a friend breaking, a rout watched (the author, 2026-10-20)", () => {
+    let differs = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      for (let k = 0; k < 16; k++) {
+        const angle = (k * Math.PI) / 8;
+        const g = battle(seed, 0, { morale: true });
+        // A BLUE tank 60 m off on every bearing, well inside armour fear's 300 m.
+        g.addUnit(makeVehicle("B-T", "BLUE", { x: centre.x + 60 * Math.cos(angle), y: centre.y + 60 * Math.sin(angle) }));
+        const [r1, tank] = [g.getUnit("R-1"), g.getUnit("B-T")];
+        if (g.spots(r1, tank) !== g.hasLineOfSight(r1, tank)) differs++;
+        const spots = vi.spyOn(g, "spots");
+        g.advanceToPhase("initiative"); // the turn's morale step
+        // Armour fear asked the windows whether the house sees the tank.
+        expect(spots.mock.calls.some(([o, t]) => o.id === "R-1" && t.id === "B-T")).toBe(true);
+        spots.mockRestore();
+      }
+    }
+    expect(differs).toBeGreaterThan(0); // and the windows answer differently from the mark
   });
 
   it("spots by the mark's sight line without it, as recorded before it", () => {
