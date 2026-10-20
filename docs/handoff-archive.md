@@ -12,6 +12,182 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-10-01 — "Start here" as it stood
+
+Moved from the handoff on 2026-10-20: its numbers are from early October.
+
+### Start here: what governs the next step (2026-10-01)
+
+**Everything is merged to `main`** (PR #12; this handoff, PR #13). Two
+things changed the course of the project in the last two days, and both
+govern the next step:
+
+1. **The author's guideline: results are judged by closeness to real-life
+   outcomes** — win rates, and what attacks cost each side, against the
+   sources (validation.md). Balance means **reasonable plans** land in the
+   targets, not one scripted plan.
+2. **The layers divide** (README, backlog 21): **rules** are tuned to real
+   outcomes; **drills** come from doctrine and stay fixed; **plans** are the
+   players' or the AI's. Today's drills are still ours, and the next large
+   piece of work is replacing them from the manuals:
+   **[doctrine-handoff.md](doctrine-handoff.md)**. It is commercial-edition
+   work on open-source manuals and goes in this public repo; it waits only
+   for the manuals the author has collected, which are on the author's
+   computer and are to be embedded too (author, 2026-10-02).
+
+**Where the balance stands, 2026-10-03** (balance.md, fiftieth to
+fifty-second rounds; README, decisions 75–80; every figure in play and its
+source in [sources.md](sources.md)). Standard measurement, 200 battles each:
+
+| Measure | Now | Target / source |
+|---|---|---|
+| Tel Azeka 3:1 | **41%** | 40–55% (decision 68) |
+| Tel Azeka 2:1 | **36%** | 20–35%; accepted (decision 81) |
+| Yokneam urban (company, 2 tanks, 2 APCs against a platoon in houses) | **18%** | — (the test bed for decisions 75–78) |
+| Explosives' share of losses, tel | **64%** | 60–80% (decision 81) |
+| Urban: BLUE's vehicles out a battle | 21% | — |
+| Urban: window / slit criticals a battle | 3.2 | — |
+
+The author looked at these and found them fine (2026-10-03). Before
+decisions 75–80 the same measurement gave 49% and 27%. The reference
+plans (below) have not been measured since; their medians were 42% and 24%
+on 2026-10-01.
+
+The **reference plans** are `--rule` variants of `npm run jev-sim` (A
+calibrated `—`; A + flank `flank`; B deliberate `basefire,bound,holdshort`;
+E fire-heavy `holdshort,prep`; D flank `basefire,holdshort,flank`; A + move
+up `moveup`; B + move up `…,moveup`; C hasty `rush`), 100 seeds a scenario
+from 1000, both tel assaults. They cost no tokens; a full set takes about an
+hour four at a time.
+
+**The AI commanders** (balance.md, thirty-fourth to thirty-sixth and
+forty-sixth rounds): on today's rules Jev wins **15% / 5%** and Haiku
+**5% / 5%**. Most of the gap is their own plans (Jev: the hasty attack with
+bounding and holding short; Haiku: the flank and moving up before the enemy
+is found — a real mistake the game rightly punishes). Opus and Sonnet behave
+alike and cost far more: compare Haiku and Jev only. Keys:
+`TYPESAFE_API_KEY` (Jev), **`JEV_ANTHROPIC_API_KEY`** (Claude; the cloud
+session keeps `ANTHROPIC_API_KEY` for itself). The next design for the AI is
+backlog 22 (plan once, compute, execute cheaply), after the doctrine work.
+
+**Rulings of 2026-10-02** (the author, answering every open question):
+
+| Question | Ruling |
+|---|---|
+| Hasty attack 45% at 3:1, flank plan 25% | Wait for doctrine: measure the reference plans again on the doctrinal drill, then rule |
+| Fire on the move (`fireOnTheMove`, off) | Keep, off, until doctrine says whether infantry fires while moving |
+| Fire support by odds | Per scenario, in its spec (README decision 70) |
+| The OPORD (`src/sim/opord.ts`) | Rewrite it from doctrine; not to be used again before |
+| Mission and victory conditions (backlog 18) | From doctrine: the manuals' definitions of mission accomplishment |
+| Direct-fire HE | Review it now — cloud work, no manuals needed |
+| Reserves for the other layouts | From doctrine |
+| The traits' other effects | Built (decision 82): per soldier, ±20%; the slowest man sets a rush's pace, not a walk's |
+| Fatigue | Built (decision 82): by strength; ⚠️ points and thresholds ours, after Ito 1999 |
+| Who fires first | Built (decision 82): within a side, still forces first, then agility; the hotseat player still chooses his own order |
+| Skills | Every soldier has an MOS from doctrine, with weapon, weight, ammunition and equipment, a skill level per man, and a comrade takes up a fallen specialist's weapon (decision 73) — not built |
+| Campaign traits | Learning by wisdom, named quirks, relationships within a squad only (decision 74) — with campaigns |
+
+Decisions 69–74 came from a survey of what other tactical games use traits
+for, with the cost at scale kept in view: none adds a sight line, and none
+adds a die where the force rolls once today (README, after decision 74).
+
+The doctrine items are in [doctrine-handoff.md](doctrine-handoff.md)'s
+scope. The author asked for the rulings to be recorded and nothing built
+yet.
+
+How the last two days went, round by round, is in
+[handoff-archive.md](handoff-archive.md), *2026-09-30 to 2026-10-01*.
+
+**Where the game stands** (README, *Rules decisions*; balance.md):
+
+- **60–65** (2026-09-30): a defending platoon's reserve counterattacks; a
+  metre climbed costs 5 m; full cover against a shell by the sources;
+  suppression (reach 30–75 m, pinned is heads down, roofs halve it, danger
+  close, a pinned defender assaulted tests its nerve); nerve lost by cover; a
+  pinned force fires to 400 m at half its chance beyond 100 m.
+- **66** nerve in the open ×1 (and division-level targets, 55–70% / 30–45%).
+  **67** an attacker's breakpoint at **30%** again. **68** targets for
+  small-unit attacks: 3:1 on a prepared position **40–55%** (70–75% with
+  surprise or strong suppression), 2:1 **20–35%** — judged on reasonable
+  plans and on losses.
+- **Drill (ours), 2026-10-01:** bounding by platoon at one level and only
+  within 400 m of a known enemy; squads step by covered ground once released;
+  platoons wait at the last cover to close together (≤ 5 turns); the company
+  can move up to an assault position chosen against what the scouts found,
+  and go round a flank on the enemy's side. Each has a `--no-…` switch in
+  `jev-sim` where it was measured.
+- **The question set is `2026-10-01.3`.** The scout question says what
+  scouts do (bare, it drew one scout from every model). Change a question's
+  wording only after `npm run jev-probe` / `npm run scout-probe` shows what
+  it does, and bump `QUESTION_SET_VERSION`.
+- **Harness policies (ours, not rules):** the scripted defender registers its
+  mortars on the dead ground in front of it (measured: where it registers
+  barely matters); a defending command post stays put; the scripted company
+  sends three scouts.
+- **The standard measurement:**
+  `npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground --n 200 --target-first squads`
+  — 3:1 **49%**, 2:1 **27%**, explosives 72–75%.
+
+**Open, in rough order:**
+
+1. **The doctrine engine** (backlog 21), when the author brings the manuals:
+   [doctrine-handoff.md](doctrine-handoff.md). Its scope now takes in
+   victory conditions, reserves, the OPORD, fire on the move and the hasty
+   attack's ruling. Then the reference plans measured again on doctrinal
+   drills.
+2. **Direct-fire HE** — **done 2026-10-03** as rules decision 75: the
+   author's ruling was to put it on the same rules as indirect fire, and
+   it is on for a new game (`directHeAsShell`). It cost the attacker
+   6 / 3 points on the standard measurement (48% → 42%, 32% → 29%;
+   balance.md, *Forty-eighth round*). Left open: **measure the reference
+   plans again under it**, since the 3:1 median was 42% before and may
+   now fall below decision 68's 40%; the armour damage table (a flat 20%
+   penetration whatever the weapon and facing), which this did not touch;
+   and whether direct HE should cost `bombarded` nerve like a shell.
+2a. **Buildings, critical hits, armour** — **built 2026-10-03** as rules
+   decisions 76–78, on by default. Most of their figures are ours (⚠️ in
+   the README; sources on validation.md). They could not be measured: the
+   harness's battles have no buildings and no vehicles (balance.md,
+   *Forty-ninth round*). **The test bed is built**: `yokneamUrban`
+   (balance.md, fiftieth to fifty-second rounds), 18% for the attacker
+   today. Its houses are twice the reference size, so none comes down in a
+   battle (about 5 tank rounds a battle against about 20 needed). The
+   sources were read on the page on
+   2026-10-03 (validation.md, *second pass*), and four rules were
+   corrected from them. Still unsourced: rounds to bring a house down,
+   window, slit and roof chances. Not built: rubble slowing
+   movement, breaching walls, an ATGM weapon, machine guns against light
+   vehicles, active protection, passengers.
+3. **The traits are built** (decision 82). **For the author:** the reference plans' 3:1 median is about 30%, under its band, and plan B (base of fire of riflemen, waiting out its suppression) is the weakest deliberate plan, for the doctrine manuals to settle (balance.md, fifty-sixth and fifty-seventh rounds). **The MOS**
+   (decision 73) needs the doctrine's squad organisation first, and moves
+   weapons from the force to the man; **campaign traits** (74) wait for
+   campaigns (backlog 16).
+4. **Play the new rules in the browser as a player** (the author, on the
+   author's computer). Suppression, heads down, danger close, the nerve
+   test, the counterattack, the 30% breakpoint: none has been played by a
+   person. The browser game is hotseat; the scripted company's choices
+   (scouts, moving up, bounding) exist only in the headless harness.
+5. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
+   evaluate once by rule from the side's belief) — after 1.
+6. **Force quality matrix**: **built 2026-10-04** (decision 83). **For the author:** checked against Dupuy and the rest (validation.md, *Force quality*), the mapping moves only nerve: the casualty exchange hardly moves with the attacker's quality, where Dupuy's CEV (1.2–1.5 within armies, 1.75–2 Israel against Egypt) would move it a lot. **Ruled and built as decision 84** (the quality gap); the author accepted its size and the nerve between equals on the measurement (2026-10-04). Closed. No scenario uses a cell yet. No scenario uses a cell yet: the test beds are all regular, experienced. **House types** (decision 81), with the urban combat work, are next.
+7. **Flat-ground misses**, **overhead cover for higher echelons**,
+   **ammunition** (backlog 12) — for battalion battles.
+
+
+## 2026-10-12 to 20 — the header as it ran
+
+Replaced on 2026-10-20 by the header of the urban-warfare work.
+
+**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; urban is ruled (decision 96, soldier-level closed terrain) and designed in docs/urban-design.md, its cost prototype measured 1.2–1.7 ms a house-turn and the floor-plan generator and the headless fight inside are built (2026-10-16); clearing time is ruled and built (2026-10-16): a house nobody holds takes a squad 20 minutes, three prepared defenders 56, within the real data's 20–60; he accepted that 20 minutes is a house nobody holds and one defender about 32; top-down's seven mechanisms are built (2026-10-16): 12% fewer men lost against defenders who fall back, nothing saved against ones who hold, 5–9 minutes slower; men under fire now fall back too (ruled 2026-10-16), and still only 0.12–0.16 a fight are driven out, because a house has one stairwell and a top-down team holds it first — left so by the author ("realistic for a house"); next is the coupling to the outside map (urban-design.md step 3b), after his go; and about 1% of defended fights still end in a standoff (a fault to find); the force-quality matrix and AI commanders wait on the author's go.**
+
+**Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
+
+**The stale tables, re-run** (balance.md, *The stale tables on the new baseline*): reference plans 3:1 median **45%** (in band), 2:1 median **13%** (under — their attacker fires through the typed question, which cannot hold a reserve, so it is the old attacker policy on the new allotment); hasty one-scout **50% / 25%** (3:1 over history's 15–35); the raid **3%**, 93% out of time — its 26% came from the old defender shelling the raid among its own houses, and it now waits on backlog 23. Still stale: the force-quality matrix and the AI commanders.
+
+Older entries, 2026-10-06 and back, are in
+[handoff-archive.md](handoff-archive.md), *Where the header used to
+run*.**
+
 ## 2026-10-11 to 12 — the attack out of band, and three reviews by doctrine
 
 Moved from the handoff on 2026-10-12, after decision 94, verbatim.

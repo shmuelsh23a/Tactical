@@ -1,14 +1,27 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 91–95 are in and the standard measurement is in band (3:1 50%, 2:1 31%); the reference plans are 46% / 18.5% after the 2:1 stall was fixed; urban is ruled (decision 96, soldier-level closed terrain) and designed in docs/urban-design.md, its cost prototype measured 1.2–1.7 ms a house-turn and the floor-plan generator and the headless fight inside are built (2026-10-16); clearing time is ruled and built (2026-10-16): a house nobody holds takes a squad 20 minutes, three prepared defenders 56, within the real data's 20–60; he accepted that 20 minutes is a house nobody holds and one defender about 32; top-down's seven mechanisms are built (2026-10-16): 12% fewer men lost against defenders who fall back, nothing saved against ones who hold, 5–9 minutes slower; men under fire now fall back too (ruled 2026-10-16), and still only 0.12–0.16 a fight are driven out, because a house has one stairwell and a top-down team holds it first — left so by the author ("realistic for a house"); next is the coupling to the outside map (urban-design.md step 3b), after his go; and about 1% of defended fights still end in a standoff (a fault to find); the force-quality matrix and AI commanders wait on the author's go.**
+**Next, in one line: urban warfare is in the game. Closed terrain is fought soldier by soldier on generated floor plans (decision 96), entered only by an assault order, a minute a turn as the turn closes; the raid went 3% → 13%. Next is the coupling's second slice — windows firing out and in, rounds landing in rooms — or the 1% standoff fault, then the players' plans inside as data. The 2:1 reference median, the force-quality matrix and the AI commanders still wait on the author.**
 
-**Current as of 2026-10-12: the attack bands are met, by doctrine rather than by tuning.** The day took the out-of-band attack (3:1 56%, 2:1 40%) through three reviews, each ruled by the author and built as a decision: **91** a burst of small arms suppresses by its volume and the target's cover (CDEC's SASE II/SUPEX); **92** a shell's suppression is a chance, as FM 7-90 states its radii, not an amount; **93** mortars by doctrine — the 60 and 120 mm beside the 81 mm, two-tube sections, the tel battles re-based (attacker 2 × 60 mm and the battalion's 4 × 81 mm; defender 2 × 60 mm) and fire plans that hold rounds back for a priority target and an FPF. Standard measurement now: **3:1 50%, 2:1 25%**, both in band; explosives 23–25%, which **decision 94** makes a battalion-and-above figure, reported but not a company target. The evidence is in `docs/small-arms-suppression.md`, `docs/indirect-suppression.md` and `docs/mortar-allotment.md`; the tables in balance.md's three 2026-10-12 entries.
+**Current as of 2026-10-20** (`3c28ae0`). Since the last header (2026-10-12):
+- **Decision 96, urban warfare.** The author's design, built in steps:
+  - floor plans generated from footprints, bit-identical on any device;
+  - a headless fight inside, run by the doctrinal room-clearing drill;
+  - clearing time calibrated to real data: 20 minutes for a house nobody
+    holds, toward an hour against prepared defenders;
+  - top-down entry with doctrine's gains and costs;
+  - the coupling to the turn: entered only by an assault order, each side
+    told only its own losses.
+- **Decision 97, a grenade's smoke needs a thrower.** A hand pot within
+  35 m of a man of the side; rifle-grenade smoke within 100 m of infantry
+  with a grenadier, as a 10 m screen.
+- **Today's control is temporary** (README, *Design principles*, first).
+  The product commands by OPORD, a battle plan drawn on the map and
+  written orders during play. A serious UX/UI pass is scheduled with that
+  work (backlog 13).
 
-**The stale tables, re-run** (balance.md, *The stale tables on the new baseline*): reference plans 3:1 median **45%** (in band), 2:1 median **13%** (under — their attacker fires through the typed question, which cannot hold a reserve, so it is the old attacker policy on the new allotment); hasty one-scout **50% / 25%** (3:1 over history's 15–35); the raid **3%**, 93% out of time — its 26% came from the old defender shelling the raid among its own houses, and it now waits on backlog 23. Still stale: the force-quality matrix and the AI commanders.
-
-Older entries, 2026-10-06 and back, are in
-[handoff-archive.md](handoff-archive.md), *Where the header used to
-run*.**
+The 2026-10-12 header and the long running line are in
+[handoff-archive.md](handoff-archive.md), *2026-10-12 to 20 — the header
+as it ran*.
 
 This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
@@ -36,18 +49,23 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `15dc62d` (2026-10-11, end of the day)
+## Green as of `3c28ae0` (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 953 tests, 63 files
+npm run check       lint + typecheck clean, 1,045 tests, 72 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
+npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
+                    the fight inside on every demo house (decision 96)
+npm run scenario-sim -- --n 100 --scenario yokneamRaid
+                    the raid: 13% since the coupling (balance.md)
 node tools/smart-attacker.mjs [scenario] [turns]
                     a scripted attacker plays a scenario in the browser
                     (dev server on :5199 first; SEED=n for other dice)
 PYTHONUTF8=1 py tools/doctrine.py --find "base of fire" --doc 3-21.8
-                    the doctrine corpus; --semantic needs VOYAGE_API_KEY
-                    in .env (AGENTS.md has the traps)
+                    the doctrine corpus, 455 manuals since 2026-10-14;
+                    --semantic needs VOYAGE_API_KEY in .env (AGENTS.md has
+                    the traps)
 npm run suppression-pays
                     does suppression pay, and can an attacker get it
 npm run scenario-sim -- --drill doctrinal --gate --rear-security
@@ -57,31 +75,6 @@ npm run jev-sim -- --rule --scenario telAzekaAssault --seed 1000 --n 100
 ```
 
 Working tree clean and pushed to `origin/main` at that commit.
-
-The app opens on a **scenario picker** (Yokneam, Tel Azeka, a company
-battle on Tel Azeka, and a company (3:1) and two platoons (2:1) assaulting a
-prepared platoon there — or a saved battle to review). **The scenarios are
-test beds** (author, 2026-09-28); the real ones come later. `?seed=N` in the
-address plays one on other dice. A battle opens on **mission
-planning** before turn 1, and the demo plays end to end in the browser,
-including the debrief. The two platoon battles have **no indirect fire** any
-more (rules decision 37); the company battle is where fire is planned and
-called.
-
-Each battle is played one of **three** ways, chosen on the picker: two
-players at one screen, *מול המחשב (אתה התוקף)* with the computer holding
-(`?vs=computer`), or *מול המחשב (אתה המגן)* with the computer attacking
-(`?vs=attacker`, decision 88). A battle in progress is kept in the browser
-and resumes from the picker or a reload, mid-turn included.
-
-A player commanding a squad can **divide it into two fire teams**
-(`חלק לחוליות`, rules decision 89) in the movement phase; the new team is a
-force like any other from that moment, and does not divide again.
-
-The rule is that nothing is called done on tests alone: if a player can see
-it, it gets driven in the actual game first. It was not kept during the
-doctrine work and driving the browser afterwards found three player-visible
-faults in an hour — see *Traps*.
 
 ## How this repo expects to be worked on
 
@@ -99,193 +92,24 @@ call the project's npm scripts and a reviewer that reads
 [review-checklist.md](review-checklist.md). Any assistant should be able to work
 here from AGENTS.md alone.
 
-## Start here: what governs the next step (2026-10-01, still current)
+## What governs the work
 
-**Everything is merged to `main`** (PR #12; this handoff, PR #13). Two
-things changed the course of the project in the last two days, and both
-govern the next step:
+Two of the author's principles govern every step, and both are in the
+README:
+- **Results are judged by closeness to real outcomes** (win rates and what
+  attacks cost each side, against the sources on validation.md).
+- **The layers divide** (backlog 21): rules are tuned to real outcomes,
+  drills come from doctrine and stay fixed, and plans are the players'.
+  Since 2026-10-20 a third: **today's control is temporary** (README,
+  *Design principles*), so behaviour goes into data the engine carries out.
 
-1. **The author's guideline: results are judged by closeness to real-life
-   outcomes** — win rates, and what attacks cost each side, against the
-   sources (validation.md). Balance means **reasonable plans** land in the
-   targets, not one scripted plan.
-2. **The layers divide** (README, backlog 21): **rules** are tuned to real
-   outcomes; **drills** come from doctrine and stay fixed; **plans** are the
-   players' or the AI's. Today's drills are still ours, and the next large
-   piece of work is replacing them from the manuals:
-   **[doctrine-handoff.md](doctrine-handoff.md)**. It is commercial-edition
-   work on open-source manuals and goes in this public repo; it waits only
-   for the manuals the author has collected, which are on the author's
-   computer and are to be embedded too (author, 2026-10-02).
-
-**Where the balance stands, 2026-10-03** (balance.md, fiftieth to
-fifty-second rounds; README, decisions 75–80; every figure in play and its
-source in [sources.md](sources.md)). Standard measurement, 200 battles each:
-
-| Measure | Now | Target / source |
-|---|---|---|
-| Tel Azeka 3:1 | **41%** | 40–55% (decision 68) |
-| Tel Azeka 2:1 | **36%** | 20–35%; accepted (decision 81) |
-| Yokneam urban (company, 2 tanks, 2 APCs against a platoon in houses) | **18%** | — (the test bed for decisions 75–78) |
-| Explosives' share of losses, tel | **64%** | 60–80% (decision 81) |
-| Urban: BLUE's vehicles out a battle | 21% | — |
-| Urban: window / slit criticals a battle | 3.2 | — |
-
-The author looked at these and found them fine (2026-10-03). Before
-decisions 75–80 the same measurement gave 49% and 27%. The reference
-plans (below) have not been measured since; their medians were 42% and 24%
-on 2026-10-01.
-
-The **reference plans** are `--rule` variants of `npm run jev-sim` (A
-calibrated `—`; A + flank `flank`; B deliberate `basefire,bound,holdshort`;
-E fire-heavy `holdshort,prep`; D flank `basefire,holdshort,flank`; A + move
-up `moveup`; B + move up `…,moveup`; C hasty `rush`), 100 seeds a scenario
-from 1000, both tel assaults. They cost no tokens; a full set takes about an
-hour four at a time.
-
-**The AI commanders** (balance.md, thirty-fourth to thirty-sixth and
-forty-sixth rounds): on today's rules Jev wins **15% / 5%** and Haiku
-**5% / 5%**. Most of the gap is their own plans (Jev: the hasty attack with
-bounding and holding short; Haiku: the flank and moving up before the enemy
-is found — a real mistake the game rightly punishes). Opus and Sonnet behave
-alike and cost far more: compare Haiku and Jev only. Keys:
-`TYPESAFE_API_KEY` (Jev), **`JEV_ANTHROPIC_API_KEY`** (Claude; the cloud
-session keeps `ANTHROPIC_API_KEY` for itself). The next design for the AI is
-backlog 22 (plan once, compute, execute cheaply), after the doctrine work.
-
-**Rulings of 2026-10-02** (the author, answering every open question):
-
-| Question | Ruling |
-|---|---|
-| Hasty attack 45% at 3:1, flank plan 25% | Wait for doctrine: measure the reference plans again on the doctrinal drill, then rule |
-| Fire on the move (`fireOnTheMove`, off) | Keep, off, until doctrine says whether infantry fires while moving |
-| Fire support by odds | Per scenario, in its spec (README decision 70) |
-| The OPORD (`src/sim/opord.ts`) | Rewrite it from doctrine; not to be used again before |
-| Mission and victory conditions (backlog 18) | From doctrine: the manuals' definitions of mission accomplishment |
-| Direct-fire HE | Review it now — cloud work, no manuals needed |
-| Reserves for the other layouts | From doctrine |
-| The traits' other effects | Built (decision 82): per soldier, ±20%; the slowest man sets a rush's pace, not a walk's |
-| Fatigue | Built (decision 82): by strength; ⚠️ points and thresholds ours, after Ito 1999 |
-| Who fires first | Built (decision 82): within a side, still forces first, then agility; the hotseat player still chooses his own order |
-| Skills | Every soldier has an MOS from doctrine, with weapon, weight, ammunition and equipment, a skill level per man, and a comrade takes up a fallen specialist's weapon (decision 73) — not built |
-| Campaign traits | Learning by wisdom, named quirks, relationships within a squad only (decision 74) — with campaigns |
-
-Decisions 69–74 came from a survey of what other tactical games use traits
-for, with the cost at scale kept in view: none adds a sight line, and none
-adds a die where the force rolls once today (README, after decision 74).
-
-The doctrine items are in [doctrine-handoff.md](doctrine-handoff.md)'s
-scope. The author asked for the rulings to be recorded and nothing built
-yet.
-
-How the last two days went, round by round, is in
-[handoff-archive.md](handoff-archive.md), *2026-09-30 to 2026-10-01*.
-
-**Where the game stands** (README, *Rules decisions*; balance.md):
-
-- **60–65** (2026-09-30): a defending platoon's reserve counterattacks; a
-  metre climbed costs 5 m; full cover against a shell by the sources;
-  suppression (reach 30–75 m, pinned is heads down, roofs halve it, danger
-  close, a pinned defender assaulted tests its nerve); nerve lost by cover; a
-  pinned force fires to 400 m at half its chance beyond 100 m.
-- **66** nerve in the open ×1 (and division-level targets, 55–70% / 30–45%).
-  **67** an attacker's breakpoint at **30%** again. **68** targets for
-  small-unit attacks: 3:1 on a prepared position **40–55%** (70–75% with
-  surprise or strong suppression), 2:1 **20–35%** — judged on reasonable
-  plans and on losses.
-- **Drill (ours), 2026-10-01:** bounding by platoon at one level and only
-  within 400 m of a known enemy; squads step by covered ground once released;
-  platoons wait at the last cover to close together (≤ 5 turns); the company
-  can move up to an assault position chosen against what the scouts found,
-  and go round a flank on the enemy's side. Each has a `--no-…` switch in
-  `jev-sim` where it was measured.
-- **The question set is `2026-10-01.3`.** The scout question says what
-  scouts do (bare, it drew one scout from every model). Change a question's
-  wording only after `npm run jev-probe` / `npm run scout-probe` shows what
-  it does, and bump `QUESTION_SET_VERSION`.
-- **Harness policies (ours, not rules):** the scripted defender registers its
-  mortars on the dead ground in front of it (measured: where it registers
-  barely matters); a defending command post stays put; the scripted company
-  sends three scouts.
-- **The standard measurement:**
-  `npm run scenario-sim -- --recon 3 --watch 1 --look 4 --wait-for-contact --aim 40 --scout-from vantage --wait-in dead-ground --n 200 --target-first squads`
-  — 3:1 **49%**, 2:1 **27%**, explosives 72–75%.
-
-**Open, in rough order:**
-
-1. **The doctrine engine** (backlog 21), when the author brings the manuals:
-   [doctrine-handoff.md](doctrine-handoff.md). Its scope now takes in
-   victory conditions, reserves, the OPORD, fire on the move and the hasty
-   attack's ruling. Then the reference plans measured again on doctrinal
-   drills.
-2. **Direct-fire HE** — **done 2026-10-03** as rules decision 75: the
-   author's ruling was to put it on the same rules as indirect fire, and
-   it is on for a new game (`directHeAsShell`). It cost the attacker
-   6 / 3 points on the standard measurement (48% → 42%, 32% → 29%;
-   balance.md, *Forty-eighth round*). Left open: **measure the reference
-   plans again under it**, since the 3:1 median was 42% before and may
-   now fall below decision 68's 40%; the armour damage table (a flat 20%
-   penetration whatever the weapon and facing), which this did not touch;
-   and whether direct HE should cost `bombarded` nerve like a shell.
-2a. **Buildings, critical hits, armour** — **built 2026-10-03** as rules
-   decisions 76–78, on by default. Most of their figures are ours (⚠️ in
-   the README; sources on validation.md). They could not be measured: the
-   harness's battles have no buildings and no vehicles (balance.md,
-   *Forty-ninth round*). **The test bed is built**: `yokneamUrban`
-   (balance.md, fiftieth to fifty-second rounds), 18% for the attacker
-   today. Its houses are twice the reference size, so none comes down in a
-   battle (about 5 tank rounds a battle against about 20 needed). The
-   sources were read on the page on
-   2026-10-03 (validation.md, *second pass*), and four rules were
-   corrected from them. Still unsourced: rounds to bring a house down,
-   window, slit and roof chances. Not built: rubble slowing
-   movement, breaching walls, an ATGM weapon, machine guns against light
-   vehicles, active protection, passengers.
-3. **The traits are built** (decision 82). **For the author:** the reference plans' 3:1 median is about 30%, under its band, and plan B (base of fire of riflemen, waiting out its suppression) is the weakest deliberate plan, for the doctrine manuals to settle (balance.md, fifty-sixth and fifty-seventh rounds). **The MOS**
-   (decision 73) needs the doctrine's squad organisation first, and moves
-   weapons from the force to the man; **campaign traits** (74) wait for
-   campaigns (backlog 16).
-4. **Play the new rules in the browser as a player** (the author, on the
-   author's computer). Suppression, heads down, danger close, the nerve
-   test, the counterattack, the 30% breakpoint: none has been played by a
-   person. The browser game is hotseat; the scripted company's choices
-   (scouts, moving up, bounding) exist only in the headless harness.
-5. **The AI commander in three parts** (backlog 22), stage 1 (plan once,
-   evaluate once by rule from the side's belief) — after 1.
-6. **Force quality matrix**: **built 2026-10-04** (decision 83). **For the author:** checked against Dupuy and the rest (validation.md, *Force quality*), the mapping moves only nerve: the casualty exchange hardly moves with the attacker's quality, where Dupuy's CEV (1.2–1.5 within armies, 1.75–2 Israel against Egypt) would move it a lot. **Ruled and built as decision 84** (the quality gap); the author accepted its size and the nerve between equals on the measurement (2026-10-04). Closed. No scenario uses a cell yet. No scenario uses a cell yet: the test beds are all regular, experienced. **House types** (decision 81), with the urban combat work, are next.
-7. **Flat-ground misses**, **overhead cover for higher echelons**,
-   **ammunition** (backlog 12) — for battalion battles.
+The 2026-10-01 version of this section, with its tables and the rulings of
+2026-10-02, is in [handoff-archive.md](handoff-archive.md), *2026-10-01 —
+"Start here" as it stood*.
 
 ## Waiting on the author
 
-### Added 2026-10-20
-
-- **The fight inside is in the game** (decision 96, the coupling's first
-  slice, `closedTerrain`): only an assault order goes in (his ruling), the
-  raid 3% → 13%, urban 60% → 58%, tel unchanged. Played by hand it opens
-  as a tab, like a phone's browser (his ruling; with the UX/UI pass). The
-  plans inside unless otherwise planned are his too: door, a grenade a
-  room, teams of four; one defender a room. **Today's control is
-  temporary** (README, *Design principles*): the product commands by
-  OPORD, a battle plan drawn on the map and written orders during play,
-  so build behaviour as data the engine carries out, not as button
-  handlers. Next in the
-  coupling: windows firing out and in, rounds landing in rooms, joining a
-  fight in progress, players' plans inside.
-
-- **A serious UX/UI pass is scheduled with the OPORD and battle-chart
-  control design** (backlog 13; the author). The findings from his played
-  battle (Yokneam to turn 10) are listed there: orders accepted again and
-  again with no sign they were in force, fire offered at marks with no
-  line of sight, the same force names on both sides.
-- **A grenade's smoke needs a thrower** (the author, 2026-10-20): a hand
-  pot within 35 m of a man of the side (TC 3-23.30, the M18), rifle-grenade
-  smoke within 100 m of infantry with a rifle grenadier (a launcher per four
-  men still fighting), and a smaller screen than a pot (10 m, ours). Further
-  limits wait for ammunition (backlog 12). `smokeNeedsThrower`, off
-  for older recordings — his saved battle still replays and verifies.
-
-### Open (2026-10-12)
+### Open (2026-10-20)
 
 - **The reference plans' 2:1 median is 18.5%**, just under 20 (standard
   measurement 31%). The stall is fixed (an assault that is spent commits
@@ -293,26 +117,47 @@ How the last two days went, round by round, is in
   plans that split the company at two to one being shot up — doctrine's
   three to one at the point of assault, and decision 68's "usually fails".
   Accept?
-- **Urban warfare is ruled (decision 96) and designed; nothing is built**
-  (2026-10-15): [urban-design.md](urban-design.md). Closed terrain is
-  fought soldier by soldier on randomised floor plans. Commanders plan,
-  soldiers act by doctrine's drill, the fight advances in ticks inside the
-  turn, it has its own screen at squad and platoon level and runs headless
-  at company and up. The author said **not to start building** until he
-  is back. His answers on the open points: scenario time limits wait for
-  the new engine; the urban target band comes from the research
-  (urban-doctrine.md, *Research on outcomes*). **Ruled the same day**
-  (decision 96, urban-design.md, *The urban band*): decision 68's
-  40–55% / 20–35% holds in a town, the urban cost is time (about 2×
-  longer) rather than outcome, and doctrine's 9:1–15:1 is planning
-  advice, since two historical studies (TDI 2002, Dstl 2023) find
-  attackers win *more* often in towns. The attacker knows only
-  what can be seen from outside; special operations are a separate topic.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
 - **The force-quality matrix** (decision 83) has waited on his view of its
-  spread since 2026-10-05. Now the baseline is in band it can be re-run
-  (18 cells × 400 battles) — still worth asking first, it is long.
+  spread since 2026-10-05. It can be re-run now the baseline is in band
+  (18 cells × 400 battles, which is long, so ask first).
+- **Our own figures in the fight inside**, all ⚠️ and listed on balance.md:
+  - `CLOSE_QUARTERS`: the hit chance a second, reaction, stun, grenades a
+    man, consolidation, the 3.5 s/m² search, 5 minutes to reorganise and
+    10 a casualty, the roof's 3 minutes, the hatch's 2;
+  - the room sizes and window spacing of the floor plans;
+  - a defender counted prepared if his force has a front.
+
+  Decision 97's 10 m rifle-grenade screen is ours too. None has been
+  questioned; all were set against the real data or doctrine where any
+  existed.
+
+### Ruled 2026-10-15 to 20, for reference
+
+Each is in the README's decision 96 or 97. The short form:
+- Closed terrain is fought soldier by soldier on randomised floor plans.
+  Commanders plan, soldiers act by doctrine; plan-then-execute ticks;
+  headless at company and up.
+- The urban band is decision 68's. A town costs time, not outcome, and
+  9:1–15:1 is planning advice.
+- The attacker knows only what can be seen from outside. Special
+  operations are a topic of their own.
+- Clearing time: 20 minutes for a house nobody holds, about 32 with one
+  defender.
+- Top-down: all seven mechanisms. Defenders fall back under fire, and with
+  one stairwell held they are cornered ("realistic for a house").
+- Only an assault order goes in; a force at the walls fights from outside.
+- The plans inside, unless otherwise planned: the front door, a grenade a
+  room, teams of four; one defender a room.
+- Played by hand, the fight inside opens as a tab, as on a phone's browser.
+  It goes with the UX/UI pass.
+- Smoke: a thrower within reach, a grenadier for rifle-grenade smoke, a
+  smaller screen than a pot. Further limits wait for ammunition
+  (backlog 12).
+- Today's control is temporary: OPORD, a map battle plan and written
+  orders. The UX/UI pass goes with it, and his played battle's findings
+  are under backlog 13.
 
 ### The older queue
 
@@ -518,6 +363,31 @@ Closed deliberately, with reasons that are not obvious from the code:
 
 ## Do not re-derive
 
+- **How long clearing really takes** (2026-10-16, urban-doctrine.md,
+  *Research on clearing time*):
+  - No controlled study times building clearing against known opposition.
+  - The real data agrees on about 20–60 minutes for a squad and a defended
+    two-storey house: Fallujah's "80 to 100 houses a day with a platoon or
+    a company-sized element" (checked on the text), an ARL Ranger squad
+    about 30 minutes, and about 8 s for a room's entry itself.
+  - ATP 3-06.11's "40-60-minutes" is one illustration, not a planning
+    figure.
+- **Urban attacks in the research** (2026-10-15): TDI 2002 and Dstl 2023
+  find attackers win as often or *more* in towns, at about half the daily
+  loss, taking 2–3× longer. No historical basis for 9:1–15:1 was found.
+- **`interior-sim` baselines** (all on balance.md):
+  - a house nobody holds, 20.4 minutes; one defender 32;
+  - three prepared defenders 54–58;
+  - top-down against defenders who fall back: 12% fewer men lost and 5–9
+    minutes slower, saving nothing against ones who hold.
+- **The coupling's first measurement** (2026-10-20, 100 battles): the raid
+  3% → 13% with assault-only entry (22% while the walls also went in),
+  urban 60% → 58%, the tel identical.
+- **Decision 97 against the drills**: the doctrinal drill and the standard
+  measurement identical before and after the thrower rule (60 battles).
+  After the 10 m screen, the drill keeps 53% / 25% (200 battles), with one
+  3:1 battle a draw instead of a loss.
+
 - **What a fight inside a house costs** (2026-10-16, throwaway prototype,
   real Yokneam footprints, 0.5 m grid, two storeys, 60 ticks of 1 s):
   **1.2–1.7 ms a house-turn** at 8 a side, 3.3 ms at 30 a side, 5.3 ms on a
@@ -631,18 +501,61 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The 2:1 question above first.** The fire question was brought to
-doctrine on 2026-10-12, and urban is designed before it is built.
+**The coupling's second slice** (urban-design.md, step 3b, *Still to do*).
+The fight inside does not yet reach the windows:
+- **windows firing out and being fired into:** a man at a window seen and
+  shot at from the street, and shooting back;
+- **rounds landing in rooms:** decision 77's window criticals and the roof
+  hits, put into the room they strike;
+- **joining a fight already going on.**
 
-**Then the force-quality matrix and the AI commanders**, once the author
-says go — both are long or cost money.
+That last item is what makes `yokneamUrban` (58%, fought from outside)
+and the raid tell the same story.
 
-**Backlog that decision 94 points at**: artillery and air support arrive
-with battalion echelon (backlog 10, echelon scaling); a company gets them
-only by a scenario's allotment from its superior echelon, as the tel's
-attacker gets the battalion's 81 mm now.
+**Before it, the 1% standoff fault** in `interior-sim`'s defended rows: a
+fight that never ends inside the resolver. Find it the way the earlier
+three were found: print the teams' phases at the end of a standoff.
+
+**Then the players' plans inside, as data.** By the design principle, the
+defender's rooms and the attacker's entry, grenades and teams come from a
+plan the engine carries out, which is what the OPORD will fill one day.
+Not a screen.
+
+**Then the 2:1 question, the force-quality matrix and the AI commanders**,
+as the author says. Artillery and air support for a company still come
+only by a scenario's allotment (decision 95); battalion echelon is
+backlog 10.
 
 ## Traps that cost real time
+
+- **Every interior change had real faults the reviewer found** — on
+  2026-10-16 to 20, five reviews of the floor plans, the resolver,
+  top-down, smoke and the coupling found two stalls, lost wounds, a free
+  move, a fog-of-war leak and three silent no-ops. Run the `code-reviewer`
+  agent before committing anything under `src/engine/interior/`, and
+  measure with `interior-sim` after; the tests alone passed every time.
+- **A stall check is part of the fight's clock.** `lastProgress` must only
+  move forward (`Math.max`), and anything that holds a team on a timer
+  (consolidating, a halt for casualties, the roof) must push it forward,
+  or a long legitimate wait reads as a standoff.
+- **`cat > file` with no heredoc in a compound command waits on stdin** and
+  hangs the tool for its full timeout. Write files with the Write tool, or
+  give every `cat` a heredoc; run vitest with `< /dev/null`.
+- **`rm -rf` is denied by `.claude/settings.json`** — the whole compound
+  command is refused, not only the `rm`. Remove files one by one, or a
+  directory with `rmdir` once empty.
+- **Before-and-after measurements on Windows**: `git worktree add <dir>
+  HEAD`, then `cmd //c mklink //J <dir>\node_modules <repo>\node_modules`
+  (a junction, so no copy), run both trees in parallel, and remove the
+  junction with `cmd //c rmdir` **before** `git worktree remove --force`.
+- **The Browser pane can report a 0×0 viewport** when it is hidden: set
+  `resize_window` 1280×900, and click the map by dispatching on `svg.map`
+  at coordinates from its own `getScreenCTM()` (driving-the-game.md), not
+  by screen coordinates off a scaled screenshot.
+- **A replay script outside the repo** runs with `npx vite-node <file>` from
+  the repo root, importing the engine by absolute path
+  (`C:/Unity/תיק עבודות/Tactical/src/engine/index.ts`). That is how the
+  author's saved battle was analysed on 2026-10-20.
 
 - **`git checkout -- <file>` as a fallback in a `||` chain destroyed a
   file's work.** `cmd 2>/dev/null || py -c "revert..."` ran the *first*
