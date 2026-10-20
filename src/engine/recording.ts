@@ -11,7 +11,7 @@ import type {
   Unit,
 } from "./types.js";
 import type { SmokeSource } from "./data/smoke.js";
-import type { InteriorReport } from "./interior/coupling.js";
+import type { InteriorPlan, InteriorReport } from "./interior/coupling.js";
 import type {
   DirectFireOptions,
   DirectFireResult,
@@ -108,6 +108,8 @@ export type RecordedAction =
   /** חיפוי: the shots it goes on to take are derived by the replay. */
   | { kind: "setCovering"; unitId: string; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; unitId: string; on: boolean }
+  /** A force's plan for a fight inside a building (rules decision 101). */
+  | { kind: "setInteriorPlan"; unitId: string; plan: InteriorPlan }
   | {
       kind: "setObservationSector";
       unitId: string;
@@ -547,6 +549,7 @@ export type ActionOutcome =
   | { kind: "layCharge"; type: Mine["type"] | null }
   | { kind: "setCovering"; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; on: boolean }
+  | { kind: "setInteriorPlan"; plan: InteriorPlan }
   | { kind: "setObservationSector"; sector: ObservationSector | null };
 
 /** A decision the replay could not carry out, and why. */
@@ -845,6 +848,10 @@ export function replayWithOutcomes(
       case "setScouting":
         game.setScouting(action.unitId, action.on);
         outcome = { kind: "setScouting", on: action.on };
+        break;
+      case "setInteriorPlan":
+        game.setInteriorPlan(action.unitId, cloneForRecord(action.plan));
+        outcome = { kind: "setInteriorPlan", plan: action.plan };
         break;
       case "layCharge":
         game.layCharge(action.unitId, action.type);

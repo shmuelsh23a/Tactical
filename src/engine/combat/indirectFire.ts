@@ -68,6 +68,12 @@ export function resolveIndirectFire(
        */
       room?: { pools: (u: Unit) => ReadonlySet<string> | undefined; rest: (u: Unit) => ReadonlySet<string> | undefined };
     } | undefined;
+    /**
+     * Men standing on the roof of the building the round came down on
+     * (decision 101): caught in the open, by forces — whatever the fuze —
+     * and kept out of the pass a roof protects. Absent: nobody stands on one.
+     */
+    onRoof?: (impact: Point) => { men: (u: Unit) => ReadonlySet<string> | undefined; distance: (u: Unit) => number } | undefined;
     /** Whose armour figures (rules decision 78). The document's unless given. */
     armour?: ArmourFigures;
     /** The research figures as checked against the sources (rules decision 79). */
@@ -94,20 +100,38 @@ export function resolveIndirectFire(
   const roomFactor = onBuilding?.factor ?? 1;
   const asShell = { factorFor: (u: Unit) => shellFactor(u, fuze, underRoof(u), opts.shellVsMen), airburst: fuze === "airburst" };
   const lethality = opts.lethality ?? "document", armour = { figures: opts.armour ?? "document" as ArmourFigures };
+  // Men on the roof the round came down on: in the open, not under it (decision 101).
+  const onRoof = opts.onRoof?.(dispersion.impact);
+  const roof = onRoof?.men;
+  const notOnRoof = (u: Unit, pool?: ReadonlySet<string>) => {
+    const up = roof?.(u);
+    if (!up || up.size === 0) return pool;
+    return new Set((u.soldiers ?? []).map((s) => s.id).filter((id) => !up.has(id) && (!pool || pool.has(id))));
+  };
+  const roofPass = roof
+    ? [resolveBlast(rng, weaponKey, dispersion.impact, allUnits.filter((u) => (roof(u)?.size ?? 0) > 0), opts.turn ?? 0, {
+        factorFor: (u: Unit) => shellFactor(u, fuze, false, opts.shellVsMen),
+        airburst: fuze === "airburst",
+      }, lethality, armour, opts.checked ?? false, roof, onRoof!.distance)]
+    : [];
   const blast = room
     ? mergeBlasts([
         // The building's fight: the rest of each force under the roof as before, and the room the round burst in.
-        resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, asShell, lethality, armour, opts.checked ?? false, room.rest),
+        resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, asShell, lethality, armour, opts.checked ?? false, (u) => notOnRoof(u, room.rest(u))),
         resolveBlast(rng, weaponKey, dispersion.impact, allUnits.filter((u) => room.pools(u) !== undefined), opts.turn ?? 0, {
           factorFor: () => roomFactor,
           airburst: false,
         }, lethality, armour, opts.checked ?? false, room.pools, true),
+        ...roofPass,
       ])
-    : resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
-        factorFor: (u) =>
-          critical && onBuilding.inside(u) ? onBuilding.factor : shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
-        airburst: fuze === "airburst",
-      }, lethality, armour, opts.checked ?? false);
+    : mergeBlasts([
+        resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
+          factorFor: (u) =>
+            critical && onBuilding.inside(u) ? onBuilding.factor : shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
+          airburst: fuze === "airburst",
+        }, lethality, armour, opts.checked ?? false, roof ? (u) => notOnRoof(u) : undefined),
+        ...roofPass,
+      ]);
   return { weapon: weaponKey, aim, dispersion, blast, ...(critical ? { critical: true as const } : {}) };
 }
 

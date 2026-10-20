@@ -236,6 +236,7 @@ export {
   INTERIOR_REFUSAL,
   InteriorBattles,
   type InteriorEngagement,
+  type InteriorPlan,
   type InteriorReport,
 } from "./interior/coupling.js";
 export {

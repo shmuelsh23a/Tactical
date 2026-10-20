@@ -9,7 +9,7 @@ import { CLOSE_QUARTERS, STOREY_HEIGHT_M } from "../data/interior.js";
 import { EYE_HEIGHT } from "../data/terrain.js";
 import { TURN_SECONDS } from "../data/lethality.js";
 import { generateFloorPlan, type FloorPlan } from "./floorPlan.js";
-import { InteriorFight, defaultDefence, type InteriorOutcome } from "./resolver.js";
+import { InteriorFight, defaultDefence, plannedDefence, type InteriorOutcome } from "./resolver.js";
 
 /**
  * The fight inside a building, coupled to the turn (README, rules decision
@@ -65,8 +65,35 @@ export interface InteriorReport {
   outcome?: InteriorOutcome;
 }
 
-/** Why a force may not act outside: it is fighting inside a building. */
-export const INTERIOR_REFUSAL = { fightingInside: "fighting inside a building" } as const;
+/** Why a force may not act outside: it is fighting inside a building; or may not go in from the roof as planned. */
+export const INTERIOR_REFUSAL = {
+  fightingInside: "fighting inside a building",
+  noWayFromRoof: "no way in from the roof",
+  /** A fight entered from the roof is joined only by its hatch, which is not modelled (decision 101). */
+  enteredFromRoof: "the fight inside went in from the roof",
+} as const;
+
+/**
+ * A force's plan for a fight inside a building (rules decision 101): what a
+ * commander writes in an order, never where each man stands. Anything left
+ * out is the author's default, "unless otherwise planned" (2026-10-20).
+ */
+export interface InteriorPlan {
+  /** Attacking: by the front door (the default), or from the roof and down, which needs stairs. Fixed once the fight begins. */
+  entry?: "door" | "top";
+  /** Attacking: a grenade into each room before entering it (the default). May change at any turn. */
+  grenades?: boolean;
+  /** Attacking: men to a team, 2 to 4 (4, the default). */
+  teamSize?: number;
+  /** Defending: the storeys its men hold, from 0 for the ground floor. All, by default. */
+  holdStoreys?: number[];
+  /** Defending: at the windows facing the enemy (the default), or back in the rooms. */
+  atWindows?: boolean;
+  /** Defending: where the attack is expected from: below (the default) or above. */
+  expects?: "below" | "above";
+  /** Defending: fall back from a room whose neighbour is taken (the default), or hold to the last. May change at any turn. */
+  fallBack?: boolean;
+}
 
 /** The reason an assault gives when it goes into the building rather than being resolved outside. */
 export const GOES_INSIDE = "goes inside";
@@ -94,6 +121,20 @@ export interface ShownMan {
   facing?: Point;
 }
 
+/** The point of a polygon's outline nearest `p`. */
+function nearestOnOutline(pts: readonly Point[], p: Point): Point | undefined {
+  let best: Point | undefined, bestD = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]!, b = pts[(i + 1) % pts.length]!;
+    const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
+    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+    const q = { x: a.x + t * dx, y: a.y + t * dy };
+    const d = distance(q, p);
+    if (d < bestD) { bestD = d; best = q; }
+  }
+  return best;
+}
+
 /** A man's eye above his floor, as outside (decision 15). */
 const STREET_EYE_M = EYE_HEIGHT.infantry;
 
@@ -108,6 +149,19 @@ function moveTo(u: Unit, to: Point): void {
 
 export class InteriorBattles {
   readonly engagements: InteriorEngagement[] = [];
+  /** Each force's plan for a fight inside, as last given (decision 101): set only by `Game.setInteriorPlan`, which journals it. */
+  private readonly orders = new Map<string, InteriorPlan>();
+
+  /** A force's plan, as last given (decision 101): a copy. */
+  orderFor(unitId: string): InteriorPlan | undefined {
+    const o = this.orders.get(unitId);
+    return o ? structuredClone(o) : undefined;
+  }
+
+  /** Keep a force's plan (decision 101). The game's, which journals it. */
+  setOrder(unitId: string, plan: InteriorPlan): void {
+    this.orders.set(unitId, structuredClone(plan));
+  }
   /** Forces that assaulted into a building this turn: they go in as it closes. */
   private readonly entering = new Map<string, string>();
   private readonly plans = new Map<string, FloorPlan>();
@@ -189,6 +243,25 @@ export class InteriorBattles {
     const building = world.terrain.objects.find((o) => o.id === e.buildingId);
     const door = building ? this.frontDoor(world, building) : undefined;
     if (door) for (const id of e.fight.inStreet()) if (mine.has(id)) out.push({ soldierId: id, point: door, height: STREET_EYE_M });
+    // On the roof (decision 101, the author: "seen on the roof"): at its edge nearest the one looking, standing on it. ⚠️ Ours: the edge, and his full height.
+    if (building && building.footprint.shape === "polygon") {
+      const edge = from ? nearestOnOutline(building.footprint.points, from) : (building.footprint.points[0] ?? door);
+      for (const id of e.fight.onRoof()) if (mine.has(id) && edge) out.push({ soldierId: id, point: edge, height: plan.storeys.length * STOREY_HEIGHT_M + STREET_EYE_M });
+    }
+    return out;
+  }
+
+  /** Every force with men on a roof (decision 101): its own men up there, and the building. Empty where nobody is. */
+  roofMen(world: InteriorWorld): Map<string, { men: Set<string>; buildingId: string }> {
+    const out = new Map<string, { men: Set<string>; buildingId: string }>();
+    for (const e of this.engagements) {
+      const up = new Set(e.fight.onRoof());
+      if (up.size === 0) continue;
+      for (const id of e.attackerUnits) {
+        const men = new Set((this.unit(world, id).soldiers ?? []).map((s) => s.id).filter((s) => up.has(s)));
+        if (men.size) out.set(id, { men, buildingId: e.buildingId });
+      }
+    }
     return out;
   }
 
@@ -263,6 +336,17 @@ export class InteriorBattles {
     const started = new Set(this.startFights(world));
     const joined = this.joinFights(world);
     this.entering.clear();
+    // The plans as they stand this turn: grenades, and fall back or hold (decision 101).
+    for (const e of this.engagements) {
+      for (const id of e.attackerUnits) {
+        const ids = (this.unit(world, id).soldiers ?? []).map((m) => m.id);
+        e.fight.setGrenades(ids, this.orders.get(id)?.grenades ?? true);
+      }
+      for (const id of e.defenderUnits) {
+        const ids = (this.unit(world, id).soldiers ?? []).map((m) => m.id);
+        e.fight.setHolds(ids, this.orders.get(id)?.fallBack === false);
+      }
+    }
     const ticks = Math.round(TURN_SECONDS / CLOSE_QUARTERS.tickSeconds);
     for (const e of [...this.engagements]) {
       const building = world.terrain.objects.find((o) => o.id === e.buildingId);
@@ -379,17 +463,32 @@ export class InteriorBattles {
       // At the windows facing the enemy, unless otherwise planned (decision
       // 98). ⚠️ Ours: the enemy is the assault, where it stands at the door,
       // seen from the building's middle — what the defender has in front of him.
-      const defence = defaultDefence(plan, defenders.flatMap((u) => fit(u).map((s) => s.id)), rng, prepared, world.windowFire ? this.toward(b, plan, attackers) : undefined);
+      const toward = world.windowFire ? this.toward(b, plan, attackers) : undefined;
+      // A force's orders where it gave any (decision 101); the defaults, drawn as they always were, where none did.
+      const defence = defenders.some((u) => this.orders.get(u.id)?.holdStoreys !== undefined || this.orders.get(u.id)?.atWindows === false)
+        ? plannedDefence(
+            plan,
+            defenders.map((u) => {
+              const order = this.orders.get(u.id);
+              return { ids: fit(u).map((s) => s.id), ...(order?.holdStoreys ? { storeys: order.holdStoreys } : {}), atWindows: order?.atWindows ?? true };
+            }),
+            rng,
+            prepared,
+            toward,
+          )
+        : defaultDefence(plan, defenders.flatMap((u) => fit(u).map((s) => s.id)), rng, prepared, toward);
       const teams: string[][] = [];
-      for (const u of attackers) {
-        const ids = fit(u).map((s) => s.id);
-        for (let k = 0; k < ids.length; k += 4) teams.push(ids.slice(k, k + 4));
-      }
+      for (const u of attackers) teams.push(...this.teamsOf(u));
       const attackerSide: Side = defenderSide === "BLUE" ? "RED" : "BLUE";
       // Unless otherwise planned (✅ the author, 2026-10-20): by the front
       // door, a grenade into each room first (the drill's "FRAG OUT", TC
-      // 3-21.76 (2025), 07-SQD-D9509, step 2), in teams of four.
-      const fight = new InteriorFight({ plan, attack: { entry: "door", grenades: true, teams }, defence, attackerSide }, rng);
+      // 3-21.76 (2025), 07-SQD-D9509, step 2), in teams of four. Planned
+      // (decision 101): the way in is the first assaulting force's
+      // (⚠️ ours, when two go in at once with different plans); the roof needs stairs.
+      const first = this.orders.get(attackers[0]!.id);
+      const entry = first?.entry === "top" && plan.stairwell && plan.storeys.length > 1 ? "top" : "door";
+      const expects = defenders.map((u) => this.orders.get(u.id)?.expects).find((x) => x !== undefined);
+      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}) }, rng);
       // Wounds already taken outside come in with the men.
       const index = this.soldierIndex(world, { attackerUnits: attackers.map((u) => u.id), defenderUnits: defenders.map((u) => u.id) });
       for (const m of fight.soldiers) {
@@ -439,9 +538,9 @@ export class InteriorBattles {
       if (u.kind !== "infantry" || u.neutralized || u.routing || u.surrendered) continue;
       const men = fit(u);
       if (men.length === 0) continue;
-      const teams: string[][] = [];
-      for (let k = 0; k < men.length; k += 4) teams.push(men.slice(k, k + 4).map((m) => m.id));
-      e.fight.join(teams);
+      // A fight entered from the roof is joined only by its hatch, which this does not model (decision 101).
+      if (e.fight.entryWay !== "door") continue;
+      e.fight.join(this.teamsOf(u));
       // Wounds already taken outside come in with the men.
       for (const m of e.fight.soldiers) {
         const s = men.find((x) => x.id === m.id);
@@ -452,6 +551,20 @@ export class InteriorBattles {
       joined.set(e, [...(joined.get(e) ?? []), u.id]);
     }
     return joined;
+  }
+
+  /** A force's fit men in teams of its plan's size (decision 101; four unless otherwise planned). */
+  private teamsOf(u: Unit): string[][] {
+    const size = this.orders.get(u.id)?.teamSize ?? 4;
+    const ids = fit(u).map((s) => s.id);
+    const teams: string[][] = [];
+    for (let k = 0; k < ids.length; k += size) teams.push(ids.slice(k, k + size));
+    return teams;
+  }
+
+  /** How a fight going on in a building was entered: by the door, or from the roof. */
+  entryIn(buildingId: string): "door" | "top" | undefined {
+    return this.engagements.find((e) => e.buildingId === buildingId)?.fight.entryWay;
   }
 
   /** The side attacking in a building's fight, if one is going on there. */

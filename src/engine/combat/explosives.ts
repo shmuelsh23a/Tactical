@@ -81,8 +81,12 @@ export function resolveBlast(
   checked: Checked = false,
   /** The men of a force the blast can reach, where it is not all of them: a force fighting inside a building (decision 98). */
   pools?: (unit: Unit) => ReadonlySet<string> | undefined,
-  /** Bursting in a room among the men in it (decision 98): every one of them is at the burst, wherever his force's mark stands. */
-  inRoom = false,
+  /**
+   * Where a force's men are not at its mark: `true`, bursting in a room
+   * among them (decision 98), all at the burst; or each force's distance
+   * from it (men on a roof, decision 101).
+   */
+  inRoom: boolean | ((unit: Unit) => number) = false,
 ): BlastResult {
   const weapon = explosiveForChecked(weaponKey, lethality, checked);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -91,7 +95,7 @@ export function resolveBlast(
 
   for (const unit of candidates) {
     if (unit.neutralized && unit.kind === "vehicle" && unit.vehicle?.destroyed) continue;
-    const dist = inRoom ? 0 : distance(impact, unit.position);
+    const dist = typeof inRoom === "function" ? inRoom(unit) : inRoom ? 0 : distance(impact, unit.position);
     // The research figures are lethal areas against men (rules decision 41):
     // a vehicle is reached, and connected with, as the document has it.
     // On the checked figures a charge reaches the vehicle on it, and plain HE

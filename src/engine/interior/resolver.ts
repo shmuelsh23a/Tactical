@@ -72,6 +72,8 @@ export interface InteriorSoldier {
   fromAbove?: boolean;
   /** A defender falling back: where he is going, and the second he comes off the stairs if on them. */
   retreat?: { goal: number; kind: "room" | "stairs" | "out"; offStairs?: number };
+  /** A defender who holds to the last rather than falls back: his force's plan (decision 101). Absent: the fight's `defenderFallback`. */
+  holds?: boolean;
   /** A defender posted at a window (decision 98): the window cell, and the cell he stands on beside it. He is at it while he stands there. */
   window?: { cell: number; at: number };
 }
@@ -155,6 +157,8 @@ interface Team {
   contact: boolean;
   /** Halted until this second, seeing to its wounded. */
   halted: number;
+  /** A grenade into each room before entering it: its force's plan, which may change at any turn (decision 101). */
+  grenades: boolean;
 }
 
 const { outside: OUTSIDE, floor: FLOOR, wall: WALL, window: WINDOW, door: DOOR, stair: STAIR } = CELL_KIND;
@@ -273,11 +277,12 @@ export class InteriorFight {
     for (const ids of input.attack.teams) {
       const members = ids.map((id) => {
         const m = this.man(id, this.attackerSide, firstStorey, start, false);
-        m.grenades = this.grenadesPlanned ? CLOSE_QUARTERS.grenadesEach : 0;
+        // Every man carries his grenades; the plan says whether he throws them (decision 101).
+        m.grenades = CLOSE_QUARTERS.grenadesEach;
         this.soldiers.push(m);
         return m;
       });
-      this.teams.push({ members, storey: firstStorey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0 });
+      this.teams.push({ members, storey: firstStorey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned });
     }
     // Coming down from the roof: getting up there takes time, and the teams
     // come through the hatch one at a time (C-30, "force size is more
@@ -400,7 +405,8 @@ export class InteriorFight {
   tick(): void {
     if (this.finished) return;
     for (const team of this.teams) this.drill(team);
-    if (this.fallback === "fallBack") for (const m of this.soldiers) if (m.side !== this.attackerSide) this.fallBack(m);
+    // Holding stops new retreats; a man already on a flight of stairs still comes off it.
+    for (const m of this.soldiers) if (m.side !== this.attackerSide && (!(m.holds ?? this.fallback === "hold") || m.retreat?.offStairs !== undefined)) this.fallBack(m);
     this.fire();
     this.second += CLOSE_QUARTERS.tickSeconds;
     this.judge();
@@ -513,7 +519,7 @@ export class InteriorFight {
       if (men.some((m) => toDoor[m.cell]! < 0)) team.phase = "pick"; // cut off from the door: choose again
       return;
     }
-    if (this.grenadesPlanned) this.grenade(team, men, 1);
+    if (team.grenades) this.grenade(team, men, 1);
     team.phase = "enter";
   }
 
@@ -532,7 +538,7 @@ export class InteriorFight {
     const room = this.stairRoom(to);
     if (this.cleared[to]![room] || this.claimed(team, to).has(room)) { team.phase = "pick"; return; }
     this.assault(team, room, stairs, false);
-    if (this.grenadesPlanned) {
+    if (team.grenades) {
       if (down) this.grenade(team, men, 1, 1);
       else this.grenade(team, men, CLOSE_QUARTERS.grenadeUpstairsFactor, CLOSE_QUARTERS.grenadeUpstairsSelfHitFactor);
     }
@@ -557,7 +563,7 @@ export class InteriorFight {
     this.lastProgress = Math.max(this.lastProgress, this.second, next?.phase === "roof" ? next.until : 0);
     if (!this.cleared[top]![room]) {
       this.assault(team, room, men[0]!.cell, false);
-      if (this.grenadesPlanned) this.grenade(team, men, 1, 1); // down the stairwell from the hatch
+      if (team.grenades) this.grenade(team, men, 1, 1); // down the stairwell from the hatch
     } else {
       team.phase = "pick";
     }
@@ -988,6 +994,21 @@ export class InteriorFight {
     }
   }
 
+  /** How the attack came in: by the door, or from the roof. */
+  get entryWay(): "door" | "top" {
+    return this.entry;
+  }
+
+  /** The teams these men are in throw a grenade into each room first, or not: their force's plan (decision 101). */
+  setGrenades(ids: readonly string[], on: boolean): void {
+    for (const t of this.teams) if (t.members.some((m) => ids.includes(m.id))) t.grenades = on;
+  }
+
+  /** These defenders hold to the last, or fall back: their force's plan (decision 101). */
+  setHolds(ids: readonly string[], holds: boolean): void {
+    for (const m of this.soldiers) if (ids.includes(m.id) && m.side !== this.attackerSide) m.holds = holds;
+  }
+
   /**
    * More attackers come in partway through (decision 99): new teams at the
    * front door, by the plan the fight began with, each taking rooms not yet
@@ -1013,11 +1034,11 @@ export class InteriorFight {
           return back;
         }
         const m = this.man(id, this.attackerSide, 0, start, false);
-        m.grenades = this.grenadesPlanned ? CLOSE_QUARTERS.grenadesEach : 0;
+        m.grenades = CLOSE_QUARTERS.grenadesEach;
         this.soldiers.push(m);
         return m;
       });
-      this.teams.push({ members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0 });
+      this.teams.push({ members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned });
     }
     this.lastProgress = Math.max(this.lastProgress, this.second); // new men going in is not a stall
   }
@@ -1061,6 +1082,12 @@ export class InteriorFight {
       out.push({ id: m.id, storey: m.storey, window: m.window.cell, outward: { x: (street % w) - (m.window.cell % w), y: Math.floor(street / w) - Math.floor(m.window.cell / w) } });
     }
     return out;
+  }
+
+  /** Attackers on the roof, waiting for the climb or the hatch (decision 101): out in the open up there, not yet inside. */
+  onRoof(): string[] {
+    if (this.entry !== "top") return [];
+    return this.soldiers.filter((m) => m.side === this.attackerSide && m.waiting && !m.out && !m.withdrew).map((m) => m.id);
   }
 
   /** The men in the street outside: attackers not yet through the door, and defenders who fell back out of it. */
@@ -1126,6 +1153,41 @@ export function defaultDefence(plan: FloorPlan, ids: readonly string[], rng: Rng
     const { storey, room } = free.splice(k, 1)[0]!;
     const atWindow = toward ? windowFacing(plan, storey, room, toward) : undefined;
     posts.push(atWindow ? { id, storey, cell: atWindow.at, prepared, window: atWindow.window } : { id, storey, cell: backOfRoom(plan, storey, room), prepared });
+  }
+  return posts;
+}
+
+/**
+ * A defence by its forces' orders (decision 101): each force's men spread
+ * over the rooms of the storeys it holds, a man to a room as far as they go,
+ * as {@link defaultDefence} spreads them — at a window facing `toward` where
+ * the force's order says the windows, else back in the room. Rooms are not
+ * shared between forces until every allowed room is taken. Drawn from `rng`.
+ */
+export function plannedDefence(
+  plan: FloorPlan,
+  forces: readonly { ids: readonly string[]; storeys?: readonly number[]; atWindows: boolean }[],
+  rng: Rng,
+  prepared: boolean,
+  toward?: { x: number; y: number },
+): DefenderPost[] {
+  const all: { storey: number; room: number }[] = [];
+  plan.storeys.forEach((s, storey) => s.rooms.forEach((r) => { if (!s.cutOff.includes(r.id)) all.push({ storey, room: r.id }); }));
+  const taken = new Set<string>();
+  const posts: DefenderPost[] = [];
+  for (const force of forces) {
+    const held = force.storeys?.length ? all.filter((r) => force.storeys!.includes(r.storey)) : all;
+    const rooms = held.length ? held : all; // a storey the house does not have: anywhere
+    // As the default spreads them: the rooms nobody holds yet, a man each; when they run out, all of them again.
+    let free = rooms.filter((r) => !taken.has(`${r.storey}:${r.room}`));
+    if (free.length === 0) free = rooms.slice();
+    for (const id of force.ids) {
+      if (free.length === 0) free = rooms.slice();
+      const { storey, room } = free.splice(rng.int(0, free.length - 1), 1)[0]!;
+      taken.add(`${storey}:${room}`);
+      const atWindow = force.atWindows && toward ? windowFacing(plan, storey, room, toward) : undefined;
+      posts.push(atWindow ? { id, storey, cell: atWindow.at, prepared, window: atWindow.window } : { id, storey, cell: backOfRoom(plan, storey, room), prepared });
+    }
   }
   return posts;
 }

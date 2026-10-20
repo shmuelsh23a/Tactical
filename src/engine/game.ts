@@ -98,7 +98,7 @@ import {
 import { resolveIndirectFire, postureFactor, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
 import { ASSAULT_RANGE_M, resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
-import { GOES_INSIDE, INTERIOR_REFUSAL, InteriorBattles, type InteriorReport } from "./interior/coupling.js";
+import { GOES_INSIDE, INTERIOR_REFUSAL, InteriorBattles, type InteriorPlan, type InteriorReport } from "./interior/coupling.js";
 import { fitSoldiers, killOutright, refreshUnitStatus } from "./units.js";
 import {
   FLAT_GROUND,
@@ -1857,6 +1857,9 @@ export class Game {
       observationPost: false,
     };
     this.units.push(team);
+    // Its parent's plan for a fight inside goes with it (decision 101).
+    const order = this.interior.orderFor(unitId);
+    if (order) this.interior.setOrder(id, order);
     this.teamsDetached.set(unitId, (this.teamsDetached.get(unitId) ?? 1) + 1);
     this.journal({ kind: "detachTeam", unitId, soldierIds: [...wanted], opts: { id, ...(opts.name ? { name: opts.name } : {}), ...(opts.echelon ? { echelon: opts.echelon } : {}) } });
     return cloneForRecord(team);
@@ -2251,6 +2254,20 @@ export class Game {
           armour: this.armour,
           checked: this.checked,
           ...(this.criticalHits ? { criticalAt: (impact: Point) => this.throughTheRoof(m.weapon, impact) } : {}),
+          // Men on a roof, going in from it (decision 101): caught in the open.
+          // ⚠️ Ours: a man anywhere on a roof is as far from the burst as the roof is: at it, when the round comes down on it.
+          onRoof: (impact: Point) => {
+            const up = this.interior.roofMen(this);
+            if (up.size === 0) return undefined;
+            const roofOf = (u: Unit) => this.ground.objects.find((o) => o.id === up.get(u.id)?.buildingId);
+            return {
+              men: (u: Unit) => up.get(u.id)?.men,
+              distance: (u: Unit) => {
+                const b = roofOf(u);
+                return b ? distanceToFootprint(b.footprint, impact) : distance(u.position, impact);
+              },
+            };
+          },
         }),
       );
       // The buildings the rounds landed on (decision 76). An air burst goes
@@ -2936,6 +2953,24 @@ export class Game {
   }
 
   /**
+   * A force's plan for a fight inside a building (rules decision 101): how
+   * it goes in, or how it holds — an order, never where each man stands.
+   * Given at any turn, the whole plan at once; what it leaves out is the
+   * default. Once a fight begins its way in is fixed; grenades, and falling
+   * back or holding, are read again each turn.
+   */
+  setInteriorPlan(unitId: string, plan: InteriorPlan): void {
+    const unit = this.getUnit(unitId);
+    if (unit.kind === "vehicle") throw new Error(`${unitId} does not fight inside buildings`);
+    if (plan.entry !== undefined && plan.entry !== "door" && plan.entry !== "top") throw new Error(`no such way in: ${String(plan.entry)}`);
+    if (plan.expects !== undefined && plan.expects !== "below" && plan.expects !== "above") throw new Error(`no such direction: ${String(plan.expects)}`);
+    if (plan.teamSize !== undefined && !(Number.isInteger(plan.teamSize) && plan.teamSize >= 2 && plan.teamSize <= 4)) throw new Error("a team is 2 to 4 men");
+    if (plan.holdStoreys !== undefined && !(Array.isArray(plan.holdStoreys) && plan.holdStoreys.length > 0 && plan.holdStoreys.every((k) => Number.isInteger(k) && k >= 0))) throw new Error("storeys are counted from 0, the ground floor");
+    this.interior.setOrder(unitId, plan);
+    this.journal({ kind: "setInteriorPlan", unitId, plan: cloneForRecord(plan) });
+  }
+
+  /**
    * Put a force out scouting, or bring it back in (סיור). A scouting force
    * looks rather than covers ground: it sees better, and it may only walk
    * while it does (rules decision 12).
@@ -3388,8 +3423,15 @@ export class Game {
       // (decision 99); the defending side's cannot counterattack in yet.
       // ⚠️ Ours: only on a force in that fight; one inside but not in it is not reached by joining.
       const fighting = this.interior.attackerSideIn(inside.id);
+      // A fight entered from the roof is joined only by its hatch, which is not modelled (decision 101).
       const joins = this.joinFights && fighting === attacker.side && this.interior.fightersIn(inside.id).includes(defenderId);
       if (fighting !== undefined && !joins) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
+      if (joins && this.interior.entryIn(inside.id) !== "door") return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.enteredFromRoof };
+      // From the roof, as planned (decision 101): only down a house's stairs.
+      if (fighting === undefined && this.interior.orderFor(attackerId)?.entry === "top") {
+        const floors = this.interior.plan(this, inside);
+        if (!floors.stairwell || floors.storeys.length < 2) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.noWayFromRoof };
+      }
       // The way to the door is the assault's last bound: it must be within the assault's reach.
       if (distance(attacker.position, door) > ASSAULT_RANGE_M) return { ...this.noAssault(attackerId, defenderId), reason: "out of range" };
       this.raiseReadiness(attacker, 3);
