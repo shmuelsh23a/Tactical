@@ -242,6 +242,7 @@ export {
 export {
   InteriorFight,
   defaultDefence,
+  plannedDefence,
   resolveInteriorFight,
   type AttackPlan,
   type DefenderPost,

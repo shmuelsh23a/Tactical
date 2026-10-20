@@ -189,3 +189,23 @@ describe("a battle without fire support (rules decision 84's test bed)", () => {
     expect(left.every((n) => n === 0)).toBe(true);
   });
 });
+
+describe("each side's plan inside a building, from the harness (decision 101)", () => {
+  it("gives every infantry force of each side its plan at mission planning, and nothing else one", () => {
+    let game: import("../engine/index.js").Game | undefined;
+    runScenarioBattle(telAzekaAssaultListing, 11, {
+      drill: PLAIN_SCRIPT,
+      fire: DEFAULT_FIRE_CHOICES,
+      maxTurns: 1,
+      interiorPlans: { attack: { entry: "top", teamSize: 2 }, defence: { fallBack: false } },
+      onTurn: (g) => (game = g),
+    });
+    const g = game!;
+    const attacker = g.attackers[0]!;
+    for (const u of g.units) {
+      const plan = g.interior.orderFor(u.id);
+      if (u.kind !== "infantry") expect(plan).toBeUndefined();
+      else expect(plan).toEqual(u.side === attacker ? { entry: "top", teamSize: 2 } : { fallBack: false });
+    }
+  });
+});

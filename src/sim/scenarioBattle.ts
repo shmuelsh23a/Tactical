@@ -49,7 +49,7 @@ export { DEFAULT_FIRE_CHOICES, type FirePlanChoices };
 import { ASSAULT_POSITION_M, FIND_WITHIN_M, HOLD_SHORT_M, VANTAGE_RING_M, type PlatoonTask } from "../app/company.js";
 import { casualtiesSeen, underFire, viewOf, type Decider, type Question } from "./companyQuestions.js";
 import { hasEyesOn } from "../app/hotseat.js";
-import type { IndirectFireResult } from "../engine/index.js";
+import type { IndirectFireResult, InteriorPlan } from "../engine/index.js";
 
 /**
  * The headless scenario runner: a generated scenario — real ground, its forces,
@@ -126,6 +126,12 @@ export interface ScenarioBattleOptions {
    * false.
    */
   fireSupport?: boolean;
+  /**
+   * Each side's plan for a fight inside a building (rules decision 101),
+   * given to every infantry force of the side at mission planning. Absent:
+   * the defaults, "unless otherwise planned".
+   */
+  interiorPlans?: { attack?: InteriorPlan; defence?: InteriorPlan };
   /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
   coveredRoutes?: boolean;
   /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
@@ -266,6 +272,10 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
         )
       : [];
   for (const w of tubesOf(g, defender)) for (const t of defenderTargets) g.registerTarget(defender, w, t);
+  // Each side's plan for a fight inside (decision 101), for every infantry force of it.
+  for (const [side, plan] of [[attacker, opts.interiorPlans?.attack], [defender, opts.interiorPlans?.defence]] as const) {
+    if (plan) for (const u of g.units) if (u.side === side && u.kind === "infantry") g.setInteriorPlan(u.id, plan);
+  }
 
   const ask = opts.decide;
   /** The asked commander's priority target, once named (decision 93). */

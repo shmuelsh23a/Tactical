@@ -23,6 +23,8 @@
  *   npm run scenario-sim -- --shell-amounts        # every round adds its suppression in full, as before rules decision 92
  *   npm run scenario-sim -- --legacy-fire-plan     # both sides fire a mission on any sure mark until the missions are gone, as before rules decision 93
  *   npm run scenario-sim -- --quality BLUE=irregular/inexperienced   # a side's force quality (decision 83); RED=… too, comma-separated
+ *   npm run scenario-sim -- --attack-plan entry=top,grenades=no,team=2   # each side's plan inside a building (decision 101)
+ *   npm run scenario-sim -- --defence-plan storeys=1,windows=no,expects=above,hold
  *
  * Kept thin on purpose, like tools/balance-sim.ts: what is worth checking
  * lives in src/sim, where the suite runs it.
@@ -31,7 +33,7 @@ import { SCENARIOS } from "../src/app/scenario.js";
 import { DOCTRINAL_DRILL, PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenario, type FirePlanChoices } from "../src/sim/scenarioBattle.js";
 import type { CompanyPlan } from "../src/app/company.js";
-import type { CombatExperience, ForceQuality, ForceType, Side } from "../src/engine/index.js";
+import type { CombatExperience, ForceQuality, ForceType, InteriorPlan, Side } from "../src/engine/index.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -110,7 +112,30 @@ for (const part of value("--quality")?.split(",") ?? []) {
   quality[side] = { type: type as ForceType, experience: experience as CombatExperience };
 }
 
-console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}\n`);
+// `--attack-plan entry=top,grenades=no,team=2` and `--defence-plan storeys=1,windows=no,expects=above,hold`:
+// each side's plan for a fight inside a building (rules decision 101), given to every infantry force of it.
+function interiorPlan(flag: string): InteriorPlan | undefined {
+  const text = value(flag);
+  if (text === undefined) return undefined;
+  const plan: InteriorPlan = {};
+  for (const part of text.split(",")) {
+    const [k, v] = part.split("=");
+    if (k === "entry" && (v === "door" || v === "top")) plan.entry = v;
+    else if (k === "grenades" && (v === "yes" || v === "no")) plan.grenades = v === "yes";
+    else if (k === "team" && v) plan.teamSize = Number(v);
+    else if (k === "storeys" && v) plan.holdStoreys = v.split("+").map(Number);
+    else if (k === "windows" && (v === "yes" || v === "no")) plan.atWindows = v === "yes";
+    else if (k === "expects" && (v === "below" || v === "above")) plan.expects = v;
+    else if (k === "hold" && v === undefined) plan.fallBack = false;
+    else if (k === "fallback" && v === undefined) plan.fallBack = true;
+    else throw new Error(`${flag}: "${part}" is not one of entry=door|top, grenades=yes|no, team=2..4, storeys=0+1, windows=yes|no, expects=below|above, hold, fallback`);
+  }
+  return plan;
+}
+const attackPlan = interiorPlan("--attack-plan");
+const defencePlan = interiorPlan("--defence-plan");
+
+console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}${attackPlan ? `, attack plan ${JSON.stringify(attackPlan)}` : ""}${defencePlan ? `, defence plan ${JSON.stringify(defencePlan)}` : ""}\n`);
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
 const urban: string[] = [];
@@ -118,7 +143,7 @@ for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
   const seeds = Array.from({ length: n }, (_, i) => first + i);
-  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}) });
+  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}), ...(attackPlan || defencePlan ? { interiorPlans: { ...(attackPlan ? { attack: attackPlan } : {}), ...(defencePlan ? { defence: defencePlan } : {}) } } : {}) });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);

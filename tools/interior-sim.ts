@@ -8,6 +8,7 @@
  *   npm run interior-sim
  *   npm run interior-sim -- --houses 100 --attackers 8 --defenders 3 --prepared
  *   npm run interior-sim -- --storeys 1      # every house one storey, as doctrine's one example is
+ *   npm run interior-sim -- --team-size 2 --hold-storeys 1   # a plan's levers (decision 101)
  *
  * What it is judged against (ATP 3-06.11 (2024)): clearing is "a slow
  * methodical process" (para 3-8, whose "40-60-minutes" for "a one-floor
@@ -16,7 +17,7 @@
  * 8-12); hand grenades the most-used explosive (para B-35); casualties
  * higher than in the open (para C-8).
  */
-import { Rng, defaultDefence, generateFloorPlan, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
+import { Rng, defaultDefence, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
 import { RAMAT_MENASHE_OBJECTS } from "../src/app/maps/ramatMenasheObjects.js";
 
 const args = process.argv.slice(2);
@@ -30,6 +31,8 @@ const STOREYS = value("--storeys");
 const ONLY = value("--only"); // e.g. "door-no": one row, for calibrating
 const HOLD = args.includes("--hold"); // the defenders hold to the last rather than fall back
 const EXPECT_ABOVE = args.includes("--expect-above"); // the defenders expect the attack from above
+const TEAM = Number(value("--team-size") ?? 4); // men to an attacking team (decision 101)
+const HOLD_STOREYS = value("--hold-storeys")?.split("+").map(Number); // the storeys the defenders hold, e.g. 1 or 0+1 (decision 101)
 
 const houses: MapObject[] = RAMAT_MENASHE_OBJECTS.filter((o) => o.kind === "building")
   .slice(0, HOUSES)
@@ -37,7 +40,7 @@ const houses: MapObject[] = RAMAT_MENASHE_OBJECTS.filter((o) => o.kind === "buil
 
 const teams: string[][] = [];
 for (let k = 0; k < ATTACKERS; k++) {
-  if (k % 4 === 0) teams.push([]);
+  if (k % TEAM === 0) teams.push([]);
   teams[teams.length - 1]!.push(`a${k + 1}`);
 }
 const defenders = Array.from({ length: DEFENDERS }, (_, k) => `d${k + 1}`);
@@ -46,7 +49,7 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const pct = (n: number, of: number) => `${Math.round((100 * n) / of)}%`;
 const mean = (xs: number[]) => (xs.reduce((s, x) => s + x, 0) / xs.length).toFixed(2);
 
-console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}`);
+console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}`);
 console.log("");
 console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Defenders withdrew (mean) | Share of hits by grenade | Rooms (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -57,7 +60,9 @@ for (const entry of ["door", "top"] as const) {
       const plan = generateFloorPlan(h, SEED);
       if (entry === "top" && !plan.stairwell) return []; // no stairs to come down
       const rng = new Rng(SEED * 7919 + k);
-      const defence = defaultDefence(plan, defenders, rng, PREPARED);
+      const defence = HOLD_STOREYS
+        ? plannedDefence(plan, [{ ids: defenders, storeys: HOLD_STOREYS, atWindows: false }], rng, PREPARED)
+        : defaultDefence(plan, defenders, rng, PREPARED);
       return [resolveInteriorFight({ plan, attack: { entry, grenades, teams }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
     });
     if (rows.length === 0) continue;
