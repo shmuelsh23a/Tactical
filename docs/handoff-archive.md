@@ -12,6 +12,43 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-10-20 — the header as it ran through the day
+
+Moved from the handoff at the night's handoff (`334b7bb`).
+
+**Next, in one line: urban warfare is in the game, and since decision 98 it meets the street through the windows (a defender at one fires out and is seen; a round that gets in bursts in one room). The standoff fault is gone. Next is joining a fight already going on, then the players' plans inside as data. Spotting follows the windows too. The 2:1 reference median, the force-quality matrix and the AI commanders wait on the author.**
+
+**Current as of 2026-10-20, evening.** Later the same day:
+- **Decision 98, through the windows** (README; every option as proposed,
+  by the author). Built, reviewed twice, driven in the browser on a saved
+  battle: RED fired out of a house fight with its one window man ("1
+  יורים"), BLUE-2 fired in. The raid 14%, urban 59%: within noise, because
+  the town's houses block almost every sight line to a fight (balance.md,
+  *Through the windows*).
+- **The standoff fault is closed**, and the three-hour clock accepted.
+
+Earlier (`3c28ae0`). Since the header before (2026-10-12):
+- **Decision 96, urban warfare.** The author's design, built in steps:
+  - floor plans generated from footprints, bit-identical on any device;
+  - a headless fight inside, run by the doctrinal room-clearing drill;
+  - clearing time calibrated to real data: 20 minutes for a house nobody
+    holds, toward an hour against prepared defenders;
+  - top-down entry with doctrine's gains and costs;
+  - the coupling to the turn: entered only by an assault order, each side
+    told only its own losses.
+- **Decision 97, a grenade's smoke needs a thrower.** A hand pot within
+  35 m of a man of the side; rifle-grenade smoke within 100 m of infantry
+  with a grenadier, as a 10 m screen.
+- **Today's control is temporary** (README, *Design principles*, first).
+  The product commands by OPORD, a battle plan drawn on the map and
+  written orders during play. A serious UX/UI pass is scheduled with that
+  work (backlog 13).
+
+The 2026-10-12 header and the long running line are in
+[handoff-archive.md](handoff-archive.md), *2026-10-12 to 20 — the header
+as it ran*.
+
+
 ## 2026-10-01 — "Start here" as it stood
 
 Moved from the handoff on 2026-10-20: its numbers are from early October.

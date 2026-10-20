@@ -1,36 +1,39 @@
 # Handoff — where the project stands
 
-**Next, in one line: urban warfare is in the game, and since decision 98 it meets the street through the windows (a defender at one fires out and is seen; a round that gets in bursts in one room). The standoff fault is gone. Next is joining a fight already going on, then the players' plans inside as data. Spotting follows the windows too. The 2:1 reference median, the force-quality matrix and the AI commanders wait on the author.**
+**Next, in one line: the fight inside a house is now fully coupled to the battle — windows (98), joining (99), the drill's next squad (100), plans as data (101), and a side's break reaching inside (102) — and `yokneamHouse` measures it. Next on this thread is the author's "later": morale inside the house, the battle waiting for a fight inside, and the defender's counterattack inside, designed together. The 2:1 median, the force-quality matrix and the AI commanders still wait on him.**
 
-**Current as of 2026-10-20, evening.** Later the same day:
-- **Decision 98, through the windows** (README; every option as proposed,
-  by the author). Built, reviewed twice, driven in the browser on a saved
-  battle: RED fired out of a house fight with its one window man ("1
-  יורים"), BLUE-2 fired in. The raid 14%, urban 59%: within noise, because
-  the town's houses block almost every sight line to a fight (balance.md,
-  *Through the windows*).
-- **The standoff fault is closed**, and the three-hour clock accepted.
+**Current as of 2026-10-20, night** (`334b7bb`, pushed). Since the morning's
+handoff (`401ae1e`), all in the README's rules decisions, every option the
+author's unless marked ⚠️:
+- **The standoff fault is closed**: no stall in 3,984 fights inside; the six
+  left were the three-hour clock on two building blocks, which he kept.
+- **98, through the windows.** A defender stands at a window facing the
+  assault unless planned otherwise; fire in finds only men at facing
+  windows (and attackers in the street); fire out counts only them; a round
+  that gets in bursts in its room. Spotting, the fall of shot and morale's
+  seeing (armour fear, contagion, a rout watched) follow the windows too.
+- **99, joining a fight.** The attacking side's further forces join as new
+  teams at the door; a rallied force goes back in; the defending side is
+  refused until the counterattack inside is designed.
+- **100, the next squad** (the drill, from ATP 3-06.11 C-3 and C-107): the
+  platoon's nearest other squad follows to cover near the door and goes in
+  while the house has more storeys than squads fit to clear it.
+- **101, plans inside as data** (`Game.setInteriorPlan`, journaled): door or
+  roof, grenades; storeys held, windows or back, expected from, hold or fall
+  back. Men on a roof are seen and hit; the plan rules grenades inside.
+  Teams are doctrine's four (teams of two measured as a dominated lever).
+  The harness gives plans (`--attack-plan`, `--defence-plan`); the computer
+  keeps the defaults.
+- **`yokneamHouse`**, the scenario for telling plans apart: a RED squad in
+  Yokneam's westernmost house, a BLUE platoon already against it from the
+  town. Only grenades count (58% with, 49% without).
+- **102, a side's break reaches inside.** A broken defender's men inside
+  surrender, a broken attacker's leave by the door, judged after every
+  action; the log and debrief say so even when the game stops at the break.
 
-Earlier (`3c28ae0`). Since the header before (2026-10-12):
-- **Decision 96, urban warfare.** The author's design, built in steps:
-  - floor plans generated from footprints, bit-identical on any device;
-  - a headless fight inside, run by the doctrinal room-clearing drill;
-  - clearing time calibrated to real data: 20 minutes for a house nobody
-    holds, toward an hour against prepared defenders;
-  - top-down entry with doctrine's gains and costs;
-  - the coupling to the turn: entered only by an assault order, each side
-    told only its own losses.
-- **Decision 97, a grenade's smoke needs a thrower.** A hand pot within
-  35 m of a man of the side; rifle-grenade smoke within 100 m of infantry
-  with a grenadier, as a 10 m screen.
-- **Today's control is temporary** (README, *Design principles*, first).
-  The product commands by OPORD, a battle plan drawn on the map and
-  written orders during play. A serious UX/UI pass is scheduled with that
-  work (backlog 13).
-
-The 2026-10-12 header and the long running line are in
-[handoff-archive.md](handoff-archive.md), *2026-10-12 to 20 — the header
-as it ran*.
+The morning's header (decisions 96–97 and the start of 98) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-20 — the header as it
+ran through the day*.
 
 This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
@@ -58,16 +61,21 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of decision 98 (2026-10-20)
+## Green as of `334b7bb` (2026-10-20, night)
 
 ```
 npm run check       lint + typecheck clean, 1,102 tests, 74 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
-                    the fight inside on every demo house (decision 96)
+                    the fight inside on every demo house (decision 96);
+                    --hold-storeys 1 (a plan's), --team-size 2 (a measurement)
 npm run scenario-sim -- --n 100 --scenario yokneamRaid
-                    the raid: 13% since the coupling (balance.md)
+                    the raid: 16% (balance.md)
+npm run scenario-sim -- --n 200 --scenario yokneamHouse
+                    the house: 58%, about 130 fights inside in 200 battles
+npm run scenario-sim -- … --attack-plan entry=top,grenades=no --defence-plan storeys=1,windows=no,expects=above,hold
+                    each side's plan inside a building (decision 101)
 node tools/smart-attacker.mjs [scenario] [turns]
                     a scripted attacker plays a scenario in the browser
                     (dev server on :5199 first; SEED=n for other dice)
@@ -120,10 +128,20 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
-- **The defender's counterattack inside** (decision 99 refuses it for
-  now): its own design when he wants it.
+- **His "later", to design together** (README decision 102): morale inside
+  the house (a man who breaks stops fighting there), the battle not judged
+  while a fight inside goes on, and the defender's counterattack inside
+  (decision 99 refuses it for now). Ask before building; it is the next
+  thread on closed terrain.
 - **For the UX pass:** the screen marks the enemy a force is fighting
   inside as a target; the engine refuses that shot ("נלחם בתוך מבנה").
+- **Today's ⚠️, none questioned yet:** a squad spent at half the men it
+  took in (decision 100, his choice, `SPENT_SHARE`); a man on a roof seen at
+  the edge nearest the viewer, at full height, and as far from a burst as
+  the roof is (101); two forces going in at once by the first's way in;
+  both sides broken at once, the house stays the defender's (102);
+  `yokneamHouse`'s positions, 90-turn limit, quality and the squad facing
+  west.
 
 - **The reference plans' 2:1 median is 18.5%**, just under 20 (standard
   measurement 31%). The stall is fixed (an assault that is spent commits
@@ -183,11 +201,12 @@ Each is in the README's decision 96 or 97. The short form:
   roof, grenades; storeys, windows or back, expected from, hold or fall
   back. Teams are doctrine's four (teams of two dropped as a dominated
   lever); the computer keeps the defaults for now.
+- Plans inside, the same evening: men on a roof are seen and hit; the
+  plan rules grenades inside; the computer keeps the defaults.
 - A side's break (decision 102): its men inside stop — a defender's
   surrender, an attacker's leave — judged after every action. Morale
   inside the house, and the battle waiting for a fight inside, are the
-  author's "later", with the counterattack inside. Men on a roof are seen and hit; the plan rules
-  grenades inside.
+  author's "later", with the counterattack inside.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
   are under backlog 13.
@@ -357,6 +376,15 @@ One rules question is **open but not asked**, because nothing needs it yet:
 
 Closed deliberately, with reasons that are not obvious from the code:
 
+- **Team size in a plan inside.** Measured 2026-10-20: teams of two cleared
+  a quarter quicker for the same losses, a dominated choice, because the
+  resolver runs more teams at once and charges a pair nothing for corners.
+  The author dropped the lever: teams are doctrine's four. (Turn-taking per
+  C-106 was the alternative; it would need the 20-minute calibration redone.)
+- **Placing defenders man by man.** A defence plan is a force's order
+  (storeys, windows or back, expects, hold); decision 96 rules out moving
+  soldiers.
+
 - **A limit on how many charges a force may lay.** No stock and no cooldown is
   deliberate: put to the author 2026-09-16 and **deferred to ammunition**
   (backlog 12), because a stock of charges per force is the same mechanism as
@@ -395,6 +423,21 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **What ends the fights inside** (2026-10-20, `yokneamHouse`): with the
+  platoon 300 m out in the open, 5 fights in 100 battles (decided outside);
+  against the house, about 130 in 200, and **none ever finishes** — a side
+  breaks a few minutes in (median battle 9 turns). Win rates do not move
+  with decision 102; it changes the ending, not the judgement.
+- **What each plan lever is worth** (balance.md, two tables): in
+  `interior-sim`, teams of two a quarter quicker (dropped); on the house,
+  only grenades outside noise (58% → 49%); in the raid, nothing.
+- **Why the windows barely show in the raid**: 1 shot in 1,031 into a fight
+  had a sight line, and the old force-to-force line was blocked in every
+  case looked at. The houses block it, not the rule.
+- **The standoff tally** (2026-10-20): 0 stalls in 3,984 fights over all 16
+  `interior-sim` configurations; six clock endings on `osm-w633110594` (184
+  rooms) and `osm-w634370214` (117).
 
 - **How long clearing really takes** (2026-10-16, urban-doctrine.md,
   *Research on clearing time*):
@@ -534,31 +577,17 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The plans inside are in the engine and the harness** (decision 101),
-measured lever by lever on balance.md, in the raid and on `yokneamHouse`,
-the scenario built for it (a squad in the town's edge house, a platoon
-already against it: 130 fights inside in 200 battles). Only grenades
-count: without them the attacker wins 49% against 58%. No fight inside
-ever ends: a side breaks a few minutes in, while clearing takes an hour.
-Since decision 102 a side's break ends its fights inside too (its men
-surrender or leave). Next on this thread, when the author wants it: morale
-inside the house and the battle waiting for a fight inside, with the
-defender's counterattack inside (the author's "later"). The windows
-(decision 98), joining (decision 99) and the drill's next squad
-(decision 100) are done. The next squad joins (6 in 12 fights over 20
-raids) and the raid is 16%; the windows barely show, because the raid's
-ground blocks sight lines to a fight. A scenario with open approaches to
-a defended house would show them.
+**His "later" on closed terrain**, as one design put to him first (cards,
+then build): morale inside the house, the battle waiting for a fight inside,
+and the defender's counterattack inside. Why it matters: on `yokneamHouse` no
+fight inside ever finishes — a side breaks a few minutes in, while clearing
+takes an hour — so the plan's levers act only through the first minutes'
+losses, and only grenades show (balance.md, *The house at the edge*). With
+morale inside and the battle waiting, the hour of clearing would count.
 
-**The 1% standoff fault is closed** (2026-10-20): no stall in 3,984
-fights. The six left are the three-hour clock on two building blocks,
-still progressing (balance.md). **The clock stays at three hours**
-(the author, 2026-10-20: "long enough").
-
-**Then the players' plans inside, as data.** By the design principle, the
-defender's rooms and the attacker's entry, grenades and teams come from a
-plan the engine carries out, which is what the OPORD will fill one day.
-Not a screen.
+**Smaller, whenever:** the UX pass's targetable marker for an enemy fought
+inside; whether the computer should give plans once a scenario can tell the
+levers apart (he ruled: defaults for now).
 
 **Then the 2:1 question, the force-quality matrix and the AI commanders**,
 as the author says. Artillery and air support for a company still come
@@ -566,6 +595,26 @@ only by a scenario's allotment (decision 95); battalion echelon is
 backlog 10.
 
 ## Traps that cost real time
+
+- **Win rate cannot measure a lever inside a house.** The battle is judged
+  at a side's break, minutes into the fight; measure the fights themselves
+  (men out a fight, cleared or not) with an `onTurn` probe over
+  `g.interior.engagements` — the shape is on balance.md.
+- **A defender at the middle of a big house is blind both ways.** Six metres
+  of his own building is the most a force sees out through
+  (`OWN_OBJECT_SIGHT_M`); at the centroid of a 130 m² house neither side saw
+  the other for 30 turns. Place a defender within 3 m of the wall he faces.
+- **A new scenario must face its start line** (`scenarioFacing.test.ts`),
+  or be listed in `FACES_AWAY` with its reason, as the raid and the house are.
+- **A glob in a cleanup can take the job list with it**: `rm dir/inside-*.txt`
+  also matched `inside-jobs.txt`. Name job lists apart from outputs.
+- **A test that changes state by hand cannot be replayed** (wounds set
+  directly are not journaled): test replay only with recorded actions.
+- **Each of decisions 98–102 had real faults only review found** — a roof
+  critical on a wall falling back to the whole building, a break mid-turn
+  never reaching inside, a rallied force crashing the turn, phantom hits
+  from an exhausted pool, a follower assaulting from out of reach. Run the
+  reviewer, fix, and run it again: the second pass found more every time.
 
 - **Every interior change had real faults the reviewer found** — on
   2026-10-16 to 20, five reviews of the floor plans, the resolver,
