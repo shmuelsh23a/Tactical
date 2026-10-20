@@ -82,7 +82,7 @@ export function planningRefusalHe(message: string): string {
   if (/fire missions left/.test(message)) return "לא נותרו משימות אש לאמצעי זה";
   if (/mission planning/.test(message)) return "זה נקבע בתכנון המשימה, לפני התור הראשון";
   if (message === SMOKE_REFUSAL.noThrower) return `אין לוחם שלנו במרחק הטלה (${SMOKE_GRENADE_THROW_M} מ') מהמקום`;
-  if (message === SMOKE_REFUSAL.noLauncher) return "אין כוח חי\"ר שלנו בטווח רימון רובה מהמקום";
+  if (message === SMOKE_REFUSAL.noLauncher) return "אין מטולאי שלנו בטווח רימון רובה מהמקום";
   return message;
 }
 

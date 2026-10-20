@@ -29,7 +29,9 @@ export const SMOKE_DURATION_TURNS: Record<SmokeSource, number> = {
  */
 export const SMOKE_RADIUS_M: Record<SmokeSource, number> = {
   grenade: 25,
-  rifleGrenade: 25, // ours (⚠️): as the hand pot
+  // A 40 mm smoke round is a marker, not a screen: smaller than a pot (the
+  // author, 2026-10-20). No source sizes its cloud; the 10 m is ours.
+  rifleGrenade: 10, // ours (⚠️)
   mortar: 50,
   artillery: 100,
 };

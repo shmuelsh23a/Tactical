@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { Game, SMOKE_REFUSAL } from "./game.js";
 import { makeCommandGroup, makeInfantry, makeVehicle } from "./units.js";
 import { replayGame, sealRecording, verifyRecording } from "./recording.js";
-import { SMOKE_GRENADE_THROW_M } from "./data/smoke.js";
-import { EXPLOSIVES } from "./data/explosives.js";
+import { SMOKE_GRENADE_THROW_M, SMOKE_RADIUS_M } from "./data/smoke.js";
+import { EXPLOSIVES, RIFLE_GRENADIERS } from "./data/explosives.js";
 
 /**
  * A grenade's smoke needs somebody to deliver it (rules decision 97, the
@@ -47,12 +47,27 @@ describe("a grenade's smoke needs a man to deliver it (decision 97)", () => {
     expect(() => g.deploySmoke("grenade", "BLUE", { x: 2000, y: 30 })).toThrow(SMOKE_REFUSAL.noThrower);
   });
 
-  it("fires rifle-grenade smoke from any infantry force out to a rifle grenade's reach, as its HE, but not from a command group", () => {
+  it("fires rifle-grenade smoke from any infantry with a rifle grenadier, out to a rifle grenade's reach", () => {
+    // "any infantry with a rifle grenadier" (the author, 2026-10-20): a
+    // launcher for every four men still fighting (his ruling of 2026-09-28).
+    expect(RIFLE_GRENADIERS.menPerLauncher).toBe(4);
     const g = battle();
     expect(g.deploySmoke("rifleGrenade", "BLUE", { x: 0, y: RIFLE_GRENADE_M }).screen).toBeDefined();
     expect(() => g.deploySmoke("rifleGrenade", "BLUE", { x: 0, y: RIFLE_GRENADE_M + 1 })).toThrow(SMOKE_REFUSAL.noLauncher);
-    expect(g.deploySmoke("rifleGrenade", "BLUE", { x: 1000, y: 60 }).screen).toBeDefined(); // a team fires its HE too
-    expect(() => g.deploySmoke("rifleGrenade", "BLUE", { x: 0, y: 1060 })).toThrow(SMOKE_REFUSAL.noLauncher); // the command group
+    // A machine gun team of three carries none; a command group none.
+    expect(() => g.deploySmoke("rifleGrenade", "BLUE", { x: 1000, y: 60 })).toThrow(SMOKE_REFUSAL.noLauncher);
+    expect(() => g.deploySmoke("rifleGrenade", "BLUE", { x: 0, y: 1060 })).toThrow(SMOKE_REFUSAL.noLauncher);
+    // A fire team of four has its grenadier — until a man is put out.
+    g.addUnit(makeInfantry("B-FT", "BLUE", "team", { x: 3000, y: 0 }, 4));
+    expect(g.deploySmoke("rifleGrenade", "BLUE", { x: 3000, y: 60 }).screen).toBeDefined();
+    g.getUnit("B-FT").soldiers![0]!.neutralized = true;
+    expect(() => g.deploySmoke("rifleGrenade", "BLUE", { x: 3000, y: 70 })).toThrow(SMOKE_REFUSAL.noLauncher);
+  });
+
+  it("lays a smaller screen from a rifle grenade than from a pot (the author, 2026-10-20)", () => {
+    expect(SMOKE_RADIUS_M.rifleGrenade).toBeLessThan(SMOKE_RADIUS_M.grenade);
+    const g = battle();
+    expect(g.deploySmoke("rifleGrenade", "BLUE", { x: 0, y: 50 }).radius).toBe(SMOKE_RADIUS_M.rifleGrenade);
   });
 
   it("has nobody throw from a force routing, given up, put out, or whose men are all broken — each on its own", () => {

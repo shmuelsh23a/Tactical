@@ -28,7 +28,7 @@ import {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
-import { ARES_AIRBURST, EXPLOSIVES, MORTAR_DOWN_CHECKED, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
+import { ARES_AIRBURST, EXPLOSIVES, MORTAR_DOWN_CHECKED, RIFLE_GRENADIERS, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
 import { DOCTRINE_MORTARS, FIRE_UNIT_TUBES, explosiveEntry, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
@@ -304,8 +304,8 @@ export const LAY_CHARGE_REFUSAL = {
 export const SMOKE_REFUSAL = {
   /** No man of the side is within throwing range of the spot. */
   noThrower: "no man within throwing range",
-  /** No infantry force of the side is within a rifle grenade's reach of it. */
-  noLauncher: "no infantry within rifle-grenade range",
+  /** No infantry force of the side with a rifle grenadier is within a rifle grenade's reach of it. */
+  noLauncher: "no grenadier within rifle-grenade range",
 } as const;
 
 /**
@@ -3318,22 +3318,25 @@ export class Game {
   /**
    * A grenade's smoke needs a man to put it there (`smokeNeedsThrower`): a
    * hand pot a man of the side within throwing range — of an infantry force
-   * or a command group — and rifle-grenade smoke an infantry force within a
-   * rifle grenade's reach, whoever may fire its HE (`fireExplosive` asks no
-   * more of a launcher: one rule, one layer). A force routing or given up
-   * throws nothing; nor does a man put out or broken (as `fireGrenadiers`).
+   * or a command group — and rifle-grenade smoke "any infantry with a rifle
+   * grenadier" (the author, 2026-10-20) within a rifle grenade's reach: a
+   * launcher for every `RIFLE_GRENADIERS.menPerLauncher` men still fighting,
+   * as the drill fires its HE. A force routing or given up throws nothing;
+   * nor does a man put out or broken (as `fireGrenadiers`).
    */
   private requireThrower(side: Side, source: SmokeSource, center: Point): void {
     if (source !== "grenade" && source !== "rifleGrenade") return;
     const reach = source === "grenade" ? SMOKE_GRENADE_THROW_M : EXPLOSIVES.rifleGrenade!.toHitBands!.at(-1)!.maxRange;
+    const fighting = (u: Unit) => (u.soldiers ?? []).filter((s) => !s.neutralized && s.morale?.state !== "broken").length;
     const able = this.units.some(
       (u) =>
         u.side === side &&
-        (source === "grenade" ? u.kind === "infantry" || u.kind === "command" : u.kind === "infantry") &&
+        (source === "grenade"
+          ? (u.kind === "infantry" || u.kind === "command") && fighting(u) >= 1
+          : u.kind === "infantry" && fighting(u) >= RIFLE_GRENADIERS.menPerLauncher) &&
         !u.neutralized &&
         !u.routing &&
         !u.surrendered &&
-        (u.soldiers ?? []).some((s) => !s.neutralized && s.morale?.state !== "broken") &&
         distance(u.position, center) <= reach,
     );
     if (!able) throw new Error(source === "grenade" ? SMOKE_REFUSAL.noThrower : SMOKE_REFUSAL.noLauncher);

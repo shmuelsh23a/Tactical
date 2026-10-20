@@ -12,6 +12,7 @@ import {
   OBSERVATION_SECTOR,
   SCOUTING,
   SMOKE_DURATION_TURNS,
+  RIFLE_GRENADIERS,
   SMOKE_GRENADE_THROW_M,
   SMOKE_RADIUS_M,
   camouflageBonus,
@@ -378,11 +379,14 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     const allotted = game.fireSupport[side]?.map((a) => a.weapon);
     // A grenade's smoke only where the side has someone to deliver it (decision 97).
     const has = (k: "infantry" | "command") => game.units.some((u) => u.side === side && u.kind === k && !u.neutralized);
+    const grenadier = game.units.some(
+      (u) => u.side === side && u.kind === "infantry" && !u.neutralized && (u.soldiers ?? []).filter((s) => !s.neutralized).length >= RIFLE_GRENADIERS.menPerLauncher,
+    );
     return (["grenade", "rifleGrenade", "mortar", "artillery"] as SmokeSource[]).filter((s) =>
       s === "grenade"
         ? has("infantry") || has("command")
         : s === "rifleGrenade"
-          ? has("infantry")
+          ? grenadier
           : game.mayCall(side, s) && (!allotted || allotted.includes(s)),
     );
   };
@@ -1850,7 +1854,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                         {activeSmoke === "grenade"
                           ? `יורד מייד, עד ${SMOKE_GRENADE_THROW_M} מ' מלוחם שלנו`
                           : activeSmoke === "rifleGrenade"
-                          ? 'יורד מייד, בטווח רימון רובה מכוח חי"ר שלנו'
+                          ? "יורד מייד, בטווח רימון רובה ממטולאי שלנו"
                           : activeSmoke === "mortar"
                             ? "יורד כעבור תור"
                             : "יורד כעבור שני תורות"}

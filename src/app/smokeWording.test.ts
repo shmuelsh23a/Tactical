@@ -6,7 +6,7 @@ import { describeAction, planningRefusalHe, weaponName } from "./debriefText.js"
 describe("smoke and the rifle grenade, in Hebrew", () => {
   it("says why a grenade's smoke could not be laid", () => {
     expect(planningRefusalHe(SMOKE_REFUSAL.noThrower)).toBe(`אין לוחם שלנו במרחק הטלה (${SMOKE_GRENADE_THROW_M} מ') מהמקום`);
-    expect(planningRefusalHe(SMOKE_REFUSAL.noLauncher)).toBe('אין כוח חי"ר שלנו בטווח רימון רובה מהמקום');
+    expect(planningRefusalHe(SMOKE_REFUSAL.noLauncher)).toBe("אין מטולאי שלנו בטווח רימון רובה מהמקום");
   });
 
   it("names the rifle grenade rather than printing its key", () => {

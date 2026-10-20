@@ -3115,22 +3115,26 @@ on the stated reasoning, still awaiting the author's word.
       (2021), app. B, gives the M18's "Average Throwing Distance" as 35 m
       standing (25 kneeling, 20 prone).
     - **Rifle-grenade smoke** (`rifleGrenade`, a new source) lands within a
-      rifle grenade's reach (100 m, the explosives table) of an **infantry
-      force**. ⚠️ Ours: whoever may fire the launcher's HE may fire its
-      smoke. `fireExplosive` asks nothing more of a launcher, and one rule
-      should not be applied two ways at two layers. A command group or a
-      vehicle has none. Until now the drill's screening smoke (Battle Drill
-      2) fired it as `grenade`, which is what let the pot fly anywhere.
-      ⚠️ Its radius and duration are the hand pot's (25 m, 1 turn), ours.
+      rifle grenade's reach (100 m, the explosives table) of **"any infantry
+      with a rifle grenadier"** (the author, 2026-10-20). That is a launcher
+      for every four men still fighting (`RIFLE_GRENADIERS`, his ruling of
+      2026-09-28, moved from the drill into the engine so both read one
+      figure): a squad or a fire team of four, not a machine gun team of
+      three, a command group or a vehicle. Until now the drill's screening
+      smoke (Battle Drill 2) fired it as `grenade`, which is what let the
+      pot fly anywhere.
+    - **A smaller screen than a pot** (the author): **10 m** (⚠️ ours, no
+      source sizes a 40 mm smoke cloud) against the pot's 25, for one turn.
+      Further limits wait for ammunition (backlog 12). Measured, 200
+      battles from seed 1000: the doctrinal drill (`--drill doctrinal
+      --gate --rear-security`) keeps 53% / 25% attacker wins, with one 3:1
+      battle a draw rather than a defender's win, and the standard
+      measurement is identical (50% / 31%).
     - A force routing, given up or neutralised throws nothing, and nor does
       a man put out or broken, as `fireGrenadiers` treats him. Refused with
       a reason the app words (`SMOKE_REFUSAL`), and the UI offers a source
       only to a side that has somebody to deliver it.
-    - **For the author:** with the same screen and no cost, a force's
-      rifle-grenade smoke is never worse than its hand pot, and reaches
-      100 m against 35. A 40 mm smoke round makes a smaller, shorter cloud
-      than an M18, so the trade-off may want a smaller radius or a count.
-      Also, like a hand pot, it needs no line of sight to where it lands.
+    - Like a hand pot, it needs no line of sight to where it lands.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

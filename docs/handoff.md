@@ -267,7 +267,9 @@ How the last two days went, round by round, is in
   line of sight, the same force names on both sides.
 - **A grenade's smoke needs a thrower** (the author, 2026-10-20): a hand
   pot within 35 m of a man of the side (TC 3-23.30, the M18), rifle-grenade
-  smoke within a rifle grenade's reach of a squad. `smokeNeedsThrower`, off
+  smoke within 100 m of infantry with a rifle grenadier (a launcher per four
+  men still fighting), and a smaller screen than a pot (10 m, ours). Further
+  limits wait for ammunition (backlog 12). `smokeNeedsThrower`, off
   for older recordings — his saved battle still replays and verifies.
 
 ### Open (2026-10-12)

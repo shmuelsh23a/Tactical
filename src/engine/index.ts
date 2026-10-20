@@ -77,6 +77,7 @@ export {
 } from "./data/directFire.js";
 export {
   EXPLOSIVES,
+  RIFLE_GRENADIERS,
   SHELL_VS_MEN,
   SHELL_VS_MEN_BEFORE_62,
   SHELL_COVERS,

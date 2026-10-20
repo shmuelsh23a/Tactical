@@ -62,6 +62,16 @@ export interface ExplosiveWeapon {
   notes?: string;
 }
 
+/**
+ * Who carries a rifle grenade launcher (author, 2026-09-28): one 40 mm
+ * launcher for every `menPerLauncher` men still fighting — two in a nine-man
+ * squad, one in a fire team, as a NATO squad carries them; none in a machine
+ * gun team of three. The drills fire HE by it, and since rules decision 97
+ * (the author, 2026-10-20: "any infantry with a rifle grenadier") smoke too.
+ * Moved here from the app's drill so the engine and the drill read one figure.
+ */
+export const RIFLE_GRENADIERS = { menPerLauncher: 4 } as const;
+
 export const EXPLOSIVES: Record<string, ExplosiveWeapon> = {
   grenade: {
     key: "grenade",

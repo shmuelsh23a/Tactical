@@ -1,5 +1,6 @@
 import {
   EXPLOSIVES,
+  RIFLE_GRENADIERS,
   angleBetween,
   bearingDegrees,
   distance,
@@ -285,7 +286,7 @@ export interface SquadDrill {
  * game's: a player's squad fires its grenadiers with its rifles, as a
  * simulated one does (rules decision 45).
  */
-export const SQUAD_GRENADIERS = { menPerLauncher: 4 } as const;
+export const SQUAD_GRENADIERS = RIFLE_GRENADIERS; // the engine's figure (data/explosives.ts)
 
 /**
  * The plain script the balance harness first measured with: everyone shoots
