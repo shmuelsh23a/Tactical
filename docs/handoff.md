@@ -514,9 +514,8 @@ and the raid tell the same story.
 
 **The 1% standoff fault is closed** (2026-10-20): no stall in 3,984
 fights. The six left are the three-hour clock on two building blocks,
-still progressing (balance.md). Open for the author: should the clock be
-reported as its own outcome, or not run at all in the game, where the
-turns already keep time?
+still progressing (balance.md). **The clock stays at three hours**
+(the author, 2026-10-20: "long enough").
 
 **Then the players' plans inside, as data.** By the design principle, the
 defender's rooms and the attacker's entry, grenades and teams come from a

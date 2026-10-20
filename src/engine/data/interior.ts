@@ -175,5 +175,5 @@ export const CLOSE_QUARTERS = {
    */
   unreadySeconds: 2, // ours (⚠️)
   /** The longest a fight inside runs before it is called a standoff, in seconds. */
-  maxSeconds: 3 * 60 * 60, // ours — three hours, past doctrine's 90 minutes unsupported
+  maxSeconds: 3 * 60 * 60, // ours, accepted by the author 2026-10-20 ("long enough") — past doctrine's 90 minutes unsupported
 } as const;

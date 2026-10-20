@@ -5411,7 +5411,8 @@ those cleared; losses per fight):
   map's two building blocks, `osm-w633110594` (1,449 m² a storey, 184
   rooms) and `osm-w634370214` (117 rooms), with one squad still taking
   rooms when time runs out. That is an outcome mislabelled, not a fault:
-  the clock reports "standoff" for a fight still moving.
+  the clock reports "standoff" for a fight still moving. **The three
+  hours accepted by the author, 2026-10-20**: "long enough".
 - **Top-down still level with the door**, as before.
 - Two bugs found while calibrating, both fixed: the stall check counted a
   long reorganisation as a stall, and a room taken reset the progress
