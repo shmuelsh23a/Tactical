@@ -12,6 +12,7 @@ import {
   OBSERVATION_SECTOR,
   SCOUTING,
   SMOKE_DURATION_TURNS,
+  SMOKE_GRENADE_THROW_M,
   SMOKE_RADIUS_M,
   camouflageBonus,
   distance,
@@ -134,6 +135,7 @@ const echelonHe: Record<Echelon, string> = { team: "חוליה", squad: "כית�
 /** Smoke by delivery means, in the document's own words (the עשן table). */
 const smokeSourceHe: Record<SmokeSource, string> = {
   grenade: "רימון",
+  rifleGrenade: "רימון רובה",
   mortar: 'פצמ"ר',
   artillery: "פגז ארטילריה",
 };
@@ -374,8 +376,14 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   // 60 and 120 mm lay none — not modelled).
   const callableSmoke = (side: Side) => {
     const allotted = game.fireSupport[side]?.map((a) => a.weapon);
-    return (["grenade", "mortar", "artillery"] as SmokeSource[]).filter(
-      (s) => game.mayCall(side, s) && (s === "grenade" || !allotted || allotted.includes(s)),
+    // A grenade's smoke only where the side has someone to deliver it (decision 97).
+    const has = (k: "infantry" | "command") => game.units.some((u) => u.side === side && u.kind === k && !u.neutralized);
+    return (["grenade", "rifleGrenade", "mortar", "artillery"] as SmokeSource[]).filter((s) =>
+      s === "grenade"
+        ? has("infantry") || has("command")
+        : s === "rifleGrenade"
+          ? has("infantry")
+          : game.mayCall(side, s) && (!allotted || allotted.includes(s)),
     );
   };
 
@@ -524,7 +532,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     try {
       if (mission === "smoke") {
         // Smoke from the tubes is a fire mission (rules decision 56).
-        if (smokeSource !== "grenade" && game.fireMissionsLeft(viewingSide, smokeSource) === 0) {
+        if (smokeSource !== "grenade" && smokeSource !== "rifleGrenade" && game.fireMissionsLeft(viewingSide, smokeSource) === 0) {
           pushLog(`לא נותרו משימות ${tubeHe[smokeSource]}`, "info", onlyFor(viewingSide));
           return;
         }
@@ -1840,7 +1848,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                         {SMOKE_RADIUS_M[activeSmoke]}מ',{" "}
                         {SMOKE_DURATION_TURNS[activeSmoke]} תורות,{" "}
                         {activeSmoke === "grenade"
-                          ? "יורד מייד"
+                          ? `יורד מייד, עד ${SMOKE_GRENADE_THROW_M} מ' מלוחם שלנו`
+                          : activeSmoke === "rifleGrenade"
+                          ? 'יורד מייד, בטווח רימון רובה מכוח חי"ר שלנו'
                           : activeSmoke === "mortar"
                             ? "יורד כעבור תור"
                             : "יורד כעבור שני תורות"}

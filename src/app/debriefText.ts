@@ -4,6 +4,8 @@ import {
   MAX_REGISTERED_TARGETS_PER_WEAPON,
   OBSERVATION_SECTOR,
   PREPARED_POSITION_REACH_M,
+  SMOKE_GRENADE_THROW_M,
+  SMOKE_REFUSAL,
   sectorBonus,
 } from "../engine/index.js";
 import type {
@@ -52,6 +54,7 @@ const weaponHe: Record<string, string> = {
   artillery: "ארטילריה",
   tankRound: "פגז טנק",
   grenade: "רימון",
+  rifleGrenade: "רימון רובה",
   rpgVsInfantry: 'רק"ק נגד חי"ר',
   rpgVsArmor: 'רק"ק נגד רק"מ',
 };
@@ -78,6 +81,8 @@ export function planningRefusalHe(message: string): string {
   if (/and above/.test(message)) return "האמצעי אינו בסמכות הדרג";
   if (/fire missions left/.test(message)) return "לא נותרו משימות אש לאמצעי זה";
   if (/mission planning/.test(message)) return "זה נקבע בתכנון המשימה, לפני התור הראשון";
+  if (message === SMOKE_REFUSAL.noThrower) return `אין לוחם שלנו במרחק הטלה (${SMOKE_GRENADE_THROW_M} מ') מהמקום`;
+  if (message === SMOKE_REFUSAL.noLauncher) return "אין כוח חי\"ר שלנו בטווח רימון רובה מהמקום";
   return message;
 }
 
