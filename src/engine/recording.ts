@@ -243,6 +243,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
   if (r.smokeNeedsThrower !== undefined && typeof r.smokeNeedsThrower !== "boolean") throw malformed("smokeNeedsThrower");
   if (r.closedTerrain !== undefined && typeof r.closedTerrain !== "boolean") throw malformed("closedTerrain");
+  if (r.windowFire !== undefined && typeof r.windowFire !== "boolean") throw malformed("windowFire");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
@@ -468,6 +469,8 @@ export interface GameRecording {
   smokeNeedsThrower?: boolean;
   /** Whether closed terrain was fought inside (rules decision 96). Read as **off** when absent: assaults on houses were resolved outside. */
   closedTerrain?: boolean;
+  /** Whether a fight inside met the street through its windows (rules decision 98). Read as **off** when absent. */
+  windowFire?: boolean;
   /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
   keepStaleMarks?: boolean;
   /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
@@ -668,6 +671,7 @@ export function replayWithOutcomes(
     smokeCostsMission: recording.smokeCostsMission ?? false,
     smokeNeedsThrower: recording.smokeNeedsThrower ?? false,
     closedTerrain: recording.closedTerrain ?? false,
+    windowFire: recording.windowFire ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
     suppressionByVolume: recording.suppressionByVolume ?? false,
     suppressionByChance: recording.suppressionByChance ?? false,

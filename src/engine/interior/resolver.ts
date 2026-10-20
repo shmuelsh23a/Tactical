@@ -72,6 +72,8 @@ export interface InteriorSoldier {
   fromAbove?: boolean;
   /** A defender falling back: where he is going, and the second he comes off the stairs if on them. */
   retreat?: { goal: number; kind: "room" | "stairs" | "out"; offStairs?: number };
+  /** A defender posted at a window (decision 98): the window cell, and the cell he stands on beside it. He is at it while he stands there. */
+  window?: { cell: number; at: number };
 }
 
 /** Where the defender puts a man. */
@@ -80,6 +82,8 @@ export interface DefenderPost {
   storey: number;
   cell: number;
   prepared?: boolean;
+  /** At a window (decision 98): the window cell beside `cell`. He fires out through it and is seen through it. */
+  window?: number;
 }
 
 /** How the attacker goes in. */
@@ -256,7 +260,12 @@ export class InteriorFight {
     for (const post of input.defence) {
       const kind = this.plan.storeys[post.storey]?.cells[post.cell];
       if (kind !== FLOOR && kind !== STAIR) throw new Error(`InteriorFight: ${post.id} is not posted on a floor`);
-      this.soldiers.push(this.man(post.id, defenderSide, post.storey, post.cell, post.prepared ?? false));
+      const m = this.man(post.id, defenderSide, post.storey, post.cell, post.prepared ?? false);
+      if (post.window !== undefined) {
+        if (this.plan.storeys[post.storey]!.cells[post.window] !== WINDOW || !this.around(post.window).includes(post.cell)) throw new Error(`InteriorFight: ${post.id} is not beside his window`);
+        m.window = { cell: post.window, at: post.cell };
+      }
+      this.soldiers.push(m);
     }
     // The attackers at their way in: outside the front door, or at the head of the stairs.
     const start = this.entryCell();
@@ -899,6 +908,7 @@ export class InteriorFight {
   /** Off he goes: leaving his post, he leaves its preparation behind. */
   private setRetreat(m: InteriorSoldier, goal: number, kind: "room" | "stairs" | "out", taken: number): void {
     m.retreat = { goal, kind };
+    m.window = undefined; // he leaves his window
     m.prepared = false;
     m.lookedAt = taken;
   }
@@ -999,6 +1009,47 @@ export class InteriorFight {
     this.lastProgress = Math.max(this.lastProgress, team.halted); // a halt is not a stall
   }
 
+  // ---- what the street sees (decision 98) ----------------------------------
+
+  /**
+   * The men at their windows now: a defender posted at one, still in the
+   * fight and standing at it. `outward` is the grid step from the window to
+   * the street.
+   */
+  atWindows(): { id: string; storey: number; window: number; outward: { x: number; y: number } }[] {
+    const w = this.plan.width;
+    const out: { id: string; storey: number; window: number; outward: { x: number; y: number } }[] = [];
+    for (const m of this.soldiers) {
+      if (!this.active(m) || !m.window || m.cell !== m.window.at) continue;
+      const cells = this.plan.storeys[m.storey]!.cells;
+      const street = this.around(m.window.cell).find((j) => cells[j] === OUTSIDE);
+      if (street === undefined) continue;
+      out.push({ id: m.id, storey: m.storey, window: m.window.cell, outward: { x: (street % w) - (m.window.cell % w), y: Math.floor(street / w) - Math.floor(m.window.cell / w) } });
+    }
+    return out;
+  }
+
+  /** The men in the street outside: attackers not yet through the door, and defenders who fell back out of it. */
+  inStreet(): string[] {
+    return this.soldiers
+      .filter((m) => !m.out && (m.withdrew ? m.side !== this.attackerSide : this.active(m) && m.storey === 0 && this.plan.storeys[0]!.cells[m.cell] === OUTSIDE))
+      .map((m) => m.id);
+  }
+
+  /** Every man in the fight in a room now, of both sides. */
+  inRoom(storey: number, room: number): string[] {
+    const roomOf = this.plan.storeys[storey]!.roomOf;
+    return this.soldiers.filter((m) => this.active(m) && m.storey === storey && roomOf[m.cell] === room).map((m) => m.id);
+  }
+
+  /** The room a man stands in, if he is in one. */
+  roomOfMan(id: string): { storey: number; room: number } | undefined {
+    const m = this.soldiers.find((s) => s.id === id);
+    if (!m) return undefined;
+    const room = this.plan.storeys[m.storey]!.roomOf[m.cell]!;
+    return room >= 0 ? { storey: m.storey, room } : undefined;
+  }
+
   result(): InteriorResult {
     const count = (attackers: boolean) => {
       const men = this.soldiers.filter((s) => attackers === (s.side === this.attackerSide));
@@ -1025,8 +1076,12 @@ export class InteriorFight {
  * man can reach, a man to a room as far as they go, each at the cell of his
  * room farthest from its doors — "back from the windows in the shadows of
  * the room" (ATTP 3-06.11 (2011), para 6-50). Drawn from `rng`.
+ *
+ * Given `toward`, the way the enemy is in the grid's own axes, a man whose
+ * room has a window facing it stands at that window instead (decision 98,
+ * "unless otherwise planned"): the one facing it most squarely. No draw.
  */
-export function defaultDefence(plan: FloorPlan, ids: readonly string[], rng: Rng, prepared = false): DefenderPost[] {
+export function defaultDefence(plan: FloorPlan, ids: readonly string[], rng: Rng, prepared = false, toward?: { x: number; y: number }): DefenderPost[] {
   const rooms: { storey: number; room: number }[] = [];
   plan.storeys.forEach((s, storey) => s.rooms.forEach((r) => { if (!s.cutOff.includes(r.id)) rooms.push({ storey, room: r.id }); }));
   const posts: DefenderPost[] = [];
@@ -1035,9 +1090,32 @@ export function defaultDefence(plan: FloorPlan, ids: readonly string[], rng: Rng
     if (free.length === 0) free.push(...rooms);
     const k = rng.int(0, free.length - 1);
     const { storey, room } = free.splice(k, 1)[0]!;
-    posts.push({ id, storey, cell: backOfRoom(plan, storey, room), prepared });
+    const atWindow = toward ? windowFacing(plan, storey, room, toward) : undefined;
+    posts.push(atWindow ? { id, storey, cell: atWindow.at, prepared, window: atWindow.window } : { id, storey, cell: backOfRoom(plan, storey, room), prepared });
   }
   return posts;
+}
+
+/**
+ * The window of a room that faces `toward` most squarely — its street side
+ * that way — and the room's cell beside it; none when no window faces it.
+ * Ties go to the first in reading order.
+ */
+function windowFacing(plan: FloorPlan, storey: number, room: number, toward: { x: number; y: number }): { window: number; at: number } | undefined {
+  const s = plan.storeys[storey]!;
+  const w = plan.width, n = s.cells.length;
+  let best: { window: number; at: number } | undefined, bestDot = 0;
+  for (let i = 0; i < n; i++) {
+    if (s.cells[i] !== CELL_KIND.window) continue;
+    const x = i % w;
+    const near = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w].filter((j) => j >= 0 && j < n);
+    const at = near.find((j) => s.roomOf[j] === room);
+    const street = near.find((j) => s.cells[j] === CELL_KIND.outside);
+    if (at === undefined || street === undefined) continue;
+    const dot = ((street % w) - x) * toward.x + (Math.floor(street / w) - Math.floor(i / w)) * toward.y;
+    if (dot > bestDot) { bestDot = dot; best = { window: i, at }; }
+  }
+  return best;
 }
 
 /** The cell of a room farthest, in steps, from every door into it. */

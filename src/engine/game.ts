@@ -147,6 +147,7 @@ import {
   roundSuppression,
   hasMorale,
   nerveUnderAssault,
+  readySoldiers,
   type FireNote,
   type ForceMorale,
   type MoraleReport,
@@ -710,6 +711,14 @@ export interface GameOptions {
    */
   closedTerrain?: boolean;
   /**
+   * A fight inside meets the street through the windows (rules decision 98):
+   * a defender stands at a window facing the enemy unless planned otherwise,
+   * fires out through it and is seen through it; fire into the building finds
+   * only such men and those still in the street; a round that gets in bursts
+   * in one room. On by default; a recording made before it reads it as off.
+   */
+  windowFire?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -752,6 +761,21 @@ export interface ReceivedFire {
  * The hotseat game engine: owns the full (umpire's) game state and drives the
  * turn/phase loop. Player actions are validated against the current phase.
  */
+/** A shot refused for want of a sight line: the words the resolvers use. */
+const NO_LINE_OF_SIGHT = "no line of sight";
+
+/** Fire through the windows of a fight inside (rules decision 98): see `Game.throughWindows`. */
+interface WindowExchange {
+  /** Someone can fire and someone can be hit. */
+  seen: boolean;
+  /** The firer's men who can fire, where it fights inside. */
+  shooters?: Set<string>;
+  /** The target's men who can be hit, where it fights inside. */
+  pool?: Set<string>;
+  /** The target's man at the window nearest the firer, whom a round aimed at it goes in on. */
+  window?: string;
+}
+
 export class Game {
   readonly seed: number;
   readonly rng: Rng;
@@ -827,6 +851,7 @@ export class Game {
   readonly smokeCostsMission: boolean;
   readonly smokeNeedsThrower: boolean;
   readonly closedTerrain: boolean;
+  readonly windowFire: boolean;
   /** The fights going on inside buildings (rules decision 96). */
   readonly interior = new InteriorBattles();
   /** Whether a mark stays where it was last seen (rules decision 57). */
@@ -969,10 +994,27 @@ export class Game {
       (o) => o.kind === "building" && distanceToFootprint(o.footprint, impact) === 0,
     );
     if (!building) return undefined;
+    // A fight going on under it (decision 98): the round bursts in the
+    // top-storey room under where it came through, and the roof still keeps
+    // it from the rest of the men inside.
+    const room = this.windowFire ? this.interior.roomBurst(this, building.id, { roof: impact }) : undefined; // a Map whenever a fight is on
+    const fighters = new Set(this.interior.fightersIn(building.id));
     return {
       chance,
       factor: ENCLOSED_BLAST_FACTOR,
       inside: (u: Unit) => u.kind === "infantry" && distanceToFootprint(building.footprint, u.position) <= OBJECT_COVER_REACH_M,
+      ...(room
+        ? {
+            room: {
+              pools: (u: Unit) => room.get(u.id),
+              rest: (u: Unit) => {
+                if (!fighters.has(u.id)) return undefined;
+                const inRoom = room.get(u.id);
+                return new Set((u.soldiers ?? []).filter((m) => !inRoom?.has(m.id)).map((m) => m.id));
+              },
+            },
+          }
+        : {}),
     };
   }
 
@@ -982,12 +1024,80 @@ export class Game {
    * where it holds a position prepared before the battle. Undefined where it
    * has neither, or the weapon has no figure.
    */
-  private throughTheWindow(weapon: string, attacker: Unit, target: Unit) {
+  private throughTheWindow(weapon: string, attacker: Unit, target: Unit, windows?: WindowExchange) {
     const figures = CRITICAL_CHANCE[weapon];
     if (!figures || target.kind !== "infantry") return undefined;
     const aperture = this.buildingAt(target.position) ? figures.window : target.baseCover === "full" ? figures.slit : undefined;
     const chance = aperture ? lookupBand(aperture, distance(attacker.position, target.position))?.value : undefined;
-    return chance ? { chance, factor: ENCLOSED_BLAST_FACTOR } : undefined;
+    if (!chance) return undefined;
+    // A force fighting inside (decision 98): through the window of the man
+    // aimed at — the nearest the firer can see at one — into his room, among
+    // everyone in it. Seen only in the street, there is no window to go in by.
+    if (windows?.pool) {
+      if (!windows.window) return undefined;
+      const building = this.buildingAt(target.position);
+      const room = building ? this.interior.roomBurst(this, building.id, { soldierId: windows.window }) : undefined;
+      if (!room) return undefined;
+      return {
+        chance,
+        factor: ENCLOSED_BLAST_FACTOR,
+        room: { candidates: [...room.keys()].map((id) => this.getUnit(id)), pools: (u: Unit) => room.get(u.id) },
+      };
+    }
+    return { chance, factor: ENCLOSED_BLAST_FACTOR };
+  }
+
+  /**
+   * Fire between two forces where either fights inside a building (rules
+   * decision 98), man by man through the windows: which of the firer's men
+   * can fire — those at a window facing the target, each with a sight line
+   * to it — and which of the target's men can be hit — those at a window
+   * facing the firer, or still in the street, each seen by someone. A force
+   * in no fight fires and is seen as a whole, from where it stands.
+   * Undefined when neither fights inside, or the rule is off.
+   */
+  private throughWindows(firer: Unit, target: Unit): WindowExchange | undefined {
+    if (!this.windowFire) return undefined;
+    const firerShown = this.interior.shown(this, firer.id, target.position);
+    const targetShown = this.interior.shown(this, target.id, firer.position);
+    if (!firerShown && !targetShown) return undefined;
+    const firerPts = firerShown ?? [{ soldierId: "", point: firer.position, height: eyeHeight(firer) }];
+    const targetPts = targetShown ?? [{ soldierId: "", point: target.position, height: eyeHeight(target) }];
+    const sees = (a: { point: Point; height: number }, b: { point: Point; height: number }) =>
+      !(SMOKE_BLOCKS_FIRE && this.smoke.some((sm) => segmentIntersectsCircle(a.point, b.point, sm.center, sm.radius))) &&
+      !terrainBlocksSight(this.terrain, a.point, a.height, b.point, b.height);
+    const shooters = firerShown ? new Set(firerShown.filter((f) => targetPts.some((t) => sees(f, t))).map((f) => f.soldierId)) : undefined;
+    const seenMen = targetShown?.filter((t) => firerPts.some((f) => sees(f, t)));
+    const pool = seenMen ? new Set(seenMen.map((t) => t.soldierId)) : undefined;
+    // The window a round aimed at it goes in by: the nearest seen at one.
+    const atWindows = (seenMen ?? []).filter((t) => t.facing).sort((a, b) => distance(a.point, firer.position) - distance(b.point, firer.position));
+    const seen = (shooters === undefined || shooters.size > 0) && (pool === undefined || pool.size > 0);
+    return { seen, ...(shooters ? { shooters } : {}), ...(pool ? { pool } : {}), ...(atWindows[0] ? { window: atWindows[0].soldierId } : {}) };
+  }
+
+  /** Two forces fighting each other inside a building fight there, room by room, and not through the rules outside (decision 98). */
+  private sameFightRefusal(a: Unit, b: Unit): string | undefined {
+    const fight = this.interior.engagementOf(a.id);
+    return fight && fight === this.interior.engagementOf(b.id) ? INTERIOR_REFUSAL.fightingInside : undefined;
+  }
+
+  /**
+   * Can `firer` fire at `target` at all: not the enemy it fights room by
+   * room, and someone of each in sight of the other — through the windows
+   * where either fights inside (decision 98), from force to force otherwise.
+   * What a computer player should aim by, since it is what the engine fires by.
+   */
+  canEngage(firer: Unit, target: Unit): boolean {
+    if (this.sameFightRefusal(firer, target)) return false;
+    const windows = this.throughWindows(firer, target);
+    return windows ? windows.seen : this.hasLineOfSight(firer, target);
+  }
+
+  /** How many of a force fighting inside can fire at `target` from its windows; undefined for a force in no fight (decision 98). */
+  windowShooters(firer: Unit, target: Unit): number | undefined {
+    const shooters = this.throughWindows(firer, target)?.shooters;
+    // A broken man at a window keeps his head down, as he does outside (decision 19).
+    return shooters ? readySoldiers(firer).filter((s) => shooters.has(s.id)).length : undefined;
   }
 
   /** Whether the checked figures are in play: they amend the research ones (rules decision 79). */
@@ -1157,6 +1267,7 @@ export class Game {
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
     this.smokeNeedsThrower = opts.smokeNeedsThrower ?? true;
     this.closedTerrain = opts.closedTerrain ?? true;
+    this.windowFire = opts.windowFire ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1316,6 +1427,7 @@ export class Game {
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
       ...(this.smokeNeedsThrower ? { smokeNeedsThrower: true } : {}),
       ...(this.closedTerrain ? { closedTerrain: true } : {}),
+      ...(this.windowFire ? { windowFire: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -1473,7 +1585,7 @@ export class Game {
         // The minute inside every building being fought for (rules decision
         // 96), before the upkeep: the morale step finds its losses itself.
         const interior = this.closedTerrain
-          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b) })
+          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire })
           : [];
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
@@ -2694,10 +2806,12 @@ export class Game {
         if (this.trackIntel && !this.knows(coverer.side, actor.id)) continue;
 
         const bands = posture.weapon === "sustainedMg" ? SUSTAINED_MG_BANDS : SMALL_ARMS_BANDS;
+        // A force firing out of a fight inside is answered through the windows it fires from (decision 98).
+        const windows = from ? undefined : this.throughWindows(coverer, actor);
         const canFireAt = (at: Point): boolean => {
           actor.position = at;
           const reaches = lookupBand(bands, distance(coverer.position, at)) != null;
-          return reaches && this.hasLineOfSight(coverer, actor);
+          return reaches && (windows ? windows.seen : this.hasLineOfSight(coverer, actor));
         };
 
         const at = from
@@ -2754,6 +2868,7 @@ export class Game {
             return aim === 1 ? {} : { aimFactor: aim };
           })(),
               hasLineOfSight: true,
+          ...(windows?.pool ? { targetPool: windows.pool } : {}),
         });
         // What it was behind against this fire, as the hit read it, for the
         // suppression the burst puts on it (decision 91): before its cover is put back.
@@ -2971,12 +3086,14 @@ export class Game {
     this.requirePhase("combat");
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    const moraleRefusal = this.moraleRefusal(attacker) ?? this.headsDownRefusal(attacker, target);
-    if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    const moraleRefusal = this.moraleRefusal(attacker, true) ?? this.sameFightRefusal(attacker, target) ?? this.headsDownRefusal(attacker, target);
+    // Through the windows nobody sees anybody (decision 98): a shot never taken draws no answer.
+    const blind = this.throughWindows(attacker, target)?.seen === false ? NO_LINE_OF_SIGHT : undefined;
+    if (moraleRefusal || blind || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       // A shot never taken draws no answer.
       return {
         fired: false,
-        reason: moraleRefusal ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
+        reason: moraleRefusal ?? blind ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hitChance: 0,
         shooters: 0,
@@ -3017,8 +3134,17 @@ export class Game {
       // The engine knows what the target is behind; a caller may still say.
       cover: opts.cover ?? this.coverAgainst(target),
       // The caller may assert line of sight itself; otherwise the engine works
-      // it out from the smoke on the map.
-      hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
+      // it out from the smoke on the map — through the windows, man by man,
+      // where either force fights inside (decision 98).
+      ...(() => {
+        const w = this.throughWindows(attacker, target);
+        if (!w) return { hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target) };
+        return {
+          hasLineOfSight: w.seen,
+          ...(w.shooters ? { shooterIds: w.shooters } : {}),
+          ...(w.pool ? { targetPool: w.pool } : {}),
+        };
+      })(),
     });
     if (fireResult.fired) {
       if (unready) this.surprise(target);
@@ -3051,11 +3177,12 @@ export class Game {
     const collateral = (opts.collateralIds ?? []).map((id) => this.getUnit(id));
     const attacker = this.getUnit(attackerId);
     const target = this.getUnit(targetId);
-    const moraleRefusal = this.moraleRefusal(attacker) ?? this.headsDownRefusal(attacker, target);
-    if (moraleRefusal || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    const moraleRefusal = this.moraleRefusal(attacker, true) ?? this.sameFightRefusal(attacker, target) ?? this.headsDownRefusal(attacker, target);
+    const blind = this.throughWindows(attacker, target)?.seen === false ? NO_LINE_OF_SIGHT : undefined;
+    if (moraleRefusal || blind || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
-        reason: moraleRefusal ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
+        reason: moraleRefusal ?? blind ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hit: false,
         hitChance: 0,
@@ -3068,13 +3195,16 @@ export class Game {
     const targetWasNeutralized = target.neutralized;
     const alreadyFired = attacker.firedThisTurn;
     const asShell = this.directHeAsShell;
-    const window = this.criticalHits ? this.throughTheWindow(weaponKey, attacker, target) : undefined;
+    // Through the windows where either force fights inside (decision 98).
+    const windows = this.throughWindows(attacker, target);
+    const window = this.criticalHits ? this.throughTheWindow(weaponKey, attacker, target, windows) : undefined;
     // The building the target is in, when the round is one that breaches its wall.
     const breached =
       SPALLS_INSIDE.has(weaponKey) && target.kind !== "vehicle" ? this.buildingAt(target.position) : undefined;
     const roofed = (u: Unit) => u.baseCover === "full" || underRoof(this.terrain, u.position);
     const result = resolveDirectExplosive(this.rng, weaponKey, attacker, target, {
-      hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target),
+      hasLineOfSight: windows ? windows.seen : (opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target)),
+      ...(windows ? { pools: (u: Unit) => (u === target ? windows.pool : this.throughWindows(attacker, u)?.pool) } : {}),
       // Like a shell's, the round's blast finds whoever is within it (rules
       // decision 75) — save another vehicle, which only the round aimed at
       // it connects with when it is an anti-armour round.
@@ -4063,9 +4193,10 @@ export class Game {
     };
   }
 
-  moraleRefusal(unit: Unit): string | undefined {
+  /** Why a force may not act; `firingOut`, for its fire, which a force fighting inside may give through its windows (decision 98). */
+  moraleRefusal(unit: Unit, firingOut = false): string | undefined {
     if (unit.surrendered) return MORALE_REFUSAL.surrendered;
-    if (this.interior.inFight(unit.id)) return INTERIOR_REFUSAL.fightingInside;
+    if (this.interior.inFight(unit.id) && !(firingOut && this.windowFire)) return INTERIOR_REFUSAL.fightingInside;
     if (unit.routing) return MORALE_REFUSAL.routing;
     if (this.standingOrders.get(unit.id)?.withdraw) return MORALE_REFUSAL.withdrawing;
     return undefined;

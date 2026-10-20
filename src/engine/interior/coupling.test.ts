@@ -18,7 +18,7 @@ const house: MapObject = {
   footprint: { shape: "polygon", points: [{ x: 100, y: 100 }, { x: 116, y: 100 }, { x: 116, y: 112 }, { x: 100, y: 112 }] },
 };
 
-function battle(seed = 1, opts: { closedTerrain?: boolean } = {}) {
+function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean } = {}) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
   g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 4)); // inside the house
   // 40 m out from the house's front door, wherever this game's plan puts it.
@@ -65,6 +65,16 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     expect(g.interior.inFight("R-1")).toBe(true);
     g.advanceToPhase("movement");
     expect(() => g.moveUnit("B-1", { x: 108, y: 150 })).toThrow(INTERIOR_REFUSAL.fightingInside);
+    g.advanceToPhase("combat");
+    // Fighting each other inside, they do it room by room, not by the rules outside (decision 98).
+    expect(g.fire("B-1", "R-1", { weapon: "smallArms" }).reason).toBe(INTERIOR_REFUSAL.fightingInside);
+    expect(g.fire("R-1", "B-1", { weapon: "smallArms" }).reason).toBe(INTERIOR_REFUSAL.fightingInside);
+  });
+
+  it("refuses all fire from a fight inside without decision 98, as recorded before it", () => {
+    const g = battle(1, { windowFire: false });
+    goIn(g);
+    closeTurn(g);
     g.advanceToPhase("combat");
     expect(g.fire("R-1", "B-1", { weapon: "smallArms" }).reason).toBe(INTERIOR_REFUSAL.fightingInside);
   });
