@@ -3209,6 +3209,29 @@ on the stated reasoning, still awaiting the author's word.
       range chooses by `Game.canEngage`. **Morale's seeing too** (the
       author, the same day): armour fear, a friend breaking in sight, and
       who watched a rout.
+99. ✅ **Joining a fight already going on** (the author, 2026-10-20, every
+    option as proposed). Until now a second assault on a building with a
+    fight in it was refused. With `GameOptions.joinFights` (on for a new
+    game, off for a recording made before it, which replays as played):
+    - **A force of the attacking side** that assaults into a building its
+      side is already clearing joins the fight as the turn closes: new
+      teams of four at the front door, each taking rooms not yet taken, by
+      the same drill (`InteriorFight.join`).
+    - **Unless otherwise planned, the same defaults** as the first force:
+      by the front door, a grenade into each room, teams of four.
+    - **A force of the defending side is refused** for now: a counterattack
+      inside means clearing back through rooms the attacker holds, which is
+      its own design. Until then it fights from outside.
+    - The log names the joining force to its own side and the umpire; the
+      defender reads only "כוח אויב נוסף נכנס למבנה".
+    - A force that broke and left the fight, and has rallied, goes back in
+      the same way. ⚠️ Ours: only an assault on a force in that fight
+      joins it; an enemy force inside the building but not in the fight is
+      not reached by it, and the assault is refused as before.
+    - **The computer does not use it yet:** its drill picks only targets
+      it can fire at, and a defender fighting inside rarely shows a window
+      to a squad outside. In 20 raids, 12 fights and no force joined one.
+      Whether the drill should send a second squad in is the author's.
     - **Rounds that get in go off in the room they strike.** A window
       critical (decision 77) bursts in the room of the man at that window;
       a round through the roof, in the top-storey room under where it

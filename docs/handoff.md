@@ -61,7 +61,7 @@ out of here on purpose:
 ## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,062 tests, 73 files
+npm run check       lint + typecheck clean, 1,070 tests, 73 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -120,6 +120,12 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
+- **Should the computer's drill send a second squad into a house its side
+  is clearing?** Decision 99 lets an assault join a fight; the drill never
+  orders one (12 fights in 20 raids, no joins), because it picks only
+  targets it can fire at. A drill change, so his.
+- **The defender's counterattack inside** (decision 99 refuses it for
+  now): its own design when he wants it.
 - **For the UX pass:** the screen marks the enemy a force is fighting
   inside as a target; the engine refuses that shot ("נלחם בתוך מבנה").
 
@@ -172,6 +178,8 @@ Each is in the README's decision 96 or 97. The short form:
   windows; fire out counts only them; a round that gets in bursts in its
   room; only where a fight is going on. Spotting and morale's seeing
   follow the windows too. The three-hour clock stays.
+- Joining (decision 99): the attacking side joins as new teams at the
+  door, by the same defaults; the defending side is refused for now.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
   are under backlog 13.
@@ -518,12 +526,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Joining a fight already going on** (urban-design.md, step 3b, *Still to
-do*): today a second assault on a building with a fight in it is refused.
-That is what makes `yokneamUrban` (59%, fought from outside) and the raid
-tell the same story. The windows (decision 98) are done; on the raid's
-ground they rarely get a sight line, so a scenario with open approaches
-to a defended house is what would show them.
+**The players' plans inside, as data** (urban-design.md, step 3b). The
+windows (decision 98) and joining (decision 99) are done; neither moves the
+town tables, because the raid's ground blocks sight lines to a fight and
+the drill never joins one. A scenario with open approaches to a defended
+house would show the windows; the drill question above decides the
+joining.
 
 **The 1% standoff fault is closed** (2026-10-20): no stall in 3,984
 fights. The six left are the three-hour clock on two building blocks,

@@ -5282,6 +5282,9 @@ show on ground with open approaches to a defended house.
 - **Spotting through the windows** (ruled the same evening): the raid
   16% at 100 battles, within noise of 14%. **Morale's seeing** through
   them too: still 16%.
+- **Joining a fight** (decision 99): the raid 15%, urban 59% at 100
+  battles, unchanged — the drill never joins one (12 fights in 20 raids,
+  no joins), because it picks only targets it can fire at.
 - ⚠️ Ours, listed on decision 98: the assault's position as "the enemy" a
   window faces; the clearing attackers man no windows.
 

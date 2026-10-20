@@ -269,8 +269,14 @@ after houses.
    only those men and attackers still in the street; forces fighting each
    other inside do not also shoot by the rules outside; a window or roof
    critical bursts in one room among both sides. Only where a fight is going
-   on: a garrison not yet assaulted keeps `OWN_OBJECT_SIGHT_M`. **Still to
-   do:** joining a fight already going on, and the players' plans inside. Two findings wait on the author first: a
+   on: a garrison not yet assaulted keeps `OWN_OBJECT_SIGHT_M`. Spotting and
+   morale's seeing follow the windows too.
+
+   **Joining a fight, done 2026-10-20** (decision 99, `GameOptions.joinFights`):
+   the attacking side's further forces join as new teams at the door; the
+   defending side's are refused until the counterattack inside is designed.
+   **Still to do:** the defender's counterattack inside, and the players'
+   plans inside. Two findings wait on the author first: a
    house is cleared in minutes, where doctrine's one example says about an
    hour (too weak to set a target; balance.md has why), and top-down entry
    is barely better than the door. It is
