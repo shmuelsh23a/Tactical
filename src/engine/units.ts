@@ -63,8 +63,10 @@ export function woundHit(
   turn: number,
   cause: "smallArms" | "explosive",
   preferredId?: string,
+  /** Only these men can be hit: those a force inside a building shows at its windows (decision 98). */
+  pool?: ReadonlySet<string>,
 ): { damage: number; casualty: boolean; missed?: true } {
-  const hit = severityHit(rng, target, turn, preferredId);
+  const hit = severityHit(rng, target, turn, preferredId, pool);
   if (hit.casualty && hit.victim) hit.victim.outBy = cause;
   return { damage: hit.damage, casualty: hit.casualty, ...(hit.missed ? { missed: true as const } : {}) };
 }
@@ -75,6 +77,7 @@ function severityHit(
   target: Unit,
   turn: number,
   preferredId?: string,
+  pool?: ReadonlySet<string>,
 ): { damage: number; casualty: boolean; victim?: Soldier; missed?: true } {
   const severity = WOUND_SEVERITY;
   // The d10 — drawn whole where luck reads it (rules decision 69): one draw
@@ -82,8 +85,9 @@ function severityHit(
   // between the faces without a draw of its own. Otherwise the middle of
   // the face rolled, which reads as the face.
   const u = target.traitRules?.effects ? rng.next() : (rng.die(10) - 0.5) / 10;
-  const victim = selectHitSoldier(target, rng, preferredId);
-  if (!victim) return { damage: 0, casualty: false };
+  const victim = selectHitSoldier(target, rng, preferredId, pool);
+  // Nobody left of the men it could reach (decision 98): no hit at all.
+  if (!victim) return pool ? { damage: 0, casualty: false, missed: true } : { damage: 0, casualty: false };
   const kind = luckyOutcome(target, victim, u, severity.light, severity.serious);
   // His luck turned it away (rules decision 69): not a hit on him at all.
   if (kind === "miss") return { damage: 0, casualty: false, missed: true };
@@ -107,16 +111,18 @@ function severityHit(
  * When a force (not a specific man) is targeted, the casualty is **random**
  * among the fit soldiers. A caller may override this by passing
  * `preferredId` — the player deliberately targeting a particular soldier —
- * in which case that soldier is chosen if still fit. Returns undefined if the
- * unit has no fit soldiers.
+ * in which case that soldier is chosen if still fit. Given a `pool`, only
+ * its men can be chosen (decision 98). Returns undefined if the unit has no
+ * fit soldiers there.
  */
 export function selectHitSoldier(
   unit: Unit,
   rng: Rng,
   preferredId?: string,
+  pool?: ReadonlySet<string>,
 ): Soldier | undefined {
   if (!unit.soldiers) return undefined;
-  const fit = unit.soldiers.filter((s) => !s.neutralized);
+  const fit = unit.soldiers.filter((s) => !s.neutralized && (!pool || pool.has(s.id)));
   if (fit.length === 0) return undefined;
   if (preferredId) {
     const chosen = fit.find((s) => s.id === preferredId);

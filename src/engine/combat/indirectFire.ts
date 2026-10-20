@@ -6,7 +6,7 @@ import { explosiveEntry, type Checked, type Lethality } from "../data/lethality.
 import type { ArmourFigures } from "../data/armor.js";
 import { effectiveCover } from "../terrain.js";
 import { resolveCepDispersion, resolveDispersion, type DispersionResult } from "./artillery.js";
-import { resolveBlast, type BlastResult, type StructureStrike } from "./explosives.js";
+import { mergeBlasts, resolveBlast, type BlastResult, type StructureStrike } from "./explosives.js";
 import { quickToCover } from "../traits.js";
 
 export interface IndirectFireResult {
@@ -56,7 +56,18 @@ export function resolveIndirectFire(
      * building, the chance it goes through the roof, who is inside, and the
      * factor on their blast chance when it does. Absent: no round can.
      */
-    criticalAt?: (impact: Point) => { chance: number; inside: (u: Unit) => boolean; factor: number } | undefined;
+    criticalAt?: (impact: Point) => {
+      chance: number;
+      inside: (u: Unit) => boolean;
+      factor: number;
+      /**
+       * A building with a fight going on in it (decision 98): through the
+       * roof, the round goes off in one room. `pools` is who is in it, by
+       * force; `rest`, the rest of each force inside, whom the roof still
+       * keeps from it.
+       */
+      room?: { pools: (u: Unit) => ReadonlySet<string> | undefined; rest: (u: Unit) => ReadonlySet<string> | undefined };
+    } | undefined;
     /** Whose armour figures (rules decision 78). The document's unless given. */
     armour?: ArmourFigures;
     /** The research figures as checked against the sources (rules decision 79). */
@@ -79,11 +90,24 @@ export function resolveIndirectFire(
   // An air burst goes off above the roof, never through it.
   const onBuilding = fuze === "impact" ? opts.criticalAt?.(dispersion.impact) : undefined;
   const critical = onBuilding !== undefined && rng.chance(onBuilding.chance);
-  const blast = resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
-    factorFor: (u) =>
-      critical && onBuilding.inside(u) ? onBuilding.factor : shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
-    airburst: fuze === "airburst",
-  }, opts.lethality ?? "document", { figures: opts.armour ?? "document" }, opts.checked ?? false);
+  const room = critical ? onBuilding.room : undefined;
+  const roomFactor = onBuilding?.factor ?? 1;
+  const asShell = { factorFor: (u: Unit) => shellFactor(u, fuze, underRoof(u), opts.shellVsMen), airburst: fuze === "airburst" };
+  const lethality = opts.lethality ?? "document", armour = { figures: opts.armour ?? "document" as ArmourFigures };
+  const blast = room
+    ? mergeBlasts([
+        // The building's fight: the rest of each force under the roof as before, and the room the round burst in.
+        resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, asShell, lethality, armour, opts.checked ?? false, room.rest),
+        resolveBlast(rng, weaponKey, dispersion.impact, allUnits.filter((u) => room.pools(u) !== undefined), opts.turn ?? 0, {
+          factorFor: () => roomFactor,
+          airburst: false,
+        }, lethality, armour, opts.checked ?? false, room.pools, true),
+      ])
+    : resolveBlast(rng, weaponKey, dispersion.impact, allUnits, opts.turn ?? 0, {
+        factorFor: (u) =>
+          critical && onBuilding.inside(u) ? onBuilding.factor : shellFactor(u, fuze, underRoof(u), opts.shellVsMen),
+        airburst: fuze === "airburst",
+      }, lethality, armour, opts.checked ?? false);
   return { weapon: weaponKey, aim, dispersion, blast, ...(critical ? { critical: true as const } : {}) };
 }
 

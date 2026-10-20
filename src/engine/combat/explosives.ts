@@ -79,6 +79,10 @@ export function resolveBlast(
   armour: { figures: ArmourFigures; from?: Point } = { figures: "document" },
   /** The research figures as checked against the sources (rules decision 79). */
   checked: Checked = false,
+  /** The men of a force the blast can reach, where it is not all of them: a force fighting inside a building (decision 98). */
+  pools?: (unit: Unit) => ReadonlySet<string> | undefined,
+  /** Bursting in a room among the men in it (decision 98): every one of them is at the burst, wherever his force's mark stands. */
+  inRoom = false,
 ): BlastResult {
   const weapon = explosiveForChecked(weaponKey, lethality, checked);
   if (!weapon) throw new Error(`Unknown explosive: ${weaponKey}`);
@@ -87,7 +91,7 @@ export function resolveBlast(
 
   for (const unit of candidates) {
     if (unit.neutralized && unit.kind === "vehicle" && unit.vehicle?.destroyed) continue;
-    const dist = distance(impact, unit.position);
+    const dist = inRoom ? 0 : distance(impact, unit.position);
     // The research figures are lethal areas against men (rules decision 41):
     // a vehicle is reached, and connected with, as the document has it.
     // On the checked figures a charge reaches the vehicle on it, and plain HE
@@ -113,12 +117,14 @@ export function resolveBlast(
     };
 
     if (unit.kind === "infantry") {
-      const fit = fitSoldiers(unit);
+      const pool = pools?.(unit);
+      const fit = pool ? (unit.soldiers ?? []).filter((s) => !s.neutralized && pool.has(s.id)).length : fitSoldiers(unit);
       for (let i = 0; i < fit; i++) {
+        if (pool && !(unit.soldiers ?? []).some((s) => !s.neutralized && pool.has(s.id))) break; // all it could reach are down
         if (!rng.chance(blastChance)) continue;
         // Area effect on a force → random casualty among the fit soldiers;
         // how bad, the same roll as a bullet's (rules decision 27).
-        const hit = woundHit(rng, unit, turn, "explosive");
+        const hit = woundHit(rng, unit, turn, "explosive", undefined, pool);
         if (hit.missed) continue; // a lucky man (rules decision 69)
         res.caught = true;
         res.damage += hit.damage;
@@ -206,7 +212,7 @@ const armourSeverity = (e: NonNullable<BlastTargetResult["armorEffect"]>) =>
   (e.destroyed ? 4 : 0) + (e.mobilityKilled ? 2 : 0) + (e.penetrated ? 1 : 0);
 
 /** Several rounds' blasts as one: each force's damage and casualties summed, its worst armour effect kept. */
-function mergeBlasts(blasts: BlastResult[]): BlastResult {
+export function mergeBlasts(blasts: BlastResult[]): BlastResult {
   const byUnit = new Map<string, BlastTargetResult>();
   for (const b of blasts) {
     for (const t of b.targets) {
@@ -249,7 +255,18 @@ export function resolveDirectExplosive(
      * through a window or a slit at `chance`, and bursts among the target's
      * men at `factor` on their blast chance. Absent: no round can.
      */
-    critical?: { chance: number; factor: number };
+    critical?: {
+      chance: number;
+      factor: number;
+      /**
+       * Where the target fights inside a building (decision 98): the round
+       * goes off in one room, among the men of both sides in it and nobody
+       * else — these forces, these men.
+       */
+      room?: { candidates: Unit[]; pools: (unit: Unit) => ReadonlySet<string> | undefined };
+    };
+    /** The men of a force the round can reach, where it is not all of them: a force fighting inside a building (decision 98). */
+    pools?: (unit: Unit) => ReadonlySet<string> | undefined;
     /** Whose armour figures (rules decision 78). The document's unless given. */
     armour?: ArmourFigures;
     /** The research figures as checked against the sources (rules decision 79). */
@@ -307,11 +324,13 @@ export function resolveDirectExplosive(
     const gap = opts.blastFactor;
     // Only as a shell: a critical round builds one of its own, which is not reason enough.
     const aimed = shell && gap && opts.shell ? { ...shell, factorFor: (u: Unit) => shell.factorFor(u) * gap(u) } : shell;
+    const room = critical ? opts.critical!.room : undefined;
+    const roomShell: ShellEffect | undefined = room ? { factorFor: () => opts.critical!.factor, airburst: false } : undefined;
     blasts.push(
-      resolveBlast(rng, weaponKey, target.position, candidates, opts.turn ?? 0, aimed, lethality, {
+      resolveBlast(rng, weaponKey, target.position, room ? room.candidates : candidates, opts.turn ?? 0, roomShell ?? aimed, lethality, {
         figures: opts.armour ?? "document",
         from: attacker.position,
-      }, opts.checked ?? false),
+      }, opts.checked ?? false, room ? room.pools : opts.pools, room !== undefined),
     );
   }
   if (criticals) result.criticals = criticals;

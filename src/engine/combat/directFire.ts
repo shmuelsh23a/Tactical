@@ -94,11 +94,23 @@ export interface DirectFireResult {
  * range-banded hit chance, modified by the target's cover and movement. Every
  * hit inflicts 1d4 damage. Small-arms fire has no effect on armoured vehicles.
  */
+/**
+ * Through the windows of a fight inside (rules decision 98): the engine's to
+ * set, never a caller's, so it is not part of `DirectFireOptions`, which a
+ * recording journals.
+ */
+export interface WindowFireOptions {
+  /** Only these men fire: a force inside a building fires out through its windows. */
+  shooterIds?: ReadonlySet<string>;
+  /** Only these men of the target can be hit: those it shows at its windows. */
+  targetPool?: ReadonlySet<string>;
+}
+
 export function resolveDirectFire(
   rng: Rng,
   attacker: Unit,
   target: Unit,
-  opts: DirectFireOptions,
+  opts: DirectFireOptions & WindowFireOptions,
 ): DirectFireResult {
   const range = distance(attacker.position, target.position);
   // A machine gun team's own table (decision 90), else the coaxial's for a
@@ -144,8 +156,10 @@ export function resolveDirectFire(
   // shooting as well as his force's suppression and his own nerve let him
   // (rules decision 19). Without morale: every fit man, at the table's chance.
   const coaxial = opts.weapon === "sustainedMg";
-  const accuracy = coaxial ? coaxialGunners(attacker) : shooterAccuracy(attacker);
-  const available = coaxial ? accuracy.length : readySoldiers(attacker).length;
+  const ids = opts.shooterIds;
+  const ready = coaxial ? [] : readySoldiers(attacker);
+  const accuracy = coaxial ? coaxialGunners(attacker) : ids ? shooterAccuracy(attacker).filter((_, k) => ids.has(ready[k]!.id)) : shooterAccuracy(attacker);
+  const available = coaxial ? accuracy.length : ids ? ready.filter((s) => ids.has(s.id)).length : ready.length;
   const shooters = Math.max(0, Math.min(opts.shooters ?? available, available));
   if (shooters === 0) return { ...base, reason: "no fit shooters", hitChance };
 
@@ -155,7 +169,7 @@ export function resolveDirectFire(
   const turn = opts.turn ?? 0;
   for (let i = 0; i < shooters; i++) {
     if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
-    const hit = woundHit(rng, target, turn, "smallArms", opts.targetSoldierId);
+    const hit = woundHit(rng, target, turn, "smallArms", opts.targetSoldierId, opts.targetPool);
     if (hit.missed) continue; // a lucky man (rules decision 69)
     hits++;
     totalDamage += hit.damage;
