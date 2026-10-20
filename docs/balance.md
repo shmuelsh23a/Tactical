@@ -5254,6 +5254,47 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The house at the edge: the levers where fights inside are common, 2026-10-20
+
+`yokneamHouse` (the author's layout, 2026-10-20): a RED squad in the
+town's westernmost house, a BLUE platoon of three squads, no indirect fire.
+
+**How it was got to work** (do not re-derive):
+- **The platoon 300 m out in the open:** 5 fights inside in 100 battles.
+  With the squad at the house's middle, neither side saw the other for
+  30 turns (6 m to every wall, the limit of seeing out through one's own
+  house); moved 3 m inside the west wall, the squad's fire or the
+  platoon's rifle grenades (73% of men out by explosives) decided it
+  before anyone reached the door.
+- **The platoon already against the house** (the author's ruling), 19-23 m
+  east in the cover of the next houses: 64 fights in 100.
+- **No fight inside ends.** A side breaks a few minutes into it (median
+  battle 9 turns); clearing a defended house takes about an hour
+  (decision 96). So the levers act through the men they cost in the first
+  minutes, not through clearing.
+
+200 battles from seed 1000 (±7 points at 95%), and the fights inside the
+same battles (`scenario-sim --attack-plan / --defence-plan`):
+
+| Plan | Attacker wins | Fights inside | Attackers out a fight | Defenders out a fight |
+|---|---|---|---|---|
+| Defaults | 58% | 132 | 2.27 | 2.67 |
+| Attack from the roof | 61% | 137 | 2.18 | 2.58 |
+| **Attack without grenades** | **49%** | 122 | **2.78** | **2.17** |
+| Defence holds the upper storey | 57% | 136 | 2.54 | 2.77 |
+| Defence back from the windows | 55% | 129 | 2.31 | 2.82 |
+| Defence holds to the last | 61% | 132 | 2.27 | 2.79 |
+| Defence expects the attack from above | 60% | 134 | 2.20 | 2.84 |
+
+- **Grenades are the lever that counts**: without them the attacker loses
+  a fifth more men and the defender a fifth fewer, and wins nine points
+  less. Doctrine's "FRAG OUT" earns its place.
+- Every other lever is within noise on the win and within a quarter of a
+  man a fight. From the roof costs the climb but loses nothing here: the
+  fight is decided before the time matters.
+- ⚠️ Ours: the positions, the 90-turn limit, the force quality, the squad
+  facing west (the platoon comes from the town, as the raid's does).
+
 ## What each lever of a plan inside is worth, 2026-10-20 (decision 101)
 
 The plan's levers, one at a time against the defaults. **The fight inside

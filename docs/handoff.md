@@ -61,7 +61,7 @@ out of here on purpose:
 ## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,092 tests, 74 files
+npm run check       lint + typecheck clean, 1,095 tests, 74 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -530,11 +530,13 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The plans inside are in the engine and the harness** (decision 101;
-`scenario-sim --attack-plan/--defence-plan`), measured lever by lever on
-balance.md. The raid cannot tell them apart (few fights inside), so the
-computer keeps the defaults by the author's ruling. What would tell them
-apart is a scenario built around a defended house with open approaches. The windows
+**The plans inside are in the engine and the harness** (decision 101),
+measured lever by lever on balance.md, in the raid and on `yokneamHouse`,
+the scenario built for it (a squad in the town's edge house, a platoon
+already against it: 130 fights inside in 200 battles). Only grenades
+count: without them the attacker wins 49% against 58%. No fight inside
+ever ends: a side breaks a few minutes in, while clearing takes an hour.
+The computer keeps the defaults. The windows
 (decision 98), joining (decision 99) and the drill's next squad
 (decision 100) are done. The next squad joins (6 in 12 fights over 20
 raids) and the raid is 16%; the windows barely show, because the raid's
