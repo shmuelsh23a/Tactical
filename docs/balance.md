@@ -5404,7 +5404,14 @@ those cleared; losses per fight):
   3 minutes. Against defenders they still pay: fewer men out and a quicker
   clear. This is the trade-off a plan should face.
 - **About 1% of defended fights still end in a standoff.** This is a
-  resolver fault to find, not a result.
+  resolver fault to find, not a result. **Gone by 2026-10-20** (the stall
+  fixes of 2026-10-16 to 20): over all sixteen configurations of
+  `interior-sim` (entry, grenades, prepared, hold; 3,984 fights) **no
+  fight stalls**. Six (0.15%) end on the three-hour clock, all on the
+  map's two building blocks, `osm-w633110594` (1,449 m² a storey, 184
+  rooms) and `osm-w634370214` (117 rooms), with one squad still taking
+  rooms when time runs out. That is an outcome mislabelled, not a fault:
+  the clock reports "standoff" for a fight still moving.
 - **Top-down still level with the door**, as before.
 - Two bugs found while calibrating, both fixed: the stall check counted a
   long reorganisation as a stall, and a room taken reset the progress
