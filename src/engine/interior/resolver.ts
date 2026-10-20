@@ -989,6 +989,40 @@ export class InteriorFight {
   }
 
   /**
+   * More attackers come in partway through (decision 99): new teams at the
+   * front door, by the plan the fight began with, each taking rooms not yet
+   * taken — the same drill as those already inside. Only by the door: a
+   * top-down attack's hatch takes its own teams in turn. A man who left the
+   * fight (his force broke, and has rallied) comes back in the same way,
+   * with what he has left.
+   */
+  join(teams: readonly string[][]): void {
+    if (this.finished) throw new Error("InteriorFight: the fight is over");
+    if (this.entry !== "door") throw new Error("InteriorFight: only a fight entered by the door is joined");
+    const start = this.entryCell();
+    for (const ids of teams) {
+      const members = ids.map((id) => {
+        const back = this.soldiers.find((s) => s.id === id);
+        if (back) {
+          if (back.side !== this.attackerSide || !back.withdrew || back.out) throw new Error(`InteriorFight: ${id} is already in the fight`);
+          // Out of the team he left with, so no two teams drive one man.
+          for (const t of this.teams) t.members = t.members.filter((x) => x !== back);
+          Object.assign(back, { withdrew: false, waiting: false, storey: 0, cell: start, fromAbove: false });
+          back.aim = undefined;
+          back.retreat = undefined;
+          return back;
+        }
+        const m = this.man(id, this.attackerSide, 0, start, false);
+        m.grenades = this.grenadesPlanned ? CLOSE_QUARTERS.grenadesEach : 0;
+        this.soldiers.push(m);
+        return m;
+      });
+      this.teams.push({ members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0 });
+    }
+    this.lastProgress = Math.max(this.lastProgress, this.second); // new men going in is not a stall
+  }
+
+  /**
    * Men who leave the fight from outside its own rules — their force routed,
    * gave itself up, or is spent and may only fall back: gone from it, as a
    * defender who withdraws is. With every attacker gone the attack is over.

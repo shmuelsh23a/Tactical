@@ -33,6 +33,14 @@ describe("a fight inside a building, in Hebrew", () => {
     expect(interiorReportHe(report, names, null)).toContain("תוקף: 1 נפגעים, מגן: 3 נפגעים");
   });
 
+  it("tells the attacking side who joined, and the defender only that more came (decision 99)", () => {
+    const joined = { ...report, began: false, joined: ["B-1"] };
+    expect(interiorReportHe(joined, names, "BLUE")).toContain("כיתה 1 הצטרף לקרב במבנה");
+    expect(interiorReportHe(joined, names, null)).toContain("כיתה 1 הצטרף לקרב במבנה");
+    expect(interiorReportHe(joined, names, "RED")).toContain("כוח אויב נוסף נכנס למבנה");
+    expect(interiorReportHe(joined, names, "RED")).not.toContain("כיתה 1");
+  });
+
   it("says how it ended", () => {
     expect(interiorReportHe({ ...report, began: false, outcome: "cleared" }, names, "BLUE")).toContain("המבנה טוהר");
     expect(interiorReportHe({ ...report, began: false, outcome: "repulsed" }, names, "BLUE")).toContain("נהדפה");

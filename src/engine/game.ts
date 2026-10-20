@@ -719,6 +719,14 @@ export interface GameOptions {
    */
   windowFire?: boolean;
   /**
+   * A force of the attacking side that assaults into a building its side is
+   * already clearing joins the fight there (rules decision 99), as new
+   * teams at the front door; a defending side's force is refused. On by
+   * default; a recording made before it reads it as off, where every
+   * second assault on a building with a fight in it was refused.
+   */
+  joinFights?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -852,6 +860,7 @@ export class Game {
   readonly smokeNeedsThrower: boolean;
   readonly closedTerrain: boolean;
   readonly windowFire: boolean;
+  readonly joinFights: boolean;
   /** The fights going on inside buildings (rules decision 96). */
   readonly interior = new InteriorBattles();
   /** Whether a mark stays where it was last seen (rules decision 57). */
@@ -1282,6 +1291,7 @@ export class Game {
     this.smokeNeedsThrower = opts.smokeNeedsThrower ?? true;
     this.closedTerrain = opts.closedTerrain ?? true;
     this.windowFire = opts.windowFire ?? true;
+    this.joinFights = opts.joinFights ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1442,6 +1452,7 @@ export class Game {
       ...(this.smokeNeedsThrower ? { smokeNeedsThrower: true } : {}),
       ...(this.closedTerrain ? { closedTerrain: true } : {}),
       ...(this.windowFire ? { windowFire: true } : {}),
+      ...(this.joinFights ? { joinFights: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -3373,8 +3384,12 @@ export class Game {
         : undefined;
     const door = inside ? this.interior.frontDoor(this, inside) : undefined;
     if (inside && door && distance(attacker.position, target.position) <= ASSAULT_RANGE_M) {
-      // A fight already going on in it is not joined (this slice: docs/urban-design.md).
-      if (this.interior.fightIn(inside.id)) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
+      // A fight already going on in it: the attacking side's forces join it
+      // (decision 99); the defending side's cannot counterattack in yet.
+      // ⚠️ Ours: only on a force in that fight; one inside but not in it is not reached by joining.
+      const fighting = this.interior.attackerSideIn(inside.id);
+      const joins = this.joinFights && fighting === attacker.side && this.interior.fightersIn(inside.id).includes(defenderId);
+      if (fighting !== undefined && !joins) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
       // The way to the door is the assault's last bound: it must be within the assault's reach.
       if (distance(attacker.position, door) > ASSAULT_RANGE_M) return { ...this.noAssault(attackerId, defenderId), reason: "out of range" };
       this.raiseReadiness(attacker, 3);

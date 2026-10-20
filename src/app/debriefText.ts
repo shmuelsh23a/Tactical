@@ -442,6 +442,10 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
     `${report.roomsCleared}/${report.rooms} חדרים טוהרו`,
     losses,
   ];
+  // More of the attacking side came in (decision 99): its own side by name, the defender only that more came.
+  if (report.joined?.length) {
+    parts.splice(1, 0, reader == null || attacking ? `${names(report.joined)} הצטרף לקרב במבנה` : "כוח אויב נוסף נכנס למבנה");
+  }
   if (report.defendersWithdrew > 0) parts.push(`${report.defendersWithdrew} ממגיני המבנה נסוגו ממנו`);
   if (report.attackersWithdrew > 0) parts.push(`${report.attackersWithdrew} מהתוקפים יצאו מן המבנה`);
   if (report.outcome === "cleared") parts.push("המבנה טוהר");

@@ -18,7 +18,7 @@ const house: MapObject = {
   footprint: { shape: "polygon", points: [{ x: 100, y: 100 }, { x: 116, y: 100 }, { x: 116, y: 112 }, { x: 100, y: 112 }] },
 };
 
-function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean } = {}) {
+function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean } = {}) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
   g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 4)); // inside the house
   // 40 m out from the house's front door, wherever this game's plan puts it.
@@ -180,6 +180,118 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
     const again = replayGame(sealed);
     expect(again.getUnit("B-1").soldiers!.map((s) => s.damagePoints)).toEqual(g.getUnit("B-1").soldiers!.map((s) => s.damagePoints));
+  });
+
+  /** A second force at the door, `side`'s, 10 m out beside the first. */
+  function second(g: Game, id: string, side: "BLUE" | "RED") {
+    const door = g.interior.frontDoor(g, house)!;
+    const dx = door.x - 108, dy = door.y - 106, d = Math.hypot(dx, dy);
+    g.addUnit(makeInfantry(id, side, "squad", { x: door.x + (10 * dx) / d - (4 * dy) / d, y: door.y + (10 * dy) / d + (4 * dx) / d }, 8));
+  }
+
+  it("lets the attacking side join a fight already going on, as new teams at the door (decision 99)", () => {
+    const g = battle(5);
+    goIn(g);
+    closeTurn(g);
+    second(g, "B-2", "BLUE");
+    g.advanceToPhase("combat");
+    expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE);
+    const reports = closeTurn(g);
+    expect(reports[0]?.joined).toEqual(["B-2"]);
+    expect(reports[0]?.attackerUnits).toEqual(["B-1", "B-2"]);
+    expect(g.interior.inFight("B-2")).toBe(true);
+    const inFight = new Set(g.interior.engagementOf("B-2")!.fight.soldiers.map((m) => m.id));
+    expect(g.getUnit("B-2").soldiers!.every((s) => inFight.has(s.id))).toBe(true);
+  });
+
+  it("takes a force that broke and rallied back into the fight it left", () => {
+    for (const seed of [5, 6, 7]) {
+      const g = battle(seed);
+      goIn(g);
+      closeTurn(g);
+      second(g, "B-2", "BLUE");
+      g.advanceToPhase("combat");
+      g.assault("B-2", "R-1", 0);
+      closeTurn(g);
+      if (!g.interior.inFight("B-1")) continue; // the fight ended first
+      g.getUnit("B-2").routing = true;
+      g.advanceToPhase("summary");
+      closeTurn(g);
+      expect(g.interior.inFight("B-2")).toBe(false);
+      if (!g.interior.inFight("B-1")) continue;
+      // Rallied, at the door again, and back in.
+      g.getUnit("B-2").routing = false;
+      g.advanceToPhase("combat");
+      expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE);
+      expect(() => closeTurn(g)).not.toThrow();
+      expect(g.interior.inFight("B-2")).toBe(true);
+      // Each of its men driven by one team only.
+      const fight = g.interior.engagementOf("B-2")!.fight as unknown as { teams: { members: { id: string }[] }[] };
+      const driven = fight.teams.flatMap((t) => t.members.map((m) => m.id)).filter((id) => id.startsWith("B-2"));
+      expect(new Set(driven).size).toBe(driven.length);
+    }
+  });
+
+  it("does not reach by joining an enemy force inside that is not in the fight", () => {
+    const g = battle(5);
+    goIn(g);
+    closeTurn(g);
+    g.addUnit(makeInfantry("R-3", "RED", "squad", { x: 104, y: 104 }, 2)); // in the house, not in the fight
+    second(g, "B-2", "BLUE");
+    g.advanceToPhase("combat");
+    if (g.interior.inFight("B-1")) expect(g.assault("B-2", "R-3", 0).reason).toBe(INTERIOR_REFUSAL.fightingInside);
+  });
+
+  it("refuses a defending side's force going in after its own: no counterattack inside yet", () => {
+    const g = battle(5);
+    goIn(g);
+    closeTurn(g);
+    second(g, "R-2", "RED");
+    g.advanceToPhase("combat");
+    expect(g.assault("R-2", "B-1", 0).reason).not.toBe(GOES_INSIDE);
+    expect(g.interior.inFight("R-2")).toBe(false);
+  });
+
+  it("clears a house sooner with a second squad joining", () => {
+    const turnsToEnd = (join: boolean, seed: number) => {
+      const g = battle(seed);
+      goIn(g);
+      closeTurn(g);
+      second(g, "B-2", "BLUE");
+      if (join) { g.advanceToPhase("combat"); expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE); }
+      for (let t = 1; t < 120; t++) {
+        const r = closeTurn(g);
+        if (r.some((x) => x.outcome)) return t;
+        g.advanceToPhase("summary");
+      }
+      return 120;
+    };
+    let alone = 0, joined = 0;
+    for (let seed = 1; seed <= 16; seed++) { alone += turnsToEnd(false, seed); joined += turnsToEnd(true, seed); }
+    expect(joined).toBeLessThan(alone);
+  });
+
+  it("refuses a second assault on a fight going on in a battle recorded before decision 99", () => {
+    const g = battle(5, { joinFights: false });
+    goIn(g);
+    closeTurn(g);
+    second(g, "B-2", "BLUE");
+    g.advanceToPhase("combat");
+    expect(g.assault("B-2", "R-1", 0).reason).toBe(INTERIOR_REFUSAL.fightingInside);
+    expect(g.toRecording().joinFights).toBeUndefined();
+  });
+
+  it("replays a battle with a force joining a fight to exactly the same state", () => {
+    const g = battle(6);
+    goIn(g);
+    closeTurn(g);
+    second(g, "B-2", "BLUE");
+    g.advanceToPhase("combat");
+    g.assault("B-2", "R-1", 0);
+    for (let t = 0; t < 3; t++) { g.advanceToPhase("initiative"); g.advanceToPhase("summary"); }
+    const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
+    expect(sealed.joinFights).toBe(true);
+    expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
   });
 
   it("plays a battle recorded before the rule as it was played: the assault resolved outside", () => {

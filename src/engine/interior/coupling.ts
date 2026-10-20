@@ -50,6 +50,8 @@ export interface InteriorReport {
   defenderUnits: string[];
   /** True on the turn the fight began. */
   began: boolean;
+  /** Forces of the attacking side that came in to join it this turn (decision 99). */
+  joined?: string[];
   /** Men put out this turn, each side. */
   attackersOut: number;
   defendersOut: number;
@@ -259,6 +261,7 @@ export class InteriorBattles {
   resolveTurn(world: InteriorWorld): InteriorReport[] {
     const reports: InteriorReport[] = [];
     const started = new Set(this.startFights(world));
+    const joined = this.joinFights(world);
     this.entering.clear();
     const ticks = Math.round(TURN_SECONDS / CLOSE_QUARTERS.tickSeconds);
     for (const e of [...this.engagements]) {
@@ -328,6 +331,7 @@ export class InteriorBattles {
         attackerUnits: [...e.attackerUnits],
         defenderUnits: [...e.defenderUnits],
         began: started.has(e),
+        ...(joined.get(e)?.length ? { joined: joined.get(e) } : {}),
         attackersOut,
         defendersOut,
         defendersWithdrew,
@@ -416,6 +420,43 @@ export class InteriorBattles {
     const dx = enemy.reduce((s, u) => s + u.position.x, 0) / enemy.length - cx;
     const dy = enemy.reduce((s, u) => s + u.position.y, 0) / enemy.length - cy;
     return { x: dx * plan.axis.x + dy * plan.axis.y, y: -dx * plan.axis.y + dy * plan.axis.x };
+  }
+
+  /**
+   * Forces of the attacking side that assaulted into a building where their
+   * side is already clearing it join the fight (decision 99, the author,
+   * 2026-10-20): new teams of four at the front door as the turn closes,
+   * by the defaults the fight began with. In unit order, so a replay joins
+   * the same. A defending side's force is refused before it gets here.
+   */
+  private joinFights(world: InteriorWorld): Map<InteriorEngagement, string[]> {
+    const joined = new Map<InteriorEngagement, string[]>();
+    for (const u of world.units) {
+      const buildingId = this.entering.get(u.id);
+      if (buildingId === undefined || this.inFight(u.id)) continue;
+      const e = this.engagements.find((x) => x.buildingId === buildingId);
+      if (!e || e.fight.finished || u.side !== e.attackerSide) continue;
+      if (u.kind !== "infantry" || u.neutralized || u.routing || u.surrendered) continue;
+      const men = fit(u);
+      if (men.length === 0) continue;
+      const teams: string[][] = [];
+      for (let k = 0; k < men.length; k += 4) teams.push(men.slice(k, k + 4).map((m) => m.id));
+      e.fight.join(teams);
+      // Wounds already taken outside come in with the men.
+      for (const m of e.fight.soldiers) {
+        const s = men.find((x) => x.id === m.id);
+        if (s) m.damage = s.damagePoints;
+      }
+      e.attackerUnits.push(u.id);
+      if (world.contact) for (const d of e.defenderUnits) world.contact(u, this.unit(world, d));
+      joined.set(e, [...(joined.get(e) ?? []), u.id]);
+    }
+    return joined;
+  }
+
+  /** The side attacking in a building's fight, if one is going on there. */
+  attackerSideIn(buildingId: string): Side | undefined {
+    return this.engagements.find((e) => e.buildingId === buildingId)?.attackerSide;
   }
 
   private unit(world: InteriorWorld, id: string): Unit {
