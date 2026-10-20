@@ -604,7 +604,7 @@ function pickTarget(
   if (game) {
     const seen = inReach.filter((e) => {
       try {
-        return game.hasLineOfSight(u, game.getUnit(e.id));
+        return game.canEngage(u, game.getUnit(e.id));
       } catch {
         return false;
       }
@@ -963,7 +963,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     if (company && job === "support" && nearest) {
       const gun = u.mediumMg && drill.machineGuns ? Math.max(drill.attackFireRange, drill.machineGuns.range) : drill.attackFireRange;
-      const canSee = freshEnemies(game, side, enemies).some((e) => game.hasLineOfSight(u, e));
+      const canSee = freshEnemies(game, side, enemies).some((e) => game.canEngage(u, e));
       if (distance(u.position, nearest.position) <= gun && (canSee || !drill.baseOfFirePosition)) {
         stay(); // in reach, with something to shoot at: a base of fire
         return;
@@ -1126,11 +1126,15 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
  */
 export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState, report?: DrillReport): void {
   const { side } = task;
-  const enemies = knownEnemies(game, side);
+  const knownToSide = knownEnemies(game, side);
   const baseReach = task.attacking ? drill.attackFireRange : drill.openFireRange;
   const heavy = drill.heavyWeapons;
   // Still forces first, then the quicker (rules decision 72).
   for (const u of game.firingOrder(side).filter(inPlay)) {
+    // A force fighting inside a building fights the enemy in it room by
+    // room, and fires out of its windows at the rest (decision 98).
+    const fight = game.interior.engagementOf(u.id);
+    const enemies = fight ? knownToSide.filter((e) => game.interior.engagementOf(e.id) !== fight) : knownToSide;
     const tank = heavy !== undefined && u.kind === "vehicle" && (u.vehicle?.vehicleClass ?? "mbt") === "mbt";
     // A machine gun team shoots as far as its gun reaches (decision 90):
     // the drill's engagement range is written for rifles, and the whole
@@ -1197,7 +1201,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
       continue;
     }
     if (u.covering) game.setCovering(u.id, false);
-    if (u.kind !== "command" && distance(u.position, target.position) <= drill.assault.range) {
+    // A force fighting inside cannot go out to assault: it fires from its windows (decision 98).
+    if (u.kind !== "command" && !fight && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {
@@ -1247,7 +1252,9 @@ export function fireGrenadiers(
   if (u.kind !== "infantry" || !inPlay(u) || target.neutralized) return volleys;
   if (distance(u.position, target.position) > RIFLE_GRENADE_RANGE) return volleys;
   const ready = (u.soldiers ?? []).filter((s) => !s.neutralized && s.morale?.state !== "broken").length;
-  const launchers = Math.floor(ready / menPerLauncher);
+  // Fighting inside, only the men at its windows facing the target can fire out (decision 98).
+  const atWindows = game.windowShooters(u, target);
+  const launchers = Math.min(Math.floor(ready / menPerLauncher), atWindows ?? Infinity);
   for (let i = 0; i < launchers && !target.neutralized; i++) {
     const r = game.fireExplosive("rifleGrenade", u.id, target.id);
     volleys.push(r);
