@@ -9,6 +9,7 @@ import {
   sectorBonus,
 } from "../engine/index.js";
 import type {
+  InteriorReport,
   ActionOutcome,
   ChargeWorkReport,
   CoveringFireResult,
@@ -112,6 +113,10 @@ export function reasonHe(reason?: string): string {
     // …an order that could not be carried out
     case "neutralised":
       return "מנוטרל";
+    case "fighting inside a building":
+      return "נלחם בתוך מבנה";
+    case "goes inside":
+      return "נכנס אל המבנה — הקרב בפנים";
     case "hit last turn":
       return "נפגע — לא יכול לנוע";
     case "grade too steep":
@@ -408,6 +413,43 @@ export function criticalHe(criticals: number | undefined, how: "window" | "roof"
   return criticals > 1 ? ` · ${criticals} פגזים ${where}` : ` · ${where}`;
 }
 
+/**
+ * What a fight inside a building did this turn (rules decision 96), as one
+ * side reads it: its own losses counted, the enemy's reported (decision 13).
+ * `reader` null is the umpire, who counts both. Both sides were in the
+ * fight, so both are told of it.
+ */
+export function interiorReportHe(report: InteriorReport, nameOf: (id: string) => string, reader: Side | null): string {
+  const names = (ids: string[]) => ids.map(nameOf).join(", ");
+  const attacking = reader === report.attackerSide;
+  const ownOut = attacking ? report.attackersOut : report.defendersOut;
+  const enemyOut = attacking ? report.defendersOut : report.attackersOut;
+  const losses =
+    reader == null
+      ? `תוקף: ${casualtyReport(report.attackersOut, true)}, מגן: ${casualtyReport(report.defendersOut, true)}`
+      : `שלנו: ${casualtyReport(ownOut, true)}, האויב: ${casualtyReport(enemyOut, false)}`;
+  // Only the reader's own forces by name: which of the enemy's are inside is
+  // what the fight teaches him room by room, not what the log tells him.
+  const own = (ids: string[]) => (reader == null ? names(ids) : "");
+  const parts = [
+    report.began
+      ? reader == null
+        ? `קרב בתוך מבנה: ${own(report.attackerUnits)} נכנס אל ${own(report.defenderUnits) || "המבנה"}`
+        : attacking
+          ? `קרב בתוך מבנה: ${names(report.attackerUnits)} נכנס למבנה שבידי האויב`
+          : `קרב בתוך מבנה: האויב נכנס אל ${names(report.defenderUnits) || "המבנה"}`
+      : "קרב בתוך מבנה",
+    `${report.roomsCleared}/${report.rooms} חדרים טוהרו`,
+    losses,
+  ];
+  if (report.defendersWithdrew > 0) parts.push(`${report.defendersWithdrew} ממגיני המבנה נסוגו ממנו`);
+  if (report.attackersWithdrew > 0) parts.push(`${report.attackersWithdrew} מהתוקפים יצאו מן המבנה`);
+  if (report.outcome === "cleared") parts.push("המבנה טוהר");
+  if (report.outcome === "repulsed") parts.push("התקיפה בתוך המבנה נהדפה");
+  if (report.outcome === "standoff") parts.push("הקרב בתוך המבנה נעצר");
+  return parts.join(" · ");
+}
+
 export function casualtyReport(casualties: number, exact: boolean): string {
   if (exact) return `${casualties} נפגעים`;
   if (casualties === 0) return "ללא נפגעים שנצפו";
@@ -679,6 +721,12 @@ export function describeOutcome(
         const line = moraleReportHe(report, who, own);
         if (line) parts.push(line);
       }
+      // The fights inside buildings (rules decision 96): both sides were in each.
+      for (const report of outcome.interior ?? []) {
+        const defenderSide = report.attackerSide === "BLUE" ? "RED" : "BLUE";
+        if (lens.side != null && lens.side !== report.attackerSide && lens.side !== defenderSide) continue;
+        parts.push(interiorReportHe(report, who, lens.side ?? null));
+      }
       for (const impact of outcome.resolved) {
         const off = Math.round(
           Math.hypot(
@@ -824,6 +872,7 @@ export function describeOutcome(
 
     case "assault": {
       const r = outcome.result;
+      if (!r.fired && r.reason === "goes inside") return reasonHe(r.reason);
       if (!r.fired) return `לא הסתער (${reasonHe(r.reason)})`;
       // What a force did to itself with its own grenades is its own to know —
       // the live log has always had this right, and the debrief was telling the

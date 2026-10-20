@@ -24,6 +24,7 @@ import {
   sectorBonus,
   type ChargeWorkReport,
   type ForceMorale,
+  type InteriorReport,
   type MoraleReport,
   type CoveringFireResult,
   type GameRecording,
@@ -61,6 +62,7 @@ import {
   describeStandingOrder,
   forceMoraleHe,
   isRoutineOrderReason,
+  interiorReportHe,
   moraleReportHe,
   moraleStateHe,
   suppressionHe,
@@ -747,6 +749,13 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
    * (`seenBy`, the same answer the debrief reads) — never how many of its
    * men broke, and nothing of a force it had not found.
    */
+  /** The fights inside buildings as the turn closed (rules decision 96): each side its own losses counted. */
+  function logInterior(reports: InteriorReport[]) {
+    for (const report of reports) {
+      pushPerSide("casualty", report.attackerSide, (reader) => interiorReportHe(report, nameOf, reader));
+    }
+  }
+
   function logMorale(reports: MoraleReport[]) {
     for (const report of reports) {
       const unit = game.units.find((u) => u.id === report.unitId);
@@ -1462,6 +1471,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     // End of turn: run upkeep + begin the next turn.
     const closed = game.advanceToPhase("initiative");
     logChargeWork(closed.chargeWork);
+    logInterior(closed.interior);
     logMorale(closed.morale);
     // Morale can end a battle with no shot fired this step: a side breaks.
     // So can the clock (rules decision 58).
