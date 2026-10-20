@@ -258,6 +258,18 @@ How the last two days went, round by round, is in
 
 ## Waiting on the author
 
+### Added 2026-10-20
+
+- **A serious UX/UI pass is scheduled with the OPORD and battle-chart
+  control design** (backlog 13; the author). The findings from his played
+  battle (Yokneam to turn 10) are listed there: orders accepted again and
+  again with no sign they were in force, fire offered at marks with no
+  line of sight, the same force names on both sides.
+- **A grenade's smoke needs a thrower** (the author, 2026-10-20): a hand
+  pot within 35 m of a man of the side (TC 3-23.30, the M18), rifle-grenade
+  smoke within a rifle grenade's reach of a squad. `smokeNeedsThrower`, off
+  for older recordings — his saved battle still replays and verifies.
+
 ### Open (2026-10-12)
 
 - **The reference plans' 2:1 median is 18.5%**, just under 20 (standard

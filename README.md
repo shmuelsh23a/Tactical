@@ -3103,6 +3103,35 @@ on the stated reasoning, still awaiting the author's word.
       more than a handful of company-level cases (urban-design.md, *The
       urban band*).
 
+97. ✅ **A grenade's smoke needs a man to deliver it** (the author,
+    2026-10-20: "a hand-thrown smoke grenade needs a thrower of the side
+    within throwing range of where it lands"). Found in a played battle: BLUE
+    laid a pot on turn 1 470 m from its nearest man, beside RED's command
+    post, because `deploySmoke` checked only who may call it. With
+    `GameOptions.smokeNeedsThrower` (on for a new game, off for a recording
+    made before it, which replays as played):
+    - **A hand pot** (`grenade`) lands within **35 m** of a fit man of the
+      side: an infantry force or a command group, not a vehicle. TC 3-23.30
+      (2021), app. B, gives the M18's "Average Throwing Distance" as 35 m
+      standing (25 kneeling, 20 prone).
+    - **Rifle-grenade smoke** (`rifleGrenade`, a new source) lands within a
+      rifle grenade's reach (100 m, the explosives table) of an **infantry
+      force**. ⚠️ Ours: whoever may fire the launcher's HE may fire its
+      smoke. `fireExplosive` asks nothing more of a launcher, and one rule
+      should not be applied two ways at two layers. A command group or a
+      vehicle has none. Until now the drill's screening smoke (Battle Drill
+      2) fired it as `grenade`, which is what let the pot fly anywhere.
+      ⚠️ Its radius and duration are the hand pot's (25 m, 1 turn), ours.
+    - A force routing, given up or neutralised throws nothing, and nor does
+      a man put out or broken, as `fireGrenadiers` treats him. Refused with
+      a reason the app words (`SMOKE_REFUSAL`), and the UI offers a source
+      only to a side that has somebody to deliver it.
+    - **For the author:** with the same screen and no cost, a force's
+      rifle-grenade smoke is never worse than its hand pot, and reaches
+      100 m against 35. A 40 mm smoke round makes a smaller, shorter cloud
+      than an M18, so the trade-off may want a smaller radius or a count.
+      Also, like a hand pot, it needs no line of sight to where it lands.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -3440,6 +3469,23 @@ Each is intended to be an independent, toggleable module:
     - **Adjudication.** Whether the model may only choose among actions the
       rules already permit (safest — the engine stays the referee), or may also
       argue for outcomes the tables do not cover.
+
+    **A serious UX/UI pass goes with it** (the author, 2026-10-20: "we need to
+    do a serious UX/UI work. Schedule it when we get to designing the control
+    via opord and battle chart"). Not before: how a player commands — an
+    order and a battle chart (מפת קרב) rather than pieces moved one by one —
+    decides what the screens are. What a played battle showed the current
+    hotseat lacks (the Yokneam demo to turn 10, 2026-10-20):
+    - **The same order accepted seven times running** in one movement phase.
+      Nothing on screen said it was already in force, or that the squad had
+      already moved this turn.
+    - **Fire ordered at a mark with no line of sight, six times in one
+      phase.** Each was refused the same way, but the UI offered it again
+      every time.
+    - **Two forces of the same name on both sides** ("חולית מקלע 2 → חולית
+      מקלע 2") make the log and the debrief ambiguous.
+    - **Smoke dropped where nobody could throw it** (fixed in the engine the
+      same day: a grenade's smoke now needs a thrower within reach).
 
 14. ✅ **Per-side debrief** — the debrief reads through the umpire's eyes or
     either side's. A side sees its own forces, the enemy only where it held a

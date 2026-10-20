@@ -858,7 +858,8 @@ tweak later when we get to balancing — write it down". So: written down.
 
 | Figure | Value | Whose | Where |
 |---|---|---|---|
-| Smoke screen radii | **25 / 50 / 100 m** (grenade / mortar / artillery) | ours, decision 9 | [`data/smoke.ts`](../src/engine/data/smoke.ts) |
+| Smoke screen radii | **25 / 50 / 100 m** (grenade / mortar / artillery); rifle-grenade smoke **25 m, 1 turn**, the hand pot's (since 2026-10-20) | ours, decision 9; the rifle grenade's ours, decision 97 | [`data/smoke.ts`](../src/engine/data/smoke.ts) |
+| A smoke grenade's throw | **35 m** from a man of the side (rifle-grenade smoke: the rifle grenade's 100 m from an infantry force) | TC 3-23.30 (2021) app. B, the M18 standing; ✅ author, decision 97 | [`data/smoke.ts`](../src/engine/data/smoke.ts), `Game.requireThrower` |
 | Charge trigger radius | **10 m** of the path walked | ✅ author, decision 10 | [`combat/mines.ts`](../src/engine/combat/mines.ts). Keep it **below** the 20 m search band: the gap between the two is the ground where a walking force finds a charge without treading on it, which is the only thing its 30% roll buys. Raise it to 20 m and the search stops being a hedge and becomes the sole guard. |
 | Assault reach | **25 m** | ✅ author, decision 11 | [`combat/assault.ts`](../src/engine/combat/assault.ts) |
 | Grenades per assault | **0–3, no ammunition tracked** | ours, decision 11 | UI |
