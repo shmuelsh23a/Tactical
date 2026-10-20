@@ -3200,8 +3200,15 @@ on the stated reasoning, still awaiting the author's word.
     - The computer's drill aims by what the engine fires by
       (`Game.canEngage`), and a force fighting inside picks no target in
       its own fight.
-    - **Not changed:** spotting a force inside still reads its mark's sight
-      line, not its windows (an open question for the author).
+    - **Spotting follows the windows too** (the author, the same day: "yes,
+      like fire does"). A force fighting inside is spotted, and spots,
+      only through its windows, by the same test the shot is taken by
+      (`Game.spots`); two forces fighting each other inside see each other.
+      So is the fall of a round watched (decision 33), and what a side is
+      told it saw happen (decision 17). A hold-fire order's engagement
+      range chooses by `Game.canEngage`. **Not changed, asked:** morale's
+      seeing — armour fear, a friend breaking in sight, who watched a rout
+      — still reads the mark.
     - **Rounds that get in go off in the room they strike.** A window
       critical (decision 77) bursts in the room of the man at that window;
       a round through the roof, in the top-storey room under where it

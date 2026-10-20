@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: urban warfare is in the game, and since decision 98 it meets the street through the windows (a defender at one fires out and is seen; a round that gets in bursts in one room). The standoff fault is gone. Next is joining a fight already going on, then the players' plans inside as data. The 2:1 reference median, the force-quality matrix, the AI commanders and whether spotting should follow the windows wait on the author.**
+**Next, in one line: urban warfare is in the game, and since decision 98 it meets the street through the windows (a defender at one fires out and is seen; a round that gets in bursts in one room). The standoff fault is gone. Next is joining a fight already going on, then the players' plans inside as data. Spotting follows the windows too. The 2:1 reference median, the force-quality matrix and the AI commanders wait on the author.**
 
 **Current as of 2026-10-20, evening.** Later the same day:
 - **Decision 98, through the windows** (README; every option as proposed,
@@ -61,7 +61,7 @@ out of here on purpose:
 ## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,057 tests, 73 files
+npm run check       lint + typecheck clean, 1,061 tests, 73 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -120,9 +120,11 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
-- **Should spotting follow the windows too?** Since decision 98, fire at a
-  force fighting inside goes only through its windows, but spotting it
-  still reads its mark's sight line. Left unchanged and flagged.
+- **Should morale's seeing follow the windows too?** Spotting, fire and the
+  fall of shot do since decision 98; armour fear (`morale.ts`, fed by
+  `sees`), contagion from a friend breaking in sight, and who watched a
+  rout still read the force's mark. The reviewer's view: switch the first
+  three to `Game.spots`. Asked, not changed.
 - **For the UX pass:** the screen marks the enemy a force is fighting
   inside as a target; the engine refuses that shot ("נלחם בתוך מבנה").
 
@@ -173,7 +175,8 @@ Each is in the README's decision 96 or 97. The short form:
 - Through the windows (decision 98): the plan says who stands at a window
   (by default, at one facing the enemy); fire in finds only men at facing
   windows; fire out counts only them; a round that gets in bursts in its
-  room; only where a fight is going on. The three-hour clock stays.
+  room; only where a fight is going on. Spotting follows the windows
+  too. The three-hour clock stays.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
   are under backlog 13.

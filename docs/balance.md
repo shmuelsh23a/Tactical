@@ -5279,6 +5279,8 @@ show on ground with open approaches to a defended house.
   by `Game.canEngage`, the engine's own test.
 - Criticals through a window, checked on one battle in Node: 34 in 92
   hits, against the table's 35%, every one into the window man's room.
+- **Spotting through the windows** (ruled the same evening): the raid
+  16% at 100 battles, within noise of 14%.
 - ⚠️ Ours, listed on decision 98: the assault's position as "the enemy" a
   window faces; the clearing attackers man no windows.
 
