@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { InteriorReport } from "../engine/index.js";
-import { interiorReportHe, reasonHe } from "./debriefText.js";
+import { describeInteriorPlan, interiorReportHe, reasonHe } from "./debriefText.js";
 
 /** A fight inside a building, as each side reads it (rules decisions 96 and 13). */
 const report: InteriorReport = {
@@ -39,6 +39,15 @@ describe("a fight inside a building, in Hebrew", () => {
     expect(interiorReportHe(joined, names, null)).toContain("כיתה 1 הצטרף לקרב במבנה");
     expect(interiorReportHe(joined, names, "RED")).toContain("כוח אויב נוסף נכנס למבנה");
     expect(interiorReportHe(joined, names, "RED")).not.toContain("כיתה 1");
+  });
+
+  it("words a plan inside by what it says, and leaves the defaults unsaid (decision 101)", () => {
+    expect(describeInteriorPlan({ entry: "top", grenades: false, teamSize: 3 })).toBe("כניסה מהגג · בלי רימונים · צוותים של 3");
+    expect(describeInteriorPlan({ holdStoreys: [0, 1], atWindows: false, expects: "above", fallBack: false })).toBe(
+      "מחזיק בקרקע, קומה 1 · בעומק החדרים · מצפה לתקיפה מלמעלה · מחזיק עד הסוף",
+    );
+    expect(describeInteriorPlan({})).toBe("כברירת המחדל");
+    expect(reasonHe("no way in from the roof")).not.toBe("no way in from the roof"); // worded, not raw
   });
 
   it("says how it ended", () => {

@@ -9,6 +9,7 @@ import {
   sectorBonus,
 } from "../engine/index.js";
 import type {
+  InteriorPlan,
   InteriorReport,
   ActionOutcome,
   ChargeWorkReport,
@@ -115,6 +116,10 @@ export function reasonHe(reason?: string): string {
       return "מנוטרל";
     case "fighting inside a building":
       return "נלחם בתוך מבנה";
+    case "no way in from the roof":
+      return "אין דרך פנימה מהגג: אין במבנה מדרגות";
+    case "the fight inside went in from the roof":
+      return "הקרב במבנה נכנס מהגג: אין הצטרפות דרך הדלת";
     case "goes inside":
       return "נכנס אל המבנה — הקרב בפנים";
     case "hit last turn":
@@ -454,6 +459,23 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
   return parts.join(" · ");
 }
 
+/**
+ * A force's plan for a fight inside a building (rules decision 101), in one
+ * line: only what it says, the defaults left unsaid.
+ */
+export function describeInteriorPlan(plan: InteriorPlan): string {
+  const storey = (k: number) => (k === 0 ? "קרקע" : `קומה ${k}`);
+  const parts: string[] = [];
+  if (plan.entry) parts.push(plan.entry === "top" ? "כניסה מהגג" : "כניסה בדלת");
+  if (plan.grenades !== undefined) parts.push(plan.grenades ? "רימון לכל חדר" : "בלי רימונים");
+  if (plan.teamSize !== undefined) parts.push(`צוותים של ${plan.teamSize}`);
+  if (plan.holdStoreys?.length) parts.push(`מחזיק ב${plan.holdStoreys.map(storey).join(", ")}`);
+  if (plan.atWindows !== undefined) parts.push(plan.atWindows ? "בחלונות" : "בעומק החדרים");
+  if (plan.expects) parts.push(plan.expects === "above" ? "מצפה לתקיפה מלמעלה" : "מצפה לתקיפה מלמטה");
+  if (plan.fallBack !== undefined) parts.push(plan.fallBack ? "נסוג מחדר לחדר" : "מחזיק עד הסוף");
+  return parts.length ? parts.join(" · ") : "כברירת המחדל";
+}
+
 export function casualtyReport(casualties: number, exact: boolean): string {
   if (exact) return `${casualties} נפגעים`;
   if (casualties === 0) return "ללא נפגעים שנצפו";
@@ -627,6 +649,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${who(action.unitId)} ${action.on ? "מסווה את עמדתו" : "הפסיק הסוואה"}`;
     case "setScouting":
       return `${who(action.unitId)} ${action.on ? "יצא לסיור" : "חזר מסיור"}`;
+    case "setInteriorPlan":
+      return `${who(action.unitId)} — תוכנית לקרב בתוך מבנה: ${describeInteriorPlan(action.plan)}`;
     case "layCharge":
       return action.type
         ? `${who(action.unitId)} מתחיל להניח ${chargeHe(action.type)}`
@@ -901,6 +925,9 @@ export function describeOutcome(
 
     case "setScouting":
       return outcome.on ? "מגלה טוב יותר, נע בהליכה בלבד" : "חוזר לקצב רגיל";
+
+    case "setInteriorPlan":
+      return "הדרך פנימה נקבעת עם תחילת הקרב; רימונים, נסיגה או החזקה — בכל תור";
 
     case "layCharge":
       return outcome.type

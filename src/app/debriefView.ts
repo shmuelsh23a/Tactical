@@ -125,6 +125,7 @@ export function outcomeVisibleTo(
     case "setStandingOrder":
     case "setCamouflage":
     case "setScouting":
+    case "setInteriorPlan":
     case "layCharge":
     case "setCovering":
     case "setObservationSector":
@@ -223,6 +224,7 @@ export function actionVisibleTo(
     case "setStandingOrder":
     case "setCamouflage":
     case "setScouting":
+    case "setInteriorPlan":
     // The work is done behind one's own lines, and the charge it produces is
     // found the way any charge is found — by the search roll on the ground,
     // not by having watched it go in (rules decisions 10 and 16).
