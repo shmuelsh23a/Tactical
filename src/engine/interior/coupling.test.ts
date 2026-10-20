@@ -18,7 +18,7 @@ const house: MapObject = {
   footprint: { shape: "polygon", points: [{ x: 100, y: 100 }, { x: 116, y: 100 }, { x: 116, y: 112 }, { x: 100, y: 112 }] },
 };
 
-function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean } = {}) {
+function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean; morale?: boolean; breakEndsInside?: boolean } = {}) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
   g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 4)); // inside the house
   // 40 m out from the house's front door, wherever this game's plan puts it.
@@ -292,6 +292,92 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
     expect(sealed.joinFights).toBe(true);
     expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
+  });
+
+  /** A side's men put out on the map, as fire outside would, before the turn closes. */
+  function knockOut(g: Game, id: string, n: number) {
+    for (const s of g.getUnit(id).soldiers!.slice(0, n)) { s.damagePoints = 10; s.neutralized = true; }
+  }
+
+  it("ends the fight inside when the defending side breaks: its men inside give themselves up (decision 102)", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    expect(g.interior.inFight("R-1")).toBe(true);
+    g.advanceToPhase("summary");
+    knockOut(g, "R-1", 2); // half a squad of four: a defending side breaks at half
+    const reports = closeTurn(g);
+    expect(g.sideBroken("RED")).toBe(true);
+    const last = reports.at(-1)!;
+    expect(last).toMatchObject({ outcome: "cleared", brokeOff: "RED" });
+    expect(g.getUnit("R-1").surrendered).toBe(true);
+    expect(g.interior.engagements).toHaveLength(0);
+  });
+
+  it("ends it when the attacking side breaks: its men inside leave by the door", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    expect(g.interior.inFight("B-1")).toBe(true);
+    g.advanceToPhase("summary");
+    knockOut(g, "B-1", 4); // half the squad: this battle names no attacker, so both sides break at half
+    const reports = closeTurn(g);
+    expect(g.sideBroken("BLUE")).toBe(true);
+    expect(reports.at(-1)).toMatchObject({ outcome: "repulsed", brokeOff: "BLUE" });
+    expect(g.interior.inFight("B-1")).toBe(false);
+    const door = g.interior.frontDoor(g, house)!;
+    expect(Math.hypot(g.getUnit("B-1").position.x - door.x, g.getUnit("B-1").position.y - door.y)).toBeLessThan(1e-6);
+  });
+
+  it("ends it the moment the side breaks, mid-turn, not only when the turn closes", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    expect(g.interior.inFight("R-1")).toBe(true);
+    g.advanceToPhase("combat");
+    knockOut(g, "R-1", 2); // as fire in this phase would
+    g.setInteriorPlan("B-1", { grenades: true }); // any action: the game is judged after it
+    expect(g.getUnit("R-1").surrendered).toBe(true);
+    expect(g.interior.engagements).toHaveLength(0);
+    expect(g.standingOrderFor("R-1")).toBeUndefined();
+    // A game that stops here, as one judged over at the break does, still says how it ended.
+    expect(g.takeBrokenInside()).toEqual([expect.objectContaining({ brokeOff: "RED", outcome: "cleared" })]);
+    expect(g.takeBrokenInside()).toEqual([]); // said once
+  });
+
+  it("hands a mid-turn break's report back with the turn's close, if the game goes on", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    g.advanceToPhase("combat");
+    knockOut(g, "R-1", 2);
+    g.setInteriorPlan("B-1", { grenades: true });
+    expect(closeTurn(g).some((r) => r.brokeOff === "RED" && r.outcome === "cleared")).toBe(true);
+  });
+
+  it("when both sides break at once, ends the attack inside and leaves the house to its defender", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    g.advanceToPhase("summary");
+    knockOut(g, "R-1", 2);
+    knockOut(g, "B-1", 4);
+    const reports = closeTurn(g);
+    expect(g.sideBroken("RED") && g.sideBroken("BLUE")).toBe(true);
+    expect(reports.at(-1)).toMatchObject({ outcome: "repulsed", brokeOff: "BLUE" });
+    expect(g.getUnit("R-1").surrendered ?? false).toBe(false);
+  });
+
+  it("lets the fight go on under a broken side in a battle recorded before decision 102", () => {
+    const g = battle(2, { morale: true, breakEndsInside: false });
+    goIn(g);
+    closeTurn(g);
+    expect(g.interior.inFight("R-1")).toBe(true);
+    g.advanceToPhase("summary");
+    knockOut(g, "R-1", 2);
+    const reports = closeTurn(g);
+    expect(reports.some((r) => r.brokeOff)).toBe(false);
+    expect(g.toRecording().breakEndsInside).toBeUndefined();
   });
 
   it("plays a battle recorded before the rule as it was played: the assault resolved outside", () => {

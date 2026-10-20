@@ -50,6 +50,16 @@ describe("a fight inside a building, in Hebrew", () => {
     expect(reasonHe("no way in from the roof")).not.toBe("no way in from the roof"); // worded, not raw
   });
 
+  it("says a side broke and its men inside stopped, as each side reads it (decision 102)", () => {
+    const redBroke = { ...report, began: false, outcome: "cleared" as const, brokeOff: "RED" as const };
+    expect(interiorReportHe(redBroke, names, "RED")).toContain("כוחותינו במבנה נכנעו");
+    expect(interiorReportHe(redBroke, names, "BLUE")).toContain("מגיני המבנה נכנעו — המבנה בידינו");
+    expect(interiorReportHe(redBroke, names, "BLUE")).not.toContain("המבנה טוהר");
+    const blueBroke = { ...report, began: false, outcome: "repulsed" as const, brokeOff: "BLUE" as const };
+    expect(interiorReportHe(blueBroke, names, "BLUE")).toContain("כוחותינו יצאו מן המבנה");
+    expect(interiorReportHe(blueBroke, names, "RED")).toContain("התוקפים יצאו מן המבנה — המבנה בידינו");
+  });
+
   it("says how it ended", () => {
     expect(interiorReportHe({ ...report, began: false, outcome: "cleared" }, names, "BLUE")).toContain("המבנה טוהר");
     expect(interiorReportHe({ ...report, began: false, outcome: "repulsed" }, names, "BLUE")).toContain("נהדפה");

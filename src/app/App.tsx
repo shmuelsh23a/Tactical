@@ -1384,6 +1384,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     // Said once: impacts at a phase change, the orders run after them and the
     // computer's own activation can each find the same end.
     if (over.current) return true;
+    // A side that broke stopped fighting inside too (decision 102): said now, as the game may end here.
+    logInterior(game.takeBrokenInside());
     const beaten = SIDES.filter((side) => sideDefeated(game, side));
     if (beaten.length === 0) {
       // The mission's deadline (rules decision 58): the attack that has not

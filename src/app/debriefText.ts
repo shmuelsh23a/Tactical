@@ -453,8 +453,15 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
   }
   if (report.defendersWithdrew > 0) parts.push(`${report.defendersWithdrew} ממגיני המבנה נסוגו ממנו`);
   if (report.attackersWithdrew > 0) parts.push(`${report.attackersWithdrew} מהתוקפים יצאו מן המבנה`);
-  if (report.outcome === "cleared") parts.push("המבנה טוהר");
-  if (report.outcome === "repulsed") parts.push("התקיפה בתוך המבנה נהדפה");
+  // A side broke, and its men inside stopped (decision 102).
+  if (report.brokeOff !== undefined) {
+    const own = reader === report.brokeOff;
+    const defenderBroke = report.brokeOff !== report.attackerSide;
+    parts.push(defenderBroke
+      ? (own ? "כוחותינו במבנה נכנעו" : reader == null ? "מגיני המבנה נכנעו" : "מגיני המבנה נכנעו — המבנה בידינו")
+      : (own ? "כוחותינו יצאו מן המבנה" : reader == null ? "התוקפים יצאו מן המבנה" : "התוקפים יצאו מן המבנה — המבנה בידינו"));
+  } else if (report.outcome === "cleared") parts.push("המבנה טוהר");
+  if (report.outcome === "repulsed" && report.brokeOff === undefined) parts.push("התקיפה בתוך המבנה נהדפה");
   if (report.outcome === "standoff") parts.push("הקרב בתוך המבנה נעצר");
   return parts.join(" · ");
 }

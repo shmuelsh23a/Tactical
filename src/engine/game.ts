@@ -727,6 +727,14 @@ export interface GameOptions {
    */
   joinFights?: boolean;
   /**
+   * A side's break reaches inside its buildings (rules decision 102): its men
+   * still fighting inside stop — a defender's give themselves up, an
+   * attacker's leave by the door — and the fight ends with the house to the
+   * other side. On by default; a recording made before it reads it as off,
+   * where the fights went on under a broken side.
+   */
+  breakEndsInside?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -861,6 +869,7 @@ export class Game {
   readonly closedTerrain: boolean;
   readonly windowFire: boolean;
   readonly joinFights: boolean;
+  readonly breakEndsInside: boolean;
   /** The fights going on inside buildings (rules decision 96). */
   readonly interior = new InteriorBattles();
   /** Whether a mark stays where it was last seen (rules decision 57). */
@@ -1217,7 +1226,42 @@ export class Game {
   private journalDepth = 0;
 
   private journal(action: RecordedAction): void {
-    if (this.journalDepth === 0) this.actions.push(action);
+    if (this.journalDepth === 0) {
+      this.actions.push(action);
+      // Whatever broke a side just now, its men inside stop (decision 102). Derived and drawing nothing, so a replay does the same.
+      this.settleBreaksInside();
+    }
+  }
+
+  /** Reports of fights inside that a side's break ended mid-turn, for the next phase change to hand back (decision 102). */
+  private brokenInside: InteriorReport[] = [];
+
+  /**
+   * The fights inside a side's break has ended since they were last handed
+   * back (decision 102): for a game that stops at the break, before the turn
+   * closes and would hand them back itself.
+   */
+  takeBrokenInside(): InteriorReport[] {
+    return this.brokenInside.splice(0);
+  }
+
+  /**
+   * A side that has broken stops fighting inside (rules decision 102): both
+   * sides judged together, then each fight it is in ended. Done whenever a
+   * side may have broken — after every action, and as the turn closes.
+   */
+  private settleBreaksInside(): InteriorReport[] {
+    if (!this.breakEndsInside || !this.closedTerrain || !this.morale || this.interior.engagements.length === 0) return [];
+    const broken = new Set((["BLUE", "RED"] as const).filter((side) => this.sideBroken(side)));
+    if (broken.size === 0) return [];
+    const { reports, surrendered } = this.interior.endOnBreak({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed }, broken);
+    // As the morale step's surrender does (decision 19): nothing left to do, nothing ordered.
+    for (const id of surrendered) {
+      this.abandonWork(this.getUnit(id));
+      this.standingOrders.delete(id);
+    }
+    this.brokenInside.push(...reports);
+    return reports;
   }
 
   /** Run `fn` without journalling the public actions it calls internally. */
@@ -1292,6 +1336,7 @@ export class Game {
     this.closedTerrain = opts.closedTerrain ?? true;
     this.windowFire = opts.windowFire ?? true;
     this.joinFights = opts.joinFights ?? true;
+    this.breakEndsInside = opts.breakEndsInside ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1453,6 +1498,7 @@ export class Game {
       ...(this.closedTerrain ? { closedTerrain: true } : {}),
       ...(this.windowFire ? { windowFire: true } : {}),
       ...(this.joinFights ? { joinFights: true } : {}),
+      ...(this.breakEndsInside ? { breakEndsInside: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -1615,6 +1661,9 @@ export class Game {
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
         const { chargeWork, morale } = this.endOfTurnUpkeep();
+        // A side that has broken stops fighting inside too (decision 102): judged on the state the morale step left.
+        this.settleBreaksInside();
+        interior.push(...this.brokenInside.splice(0));
         this.beginTurn();
         return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}), ...(interior.length ? { interior } : {}) };
       }

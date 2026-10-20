@@ -247,6 +247,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.closedTerrain !== undefined && typeof r.closedTerrain !== "boolean") throw malformed("closedTerrain");
   if (r.windowFire !== undefined && typeof r.windowFire !== "boolean") throw malformed("windowFire");
   if (r.joinFights !== undefined && typeof r.joinFights !== "boolean") throw malformed("joinFights");
+  if (r.breakEndsInside !== undefined && typeof r.breakEndsInside !== "boolean") throw malformed("breakEndsInside");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
@@ -476,6 +477,8 @@ export interface GameRecording {
   windowFire?: boolean;
   /** Whether a second assault joined a fight inside (rules decision 99). Read as **off** when absent: it was refused. */
   joinFights?: boolean;
+  /** Whether a side's break ended its fights inside (rules decision 102). Read as **off** when absent. */
+  breakEndsInside?: boolean;
   /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
   keepStaleMarks?: boolean;
   /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
@@ -679,6 +682,7 @@ export function replayWithOutcomes(
     closedTerrain: recording.closedTerrain ?? false,
     windowFire: recording.windowFire ?? false,
     joinFights: recording.joinFights ?? false,
+    breakEndsInside: recording.breakEndsInside ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
     suppressionByVolume: recording.suppressionByVolume ?? false,
     suppressionByChance: recording.suppressionByChance ?? false,
@@ -889,6 +893,13 @@ export function replayWithOutcomes(
     if (!outcome) continue;
     steps.push({ action, outcome });
     opts.onStep?.(game, steps.length - 1);
+  }
+  // A battle that stopped at a side's break, mid-turn: how its fights inside
+  // ended goes with the turn it happened in, the last phase step (decision 102).
+  const late = game.takeBrokenInside();
+  if (late.length) {
+    const last = [...steps].reverse().find((s) => s.outcome.kind === "phase");
+    if (last && last.outcome.kind === "phase") last.outcome.interior = [...(last.outcome.interior ?? []), ...late];
   }
   return { game, steps, skipped };
 }

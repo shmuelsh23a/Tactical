@@ -63,6 +63,8 @@ export interface InteriorReport {
   rooms: number;
   /** Set on the turn the fight ended. */
   outcome?: InteriorOutcome;
+  /** It ended because this side broke (decision 102): its men inside gave up, or left. */
+  brokeOff?: Side;
 }
 
 /** Why a force may not act outside: it is fighting inside a building; or may not go in from the roof as planned. */
@@ -304,6 +306,60 @@ export class InteriorBattles {
       if (d < bestD) { bestD = d; best = roomOf[i]!; }
     }
     return best;
+  }
+
+  /**
+   * A side has broken (rules decision 102, the author, 2026-10-20): its men
+   * still fighting inside stop. A defender's forces in a fight give
+   * themselves up where they are, and the house is the attacker's; an
+   * attacker's withdraw out of the front door, and the attack inside is
+   * over. One report a fight, its ending.
+   */
+  endOnBreak(world: InteriorWorld, broken: ReadonlySet<Side>): { reports: InteriorReport[]; surrendered: string[] } {
+    const reports: InteriorReport[] = [];
+    const surrendered: string[] = [];
+    for (const e of [...this.engagements]) {
+      const defenderSide: Side = e.attackerSide === "BLUE" ? "RED" : "BLUE";
+      // ⚠️ Ours: both broken in one turn, the attack inside is over and the house stays the defender's.
+      const attacking = broken.has(e.attackerSide);
+      if (!attacking && !broken.has(defenderSide)) continue;
+      const units = attacking ? e.attackerUnits : e.defenderUnits;
+      if (units.length === 0) continue;
+      const building = world.terrain.objects.find((o) => o.id === e.buildingId);
+      for (const id of units) {
+        const u = this.unit(world, id);
+        if (attacking) {
+          e.fight.leave((u.soldiers ?? []).map((s) => s.id));
+          const door = building ? this.frontDoor(world, building) : undefined;
+          if (door) moveTo(u, door);
+        } else {
+          // As morale's surrender does outside (decision 19); the game does the rest of it.
+          u.surrendered = true;
+          u.routing = false;
+          u.neutralized = true;
+          u.canOnlyRetreat = false;
+          surrendered.push(id);
+        }
+      }
+      const result = e.fight.result();
+      reports.push({
+        buildingId: e.buildingId,
+        attackerSide: e.attackerSide,
+        attackerUnits: [...e.attackerUnits],
+        defenderUnits: [...e.defenderUnits],
+        began: false,
+        attackersOut: 0,
+        defendersOut: 0,
+        defendersWithdrew: 0,
+        attackersWithdrew: 0, // the log says they left: not counted twice
+        roomsCleared: result.roomsCleared,
+        rooms: result.rooms,
+        outcome: attacking ? "repulsed" : "cleared",
+        brokeOff: attacking ? e.attackerSide : defenderSide,
+      });
+      this.engagements.splice(this.engagements.indexOf(e), 1);
+    }
+    return { reports, surrendered };
   }
 
   /** The forces fighting in a building. */
