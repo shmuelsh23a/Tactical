@@ -468,7 +468,6 @@ export function describeInteriorPlan(plan: InteriorPlan): string {
   const parts: string[] = [];
   if (plan.entry) parts.push(plan.entry === "top" ? "כניסה מהגג" : "כניסה בדלת");
   if (plan.grenades !== undefined) parts.push(plan.grenades ? "רימון לכל חדר" : "בלי רימונים");
-  if (plan.teamSize !== undefined) parts.push(`צוותים של ${plan.teamSize}`);
   if (plan.holdStoreys?.length) parts.push(`מחזיק ב${plan.holdStoreys.map(storey).join(", ")}`);
   if (plan.atWindows !== undefined) parts.push(plan.atWindows ? "בחלונות" : "בעומק החדרים");
   if (plan.expects) parts.push(plan.expects === "above" ? "מצפה לתקיפה מלמעלה" : "מצפה לתקיפה מלמטה");

@@ -44,19 +44,17 @@ describe("plans inside, as data (decision 101)", () => {
   it("takes an order, not a soldier's place, and refuses one it cannot carry out", () => {
     const { g } = battle(1);
     g.addUnit(makeVehicle("B-T", "BLUE", { x: 0, y: 0 }));
-    expect(() => g.setInteriorPlan("B-1", { teamSize: 5 })).toThrow();
-    expect(() => g.setInteriorPlan("B-1", { teamSize: 1 })).toThrow();
     expect(() => g.setInteriorPlan("R-1", { holdStoreys: [-1] })).toThrow();
     expect(() => g.setInteriorPlan("R-1", { holdStoreys: [] })).toThrow();
     expect(() => g.setInteriorPlan("B-T", { entry: "top" })).toThrow();
-    expect(() => g.setInteriorPlan("B-1", { entry: "top", grenades: false, teamSize: 2 })).not.toThrow();
+    expect(() => g.setInteriorPlan("B-1", { entry: "top", grenades: false })).not.toThrow();
   });
 
-  it("goes in by the plan's team size", () => {
-    const { g, assault } = battle(1, { blue: { teamSize: 2 } });
+  it("goes in by doctrine's teams of four, whatever the plan (the author, 2026-10-20)", () => {
+    const { g, assault } = battle(1, { blue: { grenades: false } });
     expect(assault().reason).toBe(GOES_INSIDE);
     g.advanceToPhase("initiative");
-    expect(insideOf(g).teams.map((t) => t.members.length)).toEqual([2, 2, 2, 2]);
+    expect(insideOf(g).teams.map((t) => t.members.length)).toEqual([4, 4]);
   });
 
   it("goes in from the roof where the house has stairs, and is refused where it has one storey", () => {
@@ -124,12 +122,12 @@ describe("plans inside, as data (decision 101)", () => {
   });
 
   it("replays a battle fought by plans to exactly the same state", () => {
-    const { g, assault } = battle(5, { blue: { teamSize: 3, grenades: false }, red: { holdStoreys: [0], fallBack: false } });
+    const { g, assault } = battle(5, { blue: { entry: "door", grenades: false }, red: { holdStoreys: [0], fallBack: false } });
     assault();
     for (let t = 0; t < 3; t++) { g.advanceToPhase("initiative"); g.advanceToPhase("summary"); }
     const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
     expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
-    expect(replayGame(sealed).interior.orderFor("B-1")).toEqual({ teamSize: 3, grenades: false });
+    expect(replayGame(sealed).interior.orderFor("B-1")).toEqual({ entry: "door", grenades: false });
   });
 
   it("posts the men as the default does when the order says nothing of posts, more men than rooms or not", () => {

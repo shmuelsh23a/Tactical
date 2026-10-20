@@ -197,7 +197,7 @@ describe("each side's plan inside a building, from the harness (decision 101)", 
       drill: PLAIN_SCRIPT,
       fire: DEFAULT_FIRE_CHOICES,
       maxTurns: 1,
-      interiorPlans: { attack: { entry: "top", teamSize: 2 }, defence: { fallBack: false } },
+      interiorPlans: { attack: { entry: "top", grenades: false }, defence: { fallBack: false } },
       onTurn: (g) => (game = g),
     });
     const g = game!;
@@ -205,7 +205,7 @@ describe("each side's plan inside a building, from the harness (decision 101)", 
     for (const u of g.units) {
       const plan = g.interior.orderFor(u.id);
       if (u.kind !== "infantry") expect(plan).toBeUndefined();
-      else expect(plan).toEqual(u.side === attacker ? { entry: "top", teamSize: 2 } : { fallBack: false });
+      else expect(plan).toEqual(u.side === attacker ? { entry: "top", grenades: false } : { fallBack: false });
     }
   });
 });

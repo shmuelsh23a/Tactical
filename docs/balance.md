@@ -5290,7 +5290,9 @@ Cleared 87–98% in every cell.
   once and charges a pair nothing for the corners it cannot dominate
   (ATP 3-06.11 (2024), paras C-66, C-67: four points, four men). Put to
   the author. In the raid the same lever reads 7%, nine points under the
-  defaults: at the edge of the noise, and not the same story.
+  defaults: at the edge of the noise, and not the same story. **Ruled:
+  dropped** — teams are doctrine's four, and no plan sets their size.
+  The computer keeps the defaults (the author, the same day).
 - Every other lever moves the raid within noise: it has few fights inside.
   Inside, the defender's levers trade losses for time rather than winning
   either; holding to the last costs the attacker fewer men (it does not

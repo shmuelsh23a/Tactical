@@ -61,7 +61,7 @@ out of here on purpose:
 ## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,091 tests, 74 files
+npm run check       lint + typecheck clean, 1,092 tests, 74 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -180,8 +180,9 @@ Each is in the README's decision 96 or 97. The short form:
   squad follows to cover near the door and goes in while the house has
   more storeys than fit squads; spent at half its men out.
 - Plans inside (decision 101): an order per force, any turn; door or
-  roof, grenades, team size; storeys, windows or back, expected from,
-  hold or fall back. Men on a roof are seen and hit; the plan rules
+  roof, grenades; storeys, windows or back, expected from, hold or fall
+  back. Teams are doctrine's four (teams of two dropped as a dominated
+  lever); the computer keeps the defaults for now. Men on a roof are seen and hit; the plan rules
   grenades inside.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
@@ -529,11 +530,11 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The plans inside are in the engine** (decision 101, `Game.setInteriorPlan`)
-but nothing fills them yet: the computer and the harness fight by the
-defaults, and there is no screen. Next: let the harness and the computer
-give plans (top-down where doctrine prefers it, a defender holding the
-upper storeys), and measure what each lever is worth. The windows
+**The plans inside are in the engine and the harness** (decision 101;
+`scenario-sim --attack-plan/--defence-plan`), measured lever by lever on
+balance.md. The raid cannot tell them apart (few fights inside), so the
+computer keeps the defaults by the author's ruling. What would tell them
+apart is a scenario built around a defended house with open approaches. The windows
 (decision 98), joining (decision 99) and the drill's next squad
 (decision 100) are done. The next squad joins (6 in 12 fights over 20
 raids) and the raid is 16%; the windows barely show, because the raid's

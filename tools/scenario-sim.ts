@@ -23,7 +23,7 @@
  *   npm run scenario-sim -- --shell-amounts        # every round adds its suppression in full, as before rules decision 92
  *   npm run scenario-sim -- --legacy-fire-plan     # both sides fire a mission on any sure mark until the missions are gone, as before rules decision 93
  *   npm run scenario-sim -- --quality BLUE=irregular/inexperienced   # a side's force quality (decision 83); RED=… too, comma-separated
- *   npm run scenario-sim -- --attack-plan entry=top,grenades=no,team=2   # each side's plan inside a building (decision 101)
+ *   npm run scenario-sim -- --attack-plan entry=top,grenades=no   # each side's plan inside a building (decision 101)
  *   npm run scenario-sim -- --defence-plan storeys=1,windows=no,expects=above,hold
  *
  * Kept thin on purpose, like tools/balance-sim.ts: what is worth checking
@@ -112,7 +112,7 @@ for (const part of value("--quality")?.split(",") ?? []) {
   quality[side] = { type: type as ForceType, experience: experience as CombatExperience };
 }
 
-// `--attack-plan entry=top,grenades=no,team=2` and `--defence-plan storeys=1,windows=no,expects=above,hold`:
+// `--attack-plan entry=top,grenades=no` and `--defence-plan storeys=1,windows=no,expects=above,hold`:
 // each side's plan for a fight inside a building (rules decision 101), given to every infantry force of it.
 function interiorPlan(flag: string): InteriorPlan | undefined {
   const text = value(flag);
@@ -122,13 +122,12 @@ function interiorPlan(flag: string): InteriorPlan | undefined {
     const [k, v] = part.split("=");
     if (k === "entry" && (v === "door" || v === "top")) plan.entry = v;
     else if (k === "grenades" && (v === "yes" || v === "no")) plan.grenades = v === "yes";
-    else if (k === "team" && v) plan.teamSize = Number(v);
     else if (k === "storeys" && v) plan.holdStoreys = v.split("+").map(Number);
     else if (k === "windows" && (v === "yes" || v === "no")) plan.atWindows = v === "yes";
     else if (k === "expects" && (v === "below" || v === "above")) plan.expects = v;
     else if (k === "hold" && v === undefined) plan.fallBack = false;
     else if (k === "fallback" && v === undefined) plan.fallBack = true;
-    else throw new Error(`${flag}: "${part}" is not one of entry=door|top, grenades=yes|no, team=2..4, storeys=0+1, windows=yes|no, expects=below|above, hold, fallback`);
+    else throw new Error(`${flag}: "${part}" is not one of entry=door|top, grenades=yes|no, storeys=0+1, windows=yes|no, expects=below|above, hold, fallback`);
   }
   return plan;
 }

@@ -3257,8 +3257,14 @@ on the stated reasoning, still awaiting the author's word.
     fills one day; there is no screen for it yet (the UX pass).
     - **Attacking:** by the front door or **from the roof** (by decision
       96's figures: the climb, then teams through the hatch at the
-      interval), a grenade into each room or not, teams of 2 to 4. The
-      roof needs stairs: a house of one storey, or none, refuses it.
+      interval), a grenade into each room or not. The roof needs stairs:
+      a house of one storey, or none, refuses it. **Teams are doctrine's
+      four**, not the plan's (the author, the same day): teams of two
+      measured a quarter quicker for the same losses, a dominated choice
+      (balance.md).
+    - **The computer gives no plan yet** (the author): it fights by the
+      defaults until a scenario with fights inside can tell the levers
+      apart; in the raid none but teams of two moved outside noise.
     - **Defending:** the storeys held, at the windows facing the enemy or
       back in the rooms, the attack expected from below or above, fall
       back or hold to the last. The drill spreads the men over the rooms.

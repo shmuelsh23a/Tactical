@@ -2964,7 +2964,6 @@ export class Game {
     if (unit.kind === "vehicle") throw new Error(`${unitId} does not fight inside buildings`);
     if (plan.entry !== undefined && plan.entry !== "door" && plan.entry !== "top") throw new Error(`no such way in: ${String(plan.entry)}`);
     if (plan.expects !== undefined && plan.expects !== "below" && plan.expects !== "above") throw new Error(`no such direction: ${String(plan.expects)}`);
-    if (plan.teamSize !== undefined && !(Number.isInteger(plan.teamSize) && plan.teamSize >= 2 && plan.teamSize <= 4)) throw new Error("a team is 2 to 4 men");
     if (plan.holdStoreys !== undefined && !(Array.isArray(plan.holdStoreys) && plan.holdStoreys.length > 0 && plan.holdStoreys.every((k) => Number.isInteger(k) && k >= 0))) throw new Error("storeys are counted from 0, the ground floor");
     this.interior.setOrder(unitId, plan);
     this.journal({ kind: "setInteriorPlan", unitId, plan: cloneForRecord(plan) });

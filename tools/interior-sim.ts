@@ -8,7 +8,8 @@
  *   npm run interior-sim
  *   npm run interior-sim -- --houses 100 --attackers 8 --defenders 3 --prepared
  *   npm run interior-sim -- --storeys 1      # every house one storey, as doctrine's one example is
- *   npm run interior-sim -- --team-size 2 --hold-storeys 1   # a plan's levers (decision 101)
+ *   npm run interior-sim -- --hold-storeys 1   # a plan's lever (decision 101)
+ *   npm run interior-sim -- --team-size 2      # teams of two: a measurement only (balance.md)
  *
  * What it is judged against (ATP 3-06.11 (2024)): clearing is "a slow
  * methodical process" (para 3-8, whose "40-60-minutes" for "a one-floor
@@ -31,7 +32,7 @@ const STOREYS = value("--storeys");
 const ONLY = value("--only"); // e.g. "door-no": one row, for calibrating
 const HOLD = args.includes("--hold"); // the defenders hold to the last rather than fall back
 const EXPECT_ABOVE = args.includes("--expect-above"); // the defenders expect the attack from above
-const TEAM = Number(value("--team-size") ?? 4); // men to an attacking team (decision 101)
+const TEAM = Number(value("--team-size") ?? 4); // men to an attacking team: a measurement only, no plan sets it (the author, 2026-10-20)
 const HOLD_STOREYS = value("--hold-storeys")?.split("+").map(Number); // the storeys the defenders hold, e.g. 1 or 0+1 (decision 101)
 
 const houses: MapObject[] = RAMAT_MENASHE_OBJECTS.filter((o) => o.kind === "building")

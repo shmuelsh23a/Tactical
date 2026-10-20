@@ -83,8 +83,6 @@ export interface InteriorPlan {
   entry?: "door" | "top";
   /** Attacking: a grenade into each room before entering it (the default). May change at any turn. */
   grenades?: boolean;
-  /** Attacking: men to a team, 2 to 4 (4, the default). */
-  teamSize?: number;
   /** Defending: the storeys its men hold, from 0 for the ground floor. All, by default. */
   holdStoreys?: number[];
   /** Defending: at the windows facing the enemy (the default), or back in the rooms. */
@@ -553,9 +551,13 @@ export class InteriorBattles {
     return joined;
   }
 
-  /** A force's fit men in teams of its plan's size (decision 101; four unless otherwise planned). */
+  /**
+   * A force's fit men in teams of four: doctrine's stack (TC 3-21.76 (2025),
+   * 07-SQD-D9509). Not a plan's to change (the author, 2026-10-20): smaller
+   * teams measured quicker for nothing (balance.md).
+   */
   private teamsOf(u: Unit): string[][] {
-    const size = this.orders.get(u.id)?.teamSize ?? 4;
+    const size = 4;
     const ids = fit(u).map((s) => s.id);
     const teams: string[][] = [];
     for (let k = 0; k < ids.length; k += size) teams.push(ids.slice(k, k + size));
