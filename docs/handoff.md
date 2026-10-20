@@ -263,9 +263,13 @@ How the last two days went, round by round, is in
 - **The fight inside is in the game** (decision 96, the coupling's first
   slice, `closedTerrain`): only an assault order goes in (his ruling), the
   raid 3% → 13%, urban 60% → 58%, tel unchanged. Played by hand it opens
-  as a tab, like a phone's browser (his ruling; with the UX/UI pass). Still
-  his: the default plans inside (door and grenades; `defaultDefence`)
-  until players plan there. Next in the
+  as a tab, like a phone's browser (his ruling; with the UX/UI pass). The
+  plans inside unless otherwise planned are his too: door, a grenade a
+  room, teams of four; one defender a room. **Today's control is
+  temporary** (README, *Design principles*): the product commands by
+  OPORD, a battle plan drawn on the map and written orders during play,
+  so build behaviour as data the engine carries out, not as button
+  handlers. Next in the
   coupling: windows firing out and in, rounds landing in rooms, joining a
   fight in progress, players' plans inside.
 

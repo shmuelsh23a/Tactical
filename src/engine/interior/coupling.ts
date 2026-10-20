@@ -23,9 +23,11 @@ import { InteriorFight, defaultDefence, type InteriorOutcome } from "./resolver.
  * wounds and losses, men who withdraw out of the front door. Not yet: windows
  * firing out and being fired into (a force inside is still shot at from
  * outside by the rules as they stand), rounds landing in a room, forces
- * joining a fight already going on, and the players' own plans inside (the
- * attacker goes in by the front door with grenades; the defender holds the
- * rooms `defaultDefence` gives him).
+ * joining a fight already going on, and the players' own plans inside —
+ * until then the author's defaults, "unless otherwise planned": the
+ * attacker by the front door with a grenade into each room, in teams of
+ * four; the defender one man a room. In the product the plan comes from the
+ * OPORD and the battle plan on the map (README, *Design principles*).
  */
 
 /** One building's fight in progress. */
@@ -253,8 +255,9 @@ export class InteriorBattles {
       const plan = this.plan(world, b);
       if (plan.outsideDoors.length === 0) continue; // no way in
       const rng = new Rng(unitSeed(world.seed, `interior:${b.id}:${world.turn}`));
-      // ⚠️ Ours, until the players plan inside: a defender in a position he
-      // prepared (one with a front, decision 85) holds prepared rooms.
+      // Unless otherwise planned, one defender a room (✅ the author,
+      // 2026-10-20). ⚠️ Ours: a defender in a position he prepared (one
+      // with a front, decision 85) holds them prepared.
       const prepared = defenders.some((u) => u.front !== undefined);
       const defence = defaultDefence(plan, defenders.flatMap((u) => fit(u).map((s) => s.id)), rng, prepared);
       const teams: string[][] = [];
@@ -263,9 +266,9 @@ export class InteriorBattles {
         for (let k = 0; k < ids.length; k += 4) teams.push(ids.slice(k, k + 4));
       }
       const attackerSide: Side = defenderSide === "BLUE" ? "RED" : "BLUE";
-      // ⚠️ Ours, until the players plan inside: by the front door, a grenade
-      // into each room first (the drill's "FRAG OUT", TC 3-21.76 (2025),
-      // 07-SQD-D9509, step 2, in high-intensity fighting).
+      // Unless otherwise planned (✅ the author, 2026-10-20): by the front
+      // door, a grenade into each room first (the drill's "FRAG OUT", TC
+      // 3-21.76 (2025), 07-SQD-D9509, step 2), in teams of four.
       const fight = new InteriorFight({ plan, attack: { entry: "door", grenades: true, teams }, defence, attackerSide }, rng);
       // Wounds already taken outside come in with the men.
       const index = this.soldierIndex(world, { attackerUnits: attackers.map((u) => u.id), defenderUnits: defenders.map((u) => u.id) });

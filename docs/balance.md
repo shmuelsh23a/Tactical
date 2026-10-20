@@ -5277,8 +5277,9 @@ one, fights it out room by room as the turn closes. `scenario-sim`, seed
 - **`yokneamUrban` does not move.** Its defenders hold the edge houses and
   are worn down from outside by tanks and mortars (93% of losses to HE)
   before anyone reaches a wall.
-- Its figures, all ours (⚠️, README decision 96): the front door and a
-  grenade a room, teams of four, `defaultDefence`.
+- Its defaults, unless otherwise planned (✅ the author, 2026-10-20): the
+  front door and a grenade a room, teams of four, one defender a room
+  (`defaultDefence`).
 
 ## Top-down, built and measured, 2026-10-16
 

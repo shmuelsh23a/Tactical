@@ -3059,12 +3059,11 @@ on the stated reasoning, still awaiting the author's word.
         outside map, as a phone's browser opens one (the author,
         2026-10-20; urban-design.md, *Two modes, one resolver*). Not built
         yet; it goes with the UX/UI pass.
-      - **⚠️ Ours, for the author**, until the players plan inside:
-        - the attacker goes in by the front door with a grenade into each
-          room, in teams of four;
-        - the defender holds the rooms `defaultDefence` gives him,
-          prepared if his force has a front;
-        - where both sides stand inside, the one longer in place defends.
+      - **The plans inside, unless otherwise planned** (✅ the author,
+        2026-10-20): the attacker goes in by the front door with a grenade
+        into each room, in teams of four, and the defender spreads one man
+        per room (`defaultDefence`). ⚠️ Ours: that he holds them prepared
+        if his force has a front.
       - Not yet: windows firing out and being fired into, rounds landing
         in a room, joining a fight already going on, and the players'
         own plans inside.
@@ -3186,6 +3185,22 @@ Still modelled by reasonable assumption (flag if you want them changed):
   independently (binomial), then 1d4 per hit.
 
 ## Design principles (apply to everything below)
+
+- **Today's control is temporary** (the author, 2026-10-20: "the current
+  way of control is temporary. In the product itself, control will be
+  done via OPORD, battle plan drawn on a map and intermediate written
+  orders during play"). The product commands by:
+  - **the OPORD**, the operation order;
+  - **a battle plan drawn on the map**: axes, objectives, control
+    measures, the fire plan;
+  - **written orders during play**, between the plan and its execution.
+
+  Clicking a force and moving it is a development shell, as the browser
+  build is. So build rules, drills and plans as data the engine carries
+  out (standing orders, `CompanyOrders`, the plans inside a building), not
+  as handlers on a button. A feature that works only by clicking a piece
+  is in the wrong layer. Backlog 13 is that mode, and the UX/UI pass goes
+  with it.
 
 - **Scalable & modular.** Every feature ships as a module that can be **toggled
   on/off** per game. A match is configured by a feature set, not a fixed
