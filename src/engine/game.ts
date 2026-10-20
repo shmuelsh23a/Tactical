@@ -702,8 +702,9 @@ export interface GameOptions {
   smokeNeedsThrower?: boolean;
   /**
    * Closed terrain is fought inside (rules decision 96, step 3b): a force that
-   * reaches the walls of a building the enemy holds, or assaults a force in
-   * one, fights it out room by room on the building's floor plan, a minute a
+   * assaults a force in a building — only an assault order goes in; at the
+   * walls a force fights from outside (the author, 2026-10-20) — fights it
+   * out room by room on the building's floor plan, a minute a
    * turn as the turn closes (`interior/coupling.ts`). On by default; a
    * recording made before it reads it as off, and plays the assault outside.
    */

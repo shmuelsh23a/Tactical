@@ -1,4 +1,4 @@
-import { distance, distanceToPolygon, pointInPolygon, type Point } from "../geometry.js";
+import { distance, pointInPolygon, type Point } from "../geometry.js";
 import { unitSeed } from "../morale.js";
 import { Rng } from "../rng.js";
 import type { MapObject, Terrain } from "../terrain.js";
@@ -7,15 +7,15 @@ import { refreshUnitStatus } from "../units.js";
 import { CASUALTY_RULES } from "../data/casualties.js";
 import { CLOSE_QUARTERS } from "../data/interior.js";
 import { TURN_SECONDS } from "../data/lethality.js";
-import { OBJECT_COVER_REACH_M } from "../data/terrain.js";
 import { generateFloorPlan, type FloorPlan } from "./floorPlan.js";
 import { InteriorFight, defaultDefence, type InteriorOutcome } from "./resolver.js";
 
 /**
  * The fight inside a building, coupled to the turn (README, rules decision
  * 96; docs/urban-design.md, step 3b). On the map a force inside a building is
- * where it always was; when an enemy force reaches the building's walls, or
- * assaults a force inside it, the two fight it out room by room on the
+ * where it always was; when an enemy force assaults a force inside it — only
+ * an assault order goes in, and a force at the walls fights from outside
+ * (the author, 2026-10-20) — the two fight it out room by room on the
  * building's floor plan — a minute of it a turn, as the turn closes — and
  * what that does to their men comes back onto the map.
  *
@@ -227,10 +227,10 @@ export class InteriorBattles {
   }
 
   /**
-   * New fights: a building with a side's forces inside it, and the other
-   * side's infantry at its walls (within the cover reach, decision 15) or
-   * going in by assault. Inside both, the side that has held its ground
-   * longer is the defender. Buildings are taken in map order, so a replay
+   * New fights: a building a force assaulted into this turn, with the other
+   * side's forces inside it. **Only an assault order goes in** (the author,
+   * 2026-10-20: "only an assault order goes in, and a force at the walls
+   * fights from outside"). Buildings are taken in map order, so a replay
    * starts the same fights.
    */
   private startFights(world: InteriorWorld): InteriorEngagement[] {
@@ -239,27 +239,17 @@ export class InteriorBattles {
     for (const b of world.terrain.objects) {
       if (b.kind !== "building" || b.footprint.shape !== "polygon") continue;
       if (this.engagements.some((e) => e.buildingId === b.id)) continue;
-      const pts = b.footprint.points;
-      const inside = world.units.filter((u) => free(u) && (u.kind === "infantry" || u.kind === "command") && pointInPolygon(u.position, pts));
-      if (inside.length === 0) continue;
-      const sides = [...new Set(inside.map((u) => u.side))];
-      let defenderSide: Side;
-      if (sides.length === 1) defenderSide = sides[0]!;
-      else {
-        const held = (s: Side) => Math.max(...inside.filter((u) => u.side === s).map((u) => u.stationaryTurns));
-        defenderSide = held("BLUE") >= held("RED") ? "BLUE" : "RED";
-      }
-      const defenders = inside.filter((u) => u.side === defenderSide);
       const attackers = world.units.filter(
-        (u) =>
-          free(u) &&
-          u.side !== defenderSide &&
-          u.kind === "infantry" &&
-          !u.neutralized &&
-          !u.routing &&
-          (this.entering.get(u.id) === b.id || pointInPolygon(u.position, pts) || distanceToPolygon(u.position, pts) <= OBJECT_COVER_REACH_M),
+        (u) => this.entering.get(u.id) === b.id && free(u) && u.kind === "infantry" && !u.neutralized && !u.routing,
       );
       if (attackers.length === 0) continue;
+      const attackerSide0 = attackers[0]!.side;
+      const pts = b.footprint.points;
+      const defenders = world.units.filter(
+        (u) => free(u) && u.side !== attackerSide0 && (u.kind === "infantry" || u.kind === "command") && pointInPolygon(u.position, pts),
+      );
+      if (defenders.length === 0) continue;
+      const defenderSide: Side = attackerSide0 === "BLUE" ? "RED" : "BLUE";
       const plan = this.plan(world, b);
       if (plan.outsideDoors.length === 0) continue; // no way in
       const rng = new Rng(unitSeed(world.seed, `interior:${b.id}:${world.turn}`));
