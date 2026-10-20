@@ -1,8 +1,17 @@
 # Handoff — where the project stands
 
-**Next, in one line: urban warfare is in the game. Closed terrain is fought soldier by soldier on generated floor plans (decision 96), entered only by an assault order, a minute a turn as the turn closes; the raid went 3% → 13%. Next is the coupling's second slice — windows firing out and in, rounds landing in rooms — or the 1% standoff fault, then the players' plans inside as data. The 2:1 reference median, the force-quality matrix and the AI commanders still wait on the author.**
+**Next, in one line: urban warfare is in the game, and since decision 98 it meets the street through the windows (a defender at one fires out and is seen; a round that gets in bursts in one room). The standoff fault is gone. Next is joining a fight already going on, then the players' plans inside as data. The 2:1 reference median, the force-quality matrix, the AI commanders and whether spotting should follow the windows wait on the author.**
 
-**Current as of 2026-10-20** (`3c28ae0`). Since the last header (2026-10-12):
+**Current as of 2026-10-20, evening.** Later the same day:
+- **Decision 98, through the windows** (README; every option as proposed,
+  by the author). Built, reviewed twice, driven in the browser on a saved
+  battle: RED fired out of a house fight with its one window man ("1
+  יורים"), BLUE-2 fired in. The raid 14%, urban 59%: within noise, because
+  the town's houses block almost every sight line to a fight (balance.md,
+  *Through the windows*).
+- **The standoff fault is closed**, and the three-hour clock accepted.
+
+Earlier (`3c28ae0`). Since the header before (2026-10-12):
 - **Decision 96, urban warfare.** The author's design, built in steps:
   - floor plans generated from footprints, bit-identical on any device;
   - a headless fight inside, run by the doctrinal room-clearing drill;
@@ -49,10 +58,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `3c28ae0` (2026-10-20)
+## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,045 tests, 72 files
+npm run check       lint + typecheck clean, 1,057 tests, 73 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -111,6 +120,12 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
+- **Should spotting follow the windows too?** Since decision 98, fire at a
+  force fighting inside goes only through its windows, but spotting it
+  still reads its mark's sight line. Left unchanged and flagged.
+- **For the UX pass:** the screen marks the enemy a force is fighting
+  inside as a target; the engine refuses that shot ("נלחם בתוך מבנה").
+
 - **The reference plans' 2:1 median is 18.5%**, just under 20 (standard
   measurement 31%). The stall is fixed (an assault that is spent commits
   the rest and lifts the fires; one scout a platoon); what is left is the
@@ -155,6 +170,10 @@ Each is in the README's decision 96 or 97. The short form:
 - Smoke: a thrower within reach, a grenadier for rifle-grenade smoke, a
   smaller screen than a pot. Further limits wait for ammunition
   (backlog 12).
+- Through the windows (decision 98): the plan says who stands at a window
+  (by default, at one facing the enemy); fire in finds only men at facing
+  windows; fire out counts only them; a round that gets in bursts in its
+  room; only where a fight is going on. The three-hour clock stays.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
   are under backlog 13.
@@ -501,16 +520,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The coupling's second slice** (urban-design.md, step 3b, *Still to do*).
-The fight inside does not yet reach the windows:
-- **windows firing out and being fired into:** a man at a window seen and
-  shot at from the street, and shooting back;
-- **rounds landing in rooms:** decision 77's window criticals and the roof
-  hits, put into the room they strike;
-- **joining a fight already going on.**
-
-That last item is what makes `yokneamUrban` (58%, fought from outside)
-and the raid tell the same story.
+**Joining a fight already going on** (urban-design.md, step 3b, *Still to
+do*): today a second assault on a building with a fight in it is refused.
+That is what makes `yokneamUrban` (59%, fought from outside) and the raid
+tell the same story. The windows (decision 98) are done; on the raid's
+ground they rarely get a sight line, so a scenario with open approaches
+to a defended house is what would show them.
 
 **The 1% standoff fault is closed** (2026-10-20): no stall in 3,984
 fights. The six left are the three-hour clock on two building blocks,
@@ -532,7 +547,10 @@ backlog 10.
 - **Every interior change had real faults the reviewer found** — on
   2026-10-16 to 20, five reviews of the floor plans, the resolver,
   top-down, smoke and the coupling found two stalls, lost wounds, a free
-  move, a fog-of-war leak and three silent no-ops. Run the `code-reviewer`
+  move, a fog-of-war leak and three silent no-ops. Decision 98's first
+  review found nine more: a roof critical on a wall fell back to the whole
+  building, a room burst read distance from the force's mark, phantom hits
+  once the pool ran out, the drill aiming by a different sight line. Run the `code-reviewer`
   agent before committing anything under `src/engine/interior/`, and
   measure with `interior-sim` after; the tests alone passed every time.
 - **A stall check is part of the fight's clock.** `lastProgress` must only

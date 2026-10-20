@@ -3169,6 +3169,44 @@ on the stated reasoning, still awaiting the author's word.
       a reason the app words (`SMOKE_REFUSAL`), and the UI offers a source
       only to a side that has somebody to deliver it.
     - Like a hand pot, it needs no line of sight to where it lands.
+98. ✅ **Through the windows: a fight inside meets the street** (the
+    author, 2026-10-20, every option as proposed). Decision 96's coupling
+    left a force fighting inside unable to fire, and open to fire from
+    outside on any of its men, wherever he stood. With
+    `GameOptions.windowFire` (on for a new game, off for a recording made
+    before it, which replays as played), and **only in a building where a
+    fight is going on** (a garrison with no assault yet keeps the rules as
+    they stand):
+    - **Who stands at a window is the plan's.** Unless otherwise planned,
+      a defender whose room has a window facing the enemy stands at it;
+      one whose room has none stands back in it, "back from the windows in
+      the shadows of the room" (ATTP 3-06.11 (2011), para 6-50). At the
+      window he fires out and is seen; back in the room he is neither, and
+      fights only inside. ⚠️ Ours: "facing the enemy" is a window whose
+      outside faces the assault, where it stands at the door as the fight
+      begins (not the whole side, which a defender has not all seen). A man
+      who falls back to another room leaves his window.
+    - **Fire into the building** finds only men at a window facing the
+      firer, each seen through that window alone: the sight line runs to
+      the window. Nobody at such a window is no target, and the shot is
+      refused before anything answers it. ⚠️ Ours: the attackers clearing
+      it man no windows, so only those still in the street outside the
+      door can be hit from outside, with any defender who fell back out of
+      it. Two forces fighting each other inside fight there, room by room,
+      and do not also shoot each other by the rules outside.
+    - **Fire out** is the force's, by the rules outside, counting only its
+      men at windows facing the target, each with his own sight line; its
+      rifle grenades, no more launchers than those men.
+    - The computer's drill aims by what the engine fires by
+      (`Game.canEngage`), and a force fighting inside picks no target in
+      its own fight.
+    - **Not changed:** spotting a force inside still reads its mark's sight
+      line, not its windows (an open question for the author).
+    - **Rounds that get in go off in the room they strike.** A window
+      critical (decision 77) bursts in the room of the man at that window;
+      a round through the roof, in the top-storey room under where it
+      landed. Its ×2.5 falls on every man in that room, of both sides, and
+      on nobody else in the building.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

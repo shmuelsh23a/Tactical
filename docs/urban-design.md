@@ -261,9 +261,16 @@ after houses.
    - Wounds go both ways between the map and the fight.
    - Contacts are exchanged when a fight starts.
 
-   Measured on balance.md, *The fight inside, in the game*. **Still to do:**
-   windows firing out and being fired into, rounds landing in rooms,
-   joining a fight already going on, and the players' plans inside. Two findings wait on the author first: a
+   Measured on balance.md, *The fight inside, in the game*.
+
+   **The second slice, done 2026-10-20** (decision 98, `GameOptions.windowFire`):
+   a defender stands at a window facing the enemy unless planned otherwise,
+   fires out through it and is seen through it; fire into the building finds
+   only those men and attackers still in the street; forces fighting each
+   other inside do not also shoot by the rules outside; a window or roof
+   critical bursts in one room among both sides. Only where a fight is going
+   on: a garrison not yet assaulted keeps `OWN_OBJECT_SIGHT_M`. **Still to
+   do:** joining a fight already going on, and the players' plans inside. Two findings wait on the author first: a
    house is cleared in minutes, where doctrine's one example says about an
    hour (too weak to set a target; balance.md has why), and top-down entry
    is barely better than the door. It is

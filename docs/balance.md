@@ -5254,6 +5254,34 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Through the windows, 2026-10-20 (decision 98)
+
+The second slice of the coupling: a defender at a window facing the
+assault fires out and is seen through it; fire into a fight finds only such
+men and attackers still in the street; a window or roof critical bursts in
+one room. 100 battles from seed 1000, `scenario-sim --n 100`:
+
+| Scenario | Before (`401ae1e`) | After | |
+|---|---|---|---|
+| `yokneamRaid` | 13% | **14%** | out of time 79% |
+| `yokneamUrban` | 58% | **59%** | explosives 83% |
+
+**Within noise (±9), and that is what the mechanism predicts on this
+ground.** Counted on 10 raid battles before the drill fix: 1,031 attempts
+to fire into a fight, **1** with a sight line; the old force-to-force line
+was blocked in every case looked at too. The raid's houses stand close
+enough that hardly anything outside sees a building with a fight going on.
+`yokneamUrban` started no fight inside in 10 battles. The window rule will
+show on ground with open approaches to a defended house.
+
+- **The drill could not fire out at all** until it stopped picking the
+  enemy it fights room by room (the nearest, always refused). It now aims
+  by `Game.canEngage`, the engine's own test.
+- Criticals through a window, checked on one battle in Node: 34 in 92
+  hits, against the table's 35%, every one into the window man's room.
+- ⚠️ Ours, listed on decision 98: the assault's position as "the enemy" a
+  window faces; the clearing attackers man no windows.
+
 ## The fight inside, in the game, 2026-10-20
 
 Rules decision 96's coupling, first slice (`GameOptions.closedTerrain`). A
