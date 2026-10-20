@@ -3228,10 +3228,27 @@ on the stated reasoning, still awaiting the author's word.
       the same way. ⚠️ Ours: only an assault on a force in that fight
       joins it; an enemy force inside the building but not in the fight is
       not reached by it, and the assault is refused as before.
-    - **The computer does not use it yet:** its drill picks only targets
-      it can fire at, and a defender fighting inside rarely shows a window
-      to a squad outside. In 20 raids, 12 fights and no force joined one.
-      Whether the drill should send a second squad in is the author's.
+    - The computer's drill did not use it at first (12 fights in 20 raids,
+      no joins); decision 100 is how it does.
+100. ✅ **The next squad follows the one clearing a house** (the author,
+    2026-10-20, every option as proposed). The computer's drill, from ATP
+    3-06.11 (2024): "at least one Infantry squad per floor to maintain
+    momentum" (para C-3), and "the platoon sergeant must follow close
+    behind with the next squad ready to reinforce the clearing squad"
+    (para C-107):
+    - For each house its side is clearing, **the nearest other squad of the
+      clearing squad's platoon** follows — not a scout, a base of fire, a
+      supporting platoon or a squad in a fight of its own.
+    - It **waits in cover near the door**, within assault reach of the door
+      and of the defender's mark, outside every building.
+    - It **goes in** (an assault, which joins the fight: decision 99) while
+      the house has more storeys than squads fit to clear it: a floor
+      needing a squad (C-3), or the clearing squad spent (C-107). **Never
+      more than a squad a floor** (C-107: more "can become unwieldy").
+    - ⚠️ Ours, the author's choice: a squad is spent once **half the men it
+      took in** are out of the fight. Doctrine names no number.
+    - Only the following squad goes in after a defender already in a
+      fight; the drill's other squads fight him from outside.
     - **Rounds that get in go off in the room they strike.** A window
       critical (decision 77) bursts in the room of the man at that window;
       a round through the roof, in the top-storey room under where it

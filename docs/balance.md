@@ -5282,6 +5282,12 @@ show on ground with open approaches to a defended house.
 - **Spotting through the windows** (ruled the same evening): the raid
   16% at 100 battles, within noise of 14%. **Morale's seeing** through
   them too: still 16%.
+- **The next squad** (decision 100): a squad is spent once half the men it
+  took in are out (`SPENT_SHARE`, ⚠️ the author's choice, doctrine names no
+  number). The raid 18% at 100 battles, 16% after review's fixes (within
+  noise of 15%); 6 joins in 12 fights over 20.
+  "Cover near the door" is mostly the enemy house's own wall: a building
+  gives full cover within 3 m.
 - **Joining a fight** (decision 99): the raid 15%, urban 59% at 100
   battles, unchanged — the drill never joins one (12 fights in 20 raids,
   no joins), because it picks only targets it can fire at.
