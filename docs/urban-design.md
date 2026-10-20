@@ -275,8 +275,11 @@ after houses.
    **Joining a fight, done 2026-10-20** (decision 99, `GameOptions.joinFights`):
    the attacking side's further forces join as new teams at the door; the
    defending side's are refused until the counterattack inside is designed.
-   **Still to do:** the defender's counterattack inside, and the players'
-   plans inside. Two findings wait on the author first: a
+   **Plans inside, done 2026-10-20** (decision 101, `Game.setInteriorPlan`):
+   door or roof, grenades, team size; storeys held, windows or back,
+   expected from, fall back or hold. **Still to do:** the defender's
+   counterattack inside; breaches, mouseholes, loopholes and room order in
+   a plan; the computer and the harness filling plans; the screen. Two findings wait on the author first: a
    house is cleared in minutes, where doctrine's one example says about an
    hour (too weak to set a target; balance.md has why), and top-down entry
    is barely better than the door. It is

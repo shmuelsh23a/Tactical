@@ -3249,6 +3249,37 @@ on the stated reasoning, still awaiting the author's word.
       took in** are out of the fight. Doctrine names no number.
     - Only the following squad goes in after a defender already in a
       fight; the drill's other squads fight him from outside.
+101. ✅ **The plans inside, as data** (the author, 2026-10-20, every option
+    as proposed). A force's plan for a fight inside a building is an order
+    the engine carries out (`Game.setInteriorPlan`, journaled), never where
+    each man stands. What it leaves out is the default, "unless otherwise
+    planned". By today's control being temporary, this is what an OPORD
+    fills one day; there is no screen for it yet (the UX pass).
+    - **Attacking:** by the front door or **from the roof** (by decision
+      96's figures: the climb, then teams through the hatch at the
+      interval), a grenade into each room or not, teams of 2 to 4. The
+      roof needs stairs: a house of one storey, or none, refuses it.
+    - **Defending:** the storeys held, at the windows facing the enemy or
+      back in the rooms, the attack expected from below or above, fall
+      back or hold to the last. The drill spreads the men over the rooms.
+    - **When:** at planning or any turn. Once a fight begins its way in is
+      fixed; grenades, and falling back or holding, are read again every
+      turn.
+    - **Men on the roof are seen and hit** (the author, the same day):
+      while they wait for the climb and the hatch they are shown to the
+      street at the roof's edge, at roof height, and a round that comes
+      down on that roof catches them in the open, whatever its fuze.
+    - **The plan rules grenades inside** (the author): the assault's own
+      grenades are for an assault fought outside.
+    - A team split off a force takes the force's plan.
+    - ⚠️ Ours: two forces going in at once with different ways in go by
+      the first's; two defending forces' expectations, by the first that
+      states one. A fight entered from the roof is not joined through the
+      door (decision 99). On the roof, a man is seen at the edge nearest
+      the one looking, at his full height; a round is as far from him as
+      it is from the roof — at him, when it comes down on it.
+    - Breaches, mouseholes, loopholes, the order of rooms and the support
+      element's place come later (urban-design.md).
     - **Rounds that get in go off in the room they strike.** A window
       critical (decision 77) bursts in the room of the man at that window;
       a round through the roof, in the top-storey room under where it

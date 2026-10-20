@@ -61,7 +61,7 @@ out of here on purpose:
 ## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,076 tests, 73 files
+npm run check       lint + typecheck clean, 1,091 tests, 74 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -179,6 +179,10 @@ Each is in the README's decision 96 or 97. The short form:
 - The next squad (decision 100, the drill): the platoon's nearest other
   squad follows to cover near the door and goes in while the house has
   more storeys than fit squads; spent at half its men out.
+- Plans inside (decision 101): an order per force, any turn; door or
+  roof, grenades, team size; storeys, windows or back, expected from,
+  hold or fall back. Men on a roof are seen and hit; the plan rules
+  grenades inside.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
   are under backlog 13.
@@ -525,8 +529,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The players' plans inside, as data** (urban-design.md, step 3b). The
-windows (decision 98), joining (decision 99) and the drill's next squad
+**The plans inside are in the engine** (decision 101, `Game.setInteriorPlan`)
+but nothing fills them yet: the computer and the harness fight by the
+defaults, and there is no screen. Next: let the harness and the computer
+give plans (top-down where doctrine prefers it, a defender holding the
+upper storeys), and measure what each lever is worth. The windows
+(decision 98), joining (decision 99) and the drill's next squad
 (decision 100) are done. The next squad joins (6 in 12 fights over 20
 raids) and the raid is 16%; the windows barely show, because the raid's
 ground blocks sight lines to a fight. A scenario with open approaches to
