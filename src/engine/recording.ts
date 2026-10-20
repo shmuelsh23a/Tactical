@@ -11,6 +11,7 @@ import type {
   Unit,
 } from "./types.js";
 import type { SmokeSource } from "./data/smoke.js";
+import type { InteriorReport } from "./interior/coupling.js";
 import type {
   DirectFireOptions,
   DirectFireResult,
@@ -241,6 +242,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
   if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
   if (r.smokeNeedsThrower !== undefined && typeof r.smokeNeedsThrower !== "boolean") throw malformed("smokeNeedsThrower");
+  if (r.closedTerrain !== undefined && typeof r.closedTerrain !== "boolean") throw malformed("closedTerrain");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
@@ -464,6 +466,8 @@ export interface GameRecording {
    * anywhere, and replays as it was played.
    */
   smokeNeedsThrower?: boolean;
+  /** Whether closed terrain was fought inside (rules decision 96). Read as **off** when absent: assaults on houses were resolved outside. */
+  closedTerrain?: boolean;
   /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
   keepStaleMarks?: boolean;
   /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
@@ -518,6 +522,8 @@ export type ActionOutcome =
        * heroes, rallies, routs, surrenders. Optional for the same reason.
        */
       morale?: MoraleReport[];
+      /** What the fights inside buildings did as the turn closed (rules decision 96). */
+      interior?: InteriorReport[];
     }
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
@@ -661,6 +667,7 @@ export function replayWithOutcomes(
     ...(recording.commandSuccession ? { commandSuccession: true } : {}),
     smokeCostsMission: recording.smokeCostsMission ?? false,
     smokeNeedsThrower: recording.smokeNeedsThrower ?? false,
+    closedTerrain: recording.closedTerrain ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
     suppressionByVolume: recording.suppressionByVolume ?? false,
     suppressionByChance: recording.suppressionByChance ?? false,
@@ -701,6 +708,7 @@ export function replayWithOutcomes(
           observed: r.observed ?? [],
           chargeWork: r.chargeWork ?? [],
           ...(r.morale ? { morale: r.morale } : {}),
+          ...(r.interior ? { interior: r.interior } : {}),
         };
         break;
       }
@@ -714,6 +722,7 @@ export function replayWithOutcomes(
           observed: r.observed,
           chargeWork: r.chargeWork ?? [],
           ...(game.morale ? { morale: r.morale } : {}),
+          ...(r.interior.length ? { interior: r.interior } : {}),
         };
         break;
       }

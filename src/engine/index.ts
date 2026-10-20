@@ -232,6 +232,13 @@ export {
   type Storey,
 } from "./interior/floorPlan.js";
 export {
+  GOES_INSIDE,
+  INTERIOR_REFUSAL,
+  InteriorBattles,
+  type InteriorEngagement,
+  type InteriorReport,
+} from "./interior/coupling.js";
+export {
   InteriorFight,
   defaultDefence,
   resolveInteriorFight,

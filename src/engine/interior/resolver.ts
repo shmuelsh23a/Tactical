@@ -47,6 +47,8 @@ export interface InteriorSoldier {
   /** Damage points (the document's נק"פ), floored by the wound as decision 26 floors them outside. */
   damage: number;
   wound?: InteriorWound;
+  /** What put him out: a grenade's blast or a bullet (the HE share, balance.md). */
+  outBy?: "smallArms" | "explosive";
   out: boolean;
   killed: boolean;
   grenades: number;
@@ -179,7 +181,7 @@ export function isStunned(m: InteriorSoldier, second: number): boolean {
  * the neutralise threshold). Returns false, and draws nothing, for a man
  * already out.
  */
-export function woundSoldier(m: InteriorSoldier, rng: Rng): boolean {
+export function woundSoldier(m: InteriorSoldier, rng: Rng, cause: "smallArms" | "explosive" = "smallArms"): boolean {
   if (m.out) return false;
   const roll = rng.die(10);
   if (roll <= WOUND_SEVERITY.light) {
@@ -193,7 +195,7 @@ export function woundSoldier(m: InteriorSoldier, rng: Rng): boolean {
     m.out = true;
     m.killed = killed;
   }
-  if (m.out) m.aim = undefined;
+  if (m.out) { m.aim = undefined; m.outBy = cause; }
   return true;
 }
 
@@ -584,10 +586,10 @@ export class InteriorFight {
     this.grenadesThrown++;
     const chance = Math.min(1, ASSAULT.grenadeHitChance * ENCLOSED_BLAST_FACTOR * factor);
     for (const enemy of this.enemiesIn(team.storey, team.room)) {
-      if (this.rng.chance(chance)) { if (woundSoldier(enemy, this.rng)) this.hits.grenade++; }
+      if (this.rng.chance(chance)) { if (woundSoldier(enemy, this.rng, "explosive")) this.hits.grenade++; }
       else enemy.stunnedUntil = this.second + CLOSE_QUARTERS.stunSeconds;
     }
-    if (this.rng.chance(ASSAULT.grenadeSelfHitChance * selfFactor) && woundSoldier(thrower, this.rng)) { this.hits.grenade++; this.casualty(thrower); }
+    if (this.rng.chance(ASSAULT.grenadeSelfHitChance * selfFactor) && woundSoldier(thrower, this.rng, "explosive")) { this.hits.grenade++; this.casualty(thrower); }
   }
 
   /**
@@ -974,6 +976,15 @@ export class InteriorFight {
       if (next === m.cell) return;
       m.cell = next;
     }
+  }
+
+  /**
+   * Men who leave the fight from outside its own rules — their force routed,
+   * gave itself up, or is spent and may only fall back: gone from it, as a
+   * defender who withdraws is. With every attacker gone the attack is over.
+   */
+  leave(ids: readonly string[]): void {
+    for (const m of this.soldiers) if (ids.includes(m.id) && !m.out) { m.withdrew = true; m.aim = undefined; }
   }
 
   /** An attacker put out halts his team while he is seen to and carried out; a wound he fights on with does not. */

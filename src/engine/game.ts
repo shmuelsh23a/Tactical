@@ -96,8 +96,9 @@ import {
   type DirectExplosiveResult,
 } from "./combat/explosives.js";
 import { resolveIndirectFire, postureFactor, shellFactor, type IndirectFireResult } from "./combat/indirectFire.js";
-import { resolveAssault, type AssaultResult } from "./combat/assault.js";
+import { ASSAULT_RANGE_M, resolveAssault, type AssaultResult } from "./combat/assault.js";
 import { applyBleeding, decaySmoke, endTurnUnitUpkeep } from "./upkeep.js";
+import { GOES_INSIDE, INTERIOR_REFUSAL, InteriorBattles, type InteriorReport } from "./interior/coupling.js";
 import { fitSoldiers, killOutright, refreshUnitStatus } from "./units.js";
 import {
   FLAT_GROUND,
@@ -700,6 +701,14 @@ export interface GameOptions {
    */
   smokeNeedsThrower?: boolean;
   /**
+   * Closed terrain is fought inside (rules decision 96, step 3b): a force that
+   * reaches the walls of a building the enemy holds, or assaults a force in
+   * one, fights it out room by room on the building's floor plan, a minute a
+   * turn as the turn closes (`interior/coupling.ts`). On by default; a
+   * recording made before it reads it as off, and plays the assault outside.
+   */
+  closedTerrain?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -816,6 +825,9 @@ export class Game {
   /** Whether tube smoke costs a fire mission (rules decision 56). */
   readonly smokeCostsMission: boolean;
   readonly smokeNeedsThrower: boolean;
+  readonly closedTerrain: boolean;
+  /** The fights going on inside buildings (rules decision 96). */
+  readonly interior = new InteriorBattles();
   /** Whether a mark stays where it was last seen (rules decision 57). */
   readonly keepStaleMarks: boolean;
   /** Whether a burst suppresses by its volume (rules decision 91). Set it before the first turn only: a recording keeps one value. */
@@ -1143,6 +1155,7 @@ export class Game {
     this.commandSuccession = opts.commandSuccession ?? false;
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
     this.smokeNeedsThrower = opts.smokeNeedsThrower ?? true;
+    this.closedTerrain = opts.closedTerrain ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1301,6 +1314,7 @@ export class Game {
       ...(this.commandSuccession ? { commandSuccession: true } : {}),
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
       ...(this.smokeNeedsThrower ? { smokeNeedsThrower: true } : {}),
+      ...(this.closedTerrain ? { closedTerrain: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -1450,15 +1464,21 @@ export class Game {
     observed?: Observation[];
     chargeWork?: ChargeWorkReport[];
     morale?: MoraleReport[];
+    interior?: InteriorReport[];
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
         this.checkFirePlans();
+        // The minute inside every building being fought for (rules decision
+        // 96), before the upkeep: the morale step finds its losses itself.
+        const interior = this.closedTerrain
+          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b) })
+          : [];
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
         const { chargeWork, morale } = this.endOfTurnUpkeep();
         this.beginTurn();
-        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}) };
+        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}), ...(interior.length ? { interior } : {}) };
       }
       const idx = PHASES.indexOf(this.phase);
       this.phase = PHASES[idx + 1]!;
@@ -1500,7 +1520,9 @@ export class Game {
     observed: Observation[];
     chargeWork: ChargeWorkReport[];
     morale: MoraleReport[];
+    interior: InteriorReport[];
   } {
+    const interior: InteriorReport[] = [];
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
     const observed: Observation[] = [];
@@ -1515,11 +1537,12 @@ export class Game {
         if (step.observed) observed.push(...step.observed);
         if (step.chargeWork) chargeWork.push(...step.chargeWork);
         if (step.morale) morale.push(...step.morale);
+        if (step.interior) interior.push(...step.interior);
         if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
       }
     });
     this.journal({ kind: "advanceToPhase", target });
-    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale };
+    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale, interior };
   }
 
   private requirePhase(p: Phase): void {
@@ -2192,6 +2215,7 @@ export class Game {
     if (unit.neutralized && !unit.canOnlyRetreat) {
       throw new Error(`${unitId} is neutralised and cannot act`);
     }
+    if (this.interior.inFight(unitId)) throw new Error(INTERIOR_REFUSAL.fightingInside);
     if (unit.movementBlocked) {
       throw new Error(`${unitId} was hit last turn and cannot move this turn`);
     }
@@ -3190,6 +3214,43 @@ export class Game {
         coveringFire: [],
       };
     }
+    // A force inside a building is assaulted by going in after it (rules
+    // decision 96): the attacker stands at its door, and the fight is fought
+    // room by room as the turn closes, not resolved here from outside.
+    const target = this.getUnit(defenderId);
+    const inside =
+      this.closedTerrain && attacker.kind === "infantry" && (target.kind === "infantry" || target.kind === "command") && !target.surrendered
+        ? this.interior.buildingAt(this.terrain, target.position)
+        : undefined;
+    const door = inside ? this.interior.frontDoor(this, inside) : undefined;
+    if (inside && door && distance(attacker.position, target.position) <= ASSAULT_RANGE_M) {
+      // A fight already going on in it is not joined (this slice: docs/urban-design.md).
+      if (this.interior.fightIn(inside.id)) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
+      // The way to the door is the assault's last bound: it must be within the assault's reach.
+      if (distance(attacker.position, door) > ASSAULT_RANGE_M) return { ...this.noAssault(attackerId, defenderId), reason: "out of range" };
+      this.raiseReadiness(attacker, 3);
+      // Answered on the way in, as any assault is (decision 18).
+      const coveringFire = this.answerWithCoveringFire(attacker, "assault");
+      attacker.firedThisTurn = true;
+      this.interior.goIn(this, attacker, inside);
+      this.journal({ kind: "assault", attackerId, defenderId, grenades });
+      const defender = this.getUnit(defenderId);
+      return {
+        fired: false,
+        reason: GOES_INSIDE,
+        attackerId,
+        defenderId,
+        range: distance(attacker.position, defender.position),
+        fireHits: 0,
+        fireDamage: 0,
+        grenadeHits: 0,
+        grenadeDamage: 0,
+        selfCasualties: 0,
+        defenderCasualties: 0,
+        defenderNeutralized: defender.neutralized,
+        coveringFire,
+      };
+    }
     // Interrupted before it goes in, like any other action (see `fire`).
     // A force aiming at an enemy has seen it (decision 86): stood to before anything answers it.
     this.raiseReadiness(attacker, 3);
@@ -3433,6 +3494,7 @@ export class Game {
     const base: StandingOrderExecution = { unitId: unit.id };
     if (!order.destination) return null; // holding
     if (unit.neutralized && !unit.canOnlyRetreat) return { ...base, reason: "neutralised" };
+    if (this.interior.inFight(unit.id)) return { ...base, reason: INTERIOR_REFUSAL.fightingInside };
     if (unit.movementBlocked) return { ...base, reason: "hit last turn" };
     if (unit.surrendered) return { ...base, reason: MORALE_REFUSAL.surrendered };
     if (suppressionLevel(unit) === "pinned" && !order.withdraw && !unit.routing) {
@@ -3981,8 +4043,28 @@ export class Game {
     return distance(unit.position, target.position) > HEADS_DOWN.aimedWithinM ? { aimFactor: HEADS_DOWN.beyondAimFactor } : {};
   }
 
+  /** An assault not made: nothing fired, nothing changed. */
+  private noAssault(attackerId: string, defenderId: string): AssaultResult & { coveringFire: [] } {
+    const attacker = this.getUnit(attackerId), defender = this.getUnit(defenderId);
+    return {
+      fired: false,
+      attackerId,
+      defenderId,
+      range: distance(attacker.position, defender.position),
+      fireHits: 0,
+      fireDamage: 0,
+      grenadeHits: 0,
+      grenadeDamage: 0,
+      selfCasualties: 0,
+      defenderCasualties: 0,
+      defenderNeutralized: defender.neutralized,
+      coveringFire: [],
+    };
+  }
+
   moraleRefusal(unit: Unit): string | undefined {
     if (unit.surrendered) return MORALE_REFUSAL.surrendered;
+    if (this.interior.inFight(unit.id)) return INTERIOR_REFUSAL.fightingInside;
     if (unit.routing) return MORALE_REFUSAL.routing;
     if (this.standingOrders.get(unit.id)?.withdraw) return MORALE_REFUSAL.withdrawing;
     return undefined;
