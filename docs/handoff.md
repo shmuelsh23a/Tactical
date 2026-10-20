@@ -61,7 +61,7 @@ out of here on purpose:
 ## Green as of decision 98 (2026-10-20)
 
 ```
-npm run check       lint + typecheck clean, 1,095 tests, 74 files
+npm run check       lint + typecheck clean, 1,102 tests, 74 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -182,7 +182,11 @@ Each is in the README's decision 96 or 97. The short form:
 - Plans inside (decision 101): an order per force, any turn; door or
   roof, grenades; storeys, windows or back, expected from, hold or fall
   back. Teams are doctrine's four (teams of two dropped as a dominated
-  lever); the computer keeps the defaults for now. Men on a roof are seen and hit; the plan rules
+  lever); the computer keeps the defaults for now.
+- A side's break (decision 102): its men inside stop — a defender's
+  surrender, an attacker's leave — judged after every action. Morale
+  inside the house, and the battle waiting for a fight inside, are the
+  author's "later", with the counterattack inside. Men on a roof are seen and hit; the plan rules
   grenades inside.
 - Today's control is temporary: OPORD, a map battle plan and written
   orders. The UX/UI pass goes with it, and his played battle's findings
@@ -536,7 +540,10 @@ the scenario built for it (a squad in the town's edge house, a platoon
 already against it: 130 fights inside in 200 battles). Only grenades
 count: without them the attacker wins 49% against 58%. No fight inside
 ever ends: a side breaks a few minutes in, while clearing takes an hour.
-The computer keeps the defaults. The windows
+Since decision 102 a side's break ends its fights inside too (its men
+surrender or leave). Next on this thread, when the author wants it: morale
+inside the house and the battle waiting for a fight inside, with the
+defender's counterattack inside (the author's "later"). The windows
 (decision 98), joining (decision 99) and the drill's next squad
 (decision 100) are done. The next squad joins (6 in 12 fights over 20
 raids) and the raid is 16%; the windows barely show, because the raid's

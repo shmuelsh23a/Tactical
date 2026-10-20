@@ -5294,6 +5294,11 @@ same battles (`scenario-sim --attack-plan / --defence-plan`):
   fight is decided before the time matters.
 - ⚠️ Ours: the positions, the 90-turn limit, the force quality, the squad
   facing west (the platoon comes from the town, as the raid's does).
+- **A side's break reaches inside** (decision 102, ruled the same evening):
+  the same 200 battles come out 58%, the raid 16% — the battle was already
+  judged at the break; what changes is the ending. A broken defender's men
+  inside now surrender (the house's defender down 39% → 40%) and the house
+  is the attacker's, instead of fighting on for a side that had lost.
 
 ## What each lever of a plan inside is worth, 2026-10-20 (decision 101)
 

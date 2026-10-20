@@ -276,10 +276,14 @@ after houses.
    the attacking side's further forces join as new teams at the door; the
    defending side's are refused until the counterattack inside is designed.
    **Plans inside, done 2026-10-20** (decision 101, `Game.setInteriorPlan`):
-   door or roof, grenades, team size; storeys held, windows or back,
-   expected from, fall back or hold. **Still to do:** the defender's
-   counterattack inside; breaches, mouseholes, loopholes and room order in
-   a plan; the computer and the harness filling plans; the screen. Two findings wait on the author first: a
+   door or roof, grenades (teams are doctrine's four); storeys held,
+   windows or back, expected from, fall back or hold; given by the harness
+   (`--attack-plan`, `--defence-plan`). **A side's break, done 2026-10-20**
+   (decision 102): its men inside surrender (a defender) or leave by the
+   door (an attacker). **Still to do:** morale inside the house, and the
+   battle waiting for a fight inside (the author's "later"); the
+   defender's counterattack inside; breaches, mouseholes, loopholes and
+   room order in a plan; the screen. Two findings wait on the author first: a
    house is cleared in minutes, where doctrine's one example says about an
    hour (too weak to set a target; balance.md has why), and top-down entry
    is barely better than the door. It is

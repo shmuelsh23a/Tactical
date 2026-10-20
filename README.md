@@ -3209,6 +3209,11 @@ on the stated reasoning, still awaiting the author's word.
       range chooses by `Game.canEngage`. **Morale's seeing too** (the
       author, the same day): armour fear, a friend breaking in sight, and
       who watched a rout.
+    - **Rounds that get in go off in the room they strike.** A window
+      critical (decision 77) bursts in the room of the man at that window;
+      a round through the roof, in the top-storey room under where it
+      landed. Its ×2.5 falls on every man in that room, of both sides, and
+      on nobody else in the building.
 99. ✅ **Joining a fight already going on** (the author, 2026-10-20, every
     option as proposed). Until now a second assault on a building with a
     fight in it was refused. With `GameOptions.joinFights` (on for a new
@@ -3286,11 +3291,28 @@ on the stated reasoning, still awaiting the author's word.
       it is from the roof — at him, when it comes down on it.
     - Breaches, mouseholes, loopholes, the order of rooms and the support
       element's place come later (urban-design.md).
-    - **Rounds that get in go off in the room they strike.** A window
-      critical (decision 77) bursts in the room of the man at that window;
-      a round through the roof, in the top-storey room under where it
-      landed. Its ×2.5 falls on every man in that room, of both sides, and
-      on nobody else in the building.
+102. ✅ **A side's break reaches inside** (the author, 2026-10-20, on the
+    recommendation "2 now, 3 later"). A side that breaks (decisions 44 and
+    67: a defender at half its men down or broken, an attacker at 30%)
+    ended the battle while its men inside went on fighting room by room:
+    in `yokneamHouse` no fight inside ever finished. With
+    `GameOptions.breakEndsInside` (on for a new game, off for a recording
+    made before it), as the turn closes, after the morale step:
+    - **A broken defender's men inside give themselves up** where they are
+      (the author: "surrender"), as morale's surrender does outside, and
+      the house is the attacker's.
+    - **A broken attacker's men inside leave by the front door**, and the
+      attack inside is over.
+    - The log tells each side in its own words; the enemy is not named.
+    - Judged whenever a side may have broken — after every action, and as
+      the turn closes — since the game is judged over the moment it does.
+    - ⚠️ Ours: both sides broken at once, the attack inside is over and
+      the house stays the defender's. A force gives up whole, as morale's
+      surrender does, with any of its men who had already left the house.
+    - **Later (the author's "3"):** morale inside the house itself — a man
+      who breaks stops fighting there — and the battle not judged while a
+      fight inside goes on. With the defender's counterattack inside, since
+      both need men inside who react to how it is going.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
