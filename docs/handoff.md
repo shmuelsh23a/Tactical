@@ -261,10 +261,11 @@ How the last two days went, round by round, is in
 ### Added 2026-10-20
 
 - **The fight inside is in the game** (decision 96, the coupling's first
-  slice, `closedTerrain`): the raid 3% → 22%, urban 60% → 59%, tel
-  unchanged. For him: whether reaching a building's walls should commit a
-  force to the fight inside, and the default plans inside (door and
-  grenades; `defaultDefence`) until players plan there. Next in the
+  slice, `closedTerrain`): only an assault order goes in (his ruling), the
+  raid 3% → 13%, urban 60% → 58%, tel unchanged. Played by hand it opens
+  as a tab, like a phone's browser (his ruling; with the UX/UI pass). Still
+  his: the default plans inside (door and grenades; `defaultDefence`)
+  until players plan there. Next in the
   coupling: windows firing out and in, rounds landing in rooms, joining a
   fight in progress, players' plans inside.
 

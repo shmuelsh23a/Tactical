@@ -151,6 +151,16 @@ fight bit-for-bit. No real time and no pause.
   player gets a **separate screen** with the floor plan, as much of it as
   his side knows, and his soldiers. He plans there and watches the ticks
   play out. It is a planning and playback screen, not a control screen.
+  **It opens as a tab** (the author, 2026-10-20: "The way we combine the in
+  house and out house fight is by opening the in house battle as a tab.
+  The same as in mobile version of chrome"):
+  - The outside map is one tab, and each building being fought in is a tab
+    of its own beside it.
+  - The player switches between them as a phone's browser switches tabs: a
+    tab strip or a grid of cards, each showing its fight at a glance.
+  - A tab opens when an assault goes in and closes when the fight there
+    ends.
+  - It belongs with the UX/UI pass recorded in README backlog 13.
 - **Company and above**: the same resolver runs **headless**. It builds
   the houses and resolves the fights without drawing them. The balance
   harness runs this way too.
@@ -245,8 +255,9 @@ after houses.
    **The coupling's first slice, done 2026-10-20**
    (`src/engine/interior/coupling.ts`, `GameOptions.closedTerrain`):
    - A fight runs a turn's 60 ticks as the turn closes.
-   - Forces go in by reaching the walls or by assault, and come out by
-     withdrawing, routing or surrendering.
+   - Forces go in only by an assault order (the author: "only an assault
+     order goes in, and a force at the walls fights from outside"), and
+     come out by withdrawing, routing or surrendering.
    - Wounds go both ways between the map and the fight.
    - Contacts are exchanged when a fight starts.
 

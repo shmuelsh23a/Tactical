@@ -3037,11 +3037,11 @@ on the stated reasoning, still awaiting the author's word.
     - **In the game: the fight inside, coupled to the turn** (2026-10-20,
       `GameOptions.closedTerrain`, on for a new game, off for a recording
       made before it; [`interior/coupling.ts`](src/engine/interior/coupling.ts)).
-      - A force reaches the walls of a building the enemy holds (within the
-        3 m cover reach, decision 15), or assaults a force inside one, which
-        takes it to the front door. The two then fight it out room by room
-        on the building's floor plan, a minute a turn, as the turn closes
-        and before the morale step.
+      - A force assaults a force inside a building, which takes it to the
+        front door. **Only an assault order goes in; a force at the walls
+        fights from outside** (the author, 2026-10-20). The two then fight
+        it out room by room on the building's floor plan, a minute a turn,
+        as the turn closes and before the morale step.
       - While it lasts, neither force moves or fires outside. Wounds and
         losses come back onto the men, and a force routed, given up or
         spent leaves the fight. Defenders who withdraw come out of the front
@@ -3050,14 +3050,16 @@ on the stated reasoning, still awaiting the author's word.
       - The assault that goes in keeps an assault's rules: once a turn,
         answered by covering fire, and only within the assault's 25 m of
         the door.
-      - Measured, 100 battles from seed 1000: **the raid 3% → 22%**
-        attacker wins, out of time 93% → 67%, so the stalemate inside
-        houses is broken. `yokneamUrban` 60% → 59%: its defenders hold the
+      - Measured, 100 battles from seed 1000: **the raid 3% → 13%**
+        attacker wins (22% while reaching the walls also went in), out of
+        time 93% → 76%. `yokneamUrban` 60% → 58%: its defenders hold the
         edge houses and are fought from outside. The tel is unchanged
         (balance.md, *The fight inside, in the game*).
+      - **Played by hand, the fight inside opens as a tab** beside the
+        outside map, as a phone's browser opens one (the author,
+        2026-10-20; urban-design.md, *Two modes, one resolver*). Not built
+        yet; it goes with the UX/UI pass.
       - **⚠️ Ours, for the author**, until the players plan inside:
-        - reaching the walls commits a force to the fight, whether either
-          side ordered it;
         - the attacker goes in by the front door with a grenade into each
           room, in teams of four;
         - the defender holds the rooms `defaultDefence` gives him,

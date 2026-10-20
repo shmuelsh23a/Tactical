@@ -5263,21 +5263,22 @@ one, fights it out room by room as the turn closes. `scenario-sim`, seed
 
 | Scenario | Attacker wins before → after | Out of time | Attacker / defender down |
 |---|---|---|---|
-| `yokneamRaid` (`--n 100 --scenario yokneamRaid`) | **3% → 22%** | 93% → 67% | 8% / 9% → 8% / 5% |
-| `yokneamUrban` (standard flags, `--n 100`) | 60% → 59% | 25% → 26% | 8% / 36% → 8% / 36% |
+| `yokneamRaid` (`--n 100 --scenario yokneamRaid`) | **3% → 13%** (22% while reaching the walls went in too) | 93% → 76% | 8% / 9% → 7% / 5% |
+| `yokneamUrban` (standard flags, `--n 100`) | 60% → 58% | 25% → 27% | 8% / 36% → 8% / 36% |
 | Tel Azeka, both (standard flags, `--n 60`) | 50% / 35% → identical | — | identical |
 
-- **The raid's stalemate is broken.** Its forces stood inside houses, unable
-  to see out or be seen. They now fight their way in: 22% of raids take the
-  block, against 3%. Defenders down falls (9% → 5%) because a fight inside
+- **The raid's stalemate is broken where the raid assaults.** Its forces
+  stood inside houses, unable to see out or be seen. Since the author's
+  ruling the same day, only an assault order goes in; a force that merely
+  reaches the walls fights from outside. 13% of raids take the block now,
+  against 3% before and 22% while the walls also went in. Defenders down falls (9% → 5%) because a fight inside
   ends with the house taken rather than with the militia shot from the
   windows, and many militia withdraw out of the door.
 - **`yokneamUrban` does not move.** Its defenders hold the edge houses and
   are worn down from outside by tanks and mortars (93% of losses to HE)
   before anyone reaches a wall.
-- Its figures, all ours (⚠️, README decision 96): the 3 m trigger, the
-  front door and a grenade a room, teams of four, `defaultDefence`, the
-  longer in place defending.
+- Its figures, all ours (⚠️, README decision 96): the front door and a
+  grenade a room, teams of four, `defaultDefence`.
 
 ## Top-down, built and measured, 2026-10-16
 
