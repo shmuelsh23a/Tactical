@@ -1,7 +1,10 @@
 import {
+  ASSAULT_RANGE_M,
   EXPLOSIVES,
+  GOES_INSIDE,
   RIFLE_GRENADIERS,
   angleBetween,
+  pointInPolygon,
   bearingDegrees,
   distance,
   type Game,
@@ -461,6 +464,8 @@ export class DrillState {
   readonly divided = new Set<string>();
   /** Forces holding as the support-by-fire team of a divided squad. */
   readonly baseOfFire = new Set<string>();
+  /** The next squad following into each house its side is clearing (decision 100): building to squad. */
+  readonly following = new Map<string, string>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -486,6 +491,7 @@ export class DrillState {
       screens: this.screens,
       divided: [...this.divided],
       baseOfFire: [...this.baseOfFire],
+      following: [...this.following],
     };
   }
 
@@ -505,6 +511,7 @@ export class DrillState {
     s.screens = snap.screens ?? 0;
     (snap.divided ?? []).forEach((id) => s.divided.add(id));
     (snap.baseOfFire ?? []).forEach((id) => s.baseOfFire.add(id));
+    fill(s.following, snap.following ?? []);
     return s;
   }
 }
@@ -519,6 +526,8 @@ export interface DrillStateSnapshot {
   /** Squads divided into fire teams, and the teams holding as a base of fire. */
   divided?: string[];
   baseOfFire?: string[];
+  /** The next squad following into each house (decision 100). */
+  following?: [string, string][];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -567,6 +576,124 @@ function awayFrom(from: Point, threat: Point, d: number): Point {
   const r = distance(from, threat);
   if (r === 0) return { ...from };
   return { x: from.x + ((from.x - threat.x) / r) * d, y: from.y + ((from.y - threat.y) / r) * d };
+}
+
+/**
+ * The next squad, following the one clearing a house (rules decision 100,
+ * ATP 3-06.11 (2024)): "at least one Infantry squad per floor to maintain
+ * momentum" (para C-3), and "the platoon sergeant must follow close behind
+ * with the next squad ready to reinforce the clearing squad" (para C-107),
+ * whose men are spent on doorways and casualties after a few rooms.
+ *
+ * For each house its side is clearing, the nearest other squad of the
+ * clearing squad's platoon — not a scout, not a base of fire, not in a
+ * fight of its own — follows: it waits in cover near the door, and goes in
+ * (an assault, which joins the fight: decision 99) while the house has
+ * more storeys than squads still fit to clear in it. A squad counts as no
+ * longer fit once half the men it took in are out (⚠️ ours, the author's
+ * choice: doctrine names no number). Never more than a squad a floor
+ * (para C-107: more "can become unwieldy").
+ */
+interface Follow {
+  door: Point;
+  /** A defender in the fight, for the assault that takes it in. */
+  defenderId: string;
+  /** Where it waits, in cover near the door. */
+  wait: Point;
+  goIn: boolean;
+}
+
+/** Of the men a squad took in, the share that may be out before it is spent (decision 100, ⚠️ ours). */
+const SPENT_SHARE = 0.5;
+
+function followers(game: Game, task: DrillTask, drill: SquadDrill, state?: DrillState): Map<string, Follow> {
+  const out = new Map<string, Follow>();
+  if (!task.attacking) return out;
+  const company = task.company;
+  const platoonOf = (id: string) => company?.platoonOf?.get(id) ?? platoonKey(id);
+  // A house no longer being fought for has nobody following into it.
+  if (state) for (const b of [...state.following.keys()]) if (!game.interior.fightIn(b)) state.following.delete(b);
+  // Squads already following a house are kept for it: no other house takes them first.
+  const keptFor = new Map([...(state?.following ?? [])].map(([b, id]) => [id, b]));
+  for (const e of game.interior.engagements) {
+    if (e.attackerSide !== task.side || e.fight.finished) continue;
+    const building = game.terrain.objects.find((o) => o.id === e.buildingId);
+    const door = building ? game.interior.frontDoor(game, building) : undefined;
+    if (!building || building.footprint.shape !== "polygon" || !door) continue;
+    // The defender nearest the door: the assault that takes the next squad in is made on him.
+    const defender = e.defenderUnits
+      .map((id) => game.getUnit(id))
+      .filter((d) => !d.neutralized && !d.surrendered)
+      .sort((a, b) => distance(a.position, door) - distance(b.position, door) || (a.id < b.id ? -1 : 1))[0];
+    if (!defender) continue;
+    const defenderId = defender.id;
+    const men = new Map(e.fight.soldiers.map((m) => [m.id, m]));
+    const fitToClear = e.attackerUnits.filter((id) => {
+      const mine = (game.getUnit(id).soldiers ?? []).map((s) => men.get(s.id)).filter((m) => m !== undefined);
+      const gone = mine.filter((m) => m!.out || m!.withdrew).length;
+      return mine.length > 0 && gone < mine.length * SPENT_SHARE;
+    }).length;
+    const platoon = platoonOf(e.attackerUnits[0]!);
+    // Not a scout, a base of fire, a machine gun team, a supporting platoon,
+    // a squad in a fight of its own, or one that has broken contact or is
+    // about to: the drill's own test for that, before it is sent in.
+    const eligible = (u: Unit) =>
+      u.side === task.side &&
+      u.kind === "infantry" &&
+      !u.mediumMg &&
+      inPlay(u) &&
+      !u.routing &&
+      !game.interior.inFight(u.id) &&
+      !out.has(u.id) &&
+      (keptFor.get(u.id) ?? e.buildingId) === e.buildingId &&
+      !company?.scouts.has(u.id) &&
+      !state?.baseOfFire.has(u.id) &&
+      !state?.fellBack.has(u.id) &&
+      !(drill.breakContact && state && readyShare(u, state) < drill.breakContact.readyShareBelow) &&
+      (company?.platoonTasks?.get(platoon) ?? "assault") !== "support" &&
+      platoonOf(u.id) === platoon;
+    // The squad already following stays the one, while it may (no switching turn by turn).
+    const kept = state?.following.get(e.buildingId);
+    const keptUnit = kept ? game.units.find((u) => u.id === kept) : undefined;
+    const next =
+      keptUnit && eligible(keptUnit)
+        ? keptUnit
+        : game.units.filter(eligible).sort((a, b) => distance(a.position, door) - distance(b.position, door) || (a.id < b.id ? -1 : 1))[0];
+    if (!next) { state?.following.delete(e.buildingId); continue; }
+    // Somewhere it can go in from: within assault reach of the door and of the defender. None, no follower.
+    const wait = waitNear(game, door, defender.position, building.footprint.points, next.position);
+    if (!wait) { state?.following.delete(e.buildingId); continue; }
+    state?.following.set(e.buildingId, next.id);
+    out.set(next.id, { door, defenderId, wait, goIn: fitToClear < e.fight.plan.storeys.length });
+  }
+  return out;
+}
+
+/**
+ * Where the next squad waits (decision 100, the author: "near the door, in
+ * cover"): the nearest point to it with cover, outside every building,
+ * within assault reach of both the door and the defender's mark. Without
+ * one, the open ground short of the door, if that is within reach of both;
+ * else nowhere — the house is too deep to go in after its defender from
+ * outside.
+ */
+function waitNear(game: Game, door: Point, defender: Point, house: readonly Point[], from: Point): Point | undefined {
+  const reach = ASSAULT_RANGE_M - 4; // inside the assault's reach by more than the 3 m a squad may stop short
+  let best: Point | undefined, bestD = Infinity;
+  for (let r = 6; r <= reach; r += 4) {
+    for (let k = 0; k < 16; k++) {
+      const a = (k * Math.PI) / 8;
+      const p = { x: door.x + r * Math.cos(a), y: door.y + r * Math.sin(a) };
+      if (pointInPolygon(p, house) || distance(p, defender) > reach) continue;
+      if (game.terrain.objects.some((o) => o.kind === "building" && o.footprint.shape === "polygon" && pointInPolygon(p, o.footprint.points))) continue;
+      if (game.groundCoverAt(p) === "none") continue;
+      const d = distance(p, from);
+      if (d < bestD) { bestD = d; best = p; }
+    }
+  }
+  if (best) return best;
+  const open = toward(door, from, Math.min(reach / 2, distance(door, from)));
+  return distance(open, defender) <= reach && distance(open, door) <= reach ? open : undefined;
 }
 
 /** The enemies `side` knows of, where it last saw them — never where they are. */
@@ -802,9 +929,20 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       leads.set(k, Math.min(leads.get(k) ?? Infinity, d));
     }
   }
+  const follows = followers(game, task, drill, state);
   forces.forEach((u, i) => {
     if (!inPlay(u)) return;
     state.startingStrength(u);
+    // The next squad behind one clearing a house (decision 100): up to cover
+    // near the door, and, when it goes in, no nearer than within reach.
+    const follow = follows.get(u.id);
+    if (follow) {
+      // Going in, it must be within reach of both, wherever it stopped; waiting, near its point will do.
+      const inReach = distance(u.position, follow.door) <= ASSAULT_RANGE_M && distance(u.position, game.getUnit(follow.defenderId).position) <= ASSAULT_RANGE_M;
+      const there = follow.goIn ? inReach : distance(u.position, follow.wait) <= 3;
+      game.setStandingOrder(u.id, there ? { gait: "normal" } : { gait: "normal", destination: { ...follow.wait } });
+      return;
+    }
     const nearest = pickTarget(u, enemies, axisOf(u, task), drill, Infinity);
 
     // Break contact: fall back before the force breaks, not after — once.
@@ -1129,8 +1267,19 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
   const knownToSide = knownEnemies(game, side);
   const baseReach = task.attacking ? drill.attackFireRange : drill.openFireRange;
   const heavy = drill.heavyWeapons;
+  const follows = followers(game, task, drill, state);
   // Still forces first, then the quicker (rules decision 72).
   for (const u of game.firingOrder(side).filter(inPlay)) {
+    // The next squad goes in after the one clearing (decision 100): an
+    // assault on the house's defender joins the fight (decision 99).
+    const follow = follows.get(u.id);
+    const inside = follow ? game.getUnit(follow.defenderId) : undefined;
+    if (follow?.goIn && inside && distance(u.position, follow.door) <= ASSAULT_RANGE_M && distance(u.position, inside.position) <= ASSAULT_RANGE_M) {
+      if (u.covering) game.setCovering(u.id, false); // a posture is no reason not to go in
+      const r = game.assault(u.id, inside.id, drill.assault.grenades);
+      report?.assaulted?.(u, inside, drill.assault.grenades, r);
+      if (r.reason === GOES_INSIDE) continue;
+    }
     // A force fighting inside a building fights the enemy in it room by
     // room, and fires out of its windows at the rest (decision 98).
     const fight = game.interior.engagementOf(u.id);
@@ -1202,7 +1351,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     }
     if (u.covering) game.setCovering(u.id, false);
     // A force fighting inside cannot go out to assault: it fires from its windows (decision 98).
-    if (u.kind !== "command" && !fight && distance(u.position, target.position) <= drill.assault.range) {
+    // A defender already in a fight is gone in after only by the next squad (decision 100).
+    if (u.kind !== "command" && !fight && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {

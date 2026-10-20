@@ -100,7 +100,8 @@ function isDrillSnapshot(d: unknown): boolean {
     isPairs(d.posts, isPoint) &&
     isPairs(d.counterattacking, isPoint) &&
     isPairs(d.levelWaits, (v) => isObject(v) && isCount(v.turn) && isCount(v.count)) &&
-    (d.screens === undefined || isCount(d.screens))
+    (d.screens === undefined || isCount(d.screens)) &&
+    (d.following === undefined || isPairs(d.following, (v) => typeof v === "string"))
   );
 }
 /** The attacking computer's memory, every field its restore reads (`ComputerAttacker.restore`). */

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { Game, makeCommandGroup, makeInfantry } from "../engine/index.js";
+import { describe, expect, it, vi } from "vitest";
+import { ASSAULT_RANGE_M, Game, makeCommandGroup, makeInfantry, makeMachineGunTeam } from "../engine/index.js";
 import {
   DrillState,
   PLAIN_SCRIPT,
@@ -575,5 +575,155 @@ describe("a defending platoon's reserve (rules decision 60)", () => {
     }
     expect(reserve.position).toEqual({ x: 0, y: 0 });
     expect(g.standingOrderFor(reserve.id)).toMatchObject({ holdFire: true, engagementRange: PLAIN_SCRIPT.openFireRange });
+  });
+});
+
+/**
+ * The next squad behind one clearing a house (rules decision 100, ATP
+ * 3-06.11 (2024) paras C-3 and C-107): it follows to cover near the door,
+ * and goes in while the house has more storeys than squads fit to clear it.
+ */
+describe("the next squad into a house (decision 100)", () => {
+  const house = (storeys: number) => ({
+    id: "house",
+    kind: "building" as const,
+    height: storeys * 3,
+    footprint: { shape: "polygon" as const, points: [{ x: 100, y: 100 }, { x: 116, y: 100 }, { x: 116, y: 112 }, { x: 100, y: 112 }] },
+  });
+
+  /** B-1-1 assaults R-1 in the house; B-1-2, of its platoon, and B-2-1, of another, stand off 60 m; `extra` adds more of BLUE. */
+  function clearing(seed: number, storeys: number, defenders: number, extra?: (g: Game, out: (m: number, side?: number) => { x: number; y: number }) => void) {
+    const h = house(storeys);
+    const g = new Game({ seed, trackIntel: true, enforceC2: false, terrain: { objects: [h] } });
+    g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, defenders));
+    const door = g.interior.frontDoor(g, h)!;
+    const dx = door.x - 108, dy = door.y - 106, d = Math.hypot(dx, dy);
+    const out = (m: number, side = 0) => ({ x: door.x + (m * dx) / d - (side * dy) / d, y: door.y + (m * dy) / d + (side * dx) / d });
+    g.addUnit(makeInfantry("B-1-1", "BLUE", "squad", out(10), 8));
+    g.addUnit(makeInfantry("B-1-2", "BLUE", "squad", out(60, 20), 8));
+    g.addUnit(makeInfantry("B-2-1", "BLUE", "squad", out(60, -20), 8));
+    extra?.(g, out);
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    expect(g.assault("B-1-1", "R-1", 0).reason).toBe("goes inside");
+    g.advanceToPhase("initiative");
+    return { g, door };
+  }
+
+  const task: DrillTask = { side: "BLUE", attacking: true, objective: { x: 108, y: 106 } };
+
+  /** One turn of BLUE's drill. */
+  function turn(g: Game, state: DrillState) {
+    g.advanceToPhase("movement");
+    drillMovement(g, task, PLAIN_SCRIPT, state);
+    g.advanceToPhase("combat");
+    drillCombat(g, task, PLAIN_SCRIPT, state);
+    g.advanceToPhase("initiative");
+  }
+
+  it("sends its platoon's next squad in to a second storey, and no other platoon's", () => {
+    let joined = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const { g } = clearing(seed, 2, 4);
+      const state = new DrillState();
+      for (let t = 0; t < 8 && g.interior.engagements.length; t++) {
+        turn(g, state);
+        expect(g.interior.inFight("B-2-1")).toBe(false);
+        if (g.interior.inFight("B-1-2")) { joined++; break; }
+      }
+    }
+    expect(joined).toBeGreaterThan(0);
+  });
+
+  it("keeps the next squad waiting near the door while one squad a floor is enough", () => {
+    for (let seed = 1; seed <= 4; seed++) {
+      const { g, door } = clearing(seed, 1, 1);
+      const state = new DrillState();
+      const from = Math.hypot(g.getUnit("B-1-2").position.x - door.x, g.getUnit("B-1-2").position.y - door.y);
+      for (let t = 0; t < 4 && g.interior.engagements.length; t++) {
+        turn(g, state);
+        // One storey, one defender: B-1-1 is not spent, so B-1-2 stays out.
+        const fit = g.interior.engagements[0]?.fight.soldiers.filter((m) => m.id.startsWith("B-1-1") && !m.out && !m.withdrew).length ?? 8;
+        if (fit > 4) expect(g.interior.inFight("B-1-2")).toBe(false);
+      }
+      const now = Math.hypot(g.getUnit("B-1-2").position.x - door.x, g.getUnit("B-1-2").position.y - door.y);
+      expect(now).toBeLessThan(from); // it has followed close behind
+    }
+  });
+
+  it("assaults only from within reach of the defender as well as the door, so nothing is sprung for a shot never taken", () => {
+    let calls = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      for (const storeys of [1, 2]) {
+        const { g } = clearing(seed, storeys, 4);
+        const state = new DrillState();
+        // Measured as each assault is called, before it moves anyone.
+        const original = g.assault.bind(g);
+        const reach: number[] = [];
+        vi.spyOn(g, "assault").mockImplementation((a, d, grenades) => {
+          const from = g.getUnit(a).position, to = g.getUnit(d).position;
+          reach.push(Math.hypot(from.x - to.x, from.y - to.y));
+          return original(a, d, grenades);
+        });
+        for (let t = 0; t < 6 && g.interior.engagements.length; t++) turn(g, state);
+        for (const d of reach) {
+          calls++;
+          expect(d).toBeLessThanOrEqual(ASSAULT_RANGE_M + 1e-9);
+        }
+      }
+    }
+    expect(calls).toBeGreaterThan(0);
+  });
+
+  it("never sends in a machine gun team, or a squad that has broken contact", () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      const { g } = clearing(seed, 2, 4, (game, out) => game.addUnit(makeMachineGunTeam("B-1-MG1", "BLUE", out(30, 5), 3)));
+      const state = new DrillState();
+      state.fellBack.add("B-1-2");
+      for (let t = 0; t < 6 && g.interior.engagements.length; t++) {
+        turn(g, state);
+        expect(g.interior.inFight("B-1-MG1")).toBe(false);
+        expect(g.interior.inFight("B-1-2")).toBe(false);
+      }
+    }
+  });
+
+  it("keeps the same squad following, turn after turn, and no more than a squad a floor while both are fit", () => {
+    let followed = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const { g } = clearing(seed, 1, 1, (game, out) => game.addUnit(makeInfantry("B-1-3", "BLUE", "squad", out(40, -10), 8)));
+      const state = new DrillState();
+      let first: string | undefined;
+      for (let t = 0; t < 4 && g.interior.engagements.length; t++) {
+        turn(g, state);
+        const now = state.following.get("house");
+        first ??= now;
+        if (now !== undefined) { followed++; expect(now).toBe(first); }
+        const fight = g.interior.engagements[0];
+        const fitB11 = fight?.fight.soldiers.filter((m) => m.id.startsWith("B-1-1") && !m.out && !m.withdrew).length ?? 0;
+        if (fight && fitB11 > 4) expect(fight.attackerUnits).toEqual(["B-1-1"]); // one storey, one fit squad: enough
+      }
+    }
+    expect(followed).toBeGreaterThan(0);
+  });
+
+  it("does not try to go in from within reach of the door but not of the defender", () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const { g, door } = clearing(seed, 2, 4);
+      if (!g.interior.engagements.length) continue;
+      const state = new DrillState();
+      // B-1-2, the follower, 24 m out from the door on the side away from the defender.
+      const r1 = g.getUnit("R-1").position;
+      const dx = door.x - r1.x, dy = door.y - r1.y, d = Math.hypot(dx, dy);
+      g.getUnit("B-1-2").position = { x: door.x + (24 * dx) / d, y: door.y + (24 * dy) / d };
+      if (Math.hypot(g.getUnit("B-1-2").position.x - r1.x, g.getUnit("B-1-2").position.y - r1.y) <= ASSAULT_RANGE_M) continue;
+      g.advanceToPhase("combat");
+      const assault = vi.spyOn(g, "assault");
+      drillCombat(g, task, PLAIN_SCRIPT, state);
+      expect(assault.mock.calls.filter(([a]) => a === "B-1-2")).toEqual([]);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 });
