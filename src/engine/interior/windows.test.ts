@@ -26,7 +26,7 @@ const house: MapObject = {
 const centre = { x: 108, y: 106 };
 
 /** R-1 in the house, B-1 assaulting it, and B-2 standing off `metres` away at `angle` radians from its middle. */
-function battle(seed: number, angle: number, opts: { windowFire?: boolean } = {}, metres = 40) {
+function battle(seed: number, angle: number, opts: { windowFire?: boolean; trackIntel?: boolean } = {}, metres = 40) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
   g.addUnit(makeInfantry("R-1", "RED", "squad", { ...centre }, 4));
   const door = g.interior.frontDoor(g, house)!;
@@ -233,6 +233,79 @@ describe("through the windows (decision 98)", () => {
       }
     }
     expect(refused).toBeGreaterThan(0);
+  });
+
+  it("spots a force fighting inside through its windows, as fire goes (the author, 2026-10-20)", () => {
+    let differs = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      for (const angle of angles) {
+        const g = battle(seed, angle);
+        const [r1, b1, b2] = ["R-1", "B-1", "B-2"].map((id) => g.getUnit(id)) as [ReturnType<typeof g.getUnit>, ReturnType<typeof g.getUnit>, ReturnType<typeof g.getUnit>];
+        // Both ways, the same test the shot is taken by.
+        expect(g.spots(b2, r1)).toBe(g.canEngage(b2, r1));
+        expect(g.spots(r1, b2)).toBe(g.canEngage(r1, b2));
+        // Fighting each other inside, they see each other.
+        expect(g.spots(b1, r1)).toBe(true);
+        if (g.spots(b2, r1) !== g.hasLineOfSight(b2, r1)) differs++;
+      }
+    }
+    expect(differs).toBeGreaterThan(0); // the windows, not the mark, decide
+  });
+
+  it("lets a force fighting inside find nobody outside that no window of it faces", () => {
+    let blindCases = 0, foundByMark = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      for (const angle of angles) {
+        const g = battle(seed, angle, { trackIntel: true });
+        const [r1, b2] = [g.getUnit("R-1"), g.getUnit("B-2")];
+        if (g.spots(r1, b2) || !g.hasLineOfSight(r1, b2)) continue;
+        blindCases++; // the old line would have let it look
+        // The same battle on the mark's line, for the control: does RED find B-2 there?
+        const control = battle(seed, angle, { trackIntel: true, windowFire: false });
+        let blind = true;
+        // B-2 walks up and down in the open: every enemy watching rolls for it.
+        for (let t = 0; t < 4; t++) {
+          for (const game of [g, control]) {
+            game.advanceToPhase("initiative");
+            game.advanceToPhase("movement");
+            const p = game.getUnit("B-2").position, step = t % 2 ? 4 : -4;
+            game.moveUnit("B-2", { x: p.x + step * Math.sin(angle), y: p.y - step * Math.cos(angle) });
+            game.advanceToPhase("combat");
+          }
+          blind &&= !g.spots(g.getUnit("R-1"), g.getUnit("B-2"));
+        }
+        if (blind) expect(g.knows("RED", "B-2")).toBe(false);
+        if (control.knows("RED", "B-2")) foundByMark++;
+      }
+    }
+    expect(blindCases).toBeGreaterThan(0);
+    expect(foundByMark).toBeGreaterThan(0); // the mark's line would have found it
+  });
+
+  it("watches the fall of shot from the windows facing it, fighting inside", () => {
+    let differs = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      for (const angle of angles) {
+        const g = battle(seed, angle);
+        const offMark = battle(seed, angle, { windowFire: false });
+        // A round 60 m off on this bearing: does RED, holding only the house, see where it fell?
+        const impact = { x: centre.x + 60 * Math.cos(angle), y: centre.y + 60 * Math.sin(angle) };
+        const observes = (game: Game) => (game as unknown as { observes(side: "RED", at: typeof impact, uav: boolean): boolean }).observes("RED", impact, false);
+        const facing = g.interior.shown(g, "R-1", impact) ?? [];
+        if (facing.length === 0) expect(observes(g)).toBe(false); // no window that way
+        if (observes(g) !== observes(offMark)) differs++;
+      }
+    }
+    expect(differs).toBeGreaterThan(0);
+  });
+
+  it("spots by the mark's sight line without it, as recorded before it", () => {
+    for (const angle of angles) {
+      const g = battle(1, angle, { windowFire: false });
+      const [r1, b2] = [g.getUnit("R-1"), g.getUnit("B-2")];
+      expect(g.spots(b2, r1)).toBe(g.hasLineOfSight(b2, r1));
+      expect(g.canEngage(b2, r1)).toBe(g.hasLineOfSight(b2, r1));
+    }
   });
 
   it("refuses all fire from a fight inside without it, as recorded before it", () => {

@@ -130,7 +130,8 @@ export function hasEyesOn(game: Game, side: Side, unit: Unit): boolean {
   // neutralised squad is still drawn on the map but is not watching anything —
   // and asking it a second way here is how the two halves of one rule drift.
   return game.units.some(
-    (u) => u.side === side && canObserve(u) && game.hasLineOfSight(u, unit),
+    // Through the windows where either fights inside a building (decision 98).
+    (u) => u.side === side && canObserve(u) && game.spots(u, unit),
   );
 }
 

@@ -1088,9 +1088,23 @@ export class Game {
    * What a computer player should aim by, since it is what the engine fires by.
    */
   canEngage(firer: Unit, target: Unit): boolean {
+    if (!this.windowFire) return this.hasLineOfSight(firer, target); // as recorded before it
     if (this.sameFightRefusal(firer, target)) return false;
     const windows = this.throughWindows(firer, target);
     return windows ? windows.seen : this.hasLineOfSight(firer, target);
+  }
+
+  /**
+   * Can `observer` see `target` to spot it: through the windows where either
+   * fights inside a building, as fire goes (the author, 2026-10-20, decision
+   * 98) — and two forces fighting each other inside see each other — from
+   * force to force otherwise.
+   */
+  spots(observer: Unit, target: Unit): boolean {
+    if (!this.windowFire) return this.hasLineOfSight(observer, target); // as recorded before it
+    if (this.sameFightRefusal(observer, target)) return true;
+    const windows = this.throughWindows(observer, target);
+    return windows ? windows.seen : this.hasLineOfSight(observer, target);
   }
 
   /** How many of a force fighting inside can fire at `target` from its windows; undefined for a force in no fight (decision 98). */
@@ -2192,8 +2206,12 @@ export class Game {
         // Heads down (decision 63, S2): a pinned force watches no fall of shot.
         !(this.headsDown && suppressionLevel(u) === "pinned") &&
         distance(u.position, impact) <= OBSERVE_RANGE_M &&
-        !(SMOKE_BLOCKS_FIRE && this.smoke.some((sm) => segmentIntersectsCircle(u.position, impact, sm.center, sm.radius))) &&
-        !terrainBlocksSight(this.terrain, u.position, eyeHeight(u), impact, BURST_HEIGHT_M),
+        // Fighting inside, it watches from the windows facing the burst (decision 98).
+        (this.windowFire ? (this.interior.shown(this, u.id, impact) ?? [{ point: u.position, height: eyeHeight(u) }]) : [{ point: u.position, height: eyeHeight(u) }]).some(
+          (eye) =>
+            !(SMOKE_BLOCKS_FIRE && this.smoke.some((sm) => segmentIntersectsCircle(eye.point, impact, sm.center, sm.radius))) &&
+            !terrainBlocksSight(this.terrain, eye.point, eye.height, impact, BURST_HEIGHT_M),
+        ),
     );
   }
 
@@ -2415,7 +2433,7 @@ export class Game {
     // draws exactly what it always drew.
     const sight =
       this.trackIntel || this.mapTerrain !== FLAT_GROUND
-        ? (observer: Unit, target: Unit) => this.hasLineOfSight(observer, target)
+        ? (observer: Unit, target: Unit) => this.spots(observer, target)
         : undefined;
     // `from` is where the bound started: a walking force searches the ground it
     // crossed for charges, not only where it halted (rules decision 10).
@@ -2584,7 +2602,7 @@ export class Game {
     const seen = observeFromPosition(
       this.rng,
       this.units,
-      (observer, target) => this.hasLineOfSight(observer, target),
+      (observer, target) => this.spots(observer, target),
       this.stillDetection,
       this.binoculars,
       (observer) => this.alertness(observer),
@@ -2617,7 +2635,7 @@ export class Game {
         const held = this.intel.contactFor(observer.side, target.id);
         if (!held || held.lastSeenTurn < this.turn - 1) continue;
         if (distance(observer.position, target.position) > reach) continue;
-        if (!this.hasLineOfSight(observer, target)) continue;
+        if (!this.spots(observer, target)) continue;
         this.observe(observer.side, target.id, "movement", observer);
       }
     }
@@ -3711,7 +3729,7 @@ export class Game {
 
     const inRange = (u: Unit) =>
       distance(unit.position, u.position) <= order.engagementRange! &&
-      this.hasLineOfSight(unit, u);
+      this.canEngage(unit, u);
 
     if (designated) return inRange(designated) ? designated : undefined;
 
