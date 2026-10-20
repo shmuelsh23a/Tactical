@@ -1164,7 +1164,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
         .find((e) => !game.smoke.some((sm) => distance(sm.center, e.position) < sm.radius));
       if (job2 === "support" && mark) {
         try {
-          game.deploySmoke("grenade", side, { ...mark.position });
+          game.deploySmoke("rifleGrenade", side, { ...mark.position });
           state.screens += 1;
         } catch {
           // No launcher, wrong phase, or the side may not: it just fires.

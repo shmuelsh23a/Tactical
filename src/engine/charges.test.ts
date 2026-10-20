@@ -13,7 +13,7 @@ import { replayGame, sealRecording, verifyRecording } from "./recording.js";
 
 /** A RED sapper squad on the line BLUE will walk up, with the game in movement. */
 function sapper(seed = 1) {
-  const g = new Game({ lethality: "document", seed, enforceC2: false });
+  const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, lethality: "document", seed, enforceC2: false });
   const red = makeInfantry("RED-E", "RED", "squad", { x: 0, y: 100 }, 8);
   red.canLayCharges = true;
   g.addUnit(red);

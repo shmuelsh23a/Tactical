@@ -386,7 +386,7 @@ describe("the caller chooses the method (decision 39)", () => {
 describe("who may call fire (decisions 36–37)", () => {
   /** A side commanding whatever its forces on the map say, unless `opts` declares otherwise. */
   function setUp(opts: Partial<GameOptions> = {}, blueCommand?: "platoon" | "company" | "battalion") {
-    const g = new Game({ lethality: "document", seed: 7, enforceC2: false, ...opts });
+    const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, lethality: "document", seed: 7, enforceC2: false, ...opts });
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 1500 }, 8));
     if (blueCommand) g.addUnit(makeCommandGroup("B-HQ", "BLUE", blueCommand, { x: 0, y: 1600 }, 3));

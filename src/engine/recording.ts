@@ -240,6 +240,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.keepEyesOn !== undefined && typeof r.keepEyesOn !== "boolean") throw malformed("keepEyesOn");
   if (r.commandSuccession !== undefined && typeof r.commandSuccession !== "boolean") throw malformed("commandSuccession");
   if (r.smokeCostsMission !== undefined && typeof r.smokeCostsMission !== "boolean") throw malformed("smokeCostsMission");
+  if (r.smokeNeedsThrower !== undefined && typeof r.smokeNeedsThrower !== "boolean") throw malformed("smokeNeedsThrower");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
@@ -457,6 +458,12 @@ export interface GameRecording {
    * **off** when absent: a battle recorded before it laid smoke for free.
    */
   smokeCostsMission?: boolean;
+  /**
+   * Whether a grenade's smoke needed a man to deliver it (2026-10-20). Read
+   * as **off** when absent: a battle recorded before it could drop a pot
+   * anywhere, and replays as it was played.
+   */
+  smokeNeedsThrower?: boolean;
   /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
   keepStaleMarks?: boolean;
   /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
@@ -653,6 +660,7 @@ export function replayWithOutcomes(
     ...(recording.keepEyesOn ? { keepEyesOn: true } : {}),
     ...(recording.commandSuccession ? { commandSuccession: true } : {}),
     smokeCostsMission: recording.smokeCostsMission ?? false,
+    smokeNeedsThrower: recording.smokeNeedsThrower ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
     suppressionByVolume: recording.suppressionByVolume ?? false,
     suppressionByChance: recording.suppressionByChance ?? false,

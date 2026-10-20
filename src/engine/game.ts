@@ -48,6 +48,7 @@ import {
 import {
   SMOKE_BLOCKS_FIRE,
   SMOKE_DURATION_TURNS,
+  SMOKE_GRENADE_THROW_M,
   SMOKE_RADIUS_M,
   type SmokeSource,
 } from "./data/smoke.js";
@@ -294,6 +295,17 @@ export const LAY_CHARGE_REFUSAL = {
   underFire: "was hit this turn",
   noOrders: "out of the order cycle",
   routing: "routing",
+} as const;
+
+/**
+ * Why a grenade's smoke could not be laid where it was asked (the author,
+ * 2026-10-20). Short keys, worded in Hebrew by the app.
+ */
+export const SMOKE_REFUSAL = {
+  /** No man of the side is within throwing range of the spot. */
+  noThrower: "no man within throwing range",
+  /** No infantry force of the side is within a rifle grenade's reach of it. */
+  noLauncher: "no infantry within rifle-grenade range",
 } as const;
 
 /**
@@ -680,6 +692,14 @@ export interface GameOptions {
    */
   smokeCostsMission?: boolean;
   /**
+   * Smoke from a grenade needs somebody to deliver it (the author,
+   * 2026-10-20): a hand-thrown pot lands within `SMOKE_GRENADE_THROW_M` of a
+   * man of the side, rifle-grenade smoke within a rifle grenade's reach of
+   * one of its infantry squads. Before it a side could drop a pot anywhere on
+   * the map. On by default; a recording made before it reads it as off.
+   */
+  smokeNeedsThrower?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -795,6 +815,7 @@ export class Game {
   readonly commandSuccession: boolean;
   /** Whether tube smoke costs a fire mission (rules decision 56). */
   readonly smokeCostsMission: boolean;
+  readonly smokeNeedsThrower: boolean;
   /** Whether a mark stays where it was last seen (rules decision 57). */
   readonly keepStaleMarks: boolean;
   /** Whether a burst suppresses by its volume (rules decision 91). Set it before the first turn only: a recording keeps one value. */
@@ -1121,6 +1142,7 @@ export class Game {
     this.keepEyesOn = opts.keepEyesOn ?? false;
     this.commandSuccession = opts.commandSuccession ?? false;
     this.smokeCostsMission = opts.smokeCostsMission ?? true;
+    this.smokeNeedsThrower = opts.smokeNeedsThrower ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1278,6 +1300,7 @@ export class Game {
       ...(this.keepEyesOn ? { keepEyesOn: true } : {}),
       ...(this.commandSuccession ? { commandSuccession: true } : {}),
       ...(this.smokeCostsMission ? { smokeCostsMission: true } : {}),
+      ...(this.smokeNeedsThrower ? { smokeNeedsThrower: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -3263,8 +3286,9 @@ export class Game {
       throw new PhaseError(`Smoke can only be deployed in targeting or combat phases`);
     }
     this.requireMayCall(side, source);
+    if (this.smokeNeedsThrower) this.requireThrower(side, source, center);
     // From the tubes, it is drawn from the side's missions (rules decision 56).
-    const costs = this.smokeCostsMission && source !== "grenade" && this.fireMissionsLeft(side, source) !== undefined;
+    const costs = this.smokeCostsMission && source !== "grenade" && source !== "rifleGrenade" && this.fireMissionsLeft(side, source) !== undefined;
     if (costs && this.fireMissionsLeft(side, source)! <= 0) {
       throw new Error(`${side} has no ${source} missions left for smoke (rules decision 56)`);
     }
@@ -3289,6 +3313,30 @@ export class Game {
     };
     this.pendingSmoke.push(mission);
     return { ...common, mission };
+  }
+
+  /**
+   * A grenade's smoke needs a man to put it there (`smokeNeedsThrower`): a
+   * hand pot a man of the side within throwing range — of an infantry force
+   * or a command group — and rifle-grenade smoke an infantry force within a
+   * rifle grenade's reach, whoever may fire its HE (`fireExplosive` asks no
+   * more of a launcher: one rule, one layer). A force routing or given up
+   * throws nothing; nor does a man put out or broken (as `fireGrenadiers`).
+   */
+  private requireThrower(side: Side, source: SmokeSource, center: Point): void {
+    if (source !== "grenade" && source !== "rifleGrenade") return;
+    const reach = source === "grenade" ? SMOKE_GRENADE_THROW_M : EXPLOSIVES.rifleGrenade!.toHitBands!.at(-1)!.maxRange;
+    const able = this.units.some(
+      (u) =>
+        u.side === side &&
+        (source === "grenade" ? u.kind === "infantry" || u.kind === "command" : u.kind === "infantry") &&
+        !u.neutralized &&
+        !u.routing &&
+        !u.surrendered &&
+        (u.soldiers ?? []).some((s) => !s.neutralized && s.morale?.state !== "broken") &&
+        distance(u.position, center) <= reach,
+    );
+    if (!able) throw new Error(source === "grenade" ? SMOKE_REFUSAL.noThrower : SMOKE_REFUSAL.noLauncher);
   }
 
   /** Put a screen on the map now. */

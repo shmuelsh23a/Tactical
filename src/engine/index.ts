@@ -91,6 +91,7 @@ export {
   SMOKE_DURATION_TURNS,
   SMOKE_RADIUS_M,
   SMOKE_BLOCKS_FIRE,
+  SMOKE_GRENADE_THROW_M,
   type SmokeSource,
 } from "./data/smoke.js";
 export { UAV_PROFILES, FIXED_WING_MISS_REDUCTION, type UavProfile } from "./data/uav.js";
@@ -325,6 +326,7 @@ export {
   HOLDING_COVERING_FIRE,
   LAY_CHARGE_REFUSAL,
   MORALE_REFUSAL,
+  SMOKE_REFUSAL,
   PHASES,
   PhaseError,
   type Phase,

@@ -116,7 +116,7 @@ describe("what each side knows", () => {
   });
 
   it("does not see through smoke", () => {
-    const g = new Game({ seed: 4, trackIntel: true, enforceC2: false });
+    const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, seed: 4, trackIntel: true, enforceC2: false });
     const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 200 }, 8));
     const red = g.addUnit(makeInfantry("RED-1", "RED", "squad", { x: 0, y: 0 }, 6));
     g.beginTurn();

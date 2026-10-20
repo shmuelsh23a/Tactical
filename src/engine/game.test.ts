@@ -221,7 +221,7 @@ describe("C2 gating of manoeuvre", () => {
 
 describe("smoke blocks fire", () => {
   function contact() {
-    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
+    const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, commandEchelon: BATTALIONS, seed: 1 });
     const a = g.addUnit(makeInfantry("A", "BLUE", "squad", { x: 0, y: 0 }, 8));
     const b = g.addUnit(makeInfantry("B", "RED", "squad", { x: 0, y: 200 }, 8));
     g.beginTurn();
@@ -247,7 +247,7 @@ describe("smoke blocks fire", () => {
   });
 
   it("blocks a tank round through smoke too", () => {
-    const g = new Game({ commandEchelon: BATTALIONS, seed: 1 });
+    const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, commandEchelon: BATTALIONS, seed: 1 });
     const tank = g.addUnit(makeVehicle("T", "RED", { x: 0, y: 0 }));
     const inf = g.addUnit(makeInfantry("I", "BLUE", "squad", { x: 0, y: 200 }, 8));
     g.beginTurn();
@@ -455,7 +455,7 @@ describe("emplaced charges", () => {
 
 describe("smoke delivery", () => {
   function ready(seed = 1) {
-    const g = new Game({ commandEchelon: BATTALIONS, seed });
+    const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, commandEchelon: BATTALIONS, seed });
     g.beginTurn();
     g.advanceToPhase("targeting");
     return g;

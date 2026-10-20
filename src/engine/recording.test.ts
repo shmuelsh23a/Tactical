@@ -22,7 +22,7 @@ const BATTALIONS = { RED: "battalion", BLUE: "battalion" } as const;
  * kinds of smoke. Returns the played game.
  */
 function playDemo(seed = 2026): Game {
-  const g = new Game({ commandEchelon: BATTALIONS, seed });
+  const g = new Game({ smokeNeedsThrower: false /* lays its screen wherever the test needs one: the throwing rule has its own tests */, commandEchelon: BATTALIONS, seed });
   const blue = g.addUnit(makeInfantry("BLUE-1", "BLUE", "squad", { x: 0, y: 300 }, 8));
   // A second squad already in contact, so the assault does not depend on
   // whether the first one survives the approach intact.
