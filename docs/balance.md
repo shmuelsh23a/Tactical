@@ -5254,6 +5254,59 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The reserve held back, and the brief without it, 2026-10-21 (decision 105)
+
+A reserve holds fire until committed; the attacker's brief (the harness's
+tasking and the browser's computer attacker) leaves reserves out. Every
+scenario with a reserve moves.
+
+**The reference plans** (`jev-sim --rule <variant> --seed 1000 --n 100`,
+A at 3:1 `--n 200`), the same command as *The stale tables on the new
+baseline*:
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| A calibrated | 67% | 33% |
+| A + flank | 52% | 26% |
+| B deliberate | 29% | 13% |
+| E fire-heavy | 62% | 29% |
+| D flank | 27% | 20% |
+| A + move up | 48% | 14% |
+| B + move up | 27% | 11% |
+| C hasty | 44% | 19% |
+| **Median** | **46%** | **19.5%** |
+| Target (decision 68) | 40–55% | 20–35% |
+
+The medians hardly move: the 3:1 is in its band, and the 2:1 is 19.5%
+against 18.5% (*Waiting on the author*), still just under. Why they move
+so much less than the plain script's Tel Azeka (below) is not yet looked
+into.
+
+**`scenario-sim`**, 100 battles from seed 1000 unless marked:
+
+| Scenario | Before (`2ab4d75`) | After |
+|---|---|---|
+| `telAzekaAssault`, the plain script | 36% | **21%** (hold fire alone: 33%) |
+| `yokneamRaid` | 10% | **5%** (counterattacked 6% → 36%) |
+| `yokneamUrban` | — | 58% |
+| `telAzekaCompany` | — | 30% |
+| `yokneamHouse` (200) | 83% | 83% (no reserve) |
+| `yokneamHouseReserve` (200) | — | **43%**, median 3 turns |
+
+- **The drop in the plain script's Tel Azeka is the brief**, not the
+  reserve's held fire (33% with that alone). Its tasking was aimed at the
+  mean of the defence with its reserve 100–112 m back; on the position
+  held it plans differently. The reference plans' medians are not moved.
+- **`yokneamHouseReserve`**: the reserve 88 m south of the door, in full
+  cover. Committed in 72% of battles, inside the house in 31 of 200 (mean
+  turn 7). Most battles are still decided in turn 1: the house's squad
+  assaults the platoon in the open at the door (a squad down five men),
+  and the attacker breaks before the fight inside gets going.
+- Do not re-derive: the reserve 30 m from the house (two places tried)
+  decided the battle in turn 1 by its own assault; 88 m back without the
+  brief fix, the platoon marched to the mean of house and reserve and
+  waited out the clock (53% out of time).
+
 ## Morale inside and the counterattack, 2026-10-21 (decisions 103, 104)
 
 `scenario-sim`, 200 battles from seed 1000 (±7 points at 95%); the raid

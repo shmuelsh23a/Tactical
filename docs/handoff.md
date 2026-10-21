@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: his "later" is built: morale inside (103) and the counterattack inside (104). The house now goes to the attacker 83% (58% before), and grenades are still the only lever that counts. Waiting on him: where a reserve stands for the counterattack to be measured, and whether 83% on the house is right. The 2:1 median, the force-quality matrix and the AI commanders still wait too.**
+**Next, in one line: his "later" is built and measured. Decisions 103-105 cover morale inside, the counterattack inside, and a reserve that holds fire and is kept out of the attacker's brief. The house goes to the attacker 83%; the reference medians hold (3:1 46%, 2:1 19.5%); with a reserve, 43%, mostly decided in turn 1 by the house squad's assault in the open. Waiting on him: whether that turn-1 assault should stand, the 2:1 median, the force-quality matrix and the AI commanders.**
 
-**Current as of 2026-10-21** (`1d881e9`, pushed). Since the last handoff
+**Current as of 2026-10-21, evening** (decision 105's commit, pushed). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
 author's unless marked ⚠️:
 - **103, morale inside, and the battle waits.** A man the morale step
@@ -17,6 +17,13 @@ author's unless marked ⚠️:
   the same drill (the resolver's teams now belong to either side).
   Decision 60's reserve counts a post whose house is being cleared as
   lost and makes for the door. `GameOptions.counterattackInside`.
+- **105, the reserve held back** (ruled the same day): a reserve neither
+  fires nor assaults until committed, and the attacker's brief is the
+  position held, reserves left out (`briefedObjective` requires them).
+  `yokneamHouseReserve`: the reserve 88 m south of the house, in cover.
+  Re-measured (balance.md, *The reserve held back*): reference medians
+  3:1 46% and 2:1 19.5% (unmoved); plain-script Tel Azeka 36% → 21% (the
+  brief); raid 10% → 5%; the house with a reserve 43%.
 - **Measured** (balance.md, *Morale inside and the counterattack*): house
   58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
   counterattack has no scenario yet: two placements tried, both decided
@@ -51,10 +58,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `1d881e9` (2026-10-21)
+## Green as of 2026-10-21, evening (decision 105)
 
 ```
-npm run check       lint + typecheck clean, 1,122 tests, 76 files
+npm run check       lint + typecheck clean, 1,126 tests, 76 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -118,15 +125,14 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
-- **Where a reserve stands, to measure the counterattack inside**
-  (decision 104). Tried 30 m south-west behind the next house and directly
-  behind the defended one. Both times the battle was decided in turn 1:
-  the house's squad and the reserve assault the platoon in the open at
-  the door, or the platoon works round onto the reserve (balance.md). Ask:
-  where, and should a reserve hold fire until committed?
-- **Is 83% right for the house?** Three to one at the point of assault
-  against one squad in a house, the break now waiting for the clearing
-  (decisions 68, 103). Grenades still the only lever (72% without).
+- **The house squad's turn-1 assault in the open** (an existing drill,
+  not today's): in `yokneamHouse` and `yokneamHouseReserve` the defender
+  inside assaults the platoon at its door on turn 1, a squad losing five
+  men, and the attacker often breaks before the fight inside gets going.
+  It decides most battles with a reserve. Should a defender holding a
+  house assault out of it?
+- **The plain script's Tel Azeka fell 36% → 21%** once the brief left the
+  reserve out; the reference plans did not move. Not yet looked into why.
 - **Today's ⚠️, none questioned yet:** cornered means found (an attacker
   has him in sight), and he gives himself up before that attacker fires;
   a broken attacker or counterattacker is gone at once (no walk out); a
@@ -581,12 +587,10 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The reserve's placement, then its measurement**: once the author says
-where a reserve stands, generate the scenario (the spec's shape is
-`yokneam-house.json` plus a `"reserve": true` squad of the same platoon),
-and measure the counterattack inside against no counterattack. Watch turn
-1: a reserve near the door assaults the platoon in the open before any
-fight inside begins.
+**The turn-1 assault out of the house**, once the author rules on it: then
+`yokneamHouseReserve` can tell what the counterattack inside is worth
+(today the reserve goes in in 31 battles of 200). And why the plain
+script's Tel Azeka moved with the brief while the reference plans did not.
 
 **Smaller, whenever:** the UX pass's targetable marker for an enemy fought
 inside; whether the computer should give plans once a scenario can tell the
