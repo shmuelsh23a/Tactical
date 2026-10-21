@@ -3545,6 +3545,11 @@ on the stated reasoning, still awaiting the author's word.
       baseline moved from 40% to 58.5%. Halved, the middle cells come 5–10
       points in; the corners stay near-certain (7–95.5%, 1–95.5%), carried
       by the gap and the morale dials.
+    - **The spread is ruled** (the author, the same evening, closing
+      decision 83's question open since 2026-10-05): the extremes should be
+      lopsided — elite against irregular is decision 84's "very large
+      effect" — and the middle is now gentler. Not to be narrowed further
+      without a new ruling.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

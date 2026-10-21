@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 103-109 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, a battle's score, smoke before the bound and a delay mission. Breaking contact pays nowhere measured, and he ruled that a deliberate cost (doctrine's warning about displacing under pressure). The 2:1 median is accepted (decision 110); next, the force-quality matrix re-run for his ruling, the fire question brought to doctrine, and an AI-commander pilot within a budget he sets.**
+**Next, in one line: decisions 103-111 are built and ruled, the long-waiting ones closed: the 2:1 median accepted at 19.5% (110), and the force-quality matrix re-run, its breakpoint shift halved and its spread ruled (111). Next on the threads: bring the typed fire question to doctrine (a priority target, missions held back), and an AI-commander pilot once he sets a budget.**
 
 **Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
@@ -165,9 +165,6 @@ The 2026-10-01 version of this section, with its tables and the rulings of
   thread, and what Jev will be asked.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
-- **The force-quality matrix** (decision 83) has waited on his view of its
-  spread since 2026-10-05. It can be re-run now the baseline is in band
-  (18 cells × 400 battles, which is long, so ask first).
 - **Our own figures in the fight inside**, all ⚠️ and listed on balance.md:
   - `CLOSE_QUARTERS`: the hit chance a second, reaction, stun, grenades a
     man, consolidation, the 3.5 s/m² search, 5 minutes to reorganise and
@@ -289,10 +286,6 @@ before chasing it.
 
 **Added 2026-10-11, and these have piled up:**
 
-- **The force-quality matrix's spread** (decision 83) has been waiting
-  since 2026-10-05 — and should now wait a little longer, because its
-  numbers predate the targeting fix and a ruling on them would be a ruling
-  on an artefact. Re-run first, then ask.
 - **Decision 90's ⚠️ tail band**: a dismounted medium machine gun's
   701–800 m hit chance is **10%, and ours**. The document stops at 700 m
   and ATP 3-21.8 gives the reach without a hit chance. It is the one
@@ -387,6 +380,11 @@ One rules question is **open but not asked**, because nothing needs it yet:
   along a road, a vehicle confined to one — the document does not raise it.
 
 ## Do not re-propose
+
+- **Narrowing the force-quality matrix's corners.** Re-run 2026-10-21
+  (balance.md): the breakpoint shift was halved (decision 111) and the
+  author ruled the remaining spread right — elite against irregular
+  should be lopsided. Only a new ruling reopens it.
 
 - **Breaking contact as a trap to fix.** Measured never to beat holding
   (decisions 107-109, balance.md); the author ruled it a deliberate cost:
