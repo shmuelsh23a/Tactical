@@ -433,7 +433,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       result.missions[attacker] = attackerFire.missions;
       result.smoke[attacker] = attackerFire.smoke;
     }
-    const defenderCall = callDefenderFire(g, defender, defenderTargets, legacyFire);
+    const defenderCall = callDefenderFire(g, defender, defenderTargets, legacyFire, state.movingUnderFire(g, defender));
     if (defenderCall) result.missions[defender]++;
     // On its plan: a registered target, the FPF and the priority target among them (decision 93).
     if (defenderCall === "plan" || defenderCall === "fpf" || defenderCall === "priority") result.defenderPlanned++;

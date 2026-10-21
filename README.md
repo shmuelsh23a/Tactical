@@ -3623,6 +3623,28 @@ on the stated reasoning, still awaiting the author's word.
     last, while anything else is in reach ("avoid target overkill", A-6).
     Before, every force took the nearest in its sector, and `returnFire`
     lost a gun on the flank to anything in the arc.
+116. ✅ **The defence carried out as doctrine has it** (the author,
+    2026-10-21, on the drill audit; every option the recommended one):
+    - **A machine gun's own trigger line** (D1): a defender's hold-fire
+      order held every weapon to `openFireRange`, so decision 90's 800 m
+      gun never fired past 400 m. Now a gun holds to its reach, rifles to
+      theirs — "separate trigger lines for each weapon or type of weapon
+      system" (ATP 3-21.8 (2024), para 5-208). Every drill with
+      `machineGuns`, the plain one too.
+    - **A platoon opens fire together** (D4, the doctrinal drill's
+      `massedOpening`): once one of its forces has fired, the rest of the
+      platoon fires from the next turn at anything in the drill's attack
+      range, rather than each squad giving itself away alone (para 5-208).
+      ⚠️ The turn's lag is ours: a standing order is changed in the
+      movement phase.
+    - **A reserve fires when it is attacked** (D5), amending decision 105:
+      shot at since last turn, or an enemy within assault reach (para
+      5-67). Otherwise it still holds, hidden, until committed.
+    - **The mortars cover a force breaking contact or counterattacking**
+      (D3): after the FPF and the priority target, a spare mission falls
+      on the enemy nearest such a force, within `COVER_MOVE_M` (400 m, ⚠️
+      ours: small arms' reach) of it and clear of our own (para 5-72).
+      Before, decision 93's defender fired off its plan only at a firer.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

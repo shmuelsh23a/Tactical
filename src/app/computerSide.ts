@@ -241,7 +241,14 @@ export function planDefenderFires(
 }
 
 /** What the defender's fire went on: its FPF, its priority target, a planned target, a mark firing on it, or (before decision 93) the nearest. */
-export type DefenderCall = "fpf" | "priority" | "plan" | "suppress" | "nearest";
+export type DefenderCall = "fpf" | "priority" | "plan" | "cover" | "suppress" | "nearest";
+
+/**
+ * How near an enemy must be to a force of ours breaking contact or
+ * counterattacking for the mortars to fire on him to cover it: small arms'
+ * reach, the enemy who can shoot at it on the move. ⚠️ Ours.
+ */
+export const COVER_MOVE_M = 400;
 
 /**
  * The defender's fire. Under doctrine (rules decision 93; the author,
@@ -258,9 +265,15 @@ export type DefenderCall = "fpf" | "priority" | "plan" | "suppress" | "nearest";
  * a fresh mark on it, else the nearest attacker it knows of, until the
  * missions are gone.
  */
-export function callDefenderFire(g: Game, side: Side, registered: readonly Point[] = [], legacy = false): DefenderCall | undefined {
+export function callDefenderFire(
+  g: Game,
+  side: Side,
+  registered: readonly Point[] = [],
+  legacy = false,
+  moving: readonly Point[] = [],
+): DefenderCall | undefined {
   if (!mortarFree(g, side)) return undefined;
-  if (!legacy) return callDoctrinalDefenderFire(g, side, registered);
+  if (!legacy) return callDoctrinalDefenderFire(g, side, registered, moving);
   const tube = tubesOf(g, side).find((w) => tubeFree(g, side, w))!;
   const view = sideView(g, side);
   const own = view.units.filter((u) => u.side === side && u.kind !== "command" && !u.neutralized);
@@ -290,7 +303,7 @@ export function callDefenderFire(g: Game, side: Side, registered: readonly Point
   return "nearest";
 }
 
-function callDoctrinalDefenderFire(g: Game, side: Side, registered: readonly Point[]): DefenderCall | undefined {
+function callDoctrinalDefenderFire(g: Game, side: Side, registered: readonly Point[], moving: readonly Point[] = []): DefenderCall | undefined {
   const tubes = tubesOf(g, side);
   const [fpf, priority, ...planned] = registered;
   // The reserves are held on its lightest tube: the company's own section.
@@ -323,6 +336,20 @@ function callDoctrinalDefenderFire(g: Game, side: Side, registered: readonly Poi
   }
   const tube = spare[0];
   if (!tube) return undefined;
+  // Our own forces breaking contact or counterattacking: fire on the enemy
+  // who can shoot at them, the nearest to them first — fires "disrupt the
+  // enemy to enable friendly forces to displace or counterattack" (ATP 3-21.8
+  // (2024), para 5-72; drill audit, D3). Clear of our own, as every mission.
+  const nearestMoving = (p: Point) => Math.min(...moving.map((m) => distance(m, p)));
+  const threat = moving.length
+    ? foes
+        .filter((f) => nearestMoving(f.position) <= COVER_MOVE_M && nearestOwn(f.position) > LIFT_AT_M)
+        .sort((a, b) => nearestMoving(a.position) - nearestMoving(b.position))[0]
+    : undefined;
+  if (threat) {
+    g.callForFire(side, tube, threat.position, { method: "effect" });
+    return "cover";
+  }
   const onPlan = foes
     .filter((f) => planned.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M))
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
@@ -401,7 +428,7 @@ export class ComputerDefender {
 
   /** The targeting phase: a mortar mission, if it has one to call (doctrine's, decision 93). */
   targeting(g: Game): DefenderCall | undefined {
-    return callDefenderFire(g, this.side, this.targets);
+    return callDefenderFire(g, this.side, this.targets, false, this.state.movingUnderFire(g, this.side));
   }
 
   movement(g: Game, report?: DrillReport): void {

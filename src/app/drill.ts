@@ -154,6 +154,15 @@ export interface SquadDrill {
    */
   threatFirst?: boolean;
   /**
+   * A defending platoon opens fire together (drill audit, D4): once one of
+   * its forces has fired, the rest fire from the next turn at anything in
+   * the drill's attack range — "a trigger line … to initiate and mass fires
+   * into an engagement area" (ATP 3-21.8 (2024), para 5-208). Absent: each
+   * force holds to `openFireRange` by itself, and the nearest gives itself
+   * away alone.
+   */
+  massedOpening?: boolean;
+  /**
    * Flank and rear security (Battle Drill 2 step 10: the squads not in
    * contact observe "to the flanks and rear of the platoon"; step 12b
    * deploys the last squad to it). A platoon the company puts on
@@ -420,6 +429,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   breakContact: null,
   returnFire: { since: 2 },
   threatFirst: true,
+  massedOpening: true,
   security: { arc: 120 },
   shiftToFarFlank: { clear: 100 },
   leaderForward: { behind: 50 },
@@ -634,6 +644,22 @@ export class DrillState {
   readonly breaking = new Map<string, BreakingContact>();
   /** Forces that have broken contact and hold their next position (decision 107): each breaks once. */
   readonly brokeContact = new Set<string>();
+  /** A defending side's platoons whose fire has been opened (`massedOpening`): the rest of each fires with it. */
+  readonly opened = new Set<string>();
+
+  /**
+   * Where `side`'s forces are moving under the enemy's eyes on the drill's
+   * account: breaking contact (decision 107) or counterattacking (decision
+   * 60) — what its mortars cover (drill audit, D3).
+   */
+  movingUnderFire(game: Game, side: Side): Point[] {
+    const ids = new Set<string>([...this.counterattacking.keys()]);
+    for (const [id, b] of this.breaking) {
+      ids.add(id);
+      if (b.team) ids.add(b.team);
+    }
+    return game.units.filter((u) => u.side === side && ids.has(u.id) && inPlay(u)).map((u) => ({ ...u.position }));
+  }
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -662,6 +688,7 @@ export class DrillState {
       following: [...this.following],
       breaking: [...this.breaking].map(([k, v]) => [k, copyBreak(v)]),
       brokeContact: [...this.brokeContact],
+      ...(this.opened.size ? { opened: [...this.opened] } : {}),
     };
   }
 
@@ -685,6 +712,7 @@ export class DrillState {
     // Copied: the drill changes a break in place, which must not reach back into the save (decision 107).
     (snap.breaking ?? []).forEach(([k, v]) => s.breaking.set(k, copyBreak(v)));
     (snap.brokeContact ?? []).forEach((id) => s.brokeContact.add(id));
+    (snap.opened ?? []).forEach((k) => s.opened.add(k));
     return s;
   }
 }
@@ -704,6 +732,8 @@ export interface DrillStateSnapshot {
   /** Squads breaking contact, and those that have (decision 107). */
   breaking?: [string, BreakingContact][];
   brokeContact?: string[];
+  /** Platoons whose fire has been opened (`massedOpening`). */
+  opened?: string[];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -1149,6 +1179,18 @@ function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: D
 }
 
 /**
+ * How near a defending force lets the enemy come before it fires: the
+ * drill's `openFireRange`; a machine gun's own trigger line at its reach
+ * (drill audit, D1: "separate trigger lines for each weapon or type of
+ * weapon system", ATP 3-21.8 (2024), para 5-208; decision 90); and, its
+ * platoon's fire opened (`massedOpening`), the drill's attack range.
+ */
+function triggerLine(u: Unit, drill: SquadDrill, state: DrillState | undefined): number {
+  const rifles = drill.massedOpening && state?.opened.has(platoonKey(u.id)) ? Math.max(drill.openFireRange, drill.attackFireRange) : drill.openFireRange;
+  return u.mediumMg && drill.machineGuns ? Math.max(rifles, drill.machineGuns.range) : rifles;
+}
+
+/**
  * The movement phase: each force's order for the turn, carried out; then the
  * command groups take their place behind their forces.
  */
@@ -1278,7 +1320,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       // To the alternate position prepared for it, if there is one (rules
       // decision 38); otherwise straight back, into whatever the ground gives.
       const rear = game.alternatePositionFor(u.id)?.at ?? awayFrom(u.position, task.objective, drill.displace.metres);
-      const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: drill.openFireRange };
+      const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: triggerLine(u, drill, state) };
       if (game.setStandingOrder(u.id, order)) state.displaced.add(u.id);
       return;
     }
@@ -1292,8 +1334,9 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       // holds a force's fire — covering or not — until the enemy is inside
       // the line (rules decision 6's hold-fire order).
       const held = game.standingOrderFor(u.id);
-      if (held?.holdFire !== true || held.engagementRange !== drill.openFireRange || held.withdraw) {
-        game.setStandingOrder(u.id, { gait: "normal", holdFire: true, engagementRange: drill.openFireRange });
+      const line = triggerLine(u, drill, state);
+      if (held?.holdFire !== true || held.engagementRange !== line || held.withdraw) {
+        game.setStandingOrder(u.id, { gait: "normal", holdFire: true, engagementRange: line });
       }
       return;
     }
@@ -1613,15 +1656,21 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // them (ATP 3-21.8 para C-119).
     const reach = tank
       ? Math.max(baseReach, heavy.tankGunRange)
-      : u.mediumMg && drill.machineGuns
-        ? Math.max(baseReach, drill.machineGuns.range)
-        : baseReach;
+      : !task.attacking
+        ? triggerLine(u, drill, state)
+        : u.mediumMg && drill.machineGuns
+          ? Math.max(baseReach, drill.machineGuns.range)
+          : baseReach;
     // A scout watches and reports; it does not give itself away (decision 52)
     // — unless the company has gone in and told it to give a base of fire.
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
     const retaking = task.attacking || !drill.counterattack ? undefined : state?.counterattacking.get(u.id);
-    // A reserve not yet committed holds its fire (decision 105): it is kept for the counterattack.
-    if (!task.attacking && drill.counterattack?.holdFire && task.reserves?.has(u.id) && !retaking) continue;
+    // A reserve not yet committed holds its fire (decision 105): it is kept for the counterattack —
+    // unless it is itself attacked, shot at or an enemy within assault reach, when it fights
+    // ("reserves must be prepared to react to this targeting", ATP 3-21.8 (2024), para 5-67; drill audit, D5).
+    const attacked = () =>
+      game.fireReceived(u.id, game.turn - 1).length > 0 || enemies.some((e) => distance(u.position, e.position) <= drill.assault.range);
+    if (!task.attacking && drill.counterattack?.holdFire && task.reserves?.has(u.id) && !retaking && !attacked()) continue;
     const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
     // Break Contact (decision 107): smoke where the side can (step 5), at most BREAK_CONTACT_SCREENS a break.
     // ⚠️ Ours: fire comes after movement, so a screen laid as the bound ends covers the changeover and the next bound.
@@ -1699,6 +1748,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
       continue;
     }
     if (u.covering) game.setCovering(u.id, false);
+    // Its platoon's fire is open: the rest of it fires with it from the next turn (`massedOpening`).
+    if (!task.attacking && drill.massedOpening) state?.opened.add(platoonKey(u.id));
     // A force fighting inside cannot go out to assault: it fires from its windows (decision 98).
     // A defender already in a fight is gone in after only by the next squad (decision 100).
     // A defender holding a house fights from it: leaving it — to reposition, or to go out and
