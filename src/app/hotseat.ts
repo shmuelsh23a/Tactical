@@ -280,6 +280,19 @@ export function sideDefeated(game: Game, side: Side): boolean {
 }
 
 /**
+ * The defending side whose delay mission is done (rules decision 109): it was
+ * to hold the attack until the end of turn `delayUntil`, that turn has
+ * closed, and it has not been beaten. Null with no delay mission, or turns
+ * still to hold. Called once a turn is closed, after the side-defeated check.
+ */
+export function delayHeld(game: Game): Side | null {
+  const attacker = game.attackers[0];
+  if (game.delayUntil === undefined || attacker === undefined || game.turn <= game.delayUntil) return null;
+  const defender: Side = attacker === "BLUE" ? "RED" : "BLUE";
+  return sideDefeated(game, defender) ? null : defender;
+}
+
+/**
  * The attacking side whose time has run out (rules decision 58): the mission
  * gave it until the end of turn `timeLimit` to win, that turn has closed, and
  * it has not. Null with no deadline, no attacker, or time still left. Called

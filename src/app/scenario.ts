@@ -3,6 +3,7 @@ import { telAzekaListing } from "./scenarios/telAzeka.js";
 import { telAzekaCompanyListing } from "./scenarios/telAzekaCompany.js";
 import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
 import { telAzekaAssault2Listing } from "./scenarios/telAzekaAssault2.js";
+import { telAzekaDelayListing } from "./scenarios/telAzekaDelay.js";
 import { yokneamUrbanListing } from "./scenarios/yokneamUrban.js";
 import { yokneamRaidListing } from "./scenarios/yokneamRaid.js";
 import { yokneamHouseListing } from "./scenarios/yokneamHouse.js";
@@ -28,6 +29,7 @@ export const SCENARIOS: readonly ScenarioListing[] = [
   telAzekaCompanyListing,
   telAzekaAssaultListing,
   telAzekaAssault2Listing,
+  telAzekaDelayListing,
   yokneamUrbanListing,
   yokneamRaidListing,
   yokneamHouseListing,

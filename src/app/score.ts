@@ -1,5 +1,5 @@
 import type { Game, Side } from "../engine/index.js";
-import { outOfTime, sideDefeated } from "./hotseat.js";
+import { delayHeld, outOfTime, sideDefeated } from "./hotseat.js";
 
 /**
  * A battle's score, each side for itself (rules decision 108, the author,
@@ -11,7 +11,8 @@ import { outOfTime, sideDefeated } from "./hotseat.js";
  * - **Mission**, 100: the side won the battle.
  * - **Men**, up to 40: the share of the side's men still fit at the end —
  *   not down, not taken, not in a force that gave itself up.
- * - **Time**, up to 30: the defender's share of the time limit held before
+ * - **Time**, up to 30: the defender's share of the time limit (a delay
+ *   mission's turn, where it has one) held before
  *   the battle ended against it (all of it, if it held); the attacker's,
  *   the share it had left when it won. None without a time limit.
  *
@@ -47,11 +48,13 @@ function strength(u: Game["units"][number]): { fit: number; men: number } {
   return { fit, men: people.length };
 }
 
-/** Who won, by the game's own rules: a side beaten (decision 19), or the attacker out of time (decision 58). */
+/** Who won, by the game's own rules: a side beaten (decision 19), a delay held (decision 109), or the attacker out of time (decision 58). */
 export function battleWinner(game: Game): Side | null {
   const beaten = SIDES.filter((s) => sideDefeated(game, s));
   if (beaten.length === 1) return beaten[0] === "BLUE" ? "RED" : "BLUE";
   if (beaten.length === 2) return null;
+  const held = delayHeld(game);
+  if (held) return held;
   const late = outOfTime(game);
   return late ? (late === "BLUE" ? "RED" : "BLUE") : null;
 }
@@ -59,7 +62,7 @@ export function battleWinner(game: Game): Side | null {
 /** The score as the battle stands — at its end, the battle's score. */
 export function battleScore(game: Game, winner: Side | null = battleWinner(game)): BattleScore {
   const attacker = game.attackers[0];
-  const limit = game.timeLimit;
+  const limit = game.delayUntil ?? game.timeLimit; // a delay's turn is the attack's deadline (decision 109)
   const ended = game.turn;
   const timeOf = (side: Side): number => {
     if (limit === undefined || attacker === undefined) return 0;

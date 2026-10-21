@@ -800,6 +800,14 @@ export interface GameOptions {
    * deadline. The briefing states it; the app ends the battle on it.
    */
   timeLimit?: number;
+  /**
+   * A delay mission (rules decision 109, the author, 2026-10-21; ATP 3-06.11
+   * (2024), para 4-130, "a force under pressure trades space for time"):
+   * the defenders' mission is to hold the attack until the end of this turn.
+   * Not beaten by then, they have achieved it, whatever ground they gave.
+   * Absent: the defence holds its ground.
+   */
+  delayUntil?: number;
 }
 
 /** One burst, shell or blow a force received (see `Game.fireReceived`). */
@@ -920,6 +928,8 @@ export class Game {
   suppressionByChance: boolean;
   /** The last turn the attackers have to win in (rules decision 58); undefined: none. */
   readonly timeLimit: number | undefined;
+  /** A delay mission's turn (decision 109): the defenders not beaten by its end have achieved their mission. */
+  readonly delayUntil: number | undefined;
   /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
   private readonly smokeMissions: { side: Side; weapon: string }[] = [];
   /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
@@ -1385,9 +1395,15 @@ export class Game {
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
     this.timeLimit = opts.timeLimit;
+    this.delayUntil = opts.delayUntil;
     if (this.timeLimit !== undefined && !(Number.isInteger(this.timeLimit) && this.timeLimit > 0)) {
       throw new Error(`timeLimit: cannot read ${JSON.stringify(opts.timeLimit)}`);
     }
+    if (this.delayUntil !== undefined && !(Number.isInteger(this.delayUntil) && this.delayUntil > 0)) {
+      throw new Error(`delayUntil: cannot read ${JSON.stringify(opts.delayUntil)}`);
+    }
+    // A delay is the attack's deadline too (decision 109): one clock, never two.
+    if (this.delayUntil !== undefined && this.timeLimit !== undefined) throw new Error("a delay mission's turn is the attack's deadline: give delayUntil or timeLimit, not both");
     // Without the knowledge model nothing is reported, so nothing could be off.
     if (this.locationError && !this.trackIntel) throw new Error("locationError needs trackIntel");
     if (this.stillDetection && !this.trackIntel) throw new Error("stillDetection needs trackIntel");
@@ -1549,6 +1565,7 @@ export class Game {
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
+      ...(this.delayUntil !== undefined ? { delayUntil: this.delayUntil } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.mapTerrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.mapTerrain) }),

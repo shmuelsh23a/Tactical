@@ -86,9 +86,11 @@ export function viewOf(
   lines.push(`Turn ${game.turn} (a turn is one minute). You command ${side}'s company, attacking. Map metres; y grows southward.`);
   if (plan.brief) lines.push(`Tasking (Hebrew, as the players read it): ${plan.brief}`);
   lines.push("In short: you attack; the enemy holds the ground your plan puts it on.");
-  if (game.timeLimit !== undefined && game.attackers.includes(side)) {
-    const left = game.timeLimit - Math.max(1, game.turn) + 1;
-    lines.push(`Deadline: take the objective by the end of turn ${game.timeLimit} (${left} turn${left === 1 ? "" : "s"} left, this one included), or the attack has failed.`);
+  // The deadline: the time limit, or a delay mission's turn, which is the attack's deadline too (decision 109).
+  const deadline = game.delayUntil ?? game.timeLimit;
+  if (deadline !== undefined && game.attackers.includes(side)) {
+    const left = deadline - Math.max(1, game.turn) + 1;
+    lines.push(`Deadline: take the objective by the end of turn ${deadline} (${left} turn${left === 1 ? "" : "s"} left, this one included), or the attack has failed.`);
   }
   const men = game.units.filter((u) => u.side === side).flatMap((u) => u.soldiers ?? []);
   const down = men.filter((m) => m.neutralized || m.morale?.state === "broken").length;

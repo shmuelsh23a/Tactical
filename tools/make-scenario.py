@@ -188,7 +188,7 @@ FORCE_TYPES = {"irregular", "regular", "elite"}
 COMBAT_EXPERIENCE = {"inexperienced", "experienced", "veryExperienced"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
-    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "about", "window", "forces", "charges",
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "delayUntil", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers", "readiness",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect", "tubes"}
@@ -222,6 +222,8 @@ VEHICLE_CLASSES = {"mbt", "heavyApc", "lightApc", "soft"}
 def brief_with_deadline(spec: dict[str, Any]) -> str:
     """The brief, and the mission's deadline when it has one (decision 58)."""
     brief = spec["brief"].rstrip()
+    if "delayUntil" in spec:
+        brief += " על המגן להשהות את התקיפה עד תור " + str(spec["delayUntil"]) + "."
     if "timeLimit" not in spec:
         return brief
     return brief + " יש להשלים את המשימה עד תור " + str(spec["timeLimit"]) + "."
@@ -320,6 +322,15 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require(
         "timeLimit" not in spec or bool(spec.get("attackers")),
         "spec: timeLimit needs attackers (the deadline is the attack's)",
+    )
+    require_int(spec, "delayUntil", "spec", 1, 1000)
+    require(
+        "delayUntil" not in spec or bool(spec.get("attackers")),
+        "spec: delayUntil needs attackers (the delay is the defence's against them)",
+    )
+    require(
+        "delayUntil" not in spec or "timeLimit" not in spec,
+        "spec: a delay's turn is the attack's deadline: give delayUntil or timeLimit, not both",
     )
     for key in ("stillDetection", "binoculars", "keepEyesOn"):
         require_bool(spec, key, "spec")
@@ -589,6 +600,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         lines.append("    commandSuccession: true,")
     if "timeLimit" in spec:
         lines.append("    timeLimit: " + str(spec["timeLimit"]) + ",")
+    if "delayUntil" in spec:
+        lines.append("    delayUntil: " + str(spec["delayUntil"]) + ",")
     if spec.get("attackers"):
         lines.append("    attackers: [" + ", ".join(f'"{side}"' for side in spec["attackers"]) + "],")
     if spec.get("commandEchelon"):

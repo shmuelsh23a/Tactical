@@ -132,13 +132,14 @@ function interiorPlan(flag: string): InteriorPlan | undefined {
   return plan;
 }
 /** `--defender-disengage loss=0.5,back=150` (decision 107). */
-function disengagePlan(): { lossShare: number; back: number } | undefined {
+function disengagePlan(): { lossShare?: number; line?: number; back: number } | undefined {
   const text = value("--defender-disengage");
   if (text === undefined) return undefined;
   const kv = Object.fromEntries(text.split(",").map((p) => p.split("=")));
-  const lossShare = Number(kv.loss), back = Number(kv.back);
-  if (!(lossShare > 0 && lossShare <= 1) || !(back > 0)) throw new Error('--defender-disengage: "loss=<0..1>,back=<metres>"');
-  return { lossShare, back };
+  const lossShare = kv.loss === undefined ? undefined : Number(kv.loss), line = kv.line === undefined ? undefined : Number(kv.line), back = Number(kv.back);
+  const ok = (lossShare === undefined || (lossShare > 0 && lossShare <= 1)) && (line === undefined || line > 0) && (lossShare !== undefined || line !== undefined) && back > 0;
+  if (!ok) throw new Error('--defender-disengage: "loss=<0..1>,line=<metres in front>,back=<metres>", a loss or a line');
+  return { ...(lossShare !== undefined ? { lossShare } : {}), ...(line !== undefined ? { line } : {}), back };
 }
 const disengage = disengagePlan();
 const attackPlan = interiorPlan("--attack-plan");
@@ -158,6 +159,21 @@ for (const id of ids) {
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);
   scores.push(`| ${id} | ${s.attackerScore.toFixed(1)} | ${s.defenderScore.toFixed(1)} |`);
+  // `--delay-until <turn>`: the defender's score were its mission a delay — not beaten before that turn (a measurement).
+  const delayUntil = value("--delay-until");
+  if (delayUntil !== undefined) {
+    const until = Number(delayUntil);
+    const att = listing.build(first).game.attackers[0] ?? "BLUE";
+    const def = att === "BLUE" ? "RED" : "BLUE";
+    // Held: the defender won, or the battle was still going when turn `until` closed — not a draw.
+    const holds = (r: (typeof s.results)[number]) => r.winner === def || (r.winner !== "draw" && r.turns > until);
+    const held = s.results.filter(holds);
+    const mean = s.results.reduce((t, r) => {
+      const sc = r.score?.[def];
+      return t + (sc ? (holds(r) ? 100 : 0) + sc.men + sc.time : 0);
+    }, 0) / s.results.length;
+    scores.push(`| ${id}, a delay until turn ${until} | — | ${mean.toFixed(1)} (held ${held.length} of ${s.results.length}) |`);
+  }
   const u = s.urban;
   const f = (x: number) => x.toFixed(1);
   if (u.damaged + u.rubble + u.windowCriticals + u.roofCriticals + u.vehicles > 0) {

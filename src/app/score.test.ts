@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Game, makeInfantry } from "../engine/index.js";
-import { SCORE, battleScore } from "./score.js";
+import { SCORE, battleScore, battleWinner } from "./score.js";
 
 /**
  * A battle's score (rules decision 108): mission 100, men up to 40, time up to
@@ -57,5 +57,20 @@ describe("the battle's score (decision 108)", () => {
   it("gives nobody the mission in a draw", () => {
     const s = battleScore(battle(8), null);
     expect(s.sides.BLUE.mission + s.sides.RED.mission).toBe(0);
+  });
+
+  it("gives the defender a delay mission once its turn has closed and it is not beaten (decision 109)", () => {
+    const delay = (turns: number) => {
+      const g = new Game({ seed: 1, enforceC2: false, attackers: ["BLUE"], delayUntil: 5 }); // its own deadline: no time limit beside it
+      g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 100, y: 100 }, 8));
+      g.addUnit(makeInfantry("R", "RED", "squad", { x: 300, y: 100 }, 8));
+      g.beginTurn();
+      for (let t = 1; t < turns; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+      return g;
+    };
+    expect(battleWinner(delay(5))).toBeNull(); // turn 5 still to hold
+    expect(battleWinner(delay(6))).toBe("RED");
+    expect(delay(6).toRecording().delayUntil).toBe(5);
+    expect(() => new Game({ seed: 1, attackers: ["BLUE"], delayUntil: 5, timeLimit: 30 })).toThrow(); // one clock
   });
 });

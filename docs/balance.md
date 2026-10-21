@@ -5254,6 +5254,48 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Where breaking contact might pay, 2026-10-21 (decision 109)
+
+**The options on Tel Azeka 3:1**, 100 battles from seed 1000. Defender's
+mean score, and the same battles read as a delay to turn 20
+(`--delay-until 20`: held if the defender won, or the battle went past
+turn 20 without a draw). First measured with smoke first as a switch, then
+again with it as the drill's rule:
+
+| Breaking contact | Attacker wins | Defender score | As a delay to turn 20 |
+|---|---|---|---|
+| Never (hold) | 21% | **128.5** | 128.5 (held 75 of 100) |
+| At a quarter's losses, bounding at once (before 109) | 49% | 92.4 | — |
+| At a quarter's losses, smoke first | 37% | 107.1 | 107.1 (58) |
+| An enemy 50 m in front (going early), bounding at once | 24% | 126.0 | — |
+| Going early, smoke first | 21% | 128.4 | 128.4 (75) |
+
+**A delay where holding loses**, `telAzekaDelay` (one squad on the tel, one
+platoon against it; the delay's turn 15 is the attack's deadline and the
+score's clock), 100 battles, smoke first:
+
+| Breaking contact | Attacker wins | Median turns | Defender down | Defender score |
+|---|---|---|---|---|
+| Never (hold) | 95% | 8 | 52% | **38.5** |
+| At a quarter's losses | 98% | 8 | 51% | 37.5 |
+| An enemy 50 m in front | 97% | 8 | 52% | 37.1 |
+| An enemy 150 m in front | 100% | 8 | 55% | 34.9 |
+
+- **Smoke first is worth 15 points on a loss trigger** (92.4 → 107.1) and
+  nothing on going early: adopted as the drill's rule.
+- **Going early costs nothing** on Tel Azeka (128.4 against 128.5), and
+  gains nothing either.
+- **On the delay nothing pays**: the squad is overrun by turn 8 whether it
+  holds or goes, and the teams caught in the open lose as many men as
+  staying would. Doctrine says as much: units stay and fight "because of
+  the risk when units try to displace from prepared positions while still
+  under enemy pressure" (ATP 3-06.11 (2024), para 4-137).
+- ⚠️ Ours, the harness's: the disengagement line is 400 m wide, centred
+  in front of each squad, across its way to the attack's start line;
+  `telAzekaDelay`'s turn 15.
+- Not measured: covered routes (bounds through dead ground), which needs
+  route-finding built first.
+
 ## The score, and breaking contact by it, 2026-10-21 (decision 108)
 
 Mean score a battle (mission 100, men up to 40, time up to 30), 100 battles

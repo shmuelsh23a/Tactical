@@ -56,6 +56,12 @@ describe("the mission's deadline", () => {
     for (const s of SCENARIOS) {
       const g = s.build(1).game;
       if (!g.attackers.length) continue;
+      // A delay mission's turn is the attack's deadline (decision 109): the one clock it has.
+      if (g.delayUntil !== undefined) {
+        expect(g.timeLimit, s.id).toBeUndefined();
+        expect(s.brief, s.id).toContain(`על המגן להשהות את התקיפה עד תור ${g.delayUntil}.`);
+        continue;
+      }
       expect(g.timeLimit, s.id).toBeGreaterThan(0);
       expect(s.brief, s.id).toContain(`יש להשלים את המשימה עד תור ${g.timeLimit}.`);
     }

@@ -3490,6 +3490,31 @@ on the stated reasoning, still awaiting the author's word.
       Azeka still costs the defender — 128.5 → 92.4 points at 3:1, 145.4 →
       134.1 at 2:1 — because the squads that break contact lose as many men
       going back (28% → 31%) and the mission more often.
+109. ✅ **Smoke before the bound, and a delay mission** (the author,
+    2026-10-21, both as recommended, after breaking contact was measured
+    never to pay).
+    - **Break Contact screens first** (decision 107's drill; step 5, the
+      moving team "employs smoke"): the turn its criteria are met the squad
+      splits and lays smoke; it bounds the next turn, under it. Measured on
+      Tel Azeka: worth 15 points to the defender on a loss trigger, nothing
+      either way on going early.
+    - **A delay mission** (`GameOptions.delayUntil`, a scenario spec's
+      `delayUntil`; ATP 3-06.11 (2024), para 4-130, a force that "trades
+      space for time"): the defenders not beaten by the end of that turn have
+      achieved their mission, whatever ground they gave. Its turn is the
+      attack's deadline too: a scenario gives a delay or a time limit, never
+      both, and the score's time runs on it. The brief says so; the browser,
+      the harness and the score judge it alike, after the side-defeated
+      check.
+    - `telAzekaDelay`: one RED squad of `telAzekaAssault` on the tel against
+      one BLUE platoon of it, a delay to turn 15 (⚠️ ours: the forces cut
+      down, the turn). Its brief names no force (AGENTS.md).
+    - **Measured** (balance.md, *Where breaking contact might pay*):
+      breaking contact pays nowhere yet. On the delay the squad is overrun
+      by turn 8 holding or going (attacker 95–100%); going costs as many men
+      as staying, the teams caught in the open — doctrine's own warning
+      about displacing "while still under enemy pressure" (ATP 3-06.11
+      (2024), para 4-137).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

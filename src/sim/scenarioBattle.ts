@@ -1,5 +1,5 @@
 import { battleScore, type SideScore } from "../app/score.js";
-import { outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
+import { delayHeld, outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
 import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
@@ -138,7 +138,7 @@ export interface ScenarioBattleOptions {
    * (decision 107): a share of losses, and its next position `back` metres
    * straight back from the attack's start line.
    */
-  disengage?: { lossShare: number; back: number };
+  disengage?: { lossShare?: number; line?: number; back: number };
   /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
   coveredRoutes?: boolean;
   /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
@@ -155,6 +155,8 @@ export interface ScenarioBattleOptions {
 
 export interface ScenarioBattleResult {
   winner: Side | "draw";
+  /** The defender won a delay mission by holding to its turn (decision 109). */
+  delayed?: boolean;
   /** Each side's score (decision 108), alongside who won. */
   score?: Record<Side, SideScore>;
   turns: number;
@@ -292,7 +294,11 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       const dx = u.position.x - startLine.x, dy = u.position.y - startLine.y, d = Math.hypot(dx, dy) || 1;
       const clamp = (v: number, hi: number) => Math.min(hi - 1, Math.max(1, v));
       const position = { x: clamp(u.position.x + (dx / d) * opts.disengage.back, mapWidth), y: clamp(u.position.y + (dy / d) * opts.disengage.back, mapHeight) };
-      g.setDisengagement(u.id, { lossShare: opts.disengage.lossShare, position });
+      // A line `line` metres in front of the squad, across the way to the start line: going early (5-38).
+      const ux = -dx / d, uy = -dy / d;
+      const c = opts.disengage.line !== undefined ? { x: u.position.x + ux * opts.disengage.line, y: u.position.y + uy * opts.disengage.line } : undefined;
+      const line = c ? { from: { x: c.x - uy * 200, y: c.y + ux * 200 }, to: { x: c.x + uy * 200, y: c.y - ux * 200 } } : undefined;
+      g.setDisengagement(u.id, { ...(opts.disengage.lossShare !== undefined ? { lossShare: opts.disengage.lossShare } : {}), ...(line ? { line } : {}), position });
     }
   }
 
@@ -439,6 +445,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     heard(next.resolved);
     ignore(next.morale);
     if (settle()) break;
+    // A delay mission done (decision 109): the defender held the attack as long as it was to.
+    if (delayHeld(g)) { result.winner = defender; result.delayed = true; break; }
   }
   if (result.released === undefined) result.downWhileWaiting = downOf(attacker);
   // The clock ran out on the attack (decision 58): the defender held.
@@ -1130,6 +1138,8 @@ export interface ScenarioSummary {
   /** Each side's mean score a battle (decision 108). */
   attackerScore: number;
   defenderScore: number;
+  /** Every battle's own result, for a reading the summary does not make. */
+  results: ScenarioBattleResult[];
   /** Battles in which the defender's reserve counterattacked (decision 60), and in which it held the position at the end. */
   counterattacked: number;
   retaken: number;
@@ -1166,6 +1176,7 @@ export function runScenario(
     defenderWins: rs.filter((r) => r.winner === defender).length,
     draws: rs.filter((r) => r.winner === "draw").length,
     outOfTime: rs.filter((r) => r.outOfTime).length,
+    results: rs,
     attackerScore: sum((r) => r.score?.[attacker].total ?? 0) / rs.length,
     defenderScore: sum((r) => r.score?.[defender].total ?? 0) / rs.length,
     medianTurns: median(rs.map((r) => r.turns)),

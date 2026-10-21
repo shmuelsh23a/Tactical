@@ -1,0 +1,130 @@
+{
+  "slug": "telAzekaDelay",
+  "title": "תל עזקה — עיכוב",
+  "brief": "כחול: תוקף את תל עזקה מדרום. אדום: מחזיק בתל ומעכב את התקיפה. לפני הקרב כל צד מתכנן את משימתו.",
+  "attackers": [
+    "BLUE"
+  ],
+  "seed": 1967,
+  "trackIntel": true,
+  "enforceC2": true,
+  "morale": true,
+  "commandEchelon": {
+    "BLUE": "platoon",
+    "RED": "platoon"
+  },
+  "fireSupport": {},
+  "window": {
+    "lat": 31.6985,
+    "lon": 34.9355,
+    "width": 1200,
+    "height": 1000,
+    "spacing": 10,
+    "place": "Tel Azeka over the Elah valley (תל עזקה, עמק האלה): the tel stands at 345 m in the middle of the window, its eastern face falling 110 m to the valley floor, a ridge running south from it and low ground in the east.",
+    "heightfield": "telAzeka",
+    "objects": "telAzekaObjects",
+    "constant": "TEL_AZEKA"
+  },
+  "about": [
+    "A delay on Tel Azeka (decision 109, the author, 2026-10-21): the scenario for",
+    "telling whether breaking contact pays where holding loses. One RED squad of",
+    "telAzekaAssault's platoon, dug in where it stood there (RED-A-2), against one",
+    "BLUE platoon of that battle (BLUE-2: three squads, two machine gun teams, its",
+    "headquarters), from where it stood. No indirect fire, no charges. RED's",
+    "mission is a delay: not beaten by the end of turn 15, it has achieved it,",
+    "whatever ground it gave (ATP 3-06.11 (2024), para 4-130).",
+    "",
+    "⚠️ Ours: the cut-down forces, and turn 15, which is also the attack's deadline",
+    "(telAzekaAssault's battles run a median of 12-13 turns)."
+  ],
+  "forces": [
+    {
+      "id": "BLUE-2-HQ",
+      "name": "חפ\"ק מ\"מ 2",
+      "side": "BLUE",
+      "kind": "command",
+      "echelon": "platoon",
+      "personnel": 3,
+      "at": [
+        640,
+        975
+      ]
+    },
+    {
+      "id": "BLUE-2-1",
+      "name": "כיתה 2/1",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        580,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-2-2",
+      "name": "כיתה 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        650,
+        925
+      ]
+    },
+    {
+      "id": "BLUE-2-3",
+      "name": "כיתה 2/3",
+      "side": "BLUE",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        720,
+        935
+      ]
+    },
+    {
+      "id": "BLUE-2-MG1",
+      "name": "חולית מקלע 1/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        600,
+        930
+      ]
+    },
+    {
+      "id": "BLUE-2-MG2",
+      "name": "חולית מקלע 2/2",
+      "side": "BLUE",
+      "kind": "infantry",
+      "mediumMg": true,
+      "soldiers": 3,
+      "at": [
+        700,
+        935
+      ]
+    },
+    {
+      "id": "RED-A-2",
+      "facing": 91,
+      "name": "מחלקה א'/2",
+      "side": "RED",
+      "kind": "infantry",
+      "echelon": "squad",
+      "soldiers": 8,
+      "at": [
+        650,
+        520
+      ],
+      "baseCover": "full"
+    }
+  ],
+  "charges": [],
+  "delayUntil": 15
+}

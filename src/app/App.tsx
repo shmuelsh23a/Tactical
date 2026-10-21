@@ -80,6 +80,7 @@ import {
   hasEyesOn,
   isGone,
   outOfTime,
+  delayHeld,
   sideDefeated,
   sideView,
   SIDES,
@@ -1388,6 +1389,15 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     logInterior(game.takeBrokenInside());
     const beaten = SIDES.filter((side) => sideDefeated(game, side));
     if (beaten.length === 0) {
+      // A delay mission done (rules decision 109): the defenders held the attack as long as they were to.
+      const held = delayHeld(game);
+      if (held) {
+        over.current = true;
+        setStage("gameover");
+        setWinner(held);
+        pushLog(`${held} השהה את התקיפה עד תור ${game.delayUntil} — המשימה הושלמה, ניצחון ל${held}`, "info", TABLE);
+        return true;
+      }
       // The mission's deadline (rules decision 58): the attack that has not
       // won by the end of its last turn has failed.
       const late = outOfTime(game);
@@ -1586,7 +1596,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
             <>
               <span>
                 תור {game.turn}
-                {game.timeLimit !== undefined ? ` / ${game.timeLimit}` : ""}
+                {(game.delayUntil ?? game.timeLimit) !== undefined ? ` / ${game.delayUntil ?? game.timeLimit}` : ""}
               </span>
               <span className="sep">·</span>
               <span>יוזמה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</span>

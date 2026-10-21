@@ -95,6 +95,11 @@ describe("Break Contact on the criteria (decision 107)", () => {
     const b = state.breaking.get("R")!;
     expect(b.team).toBeDefined();
     expect(b.mover).toBe(b.team);
+    // Smoke first (decision 107): the turn it is triggered both teams hold while the screen goes down.
+    expect(g.getUnit(b.team!).position).toEqual(g.getUnit("R").position);
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    drillMovement(g, hold, PLAIN_SCRIPT, state);
     // The moving team bounded back, no farther than a bound; the team in contact stayed to suppress.
     expect(Math.hypot(b.bound!.x - 400, b.bound!.y - 400)).toBeLessThanOrEqual(BREAK_CONTACT_BOUND_M + 1e-6);
     expect(g.getUnit(b.team!).position.y).toBeLessThan(400);

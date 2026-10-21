@@ -257,6 +257,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
   if (r.timeLimit !== undefined && !(Number.isInteger(r.timeLimit) && (r.timeLimit as number) > 0)) throw malformed("timeLimit");
+  if (r.delayUntil !== undefined && !(Number.isInteger(r.delayUntil) && (r.delayUntil as number) > 0)) throw malformed("delayUntil");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -496,6 +497,8 @@ export interface GameRecording {
   suppressionByChance?: boolean;
   /** The mission's deadline, a turn (rules decision 58). Absent: none, as every battle before it. */
   timeLimit?: number;
+  /** A delay mission's turn (rules decision 109). */
+  delayUntil?: number;
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -699,6 +702,7 @@ export function replayWithOutcomes(
     suppressionByVolume: recording.suppressionByVolume ?? false,
     suppressionByChance: recording.suppressionByChance ?? false,
     ...(recording.timeLimit !== undefined ? { timeLimit: recording.timeLimit } : {}),
+    ...(recording.delayUntil !== undefined ? { delayUntil: recording.delayUntil } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

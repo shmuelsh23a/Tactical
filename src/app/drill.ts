@@ -463,6 +463,8 @@ export interface BreakingContact {
   smoked?: boolean;
   /** Screens fired in this break, against {@link BREAK_CONTACT_SCREENS}. */
   screens?: number;
+  /** Smoke first (decision 107): split and screening this turn, it bounds the next. */
+  waiting?: boolean;
 }
 
 function copyBreak(b: BreakingContact): BreakingContact {
@@ -514,7 +516,7 @@ function breakContact(game: Game, task: DrillTask, state: DrillState, forces: Un
         // A force that cannot split (its nerve gone, say) goes back whole.
       }
     }
-    state.breaking.set(u.id, { ...(team ? { team } : {}), to, mover: team ?? u.id });
+    state.breaking.set(u.id, { ...(team ? { team } : {}), to, mover: team ?? u.id, waiting: true });
     // It leaves its post on purpose: no reserve counterattacks it (decision 60).
     state.displaced.add(u.id);
     if (team) state.displaced.add(team);
@@ -530,6 +532,13 @@ function breakContact(game: Game, task: DrillTask, state: DrillState, forces: Un
       continue;
     }
     for (const x of live) inBreak.add(x);
+    if (b.waiting) {
+      // Smoke first (the author, 2026-10-21; step 5, the moving team "employs smoke"): the turn it is
+      // triggered the squad splits and screens; it bounds the next, under its own smoke.
+      b.waiting = false;
+      for (const x of live) if (game.standingOrderFor(x)?.destination || game.standingOrderFor(x)?.gait !== "normal") game.setStandingOrder(x, { gait: "normal" });
+      continue;
+    }
     // The first bound is the moving team's (step 5); after each, the team that bounded overwatches and the
     // other goes (step 8) — unless it is already there, or gone.
     const first = !b.bound && live.includes(b.mover);
