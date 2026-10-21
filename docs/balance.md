@@ -6230,3 +6230,55 @@ behaviour turns out to decide battles:
 
 Gone with I7: `grenadeUpstairsFactor` and `grenadeUpstairsSelfHitFactor`
 — a grenade is no longer thrown up the stairs.
+
+## The re-measure after the drill audit, 2026-10-21, late
+
+Step 3 of the author's plan (handoff, 2026-10-21): the reference plans with
+the drills fixed (decisions 113–117), on the new reference drill (the
+doctrinal one) and on the plain one, which the shared fixes moved too
+(targets, the defender's trigger lines, the reserve, the mortars).
+`jev-sim --rule <variant> --drill <reference|plain> --seed 1000 --n 100`,
+A at 3:1 200, four jobs at a time.
+
+| Plan | Plain after 112 (3:1 / 2:1) | **Plain now** | **Doctrinal (reference)** |
+|---|---|---|---|
+| A calibrated | 73% / 44% | 68% / 30% | **86%** / **53%** |
+| A + flank | 69% / 32% | 54% / 27% | 62% / **60%** |
+| B deliberate | 73% / 40% | 57% / 26% | 72% / 42% |
+| E fire-heavy | 71% / 41% | 68% / 40% | 68% / 44% |
+| D flank | 69% / 44% | 54% / 28% | 66% / 37% |
+| A + move up | 55% / 16% | 51% / 17% | 72% / 43% |
+| B + move up | 68% / 18% | 53% / 17% | 70% / 35% |
+| C hasty | 55% / 24% | 49% / 17% | 75% / 32% |
+| **Median** | 69% / 36% | **54% / 26.5%** | **71% / 42.5%** |
+| Band (decision 68) | 40–55% / 20–35% | in / in | over by 16 / by 7.5 |
+
+- **The plain drill is back inside both bands** (54% / 26.5%). The fixes it
+  shares — chiefly the defender's machine guns firing to 800 m (D1), its
+  reserve firing back (D5) and its mortars covering the counterattack
+  (D3) — cost the attacker 15 points at 3:1 and 10 at 2:1.
+- **The doctrinal drill is over both** (71% / 42.5%): a company that
+  fights by doctrine wins more, as it should, but by more than the bands
+  allow. Its plans are close together (62–86% at 3:1): no reasonable plan
+  is a trap, and the mass assault (A) is the best by a margin.
+- The doctrinal column is measured after the fix to seizing (a position
+  never found is not seized, `d2a99b0`); the first run, before it, was
+  within two points on every cell. The plain column does not consolidate
+  and was unaffected.
+- **`scenario-sim` on the reference drill** (100 battles, the house 200),
+  this morning's plain-drill figure (decision 112) → now:
+  `telAzekaCompany` 35% → **61%**, `yokneamUrban` 53% → **65%**,
+  `yokneamRaid` 6% → **4%**, `yokneamHouse` 88% → **88%**. Before the
+  seizing fix the house was **0%**, every battle out of time: the company
+  consolidated outside a house whose defender it had never seen.
+- **The Claude commander** (`--claude claude-opus-5-5 --order --plan
+  --updates`, 10 battles a cell from 1000, about $10.15 for the twenty):
+  **6 of 10 at 3:1** (2 of 10 in the pilot, on the plain drill before
+  decision 112) and **3 of 10 at 2:1**. Ten battles is ±25 points: the
+  direction, not a measurement. Mean confidence 0.66; 928 questions. Run
+  before the seizing fix, which moved the rule commander's cells by two
+  points at most. Its logs are in `jev-runs/claude-opus-5-5-audit-*`.
+- **Not ruled**: whether the bands stand and the doctrinal drill's numbers
+  go to the rules (step 4 — decision 68's bands and the sources, including
+  whether a pinning base of fire is the bands' "strong suppression" case,
+  70–75%), is the author's.

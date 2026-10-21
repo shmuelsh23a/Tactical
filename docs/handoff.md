@@ -1,45 +1,43 @@
 # Handoff — where the project stands
 
-**Next, in one line: we found a drill that diverged from doctrine and skewed the whole balance — the plain drill's base of fire sat blind in dead ground (fixed, decision 112), and the reference medians jumped from 46% to 69% at 3:1. Before any balance ruling: audit every drill against doctrine, fix what diverges, then re-measure with the scripted commander and the AI commander and judge how balanced everything is (the author, 2026-10-21).**
+**Next, in one line: the drill audit is done and built (decisions 113–117), and the doctrinal drill is now the reference; re-measured, it is over decision 68's bands at both ratios (71% at 3:1, 42.5% at 2:1), while the plain drill, given the shared fixes, sits inside them (54% / 26.5%). Step 4 is the author's: judge the balance — whether the bands stand and the rules move, or the doctrinal drill's higher win rate is right (a 3:1 attack with a pinning base of fire as the bands' "strong suppression" case, 70–75%).**
 
-**Current as of 2026-10-21, late** (`bea63fd`, pushed). Since this
-morning's handoff (`e4f1d29`), decisions 103–112 in the README's rules
+**Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
+pushed). Since the late handoff (`e41c93d`), in the README's rules
 decisions, every option the author's unless marked ⚠️:
-- **103–104, the fight inside reacts:** morale inside (a broken man
-  leaves or, found, gives himself up) and the battle waiting for a
-  contested fight; defenders retake rooms, and a defending force
-  counterattacks in at the door.
-- **105–106, the reserve and the house:** a reserve holds fire until
-  committed and is left out of the attacker's brief; a defender in a
-  house leaves it only by its commander's order (doctrine prescribes no
-  case; sources.md).
-- **107–109, breaking contact:** disengagement criteria in a defender's
-  plan (a line, or losses), carried out by Break Contact (two teams
-  bounding, smoke first); a battle's score (mission 100, men 40, time 30);
-  a delay mission (`delayUntil`). Breaking contact pays nowhere measured:
-  ruled a deliberate cost, as doctrine warns (ATP 3-06.11 4-137).
-- **110–111, the long-waiting rulings:** the 2:1 median accepted at 19.5%
-  (since superseded by 112's re-measure); the force-quality matrix re-run,
-  its breakpoint shift halved, its spread ruled.
-- **The AI commander** (balance.md, *A Claude commander*): Claude Opus 5.5
-  won 2 of 10 on Tel Azeka at about $0.96 a battle; `--conversation
-  --updates` brings it to about $0.51. It lost by playing doctrine's plan
-  (base of fire, flank) — which led to the finding below.
-- **112, the finding:** a platoon on "support" in the plain drill
-  (`PLAIN_SCRIPT`, which the reference plans and the AI commanders play
-  by) stayed in the dead ground it waited in, seeing the enemy or not,
-  and fired a sixth as much as an assaulting platoon. The fix — firing
-  positions with a field of fire (ATP 3-21.8 3-102) and machine guns to
-  800 m (decision 90), which only the doctrinal drill had — flipped the
-  plans' order to doctrine's (deliberate 29% → 73%) and lifted every plan:
-  **3:1 median 46% → 69%** (band 40–55%), **2:1 19.5% → 36%** (band
-  20–35%). Plans without a base of fire rose too (mass assault 67% →
-  73%), most likely from the machine guns' reach. **The band question is
-  deliberately not ruled**: the author wants the drills right first.
+- **The audit** ([drill-audit.md](drill-audit.md)): five areas read
+  against the corpus by paragraph — the plain drill, the Western and
+  doctrinal drills, the attacker's company, the defender, the fight inside.
+  Eight rulings, every one the recommended option.
+- **113, the doctrinal drill's fire teams**: a split team stays in its
+  squad's platoon, no half-strength break-contact reflex, the 2A support
+  team shifts and is released. **The doctrinal drill is the reference**
+  (`REFERENCE_DRILL`): the browser computer and every tool, `--drill plain`
+  for the untrained variant.
+- **114, the attack**: the assault waits for its support to be set;
+  halts and bounds in cover; consolidation once the position is seized
+  (found first — without that the house went to 0%); the priority target
+  where the enemy was found; the reserve before the base of fire; the 2A
+  support team screens. **115**: greatest threat first, both sides.
+- **116, the defence**: a machine gun's own trigger line (800 m), a
+  platoon opens fire together, a reserve fires when attacked (amends 105),
+  the mortars cover breaking contact and the counterattack.
+- **117, the fight inside**: security left in rooms that hold a way on,
+  a man down going in owed at CLEAR, #3/#4 to the entry wall, a squad's
+  teams take turns, the leader out of the stack, no grenade upstairs.
+- **The re-measure** (balance.md, *The re-measure after the drill audit*):
+  reference 71% / 42.5%; plain 54% / 26.5%; the Claude commander 6 of 10
+  at 3:1 (2 of 10 before) and 3 of 10 at 2:1, about $10 for twenty.
+  `scenario-sim`: company 61%, urban 65%, raid 4%, house 88%.
 
-The previous header (decisions 103–109, earlier today) is in
-[handoff-archive.md](handoff-archive.md), *2026-10-21 — the header through
-decision 109*.
+Every new figure of ours is on balance.md, *The drill audit's own
+figures*. Two reviews found real bugs in every batch (a rallied leader
+made twice, the support wait reading the enemy's true position, the
+reserve spent by other fire); all fixed with tests.
+
+The previous header (decisions 103–112) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-21, late — the header
+through decision 112*.
 
 This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
@@ -67,10 +65,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `bea63fd` (2026-10-21, late)
+## Green as of `d2a99b0` (2026-10-21, night)
 
 ```
-npm run check       lint + typecheck clean, 1,151 tests, 78 files
+npm run check       lint + typecheck clean, 1,187 tests, 82 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -138,7 +136,24 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ## Waiting on the author
 
-### Open (2026-10-21, late)
+### Open (2026-10-21, night)
+
+- **Step 4, the balance judgement** (the author's): the reference
+  (doctrinal) medians are 71% / 42.5% against decision 68's 40–55% /
+  20–35%. Either the bands stand and a rule moves the doctrinal drill
+  down, or a company fighting by doctrine is meant to beat them (the
+  bands' "strong suppression" case, 70–75%, read as a pinning base of
+  fire). Plain sits in the bands (54% / 26.5%), so the gap is what the
+  doctrine buys. Do not tune before he rules.
+- **Today's ⚠️, none questioned yet** (balance.md, *The drill audit's own
+  figures*): 25 m to cover, 6 turns waiting for a support, 400 m mortar
+  cover, the massed opening's turn of lag, a team keeps two, half a
+  squad's teams in at once, three clears.
+- **Not ruled, left as they are** (drill-audit.md): A12, A13, A15, D6, I6,
+  I7's short room and marking, and the plans not yet exposed inside (the
+  entry point, the room order, top-down by an inside stair).
+
+### Done 2026-10-21, night: the drill audit (steps 1–3 of his plan)
 
 - **The drill audit, then the balance** (the author's plan, 2026-10-21):
   1. Check every drill against doctrine — `PLAIN_SCRIPT`, `WESTERN_DRILL`
@@ -158,9 +173,8 @@ The 2026-10-01 version of this section, with its tables and the rulings of
   4. Then judge how balanced everything is against decision 68's bands
      and the sources — including whether a 3:1 attack with a base of fire
      that pins is the bands' "strong suppression" case (70–75%).
-- **Not yet ruled, waiting on the audit:** the reference medians after
-  decision 112 (69% / 36%). Do not tune toward the bands before the
-  drills are right.
+- Superseded by the re-measure above: decision 112's plain-drill medians
+  (69% / 36%).
 
 ### Open (2026-10-20)
 
@@ -473,6 +487,12 @@ Closed deliberately, with reasons that are not obvious from the code:
 
 ## Do not re-derive
 
+- **The re-measure after the drill audit** (2026-10-21, balance.md): the
+  16 reference cells on both drills, about 25 minutes for 32 cells at four
+  jobs; the script is `jev-sim --rule <variant> --drill <reference|plain>
+  --seed 1000 --n 100` (A at 3:1 200), the variants on balance.md, *The
+  reference plans*.
+
 - **Why a base of fire lost to massing** (2026-10-21, balance.md): the
   plain drill kept a supporting platoon in dead ground, in reach but
   blind; it fired on 48 force-turns a battle against 304 assaulting, and
@@ -636,11 +656,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The drill audit** (above, *Waiting on the author*): a table of every
-drill behaviour against doctrine, by paragraph, then the divergences put
-to the author one by one. Use subagents for the doctrine reading; it is
-wide. Then the re-measure, scripted first (free), the AI commander after
-(paid, ask for a budget). Only then the balance judgement.
+**The balance judgement** is his (above). Bring it to him as cards: the
+two medians, plain against doctrinal, and the bands' strong-suppression
+row from validation.md. If he wants more evidence first, the cheapest is
+the Claude commander at 30 battles a cell (±15 points, about $30), or a
+probe of why the mass assault (A) is the doctrinal drill's best plan by
+eleven points at 3:1.
 
 **After that, as before:** separate the reserve's worth in
 `yokneamHouseReserve` (a `counterattackInside` harness flag); why the
@@ -649,6 +670,15 @@ did not; the typed fire question brought to doctrine (decision 110); the
 UX pass's targetable marker for an enemy fought inside.
 
 ## Traps that cost real time
+
+- **A long measurement reads the source files as each job starts**: edit
+  code while one runs and its cells are measured on mixed code. Stop it
+  (the `node` children outlive the shell: `Stop-Process` the ones whose
+  command line has `jev-sim`) and run it again.
+- **A win rate of 0% with nobody down is a stall, not balance**: the
+  house went to 0%, every battle out of time, when consolidation took an
+  unseen defender's house for seized. Read the down and out-of-time
+  columns before reading the win rate.
 
 - **Win rate cannot measure a lever inside a house.** The battle is judged
   at a side's break, minutes into the fight; measure the fights themselves

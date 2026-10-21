@@ -12,6 +12,52 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-10-21, late — the header through decision 112
+
+As it stood at `bea63fd`..`e41c93d`, before the drill audit (decisions 113–117).
+
+**Next, in one line: we found a drill that diverged from doctrine and skewed the whole balance — the plain drill's base of fire sat blind in dead ground (fixed, decision 112), and the reference medians jumped from 46% to 69% at 3:1. Before any balance ruling: audit every drill against doctrine, fix what diverges, then re-measure with the scripted commander and the AI commander and judge how balanced everything is (the author, 2026-10-21).**
+
+**Current as of 2026-10-21, late** (`bea63fd`, pushed). Since this
+morning's handoff (`e4f1d29`), decisions 103–112 in the README's rules
+decisions, every option the author's unless marked ⚠️:
+- **103–104, the fight inside reacts:** morale inside (a broken man
+  leaves or, found, gives himself up) and the battle waiting for a
+  contested fight; defenders retake rooms, and a defending force
+  counterattacks in at the door.
+- **105–106, the reserve and the house:** a reserve holds fire until
+  committed and is left out of the attacker's brief; a defender in a
+  house leaves it only by its commander's order (doctrine prescribes no
+  case; sources.md).
+- **107–109, breaking contact:** disengagement criteria in a defender's
+  plan (a line, or losses), carried out by Break Contact (two teams
+  bounding, smoke first); a battle's score (mission 100, men 40, time 30);
+  a delay mission (`delayUntil`). Breaking contact pays nowhere measured:
+  ruled a deliberate cost, as doctrine warns (ATP 3-06.11 4-137).
+- **110–111, the long-waiting rulings:** the 2:1 median accepted at 19.5%
+  (since superseded by 112's re-measure); the force-quality matrix re-run,
+  its breakpoint shift halved, its spread ruled.
+- **The AI commander** (balance.md, *A Claude commander*): Claude Opus 5.5
+  won 2 of 10 on Tel Azeka at about $0.96 a battle; `--conversation
+  --updates` brings it to about $0.51. It lost by playing doctrine's plan
+  (base of fire, flank) — which led to the finding below.
+- **112, the finding:** a platoon on "support" in the plain drill
+  (`PLAIN_SCRIPT`, which the reference plans and the AI commanders play
+  by) stayed in the dead ground it waited in, seeing the enemy or not,
+  and fired a sixth as much as an assaulting platoon. The fix — firing
+  positions with a field of fire (ATP 3-21.8 3-102) and machine guns to
+  800 m (decision 90), which only the doctrinal drill had — flipped the
+  plans' order to doctrine's (deliberate 29% → 73%) and lifted every plan:
+  **3:1 median 46% → 69%** (band 40–55%), **2:1 19.5% → 36%** (band
+  20–35%). Plans without a base of fire rose too (mass assault 67% →
+  73%), most likely from the machine guns' reach. **The band question is
+  deliberately not ruled**: the author wants the drills right first.
+
+The previous header (decisions 103–109, earlier today) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-21 — the header through
+decision 109*.
+
+
 ## 2026-10-21 — the header through decision 109
 
 As it stood at `5354453`..`92fc26a`, before decisions 110–112.
