@@ -1,53 +1,45 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 103-111 are built and ruled, the long-waiting ones closed: the 2:1 median accepted at 19.5% (110), and the force-quality matrix re-run, its breakpoint shift halved and its spread ruled (111). Next on the threads: bring the typed fire question to doctrine (a priority target, missions held back), and the AI commander: the first pilot ran (Claude Opus 5.5, 10 battles on Tel Azeka: 2 wins, about $0.96 a battle, balance.md); it lost by playing doctrine's flank-and-base-of-fire plan, which this engine rewards less than massing; with `--updates` a battle costs about $0.51 (from $0.96). Open for him: does the engine underrate a base of fire?**
+**Next, in one line: we found a drill that diverged from doctrine and skewed the whole balance — the plain drill's base of fire sat blind in dead ground (fixed, decision 112), and the reference medians jumped from 46% to 69% at 3:1. Before any balance ruling: audit every drill against doctrine, fix what diverges, then re-measure with the scripted commander and the AI commander and judge how balanced everything is (the author, 2026-10-21).**
 
-**Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
-(`e4f1d29`), both in the README's rules decisions, every option the
-author's unless marked ⚠️:
-- **103, morale inside, and the battle waits.** A man the morale step
-  broke stops fighting inside: an attacker leaves, a defender falls back
-  (holding or not) and, found by an attacker, gives himself up
-  (`Soldier.captured`). Neither side's break is judged while a fight with
-  men of both sides in it goes on (a house left empty is searched, not
-  waited for). `GameOptions.moraleInside`.
-- **104, the counterattack inside.** Defenders inside retake rooms the
-  attacker took and left; a defending force's assault on an attacker
-  fighting in its house goes in at the door and clears the rooms back by
-  the same drill (the resolver's teams now belong to either side).
-  Decision 60's reserve counts a post whose house is being cleared as
-  lost and makes for the door. `GameOptions.counterattackInside`.
-- **105, the reserve held back** (ruled the same day): a reserve neither
-  fires nor assaults until committed, and the attacker's brief is the
-  position held, reserves left out (`briefedObjective` requires them).
-  `yokneamHouseReserve`: the reserve 88 m south of the house, in cover.
-  Re-measured (balance.md, *The reserve held back*): reference medians
-  3:1 46% and 2:1 19.5% (unmoved); plain-script Tel Azeka 36% → 21% (the
-  brief); raid 10% → 5%; the house with a reserve 43%.
-- **106, a house left only by order** (ruled in three steps the same
-  evening): the drill's defender in a house fires from it and never moves
-  or assaults out; leaving is the commander's decision — doctrine
-  prescribes no case (sources.md, *Who decides that a defender leaves*).
-  House 83% → 88%; with the reserve 43% → 38%, the reserve inside in 83 of
-  200 (balance.md, *The house held from inside*).
-- **107, disengagement criteria** (`Game.setDisengagement`): an enemy past
-  a line, or losses at a share; to a named position; by the Break Contact
-  drill (two teams bounding, smoke, no charging). Never fires at half
-  (the side breaks first); at a quarter it hands Tel Azeka over (21% →
-  49%).
-- **108, a battle's score** (`src/app/score.ts`): mission 100, men up to
-  40, time up to 30, beside the winner; in the debrief and the harness.
-  Breaking contact still loses points (balance.md, *The score*).
-- **109, smoke before the bound and a delay mission**: Break Contact
-  screens first; `delayUntil` (a delay's turn, the attack's deadline,
-  never beside a time limit); `telAzekaDelay`.
-- **Measured** (balance.md, *Morale inside and the counterattack*): house
-  58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
-  counterattack has no scenario yet: two placements tried, both decided
-  in turn 1 by assaults in the open.
+**Current as of 2026-10-21, late** (`bea63fd`, pushed). Since this
+morning's handoff (`e4f1d29`), decisions 103–112 in the README's rules
+decisions, every option the author's unless marked ⚠️:
+- **103–104, the fight inside reacts:** morale inside (a broken man
+  leaves or, found, gives himself up) and the battle waiting for a
+  contested fight; defenders retake rooms, and a defending force
+  counterattacks in at the door.
+- **105–106, the reserve and the house:** a reserve holds fire until
+  committed and is left out of the attacker's brief; a defender in a
+  house leaves it only by its commander's order (doctrine prescribes no
+  case; sources.md).
+- **107–109, breaking contact:** disengagement criteria in a defender's
+  plan (a line, or losses), carried out by Break Contact (two teams
+  bounding, smoke first); a battle's score (mission 100, men 40, time 30);
+  a delay mission (`delayUntil`). Breaking contact pays nowhere measured:
+  ruled a deliberate cost, as doctrine warns (ATP 3-06.11 4-137).
+- **110–111, the long-waiting rulings:** the 2:1 median accepted at 19.5%
+  (since superseded by 112's re-measure); the force-quality matrix re-run,
+  its breakpoint shift halved, its spread ruled.
+- **The AI commander** (balance.md, *A Claude commander*): Claude Opus 5.5
+  won 2 of 10 on Tel Azeka at about $0.96 a battle; `--conversation
+  --updates` brings it to about $0.51. It lost by playing doctrine's plan
+  (base of fire, flank) — which led to the finding below.
+- **112, the finding:** a platoon on "support" in the plain drill
+  (`PLAIN_SCRIPT`, which the reference plans and the AI commanders play
+  by) stayed in the dead ground it waited in, seeing the enemy or not,
+  and fired a sixth as much as an assaulting platoon. The fix — firing
+  positions with a field of fire (ATP 3-21.8 3-102) and machine guns to
+  800 m (decision 90), which only the doctrinal drill had — flipped the
+  plans' order to doctrine's (deliberate 29% → 73%) and lifted every plan:
+  **3:1 median 46% → 69%** (band 40–55%), **2:1 19.5% → 36%** (band
+  20–35%). Plans without a base of fire rose too (mass assault 67% →
+  73%), most likely from the machine guns' reach. **The band question is
+  deliberately not ruled**: the author wants the drills right first.
 
-Yesterday's header (decisions 98–102, the house scenario) is in
-[handoff-archive.md](handoff-archive.md), *2026-10-20, night — the header*.
+The previous header (decisions 103–109, earlier today) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-21 — the header through
+decision 109*.
 
 This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
@@ -75,19 +67,19 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of 2026-10-21, night (decision 109)
+## Green as of `bea63fd` (2026-10-21, late)
 
 ```
-npm run check       lint + typecheck clean, 1,149 tests, 78 files
+npm run check       lint + typecheck clean, 1,151 tests, 78 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
                     the fight inside on every demo house (decision 96);
                     --hold-storeys 1 (a plan's), --team-size 2 (a measurement)
 npm run scenario-sim -- --n 100 --scenario yokneamRaid
-                    the raid: 10% since decisions 103-104 (16% before)
+                    the raid: 6% after decision 112
 npm run scenario-sim -- --n 200 --scenario yokneamHouse
-                    the house: 88% since decisions 103-106 (58% before)
+                    the house: 88% (58% before decision 103)
 npm run scenario-sim -- … --attack-plan entry=top,grenades=no --defence-plan storeys=1,windows=no,expects=above,hold
                     each side's plan inside a building (decision 101)
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -103,6 +95,12 @@ npm run scenario-sim -- --drill doctrinal --gate --rear-security
                     the doctrine work (rung A) in the harness
 npm run jev-sim -- --rule --scenario telAzekaAssault --seed 1000 --n 100
                     one reference plan; eight of them are the balance
+                    (medians after decision 112: 69% at 3:1, 36% at 2:1)
+npm run jev-sim -- --claude claude-opus-5-5 --order --plan --updates --scenario telAzekaAssault --seed 1000 --n 10
+                    the AI commander, about $0.51 a battle (paid: ask first)
+npm run scenario-sim -- … --defender-disengage loss=0.25,back=150 --delay-until 20 --quality-off gap
+                    measurement switches: disengagement criteria, a delay
+                    reading of the score, quality rules off
 ```
 
 Working tree clean and pushed to `origin/main` at that commit.
@@ -139,6 +137,30 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 "Start here" as it stood*.
 
 ## Waiting on the author
+
+### Open (2026-10-21, late)
+
+- **The drill audit, then the balance** (the author's plan, 2026-10-21):
+  1. Check every drill against doctrine — `PLAIN_SCRIPT`, `WESTERN_DRILL`
+     and `DOCTRINAL_DRILL` in `src/app/drill.ts`, the company's orders in
+     `company.ts`, the defender's (posts, the reserve, the house), and the
+     interior drill in `resolver.ts`. For each behaviour: what doctrine
+     says (TC 3-21.76 ch. 8's battle drills, ATP 3-21.8, ATP 3-21.10, ATP
+     3-06.11, through `tools/doctrine.py`, quoted by paragraph), what the
+     drill does, and whether they diverge. `docs/doctrine-gap.md` is an
+     earlier, partial pass to start from.
+  2. Fix what diverges, each as its own ruling (cards), with a test that
+     the behaviour holds.
+  3. Re-measure with the scripted commander (the sixteen reference cells,
+     `jev-sim --rule`, and the standard measurement) and with the AI
+     commander (`jev-sim --claude claude-opus-5-5 --order --plan --updates`,
+     about $0.51 a battle — a budget from the author).
+  4. Then judge how balanced everything is against decision 68's bands
+     and the sources — including whether a 3:1 attack with a base of fire
+     that pins is the bands' "strong suppression" case (70–75%).
+- **Not yet ruled, waiting on the audit:** the reference medians after
+  decision 112 (69% / 36%). Do not tune toward the bands before the
+  drills are right.
 
 ### Open (2026-10-20)
 
@@ -381,6 +403,10 @@ One rules question is **open but not asked**, because nothing needs it yet:
 
 ## Do not re-propose
 
+- **Tuning the balance before the drills match doctrine.** The plain
+  drill's blind base of fire skewed every reference table for weeks
+  (decision 112). Balance rulings wait for the drill audit.
+
 - **Narrowing the force-quality matrix's corners.** Re-run 2026-10-21
   (balance.md): the breakpoint shift was halved (decision 111) and the
   author ruled the remaining spread right — elite against irregular
@@ -446,6 +472,16 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **Why a base of fire lost to massing** (2026-10-21, balance.md): the
+  plain drill kept a supporting platoon in dead ground, in reach but
+  blind; it fired on 48 force-turns a battle against 304 assaulting, and
+  the defence was 37% pinned against 54% when the assault reached 100 m.
+  With firing positions and machine-gun reach: base of fire 80% against
+  massing's 68% (100 battles, rule commander, the probe not kept).
+- **The Claude commander's costs** (balance.md): memory mode $0.96 a
+  battle, of which 80% uncached input; `--conversation` caches everything
+  but carries full pictures ($0.92); `--updates` $0.51.
 
 - **What ends the fights inside** (2026-10-20, `yokneamHouse`): with the
   platoon 300 m out in the open, 5 fights in 100 battles (decided outside);
@@ -600,23 +636,17 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Separate the reserve's worth**: in `yokneamHouseReserve` the reserve is
-worth fifty points, but how much is the counterattack inside and how much
-its fight at the door is not measured (run it with `counterattackInside`
-off as a harness flag). And why the plain script's Tel Azeka moved with
-the brief while the reference plans did not.
+**The drill audit** (above, *Waiting on the author*): a table of every
+drill behaviour against doctrine, by paragraph, then the divergences put
+to the author one by one. Use subagents for the doctrine reading; it is
+wide. Then the re-measure, scripted first (free), the AI commander after
+(paid, ask for a budget). Only then the balance judgement.
 
-**Smaller, whenever:** the UX pass's targetable marker for an enemy fought
-inside; whether the computer should give plans once a scenario can tell the
-levers apart (he ruled: defaults for now).
-
-**Then the typed fire question brought to doctrine** (decision 110: a
-priority target and missions held back, so decision 93's plan can be asked
-for; what Jev will be asked too), **and an AI-commander pilot** once the
-author sets a budget (one model, one scenario, `--n 10`, for the cost a
-battle). Artillery and air support for a company still come
-only by a scenario's allotment (decision 95); battalion echelon is
-backlog 10.
+**After that, as before:** separate the reserve's worth in
+`yokneamHouseReserve` (a `counterattackInside` harness flag); why the
+plain script's Tel Azeka moved with the brief while the reference plans
+did not; the typed fire question brought to doctrine (decision 110); the
+UX pass's targetable marker for an enemy fought inside.
 
 ## Traps that cost real time
 

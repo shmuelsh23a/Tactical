@@ -12,6 +12,59 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-10-21 — the header through decision 109
+
+As it stood at `5354453`..`92fc26a`, before decisions 110–112.
+
+**Next, in one line: decisions 103-111 are built and ruled, the long-waiting ones closed: the 2:1 median accepted at 19.5% (110), and the force-quality matrix re-run, its breakpoint shift halved and its spread ruled (111). Next on the threads: bring the typed fire question to doctrine (a priority target, missions held back), and the AI commander: the first pilot ran (Claude Opus 5.5, 10 battles on Tel Azeka: 2 wins, about $0.96 a battle, balance.md); it lost by playing doctrine's flank-and-base-of-fire plan, which this engine rewards less than massing; with `--updates` a battle costs about $0.51 (from $0.96). Open for him: does the engine underrate a base of fire?**
+
+**Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
+(`e4f1d29`), both in the README's rules decisions, every option the
+author's unless marked ⚠️:
+- **103, morale inside, and the battle waits.** A man the morale step
+  broke stops fighting inside: an attacker leaves, a defender falls back
+  (holding or not) and, found by an attacker, gives himself up
+  (`Soldier.captured`). Neither side's break is judged while a fight with
+  men of both sides in it goes on (a house left empty is searched, not
+  waited for). `GameOptions.moraleInside`.
+- **104, the counterattack inside.** Defenders inside retake rooms the
+  attacker took and left; a defending force's assault on an attacker
+  fighting in its house goes in at the door and clears the rooms back by
+  the same drill (the resolver's teams now belong to either side).
+  Decision 60's reserve counts a post whose house is being cleared as
+  lost and makes for the door. `GameOptions.counterattackInside`.
+- **105, the reserve held back** (ruled the same day): a reserve neither
+  fires nor assaults until committed, and the attacker's brief is the
+  position held, reserves left out (`briefedObjective` requires them).
+  `yokneamHouseReserve`: the reserve 88 m south of the house, in cover.
+  Re-measured (balance.md, *The reserve held back*): reference medians
+  3:1 46% and 2:1 19.5% (unmoved); plain-script Tel Azeka 36% → 21% (the
+  brief); raid 10% → 5%; the house with a reserve 43%.
+- **106, a house left only by order** (ruled in three steps the same
+  evening): the drill's defender in a house fires from it and never moves
+  or assaults out; leaving is the commander's decision — doctrine
+  prescribes no case (sources.md, *Who decides that a defender leaves*).
+  House 83% → 88%; with the reserve 43% → 38%, the reserve inside in 83 of
+  200 (balance.md, *The house held from inside*).
+- **107, disengagement criteria** (`Game.setDisengagement`): an enemy past
+  a line, or losses at a share; to a named position; by the Break Contact
+  drill (two teams bounding, smoke, no charging). Never fires at half
+  (the side breaks first); at a quarter it hands Tel Azeka over (21% →
+  49%).
+- **108, a battle's score** (`src/app/score.ts`): mission 100, men up to
+  40, time up to 30, beside the winner; in the debrief and the harness.
+  Breaking contact still loses points (balance.md, *The score*).
+- **109, smoke before the bound and a delay mission**: Break Contact
+  screens first; `delayUntil` (a delay's turn, the attack's deadline,
+  never beside a time limit); `telAzekaDelay`.
+- **Measured** (balance.md, *Morale inside and the counterattack*): house
+  58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
+  counterattack has no scenario yet: two placements tried, both decided
+  in turn 1 by assaults in the open.
+
+Yesterday's header (decisions 98–102, the house scenario) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-20, night — the header*.
+
 ## 2026-10-20, night — the header
 
 As it stood at `e4f1d29`, before decisions 103 and 104.
