@@ -744,3 +744,37 @@ describe("the next squad into a house (decision 100)", () => {
     expect(checked).toBeGreaterThan(0);
   });
 });
+
+describe("a defender holding a house (rules decision 106)", () => {
+  // The author, 2026-10-21: "a defender holding a house fights from it and doesn't assault out of it".
+  const house = {
+    id: "house",
+    kind: "building" as const,
+    height: 6,
+    footprint: { shape: "polygon" as const, points: [{ x: -8, y: -6 }, { x: 8, y: -6 }, { x: 8, y: 6 }, { x: -8, y: 6 }] },
+  };
+  const hold: DrillTask = { side: "RED", attacking: false, objective: { x: 0, y: 600 } };
+  function acts(at: { x: number; y: number }) {
+    const g = new Game({ seed: 3, trackIntel: false, enforceC2: false, terrain: { objects: [house] } });
+    g.addUnit(makeInfantry("R", "RED", "squad", at, 8));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: at.x, y: 20 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    const did: string[] = [];
+    const assault = g.assault.bind(g), fire = g.fire.bind(g);
+    g.assault = (a, t, n) => (did.push("assault"), assault(a, t, n));
+    g.fire = ((a: string, ...rest: unknown[]) => (did.push("fire"), (fire as (...x: unknown[]) => unknown)(a, ...rest))) as typeof g.fire;
+    drillCombat(g, hold, PLAIN_SCRIPT, new DrillState());
+    return did;
+  }
+
+  it("fires from the house at an enemy at its walls, and does not assault out of it", () => {
+    const inside = acts({ x: 0, y: 0 });
+    expect(inside).not.toContain("assault");
+    expect(inside).toContain("fire");
+  });
+
+  it("still assaults from the open, as before", () => {
+    expect(acts({ x: 40, y: 10 })).toContain("assault");
+  });
+});

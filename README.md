@@ -3399,6 +3399,19 @@ on the stated reasoning, still awaiting the author's word.
       platoon's reserve 88 m south of the house's door, in full cover, out
       of sight of the platoon's start (the author: "farther back").
       ⚠️ Ours: the exact spot.
+106. ✅ **A defender holding a house fights from it, and does not assault
+    out of it** (the author, 2026-10-21: "a defender holding a house fights
+    from it and doesn't assault out of it"). The computer's drill gave every
+    defender the assault rule, so a squad in a house came out on turn 1 and
+    assaulted the platoon in the open at its door: in `yokneamHouse` and
+    `yokneamHouseReserve` that decided most battles before any fight
+    inside. Now a defending force standing in a building fires from it and
+    never assaults out; the attacker comes to it, and the fight inside
+    decides. A force in the open assaults as before, a committed reserve's
+    counterattack among them.
+    - It is the drill's, as squads are scripted (decision 60's reserve
+      likewise): a player defending a house may still order an assault out
+      of it. ⚠️ Ours: the engine does not refuse one.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

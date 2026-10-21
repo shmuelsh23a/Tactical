@@ -1386,7 +1386,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     if (u.covering) game.setCovering(u.id, false);
     // A force fighting inside cannot go out to assault: it fires from its windows (decision 98).
     // A defender already in a fight is gone in after only by the next squad (decision 100).
-    if (u.kind !== "command" && !fight && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
+    // A defender holding a house fights from it and does not assault out of it (decision 106).
+    const holdsHouse = !task.attacking && game.closedTerrain && game.interior.buildingAt(game.terrain, u.position) !== undefined;
+    if (u.kind !== "command" && !fight && !holdsHouse && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {
