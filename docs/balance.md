@@ -5256,13 +5256,20 @@ container.
 
 ## The house held from inside, with and without a reserve, 2026-10-21 (decision 106)
 
-A defender in a house fires from it and no longer assaults out of it.
-`scenario-sim --n 200`, seed 1000 (±7 points at 95%):
+A defender in a house does not go out to assault an enemy within 10 m of
+its walls (`COMING_IN_M`); one farther out it may. First built as "never
+assaults out" and then refined by the author the same evening; both
+measured. `scenario-sim --n 200`, seed 1000 (±7 points at 95%):
 
-| Scenario | Attacker wins | Median turns | Attacker down | Defender down | Reserve committed / inside |
-|---|---|---|---|---|---|
-| `yokneamHouse` (was 83%) | **88%** | 19 | 17% | 39% | — |
-| `yokneamHouseReserve` (was 43%) | **38%** | 8 | 44% | 54% | 92% / 83 of 200 (mean turn 3.4) |
+| Scenario | Before 106 | Never out | **At the walls only** | Median turns | Attacker down | Defender down | Reserve committed / inside |
+|---|---|---|---|---|---|---|---|
+| `yokneamHouse` | 83% | 88% | **87%** | 19 | 17% | 38% | — |
+| `yokneamHouseReserve` | 43% | 38% | **39%** | 8 | 44% | 54% | 91% / 82 of 200 (mean turn 3.4) |
+
+- **The refinement changes nothing here**, within noise: in both scenarios
+  the platoon starts at the house's walls, so every enemy the defender
+  could assault is about to come in. It matters where an enemy stands
+  farther off.
 
 - **No more turn-1 brawl at the door**: the attacker's losses in the house
   fall 21% → 17%, and it carries the house a little more often.

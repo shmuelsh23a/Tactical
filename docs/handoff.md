@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: his "later" is built and measured: decisions 103-106 cover morale inside, the counterattack inside, a reserve held back out of the brief, and a defender who fights from his house without assaulting out of it. The house goes to the attacker 88%; with a reserve, 38%, and the reserve gets into the fight inside in two battles in five. Still waiting on him: the 2:1 median (19.5%), the force-quality matrix and the AI commanders.**
+**Next, in one line: his "later" is built and measured: decisions 103-106 cover morale inside, the counterattack inside, a reserve held back out of the brief, and a defender who does not go out to assault the enemy at his walls but is not static. The house goes to the attacker 87%; with a reserve, 39%, and the reserve gets into the fight inside in two battles in five. Still waiting on him: the 2:1 median (19.5%), the force-quality matrix and the AI commanders.**
 
 **Current as of 2026-10-21, evening** (decision 106's commit, pushed). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
@@ -24,10 +24,13 @@ author's unless marked ⚠️:
   Re-measured (balance.md, *The reserve held back*): reference medians
   3:1 46% and 2:1 19.5% (unmoved); plain-script Tel Azeka 36% → 21% (the
   brief); raid 10% → 5%; the house with a reserve 43%.
-- **106, a house held from inside** (ruled the same evening): the drill's
-  defender in a building fires from it and never assaults out of it.
-  House 83% → 88%; with the reserve 43% → 38%, the reserve inside the house
-  in 83 of 200 (balance.md, *The house held from inside*).
+- **106, the enemy at the walls** (ruled, then refined the same evening:
+  "I don't want the defender to be static"): the drill's defender in a
+  house does not go out to assault an enemy within 10 m of its walls
+  (`COMING_IN_M`, ours), but may go out after one farther off, and may
+  leave to reposition (allowed, not scripted yet). House 83% → 87%; with
+  the reserve 43% → 39%, the reserve inside in 82 of 200 (balance.md,
+  *The house held from inside*).
 - **Measured** (balance.md, *Morale inside and the counterattack*): house
   58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
   counterattack has no scenario yet: two placements tried, both decided
@@ -65,7 +68,7 @@ out of here on purpose:
 ## Green as of 2026-10-21, evening (decision 106)
 
 ```
-npm run check       lint + typecheck clean, 1,128 tests, 76 files
+npm run check       lint + typecheck clean, 1,129 tests, 76 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -74,7 +77,7 @@ npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only doo
 npm run scenario-sim -- --n 100 --scenario yokneamRaid
                     the raid: 10% since decisions 103-104 (16% before)
 npm run scenario-sim -- --n 200 --scenario yokneamHouse
-                    the house: 88% since decisions 103-106 (58% before)
+                    the house: 87% since decisions 103-106 (58% before)
 npm run scenario-sim -- … --attack-plan entry=top,grenades=no --defence-plan storeys=1,windows=no,expects=above,hold
                     each side's plan inside a building (decision 101)
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -131,7 +134,10 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 - **The plain script's Tel Azeka fell 36% → 21%** once the brief left the
   reserve out; the reference plans did not move. Not yet looked into why.
-- **Today's ⚠️, none questioned yet:** cornered means found (an attacker
+- **A scripted move out of the house** (decision 106: "allowed, not
+  scripted yet"): when the drill's defender should leave its house to
+  reposition or counterattack, by its own rule, when he wants it.
+- **Today's ⚠️, none questioned yet:** the 10 m of "about to come in"; cornered means found (an attacker
   has him in sight), and he gives himself up before that attacker fires;
   a broken attacker or counterattacker is gone at once (no walk out); a
   room is retaken only with nobody of the attacker's in it; a
