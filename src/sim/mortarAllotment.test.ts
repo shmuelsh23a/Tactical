@@ -4,7 +4,7 @@ import { telAzekaAssault2Listing } from "../app/scenarios/telAzekaAssault2.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { ARTILLERY_LIFT_M, FIRE_RESERVE, tubesOf } from "../app/computerSide.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
-import { Game, distance, explosiveFor, makeCommandGroup, makeInfantry, replayGame, type Side } from "../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, Game, distance, explosiveFor, makeCommandGroup, makeInfantry, replayGame, type Side } from "../engine/index.js";
 import { CHECKED_SUPPRESSION_REACH } from "../engine/data/morale.js";
 
 /**
@@ -69,9 +69,10 @@ describe("fire plans that set missions aside (decision 93)", () => {
   };
 
   // At the end of a battle: missions the side fired on `at`, and those it had left of `weapon`.
-  const ledger = (g: Game, side: Side, weapon: string, at: { x: number; y: number }) => ({
-    // On the reserved point itself, as the reserve counts it.
-    on: g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) < 1).length,
+  const ledger = (g: Game, side: Side, weapon: string, at: { x: number; y: number }, within = 1) => ({
+    // On the reserved point as the reserve counts it: the defender's on the point itself,
+    // the attacker's anywhere within reach of it, where it found the enemy (drill audit, A8).
+    on: g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) < within).length,
     left: g.fireMissionsLeft(side, weapon) ?? 0,
   });
 
@@ -98,7 +99,7 @@ describe("fire plans that set missions aside (decision 93)", () => {
       const tubes = tubesOf(g, "BLUE");
       const heavy = tubes[tubes.length - 1]!;
       const target = g.registeredTargets.find((t) => t.side === "BLUE" && t.weapon === heavy)!.at;
-      const a = ledger(g, "BLUE", heavy, target);
+      const a = ledger(g, "BLUE", heavy, target, ADJUSTMENT_RADIUS_M);
       expect(a.left).toBeGreaterThanOrEqual(Math.max(0, FIRE_RESERVE.attackerPriority - a.on));
     }
     // The defender's check is not vacuous: in some of these the FPF was never fired.
@@ -135,8 +136,10 @@ describe("artillery allotted to a company (decision 95)", () => {
       expect(guns.length).toBeLessThanOrEqual(allotted);
       // All of it on the priority target when the allotment is no more than its reserve;
       // beyond it, the rest is free for planned targets (decision 93's plan).
-      if (allotted <= FIRE_RESERVE.attackerPriority) for (const m of guns) expect(m.target).toEqual(priority);
-      fired += guns.filter((m) => m.target.x === priority.x && m.target.y === priority.y).length;
+      // On it means within reach of it: the priority target is fired where the enemy was found near it (drill audit, A8).
+      const onIt = (m: { target: { x: number; y: number } }) => distance(m.target, priority) < ADJUSTMENT_RADIUS_M;
+      if (allotted <= FIRE_RESERVE.attackerPriority) for (const m of guns) expect(onIt(m)).toBe(true);
+      fired += guns.filter(onIt).length;
       // Never called within 300 m of any of its forces where they stood at the
       // call — the end of the turn before (onTurn runs at a turn's end). The
       // moving squads are held to 400 m there (two turns' walk more); scouts,

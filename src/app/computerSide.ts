@@ -110,8 +110,8 @@ export const PRIORITY_CALL_M = 400;
  * reserve held for it has spent. Read off the game, so a saved battle resumes
  * with the same reserve.
  */
-function firedAt(g: Game, side: Side, weapon: string, at: Point): number {
-  return g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) < 1).length;
+function firedAt(g: Game, side: Side, weapon: string, at: Point, within = 1): number {
+  return g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) < within).length;
 }
 
 /**
@@ -131,7 +131,28 @@ export function priorityReserve(g: Game, side: Side, priority: Point | undefined
   const tubes = tubesOf(g, side);
   const tube = tubes[tubes.length - 1];
   if (!tube || !priority) return { held: 0 };
-  return { tube, held: Math.max(0, FIRE_RESERVE.attackerPriority - firedAt(g, side, tube, priority)) };
+  // Fired on the target where it was found, within reach of the point (drill audit, A8), counts against it too.
+  return { tube, held: Math.max(0, FIRE_RESERVE.attackerPriority - firedAt(g, side, tube, priority, ADJUSTMENT_RADIUS_M)) };
+}
+
+/**
+ * Where the priority target is fired: on the enemy the side has found within
+ * reach of the point — fresh, and placed to within `aimWithin` if given —
+ * else on the point itself. "Final adjustments to supporting fires are
+ * necessary to reflect the actual versus the planned tactical situation"
+ * (ATP 3-21.10 (2026), para 2-173; drill audit, A8). Within reach of a
+ * registered point the tube is still on the mark, so nothing is lost in
+ * accuracy by it.
+ */
+export function priorityAim(g: Game, side: Side, priority: Point, aimWithin?: number): Point {
+  const view = sideView(g, side);
+  const sure = (id: string) => aimWithin === undefined || (view.spreads.get(id) ?? 0) * CE_PER_SIGMA <= aimWithin;
+  const fresh = (id: string) => (g.contactFor(side, id)?.lastSeenTurn ?? -Infinity) >= g.turn - 1;
+  const found = view.units
+    .filter((u) => u.side !== side && !u.neutralized && !u.surrendered && fresh(u.id) && sure(u.id))
+    .filter((u) => distance(u.position, priority) <= ADJUSTMENT_RADIUS_M)
+    .sort((a, b) => distance(a.position, priority) - distance(b.position, priority))[0];
+  return found ? { ...found.position } : priority;
 }
 
 /** Whether `side` may lay a mortar screen: the 81 mm allotted with a mission to spare — beyond a reserve held on it. */
@@ -583,18 +604,20 @@ function callDoctrinalAttackerFire(
     g.callForFire(side, w, p, { method: "effect" });
     tally.missions++;
   };
-  // The priority target as the assault closes, by its tube's call and lift distances.
+  // The priority target as the assault closes, by its tube's call and lift
+  // distances — on the enemy where the side has found him near it ({@link priorityAim}).
   const clearOf = (p: Point, w: string) => ownClearOf(g, side, at.squads, p, w);
+  const aimed = priority ? priorityAim(g, side, priority, plan.aimWithin) : undefined;
   if (
-    priority &&
+    aimed &&
     reserveTube &&
     at.going &&
     at.lead <= priorityCallFor(reserveTube) &&
-    clearOf(priority, reserveTube) &&
+    clearOf(aimed, reserveTube) &&
     free.includes(reserveTube) &&
     held(reserveTube) > 0
   ) {
-    call(reserveTube, priority);
+    call(reserveTube, aimed);
     return;
   }
   if (!spare.length) return;
@@ -663,6 +686,9 @@ export function attackerPlan(objective: Point): { planned: Point[]; suspected: P
 export const BROWSER_ATTACK_PLAN: CompanyPlan = {
   recon: { scouts: 2, lookTurns: 4, scoutFrom: "vantage" },
   waitIn: "deadGround",
+  // Its scouts, already watching from their vantage points, become the base
+  // of fire the assault waits on (drill audit, A1; ATP 3-21.10 para 2-170).
+  scoutsSupport: true,
 };
 export const BROWSER_ATTACK_FIRE: FirePlanChoices = {
   ...DEFAULT_FIRE_CHOICES,

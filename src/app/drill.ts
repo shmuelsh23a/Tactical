@@ -204,6 +204,19 @@ export interface SquadDrill {
    */
   consolidate?: { nothingWithin: number; arc: number };
   /**
+   * Halting and bounding into cover (drill audit, A5). Once in contact, a
+   * squad that halts takes the nearest cover within `within` metres of
+   * where it stands — "the squads not in contact [take up] covered and
+   * concealed positions in place" (Battle Drill 2 step 10) — and a bound
+   * ends in the nearest cover within `within` of where it would have
+   * stopped: "the moving fire team proceeds to the next covered position"
+   * (step 13b(6)(e)). With none that near, it stops where it is.
+   *
+   * Absent: a halt is wherever the squad stood, and a bound ends at a
+   * point, in the open or not — ours.
+   */
+  coverInPlace?: { within: number };
+  /**
    * Screening smoke from the squad's own launchers (Battle Drill 2 step
    * 11a(3): the squad in contact "places **screening smoke** (M203 and
    * M320) to prevent the enemy from seeing the manoeuvre element"; 2A step
@@ -392,6 +405,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   shiftToFarFlank: { clear: 100 },
   leaderForward: { behind: 50 },
   consolidate: { nothingWithin: 100, arc: 120 },
+  coverInPlace: { within: 25 },
   screeningSmoke: { screens: 4 },
   fireTeams: { splitAt: 300, minMen: 6 },
   machineGuns: { range: 800 },
@@ -837,6 +851,47 @@ function waitNear(game: Game, door: Point, defender: Point, house: readonly Poin
   if (best) return best;
   const open = toward(door, from, Math.min(reach / 2, distance(door, from)));
   return distance(open, defender) <= reach && distance(open, door) <= reach ? open : undefined;
+}
+
+/**
+ * Whether the attack has seized its objective, for consolidation (Battle
+ * Drill 2 step 14): an assaulting force of ours is on it and no enemy the
+ * side knows of is within the drill's `consolidate.nothingWithin` of it.
+ * Never without `consolidate`.
+ */
+function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly Unit[], forces: readonly Unit[], company: CompanyOrders | undefined): boolean {
+  const c = drill.consolidate;
+  if (!c || !task.attacking || company?.hold) return false;
+  if (enemies.some((e) => distance(e.position, task.objective) <= c.nothingWithin)) return false;
+  return forces.some((o) => {
+    if (!inPlay(o) || o.kind === "command" || distance(o.position, task.objective) > c.nothingWithin) return false;
+    const k = platoonIn(company, o.id);
+    return ((k && company?.platoonTasks?.get(k)) ?? "assault") === "assault";
+  });
+}
+
+/**
+ * The nearest point with ground cover within `within` metres of `p`
+ * (`p` itself if it has some), never inside a building — going into one is
+ * a fight of its own (decision 96). None that near: undefined.
+ */
+function coverNear(game: Game, p: Point, within: number): Point | undefined {
+  if (game.groundCoverAt(p) !== "none") return p;
+  const houses = game.terrain.objects.filter((o) => o.kind === "building" && o.footprint.shape === "polygon");
+  for (let r = 5; r <= within; r += 5) {
+    let best: Point | undefined;
+    let bestD = Infinity;
+    for (let k = 0; k < 16; k++) {
+      const a = (k * Math.PI) / 8;
+      const q = { x: p.x + r * Math.cos(a), y: p.y + r * Math.sin(a) };
+      if (houses.some((o) => o.footprint.shape === "polygon" && pointInPolygon(q, o.footprint.points))) continue;
+      if (game.groundCoverAt(q) === "none") continue;
+      const d = distance(q, p);
+      if (d < bestD) { bestD = d; best = q; }
+    }
+    if (best) return best;
+  }
+  return undefined;
 }
 
 /** The enemies `side` knows of, where it last saw them — never where they are. */
@@ -1308,6 +1363,14 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       else stay();
       return;
     }
+    const seized = seizedBy(task, drill, enemies, forces, company);
+    if (seized && company && job === "support") {
+      // Step 14b: the base of fire moves up onto the objective, and holds it with the rest.
+      if (distance(u.position, task.objective) > drill.consolidate!.nothingWithin) {
+        game.setStandingOrder(u.id, { gait: "normal", destination: { ...task.objective } });
+        return;
+      }
+    }
     if (company && job === "support" && nearest) {
       const gun = u.mediumMg && drill.machineGuns ? Math.max(drill.attackFireRange, drill.machineGuns.range) : drill.attackFireRange;
       const canSee = freshEnemies(game, side, enemies).some((e) => game.canEngage(u, e));
@@ -1341,15 +1404,18 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     // Consolidation (Battle Drill 2 step 14): the objective is taken and
     // nothing is known to be near it, so hold it facing outward rather
-    // than press on past it.
-    if (drill.consolidate && task.attacking && job === "assault" && distance(u.position, task.objective) <= drill.consolidate.nothingWithin) {
+    // than press on past it. Taken means "once the assaulting squads have
+    // seized the enemy positions": nothing known near the objective as
+    // well as near the squad, or a squad 100 m short of a position it has
+    // not reached would stop there (drill audit, A7).
+    if (seized && (job === "assault" || job === "support") && distance(u.position, task.objective) <= drill.consolidate!.nothingWithin) {
       const near = enemies.filter((e) => distance(u.position, e.position) <= drill.consolidate!.nothingWithin);
       if (!near.length) {
         const onward = axisOf(u, task);
         const now = u.observationSector;
-        if (!now || Math.abs(now.bearing - onward) > 1 || now.width !== drill.consolidate.arc) {
+        if (!now || Math.abs(now.bearing - onward) > 1 || now.width !== drill.consolidate!.arc) {
           try {
-            game.setObservationSector(u.id, { bearing: onward, width: drill.consolidate.arc });
+            game.setObservationSector(u.id, { bearing: onward, width: drill.consolidate!.arc });
           } catch {
             // A force that cannot be given an arc just holds the ground.
           }
@@ -1403,7 +1469,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     const bounding = !inContact || !drill.overwatch || platoonBounds || (i + game.turn) % 2 === 0;
     if (!bounding) {
-      game.setStandingOrder(u.id, { gait: "normal" });
+      const hide = drill.coverInPlace ? coverNear(game, u.position, drill.coverInPlace.within) : undefined;
+      game.setStandingOrder(u.id, hide && distance(hide, u.position) > 1 ? { gait: "normal", destination: hide } : { gait: "normal" });
       return;
     }
     // By the company's axis, if it gave one, until the force has passed it.
@@ -1420,9 +1487,10 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       task.attacking && company && company.coveredRoutes !== false && game.terrain && enemies.length && nearest && distance(u.position, nearest.position) > COVERED.straightWithinM
         ? coveredStep(game.terrain, u.position, aim, step, enemies.map((e) => e.position))
         : undefined;
+    const end = covered ?? toward(u.position, aim, step);
     game.setStandingOrder(u.id, {
       gait: inContact ? drill.bound.gait : "normal",
-      destination: covered ?? toward(u.position, aim, step),
+      destination: (inContact && drill.coverInPlace ? coverNear(game, end, drill.coverInPlace.within) : undefined) ?? end,
     });
   });
   const done = game.executeStandingOrders(side);
@@ -1554,7 +1622,10 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
       const mark = enemies
         .filter((e) => distance(u.position, e.position) <= RIFLE_GRENADE_RANGE)
         .find((e) => !game.smoke.some((sm) => distance(sm.center, e.position) < sm.radius));
-      if (job2 === "support" && mark) {
+      // The support-by-fire team of a divided squad screens too (2A step 6c(3)): it is
+      // the one near enough for a rifle grenade, where a platoon's base of fire at
+      // 150 m and more never was (drill audit, A14).
+      if ((job2 === "support" || state.baseOfFire.has(u.id)) && mark) {
         try {
           game.deploySmoke("rifleGrenade", side, { ...mark.position });
           state.screens += 1;

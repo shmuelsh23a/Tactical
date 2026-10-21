@@ -3584,6 +3584,36 @@ on the stated reasoning, still awaiting the author's word.
       within 100 m of its own assault team (step 8c), and once that team
       stands on the objective with nothing within 100 m it goes on with its
       platoon (step 12b) instead of holding where it split for good.
+114. ✅ **The attack carried out as doctrine has it** (the author, 2026-10-21,
+    on the drill audit; every option the recommended one, the clear-cut
+    ones without a card each). How a plan is executed, not what it is:
+    - **The assault waits for its support to be set** (A1): the assault
+      holds short (`holdShort`, 200 m) until every supporting force — the
+      platoons on "support", and the scouts when they give a base of fire —
+      can engage a known enemy within its weapon's reach (400 m, a machine
+      gun 800 m), ATP 3-21.10 (2026) para 2-170. Once set, never held for it
+      again. ⚠️ Ours: `SUPPORT_SET_MAX_TURNS`, 6 turns of the assault
+      actually waiting, so a support that finds no field of fire does not
+      hold the attack for good. The browser computer's plan now gives one:
+      its scouts (`scoutsSupport`).
+    - **Lift or shift as written** (A2): already the doctrinal drill's
+      `shiftToFarFlank` (100 m), now the reference. ⚠️ The reason doctrine
+      gives — the risk to one's own men — is not modelled.
+    - **Halts and bounds end in cover** (A5, `coverInPlace`, 25 m ⚠️ ours):
+      Battle Drill 2 steps 10 and 13b(6)(e).
+    - **Consolidation on the seized position** (A7): only once nothing is
+      known within 100 m of the objective as well as of the squad, and the
+      base of fire then moves up onto it (step 14b).
+    - **The priority target where the enemy was found** (A8): within reach
+      of the briefed point (the adjustment radius, so still on the mark) on
+      the nearest sure fresh mark, ATP 3-21.10 para 2-173 — the scripted
+      commander and the asked one both. The reserve counts what was fired
+      within that reach.
+    - **The reserve before the base of fire** (A9): a spent assault commits
+      the reserve, and the base of fire only when there is none (paras
+      2-130, 2-176). The asked commander's question names which.
+    - **The 2A support team screens too** (A14): the base of fire at 150 m
+      and more never reached with a 100 m rifle grenade.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

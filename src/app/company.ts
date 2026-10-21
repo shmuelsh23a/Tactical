@@ -1,4 +1,4 @@
-import { distance, suppressionLevel, type Game, type Point, type Side, type Terrain, type Unit } from "../engine/index.js";
+import { MEDIUM_MG_BANDS, SMALL_ARMS_BANDS, distance, suppressionLevel, type Game, type Point, type Side, type Terrain, type Unit } from "../engine/index.js";
 import { bestVantages, nearestDeadGround } from "./deadGround.js";
 import { hasEyesOn, sideView } from "./hotseat.js";
 
@@ -95,6 +95,16 @@ export const HOLD_SHORT_M = 200;
  * far short of where the plan puts the enemy.
  */
 export const ASSAULT_POSITION_M = 250;
+
+/**
+ * Turns the assault waits short of the enemy for its support to be set
+ * (ATP 3-21.10 (2026), para 2-170: every force supporting the assault "set
+ * in their support by fire positions before the assault force crosses the
+ * probable line of deployment"), counted only while it is actually waiting
+ * there. ⚠️ Ours: a support force that can find no field of fire must not
+ * hold the attack for good.
+ */
+export const SUPPORT_SET_MAX_TURNS = 6;
 export const ASSAULT_POSITION_SEARCH_M = 150;
 
 /**
@@ -285,6 +295,10 @@ export class ScriptedCompany {
    * from strict to trivial measured the same 8% (balance.md).
    */
   private gateHolding = false;
+  /** The assault waits for its support to be set (drill audit, A1); and the support has been set, or waited for long enough. */
+  private supportHolding = false;
+  private supportSetDone = false;
+  private supportWaitTurns = 0;
   /** The commander declined to commit the base of fire when the assault was spent. */
   private recommitDeclined = false;
   /** The rearmost platoon has been put on flank and rear security (step 12b). */
@@ -411,6 +425,9 @@ export class ScriptedCompany {
       reinforced: [...this.reinforced],
       gaveUp: this.gaveUp,
       gateHolding: this.gateHolding,
+      ...(this.supportHolding ? { supportHolding: true } : {}),
+      ...(this.supportSetDone ? { supportSet: true } : {}),
+      ...(this.supportWaitTurns ? { supportWaitTurns: this.supportWaitTurns } : {}),
       securityGiven: this.securityGiven,
       ...(this.recommitDeclined ? { recommitDeclined: true } : {}),
       support: this.support,
@@ -442,6 +459,9 @@ export class ScriptedCompany {
     this.reinforced.push(...(snap.reinforced ?? []));
     this.gaveUp = snap.gaveUp ?? false;
     this.gateHolding = snap.gateHolding ?? false;
+    this.supportHolding = snap.supportHolding ?? false;
+    this.supportSetDone = snap.supportSet ?? false;
+    this.supportWaitTurns = snap.supportWaitTurns ?? 0;
     this.recommitDeclined = snap.recommitDeclined ?? false;
     this.securityGiven = snap.securityGiven ?? false;
     this.support = snap.support;
@@ -578,6 +598,7 @@ export class ScriptedCompany {
     if (gate && this.released !== undefined) {
       this.gateHolding = !this.assaultMayGo(game, gate);
     }
+    if (this.released !== undefined) this.waitForSupport(game);
     return this.currentOrders(game, { holding, asked: decided !== undefined });
   }
 
@@ -680,6 +701,55 @@ export class ScriptedCompany {
     return false;
   }
 
+  /**
+   * Hold the assault short of the enemy until every force supporting it is
+   * set: in play and able to engage an enemy the side knows of (ATP 3-21.10
+   * (2026), para 2-170). Supporting forces are the platoons on "support" and,
+   * when they give a base of fire, the scouts. Once set, the assault is never
+   * held for it again; a support that cannot get set is waited for
+   * {@link SUPPORT_SET_MAX_TURNS} turns of the assault actually waiting.
+   */
+  private waitForSupport(game: Game): void {
+    this.supportHolding = false;
+    if (this.supportSetDone) return;
+    const supporting = game.units.filter((u) => {
+      if (u.side !== this.side || u.kind !== "infantry" || u.neutralized || u.routing || u.surrendered) return false;
+      if (this.scouts.has(u.id)) return this.support;
+      const key = this.platoonOfSquad.get(u.id) ?? this.platoonOfSquad.get(u.id.split("/")[0]!);
+      return key !== undefined && this.platoonTask(key) === "support";
+    });
+    if (!supporting.length) return;
+    const view = sideView(game, this.side);
+    const foes = view.units
+      .filter((u) => u.side !== this.side && !u.neutralized && !u.surrendered)
+      .map((f) => game.units.find((u) => u.id === f.id))
+      .filter((u): u is Unit => u !== undefined);
+    // In its weapon's reach (the rules' own tables: 400 m, a machine gun 800 m) with eyes on.
+    const reach = (u: Unit) => (u.mediumMg ? MEDIUM_MG_BANDS : SMALL_ARMS_BANDS).at(-1)!.maxRange;
+    const set = supporting.every((u) => foes.some((f) => {
+      if (distance(u.position, f.position) > reach(u)) return false;
+      try {
+        return game.canEngage(u, f);
+      } catch {
+        return false;
+      }
+    }));
+    if (set) {
+      this.supportSetDone = true;
+      return;
+    }
+    // Waiting counts only while an assaulting squad is at the line, held.
+    const atTheLine = foes.length > 0 && [...this.platoons(game)].some(
+      ([key, squads]) => this.platoonTask(key) === "assault" && squads.some((u) => foes.some((f) => distance(u.position, f.position) <= HOLD_SHORT_M)),
+    );
+    if (this.supportWaitTurns >= SUPPORT_SET_MAX_TURNS) {
+      this.supportSetDone = true;
+      return;
+    }
+    if (atTheLine) this.supportWaitTurns += 1;
+    this.supportHolding = true;
+  }
+
   /** How far a platoon's nearest squad is from where the plan puts the enemy. */
   private platoonRange(squads: readonly Unit[]): number {
     return Math.min(...squads.map((u) => distance(u.position, this.objective)));
@@ -712,7 +782,7 @@ export class ScriptedCompany {
       platoonOf: this.platoonOfSquad,
       ...(this.tasks.size ? { platoonTasks: this.tasks } : {}),
       ...(this.bounding ? { boundByPlatoon: true } : {}),
-      ...(this.holdingShort || this.gateHolding ? { holdShort: true } : {}),
+      ...(this.holdingShort || this.gateHolding || this.supportHolding ? { holdShort: true } : {}),
       fallBackTo: this.home,
       ...(this.plan.coveredRoutes === false ? { coveredRoutes: false } : {}),
       ...(this.plan.arriveTogether === false ? { arriveTogether: false } : {}),
@@ -799,7 +869,21 @@ export class ScriptedCompany {
     const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered && !this.scouts.has(u.id);
     const platoons = [...this.platoons(game)];
     const assault = platoons.filter(([key]) => this.platoonTask(key) === "assault");
-    return assault.length > 0 && !assault.some(([, us]) => us.some(fighting)) && this.baseOfFire(game).length > 0;
+    return assault.length > 0 && !assault.some(([, us]) => us.some(fighting)) && this.toCommit(game).length > 0;
+  }
+
+  /**
+   * What a spent assault commits: its reserve first, which is what a reserve
+   * is for — "to exploit success, defeat enemy counterattacks, or restore
+   * momentum to a stalled attack" (ATP 3-21.10 (2026), para 2-130) — and the
+   * base of fire only when there is none, since "the support element must
+   * not reduce its suppressive fires as the assault element closes" (para
+   * 2-176; drill audit, A9).
+   */
+  toCommit(game: Game): string[] {
+    const fighting = (u: Unit) => !u.neutralized && !u.routing && !u.surrendered && !this.scouts.has(u.id);
+    const reserve = [...this.platoons(game)].filter(([key, us]) => this.platoonTask(key) === "reserve" && us.some(fighting)).map(([key]) => key);
+    return reserve.length ? reserve : this.baseOfFire(game);
   }
 
   /** The platoons on "support" with a squad still fighting: what a spent assault can commit. */
@@ -809,13 +893,14 @@ export class ScriptedCompany {
   }
 
   /**
-   * Commit the base of fire (Battle Drill 2 step 12: reinforce the assault):
-   * its platoons go in, and fires held for an assault held short lift. Rear
-   * security, a reserve and a platoon told to halt or withdraw keep their
-   * tasks; a suppression gate gives up waiting.
+   * Commit the reserve, or with none the base of fire (Battle Drill 2 step
+   * 12: reinforce the assault; {@link toCommit}): its platoons go in, and
+   * fires held for an assault held short lift. Rear security and a platoon
+   * told to halt or withdraw keep their tasks; a suppression gate gives up
+   * waiting.
    */
   recommit(game: Game): void {
-    for (const key of this.baseOfFire(game)) this.tasks.set(key, "assault");
+    for (const key of this.toCommit(game)) this.tasks.set(key, "assault");
     if (this.holdingShort) this.liftFires();
     this.gaveUp = true;
     this.gateHolding = false;
@@ -873,6 +958,10 @@ export interface CompanySnapshot {
   reinforced?: string[];
   gaveUp?: boolean;
   gateHolding?: boolean;
+  /** The wait for the support to be set (drill audit, A1); absent: not waiting, not yet set, no turns waited. */
+  supportHolding?: boolean;
+  supportSet?: boolean;
+  supportWaitTurns?: number;
   securityGiven?: boolean;
   /** Whether the commander declined to commit the base of fire (2026-10-12); absent: no. */
   recommitDeclined?: boolean;

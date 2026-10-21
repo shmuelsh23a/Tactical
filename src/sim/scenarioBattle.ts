@@ -36,6 +36,7 @@ import {
   liftFor,
   ownClearOf,
   firingOnUs,
+  priorityAim,
   priorityReserve,
   mortarFree,
   planDefenderFires,
@@ -817,15 +818,17 @@ function askPlatoons(
   // send it in? Unasked, a company would wait out the clock for an assault
   // that no longer exists (balance.md, *Why the 2:1 plans fail*).
   if (company.assaultSpent(g)) {
-    const rest = company.baseOfFire(g);
+    const rest = company.toCommit(g);
+    // The reserve first (drill audit, A9); the base of fire only when there is none.
+    const what = rest.some((k) => company.platoonTask(k) === "reserve") ? "reserve" : "base of fire";
     const a = question({
       id: `recommit.${g.turn}`,
       kind: "noul",
       ask:
         `Your assault is out of the fight: no squad of an assaulting platoon is still fighting. ` +
-        `Send your base of fire, ${rest.join(" and ")}, in to assault${company.holdsShort ? ", lifting your fires" : ""}?`,
+        `Send your ${what}, ${rest.join(" and ")}, in to assault${company.holdsShort ? ", lifting your fires" : ""}?`,
       options: [
-        { id: "yes", label: "yes: the base of fire goes in" },
+        { id: "yes", label: `yes: the ${what} goes in` },
         { id: "no", label: "no: it stays where it is (you will not be asked again)" },
       ],
     });
@@ -1073,7 +1076,7 @@ function askAttackerFire(
             {
               id: "priority",
               label:
-                `your priority target, ${priorityName}: one of the ${reserve.held} missions held for it, on its registered data` +
+                `your priority target, ${priorityName}: one of the ${reserve.held} missions held for it, on its registered data, shifted onto the enemy if he has been seen near it` +
                 (reserve.tube === "artillery" ? ", by the battalion's artillery, landing two turns after the call" : "") +
                 (lead !== undefined ? `; your nearest squad is ${lead} m from it` : "") +
                 (lead !== undefined && lead <= DANGER_CLOSE_M ? " — DANGER CLOSE" : ""),
@@ -1092,7 +1095,7 @@ function askAttackerFire(
   });
   if (a === "hold") return;
   if (a === "priority") {
-    g.callForFire(side, reserve.tube!, priority!, { method: "effect" });
+    g.callForFire(side, reserve.tube!, priorityAim(g, side, priority!), { method: "effect" });
     result.missions[side]++;
     return;
   }
