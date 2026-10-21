@@ -294,8 +294,12 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     expect(g.assault("R-1", "B-1", 0).reason).not.toBe(GOES_INSIDE);
   });
 
-  it("clears a house sooner with a second squad joining", () => {
-    const turnsToEnd = (join: boolean, seed: number) => {
+  it("clears a house sooner, and more often, with a second squad joining", () => {
+    // Turns to clear it, or undefined when it was not cleared. Since the drill
+    // audit (I1, men left behind as security) a lone squad is drained and
+    // repulsed sooner, so turns to *any* end rewarded the squad that lost
+    // quickly; what joining buys is clearing.
+    const turnsToClear = (join: boolean, seed: number) => {
       const g = battle(seed);
       goIn(g);
       closeTurn(g);
@@ -303,13 +307,20 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
       if (join) { g.advanceToPhase("combat"); expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE); }
       for (let t = 1; t < 120; t++) {
         const r = closeTurn(g);
-        if (r.some((x) => x.outcome)) return t;
+        const end = r.find((x) => x.outcome);
+        if (end) return end.outcome === "cleared" ? t : undefined;
         g.advanceToPhase("summary");
       }
-      return 120;
+      return undefined;
     };
-    let alone = 0, joined = 0;
-    for (let seed = 1; seed <= 16; seed++) { alone += turnsToEnd(false, seed); joined += turnsToEnd(true, seed); }
+    let alone = 0, joined = 0, clearedAlone = 0, clearedJoined = 0;
+    for (let seed = 1; seed <= 16; seed++) {
+      const a = turnsToClear(false, seed), j = turnsToClear(true, seed);
+      if (a !== undefined) clearedAlone++;
+      if (j !== undefined) clearedJoined++;
+      if (a !== undefined && j !== undefined) { alone += a; joined += j; }
+    }
+    expect(clearedJoined).toBeGreaterThan(clearedAlone);
     expect(joined).toBeLessThan(alone);
   });
 

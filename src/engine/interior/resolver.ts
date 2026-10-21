@@ -76,6 +76,12 @@ export interface InteriorSoldier {
   holds?: boolean;
   /** A defender posted at a window (decision 98): the window cell, and the cell he stands on beside it. He is at it while he stands there. */
   window?: { cell: number; at: number };
+  /**
+   * An attacker left behind to secure a cleared room's way to ground not yet
+   * cleared (drill audit, I1; ATP 3-06.11 (2024), para C-107): the cell he
+   * holds. He is in no team from then on, and fights from it.
+   */
+  post?: { storey: number; cell: number };
   /** Broken, as morale outside has judged him (decision 103): he fires no more; an attacker leaves, a defender falls back or, found, gives himself up. */
   broken?: boolean;
   /** A broken defender who gave himself up, cornered (decision 103): out of the fight, a prisoner, not hit. */
@@ -104,6 +110,15 @@ export interface AttackPlan {
   grenades: boolean;
   /** Teams of up to four, leader first. Each team clears its own rooms. */
   teams: string[][];
+  /**
+   * Men who do not go into a stack: the squad leader, and a remainder too
+   * small to clear a room (ATP 3-06.11 (2024), paras C-79, C-108; drill
+   * audit, I5). They follow the first team and are the first left behind as
+   * security (I1).
+   */
+  security?: string[];
+  /** Each team's squad, in order: a squad's teams take turns going in (drill audit, I4). Absent: one squad. */
+  squads?: number[];
   /** How a top-down attack reaches the roof (ATP 3-06.11 (2024), para C-30). All take `roofAccessSeconds` for now. */
   roofAccess?: "adjacentRoof" | "ladder" | "vehicle";
 }
@@ -175,6 +190,16 @@ interface Team {
   grenades: boolean;
   /** A counterattacking team on its way up or down the stairs: the storey it is going to. */
   next?: number;
+  /**
+   * Men who go with the team but not in its stack (drill audit, I5): the
+   * squad leader and a remainder too small to clear, kept back in the held
+   * ground behind it — the first left as security (I1).
+   */
+  trail?: InteriorSoldier[];
+  /** Seconds of seeing to a man put out during the stack or the entry, owed at "CLEAR" (drill audit, I2). */
+  owed?: number;
+  /** Which squad's teams it is one of: a squad's teams take turns going in (drill audit, I4). */
+  squad?: number;
 }
 
 const { outside: OUTSIDE, floor: FLOOR, wall: WALL, window: WINDOW, door: DOOR, stair: STAIR } = CELL_KIND;
@@ -298,7 +323,7 @@ export class InteriorFight {
     // The attackers at their way in: outside the front door, or at the head of the stairs.
     const start = this.entryCell();
     const firstStorey = this.order[0]!;
-    for (const ids of input.attack.teams) {
+    input.attack.teams.forEach((ids, k) => {
       const members = ids.map((id) => {
         const m = this.man(id, this.attackerSide, firstStorey, start, false);
         // Every man carries his grenades; the plan says whether he throws them (decision 101).
@@ -306,8 +331,10 @@ export class InteriorFight {
         this.soldiers.push(m);
         return m;
       });
-      this.teams.push({ side: this.attackerSide, members, storey: firstStorey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned });
-    }
+      this.teams.push({ side: this.attackerSide, members, storey: firstStorey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned, squad: input.attack.squads?.[k] ?? 0 });
+    });
+    this.squadsIn = Math.max(0, ...(input.attack.squads ?? [0])) + 1;
+    this.addTrail(input.attack.security ?? [], firstStorey, start);
     // Coming down from the roof: getting up there takes time, and the teams
     // come through the hatch one at a time (C-30, "force size is more
     // limited") — the first takes the top storey's stair room, a grenade down
@@ -318,11 +345,107 @@ export class InteriorFight {
         team.phase = "roof";
         // The first after the climb; each next one's turn is set when the one before goes through.
         team.until = k === 0 ? CLOSE_QUARTERS.roofAccessSeconds : Number.MAX_SAFE_INTEGER;
-        for (const m of team.members) m.waiting = true;
+        for (const m of [...team.members, ...(team.trail ?? [])]) m.waiting = true;
       });
       this.lastProgress = CLOSE_QUARTERS.roofAccessSeconds;
     }
   }
+
+  /**
+   * The men who go in with the first team without stacking (drill audit,
+   * I5): with no team to follow, they make one, as before.
+   */
+  private addTrail(ids: readonly string[], storey: number, cell: number, to?: Team): void {
+    if (!ids.length) return;
+    const men = ids.map((id) => {
+      const m = this.man(id, this.attackerSide, storey, cell, false);
+      m.grenades = CLOSE_QUARTERS.grenadesEach;
+      this.soldiers.push(m);
+      return m;
+    });
+    const first = to ?? this.teams.find((t) => t.side === this.attackerSide && t.members.some((m) => !m.out));
+    if (first) first.trail = [...(first.trail ?? []), ...men];
+    else this.teams.push({ side: this.attackerSide, members: men, storey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned });
+  }
+
+  /**
+   * A clearing team with nobody left in it goes on with what it left behind
+   * (drill audit, I1): its trail, else the men posted as security — on its
+   * storey first — who leave their posts to clear the rest. Without this the
+   * house stood half cleared, held by sentries nobody led on.
+   */
+  private reform(team: Team): void {
+    const trail = (team.trail ?? []).filter((m) => this.active(m));
+    const posted = this.soldiers
+      .filter((m) => m.side === this.attackerSide && m.post && this.active(m) && !this.teams.some((t) => t.members.includes(m)))
+      .sort((a, b) => Number(a.storey !== team.storey) - Number(b.storey !== team.storey) || a.storey - b.storey);
+    const pool = trail.length ? trail : posted.filter((m) => m.storey === posted[0]?.storey).slice(0, 4);
+    if (!pool.length) return;
+    for (const m of pool) m.post = undefined;
+    team.trail = (team.trail ?? []).filter((m) => !pool.includes(m));
+    team.members = pool;
+    team.storey = pool[0]!.storey;
+    team.phase = "pick";
+    team.owed = 0;
+  }
+
+  /** The trail keeps a step behind its team, in ground already held: at the way in while the team takes a room. */
+  private trailOn(team: Team): void {
+    const leader = team.members.find((m) => !m.out);
+    for (const m of team.trail ?? []) {
+      if (!this.active(m) || m.storey !== team.storey) continue;
+      const busy = team.phase === "stack" || team.phase === "enter" || team.phase === "consolidate";
+      const goal = busy && team.approach >= 0 ? team.approach : leader?.cell;
+      if (goal !== undefined) this.walk(m, goal, -1, 2);
+    }
+  }
+
+  /**
+   * Does a cleared room hold a way to ground not yet cleared — a door to an
+   * uncleared room, the stairs while a storey is still to clear, or the
+   * street door (C-107: "entrances to uncleared rooms, building exits,
+   * stairways")? The cell to hold it from, if so: inside the room, beside it.
+   */
+  private wayToHold(storey: number, room: number): number | undefined {
+    const p = this.plan.storeys[storey]!;
+    const cleared = this.cleared[storey]!;
+    const inside = (door: number) => this.around(door).find((j) => p.roomOf[j] === room);
+    for (let i = 0; i < p.cells.length; i++) {
+      if (p.cells[i] !== DOOR) continue;
+      const [a, b] = this.sidesOf(storey, i);
+      const other = a === room ? b : b === room ? a : undefined;
+      if (other === undefined) continue;
+      const open = other === OUT_OF_DOORS ? storey === 0 : other >= 0 && !cleared[other] && !p.cutOff.includes(other);
+      if (open) {
+        const c = inside(i);
+        if (c !== undefined) return c;
+      }
+    }
+    const st = this.plan.stairwell;
+    if (st && this.stairRoom(storey) === room && this.cleared.some((c, k) => k !== storey && !c.every((v) => v === 1))) return st.y * this.plan.width + st.x;
+    return undefined;
+  }
+
+  /**
+   * Leave a man behind in a room just cleared, if it holds a way to ground
+   * not yet cleared (drill audit, I1; C-107): the trail first, then the
+   * team's last man while two are left to clear. "This can quickly drain the
+   * clearing squad" — it does. ⚠️ Ours: the two a team keeps.
+   */
+  private postGuard(team: Team): void {
+    const cell = this.wayToHold(team.storey, team.room);
+    if (cell === undefined) return;
+    const trail = (team.trail ?? []).filter((m) => this.active(m) && m.storey === team.storey);
+    const clearing = team.members.filter((m) => !m.out);
+    const guard = trail[0] ?? (clearing.length > 2 ? clearing[clearing.length - 1] : undefined);
+    if (!guard) return;
+    if (team.trail) team.trail = team.trail.filter((m) => m !== guard);
+    team.members = team.members.filter((m) => m !== guard);
+    guard.post = { storey: team.storey, cell };
+  }
+
+  /** How many squads have come in: a joining one is the next (drill audit, I4). */
+  private squadsIn = 1;
 
   private stairsFieldCache: Int32Array[] = [];
   /** Steps on a storey from its stairs. */
@@ -435,6 +558,9 @@ export class InteriorFight {
     if (this.finished) return;
     this.giveWay();
     for (const team of this.teams) this.drill(team);
+    for (const team of this.teams) this.trailOn(team);
+    // The men left as security go to the way they hold, and stay there (I1).
+    for (const m of this.soldiers) if (m.post && this.active(m) && m.storey === m.post.storey) this.walk(m, m.post.cell, this.plan.storeys[m.storey]!.roomOf[m.post.cell]!, 0);
     // Holding stops new retreats — but not a broken man's; a man already on a flight of stairs still comes off it.
     for (const m of this.soldiers) if (m.side !== this.attackerSide && !m.counter && (!(m.holds ?? this.fallback === "hold") || m.broken || m.retreat?.offStairs !== undefined)) this.fallBack(m);
     this.giveWay(); // found by a team that came on this second: he gives himself up before anyone fires
@@ -454,6 +580,7 @@ export class InteriorFight {
   // ---- the drill ---------------------------------------------------------
 
   private drill(team: Team): void {
+    if (team.side === this.attackerSide && team.phase !== "done" && !team.members.some((m) => !m.out)) this.reform(team);
     const men = team.members.filter((m) => !m.out);
     if (men.length === 0) { team.phase = "done"; return; }
     if (this.second < team.halted) return; // seeing to the wounded: nobody moves, though all still fire
@@ -473,7 +600,10 @@ export class InteriorFight {
         if (this.enemiesIn(team.storey, team.room, team.side).length > 0) { team.phase = "enter"; return; } // still a fight in it
         if (this.second >= team.until) {
           // The attacker's now; or, taken back by a counterattack, the defender's again (decision 104).
-          if (team.side === this.attackerSide) this.cleared[team.storey]![team.room] = 1;
+          if (team.side === this.attackerSide) {
+            this.cleared[team.storey]![team.room] = 1;
+            this.postGuard(team);
+          }
           else if (this.cleared[team.storey]![team.room]) { this.cleared[team.storey]![team.room] = 0; this.retaken++; }
           // 6: a room a defender already went back into is not taken back twice.
           this.changes[team.storey]!++;
@@ -503,6 +633,18 @@ export class InteriorFight {
     // — it is the room to take.
     const here = plan.roomOf[leader.cell]!;
     if (here >= 0 && this.toTake(team, storey, here) && !claimed.has(here)) return this.assault(team, here, leader.cell, false);
+    // A team goes in while another of its squad overwatches the hallway from
+    // held ground (ATP 3-06.11 (2024), para C-106: "two-to-three fire teams
+    // generally take turns … While one fire team clears a room, another
+    // normally provides overwatch in the hallway"; drill audit, I4): of a
+    // squad's teams on a storey, half at most go in at once, and a lone team
+    // goes in by itself. Another squad's teams take their own turns ("multiple
+    // teams can clear different rooms simultaneously"). ⚠️ Ours: the half.
+    if (team.side === this.attackerSide) {
+      const here = this.teams.filter((t) => t.side === team.side && t.squad === team.squad && t.storey === storey && t.phase !== "done" && t.phase !== "stairs" && t.members.some((m) => !m.out));
+      const going = here.filter((t) => t !== team && (t.phase === "stack" || t.phase === "enter")).length;
+      if (going >= Math.max(1, Math.floor(here.length / 2))) return;
+    }
     // Through held ground only, so the way to the door is the way the team can walk.
     const field = this.distances(storey, leader.cell, -1, team.side);
     let best = -1, bestRoom = -1, bestD = Infinity;
@@ -577,17 +719,16 @@ export class InteriorFight {
     const stairs = s.y * this.plan.width + s.x;
     team.storey = to;
     const down = to < from;
-    for (const m of men) { m.storey = to; m.cell = stairs; m.aim = undefined; m.fromAbove = down; }
+    for (const m of [...men, ...(team.trail ?? []).filter((x) => this.active(x) && x.storey === from)]) { m.storey = to; m.cell = stairs; m.aim = undefined; m.fromAbove = down; }
     // Boots on an enclosed stairway carry: coming down, every storey below
     // turns to watch the stairs (ATP 3-06.11 (2024), para C-103).
     if (down && team.side === this.attackerSide) for (let k = 0; k <= to; k++) this.alerted[k] = true;
     const room = this.stairRoom(to);
     if (!this.toTake(team, to, room) || this.claimed(team, to).has(room)) { team.phase = "pick"; return; }
     this.assault(team, room, stairs, false);
-    if (team.grenades) {
-      if (down) this.grenade(team, men, 1, 1);
-      else this.grenade(team, men, CLOSE_QUARTERS.grenadeUpstairsFactor, CLOSE_QUARTERS.grenadeUpstairsSelfHitFactor);
-    }
+    // Down the stairwell only: "Soldiers should avoid throwing grenades upstairs" (ATP 3-06.11 (2024),
+    // para C-103; drill audit, I7).
+    if (team.grenades && down) this.grenade(team, men, 1, 1);
   }
 
   /**
@@ -602,7 +743,7 @@ export class InteriorFight {
     const room = this.stairRoom(top);
     const taking = this.teams.some((t) => t !== team && t.storey === top && t.room === room && (t.phase === "enter" || t.phase === "consolidate"));
     if (taking) return;
-    for (const m of men) { m.waiting = false; m.fromAbove = true; }
+    for (const m of [...men, ...(team.trail ?? [])]) { m.waiting = false; m.fromAbove = true; }
     const k = this.teams.indexOf(team);
     const next = this.teams[k + 1];
     if (next && next.phase === "roof") next.until = this.second + CLOSE_QUARTERS.roofTeamIntervalSeconds;
@@ -635,7 +776,8 @@ export class InteriorFight {
       team.phase = "consolidate";
       const area = this.plan.storeys[team.storey]!.rooms[team.room]!.areaM2;
       team.until = this.second + CLOSE_QUARTERS.consolidateSeconds + area * CLOSE_QUARTERS.searchSecondsPerM2 +
-        (team.contact ? CLOSE_QUARTERS.reorganiseSeconds : 0);
+        (team.contact ? CLOSE_QUARTERS.reorganiseSeconds : 0) + (team.owed ?? 0);
+      team.owed = 0;
       this.lastProgress = Math.max(this.lastProgress, team.until); // holding a room on the clock is not a stall
     }
   }
@@ -654,10 +796,16 @@ export class InteriorFight {
   }
 
   /**
-   * The points of domination (ATP 3-06.11 (2024), paras C-66, C-67): the
-   * room's corners — the two nearest the way in for #1 and #2, the far two
-   * for #3 and #4. A corner is the room's cell nearest the corner of the
-   * room's extent.
+   * The points of domination (ATP 3-06.11 (2024), paras C-66, C-67): "the
+   * two corners on either side of the door and at least one meter to the
+   * left and to the right of the entry point. All points should be against
+   * the wall". #1 and #2 take the room's two corners nearest the way in; #3
+   * and #4 the cells against the entry wall at least a metre either side of
+   * it (drill audit, I3: they used to go to the far two corners — the
+   * defender's own). A corner is the room's cell nearest the corner of the
+   * room's extent. Where the entry wall gives no such cell on a side (a
+   * door in a corner, C-68), or the way in is the stairs inside the room,
+   * the far corner stands in for it.
    */
   private pointsOfDomination(storey: number, room: number, approach: number): number[] {
     const plan = this.plan.storeys[storey]!;
@@ -684,7 +832,24 @@ export class InteriorFight {
     const corners = [nearest(x0, y0), nearest(x1, y0), nearest(x0, y1), nearest(x1, y1)];
     const ax = approach % w, ay = (approach - ax) / w;
     const far = (i: number) => { const x = i % w, y = (i - x) / w; return (x - ax) * (x - ax) + (y - ay) * (y - ay); };
-    return corners.map((c, k) => ({ c, k, d: far(c) })).sort((p, q) => p.d - q.d || p.k - q.k).map((p) => p.c);
+    const byNear = corners.map((c, k) => ({ c, k, d: far(c) })).sort((p, q) => p.d - q.d || p.k - q.k).map((p) => p.c);
+    // The first step into the room from the way in gives the wall's direction.
+    const step = plan.roomOf[approach] === room ? undefined : this.around(approach).find((j) => plan.roomOf[j] === room);
+    if (step === undefined) return byNear;
+    const dx = (step % w) - ax, dy = (step - (step % w)) / w - ay;
+    const metre = Math.ceil(1 / this.plan.cellM);
+    const wall = (sign: number) => {
+      let best: number | undefined, bestOff = Infinity;
+      for (const i of cells) {
+        const rx = (i % w) - ax, ry = (i - (i % w)) / w - ay;
+        if (rx * dx + ry * dy !== 1) continue; // the row just inside the entry wall
+        const off = (rx * -dy + ry * dx) * sign;
+        if (off >= metre && off < bestOff) { bestOff = off; best = i; }
+      }
+      return best;
+    };
+    const left = wall(1), right = wall(-1);
+    return [byNear[0]!, byNear[1]!, left ?? byNear[2]!, right ?? byNear[3]!];
   }
 
   // ---- ground ------------------------------------------------------------
@@ -1177,7 +1342,8 @@ export class InteriorFight {
    * fight (his force broke, and has rallied) comes back in the same way,
    * with what he has left.
    */
-  join(teams: readonly string[][]): void {
+  join(teams: readonly string[][], security: readonly string[] = []): void {
+    const squad = this.squadsIn++;
     if (this.finished) throw new Error("InteriorFight: the fight is over");
     if (this.entry !== "door") throw new Error("InteriorFight: only a fight entered by the door is joined");
     const start = this.entryCell();
@@ -1198,8 +1364,10 @@ export class InteriorFight {
         this.soldiers.push(m);
         return m;
       });
-      this.teams.push({ side: this.attackerSide, members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned });
+      this.teams.push({ side: this.attackerSide, members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned, squad });
     }
+    // Its leader and odd men come in behind the first of its new teams (drill audit, I5).
+    this.addTrail(security, 0, start, teams.length ? this.teams[this.teams.length - teams.length] : undefined);
     this.lastProgress = Math.max(this.lastProgress, this.second); // new men going in is not a stall
   }
 
@@ -1254,7 +1422,14 @@ export class InteriorFight {
     // Above floors not yet cleared he cannot simply be carried down and out (C-30).
     let below = false;
     if (team.side === this.attackerSide) for (let k = 0; k < m.storey; k++) if (!this.cleared[k]!.every((v) => v === 1)) below = true;
-    team.halted = Math.max(team.halted, this.second) + CLOSE_QUARTERS.casualtySeconds * (below ? CLOSE_QUARTERS.casualtyAboveUnclearedFactor : 1);
+    const seconds = CLOSE_QUARTERS.casualtySeconds * (below ? CLOSE_QUARTERS.casualtyAboveUnclearedFactor : 1);
+    // Going in, nobody stops: a man down in the doorway "should stay down until the room is
+    // clear" (ATP 3-06.11 (2024), para C-63), and is seen to at "CLEAR" (drill audit, I2).
+    if (team.phase === "stack" || team.phase === "enter") {
+      team.owed = (team.owed ?? 0) + seconds;
+      return;
+    }
+    team.halted = Math.max(team.halted, this.second) + seconds;
     this.lastProgress = Math.max(this.lastProgress, team.halted); // a halt is not a stall
   }
 

@@ -563,7 +563,14 @@ export class InteriorBattles {
           )
         : defaultDefence(plan, defenders.flatMap((u) => fit(u).map((s) => s.id)), rng, prepared, toward);
       const teams: string[][] = [];
-      for (const u of attackers) teams.push(...this.teamsOf(u));
+      const security: string[] = [];
+      const squads: number[] = [];
+      attackers.forEach((u, k) => {
+        const s = this.stackOf(u);
+        teams.push(...s.teams);
+        squads.push(...s.teams.map(() => k));
+        security.push(...s.security);
+      });
       const attackerSide: Side = defenderSide === "BLUE" ? "RED" : "BLUE";
       // Unless otherwise planned (✅ the author, 2026-10-20): by the front
       // door, a grenade into each room first (the drill's "FRAG OUT", TC
@@ -573,7 +580,7 @@ export class InteriorBattles {
       const first = this.orders.get(attackers[0]!.id);
       const entry = first?.entry === "top" && plan.stairwell && plan.storeys.length > 1 ? "top" : "door";
       const expects = defenders.map((u) => this.orders.get(u.id)?.expects).find((x) => x !== undefined);
-      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
+      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
       // Wounds already taken outside come in with the men.
       const index = this.soldierIndex(world, { attackerUnits: attackers.map((u) => u.id), defenderUnits: defenders.map((u) => u.id) });
       for (const m of fight.soldiers) {
@@ -639,7 +646,8 @@ export class InteriorBattles {
       }
       // A fight entered from the roof is joined only by its hatch, which this does not model (decision 101).
       if (e.fight.entryWay !== "door") continue;
-      e.fight.join(this.teamsOf(u));
+      const s = this.stackOf(u);
+      e.fight.join(s.teams, s.security);
       // Wounds already taken outside come in with the men.
       for (const m of e.fight.soldiers) {
         const s = men.find((x) => x.id === m.id);
@@ -653,9 +661,31 @@ export class InteriorBattles {
   }
 
   /**
+   * An attacking force's stack (drill audit, I5): its fit men other than
+   * its leaders in teams of four, a remainder of three clearing as a team of
+   * its own — "the base element … remains the four-Soldier fire team" (ATP
+   * 3-06.11 (2024), para C-79). The leaders, who "do not get into stacks,
+   * except under extreme circumstances" (C-108), and a remainder of one or
+   * two follow as security. A force with no man to stack but its leader
+   * stacks him. ⚠️ Ours: three clears, two does not.
+   */
+  private stackOf(u: Unit): { teams: string[][]; security: string[] } {
+    const men = fit(u);
+    const rank = men.filter((s) => !s.leader).map((s) => s.id);
+    const leaders = men.filter((s) => s.leader).map((s) => s.id);
+    if (!rank.length) return { teams: leaders.length ? [leaders] : [], security: [] };
+    const teams: string[][] = [];
+    for (let k = 0; k < rank.length; k += 4) teams.push(rank.slice(k, k + 4));
+    const last = teams[teams.length - 1]!;
+    const odd = teams.length > 1 && last.length < 3 ? teams.pop()! : [];
+    return { teams, security: [...leaders, ...odd] };
+  }
+
+  /**
    * A force's fit men in teams of four: doctrine's stack (TC 3-21.76 (2025),
-   * 07-SQD-D9509). Not a plan's to change (the author, 2026-10-20): smaller
-   * teams measured quicker for nothing (balance.md).
+   * 07-SQD-D9509), for a defender's counterattack (decision 104). Not a
+   * plan's to change (the author, 2026-10-20): smaller teams measured
+   * quicker for nothing (balance.md).
    */
   private teamsOf(u: Unit): string[][] {
     const size = 4;

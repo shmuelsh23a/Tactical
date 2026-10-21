@@ -3645,6 +3645,35 @@ on the stated reasoning, still awaiting the author's word.
       on the enemy nearest such a force, within `COVER_MOVE_M` (400 m, ⚠️
       ours: small arms' reach) of it and clear of our own (para 5-72).
       Before, decision 93's defender fired off its plan only at a firer.
+117. ✅ **The fight inside cleared as doctrine has it** (the author,
+    2026-10-21, on the drill audit; I1 his ruling, the rest the clear-cut
+    ones). ATP 3-06.11 (2024), appendix C:
+    - **Security left behind** (I1, C-107): a cleared room that holds a way
+      to ground not yet cleared — a door to an uncleared room, the stairs
+      while a storey is still to clear, the street door — keeps a man at
+      it: the squad's trail first, then the team's last man while it keeps
+      two to clear (⚠️ ours, the two). A room with a man of the attacker's
+      in it is never retaken. A team with nobody left is re-formed from its
+      trail, else from the men posted on its storey, who leave their posts
+      — without that the house stood half cleared, held by sentries.
+    - **A man down going in does not stop the entry** (I2, C-63): his time
+      (`casualtySeconds`) is owed at "CLEAR", not spent frozen in the
+      doorway.
+    - **#3 and #4 to the entry wall** (I3, C-67): against the wall at least
+      a metre either side of the way in; the far corner stands in only
+      where the wall gives no such cell or the way in is the stairs.
+    - **One of a squad's teams goes in while another overwatches** (I4,
+      C-106): of a squad's teams on a storey, half at most go in at once (⚠️
+      ours, the half), a lone team by itself; another squad's teams take
+      their own turns.
+    - **The leader and an odd man out of the stack** (I5, C-79, C-108):
+      teams of four from the men who do not lead, a remainder of three
+      clearing as a team (⚠️ ours), a smaller one and the leader following
+      as the trail.
+    - **No grenade up the stairs** (I7, C-103).
+    - The coupling test "clears a house sooner with a second squad" now
+      measures turns to *clear*: with security draining a lone squad, it
+      is repulsed sooner, and turns to any end rewarded losing quickly.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
