@@ -56,3 +56,29 @@ describe("greatest threat first (ruling 6)", () => {
     expect(shotAt(g, drill, hold)).toEqual(["F"]);
   });
 });
+
+describe("pinned, as the side can see it (ruling 6, the review)", () => {
+  it("does not spare a pinned gun its side cannot watch: it reads only what it sees", () => {
+    // A long block of buildings: nothing sees over it.
+    const wall = {
+      id: "block",
+      kind: "building" as const,
+      footprint: { shape: "polygon" as const, points: [{ x: -300, y: -30 }, { x: 300, y: -30 }, { x: 300, y: -20 }, { x: -300, y: -20 }] },
+    };
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false, terrain: { objects: [wall] } });
+    const b = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 0 }, 9));
+    const rifles = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 150 }, 9));
+    const gun = g.addUnit(makeMachineGunTeam("MG", "RED", { x: 40, y: 140 }, 3)); // both inside the 200 m line once behind the block
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire(rifles.id, b.id, { weapon: "smallArms" });
+    g.fire(gun.id, b.id, { weapon: "smallArms" });
+    g.advanceToPhase("summary");
+    // Behind the wall now: both are marks it cannot see, and the gun pinned out of its sight.
+    b.position = { x: 0, y: -40 };
+    gun.suppression = 100;
+    g.advanceToPhase("movement");
+    expect(g.canEngage(b, rifles) || g.canEngage(b, gun)).toBe(false);
+    expect(shotAt(g, drill, hold)).toEqual(["MG"]);
+  });
+});

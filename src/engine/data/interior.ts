@@ -102,14 +102,6 @@ export const CLOSE_QUARTERS = {
    * hit at the document's 5%. Ours: the stun and the multiplication.
    */
   stunSeconds: 2, // ours (⚠️)
-  /**
-   * A grenade thrown up a stairwell lands at half its chance: "grenades are
-   * easier to throw down a stairwell than up" (ATTP 3-06.11 (2011), para
-   * 7-148). The half is ours.
-   */
-  grenadeUpstairsFactor: 0.5, // ours (⚠️)
-  /** …and its thrower is hit twice as often, since it is "likely to roll back down" (ATP 3-06.11, para C-103). Ours. */
-  grenadeUpstairsSelfHitFactor: 2, // ours (⚠️)
   /** Grenades a man carries into the building. Ours: the document leaves ammunition to backlog 12. */
   grenadesEach: 2, // ours (⚠️)
   /**

@@ -3682,9 +3682,16 @@ on the stated reasoning, still awaiting the author's word.
       clearing as a team (⚠️ ours), a smaller one and the leader following
       as the trail.
     - **No grenade up the stairs** (I7, C-103).
+    - The owed time is a defender's counterattack's too: it runs the same
+      drill.
     - The coupling test "clears a house sooner with a second squad" now
       measures turns to *clear*: with security draining a lone squad, it
       is repulsed sooner, and turns to any end rewarded losing quickly.
+    - **A recording with a fight inside, made before this, replays
+      differently**: posts, the trail, the overwatch and the grenade not
+      thrown change who fires and so the dice drawn (as decisions 113–116
+      change who fires outside). The figures it brings are on balance.md,
+      *The drill audit's own figures*.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

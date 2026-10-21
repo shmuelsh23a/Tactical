@@ -28,6 +28,7 @@ function fightOf(seed: number, defenders: number, extra: Partial<InteriorFightIn
 
 describe("security left behind (I1)", () => {
   it("leaves a man in a cleared room that holds a way to ground not yet cleared, the leader first", () => {
+    // Seed 3: an empty house whose first room cleared opens onto rooms not yet cleared, so a man is posted.
     const f = fightOf(3, 0);
     while (!f.finished && !f.soldiers.some((m) => m.post)) f.tick();
     const posted = f.soldiers.filter((m) => m.post);
@@ -60,6 +61,18 @@ describe("a man down going in does not stop the entry (I2)", () => {
     f.casualty(m);
     expect(team.halted).toBe(0);
     expect(team.owed).toBeGreaterThan(0);
+    // …and paid at CLEAR: added to the consolidation, then cleared.
+    const owed = team.owed;
+    team.room = f.plan.storeys[0].rooms[0].id;
+    team.storey = 0;
+    team.entered = 99;
+    const inRoom = f.plan.storeys[0].roomOf.indexOf(team.room);
+    team.points = [inRoom];
+    for (const x of team.members) { x.storey = 0; x.cell = inRoom; }
+    f.enter(team, team.members.filter((x: Inside) => !x.out));
+    expect(team.phase).toBe("consolidate");
+    expect(team.until).toBeGreaterThanOrEqual(f.second + owed);
+    expect(team.owed).toBe(0);
     // Outside the entry, as before: the team halts.
     const other = f.teams[1];
     other.phase = "consolidate";
@@ -115,12 +128,12 @@ describe("the stack (I5)", () => {
 
 describe("no grenade up the stairs (I7)", () => {
   it("throws one down a stairwell, never up one", () => {
+    // Seed 3's house has two storeys and its stairs.
     const f = fightOf(3, 0, {}, []) as Inside;
-    f.grenadesPlanned = true;
     const team = f.teams[0];
     team.grenades = true;
     const stair = f.plan.stairwell;
-    if (!stair) return;
+    expect(stair).toBeDefined();
     const cell = stair.y * f.plan.width + stair.x;
     expect(f.plan.storeys[0].cells[cell]).toBe(CELL_KIND.stair);
     team.storey = 0;
@@ -128,5 +141,62 @@ describe("no grenade up the stairs (I7)", () => {
     const before = f.grenadesThrown;
     f.arrive(team, team.members);
     expect(f.grenadesThrown).toBe(before);
+    // Coming down, one goes first.
+    team.next = 0;
+    f.arrive(team, team.members);
+    expect(f.grenadesThrown).toBe(before + 1);
+  });
+});
+
+describe("a force that left and rallies comes back once (I1, I5)", () => {
+  it("brings its leader back as the same man, out of the trail and post he had", () => {
+    const f = fightOf(3, 0);
+    while (!f.finished && !f.soldiers.some((m) => m.post)) f.tick();
+    expect(f.soldiers.find((m) => m.id === "sl")?.post).toBeDefined();
+    f.leave(["a5", "a6", "a7", "sl"]);
+    f.join([["a5", "a6", "a7"]], ["sl"]);
+    const ids = f.soldiers.map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const sl = f.soldiers.find((m) => m.id === "sl")!;
+    expect(sl.post).toBeUndefined();
+    const s = f as Inside;
+    const holders = s.teams.filter((t: Inside) => t.members.includes(sl) || (t.trail ?? []).includes(sl));
+    expect(holders).toHaveLength(1);
+  });
+});
+
+describe("a squad's teams take turns going in (I4)", () => {
+  it("holds a team back while another of its squad is going in, but not another squad's", () => {
+    const f = fightOf(3, 0) as Inside;
+    const [a, b] = f.teams;
+    a.phase = "stack";
+    a.storey = b.storey = 0;
+    b.phase = "pick";
+    const room = b.room;
+    f.pick(b, b.members);
+    expect(b.phase).toBe("pick"); // overwatching
+    expect(b.room).toBe(room);
+    b.squad = 1; // another squad's team takes its own turn
+    f.pick(b, b.members);
+    expect(["stack", "enter"]).toContain(b.phase);
+  });
+});
+
+describe("a team with nobody left re-forms (I1)", () => {
+  it("from its trail first, then from the men posted on one storey, who leave their posts", () => {
+    const f = fightOf(3, 0) as Inside;
+    const team = f.teams[0];
+    for (const m of team.members) m.out = true;
+    f.reform(team);
+    expect(team.members.map((m: Inside) => m.id)).toEqual(["sl"]);
+    expect(team.trail).toEqual([]);
+    // Then the posted men: a man of the other team posted, and the re-formed team gone too.
+    for (const m of team.members) m.out = true;
+    const guard = f.teams[1].members.pop();
+    guard.post = { storey: guard.storey, cell: guard.cell };
+    f.reform(team);
+    expect(team.members).toEqual([guard]);
+    expect(guard.post).toBeUndefined();
+    expect(team.phase).toBe("pick");
   });
 });

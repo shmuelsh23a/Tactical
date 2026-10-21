@@ -6210,3 +6210,23 @@ chance is a placeholder and there is no drill. Node 24, AMD Ryzen 7
 - **Full camouflage at setup is strong.** The demo's forward RED squad starts at
   the -50% cap, which is the author's prepared-position reading. Against it, a
   walking searcher has 30% inside 20 m and a scout 40%.
+
+## The drill audit's own figures, 2026-10-21
+
+Decisions 113–117 brought every drill in line with doctrine
+([drill-audit.md](drill-audit.md)). Doctrine gave the steps; these numbers
+are ours (⚠️), none yet questioned, each the row to revisit if its
+behaviour turns out to decide battles:
+
+| Figure | Value | Where | What it does |
+|---|---|---|---|
+| `coverInPlace.within` | 25 m | `drill.ts`, doctrinal drill | how far a halting squad or a bound's end looks for cover (A5) |
+| `SUPPORT_SET_MAX_TURNS` | 6 turns | `company.ts` | how long the assault waits at the line for a support that cannot get set (A1) |
+| `COVER_MOVE_M` | 400 m | `computerSide.ts` | how near an enemy must be to a force breaking contact or counterattacking for the defender's mortars to cover it (D3) |
+| massed opening's lag | 1 turn | `drill.ts` | the rest of a platoon fires to the attack range from the turn after one of it fired (D4) |
+| a clearing team keeps | 2 men | `resolver.ts`, `postGuard` | a team gives up a man as security only while two are left to clear (I1) |
+| the overwatch share | half | `resolver.ts`, `pick` | of a squad's teams on a storey, half at most go in at once (I4) |
+| a remainder that clears | 3 men | `coupling.ts`, `stackOf` | three left over clear as a team; one or two follow as the trail (I5) |
+
+Gone with I7: `grenadeUpstairsFactor` and `grenadeUpstairsSelfHitFactor`
+— a grenade is no longer thrown up the stairs.

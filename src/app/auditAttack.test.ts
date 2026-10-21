@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { Game, makeCommandGroup, makeInfantry, type Terrain } from "../engine/index.js";
 import { SUPPORT_SET_MAX_TURNS, ScriptedCompany, type CompanyOrders } from "./company.js";
-import { DOCTRINAL_DRILL, DrillState, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "./drill.js";
+import { DOCTRINAL_DRILL, DrillState, drillCombat, drillMovement, seizedBy, type DrillTask, type SquadDrill } from "./drill.js";
+import { askAttackerFire } from "../sim/scenarioBattle.js";
 import { DEFAULT_FIRE_CHOICES, callAttackerFire } from "./computerSide.js";
 
 /**
@@ -195,5 +196,53 @@ describe("the doctrinal drill's halts, consolidation and screens (drill audit, A
     g.advanceToPhase("combat");
     drillCombat(g, task, DOCTRINAL_DRILL, state);
     expect(state.screens).toBeGreaterThan(0);
+  });
+});
+
+describe("the review's fixes, pinned (drill audit A7, A8, ruling 6)", () => {
+  function fired(go: boolean) {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false, fireSupport: { BLUE: [{ weapon: "mortar", missions: 20, roundsForEffect: 8, tubes: 4 }] } });
+    g.addUnit(makeCommandGroup("BLUE-COY", "BLUE", "company", { x: 0, y: 100 }));
+    const blue = g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 380 }, 9));
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 30, y: 620 }, 9));
+    const c = new ScriptedCompany(g, "BLUE", objective, [objective], {}, { terrain: flat, width: 1000, height: 1000 });
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire(red.id, blue.id, { weapon: "smallArms" });
+    g.advanceToPhase("initiative");
+    if (go) c.orders(g, { go: true });
+    g.advanceToPhase("targeting");
+    return { g, c, red, calls: vi.spyOn(g, "callForFire") };
+  }
+
+  it("keeps the reserve's tube off the priority target until the assault closes: fire there is the reserve's", () => {
+    // The enemy found, the squad back beyond the priority target's call distance (400 m): not yet closing.
+    const { g, c, calls } = fired(false);
+    g.getUnit("BLUE-1-1").position = { x: 0, y: 150 };
+    callAttackerFire(g, "BLUE", [objective], objective, { ...DEFAULT_FIRE_CHOICES }, c, { missions: 0, smoke: 0 });
+    expect(calls).not.toHaveBeenCalled();
+  });
+
+  it("clears and tells the asked commander's squads by where the priority mission lands", () => {
+    const { g, c, red, calls } = fired(true);
+    const mark = g.contactFor("BLUE", red.id)!.lastKnownPosition;
+    let label = "";
+    const result = { missions: { RED: 0, BLUE: 0 } } as unknown as Parameters<typeof askAttackerFire>[3];
+    askAttackerFire(g, "BLUE", c, result, (q) => {
+      const p = q.options.find((o) => o.id === "priority");
+      if (p) label = p.label;
+      return p ? "priority" : "hold";
+    }, [objective], objective);
+    expect(calls.mock.calls[0]![2]).toEqual(mark);
+    const lead = Math.round(Math.hypot(mark.x - 0, mark.y - 380));
+    expect(label).toContain(`${lead} m from it`);
+  });
+
+  it("does not take a scout standing on the objective for the assault having seized it", () => {
+    const task = { side: "BLUE" as const, attacking: true, objective: { x: 0, y: 500 } };
+    const scout = makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 0, y: 495 }, 9);
+    const company: CompanyOrders = { scouts: new Map([["BLUE-2-1", null]]), scoutsLieUp: true, hold: false, waitAt: new Map(), platoonOf: new Map([["BLUE-2-1", "BLUE-2"]]), fallBackTo: { x: 0, y: 0 } };
+    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], company)).toBe(false);
+    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], { ...company, scouts: new Map() })).toBe(true);
   });
 });

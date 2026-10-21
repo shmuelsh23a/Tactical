@@ -110,8 +110,8 @@ export const PRIORITY_CALL_M = 400;
  * reserve held for it has spent. Read off the game, so a saved battle resumes
  * with the same reserve.
  */
-function firedAt(g: Game, side: Side, weapon: string, at: Point, within = 1): number {
-  return g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) < within).length;
+function firedAt(g: Game, side: Side, weapon: string, at: Point, within = 0.5): number {
+  return g.fireMissions.filter((m) => m.side === side && m.weapon === weapon && distance(m.target, at) <= within).length;
 }
 
 /**
@@ -659,7 +659,7 @@ function callDoctrinalAttackerFire(
   // The heaviest spare tube that may fire there: the guns not within their lift distance of the squads.
   // Not the reserve's tube within reach of the priority target while its reserve is held: fire there is
   // the priority target's, and is counted against it (priorityReserve) — the reserve stays for the assault.
-  const kept = (p: Point, w: string) => !!priority && w === reserveTube && held(w) > 0 && distance(p, priority) < ADJUSTMENT_RADIUS_M;
+  const kept = (p: Point, w: string) => !!priority && w === reserveTube && held(w) > 0 && distance(p, priority) <= ADJUSTMENT_RADIUS_M;
   const tubeFor = (p: Point) => [...spare].reverse().find((w) => clearOf(p, w) && !kept(p, w));
   if (onPlan && tubeFor(onPlan.position)) {
     call(tubeFor(onPlan.position)!, onPlan.position);

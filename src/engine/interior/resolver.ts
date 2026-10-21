@@ -357,15 +357,35 @@ export class InteriorFight {
    */
   private addTrail(ids: readonly string[], storey: number, cell: number, to?: Team): void {
     if (!ids.length) return;
-    const men = ids.map((id) => {
-      const m = this.man(id, this.attackerSide, storey, cell, false);
-      m.grenades = CLOSE_QUARTERS.grenadesEach;
-      this.soldiers.push(m);
-      return m;
-    });
+    const men = ids.map((id) => this.comeIn(id, storey, cell));
     const first = to ?? this.teams.find((t) => t.side === this.attackerSide && t.members.some((m) => !m.out));
     if (first) first.trail = [...(first.trail ?? []), ...men];
     else this.teams.push({ side: this.attackerSide, members: men, storey, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned });
+  }
+
+  /**
+   * An attacker coming in at `cell`: a new man, or one who left the fight and
+   * has rallied, back as he is — out of every team, trail and post he had, so
+   * no two orders drive one man and no man is in the fight twice.
+   */
+  private comeIn(id: string, storey: number, cell: number): InteriorSoldier {
+    const back = this.soldiers.find((s) => s.id === id);
+    if (back) {
+      if (back.side !== this.attackerSide || !back.withdrew || back.out) throw new Error(`InteriorFight: ${id} is already in the fight`);
+      for (const t of this.teams) {
+        t.members = t.members.filter((x) => x !== back);
+        if (t.trail) t.trail = t.trail.filter((x) => x !== back);
+      }
+      Object.assign(back, { withdrew: false, waiting: false, storey, cell, fromAbove: false });
+      back.aim = undefined;
+      back.retreat = undefined;
+      back.post = undefined;
+      return back;
+    }
+    const m = this.man(id, this.attackerSide, storey, cell, false);
+    m.grenades = CLOSE_QUARTERS.grenadesEach;
+    this.soldiers.push(m);
+    return m;
   }
 
   /**
@@ -844,7 +864,7 @@ export class InteriorFight {
         const rx = (i % w) - ax, ry = (i - (i % w)) / w - ay;
         if (rx * dx + ry * dy !== 1) continue; // the row just inside the entry wall
         const off = (rx * -dy + ry * dx) * sign;
-        if (off >= metre && off < bestOff) { bestOff = off; best = i; }
+        if (off >= metre && off < bestOff && i !== byNear[0] && i !== byNear[1]) { bestOff = off; best = i; }
       }
       return best;
     };
@@ -1343,27 +1363,12 @@ export class InteriorFight {
    * with what he has left.
    */
   join(teams: readonly string[][], security: readonly string[] = []): void {
-    const squad = this.squadsIn++;
     if (this.finished) throw new Error("InteriorFight: the fight is over");
     if (this.entry !== "door") throw new Error("InteriorFight: only a fight entered by the door is joined");
+    const squad = this.squadsIn++;
     const start = this.entryCell();
     for (const ids of teams) {
-      const members = ids.map((id) => {
-        const back = this.soldiers.find((s) => s.id === id);
-        if (back) {
-          if (back.side !== this.attackerSide || !back.withdrew || back.out) throw new Error(`InteriorFight: ${id} is already in the fight`);
-          // Out of the team he left with, so no two teams drive one man.
-          for (const t of this.teams) t.members = t.members.filter((x) => x !== back);
-          Object.assign(back, { withdrew: false, waiting: false, storey: 0, cell: start, fromAbove: false });
-          back.aim = undefined;
-          back.retreat = undefined;
-          return back;
-        }
-        const m = this.man(id, this.attackerSide, 0, start, false);
-        m.grenades = CLOSE_QUARTERS.grenadesEach;
-        this.soldiers.push(m);
-        return m;
-      });
+      const members = ids.map((id) => this.comeIn(id, 0, start));
       this.teams.push({ side: this.attackerSide, members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned, squad });
     }
     // Its leader and odd men come in behind the first of its new teams (drill audit, I5).
@@ -1424,7 +1429,8 @@ export class InteriorFight {
     if (team.side === this.attackerSide) for (let k = 0; k < m.storey; k++) if (!this.cleared[k]!.every((v) => v === 1)) below = true;
     const seconds = CLOSE_QUARTERS.casualtySeconds * (below ? CLOSE_QUARTERS.casualtyAboveUnclearedFactor : 1);
     // Going in, nobody stops: a man down in the doorway "should stay down until the room is
-    // clear" (ATP 3-06.11 (2024), para C-63), and is seen to at "CLEAR" (drill audit, I2).
+    // clear" (ATP 3-06.11 (2024), para C-63), and is seen to at "CLEAR" (drill audit, I2) —
+    // a defender's counterattack too, which runs the same drill.
     if (team.phase === "stack" || team.phase === "enter") {
       team.owed = (team.owed ?? 0) + seconds;
       return;

@@ -986,7 +986,7 @@ function askScouts(
  * mark? Offered: every enemy mark seen this turn or last that is not within
  * danger close of the company's own squads (scouts aside), and holding fire.
  */
-function askAttackerFire(
+export function askAttackerFire(
   g: Game,
   side: Side,
   company: ScriptedCompany,

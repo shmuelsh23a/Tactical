@@ -916,7 +916,7 @@ function waitNear(game: Game, door: Point, defender: Point, house: readonly Poin
  * side knows of is within the drill's `consolidate.nothingWithin` of it.
  * Never without `consolidate`.
  */
-function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly Unit[], forces: readonly Unit[], company: CompanyOrders | undefined): boolean {
+export function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly Unit[], forces: readonly Unit[], company: CompanyOrders | undefined): boolean {
   const c = drill.consolidate;
   if (!c || !task.attacking || company?.hold) return false;
   if (enemies.some((e) => distance(e.position, task.objective) <= c.nothingWithin)) return false;

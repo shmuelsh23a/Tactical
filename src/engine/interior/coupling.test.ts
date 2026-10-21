@@ -225,10 +225,17 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
       expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE);
       expect(() => closeTurn(g)).not.toThrow();
       expect(g.interior.inFight("B-2")).toBe(true);
-      // Each of its men driven by one team only.
-      const fight = g.interior.engagementOf("B-2")!.fight as unknown as { teams: { members: { id: string }[] }[] };
-      const driven = fight.teams.flatMap((t) => t.members.map((m) => m.id)).filter((id) => id.startsWith("B-2"));
+      // Each of its men driven by one team only — its trail (decision 117) counted with the teams —
+      // in the fight once, and posted nowhere he has left.
+      const fight = g.interior.engagementOf("B-2")!.fight as unknown as {
+        teams: { members: { id: string }[]; trail?: { id: string }[] }[];
+        soldiers: { id: string; post?: unknown; withdrew?: boolean }[];
+      };
+      const driven = fight.teams.flatMap((t) => [...t.members, ...(t.trail ?? [])].map((m) => m.id)).filter((id) => id.startsWith("B-2"));
       expect(new Set(driven).size).toBe(driven.length);
+      const ids = fight.soldiers.map((m) => m.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(fight.soldiers.filter((m) => m.id.startsWith("B-2") && !m.withdrew && m.post && driven.includes(m.id))).toEqual([]);
     }
   });
 
