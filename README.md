@@ -3607,9 +3607,12 @@ on the stated reasoning, still awaiting the author's word.
       gives — the risk to one's own men — is not modelled.
     - **Halts and bounds end in cover** (A5, `coverInPlace`, 25 m ⚠️ ours):
       Battle Drill 2 steps 10 and 13b(6)(e).
-    - **Consolidation on the seized position** (A7): only once nothing is
-      known within 100 m of the objective as well as of the squad, and the
-      base of fire then moves up onto it (step 14b).
+    - **Consolidation on the seized position** (A7): only once the side
+      has found the enemy at the objective and nothing is known within
+      100 m of it or of the squad now, and the base of fire then moves up
+      onto it (step 14b). A position never found is not seized: without
+      that, the re-measure's `yokneamHouse` went to 0%, the company
+      consolidating outside a house whose defender it had not yet seen.
     - **The priority target where the enemy was found** (A8): within reach
       of the briefed point (the adjustment radius, so still on the mark) on
       the nearest sure fresh mark (the asked commander's: the nearest fresh

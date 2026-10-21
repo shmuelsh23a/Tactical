@@ -174,11 +174,21 @@ describe("the doctrinal drill's halts, consolidation and screens (drill audit, A
   it("brings the base of fire up once the objective is seized (step 14b)", () => {
     const g = new Game({ seed: 3, trackIntel: false, enforceC2: false });
     const support = g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 100 }, 9));
-    const assault = g.addUnit(makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 0, y: 490 }, 9));
+    const assault = g.addUnit(makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 0, y: 450 }, 9));
+    const enemy = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 520 }, 9));
     g.beginTurn();
-    g.advanceToPhase("movement");
     const task: DrillTask = { side: "BLUE", attacking: true, objective: { x: 0, y: 500 }, company: company({ platoonTasks: new Map([["BLUE-1", "support"]]) }) };
-    drillMovement(g, task, drill, new DrillState());
+    const state = new DrillState();
+    // Found on the objective first; then put out, and the assault on it.
+    g.advanceToPhase("movement");
+    drillMovement(g, task, drill, state);
+    expect(state.objectiveFound).toBe(true);
+    enemy.neutralized = true;
+    assault.position = { x: 0, y: 490 };
+    support.position = { x: 0, y: 100 };
+    g.advanceToPhase("summary");
+    g.advanceToPhase("movement");
+    drillMovement(g, task, drill, state);
     expect(support.position.y).toBeGreaterThan(100);
     expect(assault.observationSector).toBeDefined(); // consolidating, facing on
   });
@@ -242,7 +252,23 @@ describe("the review's fixes, pinned (drill audit A7, A8, ruling 6)", () => {
     const task = { side: "BLUE" as const, attacking: true, objective: { x: 0, y: 500 } };
     const scout = makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 0, y: 495 }, 9);
     const company: CompanyOrders = { scouts: new Map([["BLUE-2-1", null]]), scoutsLieUp: true, hold: false, waitAt: new Map(), platoonOf: new Map([["BLUE-2-1", "BLUE-2"]]), fallBackTo: { x: 0, y: 0 } };
-    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], company)).toBe(false);
-    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], { ...company, scouts: new Map() })).toBe(true);
+    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], company, true)).toBe(false);
+    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], { ...company, scouts: new Map() }, true)).toBe(true);
+    // Nor a position it never found the enemy on: there is nothing seized.
+    expect(seizedBy(task, DOCTRINAL_DRILL, [], [scout], { ...company, scouts: new Map() }, false)).toBe(false);
+  });
+});
+
+describe("a position never found is not seized (the re-measure's house)", () => {
+  it("does not consolidate short of an enemy it has not yet seen, but goes on to find him", () => {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false });
+    const u = g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 420 }, 9));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    const drill: SquadDrill = { ...DOCTRINAL_DRILL, fireTeams: undefined };
+    const company: CompanyOrders = { scouts: new Map(), scoutsLieUp: false, hold: false, waitAt: new Map(), platoonOf: new Map([["BLUE-1-1", "BLUE-1"]]), fallBackTo: { x: 0, y: 0 } };
+    drillMovement(g, { side: "BLUE", attacking: true, objective: { x: 0, y: 500 }, company }, drill, new DrillState());
+    expect(u.observationSector).toBeUndefined();
+    expect(u.position.y).toBeGreaterThan(420);
   });
 });

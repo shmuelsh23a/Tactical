@@ -654,6 +654,8 @@ export class DrillState {
   readonly brokeContact = new Set<string>();
   /** A defending side's platoons whose fire has been opened (`massedOpening`): the rest of each fires with it. */
   readonly opened = new Set<string>();
+  /** The attacker has found the enemy at its objective: only then can it seize it (`consolidate`). */
+  objectiveFound = false;
 
   /**
    * Where `side`'s forces are moving under the enemy's eyes on the drill's
@@ -697,6 +699,7 @@ export class DrillState {
       breaking: [...this.breaking].map(([k, v]) => [k, copyBreak(v)]),
       brokeContact: [...this.brokeContact],
       ...(this.opened.size ? { opened: [...this.opened] } : {}),
+      ...(this.objectiveFound ? { objectiveFound: true } : {}),
     };
   }
 
@@ -721,6 +724,7 @@ export class DrillState {
     (snap.breaking ?? []).forEach(([k, v]) => s.breaking.set(k, copyBreak(v)));
     (snap.brokeContact ?? []).forEach((id) => s.brokeContact.add(id));
     (snap.opened ?? []).forEach((k) => s.opened.add(k));
+    s.objectiveFound = snap.objectiveFound ?? false;
     return s;
   }
 }
@@ -742,6 +746,8 @@ export interface DrillStateSnapshot {
   brokeContact?: string[];
   /** Platoons whose fire has been opened (`massedOpening`). */
   opened?: string[];
+  /** The attacker has found the enemy at its objective. */
+  objectiveFound?: boolean;
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -912,13 +918,16 @@ function waitNear(game: Game, door: Point, defender: Point, house: readonly Poin
 
 /**
  * Whether the attack has seized its objective, for consolidation (Battle
- * Drill 2 step 14): an assaulting force of ours is on it and no enemy the
- * side knows of is within the drill's `consolidate.nothingWithin` of it.
- * Never without `consolidate`.
+ * Drill 2 step 14): the side has found the enemy there (`found`), an
+ * assaulting force of ours is on it, and no enemy the side knows of is now
+ * within the drill's `consolidate.nothingWithin` of it. A position never
+ * found is not seized: without that, a company stood consolidating outside
+ * a house whose defender it had not yet seen (the drill audit's re-measure:
+ * `yokneamHouse` 0%, every battle out of time). Never without `consolidate`.
  */
-export function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly Unit[], forces: readonly Unit[], company: CompanyOrders | undefined): boolean {
+export function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly Unit[], forces: readonly Unit[], company: CompanyOrders | undefined, found: boolean): boolean {
   const c = drill.consolidate;
-  if (!c || !task.attacking || company?.hold) return false;
+  if (!c || !task.attacking || company?.hold || !found) return false;
   if (enemies.some((e) => distance(e.position, task.objective) <= c.nothingWithin)) return false;
   return forces.some((o) => {
     if (!inPlay(o) || o.kind === "command" || company?.scouts.has(o.id) || distance(o.position, task.objective) > c.nothingWithin) return false;
@@ -1456,7 +1465,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       else stay();
       return;
     }
-    const seized = seizedBy(task, drill, enemies, forces, company);
+    if (drill.consolidate && task.attacking && enemies.some((e) => distance(e.position, task.objective) <= drill.consolidate!.nothingWithin)) state.objectiveFound = true;
+    const seized = seizedBy(task, drill, enemies, forces, company, state.objectiveFound);
     if (seized && company && job === "support") {
       // Step 14b: the base of fire moves up onto the objective, and holds it with the rest.
       if (distance(u.position, task.objective) > drill.consolidate!.nothingWithin) {
