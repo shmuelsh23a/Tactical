@@ -3614,6 +3614,15 @@ on the stated reasoning, still awaiting the author's word.
       2-130, 2-176). The asked commander's question names which.
     - **The 2A support team screens too** (A14): the base of fire at 150 m
       and more never reached with a 100 m rifle grenade.
+115. ✅ **Greatest threat first, both sides** (the author, 2026-10-21, on
+    the drill audit, A6/D2). The doctrinal drill's `threatFirst`: in the
+    fire phase a force takes whoever is firing on it, whatever its sector;
+    then a crew-served weapon or a vehicle before riflemen; in its sector
+    before outside it; the nearest first — Battle Drill 2 step 11a(1), 2A
+    step 6c(2), ATP 3-21.8 (2024) para A-3. An enemy already pinned comes
+    last, while anything else is in reach ("avoid target overkill", A-6).
+    Before, every force took the nearest in its sector, and `returnFire`
+    lost a gun on the flank to anything in the arc.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

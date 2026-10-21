@@ -7,6 +7,7 @@ import {
   pointInPolygon,
   bearingDegrees,
   distance,
+  suppressionLevel,
   type Game,
   type MovementMode,
   type Point,
@@ -135,6 +136,23 @@ export interface SquadDrill {
    * a force does not learn where an unseen enemy is by being shot by it.
    */
   returnFire?: { since: number };
+  /**
+   * Greatest threat first, and no piling on (drill audit, A6/D2; the
+   * author's ruling 6, both sides). In the fire phase a force takes, in
+   * order: who is firing on it (`returnFire`'s weight), whatever its sector;
+   * then, of the rest, a crew-served weapon or a vehicle before riflemen —
+   * "enemy weapons that are firing most effectively against it" (Battle
+   * Drill 2 step 11a(1)), "crew-served weapons first" (2A step 6c(2)), "the
+   * greatest threat first" (ATP 3-21.8 (2024), para A-3) — in its sector
+   * before outside it, the nearest first; and an enemy already pinned only
+   * when nothing else is in reach ("avoid target overkill", para A-6). A
+   * pinned enemy is something a firer can watch happen, as the suppression
+   * gate reads it.
+   *
+   * Absent: the nearest in the sector (with `returnFire`, whoever is firing
+   * on it first, and then only inside the sector).
+   */
+  threatFirst?: boolean;
   /**
    * Flank and rear security (Battle Drill 2 step 10: the squads not in
    * contact observe "to the flanks and rear of the platoon"; step 12b
@@ -401,6 +419,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   name: "doctrinal (rung A)",
   breakContact: null,
   returnFire: { since: 2 },
+  threatFirst: true,
   security: { arc: 120 },
   shiftToFarFlank: { clear: 100 },
   leaderForward: { behind: 50 },
@@ -936,9 +955,30 @@ function pickTarget(
     });
     if (seen.length) inReach = seen;
   }
-  const inSector = inReach.find(
-    (e) => drill.sectorWidth >= 360 || angleBetween(bearingDegrees(u.position, e.position), axis) <= drill.sectorWidth / 2,
-  );
+  const inArc = (e: Unit) => drill.sectorWidth >= 360 || angleBetween(bearingDegrees(u.position, e.position), axis) <= drill.sectorWidth / 2;
+  if (drill.threatFirst && game) {
+    const heavy = (e: Unit) => (e.mediumMg || e.kind === "vehicle" ? 1 : 0);
+    const pinned = (e: Unit) => {
+      try {
+        return suppressionLevel(game.getUnit(e.id)) === "pinned" ? 1 : 0;
+      } catch {
+        return 0;
+      }
+    };
+    const near = (e: Unit) => distance(u.position, e.position);
+    const ranked = [...inReach].sort(
+      (a, b) =>
+        weight(b) - weight(a) ||
+        pinned(a) - pinned(b) ||
+        heavy(b) - heavy(a) ||
+        Number(inArc(b)) - Number(inArc(a)) ||
+        near(a) - near(b),
+    );
+    const first = ranked[0];
+    // Shooting back needs no sector; anything else outside it only if the drill strays.
+    return first && (weight(first) > 0 || inArc(first) || drill.engageOutsideSector) ? first : undefined;
+  }
+  const inSector = inReach.find(inArc);
   return inSector ?? (drill.engageOutsideSector ? inReach[0] : undefined);
 }
 
