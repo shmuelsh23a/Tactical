@@ -5297,6 +5297,25 @@ Every row and column is still ordered. The baseline is 58.5% (from 40%).
   (attacker −22.5 to +15.5 points, then −8 to +13; defender −33.5 to +26,
   then −25.5 to +25.5): the morale dials did not widen it.
 
+**The breakpoint shift halved** (decision 111: irregular −5, elite +10),
+the whole matrix again, 400 a cell, after (before):
+
+| Attacker's quality | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 7% (4.5) | 30.5% (21.5) | 46% (34.5) |
+| **Regular** | 30% | 58.5% | 70.5% |
+| **Elite** | 71.5% (79) | 84% (87.5) | 95.5% (96.5) |
+
+| Defender's quality | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 95.5% (97) | 76.5% (80) | 50% (60) |
+| **Regular** | 85% | 58.5% | 31% |
+| **Elite** | 31% (21) | 13% (8.5) | 1% (0.5) |
+
+- The middle cells come 5–10 points toward the centre; the corners stay
+  near-certain (7–95.5% and 1–95.5%). There the quality gap and the
+  morale dials carry it, not the breakpoint.
+
 ## Where breaking contact might pay, 2026-10-21 (decision 109)
 
 **The options on Tel Azeka 3:1**, 100 battles from seed 1000. Defender's

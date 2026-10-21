@@ -72,14 +72,15 @@ describe("force quality beyond small arms (rules decision 87)", () => {
     expect(regular).toBe(0.3);
     expect(attack(3)).toBe(true);
     expect(attack(2)).toBe(false);
-    // Elite: 30% + 20%.
-    expect(regular + QUALITY_BREAK_SHIFT.elite).toBeCloseTo(0.5, 9);
-    expect(attack(4, ELITE)).toBe(false);
-    expect(attack(5, ELITE)).toBe(true);
-    // Irregular: 30% − 10%.
-    expect(attack(2, IRREGULAR)).toBe(true);
-    expect(attack(1, IRREGULAR)).toBe(false);
-    // A side of two types: its men's mean, half elite and half irregular +5 points.
+    // Elite: 30% + 10% (decision 111).
+    expect(regular + QUALITY_BREAK_SHIFT.elite).toBeCloseTo(0.4, 9);
+    expect(attack(3, ELITE)).toBe(false);
+    expect(attack(4, ELITE)).toBe(true);
+    // Irregular: 30% − 5%: a squad of ten breaks at its third man, as a regular one does; at 25% exactly.
+    expect(regular + QUALITY_BREAK_SHIFT.irregular).toBeCloseTo(0.25, 9);
+    expect(attack(2, IRREGULAR)).toBe(false);
+    expect(attack(3, IRREGULAR)).toBe(true);
+    // A side of two types: its men's mean, half elite and half irregular +2.5 points.
     const g = new Game({ seed: 5, enforceC2: false, morale: true, terrain: FLAT_GROUND, attackers: ["BLUE"] });
     const a = Object.assign(makeInfantry("B1", "BLUE", "squad", { x: 0, y: 0 }, 10), forceQuality(ELITE));
     const b = Object.assign(makeInfantry("B2", "BLUE", "squad", { x: 20, y: 0 }, 10), forceQuality(IRREGULAR));
@@ -87,9 +88,9 @@ describe("force quality beyond small arms (rules decision 87)", () => {
     g.addUnit(b);
     g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 500 }, 10));
     [...a.soldiers!.slice(0, 3), ...b.soldiers!.slice(0, 3)].forEach((s) => (s.neutralized = true));
-    expect(g.sideBroken("BLUE")).toBe(false); // 30% < 35%
+    expect(g.sideBroken("BLUE")).toBe(false); // 30% < 32.5%
     b.soldiers![3]!.neutralized = true;
-    expect(g.sideBroken("BLUE")).toBe(true); // 35%
+    expect(g.sideBroken("BLUE")).toBe(true); // 35% ≥ 32.5%
     // Off: by posture alone.
     expect(attack(3, ELITE, { qualityBreakpoint: false })).toBe(true);
   });

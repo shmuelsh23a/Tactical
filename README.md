@@ -3533,6 +3533,18 @@ on the stated reasoning, still awaiting the author's word.
       plan cannot be expressed through it (the standard measurement, which
       can, reads 31% at 2:1). Bringing that question to doctrine is the
       next step on this thread: it is also what Jev will be asked.
+111. ✅ **The breakpoint by force type halved** (the author, 2026-10-21,
+    on the force-quality matrix re-run: "soften the compounding").
+    Decision 87's shift is now irregular −5 points, elite +10 (was −10,
+    +20): an attacker gives up at 25%, 30% and 40%, a defender at 45%, 50%
+    and 60%. Decision 84's gap is kept at full strength. ⚠️ The shifts stay
+    ours.
+    - **Measured** (balance.md, *The force-quality matrix re-run*): the
+      matrix had widened to 4.5–96.5% and 0.5–97% (from 32–53% and
+      14.5–65.5% on 2026-10-04), decisions 84 and 87 compounding over a
+      baseline moved from 40% to 58.5%. Halved, the middle cells come 5–10
+      points in; the corners stay near-certain (7–95.5%, 1–95.5%), carried
+      by the gap and the morale dials.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
