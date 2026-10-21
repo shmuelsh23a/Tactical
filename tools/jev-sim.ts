@@ -53,6 +53,10 @@
  * their reasons. The plan is logged with the battle.
  *
  *   npm run jev-sim -- --claude claude-opus-5-5 --order --plan --memory --seed 1000 --n 20
+ *
+ * `--conversation` plays the battle as one append-only conversation with its
+ * tail cached (`claude.ts`): the commander sees its earlier pictures, not
+ * one-line summaries, and every call's earlier turns are read from cache.
  *   npm run jev-sim -- --jev --framing order --seed 1000 --n 20
  */
 import "./env.js";
@@ -126,9 +130,10 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
       ...(withOrder ? { order } : {}),
       plan: args.includes("--plan"),
       memory: args.includes("--memory"),
+      conversation: args.includes("--conversation"),
     };
     commander = () => claudeCommander(client, opts);
-    framing = [`claude:${model}${effort ? `@${effort}` : ""}`, ...(["order", "plan", "memory"] as const).filter((f) => args.includes(`--${f}`))].join("+");
+    framing = [`claude:${model}${effort ? `@${effort}` : ""}`, ...(["order", "plan", "memory", "conversation"] as const).filter((f) => args.includes(`--${f}`))].join("+");
   } else if (args.includes("--rule")) {
     const extra = value("--rule")?.startsWith("--") === false ? value("--rule")!.split(",") : [];
     const ask = ruleAsker(new Set(extra));
@@ -170,7 +175,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   let calls = 0;
   let ms = 0;
   let sure = 0;
-  const tokens = { input: 0, cached: 0, output: 0 };
+  const tokens = { input: 0, cached: 0, written: 0, output: 0 };
   // Battles at once (`--parallel`): only the waits on the service overlap, the engine is synchronous.
   const parallel = Math.max(1, Number(value("--parallel") ?? 1));
   const play = async (s: number) => {
@@ -190,6 +195,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
       for (const e of log) {
         tokens.input += e.usage?.input ?? 0;
         tokens.cached += e.usage?.cached ?? 0;
+        tokens.written += e.usage?.written ?? 0;
         tokens.output += e.usage?.output ?? 0;
       }
       console.log(`${id} seed ${s}: ${result.winner === attacker ? "the attack won" : result.winner === "draw" ? "a draw" : "the defence held"} on turn ${result.turns}, ${log.length} questions (${log[0]?.model ?? "-"})`);
@@ -205,7 +211,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   console.log(
     `JEV ${id} (${framing}): the attack won ${wins} of ${n} (${Math.round((100 * wins) / n)}%); ${calls} questions, ` +
       `${calls ? Math.round(ms / calls) : 0} ms a call, mean confidence ${calls ? (sure / calls).toFixed(2) : "-"}` +
-      (tokens.input + tokens.output ? `; tokens ${tokens.input} in (+${tokens.cached} cached), ${tokens.output} out` : "") +
+      (tokens.input + tokens.output ? `; tokens ${tokens.input} in (+${tokens.cached} cached, +${tokens.written} written to cache), ${tokens.output} out` : "") +
       `. Answers and logs in ${out}/.`,
   );
   process.exit(0);

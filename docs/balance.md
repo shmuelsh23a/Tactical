@@ -5293,6 +5293,25 @@ own plan first and carrying the battle's decisions so far.
   system prompt and the plan are cached, but the memory (every decision so
   far, with its reason) is written into the user message, so it is never
   cached and grows each call.
+- **The battle as one cached conversation** (`--conversation`, the same
+  two seeds, Claude Opus 5.5, order and plan): caching works — about 4
+  uncached input tokens a call, everything earlier read from the cache —
+  but it **saves nothing**:
+
+  | Seed | Memory mode (pilot) | Conversation |
+  |---|---|---|
+  | 1000 | won, 50 calls, **$1.12** | won, 53 calls, **$1.02** (2.10M read, 88k written, 7.6k out) |
+  | 1001 | lost, 37 calls, **$0.63** | won, 46 calls, **$0.81** (1.57M read, 74k written, 6.2k out) |
+  | Pair | $1.75 | $1.83 |
+
+  The conversation carries every earlier picture in full, about 1.6k
+  tokens a turn, so by the end each call reads 70–85k tokens; cheap at the
+  cache rate, but there are three times as many of them as the memory
+  lines, and each new turn is written at 1.25×. About $0.02 a call either
+  way. The cost lies in the size of the picture, not in the caching.
+- It won both (the pilot one): it still flanked east and moved up early,
+  but on seed 1000 sent all three platoons in. Two battles cannot tell
+  that from chance.
 
 ## The force-quality matrix re-run, 2026-10-21 (decisions 83, 84, 87)
 

@@ -69,12 +69,20 @@ export interface ClaudeAskerOptions {
   plan?: boolean;
   /** Carry the battle's decisions so far, with their reasons, in every call. */
   memory?: boolean;
+  /**
+   * The battle as one conversation, append-only: each question a user turn,
+   * each answer the model's own turn passed back unchanged, so everything
+   * before the newest question is read from the cache. Its memory is the
+   * conversation itself; `memory` is then not needed.
+   */
+  conversation?: boolean;
 }
 
 /** Models that take neither effort nor server-side fallback. */
 const PLAIN = /haiku/;
 
-type Usage = { input: number; cached: number; output: number };
+/** Tokens a call cost: uncached input, read from the cache, written to it (billed at 1.25x), and output. */
+type Usage = { input: number; cached: number; written?: number; output: number };
 
 /**
  * A commander backed by a Claude model, for one battle: with `plan` or
@@ -88,8 +96,12 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
   const system = claudeSystem(opts.order);
   let plan: string | undefined;
   const memory: string[] = [];
+  /** The battle so far, in `conversation`: appended to, never edited. */
+  const history: Anthropic.Beta.BetaMessageParam[] = [];
 
-  const call = async (user: string, schema: Record<string, unknown>, what: string) => {
+  const call = async (user: string, schema: Record<string, unknown>, what: string, inConversation = false) => {
+    // Outside a conversation the request is as it always was: one user turn, a string.
+    const turn: Anthropic.Beta.BetaMessageParam = { role: "user", content: inConversation ? [{ type: "text", text: user }] : user };
     const response = await client.beta.messages.create({
       model: opts.model,
       max_tokens: 16000,
@@ -97,7 +109,9 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
         { type: "text", text: system, cache_control: { type: "ephemeral" } },
         ...(plan ? [{ type: "text" as const, text: `Your plan, written before the battle:\n${plan}`, cache_control: { type: "ephemeral" as const } }] : []),
       ],
-      messages: [{ role: "user", content: user }],
+      messages: inConversation ? [...history, turn] : [turn],
+      // The conversation's growing tail cached automatically, the breakpoint moving with it.
+      ...(inConversation ? { cache_control: { type: "ephemeral" as const } } : {}),
       output_config: {
         ...(opts.effort && !plain ? { effort: opts.effort } : {}),
         format: { type: "json_schema", schema },
@@ -108,9 +122,44 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
     if (response.stop_reason === "refusal") {
       throw new Error(`${response.model} declined ${what} (${response.stop_details?.category ?? "no category"})`);
     }
+    // The model's turn goes back exactly as it came, thinking blocks and all (append-only).
+    if (inConversation) history.push(turn, { role: "assistant", content: response.content as Anthropic.Beta.BetaContentBlockParam[] });
     const text = response.content.find((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")?.text ?? "";
-    const usage: Usage = { input: response.usage.input_tokens, cached: response.usage.cache_read_input_tokens ?? 0, output: response.usage.output_tokens };
+    const usage: Usage = {
+      input: response.usage.input_tokens,
+      cached: response.usage.cache_read_input_tokens ?? 0,
+      written: response.usage.cache_creation_input_tokens ?? 0,
+      output: response.usage.output_tokens,
+    };
     return { parsed: JSON.parse(text) as Record<string, unknown>, model: response.model, usage };
+  };
+  const add = (a: Usage, b: Usage): Usage => ({ input: a.input + b.input, cached: a.cached + b.cached, written: (a.written ?? 0) + (b.written ?? 0), output: a.output + b.output });
+
+  /**
+   * One answer in the conversation: one schema for every call, so a
+   * question's own options never touch the cached request; the options are
+   * in the question, and an answer outside them gets a correction turn
+   * appended, never an edit.
+   */
+  const conversationAnswer = async (q: Question, ids: readonly string[]) => {
+    const schema = {
+      type: "object",
+      properties: {
+        answer: { type: "string", description: "The id of exactly one of the options offered." },
+        confidence: { type: "number", description: "How sure you are of this answer, 0 to 1." },
+        reason: { type: "string", description: "Why, in one short sentence." },
+      },
+      required: ["answer", "confidence", "reason"],
+      additionalProperties: false,
+    };
+    let r = await call(claudePrompt(q), schema, q.id, true);
+    let usage = r.usage;
+    for (let tries = 0; !ids.includes(String(r.parsed.answer)) && tries < 2; tries++) {
+      r = await call(`"${String(r.parsed.answer)}" is not one of the options. Answer with one of: ${ids.join(", ")}.`, schema, q.id, true);
+      usage = add(usage, r.usage);
+    }
+    if (!ids.includes(String(r.parsed.answer))) throw new Error(`${r.model} gave no option for ${q.id}: ${String(r.parsed.answer)}`);
+    return { ...r, usage };
   };
 
   const ask: Asker = async (q) => {
@@ -130,7 +179,7 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
       planUsage = r.usage;
     }
     const ids = q.options.map((o) => o.id);
-    const r = await call(
+    const r = opts.conversation ? await conversationAnswer(q, ids) : await call(
       claudePrompt(q, opts.memory ? memory : []),
       {
         type: "object",
@@ -152,9 +201,7 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
       model: r.model,
       reason: parsed.reason,
       // The plan's tokens are counted with the first answer's.
-      usage: planUsage
-        ? { input: r.usage.input + planUsage.input, cached: r.usage.cached + planUsage.cached, output: r.usage.output + planUsage.output }
-        : r.usage,
+      usage: planUsage ? add(r.usage, planUsage) : r.usage,
     };
   };
   return { ask, plan: () => plan };

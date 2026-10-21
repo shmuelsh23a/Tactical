@@ -27,7 +27,8 @@ const q: Question = {
 type Body = {
   model: string;
   system: { text: string; cache_control?: unknown }[];
-  messages: { content: string }[];
+  messages: { role: string; content: unknown }[];
+  cache_control?: unknown;
   output_config: { effort?: string; format: { schema: { properties: { answer: { enum: string[] } } } } };
   fallbacks?: unknown;
 };
@@ -75,7 +76,7 @@ describe("a question as a Claude model is asked it", () => {
     const { client, seen } = standIn(() => "reserve");
     const a = await claudeAsker(client, { model: "claude-sonnet-5-5", effort: "low" })(q);
     expect(a).toMatchObject({ answer: "reserve", confidence: 1, model: "claude-sonnet-5-5", reason: "because" });
-    expect(a.usage).toEqual({ input: 100, cached: 900, output: 20 });
+    expect(a.usage).toEqual({ input: 100, cached: 900, written: 0, output: 20 });
     const { body, beta } = seen[0]!;
     expect(body.output_config.format.schema.properties.answer.enum).toEqual(["assault", "reserve"]);
     expect(body.output_config.effort).toBe("low");
@@ -144,5 +145,23 @@ describe("the order from battalion", () => {
   it("goes to Jev beside the mission with the order framing", () => {
     const { state } = jevRequest(q, "order", ORDERS.telAzekaAssault);
     expect(state).toMatchObject({ mission: [...MISSION], orders: [...ORDERS.telAzekaAssault!], situation: q.view });
+  });
+
+  it("plays the battle as one append-only conversation, the tail cached, one schema throughout (conversation)", async () => {
+    let n = 0;
+    const { client, seen } = standIn(() => (++n === 2 ? "charge" : "reserve")); // the second answer is not an option
+    const c = claudeCommander(client, { model: "claude-opus-5-5", conversation: true });
+    await c.ask(q);
+    const second = await c.ask({ ...q, id: "go.21", turn: 21 });
+    expect(second.answer).toBe("reserve");
+    const [first, again, fixed] = seen.map((x) => x.body);
+    // One schema for every call: no options in it.
+    for (const b of [first!, again!, fixed!]) expect((b.output_config.format.schema.properties.answer as { enum?: string[] }).enum).toBeUndefined();
+    // The growing tail cached automatically; the first call's turns come back unchanged, in order.
+    expect(again!.cache_control).toEqual({ type: "ephemeral" });
+    expect(again!.messages.slice(0, 2)).toEqual([first!.messages[0], expect.objectContaining({ role: "assistant" })]);
+    // An answer outside the options gets a correction turn appended, never an edit.
+    expect(fixed!.messages.slice(0, 3)).toEqual(again!.messages);
+    expect(JSON.stringify(fixed!.messages.at(-1))).toContain("is not one of the options");
   });
 });

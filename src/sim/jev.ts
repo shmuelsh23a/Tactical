@@ -38,8 +38,8 @@ export interface JevAnswer {
   ms?: number;
   /** Why, where the model says (a Claude model does; Jev does not). */
   reason?: string;
-  /** Tokens the call used, where the model reports them. */
-  usage?: { input: number; cached: number; output: number };
+  /** Tokens the call used, where the model reports them: uncached input, read from the cache, written to it, output. */
+  usage?: { input: number; cached: number; written?: number; output: number };
 }
 
 /** Answers one question, however long it takes. */
