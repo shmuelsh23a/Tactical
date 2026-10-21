@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 103-108 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, and a battle's score. Open for him: breaking contact still costs the defender under the score (Tel Azeka 128.5 → 92.4 points), so what would make it pay. Then the 2:1 median, the force-quality matrix and the AI commanders.**
+**Next, in one line: decisions 103-109 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, a battle's score, smoke before the bound and a delay mission. Breaking contact still pays nowhere measured (doctrine's own warning about displacing under pressure); open for him: covered routes, or accept it. Then the 2:1 median, the force-quality matrix and the AI commanders.**
 
-**Current as of 2026-10-21, night** (decision 108's commit, pushed). Since the last handoff
+**Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
 author's unless marked ⚠️:
 - **103, morale inside, and the battle waits.** A man the morale step
@@ -38,6 +38,9 @@ author's unless marked ⚠️:
 - **108, a battle's score** (`src/app/score.ts`): mission 100, men up to
   40, time up to 30, beside the winner; in the debrief and the harness.
   Breaking contact still loses points (balance.md, *The score*).
+- **109, smoke before the bound and a delay mission**: Break Contact
+  screens first; `delayUntil` (a delay's turn, the attack's deadline,
+  never beside a time limit); `telAzekaDelay`.
 - **Measured** (balance.md, *Morale inside and the counterattack*): house
   58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
   counterattack has no scenario yet: two placements tried, both decided
@@ -72,10 +75,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of 2026-10-21, night (decision 108)
+## Green as of 2026-10-21, night (decision 109)
 
 ```
-npm run check       lint + typecheck clean, 1,144 tests, 78 files
+npm run check       lint + typecheck clean, 1,149 tests, 78 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -141,10 +144,12 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 - **The plain script's Tel Azeka fell 36% → 21%** once the brief left the
   reserve out; the reference plans did not move. Not yet looked into why.
-- **What would make breaking contact pay** (decisions 107-108): under
-  the score the squads that go lose as many men moving back as they would
-  holding. Candidates: a delay mission (time is the mission), or the
-  bound under fire (smoke first, or covered routes).
+- **Breaking contact pays nowhere measured** (decision 109, balance.md,
+  *Where breaking contact might pay*): smoke first (adopted) wins back 15
+  of the 36 points a loss trigger costs; going early costs nothing and
+  gains nothing; on `telAzekaDelay` the squad is overrun by turn 8 holding
+  or going. Left: covered routes (bounds through dead ground, which needs
+  route-finding), or accept it as doctrine's warning (ATP 3-06.11 4-137).
 - **Today's ⚠️, none questioned yet:** cornered means found (an attacker
   has him in sight), and he gives himself up before that attacker fires;
   a broken attacker or counterattacker is gone at once (no walk out); a
