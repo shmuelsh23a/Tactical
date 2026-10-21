@@ -60,6 +60,14 @@ describe("a fight inside a building, in Hebrew", () => {
     expect(interiorReportHe(blueBroke, names, "RED")).toContain("התוקפים יצאו מן המבנה — המבנה בידינו");
   });
 
+  it("tells the defender how many of his men gave themselves up, the attacker only that some did (decision 103)", () => {
+    const yielded = { ...report, began: false, defendersYielded: 3 };
+    expect(interiorReportHe(yielded, names, "RED")).toContain("3 ממגיני המבנה נכנעו");
+    expect(interiorReportHe(yielded, names, null)).toContain("3 ממגיני המבנה נכנעו");
+    expect(interiorReportHe(yielded, names, "BLUE")).toContain("מספר מגינים נכנעו"); // casualtyReport's bands: 3 is "several"
+    expect(interiorReportHe(yielded, names, "BLUE")).not.toContain("3 ממגיני");
+  });
+
   it("says how it ended", () => {
     expect(interiorReportHe({ ...report, began: false, outcome: "cleared" }, names, "BLUE")).toContain("המבנה טוהר");
     expect(interiorReportHe({ ...report, began: false, outcome: "repulsed" }, names, "BLUE")).toContain("נהדפה");

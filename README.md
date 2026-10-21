@@ -3313,6 +3313,38 @@ on the stated reasoning, still awaiting the author's word.
       who breaks stops fighting there — and the battle not judged while a
       fight inside goes on. With the defender's counterattack inside, since
       both need men inside who react to how it is going.
+103. ✅ **Morale inside the house, and the battle waits for it** (the
+    author, 2026-10-21, every option as proposed: the first two of his
+    "later" from decision 102). With `GameOptions.moraleInside` (on for a
+    new game, off for a recording made before it):
+    - **A man who breaks stops fighting inside.** Morale is judged outside,
+      once a turn, by the same rules as anywhere (the author: "same rules
+      as outside" — a comrade down, wounded, under fire, outnumbered); the
+      fight reads it as the minute begins. A broken man fires no more. **A
+      broken attacker leaves** the fight by the front door. **A broken
+      defender falls back** when pressed, even under a plan to hold, and
+      **gives himself up** once he is cornered: out of the battle, a
+      prisoner, not hit (`Soldier.captured`). A man rallied fights again
+      where he stands.
+    - **The battle waits for a fight inside**: neither side's break is
+      judged while one goes on — men of both sides still in it. It is
+      judged when the last one ends — cleared, repulsed, or its men broken
+      — or at the scenario's limit; the battle outside goes on meanwhile.
+      A house its defenders have all left or given up is being searched,
+      not fought for, and nothing waits for that. Decision 102's surrender
+      and withdrawal stay for a battle recorded before this one.
+    - An attacking force whose men have all broken and left is out of the
+      fight, at the door: free for orders, and to go back in once rallied
+      (decision 99).
+    - The log tells the defender how many of his men gave themselves up,
+      and the attacker only `casualtyReport`'s band (a prisoner is a loss).
+    - ⚠️ Ours: cornered is **found** — an attacker has him in sight, and he
+      gives himself up before that attacker fires; a broken attacker is
+      gone at once, the walk back out through the rooms cleared not
+      modelled. As before, a force whose men break together breaks whole
+      (decision 19): it routs out of the fight, or, cornered, gives itself
+      up whole. `Soldier.captured` is recorded but not yet shown apart from
+      a casualty (the UX pass).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

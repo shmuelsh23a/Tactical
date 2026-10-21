@@ -735,6 +735,15 @@ export interface GameOptions {
    */
   breakEndsInside?: boolean;
   /**
+   * Morale reaches inside, and the battle waits for it (rules decision 103):
+   * a man the morale step has broken stops fighting inside — an attacker
+   * leaves, a defender falls back or, cornered, gives himself up — and
+   * neither side's break is judged while a fight inside goes on. On by
+   * default; a recording made before it reads it as off, where a broken man
+   * fought on and a side's break ended the fights inside (decision 102).
+   */
+  moraleInside?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -870,6 +879,7 @@ export class Game {
   readonly windowFire: boolean;
   readonly joinFights: boolean;
   readonly breakEndsInside: boolean;
+  readonly moraleInside: boolean;
   /** The fights going on inside buildings (rules decision 96). */
   readonly interior = new InteriorBattles();
   /** Whether a mark stays where it was last seen (rules decision 57). */
@@ -1337,6 +1347,7 @@ export class Game {
     this.windowFire = opts.windowFire ?? true;
     this.joinFights = opts.joinFights ?? true;
     this.breakEndsInside = opts.breakEndsInside ?? true;
+    this.moraleInside = opts.moraleInside ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1499,6 +1510,7 @@ export class Game {
       ...(this.windowFire ? { windowFire: true } : {}),
       ...(this.joinFights ? { joinFights: true } : {}),
       ...(this.breakEndsInside ? { breakEndsInside: true } : {}),
+      ...(this.moraleInside ? { moraleInside: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -1656,7 +1668,7 @@ export class Game {
         // The minute inside every building being fought for (rules decision
         // 96), before the upkeep: the morale step finds its losses itself.
         const interior = this.closedTerrain
-          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire })
+          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire, moraleInside: this.moraleInside && this.morale })
           : [];
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
@@ -4359,6 +4371,9 @@ export class Game {
    */
   sideBroken(side: Side): boolean {
     if (!this.morale) return false;
+    // The battle waits for a fight inside (rules decision 103): judged once the last one is over —
+    // a house with no defender left in it is searched, not fought for.
+    if (this.moraleInside && this.closedTerrain && this.interior.engagements.some((e) => e.fight.contested)) return false;
     // By posture on the research figures (rules decision 44), where a routed
     // or neutralised force counts only its men down or broken (decisions 45
     // and 48); two thirds, and such a force counted whole, on the document's.

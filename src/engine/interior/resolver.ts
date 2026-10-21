@@ -76,6 +76,10 @@ export interface InteriorSoldier {
   holds?: boolean;
   /** A defender posted at a window (decision 98): the window cell, and the cell he stands on beside it. He is at it while he stands there. */
   window?: { cell: number; at: number };
+  /** Broken, as morale outside has judged him (decision 103): he fires no more; an attacker leaves, a defender falls back or, found, gives himself up. */
+  broken?: boolean;
+  /** A broken defender who gave himself up, cornered (decision 103): out of the fight, a prisoner, not hit. */
+  yielded?: boolean;
 }
 
 /** Where the defender puts a man. */
@@ -131,7 +135,7 @@ export interface InteriorResult {
   /** Rooms the plan says no man can reach (`Storey.cutOff`): counted as cleared, since nobody can hold them either. */
   roomsCutOff: number;
   attackers: { men: number; out: number; killed: number };
-  defenders: { men: number; out: number; killed: number; withdrew: number };
+  defenders: { men: number; out: number; killed: number; withdrew: number; yielded: number };
   /** Hits that wounded or put out a man still in the fight, by what caused them. */
   hits: { fire: number; grenade: number };
   grenadesThrown: number;
@@ -401,12 +405,14 @@ export class InteriorFight {
     return !s.out && !s.withdrew && !s.waiting;
   }
 
-  /** One second of the fight: the attacker's drill moves, everyone looks, everyone who can fires. */
+  /** One second of the fight: the broken give way, the attacker's drill moves, everyone looks, everyone who can fires. */
   tick(): void {
     if (this.finished) return;
+    this.giveWay();
     for (const team of this.teams) this.drill(team);
-    // Holding stops new retreats; a man already on a flight of stairs still comes off it.
-    for (const m of this.soldiers) if (m.side !== this.attackerSide && (!(m.holds ?? this.fallback === "hold") || m.retreat?.offStairs !== undefined)) this.fallBack(m);
+    // Holding stops new retreats — but not a broken man's; a man already on a flight of stairs still comes off it.
+    for (const m of this.soldiers) if (m.side !== this.attackerSide && (!(m.holds ?? this.fallback === "hold") || m.broken || m.retreat?.offStairs !== undefined)) this.fallBack(m);
+    this.giveWay(); // found by a team that came on this second: he gives himself up before anyone fires
     this.fire();
     this.second += CLOSE_QUARTERS.tickSeconds;
     this.judge();
@@ -785,7 +791,7 @@ export class InteriorFight {
     const w = this.plan.width, cellM = this.plan.cellM;
     const byId = new Map(this.soldiers.map((s) => [s.id, s]));
     for (const m of this.soldiers) {
-      if (!this.active(m) || isStunned(m, this.second)) continue;
+      if (!this.active(m) || isStunned(m, this.second) || m.broken) continue; // a broken man fires no more (decision 103)
       const mx = m.cell % w, my = (m.cell - mx) / w;
       const dist2 = (e: InteriorSoldier) => { const ex = e.cell % w, ey = (e.cell - ex) / w; return (ex - mx) * (ex - mx) + (ey - my) * (ey - my); };
       let target: InteriorSoldier | undefined;
@@ -1004,6 +1010,45 @@ export class InteriorFight {
     for (const t of this.teams) if (t.members.some((m) => ids.includes(m.id))) t.grenades = on;
   }
 
+  /**
+   * These men are broken, or are not (decision 103): morale is judged
+   * outside, once a turn, and the fight reads it as the minute begins. A
+   * man rallied is in the fight again where he stands.
+   */
+  setBroken(ids: readonly string[], broken: boolean): void {
+    for (const m of this.soldiers) if (ids.includes(m.id) && !m.out && !m.withdrew) m.broken = broken;
+  }
+
+  /**
+   * The broken stop fighting (decision 103, the author, 2026-10-21). An
+   * attacker who breaks leaves the fight — out by the front door, as his
+   * force would. A defender who breaks falls back when pressed, holding or
+   * not (`fallBack`), and gives himself up where he is once he is cornered:
+   * an attacker has him in sight.
+   */
+  private giveWay(): void {
+    for (const m of this.soldiers) {
+      if (!m.broken || m.out || m.withdrew) continue;
+      if (m.side === this.attackerSide) {
+        // ⚠️ Ours: gone at once; the walk back out through rooms cleared is not modelled.
+        m.withdrew = true;
+        m.waiting = false;
+        m.aim = undefined;
+        for (const t of this.teams) t.members = t.members.filter((x) => x !== m);
+        continue;
+      }
+      if (!this.active(m)) continue; // on a flight of stairs: he gets off it first
+      // ⚠️ Ours: found is cornered — an attacker has him in sight, as he would have him in his sights.
+      const cornered = this.soldiers.some((e) => e.side === this.attackerSide && this.active(e) && e.storey === m.storey && this.sees(m.storey, e.cell, m.cell));
+      if (!cornered) continue;
+      m.out = true;
+      m.yielded = true;
+      m.aim = undefined;
+      m.retreat = undefined;
+      m.window = undefined;
+    }
+  }
+
   /** These defenders hold to the last, or fall back: their force's plan (decision 101). */
   setHolds(ids: readonly string[], holds: boolean): void {
     for (const m of this.soldiers) if (ids.includes(m.id) && m.side !== this.attackerSide) m.holds = holds;
@@ -1064,6 +1109,15 @@ export class InteriorFight {
     this.lastProgress = Math.max(this.lastProgress, team.halted); // a halt is not a stall
   }
 
+  /**
+   * Men of both sides still in it (decision 103): a house its defenders have
+   * all left, or given up, is being searched, not fought for — the battle
+   * does not wait for that.
+   */
+  get contested(): boolean {
+    return !this.finished && this.alive(this.attackerSide).length > 0 && this.soldiers.some((s) => s.side !== this.attackerSide && !s.out && !s.withdrew);
+  }
+
   // ---- what the street sees (decision 98) ----------------------------------
 
   /**
@@ -1114,7 +1168,7 @@ export class InteriorFight {
   result(): InteriorResult {
     const count = (attackers: boolean) => {
       const men = this.soldiers.filter((s) => attackers === (s.side === this.attackerSide));
-      return { men: men.length, out: men.filter((s) => s.out).length, killed: men.filter((s) => s.killed).length, withdrew: men.filter((s) => s.withdrew).length };
+      return { men: men.length, out: men.filter((s) => s.out).length, killed: men.filter((s) => s.killed).length, withdrew: men.filter((s) => s.withdrew).length, yielded: men.filter((s) => s.yielded).length };
     };
     let rooms = 0, roomsCleared = 0;
     for (const c of this.cleared) { rooms += c.length; for (const v of c) roomsCleared += v; }

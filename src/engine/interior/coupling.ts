@@ -57,8 +57,10 @@ export interface InteriorReport {
   defendersOut: number;
   /** Defenders who left the building this turn: fell back out of its front door, or their force broke or gave up. */
   defendersWithdrew: number;
-  /** Attackers who left the fight this turn: their force broke, gave up or was spent. */
+  /** Attackers who left the fight this turn: their force broke, gave up or was spent, or they broke themselves (decision 103). */
   attackersWithdrew: number;
+  /** Defenders who broke and, cornered, gave themselves up inside this turn (decision 103). */
+  defendersYielded?: number;
   roomsCleared: number;
   rooms: number;
   /** Set on the turn the fight ended. */
@@ -108,6 +110,8 @@ export interface InteriorWorld {
   readonly contact?: (a: Unit, b: Unit) => void;
   /** Decision 98: the defenders stand at the windows facing the enemy, unless otherwise planned. */
   readonly windowFire?: boolean;
+  /** Decision 103: a man broken outside's judgement stops fighting inside. */
+  readonly moraleInside?: boolean;
 }
 
 /** A man of a force fighting inside whom the street can see, and who can see it (decision 98). */
@@ -432,16 +436,24 @@ export class InteriorBattles {
           if (door) moveTo(u, door);
         }
       }
+      // Who is broken, as the last morale step left them (decision 103).
+      if (world.moraleInside) {
+        for (const m of e.fight.soldiers) {
+          const s = byId.get(m.id)?.soldier;
+          if (s?.morale) e.fight.setBroken([m.id], s.morale.state === "broken");
+        }
+      }
       const damageBefore = new Map(e.fight.soldiers.map((m) => [m.id, m.damage]));
       const outBefore = new Set(e.fight.soldiers.filter((m) => m.out).map((m) => m.id));
       for (let k = 0; k < ticks && !e.fight.finished; k++) e.fight.tick();
-      let attackersOut = 0, defendersOut = 0, defendersWithdrew = 0, attackersWithdrew = 0;
+      let attackersOut = 0, defendersOut = 0, defendersWithdrew = 0, attackersWithdrew = 0, defendersYielded = 0;
       for (const m of e.fight.soldiers) {
         const entry = byId.get(m.id);
         if (!entry) continue;
         this.writeBack(m, damageBefore.get(m.id) ?? 0, outBefore.has(m.id), entry.soldier, entry.unit, world.turn);
         if (m.out && !outBefore.has(m.id)) {
-          if (m.side === e.attackerSide) attackersOut++;
+          if (m.yielded) defendersYielded++;
+          else if (m.side === e.attackerSide) attackersOut++;
           else defendersOut++;
         }
         if (m.withdrew && !withdrewBefore.has(m.id)) {
@@ -462,6 +474,14 @@ export class InteriorBattles {
           e.defenderUnits = e.defenderUnits.filter((d) => d !== id);
         }
       }
+      // An attacking force whose every man still fit has left the fight —
+      // broken, one by one (decision 103) — is out of it, at the front door.
+      for (const id of e.attackerUnits) {
+        const men = fit(this.unit(world, id));
+        if (men.length > 0 && men.every((s) => e.fight.soldiers.find((m) => m.id === s.id)?.withdrew)) {
+          e.attackerUnits = e.attackerUnits.filter((a) => a !== id);
+        }
+      }
       const result = e.fight.result();
       reports.push({
         buildingId: e.buildingId,
@@ -474,6 +494,7 @@ export class InteriorBattles {
         defendersOut,
         defendersWithdrew,
         attackersWithdrew,
+        ...(defendersYielded ? { defendersYielded } : {}),
         roomsCleared: result.roomsCleared,
         rooms: result.rooms,
         ...(e.fight.finished ? { outcome: result.outcome } : {}),
@@ -657,9 +678,10 @@ export class InteriorBattles {
     }
     if (m.out && !wasOut && !m.withdrew && !s.neutralized) {
       s.neutralized = true;
+      if (m.yielded) s.captured = true; // a prisoner: out of the battle, not hit (decision 103)
       if (m.wound) s.wound = m.wound;
       if (m.outBy) s.outBy = m.outBy;
-      u.hitThisTurn = true;
+      if (!m.yielded) u.hitThisTurn = true;
     }
   }
 }

@@ -18,9 +18,9 @@ const house: MapObject = {
   footprint: { shape: "polygon", points: [{ x: 100, y: 100 }, { x: 116, y: 100 }, { x: 116, y: 112 }, { x: 100, y: 112 }] },
 };
 
-function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean; morale?: boolean; breakEndsInside?: boolean } = {}) {
+function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean; morale?: boolean; breakEndsInside?: boolean; moraleInside?: boolean } = {}, defenders = 4) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
-  g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 4)); // inside the house
+  g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, defenders)); // inside the house
   // 40 m out from the house's front door, wherever this game's plan puts it.
   const door = g.interior.frontDoor(g, house)!;
   const dx = door.x - 108, dy = door.y - 106, d = Math.hypot(dx, dy);
@@ -299,8 +299,9 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     for (const s of g.getUnit(id).soldiers!.slice(0, n)) { s.damagePoints = 10; s.neutralized = true; }
   }
 
+  // Decision 102's tests play without decision 103, as a battle recorded between the two: there the break did not wait.
   it("ends the fight inside when the defending side breaks: its men inside give themselves up (decision 102)", () => {
-    const g = battle(2, { morale: true });
+    const g = battle(2, { morale: true, moraleInside: false });
     goIn(g);
     closeTurn(g);
     expect(g.interior.inFight("R-1")).toBe(true);
@@ -315,7 +316,7 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
   });
 
   it("ends it when the attacking side breaks: its men inside leave by the door", () => {
-    const g = battle(2, { morale: true });
+    const g = battle(2, { morale: true, moraleInside: false });
     goIn(g);
     closeTurn(g);
     expect(g.interior.inFight("B-1")).toBe(true);
@@ -330,7 +331,7 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
   });
 
   it("ends it the moment the side breaks, mid-turn, not only when the turn closes", () => {
-    const g = battle(2, { morale: true });
+    const g = battle(2, { morale: true, moraleInside: false });
     goIn(g);
     closeTurn(g);
     expect(g.interior.inFight("R-1")).toBe(true);
@@ -346,7 +347,7 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
   });
 
   it("hands a mid-turn break's report back with the turn's close, if the game goes on", () => {
-    const g = battle(2, { morale: true });
+    const g = battle(2, { morale: true, moraleInside: false });
     goIn(g);
     closeTurn(g);
     g.advanceToPhase("combat");
@@ -356,7 +357,7 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
   });
 
   it("when both sides break at once, ends the attack inside and leaves the house to its defender", () => {
-    const g = battle(2, { morale: true });
+    const g = battle(2, { morale: true, moraleInside: false });
     goIn(g);
     closeTurn(g);
     g.advanceToPhase("summary");
@@ -378,6 +379,81 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     const reports = closeTurn(g);
     expect(reports.some((r) => r.brokeOff)).toBe(false);
     expect(g.toRecording().breakEndsInside).toBeUndefined();
+  });
+
+  it("waits for the fight inside before judging a side's break (decision 103)", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    expect(g.interior.inFight("R-1")).toBe(true);
+    g.advanceToPhase("summary");
+    knockOut(g, "R-1", 2); // half the defenders down: broken, on the count
+    closeTurn(g);
+    expect(g.interior.engagements.length).toBeGreaterThan(0); // the fight goes on, room by room
+    expect(g.sideBroken("RED")).toBe(false);
+    expect(g.getUnit("R-1").surrendered ?? false).toBe(false);
+    // Run to its end: then the break is judged on what is left.
+    for (let t = 0; t < 200 && g.interior.engagements.length > 0; t++) { g.advanceToPhase("summary"); closeTurn(g); }
+    expect(g.interior.engagements).toHaveLength(0);
+    expect(g.sideBroken("RED") || g.sideBroken("BLUE")).toBe(true);
+  });
+
+  it("lets go of an attacking force whose men have all broken and left (decision 103)", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    expect(g.interior.inFight("B-1")).toBe(true);
+    g.advanceToPhase("summary");
+    for (const s of g.getUnit("B-1").soldiers!) if (s.morale && !s.neutralized) s.morale.state = "broken";
+    closeTurn(g);
+    expect(g.interior.inFight("B-1")).toBe(false); // free to be given orders, and to go back in once rallied
+  });
+
+  it("does not wait for a house with no defender left in it: that is searched, not fought for", () => {
+    const g = battle(2, { morale: true });
+    goIn(g);
+    closeTurn(g);
+    g.advanceToPhase("summary");
+    knockOut(g, "R-1", 2); // half the defenders down: broken, on the count
+    const e = g.interior.engagements[0]!;
+    expect(e.fight.contested).toBe(true);
+    expect(g.sideBroken("RED")).toBe(false); // waiting for the fight
+    // The other two slip out of the back of the house: the attacker is left searching it.
+    e.fight.leave(g.getUnit("R-1").soldiers!.map((x) => x.id)); // the fight learns of the two down only as its minute begins
+    expect(e.fight.contested).toBe(false);
+    expect(g.interior.engagements).toContain(e);
+    expect(g.sideBroken("RED")).toBe(true);
+  });
+
+  it("stops a man broken outside from fighting inside: a broken defender, cornered, is taken prisoner (decision 103)", () => {
+    let captured = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      // A full squad: of four, one broken and one down is a force broken, which, cornered, gives itself up whole outside.
+      const g = battle(seed, { morale: true }, 9);
+      goIn(g);
+      closeTurn(g);
+      if (!g.interior.inFight("R-1")) continue;
+      // One man broken — a whole force broken routs out of the fight instead — and kept so, as if nobody could rally him.
+      const one = g.getUnit("R-1").soldiers!.find((s) => !s.neutralized && !s.leader)!;
+      for (let t = 0; t < 60 && g.interior.engagements.length > 0; t++) {
+        if (one.morale && !one.neutralized) one.morale.state = "broken";
+        g.advanceToPhase("summary");
+        closeTurn(g);
+      }
+      for (const s of g.getUnit("R-1").soldiers!) {
+        if (!s.captured) continue;
+        captured++;
+        expect(s.neutralized).toBe(true);
+      }
+    }
+    expect(captured).toBeGreaterThan(0);
+  });
+
+  it("records morale inside, and replays a battle from before it with the fight going on under a broken side", () => {
+    expect(battle(2, { morale: true }).toRecording().moraleInside).toBe(true);
+    const g = battle(2, { morale: true, moraleInside: false });
+    expect(g.toRecording().moraleInside).toBeUndefined();
+    expect(replayGame(JSON.parse(JSON.stringify(g.toRecording()))).moraleInside).toBe(false);
   });
 
   it("plays a battle recorded before the rule as it was played: the assault resolved outside", () => {

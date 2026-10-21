@@ -248,6 +248,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.windowFire !== undefined && typeof r.windowFire !== "boolean") throw malformed("windowFire");
   if (r.joinFights !== undefined && typeof r.joinFights !== "boolean") throw malformed("joinFights");
   if (r.breakEndsInside !== undefined && typeof r.breakEndsInside !== "boolean") throw malformed("breakEndsInside");
+  if (r.moraleInside !== undefined && typeof r.moraleInside !== "boolean") throw malformed("moraleInside");
   if (r.keepStaleMarks !== undefined && typeof r.keepStaleMarks !== "boolean") throw malformed("keepStaleMarks");
   if (r.suppressionByVolume !== undefined && typeof r.suppressionByVolume !== "boolean") throw malformed("suppressionByVolume");
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
@@ -479,6 +480,8 @@ export interface GameRecording {
   joinFights?: boolean;
   /** Whether a side's break ended its fights inside (rules decision 102). Read as **off** when absent. */
   breakEndsInside?: boolean;
+  /** Whether morale reached inside and the battle waited for a fight inside (rules decision 103). Read as **off** when absent. */
+  moraleInside?: boolean;
   /** Whether marks stayed where last seen (rules decision 57). Read as **off** when absent: they expired after three turns. */
   keepStaleMarks?: boolean;
   /** Whether a burst suppressed by its volume (rules decision 91). Read as **off** when absent. */
@@ -683,6 +686,7 @@ export function replayWithOutcomes(
     windowFire: recording.windowFire ?? false,
     joinFights: recording.joinFights ?? false,
     breakEndsInside: recording.breakEndsInside ?? false,
+    moraleInside: recording.moraleInside ?? false,
     keepStaleMarks: recording.keepStaleMarks ?? false,
     suppressionByVolume: recording.suppressionByVolume ?? false,
     suppressionByChance: recording.suppressionByChance ?? false,

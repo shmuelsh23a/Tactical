@@ -117,6 +117,8 @@ export interface Soldier {
   wound?: "light" | "serious" | "killed";
   /** What put him out of the fight, when a hit did (not bleeding). */
   outBy?: "smallArms" | "explosive";
+  /** Gave himself up inside a building, broken and cornered (rules decision 103): out of the battle, a prisoner, not hit. */
+  captured?: boolean;
 }
 
 /** Parts of an armoured vehicle, per the armour-damage table (טבלת נזק שריון). */

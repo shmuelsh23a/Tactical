@@ -453,6 +453,12 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
   }
   if (report.defendersWithdrew > 0) parts.push(`${report.defendersWithdrew} ממגיני המבנה נסוגו ממנו`);
   if (report.attackersWithdrew > 0) parts.push(`${report.attackersWithdrew} מהתוקפים יצאו מן המבנה`);
+  // Broken and cornered, defenders gave themselves up (decision 103): prisoners are losses, so the attacker reads no count.
+  if (report.defendersYielded) {
+    parts.push(reader == null || !attacking
+      ? `${report.defendersYielded} ממגיני המבנה נכנעו`
+      : report.defendersYielded <= 2 ? "מגינים בודדים נכנעו" : report.defendersYielded <= 5 ? "מספר מגינים נכנעו" : "מגינים רבים נכנעו"); // casualtyReport's bands
+  }
   // A side broke, and its men inside stopped (decision 102).
   if (report.brokeOff !== undefined) {
     const own = reader === report.brokeOff;
