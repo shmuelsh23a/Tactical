@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the drill audit is done and built (decisions 113–117), and the doctrinal drill is now the reference; re-measured, it is over decision 68's bands at both ratios (71% at 3:1, 42.5% at 2:1), while the plain drill, given the shared fixes, sits inside them (54% / 26.5%). Step 4 is the author's: judge the balance — whether the bands stand and the rules move, or the doctrinal drill's higher win rate is right (a 3:1 attack with a pinning base of fire as the bands' "strong suppression" case, 70–75%).**
+**Next, in one line: the drill audit and its balance ruling are closed — decisions 113–117 bring every drill to doctrine, the doctrinal drill is the reference, and decision 118 judges it on the bands' strong-suppression row (71% in 70–75% at 3:1; 42.5% against 45–50% at 2:1, accepted) while the plain drill sits in 40–55% / 20–35% (54% / 26.5%). Nothing was tuned. Next: the threads the audit put aside (below, *What I would pick up next*).**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -138,13 +138,10 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-21, night)
 
-- **Step 4, the balance judgement** (the author's): the reference
-  (doctrinal) medians are 71% / 42.5% against decision 68's 40–55% /
-  20–35%. Either the bands stand and a rule moves the doctrinal drill
-  down, or a company fighting by doctrine is meant to beat them (the
-  bands' "strong suppression" case, 70–75%, read as a pinning base of
-  fire). Plain sits in the bands (54% / 26.5%), so the gap is what the
-  doctrine buys. Do not tune before he rules.
+- **Ruled, decision 118**: the doctrinal drill is the bands'
+  strong-suppression case (70–75% at 3:1; 45–50% at 2:1, ⚠️ ours by
+  decision 68's own step); the plain drill keeps 40–55% / 20–35%. Both in
+  (2:1 doctrinal 2.5 under, accepted as noise). `SUPPRESSED_TARGETS`.
 - **Today's ⚠️, none questioned yet** (balance.md, *The drill audit's own
   figures*): 25 m to cover, 6 turns waiting for a support, 400 m mortar
   cover, the massed opening's turn of lag, a team keeps two, half a
@@ -173,8 +170,8 @@ The 2026-10-01 version of this section, with its tables and the rulings of
   4. Then judge how balanced everything is against decision 68's bands
      and the sources — including whether a 3:1 attack with a base of fire
      that pins is the bands' "strong suppression" case (70–75%).
-- Superseded by the re-measure above: decision 112's plain-drill medians
-  (69% / 36%).
+- Superseded by the re-measure and decision 118: decision 112's
+  plain-drill medians (69% / 36%).
 
 ### Open (2026-10-20)
 
@@ -417,9 +414,12 @@ One rules question is **open but not asked**, because nothing needs it yet:
 
 ## Do not re-propose
 
-- **Tuning the balance before the drills match doctrine.** The plain
-  drill's blind base of fire skewed every reference table for weeks
-  (decision 112). Balance rulings wait for the drill audit.
+- **Tuning the doctrinal drill down to 40–55%.** Decision 118: it is the
+  bands' strong-suppression case (70–75% at 3:1, 45–50% at 2:1); the
+  plain drill is the one judged on 40–55% / 20–35%.
+- **Balance rulings on drills that diverge from doctrine.** A blind base
+  of fire skewed every reference table for weeks (decision 112): audit a
+  drill against doctrine before ruling on what it measures.
 
 - **Narrowing the force-quality matrix's corners.** Re-run 2026-10-21
   (balance.md): the breakpoint shift was halved (decision 111) and the
@@ -656,12 +656,13 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The balance judgement** is his (above). Bring it to him as cards: the
-two medians, plain against doctrinal, and the bands' strong-suppression
-row from validation.md. If he wants more evidence first, the cheapest is
-the Claude commander at 30 battles a cell (±15 points, about $30), or a
-probe of why the mass assault (A) is the doctrinal drill's best plan by
-eleven points at 3:1.
+**The balance is ruled** (decision 118). What I would take next, in order:
+the audit's divergences left as they are (A13 hold-short in the open, D6
+the defender's long-range and behind-the-position fires, I6 dead-space
+searching), each a card; why the mass assault (A) is the doctrinal
+drill's best plan by eleven points at 3:1 (a probe, free); and the
+plans doctrine names that a player cannot yet set inside a house (the
+entry point, the room order, top-down by an inside stair).
 
 **After that, as before:** separate the reserve's worth in
 `yokneamHouseReserve` (a `counterattackInside` harness flag); why the

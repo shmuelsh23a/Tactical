@@ -6278,7 +6278,8 @@ A at 3:1 200, four jobs at a time.
   direction, not a measurement. Mean confidence 0.66; 928 questions. Run
   before the seizing fix, which moved the rule commander's cells by two
   points at most. Its logs are in `jev-runs/claude-opus-5-5-audit-*`.
-- **Not ruled**: whether the bands stand and the doctrinal drill's numbers
-  go to the rules (step 4 — decision 68's bands and the sources, including
-  whether a pinning base of fire is the bands' "strong suppression" case,
-  70–75%), is the author's.
+- **Ruled** (decision 118, the author, 2026-10-21, night): the doctrinal
+  drill is the bands' strong-suppression case — 70–75% at 3:1 (71%, in)
+  and, by decision 68's own 25-point step, 45–50% at 2:1 (42.5%, 2.5
+  under, accepted as noise); the plain drill stays on 40–55% / 20–35%
+  (54% / 26.5%, in). Nothing tuned.

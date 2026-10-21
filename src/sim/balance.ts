@@ -789,6 +789,19 @@ export const TARGETS = {
   attack3AttackerDown: [10, 30] as const,
 } as const;
 
+/**
+ * The bands for an attack with strong suppression (rules decision 118, the
+ * author, 2026-10-21): decision 68's second row at 3:1, 70–75% (Rowland's
+ * 76%), and at 2:1 the same 25-point step down, 45–50% (⚠️ ours, as
+ * decision 68's 2:1 is: no small-unit source gives it). A company fighting
+ * by doctrine — the reference drill, `REFERENCE_DRILL` — is judged against
+ * these; the plain drill against {@link TARGETS}.
+ */
+export const SUPPRESSED_TARGETS = {
+  attack2Win: [45, 50] as const,
+  attack3Win: [70, 75] as const,
+} as const;
+
 export interface Verdict {
   echelon: Echelon;
   attack1Win: number;

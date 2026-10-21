@@ -3695,6 +3695,22 @@ on the stated reasoning, still awaiting the author's word.
       thrown change who fires and so the dice drawn (as decisions 113–116
       change who fires outside). The figures it brings are on balance.md,
       *The drill audit's own figures*.
+118. ✅ **A company fighting by doctrine is the bands' strong-suppression
+    case** (the author, 2026-10-21, night, on the re-measure after the
+    drill audit; both options the recommended one). Decision 68's bands
+    have two rows at 3:1: 40–55%, and 70–75% "with surprise or strong
+    suppression" (Rowland's 76%). The doctrinal drill — a base of fire set
+    and suppressing before the assault goes in — is judged on the second
+    row; the plain drill, the untrained variant, on the first.
+    - **3:1**: doctrinal 71% against 70–75%, **in**; plain 54% against
+      40–55%, **in**.
+    - **2:1**: the strong-suppression band takes decision 68's own 25-point
+      step down from 3:1, **45–50%** (⚠️ ours, as 20–35% is: no small-unit
+      source gives 2:1). Doctrinal 42.5%, 2.5 points under, within the
+      noise of 100 battles a plan: **accepted, not tuned**. Plain 26.5%
+      against 20–35%, **in**.
+    - In code: `SUPPRESSED_TARGETS` beside `TARGETS` in
+      `src/sim/balance.ts`. Nothing in the rules moves.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
