@@ -52,6 +52,8 @@ export interface InteriorReport {
   began: boolean;
   /** Forces of the attacking side that came in to join it this turn (decision 99). */
   joined?: string[];
+  /** Forces of the defending side that came in to counterattack this turn (decision 104). */
+  counterattacked?: string[];
   /** Men put out this turn, each side. */
   attackersOut: number;
   defendersOut: number;
@@ -112,6 +114,8 @@ export interface InteriorWorld {
   readonly windowFire?: boolean;
   /** Decision 103: a man broken outside's judgement stops fighting inside. */
   readonly moraleInside?: boolean;
+  /** Decision 104: defenders inside retake rooms, and the defending side counterattacks in. */
+  readonly counterattackInside?: boolean;
 }
 
 /** A man of a force fighting inside whom the street can see, and who can see it (decision 98). */
@@ -392,8 +396,13 @@ export class InteriorBattles {
   resolveTurn(world: InteriorWorld): InteriorReport[] {
     const reports: InteriorReport[] = [];
     const started = new Set(this.startFights(world));
-    const joined = this.joinFights(world);
+    const { joined, countered } = this.joinFights(world);
     this.entering.clear();
+    // Fighting room by room, each side goes on knowing who it is fighting, minute by minute
+    // (decision 104: a reserve commits on what its side knows fresh).
+    if (world.counterattackInside && world.contact) {
+      for (const e of this.engagements) for (const a of e.attackerUnits) for (const d of e.defenderUnits) world.contact(this.unit(world, a), this.unit(world, d));
+    }
     // The plans as they stand this turn: grenades, and fall back or hold (decision 101).
     for (const e of this.engagements) {
       for (const id of e.attackerUnits) {
@@ -490,6 +499,7 @@ export class InteriorBattles {
         defenderUnits: [...e.defenderUnits],
         began: started.has(e),
         ...(joined.get(e)?.length ? { joined: joined.get(e) } : {}),
+        ...(countered.get(e)?.length ? { counterattacked: countered.get(e) } : {}),
         attackersOut,
         defendersOut,
         defendersWithdrew,
@@ -563,7 +573,7 @@ export class InteriorBattles {
       const first = this.orders.get(attackers[0]!.id);
       const entry = first?.entry === "top" && plan.stairwell && plan.storeys.length > 1 ? "top" : "door";
       const expects = defenders.map((u) => this.orders.get(u.id)?.expects).find((x) => x !== undefined);
-      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}) }, rng);
+      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
       // Wounds already taken outside come in with the men.
       const index = this.soldierIndex(world, { attackerUnits: attackers.map((u) => u.id), defenderUnits: defenders.map((u) => u.id) });
       for (const m of fight.soldiers) {
@@ -601,18 +611,32 @@ export class InteriorBattles {
    * side is already clearing it join the fight (decision 99, the author,
    * 2026-10-20): new teams of four at the front door as the turn closes,
    * by the defaults the fight began with. In unit order, so a replay joins
-   * the same. A defending side's force is refused before it gets here.
+   * the same. A defending side's force counterattacks in (decision 104):
+   * new teams at the front door, clearing the attacker's rooms back.
    */
-  private joinFights(world: InteriorWorld): Map<InteriorEngagement, string[]> {
+  private joinFights(world: InteriorWorld): { joined: Map<InteriorEngagement, string[]>; countered: Map<InteriorEngagement, string[]> } {
     const joined = new Map<InteriorEngagement, string[]>();
+    const countered = new Map<InteriorEngagement, string[]>();
     for (const u of world.units) {
       const buildingId = this.entering.get(u.id);
       if (buildingId === undefined || this.inFight(u.id)) continue;
       const e = this.engagements.find((x) => x.buildingId === buildingId);
-      if (!e || e.fight.finished || u.side !== e.attackerSide) continue;
+      if (!e || e.fight.finished) continue;
       if (u.kind !== "infantry" || u.neutralized || u.routing || u.surrendered) continue;
       const men = fit(u);
       if (men.length === 0) continue;
+      if (u.side !== e.attackerSide) {
+        if (!world.counterattackInside) continue;
+        e.fight.counterJoin(this.teamsOf(u));
+        for (const m of e.fight.soldiers) {
+          const s = men.find((x) => x.id === m.id);
+          if (s) m.damage = s.damagePoints;
+        }
+        e.defenderUnits.push(u.id);
+        if (world.contact) for (const a of e.attackerUnits) world.contact(u, this.unit(world, a));
+        countered.set(e, [...(countered.get(e) ?? []), u.id]);
+        continue;
+      }
       // A fight entered from the roof is joined only by its hatch, which this does not model (decision 101).
       if (e.fight.entryWay !== "door") continue;
       e.fight.join(this.teamsOf(u));
@@ -625,7 +649,7 @@ export class InteriorBattles {
       if (world.contact) for (const d of e.defenderUnits) world.contact(u, this.unit(world, d));
       joined.set(e, [...(joined.get(e) ?? []), u.id]);
     }
-    return joined;
+    return { joined, countered };
   }
 
   /**

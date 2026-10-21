@@ -68,6 +68,13 @@ describe("a fight inside a building, in Hebrew", () => {
     expect(interiorReportHe(yielded, names, "BLUE")).not.toContain("3 ממגיני");
   });
 
+  it("names a counterattack inside to the defender, and tells the attacker only that it came (decision 104)", () => {
+    const counter = { ...report, began: false, counterattacked: ["R-1"] };
+    expect(interiorReportHe(counter, names, "RED")).toContain("מחלקה א'/1 פתח בהתקפת נגד בתוך המבנה");
+    expect(interiorReportHe(counter, names, "BLUE")).toContain("האויב פתח בהתקפת נגד בתוך המבנה");
+    expect(interiorReportHe(counter, names, "BLUE")).not.toContain("מחלקה א'/1");
+  });
+
   it("says how it ended", () => {
     expect(interiorReportHe({ ...report, began: false, outcome: "cleared" }, names, "BLUE")).toContain("המבנה טוהר");
     expect(interiorReportHe({ ...report, began: false, outcome: "repulsed" }, names, "BLUE")).toContain("נהדפה");

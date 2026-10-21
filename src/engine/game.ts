@@ -744,6 +744,15 @@ export interface GameOptions {
    */
   moraleInside?: boolean;
   /**
+   * The defender's counterattack inside (rules decision 104): defenders
+   * inside go back into rooms the attacker took and left, and a force of
+   * the defending side that assaults an attacker fighting in its house
+   * goes in at the door and clears the attacker's rooms back. On by
+   * default; a recording made before it reads it as off, where defenders
+   * stood or fell back and the defending side's assault was refused.
+   */
+  counterattackInside?: boolean;
+  /**
    * An enemy mark stays on the side's map where it was last seen, however long
    * ago (rules decision 57, author 2026-09-29): the side draws it as stale.
    * Before, a report nobody refreshed for three turns was dropped (decision
@@ -880,6 +889,7 @@ export class Game {
   readonly joinFights: boolean;
   readonly breakEndsInside: boolean;
   readonly moraleInside: boolean;
+  readonly counterattackInside: boolean;
   /** The fights going on inside buildings (rules decision 96). */
   readonly interior = new InteriorBattles();
   /** Whether a mark stays where it was last seen (rules decision 57). */
@@ -1348,6 +1358,7 @@ export class Game {
     this.joinFights = opts.joinFights ?? true;
     this.breakEndsInside = opts.breakEndsInside ?? true;
     this.moraleInside = opts.moraleInside ?? true;
+    this.counterattackInside = opts.counterattackInside ?? true;
     this.keepStaleMarks = opts.keepStaleMarks ?? true;
     this.suppressionByVolume = opts.suppressionByVolume ?? true;
     this.suppressionByChance = opts.suppressionByChance ?? true;
@@ -1511,6 +1522,7 @@ export class Game {
       ...(this.joinFights ? { joinFights: true } : {}),
       ...(this.breakEndsInside ? { breakEndsInside: true } : {}),
       ...(this.moraleInside ? { moraleInside: true } : {}),
+      ...(this.counterattackInside ? { counterattackInside: true } : {}),
       ...(this.keepStaleMarks ? { keepStaleMarks: true } : {}),
       ...(this.suppressionByVolume ? { suppressionByVolume: true } : {}),
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
@@ -1668,7 +1680,7 @@ export class Game {
         // The minute inside every building being fought for (rules decision
         // 96), before the upkeep: the morale step finds its losses itself.
         const interior = this.closedTerrain
-          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire, moraleInside: this.moraleInside && this.morale })
+          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire, moraleInside: this.moraleInside && this.morale, counterattackInside: this.counterattackInside })
           : [];
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
@@ -3473,19 +3485,24 @@ export class Game {
     // decision 96): the attacker stands at its door, and the fight is fought
     // room by room as the turn closes, not resolved here from outside.
     const target = this.getUnit(defenderId);
+    // An enemy fighting in a building is in that building, wherever his force's mark stands (its door).
+    const foughtIn = this.closedTerrain && this.counterattackInside ? this.interior.engagementOf(defenderId) : undefined;
     const inside =
       this.closedTerrain && attacker.kind === "infantry" && (target.kind === "infantry" || target.kind === "command") && !target.surrendered
-        ? this.interior.buildingAt(this.terrain, target.position)
+        ? (foughtIn ? this.terrain.objects.find((o) => o.id === foughtIn.buildingId) : this.interior.buildingAt(this.terrain, target.position))
         : undefined;
     const door = inside ? this.interior.frontDoor(this, inside) : undefined;
     if (inside && door && distance(attacker.position, target.position) <= ASSAULT_RANGE_M) {
       // A fight already going on in it: the attacking side's forces join it
-      // (decision 99); the defending side's cannot counterattack in yet.
+      // (decision 99); the defending side's counterattack in, at the door, on
+      // an attacker in it (decision 104).
       // ⚠️ Ours: only on a force in that fight; one inside but not in it is not reached by joining.
       const fighting = this.interior.attackerSideIn(inside.id);
+      const inThatFight = this.interior.fightersIn(inside.id).includes(defenderId);
       // A fight entered from the roof is joined only by its hatch, which is not modelled (decision 101).
-      const joins = this.joinFights && fighting === attacker.side && this.interior.fightersIn(inside.id).includes(defenderId);
-      if (fighting !== undefined && !joins) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
+      const joins = this.joinFights && fighting === attacker.side && inThatFight;
+      const counters = this.counterattackInside && fighting !== undefined && fighting !== attacker.side && target.side === fighting && inThatFight && !this.interior.inFight(attackerId);
+      if (fighting !== undefined && !joins && !counters) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
       if (joins && this.interior.entryIn(inside.id) !== "door") return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.enteredFromRoof };
       // From the roof, as planned (decision 101): only down a house's stairs.
       if (fighting === undefined && this.interior.orderFor(attackerId)?.entry === "top") {

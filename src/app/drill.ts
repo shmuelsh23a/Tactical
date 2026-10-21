@@ -832,6 +832,19 @@ function freshEnemies(game: Game, side: Side, enemies: Unit[]): Unit[] {
   return enemies.filter((e) => fresh.has(e.id));
 }
 
+/**
+ * The front door of the house where `foe` is clearing `side`'s men out
+ * (decision 104): where the counterattack goes in. The defender knows his
+ * own house and that it is being fought for.
+ */
+function counterDoor(game: Game, side: Side, foe: Unit): Point | undefined {
+  if (!game.counterattackInside) return undefined;
+  const e = game.interior.engagementOf(foe.id);
+  if (!e || e.attackerSide === side) return undefined;
+  const building = game.terrain.objects.find((o) => o.id === e.buildingId);
+  return building ? game.interior.frontDoor(game, building) : undefined;
+}
+
 /** The enemy known nearest `post`, if one is within `within` metres of it. */
 function enemyOn(post: Point, enemies: Unit[], within: number): Unit | undefined {
   let best: Unit | undefined;
@@ -845,8 +858,9 @@ function enemyOn(post: Point, enemies: Unit[], within: number): Unit | undefined
 /**
  * Commit a defender's reserves (rules decision 60): each reserve not yet
  * committed goes for the nearest forward position of its own platoon that is
- * lost — its squad out of the fight or gone from it, and an enemy known on
- * it. Once committed it stays committed.
+ * lost — its squad out of the fight or gone from it, or its house being
+ * cleared round it (decision 104), and an enemy known on it. Once committed
+ * it stays committed; its assault on an enemy fighting inside goes in.
  */
 function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState, forces: Unit[], enemies: Unit[]): void {
   const counter = drill.counterattack;
@@ -856,7 +870,10 @@ function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: D
     // A squad that went to its alternate position left its post on purpose.
     if (state.displaced.has(id)) return false;
     const holder = game.getUnit(id);
-    const holds = inPlay(holder) && distance(holder.position, post) <= HOLDS_POST_M;
+    // A squad whose house is being cleared round it is losing its post (decision 104): the reserve goes in, before it is cleared.
+    const fight = game.counterattackInside ? game.interior.engagementOf(id) : undefined;
+    const beingCleared = fight !== undefined && fight.attackerSide !== holder.side;
+    const holds = inPlay(holder) && distance(holder.position, post) <= HOLDS_POST_M && !beingCleared;
     return !holds && enemyOn(post, enemies, counter.lostWithin) !== undefined;
   });
   if (lost.length === 0) return;
@@ -960,6 +977,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       // The counterattack (decision 60): at the enemy on the lost position,
       // then onto the position itself; there it holds by the drill below.
       const foe = enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack.lostWithin);
+      // An enemy clearing the house is gone in after at its door (decision 104), wherever its mark is drawn.
+      const door = foe ? counterDoor(game, side, foe) : undefined;
+      if (door) {
+        game.setStandingOrder(u.id, distance(u.position, door) <= ASSAULT_RANGE_M - 4 ? { gait: "normal" } : { gait: drill.counterattack.gait, destination: { ...door } });
+        return;
+      }
       if (foe) {
         game.setStandingOrder(
           u.id,
@@ -1299,6 +1322,13 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
     const retaking = task.attacking || !drill.counterattack ? undefined : state?.counterattacking.get(u.id);
     const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
+    // The counterattack inside (decision 104): at the door of the house being cleared, it goes in.
+    const door = foe ? counterDoor(game, side, foe) : undefined;
+    if (foe && door && u.kind === "infantry" && !game.interior.inFight(u.id) && distance(u.position, door) <= ASSAULT_RANGE_M) {
+      const r = game.assault(u.id, foe.id, drill.assault.grenades);
+      report?.assaulted?.(u, foe, drill.assault.grenades, r);
+      continue;
+    }
     // Screening smoke (Battle Drill 2 step 11a(3)): a supporting force
     // whose company has gone in blinds the position to the assault.
     if (

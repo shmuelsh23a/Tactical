@@ -451,6 +451,10 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
   if (report.joined?.length) {
     parts.splice(1, 0, reader == null || attacking ? `${names(report.joined)} הצטרף לקרב במבנה` : "כוח אויב נוסף נכנס למבנה");
   }
+  // The defending side came in to counterattack (decision 104): its own side by name, the attacker only that it came.
+  if (report.counterattacked?.length) {
+    parts.splice(1, 0, reader == null || !attacking ? `${names(report.counterattacked)} פתח בהתקפת נגד בתוך המבנה` : "האויב פתח בהתקפת נגד בתוך המבנה");
+  }
   if (report.defendersWithdrew > 0) parts.push(`${report.defendersWithdrew} ממגיני המבנה נסוגו ממנו`);
   if (report.attackersWithdrew > 0) parts.push(`${report.attackersWithdrew} מהתוקפים יצאו מן המבנה`);
   // Broken and cornered, defenders gave themselves up (decision 103): prisoners are losses, so the attacker reads no count.

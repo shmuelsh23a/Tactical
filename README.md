@@ -3345,6 +3345,44 @@ on the stated reasoning, still awaiting the author's word.
       (decision 19): it routs out of the fight, or, cornered, gives itself
       up whole. `Soldier.captured` is recorded but not yet shown apart from
       a casualty (the UX pass).
+104. ✅ **The defender's counterattack inside** (the author, 2026-10-21:
+    "both from the outside like you suggested, and the defender in the
+    house tries to retake rooms and is not static"; ATP 3-06.11 (2024),
+    para 4-96: "local counterattacks with the smallest available
+    resources to prevent enemy forces from consolidating"). With
+    `GameOptions.counterattackInside` (on for a new game, off for a
+    recording made before it):
+    - **The defenders inside are not static.** A defender goes back into a
+      room beside his that the attacker took and has left — nobody of the
+      attacker's in it — and once he is in it, it is the defender's again:
+      fire teams "can only secure where they are, not where they have been"
+      (para C-79). The attacker has to take it again, and a team beyond it
+      is cut off from the door until it does. One man a room; never a man
+      broken, or one whose plan holds him to the last.
+    - **From outside** (decision 99's refusal lifted): a force of the
+      defending side that assaults an attacker fighting in its house goes
+      in at the front door, as new teams of four, and clears the
+      attacker's rooms back by the same drill — a grenade into each, through
+      the ground the defender still holds, storey by storey to the nearest
+      with rooms of the attacker's; the attacker's men hold what they took
+      as the defender's do. A broken counterattacker leaves, as a broken
+      attacker does (decision 103). The fight is not cleared while a
+      counterattack is still at it.
+    - **The computer's drill**: decision 60's reserve counts a post whose
+      squad is defending a house being cleared round it as lost, and goes
+      for the enemy at it at once, before the house is cleared; its assault
+      on an attacker fighting inside goes in.
+    - The log names the counterattacking force to its own side and the
+      umpire; the attacker reads "האויב פתח בהתקפת נגד בתוך המבנה".
+    - Fighting room by room, each side goes on knowing who it is fighting,
+      minute by minute (a reserve commits on what its side knows fresh), and
+      the reserve makes for the house's door, not for its marks of the enemy
+      fighting inside it.
+    - ⚠️ Ours: retaking a room needs nobody of the attacker's in it, and a
+      defender with no enemy in his own room; a counterattack goes in only
+      at the front door, with grenades. No scenario measures the reserve's
+      counterattack yet: where a reserve stands decided the battle before
+      it (balance.md), so its place waits on the author.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

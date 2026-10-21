@@ -18,7 +18,7 @@ const house: MapObject = {
   footprint: { shape: "polygon", points: [{ x: 100, y: 100 }, { x: 116, y: 100 }, { x: 116, y: 112 }, { x: 100, y: 112 }] },
 };
 
-function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean; morale?: boolean; breakEndsInside?: boolean; moraleInside?: boolean } = {}, defenders = 4) {
+function battle(seed = 1, opts: { closedTerrain?: boolean; windowFire?: boolean; joinFights?: boolean; morale?: boolean; breakEndsInside?: boolean; moraleInside?: boolean; counterattackInside?: boolean } = {}, defenders = 4) {
   const g = new Game({ seed, enforceC2: false, terrain: { objects: [house] }, ...opts });
   g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, defenders)); // inside the house
   // 40 m out from the house's front door, wherever this game's plan puts it.
@@ -242,14 +242,56 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
     if (g.interior.inFight("B-1")) expect(g.assault("B-2", "R-3", 0).reason).toBe(INTERIOR_REFUSAL.fightingInside);
   });
 
-  it("refuses a defending side's force going in after its own: no counterattack inside yet", () => {
-    const g = battle(5);
+  it("lets a defending side's force counterattack in at the door, clearing back the attacker's rooms (decision 104)", () => {
+    let came = 0, retaken = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const g = battle(seed);
+      goIn(g);
+      closeTurn(g);
+      // The attacker takes some of the house first.
+      for (let t = 0; t < 30 && g.interior.inFight("B-1") && g.interior.engagements[0]!.fight.result().roomsCleared < 2; t++) {
+        g.advanceToPhase("summary");
+        closeTurn(g);
+      }
+      if (!g.interior.inFight("B-1")) continue;
+      second(g, "R-2", "RED");
+      g.advanceToPhase("combat");
+      expect(g.assault("R-2", "B-1", 0).reason).toBe(GOES_INSIDE);
+      const reports = closeTurn(g);
+      expect(g.interior.inFight("R-2")).toBe(true);
+      expect(reports.some((r) => r.counterattacked?.includes("R-2"))).toBe(true);
+      came++;
+      for (let t = 0; t < 120 && g.interior.engagements.length > 0; t++) {
+        const e = g.interior.engagements[0]!;
+        g.advanceToPhase("summary");
+        closeTurn(g);
+        retaken = Math.max(retaken, e.fight.result().roomsRetaken);
+      }
+      expect(g.interior.engagements).toHaveLength(0); // it comes to an end
+    }
+    expect(came).toBeGreaterThan(0);
+    expect(retaken).toBeGreaterThan(0);
+  });
+
+  it("resolves a defending side's assault outside, as played, in a battle recorded before decision 104", () => {
+    const g = battle(5, { counterattackInside: false });
     goIn(g);
     closeTurn(g);
     second(g, "R-2", "RED");
     g.advanceToPhase("combat");
-    expect(g.assault("R-2", "B-1", 0).reason).not.toBe(GOES_INSIDE);
+    const reason = g.assault("R-2", "B-1", 0).reason;
+    expect(reason).not.toBe(GOES_INSIDE);
+    expect(reason).not.toBe(INTERIOR_REFUSAL.fightingInside); // the attacker at the door is fought where his mark is
     expect(g.interior.inFight("R-2")).toBe(false);
+  });
+
+  it("does not let a force already in the fight counterattack into it", () => {
+    const g = battle(5);
+    goIn(g);
+    closeTurn(g);
+    g.advanceToPhase("combat");
+    if (!g.interior.inFight("R-1")) return;
+    expect(g.assault("R-1", "B-1", 0).reason).not.toBe(GOES_INSIDE);
   });
 
   it("clears a house sooner with a second squad joining", () => {
@@ -447,6 +489,13 @@ describe("the fight inside, coupled to the turn (decision 96)", () => {
       }
     }
     expect(captured).toBeGreaterThan(0);
+  });
+
+  it("records the counterattack inside, and replays a battle from before it without one", () => {
+    expect(battle(2).toRecording().counterattackInside).toBe(true);
+    const g = battle(2, { counterattackInside: false });
+    expect(g.toRecording().counterattackInside).toBeUndefined();
+    expect(replayGame(JSON.parse(JSON.stringify(g.toRecording()))).counterattackInside).toBe(false);
   });
 
   it("records morale inside, and replays a battle from before it with the fight going on under a broken side", () => {
