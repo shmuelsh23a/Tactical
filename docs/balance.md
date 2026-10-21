@@ -5295,6 +5295,9 @@ score's clock), 100 battles, smoke first:
   `telAzekaDelay`'s turn 15.
 - Not measured: covered routes (bounds through dead ground), which needs
   route-finding built first.
+- **Ruled a deliberate cost, not a trap** (the author, 2026-10-21):
+  breaking contact under pressure costs, as doctrine warns. The criteria
+  stay as built; covered routes are not pursued for now.
 
 ## The score, and breaking contact by it, 2026-10-21 (decision 108)
 
@@ -5312,8 +5315,8 @@ from seed 1000, `--defender-disengage loss=0.25,back=150` against none:
   do not keep their men — the defender's losses are 28% holding and 31%
   breaking contact, the teams caught on the move — and the mission is lost
   more often. The men part barely moves; the mission part dominates.
-- So by this score the criteria stay a dominated option on Tel Azeka. Put
-  to the author.
+- So by this score the criteria never beat holding on Tel Azeka. Put to
+  the author, who ruled it a deliberate cost (decision 109).
 
 ## Disengagement criteria, 2026-10-21 (decision 107)
 

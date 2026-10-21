@@ -3516,6 +3516,12 @@ on the stated reasoning, still awaiting the author's word.
       about displacing "while still under enemy pressure" (ATP 3-06.11
       (2024), para 4-137).
 
+    - **A deliberate cost, not a trap** (the author, the same evening:
+      "breaking contact under pressure costs, as doctrine warns"). That no
+      setting of the criteria beats holding in the scenarios measured is
+      the rule working, not a dominated control to fix: the criteria are
+      the commander's to use when holding is worse still, and going early
+      costs next to nothing. Not to be re-proposed as a trap.
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

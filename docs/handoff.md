@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 103-109 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, a battle's score, smoke before the bound and a delay mission. Breaking contact still pays nowhere measured (doctrine's own warning about displacing under pressure); open for him: covered routes, or accept it. Then the 2:1 median, the force-quality matrix and the AI commanders.**
+**Next, in one line: decisions 103-109 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, a battle's score, smoke before the bound and a delay mission. Breaking contact pays nowhere measured, and he ruled that a deliberate cost (doctrine's warning about displacing under pressure). Next: the 2:1 median, the force-quality matrix and the AI commanders, which wait on him.**
 
 **Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
@@ -144,12 +144,6 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 - **The plain script's Tel Azeka fell 36% → 21%** once the brief left the
   reserve out; the reference plans did not move. Not yet looked into why.
-- **Breaking contact pays nowhere measured** (decision 109, balance.md,
-  *Where breaking contact might pay*): smoke first (adopted) wins back 15
-  of the 36 points a loss trigger costs; going early costs nothing and
-  gains nothing; on `telAzekaDelay` the squad is overrun by turn 8 holding
-  or going. Left: covered routes (bounds through dead ground, which needs
-  route-finding), or accept it as doctrine's warning (ATP 3-06.11 4-137).
 - **Today's ⚠️, none questioned yet:** cornered means found (an attacker
   has him in sight), and he gives himself up before that attacker fires;
   a broken attacker or counterattacker is gone at once (no walk out); a
@@ -395,6 +389,12 @@ One rules question is **open but not asked**, because nothing needs it yet:
   along a road, a vehicle confined to one — the document does not raise it.
 
 ## Do not re-propose
+
+- **Breaking contact as a trap to fix.** Measured never to beat holding
+  (decisions 107-109, balance.md); the author ruled it a deliberate cost:
+  breaking contact under pressure costs, as doctrine warns (ATP 3-06.11
+  (2024), para 4-137). Covered routes were the remaining lever, not
+  pursued.
 
 - **A battle that waits for an empty house.** Decision 103 waits only
   while men of both sides are in a fight inside; waiting for the
