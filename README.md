@@ -3399,19 +3399,25 @@ on the stated reasoning, still awaiting the author's word.
       platoon's reserve 88 m south of the house's door, in full cover, out
       of sight of the platoon's start (the author: "farther back").
       ⚠️ Ours: the exact spot.
-106. ✅ **A defender holding a house fights from it, and does not assault
-    out of it** (the author, 2026-10-21: "a defender holding a house fights
-    from it and doesn't assault out of it"). The computer's drill gave every
+106. ✅ **A defender holding a house does not go out to assault the force
+    about to come in** (the author, 2026-10-21, refining his first ruling
+    the same evening: "I don't want the defender to be static. A force
+    defending a house does not assault the attacking force that is about
+    to come in, but it should be able to leave the house — either to
+    reposition or to attack the attacker"). The computer's drill gave every
     defender the assault rule, so a squad in a house came out on turn 1 and
     assaulted the platoon in the open at its door: in `yokneamHouse` and
-    `yokneamHouseReserve` that decided most battles before any fight
-    inside. Now a defending force standing in a building fires from it and
-    never assaults out; the attacker comes to it, and the fight inside
-    decides. A force in the open assaults as before, a committed reserve's
-    counterattack among them.
-    - It is the drill's, as squads are scripted (decision 60's reserve
-      likewise): a player defending a house may still order an assault out
-      of it. ⚠️ Ours: the engine does not refuse one.
+    `yokneamHouseReserve` that decided most battles before any fight inside.
+    - **About to come in is at the walls**: an enemy within 10 m of the
+      house's walls (`COMING_IN_M`, ⚠️ the figure ours). The defender fires
+      on him from the house and lets him come in; the fight inside decides.
+    - **The defender is not static.** An enemy farther out it may go out
+      and assault, and nothing stops it leaving the house to reposition — a
+      player may order either. The drill does not yet script a move out
+      (the author: allowed, not scripted yet).
+    - A force in the open assaults as before, a committed reserve among them.
+    - It is the drill's, as squads are scripted; the engine refuses no
+      order. The defender judges "at the walls" by its marks of the enemy.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

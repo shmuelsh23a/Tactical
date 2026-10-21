@@ -9,6 +9,7 @@ import {
   drillMovement,
   fireGrenadiers,
   SCOUT_GIVE_UP_TURNS,
+  COMING_IN_M,
   type DrillTask,
 } from "./drill.js";
 import { HOLD_SHORT_M, type CompanyOrders } from "./company.js";
@@ -746,7 +747,8 @@ describe("the next squad into a house (decision 100)", () => {
 });
 
 describe("a defender holding a house (rules decision 106)", () => {
-  // The author, 2026-10-21: "a defender holding a house fights from it and doesn't assault out of it".
+  // The author, 2026-10-21: it "does not assault the attacking force that is about to come in, but it
+  // should be able to leave the house - either to reposition or to attack the attacker".
   const house = {
     id: "house",
     kind: "building" as const,
@@ -754,10 +756,10 @@ describe("a defender holding a house (rules decision 106)", () => {
     footprint: { shape: "polygon" as const, points: [{ x: -8, y: -6 }, { x: 8, y: -6 }, { x: 8, y: 6 }, { x: -8, y: 6 }] },
   };
   const hold: DrillTask = { side: "RED", attacking: false, objective: { x: 0, y: 600 } };
-  function acts(at: { x: number; y: number }) {
+  function acts(at: { x: number; y: number }, enemyY = 12) {
     const g = new Game({ seed: 3, trackIntel: false, enforceC2: false, terrain: { objects: [house] } });
     g.addUnit(makeInfantry("R", "RED", "squad", at, 8));
-    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: at.x, y: 20 }, 8));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: at.x, y: enemyY }, 8));
     g.beginTurn();
     g.advanceToPhase("combat");
     const did: string[] = [];
@@ -768,13 +770,17 @@ describe("a defender holding a house (rules decision 106)", () => {
     return did;
   }
 
-  it("fires from the house at an enemy at its walls, and does not assault out of it", () => {
-    const inside = acts({ x: 0, y: 0 });
+  it("fires from the house at an enemy at its walls, and does not go out to assault him", () => {
+    const inside = acts({ x: 0, y: 0 }); // 6 m from the wall: about to come in
     expect(inside).not.toContain("assault");
     expect(inside).toContain("fire");
   });
 
+  it("is not static: it may go out and assault an enemy farther from the house", () => {
+    expect(acts({ x: 0, y: 0 }, 6 + COMING_IN_M + 4)).toContain("assault");
+  });
+
   it("still assaults from the open, as before", () => {
-    expect(acts({ x: 40, y: 10 })).toContain("assault");
+    expect(acts({ x: 40, y: 0 })).toContain("assault");
   });
 });
