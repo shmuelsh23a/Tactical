@@ -299,6 +299,7 @@ export class ScriptedCompany {
   private supportHolding = false;
   private supportSetDone = false;
   private supportWaitTurns = 0;
+  private supportCountedOn = -1;
   /** The commander declined to commit the base of fire when the assault was spent. */
   private recommitDeclined = false;
   /** The rearmost platoon has been put on flank and rear security (step 12b). */
@@ -427,7 +428,7 @@ export class ScriptedCompany {
       gateHolding: this.gateHolding,
       ...(this.supportHolding ? { supportHolding: true } : {}),
       ...(this.supportSetDone ? { supportSet: true } : {}),
-      ...(this.supportWaitTurns ? { supportWaitTurns: this.supportWaitTurns } : {}),
+      ...(this.supportWaitTurns ? { supportWaitTurns: this.supportWaitTurns, supportCountedOn: this.supportCountedOn } : {}),
       securityGiven: this.securityGiven,
       ...(this.recommitDeclined ? { recommitDeclined: true } : {}),
       support: this.support,
@@ -462,6 +463,7 @@ export class ScriptedCompany {
     this.supportHolding = snap.supportHolding ?? false;
     this.supportSetDone = snap.supportSet ?? false;
     this.supportWaitTurns = snap.supportWaitTurns ?? 0;
+    this.supportCountedOn = snap.supportCountedOn ?? -1;
     this.recommitDeclined = snap.recommitDeclined ?? false;
     this.securityGiven = snap.securityGiven ?? false;
     this.support = snap.support;
@@ -719,11 +721,10 @@ export class ScriptedCompany {
       return key !== undefined && this.platoonTask(key) === "support";
     });
     if (!supporting.length) return;
+    // The enemy where the side has him marked, as the drill holds the assault short of him:
+    // never where he really is (a stale mark, or one moved to an alternate position).
     const view = sideView(game, this.side);
-    const foes = view.units
-      .filter((u) => u.side !== this.side && !u.neutralized && !u.surrendered)
-      .map((f) => game.units.find((u) => u.id === f.id))
-      .filter((u): u is Unit => u !== undefined);
+    const foes = view.units.filter((u) => u.side !== this.side && !u.neutralized && !u.surrendered);
     // In its weapon's reach (the rules' own tables: 400 m, a machine gun 800 m) with eyes on.
     const reach = (u: Unit) => (u.mediumMg ? MEDIUM_MG_BANDS : SMALL_ARMS_BANDS).at(-1)!.maxRange;
     const set = supporting.every((u) => foes.some((f) => {
@@ -746,7 +747,11 @@ export class ScriptedCompany {
       this.supportSetDone = true;
       return;
     }
-    if (atTheLine) this.supportWaitTurns += 1;
+    // Once a turn, however often the orders are read.
+    if (atTheLine && this.supportCountedOn !== game.turn) {
+      this.supportWaitTurns += 1;
+      this.supportCountedOn = game.turn;
+    }
     this.supportHolding = true;
   }
 
@@ -962,6 +967,8 @@ export interface CompanySnapshot {
   supportHolding?: boolean;
   supportSet?: boolean;
   supportWaitTurns?: number;
+  /** The turn it last counted one of them. */
+  supportCountedOn?: number;
   securityGiven?: boolean;
   /** Whether the commander declined to commit the base of fire (2026-10-12); absent: no. */
   recommitDeclined?: boolean;

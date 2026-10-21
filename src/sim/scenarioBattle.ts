@@ -1004,7 +1004,10 @@ function askAttackerFire(
   const spare = free.filter((w) => (g.fireMissionsLeft(side, w) ?? Infinity) > (w === reserve.tube ? reserve.held : 0));
   // Before the fires lift, and with every squad beyond the reserve tube's lift
   // from it, as the scripted commander's (decisions 93, 95; liftFor).
-  const clear = !priority || !reserve.tube || squadsClearOf(g, side, company, priority, reserve.tube);
+  // Where the priority mission would land: on the enemy seen near the point, if any (drill audit, A8) —
+  // and that is where its squads must be clear of it, and what they are told.
+  const aimed = priority ? priorityAim(g, side, priority) : undefined;
+  const clear = !aimed || !reserve.tube || squadsClearOf(g, side, company, aimed, reserve.tube);
   const canPriority = !!priority && !!reserve.tube && reserve.held > 0 && free.includes(reserve.tube) && !company.firesLifted && clear;
   if (!spare.length && !canPriority) return;
   // The mortar a mark is fired with — the heaviest with a mission to spare —
@@ -1035,7 +1038,7 @@ function askAttackerFire(
   const onPlan = (p: Point) => planned.findIndex((t) => distance(t, p) <= ADJUSTMENT_RADIUS_M);
   const name = (i: number) => PLANNED_NAMES[i] ?? `planned point ${i + 1}`;
   const priorityName = priority ? name(planned.indexOf(priority)) : "";
-  const lead = squads.length && priority ? Math.round(nearestOwn(priority)) : undefined;
+  const lead = squads.length && aimed ? Math.round(nearestOwn(aimed)) : undefined;
   const left = (w: string) => g.fireMissionsLeft(side, w) ?? 0;
   const freeMissions = tubes.reduce((n, w) => n + Math.max(0, left(w) - (w === reserve.tube ? reserve.held : 0)), 0);
   const a = question({
@@ -1095,7 +1098,7 @@ function askAttackerFire(
   });
   if (a === "hold") return;
   if (a === "priority") {
-    g.callForFire(side, reserve.tube!, priorityAim(g, side, priority!), { method: "effect" });
+    g.callForFire(side, reserve.tube!, aimed!, { method: "effect" });
     result.missions[side]++;
     return;
   }

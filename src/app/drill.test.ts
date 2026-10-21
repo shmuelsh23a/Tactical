@@ -849,6 +849,12 @@ describe("the doctrinal drill's fire teams (drill audit A3, A4, A10)", () => {
     g.advanceToPhase("combat");
     drillCombat(g, task, DOCTRINAL_DRILL, state);
     expect(a.firedThisTurn).toBeFalsy();
+    // With its team off the enemy, it fires on him: what held it was the shift, not a want of sight.
+    team.position = { x: 10, y: 300 };
+    g.advanceToPhase("summary");
+    g.advanceToPhase("combat");
+    drillCombat(g, task, DOCTRINAL_DRILL, state);
+    expect(a.firedThisTurn).toBe(true);
     // The enemy gone and the team on the objective: the support team goes on.
     r.neutralized = true;
     team.position = { x: 0, y: 480 };

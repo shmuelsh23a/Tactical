@@ -657,7 +657,10 @@ function callDoctrinalAttackerFire(
     .filter((u) => planned.some((p) => distance(p, u.position) <= ADJUSTMENT_RADIUS_M))
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
   // The heaviest spare tube that may fire there: the guns not within their lift distance of the squads.
-  const tubeFor = (p: Point) => [...spare].reverse().find((w) => clearOf(p, w));
+  // Not the reserve's tube within reach of the priority target while its reserve is held: fire there is
+  // the priority target's, and is counted against it (priorityReserve) — the reserve stays for the assault.
+  const kept = (p: Point, w: string) => !!priority && w === reserveTube && held(w) > 0 && distance(p, priority) < ADJUSTMENT_RADIUS_M;
+  const tubeFor = (p: Point) => [...spare].reverse().find((w) => clearOf(p, w) && !kept(p, w));
   if (onPlan && tubeFor(onPlan.position)) {
     call(tubeFor(onPlan.position)!, onPlan.position);
     return;
@@ -668,8 +671,9 @@ function callDoctrinalAttackerFire(
   const shooter = view.units
     .filter((u) => u.side !== side && !u.neutralized && !u.surrendered && fresh(u.id) && at.safe(u.position) && firing.has(u.id))
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
-  if (shooter && spare.find((w) => clearOf(shooter.position, w))) {
-    call(spare.find((w) => clearOf(shooter.position, w))!, shooter.position);
+  const suppressWith = shooter ? spare.find((w) => clearOf(shooter.position, w) && !kept(shooter.position, w)) : undefined;
+  if (shooter && suppressWith) {
+    call(suppressWith, shooter.position);
     return;
   }
   if (plan.prepFires && at.going) {

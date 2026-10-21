@@ -3591,9 +3591,10 @@ on the stated reasoning, still awaiting the author's word.
       holds short (`holdShort`, 200 m) until every supporting force — the
       platoons on "support", and the scouts when they give a base of fire —
       can engage a known enemy within its weapon's reach (400 m, a machine
-      gun 800 m), ATP 3-21.10 (2026) para 2-170. Once set, never held for it
-      again. ⚠️ Ours: `SUPPORT_SET_MAX_TURNS`, 6 turns of the assault
-      actually waiting, so a support that finds no field of fire does not
+      gun 800 m), ATP 3-21.10 (2026) para 2-170 — judged on the enemy's
+      marks, as the drill holds the assault short of them, never on where
+      he really is. Once set, never held for it again. ⚠️ Ours:
+      `SUPPORT_SET_MAX_TURNS`, 6 turns of the assault actually waiting, so a support that finds no field of fire does not
       hold the attack for good. The browser computer's plan now gives one:
       its scouts (`scoutsSupport`).
     - **Lift or shift as written** (A2): already the doctrinal drill's
@@ -3606,9 +3607,12 @@ on the stated reasoning, still awaiting the author's word.
       base of fire then moves up onto it (step 14b).
     - **The priority target where the enemy was found** (A8): within reach
       of the briefed point (the adjustment radius, so still on the mark) on
-      the nearest sure fresh mark, ATP 3-21.10 para 2-173 — the scripted
-      commander and the asked one both. The reserve counts what was fired
-      within that reach.
+      the nearest sure fresh mark (the asked commander's: the nearest fresh
+      one), ATP 3-21.10 para 2-173 — its squads cleared of, and told the
+      distance to, the point it will land on. The reserve counts what its
+      tube fired within that reach, and while the reserve is held that tube
+      fires nothing else there: fire on the priority target is the
+      priority target's.
     - **The reserve before the base of fire** (A9): a spent assault commits
       the reserve, and the base of fire only when there is none (paras
       2-130, 2-176). The asked commander's question names which.
@@ -3620,7 +3624,8 @@ on the stated reasoning, still awaiting the author's word.
     then a crew-served weapon or a vehicle before riflemen; in its sector
     before outside it; the nearest first — Battle Drill 2 step 11a(1), 2A
     step 6c(2), ATP 3-21.8 (2024) para A-3. An enemy already pinned comes
-    last, while anything else is in reach ("avoid target overkill", A-6).
+    last, while anything else is in reach ("avoid target overkill", A-6) —
+    pinned as the firer's side can watch it (`hasEyesOn`), not as it is.
     Before, every force took the nearest in its sector, and `returnFire`
     lost a gun on the flank to anything in the arc.
 116. ✅ **The defence carried out as doctrine has it** (the author,
@@ -3635,6 +3640,7 @@ on the stated reasoning, still awaiting the author's word.
       `massedOpening`): once one of its forces has fired, the rest of the
       platoon fires from the next turn at anything in the drill's attack
       range, rather than each squad giving itself away alone (para 5-208).
+      Opened by a shot that went, not one aimed.
       ⚠️ The turn's lag is ours: a standing order is changed in the
       movement phase.
     - **A reserve fires when it is attacked** (D5), amending decision 105:

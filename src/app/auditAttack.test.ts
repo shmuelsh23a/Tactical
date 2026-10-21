@@ -66,12 +66,40 @@ describe("the assault waits for its support to be set (drill audit, A1)", () => 
     expect(c.orders(g, { go: true }).holdShort).toBeFalsy();
   });
 
-  it("does not wait for good on a support that never gets set", () => {
+  // A turn's orders, and on to the next turn.
+  const turn = (g: Game, c: ScriptedCompany) => {
+    const held = !!c.orders(g, { go: true }).holdShort;
+    g.advanceToPhase("summary");
+    g.advanceToPhase("movement");
+    return held;
+  };
+
+  it("does not wait for good on a support that never gets set, counting turns and not readings", () => {
     const { g, c } = field();
+    c.orders(g, { go: true });
+    c.orders(g, { go: true }); // read twice in a turn: one turn waited
+    // Held for SUPPORT_SET_MAX_TURNS turns, this one among them; released on the next.
     const held: boolean[] = [];
-    for (let t = 0; t < SUPPORT_SET_MAX_TURNS + 1; t++) held.push(!!c.orders(g, { go: true }).holdShort);
+    for (let t = 0; t <= SUPPORT_SET_MAX_TURNS; t++) held.push(turn(g, c));
     expect(held.slice(0, SUPPORT_SET_MAX_TURNS)).toEqual(Array(SUPPORT_SET_MAX_TURNS).fill(true));
     expect(held.at(-1)).toBe(false);
+  });
+
+  it("judges the wait by the enemy's mark, not where he really is", () => {
+    // The enemy slips away unseen: the assault is held at his mark, and the wait still runs out.
+    const { g, c, red } = field();
+    red.position = { x: 0, y: 2000 };
+    const held: boolean[] = [];
+    for (let t = 0; t < SUPPORT_SET_MAX_TURNS + 1; t++) held.push(turn(g, c));
+    expect(held.at(-1)).toBe(false);
+  });
+
+  it("keeps the wait across a save", () => {
+    const { g, c } = field();
+    turn(g, c);
+    turn(g, c);
+    const back = ScriptedCompany.restored(g, "BLUE", objective, [objective], {}, { terrain: flat, width: 1000, height: 1000 }, c.snapshot());
+    expect(back.snapshot()).toEqual(c.snapshot());
   });
 
   it("holds nobody when no force is on support", () => {

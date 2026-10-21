@@ -19,7 +19,7 @@ import {
   type Unit,
   type WithCoveringFire,
 } from "../engine/index.js";
-import { sideView } from "./hotseat.js";
+import { hasEyesOn, sideView } from "./hotseat.js";
 import { HOLD_SHORT_M, platoonKey, type CompanyOrders } from "./company.js";
 import { bestVantages, isDeadGround } from "./deadGround.js";
 
@@ -913,7 +913,7 @@ function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly Unit[], 
   if (!c || !task.attacking || company?.hold) return false;
   if (enemies.some((e) => distance(e.position, task.objective) <= c.nothingWithin)) return false;
   return forces.some((o) => {
-    if (!inPlay(o) || o.kind === "command" || distance(o.position, task.objective) > c.nothingWithin) return false;
+    if (!inPlay(o) || o.kind === "command" || company?.scouts.has(o.id) || distance(o.position, task.objective) > c.nothingWithin) return false;
     const k = platoonIn(company, o.id);
     return ((k && company?.platoonTasks?.get(k)) ?? "assault") === "assault";
   });
@@ -988,9 +988,11 @@ function pickTarget(
   const inArc = (e: Unit) => drill.sectorWidth >= 360 || angleBetween(bearingDegrees(u.position, e.position), axis) <= drill.sectorWidth / 2;
   if (drill.threatFirst && game) {
     const heavy = (e: Unit) => (e.mediumMg || e.kind === "vehicle" ? 1 : 0);
+    // Pinned as the firer's side can watch it, as the suppression gate reads it (hasEyesOn).
     const pinned = (e: Unit) => {
       try {
-        return suppressionLevel(game.getUnit(e.id)) === "pinned" ? 1 : 0;
+        const it = game.getUnit(e.id);
+        return hasEyesOn(game, u.side, it) && suppressionLevel(it) === "pinned" ? 1 : 0;
       } catch {
         return 0;
       }
@@ -1185,8 +1187,8 @@ function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: D
  * weapon system", ATP 3-21.8 (2024), para 5-208; decision 90); and, its
  * platoon's fire opened (`massedOpening`), the drill's attack range.
  */
-function triggerLine(u: Unit, drill: SquadDrill, state: DrillState | undefined): number {
-  const rifles = drill.massedOpening && state?.opened.has(platoonKey(u.id)) ? Math.max(drill.openFireRange, drill.attackFireRange) : drill.openFireRange;
+function triggerLine(u: Unit, drill: SquadDrill, opened: ReadonlySet<string> | undefined): number {
+  const rifles = drill.massedOpening && opened?.has(platoonKey(u.id)) ? Math.max(drill.openFireRange, drill.attackFireRange) : drill.openFireRange;
   return u.mediumMg && drill.machineGuns ? Math.max(rifles, drill.machineGuns.range) : rifles;
 }
 
@@ -1320,7 +1322,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       // To the alternate position prepared for it, if there is one (rules
       // decision 38); otherwise straight back, into whatever the ground gives.
       const rear = game.alternatePositionFor(u.id)?.at ?? awayFrom(u.position, task.objective, drill.displace.metres);
-      const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: triggerLine(u, drill, state) };
+      const order = { gait: "run" as const, destination: rear, withdraw: true, holdFire: true, engagementRange: triggerLine(u, drill, state.opened) };
       if (game.setStandingOrder(u.id, order)) state.displaced.add(u.id);
       return;
     }
@@ -1334,7 +1336,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       // holds a force's fire — covering or not — until the enemy is inside
       // the line (rules decision 6's hold-fire order).
       const held = game.standingOrderFor(u.id);
-      const line = triggerLine(u, drill, state);
+      const line = triggerLine(u, drill, state.opened);
       if (held?.holdFire !== true || held.engagementRange !== line || held.withdraw) {
         game.setStandingOrder(u.id, { gait: "normal", holdFire: true, engagementRange: line });
       }
@@ -1632,6 +1634,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
   const knownToSide = knownEnemies(game, side);
   const baseReach = task.attacking ? drill.attackFireRange : drill.openFireRange;
   const heavy = drill.heavyWeapons;
+  // The platoons whose fire was open before this phase: the rest of one opened now fires with it
+  // from the next turn, when its standing order has been widened (`massedOpening`).
+  const openedBefore = new Set(state?.opened ?? []);
   const follows = followers(game, task, drill, state);
   // Still forces first, then the quicker (rules decision 72).
   for (const u of game.firingOrder(side).filter(inPlay)) {
@@ -1657,7 +1662,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const reach = tank
       ? Math.max(baseReach, heavy.tankGunRange)
       : !task.attacking
-        ? triggerLine(u, drill, state)
+        ? triggerLine(u, drill, openedBefore)
         : u.mediumMg && drill.machineGuns
           ? Math.max(baseReach, drill.machineGuns.range)
           : baseReach;
@@ -1748,8 +1753,6 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
       continue;
     }
     if (u.covering) game.setCovering(u.id, false);
-    // Its platoon's fire is open: the rest of it fires with it from the next turn (`massedOpening`).
-    if (!task.attacking && drill.massedOpening) state?.opened.add(platoonKey(u.id));
     // A force fighting inside cannot go out to assault: it fires from its windows (decision 98).
     // A defender already in a fight is gone in after only by the next squad (decision 100).
     // A defender holding a house fights from it: leaving it — to reposition, or to go out and
@@ -1779,6 +1782,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
         report?.grenadiers?.(u, target, volleys);
       }
     }
+    // Its platoon's fire is open once a shot has gone: the rest of it fires with it from the next turn (`massedOpening`).
+    if (!task.attacking && drill.massedOpening && u.firedThisTurn) state?.opened.add(platoonKey(u.id));
   }
 }
 

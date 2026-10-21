@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Game, makeCommandGroup, makeInfantry, makeMachineGunTeam } from "../engine/index.js";
-import { COVER_MOVE_M, callDefenderFire } from "./computerSide.js";
+import { callDefenderFire } from "./computerSide.js";
 import { DOCTRINAL_DRILL, DrillState, PLAIN_SCRIPT, drillCombat, drillMovement, type DrillTask } from "./drill.js";
 
 /**
@@ -37,10 +37,18 @@ describe("a defending platoon opens fire together (D4)", () => {
     g.advanceToPhase("combat");
     drillCombat(g, hold, DOCTRINAL_DRILL, state);
     expect(near.firedThisTurn).toBe(true);
+    // Not this turn: its order still holds it to the line, and a shot the engine would refuse is not taken.
+    expect(far.firedThisTurn).toBeFalsy();
+    expect(far.covering).toBeTruthy();
     g.advanceToPhase("summary");
     g.advanceToPhase("movement");
     drillMovement(g, hold, DOCTRINAL_DRILL, state);
     expect(g.standingOrderFor(far.id)?.engagementRange).toBe(DOCTRINAL_DRILL.attackFireRange);
+    g.advanceToPhase("combat");
+    drillCombat(g, hold, DOCTRINAL_DRILL, state);
+    expect(far.firedThisTurn).toBe(true);
+    // And it survives a save.
+    expect(DrillState.restore(state.snapshot()).opened).toEqual(state.opened);
     // Another platoon's fire is not opened by it.
     expect(g.standingOrderFor(other.id)?.engagementRange).toBe(DOCTRINAL_DRILL.openFireRange);
   });
@@ -91,6 +99,5 @@ describe("the defender's mortars cover forces on the move (D3)", () => {
     expect(callDefenderFire(g, "RED", [{ x: 900, y: 900 }], false, [])).not.toBe("cover");
     expect(callDefenderFire(g, "RED", [{ x: 900, y: 900 }], false, [moving.position])).toBe("cover");
     expect(calls.mock.calls.at(-1)![2]).toEqual(g.contactFor("RED", foe.id)!.lastKnownPosition);
-    expect(COVER_MOVE_M).toBeGreaterThanOrEqual(250);
   });
 });
