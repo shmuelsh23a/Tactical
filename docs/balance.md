@@ -5298,6 +5298,30 @@ The same four plans with the plain drill given those two parts:
   decision 68's 3:1 band (40–55%) already, and the band is judged on the
   eight plans' median. Put to the author.
 
+**Ruled and built** (decision 112): the plain drill has both parts. The
+reference plans re-measured (`jev-sim --rule <variant> --seed 1000 --n
+100`, A at 3:1 200), before → now:
+
+| Plan | 3:1 | 2:1 |
+|---|---|---|
+| A calibrated | 67% → **73%** | 33% → **44%** |
+| A + flank | 52% → **69%** | 26% → **32%** |
+| B deliberate | 29% → **73%** | 13% → **40%** |
+| E fire-heavy | 62% → **71%** | 29% → **41%** |
+| D flank | 27% → **69%** | 20% → **44%** |
+| A + move up | 48% → **55%** | 14% → **16%** |
+| B + move up | 27% → **68%** | 11% → **18%** |
+| C fire and movement | 44% → **55%** | 19% → **24%** |
+| **Median** | 46% → **69%** | 19.5% → **36%** |
+| Band (decision 68) | 40–55% | 20–35% |
+
+- The doctrinal plans go from worst to best (B 29% → 73%, D 27% → 69%);
+  moving up early is now the costly choice.
+- Both medians are over their bands: 3:1 by 14 points, 2:1 by one.
+- `scenario-sim`, 100 battles (the house 200): `telAzekaCompany` 30% →
+  35%, `yokneamUrban` 58% → 53%, `yokneamRaid` 5% → 6%, `yokneamHouse`
+  88% (no change).
+
 ## A Claude commander, the first paid pilot, 2026-10-21
 
 `npm run jev-sim -- --claude claude-opus-5-5 --order --plan --memory

@@ -320,6 +320,11 @@ export const PLAIN_SCRIPT: SquadDrill = {
   breakContact: null,
   commandGroupBehind: 80,
   counterattack: { lostWithin: 50, gait: "run", holdFire: true },
+  // A base of fire goes where it can see (ATP 3-21.8 (2024), para 3-102), and a machine gun
+  // shoots as far as it reaches (decision 90): without them a platoon on support sat blind in
+  // the dead ground it waited in, and a base of fire lost to massing (decision 112).
+  machineGuns: { range: 800 },
+  baseOfFirePosition: { minRange: 150 },
 };
 
 /**
@@ -1284,6 +1289,11 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
           game.setStandingOrder(u.id, { gait: "normal", destination: { ...post } });
           return;
         }
+      }
+      // No better post to be had (or no map to search): it holds in reach, as a base of fire, and never charges.
+      if (distance(u.position, nearest.position) <= gun) {
+        stay();
+        return;
       }
     }
     // Consolidation (Battle Drill 2 step 14): the objective is taken and

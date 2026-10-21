@@ -393,6 +393,7 @@ describe("the drill carrying out its platoons' tasks", () => {
   });
 
   it("gives a base of fire: closes to small-arms reach, then halts", () => {
+    // With no map to search for a firing position (decision 112), it holds in reach: it never charges.
     const { g, a } = field();
     const state = new DrillState();
     for (let t = 0; t < 8; t++) turn(g, orders({ platoonTasks: new Map([["BLUE-1", "support"]]) }), state);

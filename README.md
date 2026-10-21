@@ -3550,6 +3550,22 @@ on the stated reasoning, still awaiting the author's word.
       lopsided — elite against irregular is decision 84's "very large
       effect" — and the middle is now gentler. Not to be narrowed further
       without a new ruling.
+112. ✅ **The plain drill's base of fire goes where it can see** (the
+    author, 2026-10-21, on the investigation of why a base of fire lost to
+    massing). A platoon on "support" in `PLAIN_SCRIPT` stayed in the dead
+    ground it waited in whenever the enemy was in reach, seeing him or not,
+    and hardly fired (48 force-turns a battle against 304 assaulting), so
+    every plan that kept a base of fire lost to massing all three platoons.
+    The plain drill now has the doctrinal drill's two parts: a blind base
+    of fire moves to a position with a field of fire (ATP 3-21.8 (2024),
+    para 3-102, `baseOfFirePosition`), and machine guns shoot to 800 m
+    (decision 90). With no better post to be had, a base of fire holds in
+    reach and never charges (both drills).
+    - **Measured** (balance.md, *Why a base of fire loses to massing*): the
+      doctrinal plans go from worst to best (deliberate 29% → 73%); the
+      reference medians rise to 69% at 3:1 and 36% at 2:1, both over
+      decision 68's bands. The Claude commander's plan was right; the drill
+      was blinding it.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
