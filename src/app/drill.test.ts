@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ASSAULT_RANGE_M, Game, makeCommandGroup, makeInfantry, makeMachineGunTeam } from "../engine/index.js";
 import {
+  DOCTRINAL_DRILL,
   DrillState,
   PLAIN_SCRIPT,
   SQUAD_GRENADIERS,
@@ -8,6 +9,7 @@ import {
   drillCombat,
   drillMovement,
   fireGrenadiers,
+  platoonIn,
   SCOUT_GIVE_UP_TURNS,
   type DrillTask,
 } from "./drill.js";
@@ -785,5 +787,75 @@ describe("a defender holding a house (rules decision 106)", () => {
 
   it("still assaults from the open, as before", () => {
     expect(acts({ x: 40, y: 0 })).toContain("assault");
+  });
+});
+
+describe("the doctrinal drill's fire teams (drill audit A3, A4, A10)", () => {
+  // Without the knowledge model the side knows the truth, so an enemy put out is gone from its picture.
+  function field(trackIntel = true) {
+    const g = new Game({ seed: 3, trackIntel, enforceC2: false });
+    const a = g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 250 }, 9));
+    const b = g.addUnit(makeInfantry("BLUE-2-1", "BLUE", "squad", { x: 60, y: 250 }, 9));
+    const r = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 500 }, 9));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire(r.id, a.id, { weapon: "smallArms" });
+    g.fire(r.id, b.id, { weapon: "smallArms" });
+    g.advanceToPhase("initiative");
+    return { g, a, b, r };
+  }
+  const platoonOf = new Map([
+    ["BLUE-1-1", "BLUE-1"],
+    ["BLUE-2-1", "BLUE-2"],
+  ]);
+  const orders = (o: Partial<CompanyOrders> = {}): DrillTask => ({
+    ...attack,
+    objective: { x: 0, y: 500 },
+    company: { scouts: new Map(), scoutsLieUp: false, hold: false, waitAt: new Map(), platoonOf, fallBackTo: { x: 30, y: -100 }, ...o },
+  });
+
+  it("divides only an assaulting squad, and its team stays in its squad's platoon", () => {
+    const { g } = field();
+    const task = orders({ platoonTasks: new Map([["BLUE-2", "support"]]) });
+    g.advanceToPhase("movement");
+    drillMovement(g, task, DOCTRINAL_DRILL, new DrillState());
+    expect(g.units.map((u) => u.id)).toContain("BLUE-1-1/t1");
+    expect(g.units.map((u) => u.id)).not.toContain("BLUE-2-1/t1");
+    expect(platoonIn(task.company, "BLUE-1-1/t1")).toBe("BLUE-1");
+  });
+
+  it("does not send an attacking squad back at half strength: it fights on (step 13c)", () => {
+    const { g, a } = field();
+    const state = new DrillState();
+    g.advanceToPhase("movement");
+    state.startingStrength(a);
+    a.soldiers!.slice(0, 5).forEach((s) => (s.neutralized = true));
+    drillMovement(g, orders(), DOCTRINAL_DRILL, state);
+    expect(g.standingOrderFor(a.id)?.withdraw).not.toBe(true);
+    expect(state.fellBack.has(a.id)).toBe(false);
+  });
+
+  it("holds the support team while its assault team closes, shifts its fire off it, and releases it once the ground is taken", () => {
+    const { g, a, r } = field(false);
+    const state = new DrillState();
+    const task = orders();
+    g.advanceToPhase("movement");
+    drillMovement(g, task, DOCTRINAL_DRILL, state);
+    expect(state.baseOfFire.has(a.id)).toBe(true);
+    const team = g.getUnit("BLUE-1-1/t1");
+    // The team at the enemy's position: the support team must not fire across it.
+    team.position = { x: 10, y: 450 };
+    g.advanceToPhase("combat");
+    drillCombat(g, task, DOCTRINAL_DRILL, state);
+    expect(a.firedThisTurn).toBeFalsy();
+    // The enemy gone and the team on the objective: the support team goes on.
+    r.neutralized = true;
+    team.position = { x: 0, y: 480 };
+    g.advanceToPhase("summary");
+    g.advanceToPhase("movement");
+    const y = a.position.y;
+    drillMovement(g, task, DOCTRINAL_DRILL, state);
+    expect(state.baseOfFire.has(a.id)).toBe(false);
+    expect(a.position.y).toBeGreaterThan(y);
   });
 });

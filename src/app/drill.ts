@@ -368,10 +368,12 @@ export const WESTERN_DRILL: SquadDrill = {
  * not thresholds — but each switch now does what a numbered step says
  * rather than what we invented. Cited by option, in `SquadDrill` above.
  *
+ * No **`breakContact`** reflex: the Break Contact drill (07-PLT-D9505)
+ * starts "on orders", and a squad that cannot go on suppresses (Battle
+ * Drill 2 step 13c). A defender breaks on its commander's criteria
+ * (decision 107); an attacking squad fights on (drill audit, A4).
+ *
  * ⚠️ Not yet doctrinal, and deliberately so:
- * - **`breakContact`** stays ours. The Break Contact drill (07-PLT-D9505)
- *   starts "on orders", with no casualty trigger: it is a decision, not a
- *   reflex at half strength. Making it one needs a commander to take it.
  * - **`bound.metres`** stays a fixed distance where the drills give the
  *   leader a distance and direction per bound.
  * - **`holdShort`** (the fire plan's, in `company.ts`) is **against** the
@@ -384,6 +386,7 @@ export const WESTERN_DRILL: SquadDrill = {
 export const DOCTRINAL_DRILL: SquadDrill = {
   ...WESTERN_DRILL,
   name: "doctrinal (rung A)",
+  breakContact: null,
   returnFire: { since: 2 },
   security: { arc: 120 },
   shiftToFarFlank: { clear: 100 },
@@ -750,7 +753,7 @@ function followers(game: Game, task: DrillTask, drill: SquadDrill, state?: Drill
   const out = new Map<string, Follow>();
   if (!task.attacking) return out;
   const company = task.company;
-  const platoonOf = (id: string) => company?.platoonOf?.get(id) ?? platoonKey(id);
+  const platoonOf = (id: string) => platoonIn(company, id) ?? platoonKey(id);
   // A house no longer being fought for has nobody following into it.
   if (state) for (const b of [...state.following.keys()]) if (!game.interior.fightIn(b)) state.following.delete(b);
   // Squads already following a house are kept for it: no other house takes them first.
@@ -912,20 +915,44 @@ function nearestOwnToEnemy(own: readonly Unit[], enemies: readonly Unit[]): Poin
  * clear of. An empty list is the handover: with nothing on the far side,
  * the base of fire stops rather than shoot across its own men.
  */
-function farFlankOnly(game: Game, u: Unit, task: DrillTask, enemies: Unit[], clear: number): Unit[] {
+function farFlankOnly(game: Game, u: Unit, task: DrillTask, enemies: Unit[], clear: number, state?: DrillState): Unit[] {
   const company = task.company;
   if (!company || company.hold) return enemies;
-  const platoon = company.platoonOf?.get(u.id);
+  // The support-by-fire team of a divided squad shifts off its own assault
+  // team the same way (Battle Drill 2A step 8c: "shifts direct fire to the
+  // opposite flank").
+  if (state?.baseOfFire.has(u.id)) {
+    const team = game.units.filter((o) => o.id.startsWith(`${u.id}/`) && inPlay(o));
+    return enemies.filter((e) => team.every((o) => distance(o.position, e.position) > clear));
+  }
+  const platoon = platoonIn(company, u.id);
   if (((platoon && company.platoonTasks?.get(platoon)) ?? "assault") !== "support") return enemies;
   // Where our own assault is. A side knows where its own forces are, so
-  // this is read off the live units and not through `sideView`.
+  // this is read off the live units and not through `sideView`. A command
+  // group is in no platoon, and is not the assault.
   const assaulting = game.units.filter((o) => {
-    if (o.side !== u.side || o.id === u.id || !inPlay(o)) return false;
-    const key = company.platoonOf?.get(o.id);
+    if (o.side !== u.side || o.id === u.id || o.kind === "command" || !inPlay(o)) return false;
+    const key = platoonIn(company, o.id);
     return ((key && company.platoonTasks?.get(key)) ?? "assault") === "assault";
   });
   if (!assaulting.length) return enemies;
   return enemies.filter((e) => assaulting.every((o) => distance(o.position, e.position) > clear));
+}
+
+/**
+ * The platoon a force is in by its company's orders. A fire team split off
+ * a squad (decision 89) is in its squad's platoon: the company's map was
+ * drawn before the team existed, and without this the team fell to the
+ * default task, "assault", whatever its squad was doing (drill audit, A3).
+ */
+export function platoonIn(company: CompanyOrders | undefined, id: string): string | undefined {
+  for (let k: string | undefined = id; k !== undefined; ) {
+    const p = company?.platoonOf?.get(k);
+    if (p) return p;
+    const slash = k.lastIndexOf("/");
+    k = slash > 0 ? k.slice(0, slash) : undefined;
+  }
+  return undefined;
 }
 
 /**
@@ -1058,6 +1085,10 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     for (const u of forces) {
       if (u.kind !== "infantry" || u.echelon !== "squad" || !inPlay(u)) continue;
       if (state.divided.has(u.id) || scouts.has(u.id)) continue;
+      // Battle Drill 2A is the squad *assault*: a squad on support, security
+      // or in reserve fires or waits whole.
+      const k = platoonIn(company, u.id);
+      if (company && ((k && company.platoonTasks?.get(k)) ?? "assault") !== "assault") continue;
       const men = (u.soldiers ?? []).filter((m) => !m.neutralized);
       if (men.length < drill.fireTeams.minMen) continue;
       const near = enemies.some((e) => distance(u.position, e.position) <= drill.fireTeams!.splitAt);
@@ -1082,7 +1113,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const leads = new Map<string, number>();
   if (company && company.arriveTogether !== false && enemies.length) {
     for (const u of forces) {
-      const k = company.platoonOf?.get(u.id);
+      const k = platoonIn(company, u.id);
       if (!k || !inPlay(u) || scouts.has(u.id) || (company.platoonTasks?.get(k) ?? "assault") !== "assault") continue;
       const d = Math.min(...enemies.map((e) => distance(u.position, e.position)));
       leads.set(k, Math.min(leads.get(k) ?? Infinity, d));
@@ -1220,7 +1251,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       return;
     }
     // The platoon's task once the company has gone (company.ts, PlatoonTask).
-    const platoon = company?.platoonOf?.get(u.id);
+    const platoon = platoonIn(company, u.id);
     const job = (platoon && company?.platoonTasks?.get(platoon)) ?? "assault";
     const stay = () => game.setStandingOrder(u.id, { gait: "normal" });
     let platoonBounds = false;
@@ -1235,9 +1266,21 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     // The support-by-fire team of a divided squad holds where it is and
     // shoots (Battle Drill 2A step 6: it "becomes the support by fire
     // team" and keeps a sustained rate with no lulls).
+    // It is released once its assault team has taken the ground in front of
+    // it, or is gone (step 12b: it "moves into designated positions"), and
+    // goes on with its platoon — which consolidation then holds (drill
+    // audit, A10: it used to hold where it split for the rest of the battle).
     if (state.baseOfFire.has(u.id)) {
-      stay();
-      return;
+      const clearWithin = drill.consolidate?.nothingWithin ?? 100;
+      const team = game.units.filter((o) => o.id.startsWith(`${u.id}/`) && inPlay(o));
+      const taken = team.every(
+        (o) => distance(o.position, task.objective) <= clearWithin && !enemies.some((e) => distance(o.position, e.position) <= clearWithin),
+      );
+      if (!taken) {
+        stay();
+        return;
+      }
+      state.baseOfFire.delete(u.id);
     }
     if (company && job === "security") {
       // Flank and rear security (Battle Drill 2 steps 10 and 12b): hold
@@ -1506,7 +1549,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
       u.kind === "infantry" &&
       state.screens < drill.screeningSmoke.screens
     ) {
-      const key = task.company.platoonOf?.get(u.id);
+      const key = platoonIn(task.company, u.id);
       const job2 = (key && task.company.platoonTasks?.get(key)) ?? "assault";
       const mark = enemies
         .filter((e) => distance(u.position, e.position) <= RIFLE_GRENADE_RANGE)
@@ -1523,7 +1566,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const hurting = drill.returnFire ? hurtingUs(game, side, u, enemies, drill.returnFire.since) : undefined;
     // A force giving a base of fire while the assault is in shoots at the
     // far side of the objective, not across the assault's front.
-    const mine = drill.shiftToFarFlank && task.attacking ? farFlankOnly(game, u, task, enemies, drill.shiftToFarFlank.clear) : enemies;
+    const mine = drill.shiftToFarFlank && task.attacking ? farFlankOnly(game, u, task, enemies, drill.shiftToFarFlank.clear, state) : enemies;
     const target =
       foe && distance(u.position, foe.position) <= reach
         ? foe

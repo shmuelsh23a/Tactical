@@ -3566,6 +3566,24 @@ on the stated reasoning, still awaiting the author's word.
       reference medians rise to 69% at 3:1 and 36% at 2:1, both over
       decision 68's bands. The Claude commander's plan was right; the drill
       was blinding it.
+113. ✅ **The doctrinal drill's fire teams, fixed** (the author, 2026-10-21,
+    on the drill audit, [docs/drill-audit.md](docs/drill-audit.md): the
+    doctrinal drill, fixed, becomes the reference). Three divergences in
+    `DOCTRINAL_DRILL`, all against Battle Drills 2 and 2A (TC 3-21.76
+    (2025), ch. 8):
+    - **A split-off fire team is in its squad's platoon** (`platoonIn`). The
+      company's map was drawn before the team existed, so the team fell to
+      the default task, "assault": half of every support squad within 300 m
+      went in alone and counted as the assault its base of fire shifted
+      off. And only an assaulting squad divides — 2A is the squad assault.
+    - **No break-contact reflex** (`breakContact: null`): Break Contact
+      starts "on orders", and a squad that cannot go on suppresses (step
+      13c). A defender still breaks on its commander's criteria (decision
+      107).
+    - **The 2A support team shifts and is released**: it drops targets
+      within 100 m of its own assault team (step 8c), and once that team
+      stands on the objective with nothing within 100 m it goes on with its
+      platoon (step 12b) instead of holding where it split for good.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

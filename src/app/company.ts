@@ -748,7 +748,8 @@ export class ScriptedCompany {
   platoons(game: Game): Map<string, Unit[]> {
     const out = new Map<string, Unit[]>();
     for (const u of game.units) {
-      const key = this.platoonOfSquad.get(u.id);
+      // A fire team split off a squad (decision 89) is its squad's: `BLUE-2-1/t1` is BLUE-2-1's.
+      const key = this.platoonOfSquad.get(u.id) ?? this.platoonOfSquad.get(u.id.split("/")[0]!);
       if (!key || this.scouts.has(u.id)) continue;
       out.set(key, [...(out.get(key) ?? []), u]);
     }
