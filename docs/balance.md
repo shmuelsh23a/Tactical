@@ -5312,6 +5312,24 @@ own plan first and carrying the battle's decisions so far.
 - It won both (the pilot one): it still flanked east and moved up early,
   but on seed 1000 sent all three platoons in. Two battles cannot tell
   that from chance.
+- **Picture updates** (`--updates`): in the conversation, the whole
+  picture only the first time and when more than half its lines changed
+  (`FULL_PICTURE_CHANGED`, ⚠️ ours), otherwise only the lines that changed
+  under their headings and what is no longer listed — or "as in your last
+  message" for a second question in the same turn. On the rule
+  commander's questions the pictures sent fall to 29% of the full text.
+  The same two seeds, paid:
+
+  | Seeds 1000 + 1001 | Pilot (memory) | Conversation | **Conversation + updates** |
+  |---|---|---|---|
+  | Cost for the pair | $1.75 | $1.83 | **$1.02** |
+  | A battle | $0.88 | $0.92 | **$0.51** |
+  | Won | 1 of 2 | 2 of 2 | 1 of 2 |
+
+  1.72M tokens read from cache ($0.34), 82k written ($0.41), 12.6k out
+  ($0.25), 2.5k uncached in. About 42% under the pilot. Its plan stayed
+  the same (flank east, move up early); on seed 1000 it kept a base of
+  fire and lost, on 1001 sent all three platoons and won.
 
 ## The force-quality matrix re-run, 2026-10-21 (decisions 83, 84, 87)
 

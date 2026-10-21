@@ -4,7 +4,7 @@ import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
 import { fromAnswers, type Question } from "./companyQuestions.js";
-import { CLAUDE_SYSTEM, claudeAsker, claudeCommander, claudePrompt } from "./claude.js";
+import { CLAUDE_SYSTEM, claudeAsker, claudeCommander, claudePrompt, pictureFor } from "./claude.js";
 import { MISSION, jevRequest, playWithAsker } from "./jev.js";
 import { ORDERS } from "./opord.js";
 
@@ -163,5 +163,34 @@ describe("the order from battalion", () => {
     // An answer outside the options gets a correction turn appended, never an edit.
     expect(fixed!.messages.slice(0, 3)).toEqual(again!.messages);
     expect(JSON.stringify(fixed!.messages.at(-1))).toContain("is not one of the options");
+  });
+
+  it("sends the whole picture when much changed, and only what changed otherwise (updates)", () => {
+    const picture = (turn: number, blue1: string, enemy: string[]) => [
+      `Turn ${turn} (a turn is one minute). You command BLUE's company, attacking.`,
+      "In short: you attack; the enemy holds the ground your plan puts it on.",
+      "Mortar missions left: 6.",
+      "Your forces:",
+      `  BLUE-1 (infantry, squad) at ${blue1}, 8/8 fit`,
+      "  BLUE-2 (infantry, squad) at (500, 900), 8/8 fit",
+      "  BLUE-3 (infantry, squad) at (600, 900), 8/8 fit",
+      "  BLUE-4 (infantry, squad) at (700, 900), 8/8 fit",
+      "Enemy as your side has it (a mark is where it was reported, not necessarily where it is):",
+      ...enemy,
+    ].join("\n");
+    const first = picture(10, "(400, 900)", ["  RED-1: infantry at (520, 440), in sight", "  RED-2: infantry at (600, 450), in sight"]);
+    expect(pictureFor(first, undefined)).toBe(first); // the first time, whole
+    expect(pictureFor(first, first)).toBe("The picture is as in your last message.");
+    // A turn on: the turn line, one squad moved, one mark gone.
+    const next = picture(11, "(400, 850)", ["  RED-1: infantry at (520, 440), in sight"]);
+    const update = pictureFor(next, first);
+    expect(update).toContain("Turn 11");
+    expect(update).toContain("Your forces:\n  BLUE-1 (infantry, squad) at (400, 850), 8/8 fit");
+    expect(update).not.toContain("BLUE-2");
+    expect(update).not.toContain("Mortar missions left");
+    expect(update).toContain("RED-2: no longer in your picture");
+    // Most of it changed: whole again.
+    const moved = picture(12, "(1, 1)", ["  RED-3: infantry at (1, 2), in sight", "  RED-4: infantry at (3, 4), in sight"]).replace(/\(\d+, 900\)/g, "(9, 9)");
+    expect(pictureFor(moved, next)).toBe(moved);
   });
 });

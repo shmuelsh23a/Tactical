@@ -45,12 +45,75 @@ export function memoryLine(q: Question, answer: string, reason?: string): string
   return `- Turn ${q.turn}. ${first.length > 160 ? first.slice(0, 157) + "..." : first} You chose: ${label}${reason ? `. Why: ${reason}` : ""}`;
 }
 
+/**
+ * Past this share of a picture's lines changed, the conversation sends the
+ * picture whole rather than an update (⚠️ ours: a measurement's choice,
+ * docs/balance.md).
+ */
+export const FULL_PICTURE_CHANGED = 0.5;
+
+/**
+ * A picture line's key: the section it is in and, for a listed force, mark or
+ * report, its first word (a force's id); a heading line by its first words.
+ * Two lines with one key say the same thing, one of them newer.
+ */
+function pictureKeys(view: string): Map<string, string> {
+  const out = new Map<string, string>();
+  let section = "";
+  for (const line of view.split("\n")) {
+    if (!line.startsWith("  ")) {
+      section = line.split(/[ :(]/).slice(0, 3).join(" ");
+      out.set(`#${section}`, line);
+      continue;
+    }
+    const first = line.trim().split(/[ :(]/)[0]!;
+    let key = `${section}|${first}`;
+    for (let k = 2; out.has(key); k++) key = `${section}|${first}#${k}`; // two reports by one force
+    out.set(key, line);
+  }
+  return out;
+}
+
+/**
+ * The conversation's picture for a question (rules: the commander's, decided
+ * here): the whole of it the first time and whenever more than
+ * {@link FULL_PICTURE_CHANGED} of its lines changed; otherwise only what
+ * changed since the picture it last had — each changed line under its
+ * heading, and what is no longer listed — or, when nothing did, a line
+ * saying so. A heading line is a change like any other.
+ */
+export function pictureFor(view: string, last: string | undefined): string {
+  if (last === undefined) return view;
+  if (view === last) return "The picture is as in your last message.";
+  const was = pictureKeys(last);
+  const now = pictureKeys(view);
+  const changed: string[] = [];
+  let count = 0;
+  let heading = "";
+  for (const [key, line] of now) {
+    if (key.startsWith("#")) heading = line;
+    if (was.get(key) === line) continue;
+    count++;
+    if (!key.startsWith("#") && heading && !changed.includes(heading)) changed.push(heading);
+    changed.push(line);
+  }
+  const gone = [...was.keys()].filter((k) => !now.has(k));
+  count += gone.length;
+  if (count > FULL_PICTURE_CHANGED * now.size) return view;
+  const goneLines = gone.map((k) => `  ${k.startsWith("#") ? was.get(k)!.trim() : k.split("|")[1]!.replace(/#\d+$/, "")}: no longer in your picture`);
+  return [
+    "Your picture since your last message (only what changed; everything else is as it was):",
+    ...changed,
+    ...(goneLines.length ? ["No longer listed:", ...goneLines] : []),
+  ].join("\n");
+}
+
 /** The user turn: your decisions so far (with `memory`), the picture, then the decision and its options by id. */
-export function claudePrompt(q: Question, memory: readonly string[] = []): string {
+export function claudePrompt(q: Question, memory: readonly string[] = [], picture: string = q.view): string {
   const options = q.kind === "noul" ? q.options.filter((o) => o.id === "yes" || o.id === "no") : q.options;
   return [
     ...(memory.length ? ["Your decisions so far in this battle, oldest first:", ...memory, ""] : []),
-    q.view,
+    picture,
     "",
     `Decision: ${q.ask}`,
     "Options:",
@@ -76,6 +139,8 @@ export interface ClaudeAskerOptions {
    * conversation itself; `memory` is then not needed.
    */
   conversation?: boolean;
+  /** In a conversation, the whole picture only when much of it changed, an update otherwise (`pictureFor`). */
+  updates?: boolean;
 }
 
 /** Models that take neither effort nor server-side fallback. */
@@ -98,6 +163,8 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
   const memory: string[] = [];
   /** The battle so far, in `conversation`: appended to, never edited. */
   const history: Anthropic.Beta.BetaMessageParam[] = [];
+  /** The picture the commander last had, in `updates`. */
+  let lastView: string | undefined;
 
   const call = async (user: string, schema: Record<string, unknown>, what: string, inConversation = false) => {
     // Outside a conversation the request is as it always was: one user turn, a string.
@@ -152,7 +219,9 @@ export function claudeCommander(client: Pick<Anthropic, "beta">, opts: ClaudeAsk
       required: ["answer", "confidence", "reason"],
       additionalProperties: false,
     };
-    let r = await call(claudePrompt(q), schema, q.id, true);
+    const picture = opts.updates ? pictureFor(q.view, lastView) : q.view;
+    lastView = q.view;
+    let r = await call(claudePrompt(q, [], picture), schema, q.id, true);
     let usage = r.usage;
     for (let tries = 0; !ids.includes(String(r.parsed.answer)) && tries < 2; tries++) {
       r = await call(`"${String(r.parsed.answer)}" is not one of the options. Answer with one of: ${ids.join(", ")}.`, schema, q.id, true);

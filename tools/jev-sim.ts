@@ -57,6 +57,8 @@
  * `--conversation` plays the battle as one append-only conversation with its
  * tail cached (`claude.ts`): the commander sees its earlier pictures, not
  * one-line summaries, and every call's earlier turns are read from cache.
+ * `--updates` (with it implied) sends the whole picture only when much of
+ * it changed, and what changed otherwise (`pictureFor`).
  *   npm run jev-sim -- --jev --framing order --seed 1000 --n 20
  */
 import "./env.js";
@@ -130,10 +132,11 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
       ...(withOrder ? { order } : {}),
       plan: args.includes("--plan"),
       memory: args.includes("--memory"),
-      conversation: args.includes("--conversation"),
+      conversation: args.includes("--conversation") || args.includes("--updates"),
+      updates: args.includes("--updates"),
     };
     commander = () => claudeCommander(client, opts);
-    framing = [`claude:${model}${effort ? `@${effort}` : ""}`, ...(["order", "plan", "memory", "conversation"] as const).filter((f) => args.includes(`--${f}`))].join("+");
+    framing = [`claude:${model}${effort ? `@${effort}` : ""}`, ...(["order", "plan", "memory", "conversation", "updates"] as const).filter((f) => args.includes(`--${f}`))].join("+");
   } else if (args.includes("--rule")) {
     const extra = value("--rule")?.startsWith("--") === false ? value("--rule")!.split(",") : [];
     const ask = ruleAsker(new Set(extra));
