@@ -28,6 +28,7 @@ import {
 } from "./debriefView.js";
 import { isGone, sideView } from "./hotseat.js";
 import { spread, whatIf, type WhatIf } from "./whatIf.js";
+import { battleScore } from "./score.js";
 
 /** How many alternate battles a re-roll fights. Cheap: a battle replays in ms. */
 const RUNS = 20;
@@ -92,6 +93,8 @@ export function Debrief({
   // If replay no longer matches them, the rules have moved under it — the
   // decisions still replay, but this is no longer the battle that was fought.
   const drift = useMemo(() => verifyRecording(recording), [recording]);
+  /** The battle's score at its end (decision 108), from the game as the recording left it. */
+  const score = useMemo(() => (index === total ? battleScore(game) : undefined), [game, index, total]);
 
   /** A recording played without the knowledge model has no per-side picture. */
   const perSidePossible = game.trackIntel;
@@ -237,6 +240,19 @@ export function Debrief({
                 ? "הקרב כפי שצד זה ראה אותו: כוחותיו, אויב רק היכן שזוהה, ורק פעולות שנצפו."
                 : "תמונת המנחה: שני הצדדים וכל התוצאות."}
             </p>
+
+            {/* The score at the battle's end (decision 108): both sides to the umpire, a side its own —
+                the men it kept are its own losses, which it knows; the enemy's are not its to read (decision 13). */}
+            {index === total && score && (
+              <div className="unit-card score">
+                <div className="unit-name">ניקוד</div>
+                {(side ? [side] : (["BLUE", "RED"] as const)).map((s) => (
+                  <div key={s}>
+                    {s}: <strong>{score.sides[s].total}</strong> — משימה {score.sides[s].mission}, כוח אדם שנשמר {score.sides[s].men}, זמן {score.sides[s].time}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {side && (
               <>

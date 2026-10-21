@@ -148,6 +148,7 @@ console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defender
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
 const urban: string[] = [];
+const scores: string[] = [];
 for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
@@ -156,12 +157,18 @@ for (const id of ids) {
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);
+  scores.push(`| ${id} | ${s.attackerScore.toFixed(1)} | ${s.defenderScore.toFixed(1)} |`);
   const u = s.urban;
   const f = (x: number) => x.toFixed(1);
   if (u.damaged + u.rubble + u.windowCriticals + u.roofCriticals + u.vehicles > 0) {
     urban.push(`| ${id} | ${f(u.damaged)} | ${f(u.rubble)} | ${f(u.windowCriticals)} | ${f(u.roofCriticals)} | ${f(u.crushed)} | ${u.vehicles ? `${Math.round(u.attackerVehiclesOutPct)}% / ${Math.round(u.defenderVehiclesOutPct)}%` : "—"} |`);
   }
 }
+// Each side's mean score a battle (decision 108): mission 100, men up to 40, time up to 30.
+console.log("");
+console.log("| Scenario | Score, attacker | Score, defender |");
+console.log("|---|---|---|");
+for (const line of scores) console.log(line);
 // Buildings and vehicles (decisions 76–78): means a battle, where the scenario has any.
 if (urban.length) {
   console.log("\n| Scenario | Buildings damaged | Rubble | Window / slit criticals | Roof criticals | Men buried | Vehicles out (attacker / defender) |");

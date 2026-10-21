@@ -5254,6 +5254,25 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The score, and breaking contact by it, 2026-10-21 (decision 108)
+
+Mean score a battle (mission 100, men up to 40, time up to 30), 100 battles
+from seed 1000, `--defender-disengage loss=0.25,back=150` against none:
+
+| Scenario | Attacker wins | Attacker score | Defender score |
+|---|---|---|---|
+| `telAzekaAssault`, holding | 21% | 60.4 | **128.5** |
+| `telAzekaAssault`, breaking contact | 49% | 94.9 | 92.4 |
+| `telAzekaAssault2`, holding | 12% | 48.0 | **145.4** |
+| `telAzekaAssault2`, breaking contact | 20% | 58.1 | 134.1 |
+
+- **Breaking contact still does not pay the defender.** The squads that go
+  do not keep their men — the defender's losses are 28% holding and 31%
+  breaking contact, the teams caught on the move — and the mission is lost
+  more often. The men part barely moves; the mission part dominates.
+- So by this score the criteria stay a dominated option on Tel Azeka. Put
+  to the author.
+
 ## Disengagement criteria, 2026-10-21 (decision 107)
 
 `scenario-sim` with `--defender-disengage loss=<share>,back=150`: every

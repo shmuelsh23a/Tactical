@@ -1,3 +1,4 @@
+import { battleScore, type SideScore } from "../app/score.js";
 import { outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
 import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
@@ -154,6 +155,8 @@ export interface ScenarioBattleOptions {
 
 export interface ScenarioBattleResult {
   winner: Side | "draw";
+  /** Each side's score (decision 108), alongside who won. */
+  score?: Record<Side, SideScore>;
   turns: number;
   men: Record<Side, number>;
   down: Record<Side, number>;
@@ -443,6 +446,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     result.winner = defender;
     result.outOfTime = true;
   }
+  result.score = battleScore(g, result.winner === "draw" ? null : result.winner).sides;
 
   for (const [id, post] of state.counterattacking) {
     result.counterattacks++;
@@ -1123,6 +1127,9 @@ export interface ScenarioSummary {
   medianDownWhileWaiting: number;
   /** Of the defender's wins, those where the attack ran out of time (decision 58). */
   outOfTime: number;
+  /** Each side's mean score a battle (decision 108). */
+  attackerScore: number;
+  defenderScore: number;
   /** Battles in which the defender's reserve counterattacked (decision 60), and in which it held the position at the end. */
   counterattacked: number;
   retaken: number;
@@ -1159,6 +1166,8 @@ export function runScenario(
     defenderWins: rs.filter((r) => r.winner === defender).length,
     draws: rs.filter((r) => r.winner === "draw").length,
     outOfTime: rs.filter((r) => r.outOfTime).length,
+    attackerScore: sum((r) => r.score?.[attacker].total ?? 0) / rs.length,
+    defenderScore: sum((r) => r.score?.[defender].total ?? 0) / rs.length,
     medianTurns: median(rs.map((r) => r.turns)),
     attackerDownPct: (100 * sum((r) => r.down[attacker])) / Math.max(1, sum((r) => r.men[attacker])),
     defenderDownPct: (100 * sum((r) => r.down[defender])) / Math.max(1, sum((r) => r.men[defender])),

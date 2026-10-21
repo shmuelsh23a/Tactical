@@ -3464,6 +3464,32 @@ on the stated reasoning, still awaiting the author's word.
     - The drill carries them out for a side the computer plays and in the
       harness (`--defender-disengage loss=0.5,back=150`); a player executes
       his own, as with any order. No screen sets them yet (the UX pass).
+108. ✅ **A battle's score, beside who won** (the author, 2026-10-21, on
+    breaking contact never paying: it should buy "time and people … Men
+    saved should continue to the next scenario if it is part of a campaign
+    and be counted as part of the score in a single scenario. Either way,
+    they should give less points than achieving the mission").
+    `battleScore` (`src/app/score.ts`), each side for itself:
+    - **Mission, 100**: the side won.
+    - **Men, up to 40**: the share of its men fit at the end — not down, not
+      taken, not in a force that gave itself up.
+    - **Time, up to 30**: the defender's share of the time limit held before
+      the battle ended against it (all of it, if it held); a winning
+      attacker's, the share it had left. None without a time limit.
+    - Men and time together (70) never reach the mission. The score does
+      **not** decide who won; the mission's winner stays the break's and the
+      time limit's.
+    - **Shown in the debrief** at the battle's end: both sides to the umpire,
+      a side its own score in its own review (the men part is its own
+      losses; the enemy's are not its to read, decision 13). The harness
+      prints each side's mean.
+    - **Campaigns** (backlog 16, not built): the score lists each force's men
+      fit at the end, which a campaign will start its next battle from.
+      Nothing carries yet.
+    - Measured (balance.md, *The score*): with it, breaking contact on Tel
+      Azeka still costs the defender — 128.5 → 92.4 points at 3:1, 145.4 →
+      134.1 at 2:1 — because the squads that break contact lose as many men
+      going back (28% → 31%) and the mission more often.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
