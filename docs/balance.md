@@ -5276,9 +5276,23 @@ own plan first and carrying the battle's decisions so far.
   grows each call after the cached prefix. Putting the battle's decisions in
   appended messages instead of the prompt would let them cache, worth most
   of that $7.61.
-- Its plan reads like a commander's (find, move by dead ground, a base of
-  fire on the western spur, assault on a signal); why the attacks failed is
-  in `jev-runs/claude-opus-5-5/` and not yet read.
+- **Why it lost** (the logs, against the rule commander on the same ten
+  seeds, which won 7): on every seed Claude chose the same textbook plan —
+  **flank east** (rule: straight), **one platoon as a base of fire** and
+  two assaulting (rule: all three assault), **move up** at turn 5 (rule:
+  wait in dead ground), two scouts (rule: three). Those are the reference
+  variants that measure worst at 3:1: A + flank 52%, A + move up 48%, base
+  of fire + flank (D) 27%, against the mass assault's 67%. Its losses were
+  light (3–17 of 104 men); the attack broke or stalled first, and two ran
+  out of time. It held fire on about a third of its fire questions.
+- So it lost by playing doctrine's fire-and-movement plan in an engine
+  that rewards massing all three platoons on the assault. Whether the
+  engine underrates a base of fire is a question for the author, not the
+  commander's fault.
+- **Why it is expensive**: each call is a fresh one-message request; the
+  system prompt and the plan are cached, but the memory (every decision so
+  far, with its reason) is written into the user message, so it is never
+  cached and grows each call.
 
 ## The force-quality matrix re-run, 2026-10-21 (decisions 83, 84, 87)
 
