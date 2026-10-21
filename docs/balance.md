@@ -5254,6 +5254,49 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The force-quality matrix re-run, 2026-10-21 (decisions 83, 84, 87)
+
+The fifty-eighth round's matrix again, on today's rules: Tel Azeka 3:1, the
+same standard-measurement command with `--quality SIDE=type/experience`,
+200 battles from seed 1000 and 200 from seed 2000, pooled (one standard
+error about 2.5 points). Attacker's wins, then (2026-10-04) → now.
+
+**The attacker's quality** (the defender regular, experienced):
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 32% → **4.5%** | 36% → **21.5%** | 41% → **34.5%** |
+| **Regular** | 33% → **30%** | 40% → **58.5%** | 45% → **70.5%** |
+| **Elite** | 38.5% → **79%** | 48.5% → **87.5%** | 53% → **96.5%** |
+
+**The defender's quality** (the attacker regular, experienced):
+
+| | Inexperienced | Experienced | Very experienced |
+|---|---|---|---|
+| **Irregular** | 65.5% → **97%** | 51.5% → **80%** | 34.5% → **60%** |
+| **Regular** | 54% → **85%** | 40% → **58.5%** | 28% → **31%** |
+| **Elite** | 26.5% → **21%** | 20% → **8.5%** | 14.5% → **0.5%** |
+
+Every row and column is still ordered. The baseline is 58.5% (from 40%).
+
+**What widened it** — the corners with each later rule switched off
+(`--quality-off gap|grenades|breakpoint`, a measurement switch), 400 a cell:
+
+| Corner | All on | Gap off (84) | Grenades off (87) | Breakpoint off (87) | All three off |
+|---|---|---|---|---|---|
+| Attacker elite, very experienced | 96.5% | 86.5% | 96% | 91.5% | 74% |
+| Attacker irregular, inexperienced | 4.5% | 16.5% | 5% | 11.5% | 36% |
+| Defender elite, very experienced | 0.5% | 10.5% | 0.5% | 4% | 25% |
+| Defender irregular, inexperienced | 97% | 90.5% | 97% | 93.5% | 84.5% |
+
+- The quality gap (decision 84) is the largest single lever, 6–12 points
+  a corner; the breakpoint by force type next, 4–7; rifle grenades nothing
+  measurable. Together they compound — hit harder, and give up sooner —
+  to about 20 points a corner beyond either.
+- With all three off the spread is October's around the new baseline
+  (attacker −22.5 to +15.5 points, then −8 to +13; defender −33.5 to +26,
+  then −25.5 to +25.5): the morale dials did not widen it.
+
 ## Where breaking contact might pay, 2026-10-21 (decision 109)
 
 **The options on Tel Azeka 3:1**, 100 battles from seed 1000. Defender's

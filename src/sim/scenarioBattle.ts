@@ -108,6 +108,12 @@ export interface ScenarioBattleOptions {
   fireOnTheMove?: number;
   /** The attacker's breakpoint (`GameOptions.attackerBreakpoint`), set on the scenario's game before the first turn. */
   attackerBreakpoint?: number;
+  /**
+   * The quality rules to switch off, for a measurement of what each does
+   * (decisions 84 and 87): the gap on small arms and the assault, on rifle
+   * grenades, and the breakpoint by force type. Set before the first turn.
+   */
+  qualityOff?: readonly ("gap" | "grenades" | "breakpoint")[];
   /** Suppression by volume (`GameOptions.suppressionByVolume`, rules decision 91), set before the first turn. Absent: the game's own. */
   suppressionByVolume?: boolean;
   /** A shell's suppression as a chance (`GameOptions.suppressionByChance`, rules decision 92), set before the first turn. Absent: the game's own. */
@@ -239,6 +245,11 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   if (opts.fireOnTheMove !== undefined) g.fireOnTheMove = opts.fireOnTheMove;
   if (opts.attackerBreakpoint !== undefined) g.attackerBreakpoint = opts.attackerBreakpoint;
   if (opts.suppressionByVolume !== undefined) g.suppressionByVolume = opts.suppressionByVolume;
+  // A measurement's switch, not a rule: the game's own options are fixed once it is built.
+  const quality = g as { qualityGap: boolean; qualityGapGrenades: boolean; qualityBreakpoint: boolean };
+  if (opts.qualityOff?.includes("gap")) quality.qualityGap = false;
+  if (opts.qualityOff?.includes("grenades")) quality.qualityGapGrenades = false;
+  if (opts.qualityOff?.includes("breakpoint")) quality.qualityBreakpoint = false;
   if (opts.suppressionByChance !== undefined) g.suppressionByChance = opts.suppressionByChance;
   if (opts.quality) dressQuality(g, opts.quality);
   if (opts.fireSupport === false) for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
