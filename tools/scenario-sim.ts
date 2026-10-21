@@ -44,7 +44,8 @@ const ids = (value("--scenario") ?? "telAzekaAssault,telAzekaAssault2").split(",
 const n = Number(value("--n") ?? 100);
 const first = Number(value("--seed") ?? 1000);
 const drills = { plain: PLAIN_SCRIPT, western: { ...WESTERN_DRILL }, doctrinal: { ...DOCTRINAL_DRILL } } as const;
-const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
+// The doctrinal drill is the reference (the drill audit, 2026-10-21); plain is the untrained variant.
+const drillName = (value("--drill") ?? "doctrinal") as keyof typeof drills;
 const base = drills[drillName];
 if (!base) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
 const drill: SquadDrill = { ...base };

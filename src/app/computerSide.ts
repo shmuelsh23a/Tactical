@@ -3,7 +3,7 @@ import { ScriptedCompany, type CompanyPlan, type CompanySnapshot } from "./compa
 import { isDeadGround } from "./deadGround.js";
 import {
   DrillState,
-  PLAIN_SCRIPT,
+  REFERENCE_DRILL,
   drillCombat,
   drillMovement,
   type DrillReport,
@@ -385,7 +385,7 @@ export class ComputerDefender {
     g: Game,
     readonly side: Side,
     private readonly ground: { mapWidth: number; mapHeight: number; reserves?: readonly string[] },
-    private readonly drill: SquadDrill = PLAIN_SCRIPT,
+    private readonly drill: SquadDrill = REFERENCE_DRILL,
   ) {
     const enemy = g.units.filter((u) => u.side !== side && u.kind !== "command");
     const startLine = enemy.length ? mean(enemy) : mean(g.units.filter((u) => u.side === side));
@@ -409,7 +409,7 @@ export class ComputerDefender {
   }
 
   /** The defender a saved battle left, on the game replayed from its recording. */
-  static restore(g: Game, snap: ComputerSnapshot, ground: { mapWidth: number; mapHeight: number }, drill: SquadDrill = PLAIN_SCRIPT): ComputerDefender {
+  static restore(g: Game, snap: ComputerSnapshot, ground: { mapWidth: number; mapHeight: number }, drill: SquadDrill = REFERENCE_DRILL): ComputerDefender {
     const ai = new ComputerDefender(g, snap.side, { ...ground, reserves: snap.reserves }, drill);
     ai.task.objective = { ...snap.objective };
     ai.targets = snap.targets.map((t) => ({ ...t }));
@@ -757,7 +757,7 @@ export class ComputerAttacker {
     private readonly ground: { mapWidth: number; mapHeight: number },
     private readonly choices: FirePlanChoices = BROWSER_ATTACK_FIRE,
     plan: CompanyPlan = BROWSER_ATTACK_PLAN,
-    private readonly drill: SquadDrill = PLAIN_SCRIPT,
+    private readonly drill: SquadDrill = REFERENCE_DRILL,
     /** A saved commander's memory: put back rather than chosen again. */
     restoreWith?: CompanySnapshot,
   ) {
@@ -806,7 +806,7 @@ export class ComputerAttacker {
     ground: { mapWidth: number; mapHeight: number },
     choices: FirePlanChoices = BROWSER_ATTACK_FIRE,
     plan: CompanyPlan = BROWSER_ATTACK_PLAN,
-    drill: SquadDrill = PLAIN_SCRIPT,
+    drill: SquadDrill = REFERENCE_DRILL,
   ): ComputerAttacker {
     const ai = new ComputerAttacker(g, snap.side, snap.objective, ground, choices, plan, drill, snap.company);
     ai.fire.missions = snap.fire.missions;

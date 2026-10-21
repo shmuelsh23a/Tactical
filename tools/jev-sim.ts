@@ -66,7 +66,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
-import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
+import { PLAIN_SCRIPT, REFERENCE_DRILL, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
 import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
@@ -85,7 +85,11 @@ if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map
 const seed = Number(value("--seed") ?? 11);
 const file = value("--answers");
 const answers: string[] = file && existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
-const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIPT), scouting: { watchTurns: 1 } };
+// The reference drill unless asked for another (the drill audit, 2026-10-21): plain is the untrained variant.
+const drillArg = value("--drill") ?? "reference";
+const drillBase = drillArg === "western" ? WESTERN_DRILL : drillArg === "plain" ? PLAIN_SCRIPT : drillArg === "reference" ? REFERENCE_DRILL : undefined;
+if (!drillBase) throw new Error(`--drill: "${drillArg}" is not one of reference, plain, western`);
+const drill = { ...drillBase, scouting: { watchTurns: 1 } };
 const decide = fromAnswers(answers);
 // Where the scripted defender registers its mortars (`--defender-plan`): dead ground (the default), open ground, or nothing.
 const defenderPlan = value("--defender-plan") ?? "dead";

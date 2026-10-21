@@ -16,7 +16,7 @@ import "./env.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
-import { PLAIN_SCRIPT, WESTERN_DRILL } from "../src/app/drill.js";
+import { PLAIN_SCRIPT, REFERENCE_DRILL, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
 import { NeedAnswer, fromAnswers, type Question } from "../src/sim/companyQuestions.js";
 import { jevAsker, jevRequest, JEV_FRAMINGS, type JevFraming } from "../src/sim/jev.js";
@@ -32,7 +32,11 @@ const per = Number(value("--per") ?? 15);
 // A variant is a framing, then any of the rewordings below as `+name`, then optionally `@model`;
 // `repeat` is `plain` again, to see how much Jev varies by itself.
 const variants = (value("--variants") ?? "plain,repeat,mission,mission@jev-preview,role,mission+first").split(",");
-const drill = { ...(value("--drill") === "western" ? WESTERN_DRILL : PLAIN_SCRIPT), scouting: { watchTurns: 1 } };
+// The reference drill unless asked for another (the drill audit, 2026-10-21): plain is the untrained variant.
+const drillArg = value("--drill") ?? "reference";
+const drillBase = drillArg === "western" ? WESTERN_DRILL : drillArg === "plain" ? PLAIN_SCRIPT : drillArg === "reference" ? REFERENCE_DRILL : undefined;
+if (!drillBase) throw new Error(`--drill: "${drillArg}" is not one of reference, plain, western`);
+const drill = { ...drillBase, scouting: { watchTurns: 1 } };
 
 /** The questions of one recorded battle, each as Jev saw it, with the answer it gave. */
 function recover(file: string): { q: Question; given: string }[] {

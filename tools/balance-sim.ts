@@ -12,7 +12,7 @@
  *   npm run balance -- --fires mortar=4,method=effect --defender-fires mortar=4,method=effect   # fire for effect at once (decision 39)
  *   npm run balance -- --displace 100                # a defender moves off a shelled position
  *   npm run balance -- --prepared-cover partial      # a prepared position starts in partial cover, not full (decision 48); `none`: a hasty defence
- *   npm run balance -- --drill western               # how the squads fight: plain (default) or western (src/app/drill.ts)
+ *   npm run balance -- --drill western               # how the squads fight: doctrinal (default, the reference), plain or western (src/app/drill.ts)
  *   npm run balance -- --defender-ops --alternate 150 --displace 100   # the defender's mission plan (decision 38)
  *   npm run balance -- --any-echelon               # any side may call any weapon: rules decision 37 off
  *   npm run balance -- --morale on                   # only with morale (or: off)
@@ -54,7 +54,7 @@ import {
   type Echelon,
 } from "../src/sim/balance.js";
 import { LETHALITIES, type FireAllotment, type Lethality, type RuleVariants } from "../src/engine/index.js";
-import { PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
+import { DOCTRINAL_DRILL, PLAIN_SCRIPT, WESTERN_DRILL, type SquadDrill } from "../src/app/drill.js";
 import type { CompanyPlan } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
@@ -80,8 +80,9 @@ const moraleArg = value("--morale");
 const morales = moraleArg === "on" ? [true] : moraleArg === "off" ? [false] : [true, false];
 const swap = args.includes("--swap");
 const preparedCover = (["none", "partial"] as const).find((c) => c === value("--prepared-cover")) ?? "full";
-const drills = { plain: PLAIN_SCRIPT, western: WESTERN_DRILL } as const;
-const drillName = (value("--drill") ?? "plain") as keyof typeof drills;
+const drills = { plain: PLAIN_SCRIPT, western: WESTERN_DRILL, doctrinal: DOCTRINAL_DRILL } as const;
+// The doctrinal drill is the reference (the drill audit, 2026-10-21); plain is the untrained variant.
+const drillName = (value("--drill") ?? "doctrinal") as keyof typeof drills;
 const drill: SquadDrill | undefined = drills[drillName] && { ...drills[drillName] };
 if (!drill) throw new Error(`--drill: "${drillName}" is not one of ${Object.keys(drills).join(", ")}`);
 

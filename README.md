@@ -3584,6 +3584,11 @@ on the stated reasoning, still awaiting the author's word.
       within 100 m of its own assault team (step 8c), and once that team
       stands on the objective with nothing within 100 m it goes on with its
       platoon (step 12b) instead of holding where it split for good.
+    - **It is the reference** (`REFERENCE_DRILL`): the browser computer,
+      `scenario-sim`, `jev-sim`, `jev-probe` and `npm run balance` fight by
+      it unless given `--drill plain` (the untrained variant) or `western`.
+      Code that names no drill (`runBalance`, tests) keeps the plain one,
+      so the tables recorded with it still reproduce.
 114. ✅ **The attack carried out as doctrine has it** (the author, 2026-10-21,
     on the drill audit; every option the recommended one, the clear-cut
     ones without a card each). How a plan is executed, not what it is:

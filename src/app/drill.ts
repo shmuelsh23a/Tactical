@@ -441,6 +441,14 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   baseOfFirePosition: { minRange: 150 },
 };
 
+/**
+ * The drill the game is measured with and the computer fights by (the
+ * author's ruling on the drill audit, 2026-10-21: the doctrinal drill,
+ * fixed). The plain script stays, as the recorded "untrained" variant to
+ * compare against (`--drill plain`).
+ */
+export const REFERENCE_DRILL: SquadDrill = DOCTRINAL_DRILL;
+
 /** What one side has been told to do: attack towards a point, or hold facing one. */
 export interface DrillTask {
   side: Side;
