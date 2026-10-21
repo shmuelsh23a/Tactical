@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 103-111 are built and ruled, the long-waiting ones closed: the 2:1 median accepted at 19.5% (110), and the force-quality matrix re-run, its breakpoint shift halved and its spread ruled (111). Next on the threads: bring the typed fire question to doctrine (a priority target, missions held back), and an AI-commander pilot once he sets a budget.**
+**Next, in one line: decisions 103-111 are built and ruled, the long-waiting ones closed: the 2:1 median accepted at 19.5% (110), and the force-quality matrix re-run, its breakpoint shift halved and its spread ruled (111). Next on the threads: bring the typed fire question to doctrine (a priority target, missions held back), and the AI commander: the first pilot ran (Claude Opus 5.5, 10 battles on Tel Azeka: 2 wins, about $0.96 a battle, balance.md); next, read why its attacks failed and make its memory cache.**
 
 **Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the

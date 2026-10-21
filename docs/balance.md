@@ -5254,6 +5254,32 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## A Claude commander, the first paid pilot, 2026-10-21
+
+`npm run jev-sim -- --claude claude-opus-5-5 --order --plan --memory
+--scenario telAzekaAssault --seed 1000 --n 10 --parallel 5`: Claude Opus 5.5
+($4 / $20 per million tokens in / out, cache reads $0.20) commanding the
+attacking company on Tel Azeka 3:1, given the battalion's order, writing its
+own plan first and carrying the battle's decisions so far.
+
+- **It won 2 of 10** (20%); one draw; two held out of time at turn 45. The
+  rule commander on the same reference plan wins 67% (decision 110's
+  table). Ten battles is ±25 points, so this is a first look, not a
+  measurement.
+- **453 questions**, 45 a battle, 4.7 s a call; mean confidence 0.71. Most
+  were fire calls (263), then the go/hold questions (92) and its plan (52).
+- **Tokens:** 1,902,186 in uncached, 768,902 in from cache, 90,328 out.
+  **Cost about $9.60, about $0.96 a battle** ($7.61 uncached input, $0.15
+  cache reads, $1.81 output; cache writes, if billed within the uncached
+  count at 1.25×, would add up to $1.90).
+- **Uncached input is 71% of the input and 80% of the cost**: the memory
+  grows each call after the cached prefix. Putting the battle's decisions in
+  appended messages instead of the prompt would let them cache, worth most
+  of that $7.61.
+- Its plan reads like a commander's (find, move by dead ground, a base of
+  fire on the western spur, assault on a signal); why the attacks failed is
+  in `jev-runs/claude-opus-5-5/` and not yet read.
+
 ## The force-quality matrix re-run, 2026-10-21 (decisions 83, 84, 87)
 
 The fifty-eighth round's matrix again, on today's rules: Tel Azeka 3:1, the
