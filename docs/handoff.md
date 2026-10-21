@@ -610,8 +610,11 @@ the brief while the reference plans did not.
 inside; whether the computer should give plans once a scenario can tell the
 levers apart (he ruled: defaults for now).
 
-**Then the 2:1 question, the force-quality matrix and the AI commanders**,
-as the author says. Artillery and air support for a company still come
+**Then the typed fire question brought to doctrine** (decision 110: a
+priority target and missions held back, so decision 93's plan can be asked
+for; what Jev will be asked too), **and an AI-commander pilot** once the
+author sets a budget (one model, one scenario, `--n 10`, for the cost a
+battle). Artillery and air support for a company still come
 only by a scenario's allotment (decision 95); battalion echelon is
 backlog 10.
 
