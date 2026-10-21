@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: his "later" is built and measured: decisions 103-106 cover morale inside, the counterattack inside, a reserve held back out of the brief, and a defender who leaves his house only by his commander's decision (doctrine prescribes no case). The house goes to the attacker 88%; with a reserve, 38%, and the reserve gets into the fight inside in two battles in five. Still waiting on him: the 2:1 median (19.5%), the force-quality matrix and the AI commanders.**
+**Next, in one line: decisions 103-108 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, and a battle's score. Open for him: breaking contact still costs the defender under the score (Tel Azeka 128.5 → 92.4 points), so what would make it pay. Then the 2:1 median, the force-quality matrix and the AI commanders.**
 
-**Current as of 2026-10-21, evening** (decision 106's commit, pushed). Since the last handoff
+**Current as of 2026-10-21, night** (decision 108's commit, pushed). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
 author's unless marked ⚠️:
 - **103, morale inside, and the battle waits.** A man the morale step
@@ -30,6 +30,14 @@ author's unless marked ⚠️:
   prescribes no case (sources.md, *Who decides that a defender leaves*).
   House 83% → 88%; with the reserve 43% → 38%, the reserve inside in 83 of
   200 (balance.md, *The house held from inside*).
+- **107, disengagement criteria** (`Game.setDisengagement`): an enemy past
+  a line, or losses at a share; to a named position; by the Break Contact
+  drill (two teams bounding, smoke, no charging). Never fires at half
+  (the side breaks first); at a quarter it hands Tel Azeka over (21% →
+  49%).
+- **108, a battle's score** (`src/app/score.ts`): mission 100, men up to
+  40, time up to 30, beside the winner; in the debrief and the harness.
+  Breaking contact still loses points (balance.md, *The score*).
 - **Measured** (balance.md, *Morale inside and the counterattack*): house
   58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
   counterattack has no scenario yet: two placements tried, both decided
@@ -64,10 +72,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of 2026-10-21, evening (decision 106)
+## Green as of 2026-10-21, night (decision 108)
 
 ```
-npm run check       lint + typecheck clean, 1,129 tests, 76 files
+npm run check       lint + typecheck clean, 1,144 tests, 78 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -133,9 +141,10 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 - **The plain script's Tel Azeka fell 36% → 21%** once the brief left the
   reserve out; the reference plans did not move. Not yet looked into why.
-- **Disengagement criteria as a plan field** (decision 106): the one
-  doctrinal way to decide leaving in advance (ATP 3-21.8 (2024), paras
-  5-35, 5-38). Not built; his call whether the plan should carry it.
+- **What would make breaking contact pay** (decisions 107-108): under
+  the score the squads that go lose as many men moving back as they would
+  holding. Candidates: a delay mission (time is the mission), or the
+  bound under fire (smoke first, or covered routes).
 - **Today's ⚠️, none questioned yet:** cornered means found (an attacker
   has him in sight), and he gives himself up before that attacker fires;
   a broken attacker or counterattacker is gone at once (no walk out); a
