@@ -5254,6 +5254,50 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Why a base of fire loses to massing, 2026-10-21
+
+The Claude commander lost by keeping a base of fire and flanking, the
+plans that measure worst at 3:1. Investigated with the rule commander
+(`jev-sim --rule`, free), Tel Azeka 3:1, 100 battles from seed 1000,
+instrumented each turn (a scratch probe, not kept):
+
+| Plan | Attacker wins | BLUE-1's fire (force-turns a battle) | Company's fire | Defence pinned as the assault reaches 100 m |
+|---|---|---|---|---|
+| Mass assault (A) | 63% | 304 | 607 | 54% |
+| Base of fire | 57% | **48** | 465 | 37% |
+| Flank | 52% | 270 | 559 | 33% |
+| Base of fire + flank | 43% | **42** | 417 | 22% |
+
+**The base of fire hardly fires.** A platoon on "support" in the plain
+drill (`PLAIN_SCRIPT`, which the reference plans and the AI commanders
+play by) stays where it waited whenever the enemy is in reach, seeing him
+or not (`drill.ts`, `job === "support"`), and it waited in dead ground,
+which by definition cannot see the objective. So the company that keeps a
+base of fire puts less fire on the enemy, not more, and its assault meets
+a less-pinned defence. The doctrinal drill already moves a blind base of
+fire to a position with a field of fire (`baseOfFirePosition`, ATP 3-21.8
+(2024), para 3-102; the fifty-somethingth round's +5) and gives machine
+guns their 800 m (decision 90); the plain drill has neither.
+
+The same four plans with the plain drill given those two parts:
+
+| Plan | Plain drill | **+ firing positions, MG reach** |
+|---|---|---|
+| Mass assault (A) | 63% | 68% |
+| Base of fire | 57% | **80%** |
+| Flank | 52% | 69% |
+| Base of fire + flank | 43% | **80%** |
+
+- **The order flips to doctrine's**: with a base of fire that can see,
+  keeping one beats massing by 12 points, and the attacker loses fewer
+  men (6.9 down against 10.4 a battle). BLUE-1's fire as the base of fire
+  goes from 48 to 403 force-turns a battle.
+- So the engine does not underrate a base of fire; the plain drill blinds
+  it. The Claude commander's plan was right.
+- **Every reference table would move**, upward: each of these is past
+  decision 68's 3:1 band (40–55%) already, and the band is judged on the
+  eight plans' median. Put to the author.
+
 ## A Claude commander, the first paid pilot, 2026-10-21
 
 `npm run jev-sim -- --claude claude-opus-5-5 --order --plan --memory
