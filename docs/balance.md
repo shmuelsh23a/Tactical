@@ -5254,6 +5254,26 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## The house held from inside, with and without a reserve, 2026-10-21 (decision 106)
+
+A defender in a house fires from it and no longer assaults out of it.
+`scenario-sim --n 200`, seed 1000 (±7 points at 95%):
+
+| Scenario | Attacker wins | Median turns | Attacker down | Defender down | Reserve committed / inside |
+|---|---|---|---|---|---|
+| `yokneamHouse` (was 83%) | **88%** | 19 | 17% | 39% | — |
+| `yokneamHouseReserve` (was 43%) | **38%** | 8 | 44% | 54% | 92% / 83 of 200 (mean turn 3.4) |
+
+- **No more turn-1 brawl at the door**: the attacker's losses in the house
+  fall 21% → 17%, and it carries the house a little more often.
+- **The reserve is worth fifty points.** It is committed in nine battles in
+  ten and gets into the fight inside in two in five, by turn 3 or 4. It costs the
+  attacker more than twice the men (44% against 17%) and its own side more
+  too (54%). Draws, 10%, are battles where both sides break. How much of it
+  is the counterattack inside rather than the reserve's fight at the door is
+  not separated yet.
+- ⚠️ The reserve's spot (88 m south of the door, in full cover) is ours.
+
 ## The reserve held back, and the brief without it, 2026-10-21 (decision 105)
 
 A reserve holds fire until committed; the attacker's brief (the harness's

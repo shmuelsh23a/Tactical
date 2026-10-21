@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: his "later" is built and measured. Decisions 103-105 cover morale inside, the counterattack inside, and a reserve that holds fire and is kept out of the attacker's brief. The house goes to the attacker 83%; the reference medians hold (3:1 46%, 2:1 19.5%); with a reserve, 43%, mostly decided in turn 1 by the house squad's assault in the open. Waiting on him: whether that turn-1 assault should stand, the 2:1 median, the force-quality matrix and the AI commanders.**
+**Next, in one line: his "later" is built and measured: decisions 103-106 cover morale inside, the counterattack inside, a reserve held back out of the brief, and a defender who fights from his house without assaulting out of it. The house goes to the attacker 88%; with a reserve, 38%, and the reserve gets into the fight inside in two battles in five. Still waiting on him: the 2:1 median (19.5%), the force-quality matrix and the AI commanders.**
 
-**Current as of 2026-10-21, evening** (decision 105's commit, pushed). Since the last handoff
+**Current as of 2026-10-21, evening** (decision 106's commit, pushed). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
 author's unless marked ⚠️:
 - **103, morale inside, and the battle waits.** A man the morale step
@@ -24,6 +24,10 @@ author's unless marked ⚠️:
   Re-measured (balance.md, *The reserve held back*): reference medians
   3:1 46% and 2:1 19.5% (unmoved); plain-script Tel Azeka 36% → 21% (the
   brief); raid 10% → 5%; the house with a reserve 43%.
+- **106, a house held from inside** (ruled the same evening): the drill's
+  defender in a building fires from it and never assaults out of it.
+  House 83% → 88%; with the reserve 43% → 38%, the reserve inside the house
+  in 83 of 200 (balance.md, *The house held from inside*).
 - **Measured** (balance.md, *Morale inside and the counterattack*): house
   58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
   counterattack has no scenario yet: two placements tried, both decided
@@ -58,10 +62,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of 2026-10-21, evening (decision 105)
+## Green as of 2026-10-21, evening (decision 106)
 
 ```
-npm run check       lint + typecheck clean, 1,126 tests, 76 files
+npm run check       lint + typecheck clean, 1,128 tests, 76 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -70,7 +74,7 @@ npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only doo
 npm run scenario-sim -- --n 100 --scenario yokneamRaid
                     the raid: 10% since decisions 103-104 (16% before)
 npm run scenario-sim -- --n 200 --scenario yokneamHouse
-                    the house: 83% since decisions 103-104 (58% before)
+                    the house: 88% since decisions 103-106 (58% before)
 npm run scenario-sim -- … --attack-plan entry=top,grenades=no --defence-plan storeys=1,windows=no,expects=above,hold
                     each side's plan inside a building (decision 101)
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -125,12 +129,6 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
-- **The house squad's turn-1 assault in the open** (an existing drill,
-  not today's): in `yokneamHouse` and `yokneamHouseReserve` the defender
-  inside assaults the platoon at its door on turn 1, a squad losing five
-  men, and the attacker often breaks before the fight inside gets going.
-  It decides most battles with a reserve. Should a defender holding a
-  house assault out of it?
 - **The plain script's Tel Azeka fell 36% → 21%** once the brief left the
   reserve out; the reference plans did not move. Not yet looked into why.
 - **Today's ⚠️, none questioned yet:** cornered means found (an attacker
@@ -587,10 +585,11 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The turn-1 assault out of the house**, once the author rules on it: then
-`yokneamHouseReserve` can tell what the counterattack inside is worth
-(today the reserve goes in in 31 battles of 200). And why the plain
-script's Tel Azeka moved with the brief while the reference plans did not.
+**Separate the reserve's worth**: in `yokneamHouseReserve` the reserve is
+worth fifty points, but how much is the counterattack inside and how much
+its fight at the door is not measured (run it with `counterattackInside`
+off as a harness flag). And why the plain script's Tel Azeka moved with
+the brief while the reference plans did not.
 
 **Smaller, whenever:** the UX pass's targetable marker for an enemy fought
 inside; whether the computer should give plans once a scenario can tell the
