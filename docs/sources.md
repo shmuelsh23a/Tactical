@@ -139,6 +139,31 @@ gitignored, so it is fetched, not versioned.
 - **Chunk counts are not measurements.** The manifest says so itself: it is
   a retrieval index, not a unit set. Quote paragraphs, never "N chunks say".
 
+### Who decides that a defender leaves its building (2026-10-21, decision 106)
+
+Searched for any drill or rule that has defenders leave a building, or move
+between positions, without a leader's decision. **None found**: the only
+automatic act in any drill is taking cover under indirect fire.
+- **React to Indirect Fire While Dismounted – Squad (07-SQD-D9504)**, TC
+  3-21.76 (2025), ch. 8, step 3: "The squad leader orders the squad to move
+  to a rally point". It is written for a squad in the open, and there is no
+  building version.
+- **Break Contact – Squad (07-SQD-D9505)**, TC 3-21.76 (2025): "the squad
+  leader decides to break contact". It is written for the attack and the
+  movement to contact.
+- **Disengagement criteria**, ATP 3-21.8 (2024), paras 5-35 and 5-38: set in
+  advance, and still "The platoon leader makes a displacement decision".
+  The urban delay, ATP 3-06.11 (2024) para 4-130, is the same: criteria
+  leaders set beforehand, for a delay mission.
+- **Stay and fight**: ATP 3-06.11 (2024) para 4-137, "Defending units stay
+  in place and continue to fight unless they can … break contact"; ATTP
+  3-06.11 (2011) para 6-76, a strongpoint "is defended until the unit is
+  formally ordered out of it"; ATP 3-21.8 (2024) para 5-25, withdrawing from
+  a strongpoint needs "permission from the higher headquarters".
+- Not found: leaving a building on fire, falling back floor by floor (as a
+  rule), or a building version of React to Indirect Fire. FM 3-06.11 (2002)
+  is not in the corpus.
+
 ## Not yet read, worth reading
 
 - DTIC was down for maintenance all of 2026-10-03:

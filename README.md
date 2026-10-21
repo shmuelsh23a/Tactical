@@ -3399,25 +3399,33 @@ on the stated reasoning, still awaiting the author's word.
       platoon's reserve 88 m south of the house's door, in full cover, out
       of sight of the platoon's start (the author: "farther back").
       ⚠️ Ours: the exact spot.
-106. ✅ **A defender holding a house does not go out to assault the force
-    about to come in** (the author, 2026-10-21, refining his first ruling
-    the same evening: "I don't want the defender to be static. A force
-    defending a house does not assault the attacking force that is about
-    to come in, but it should be able to leave the house — either to
-    reposition or to attack the attacker"). The computer's drill gave every
-    defender the assault rule, so a squad in a house came out on turn 1 and
+106. ✅ **A defender holding a house leaves it only by a commander's
+    decision** (the author, 2026-10-21, ruled in three steps the same
+    evening: it does not assault the force about to come in; "I don't want
+    the defender to be static", it should be able to leave to reposition or
+    to attack; and leaving "should be a commander's decision", unless
+    doctrine prescribes a case). The computer's drill gave every defender
+    the assault rule, so a squad in a house came out on turn 1 and
     assaulted the platoon in the open at its door: in `yokneamHouse` and
-    `yokneamHouseReserve` that decided most battles before any fight inside.
-    - **About to come in is at the walls**: an enemy within 10 m of the
-      house's walls (`COMING_IN_M`, ⚠️ the figure ours). The defender fires
-      on him from the house and lets him come in; the fight inside decides.
-    - **The defender is not static.** An enemy farther out it may go out
-      and assault, and nothing stops it leaving the house to reposition — a
-      player may order either. The drill does not yet script a move out
-      (the author: allowed, not scripted yet).
-    - A force in the open assaults as before, a committed reserve among them.
-    - It is the drill's, as squads are scripted; the engine refuses no
-      order. The defender judges "at the walls" by its marks of the enemy.
+    `yokneamHouseReserve` that decided most battles before any fight
+    inside.
+    - **Doctrine prescribes no leaving at squad level** (searched,
+      docs/sources.md): React to Indirect Fire and Break Contact both have
+      the squad leader order the move, and a strongpoint is held until the
+      commander orders it out (ATTP 3-06.11 (2011), para 6-76; ATP 3-06.11
+      (2024), para 4-137).
+    - **So the drill's defender in a house fights from it**: it fires, and
+      never assaults out or moves out on its own. Leaving — to reposition, or
+      to go out and attack — is ordered by its commander: a player today, a
+      simulated commander (Jev) later. The engine refuses no such order.
+    - **Not static:** any order the commander gives takes it out; a force
+      whose plan holds to the last (decision 101) is the commander's
+      decision to stay.
+    - A force in the open assaults as before, a committed reserve among
+      them.
+    - A decision made in advance — disengagement criteria (ATP 3-21.8
+      (2024), paras 5-35, 5-38) — would be a plan field the commander
+      fills; not built.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

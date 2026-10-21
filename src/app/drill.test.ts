@@ -9,7 +9,6 @@ import {
   drillMovement,
   fireGrenadiers,
   SCOUT_GIVE_UP_TURNS,
-  COMING_IN_M,
   type DrillTask,
 } from "./drill.js";
 import { HOLD_SHORT_M, type CompanyOrders } from "./company.js";
@@ -747,8 +746,8 @@ describe("the next squad into a house (decision 100)", () => {
 });
 
 describe("a defender holding a house (rules decision 106)", () => {
-  // The author, 2026-10-21: it "does not assault the attacking force that is about to come in, but it
-  // should be able to leave the house - either to reposition or to attack the attacker".
+  // The author, 2026-10-21: it does not assault the force about to come in; leaving the house, to
+  // reposition or to attack, "should be a commander's decision" — and no doctrine prescribes it.
   const house = {
     id: "house",
     kind: "building" as const,
@@ -776,8 +775,11 @@ describe("a defender holding a house (rules decision 106)", () => {
     expect(inside).toContain("fire");
   });
 
-  it("is not static: it may go out and assault an enemy farther from the house", () => {
-    expect(acts({ x: 0, y: 0 }, 6 + COMING_IN_M + 4)).toContain("assault");
+  it("does not go out after an enemy farther off either: leaving is the commander's to order", () => {
+    // 14 m from the wall, in assault reach: the drill still fights him from the house.
+    const inside = acts({ x: 0, y: 0 }, 20);
+    expect(inside).not.toContain("assault");
+    expect(inside).toContain("fire");
   });
 
   it("still assaults from the open, as before", () => {

@@ -5,7 +5,6 @@ import {
   RIFLE_GRENADIERS,
   angleBetween,
   pointInPolygon,
-  distanceToPolygon,
   bearingDegrees,
   distance,
   type Game,
@@ -820,13 +819,6 @@ function readyShare(u: Unit, state: DrillState): number {
   return ready / start;
 }
 
-/**
- * An enemy this near a house's walls is about to come in (decision 106, the
- * author, 2026-10-21; the figure ours): its defender fights him from the
- * house rather than going out to assault him.
- */
-export const COMING_IN_M = 10;
-
 /** A squad still holds its post while it is in the fight and within this of it (ours). */
 export const HOLDS_POST_M = 25;
 
@@ -1394,11 +1386,10 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     if (u.covering) game.setCovering(u.id, false);
     // A force fighting inside cannot go out to assault: it fires from its windows (decision 98).
     // A defender already in a fight is gone in after only by the next squad (decision 100).
-    // A defender holding a house does not go out to assault the enemy about to come in, at its walls:
-    // it fights him from the house (decision 106). One farther out it may go out after.
-    const house = !task.attacking && game.closedTerrain ? game.interior.buildingAt(game.terrain, u.position) : undefined;
-    const comingIn = house?.footprint.shape === "polygon" && distanceToPolygon(target.position, house.footprint.points) <= COMING_IN_M;
-    if (u.kind !== "command" && !fight && !comingIn && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
+    // A defender holding a house fights from it: leaving it — to reposition, or to go out and
+    // attack — is a commander's decision, never the drill's (decision 106; no doctrine prescribes it).
+    const holdsHouse = !task.attacking && game.closedTerrain && game.interior.buildingAt(game.terrain, u.position) !== undefined;
+    if (u.kind !== "command" && !fight && !holdsHouse && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {
