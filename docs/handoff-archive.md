@@ -12,6 +12,45 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-10-20, night — the header
+
+As it stood at `e4f1d29`, before decisions 103 and 104.
+
+**Next, in one line: the fight inside a house is now fully coupled to the battle — windows (98), joining (99), the drill's next squad (100), plans as data (101), and a side's break reaching inside (102) — and `yokneamHouse` measures it. Next on this thread is the author's "later": morale inside the house, the battle waiting for a fight inside, and the defender's counterattack inside, designed together. The 2:1 median, the force-quality matrix and the AI commanders still wait on him.**
+
+**Current as of 2026-10-20, night** (`334b7bb`, pushed). Since the morning's
+handoff (`401ae1e`), all in the README's rules decisions, every option the
+author's unless marked ⚠️:
+- **The standoff fault is closed**: no stall in 3,984 fights inside; the six
+  left were the three-hour clock on two building blocks, which he kept.
+- **98, through the windows.** A defender stands at a window facing the
+  assault unless planned otherwise; fire in finds only men at facing
+  windows (and attackers in the street); fire out counts only them; a round
+  that gets in bursts in its room. Spotting, the fall of shot and morale's
+  seeing (armour fear, contagion, a rout watched) follow the windows too.
+- **99, joining a fight.** The attacking side's further forces join as new
+  teams at the door; a rallied force goes back in; the defending side is
+  refused until the counterattack inside is designed.
+- **100, the next squad** (the drill, from ATP 3-06.11 C-3 and C-107): the
+  platoon's nearest other squad follows to cover near the door and goes in
+  while the house has more storeys than squads fit to clear it.
+- **101, plans inside as data** (`Game.setInteriorPlan`, journaled): door or
+  roof, grenades; storeys held, windows or back, expected from, hold or fall
+  back. Men on a roof are seen and hit; the plan rules grenades inside.
+  Teams are doctrine's four (teams of two measured as a dominated lever).
+  The harness gives plans (`--attack-plan`, `--defence-plan`); the computer
+  keeps the defaults.
+- **`yokneamHouse`**, the scenario for telling plans apart: a RED squad in
+  Yokneam's westernmost house, a BLUE platoon already against it from the
+  town. Only grenades count (58% with, 49% without).
+- **102, a side's break reaches inside.** A broken defender's men inside
+  surrender, a broken attacker's leave by the door, judged after every
+  action; the log and debrief say so even when the game stops at the break.
+
+The morning's header (decisions 96–97 and the start of 98) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-20 — the header as it
+ran through the day*.
+
 ## 2026-10-20 — the header as it ran through the day
 
 Moved from the handoff at the night's handoff (`334b7bb`).

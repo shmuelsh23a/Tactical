@@ -5254,6 +5254,51 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Morale inside and the counterattack, 2026-10-21 (decisions 103, 104)
+
+`scenario-sim`, 200 battles from seed 1000 (±7 points at 95%); the raid
+100 (±9). Before is `e4f1d29`; after 103 is `376cf87`; after 104 is
+`1d881e9`.
+
+| Scenario | Before | After 103 | After 104 | Turns (median), before → after |
+|---|---|---|---|---|
+| `yokneamHouse`, defaults | 58% | 82% | **83%** | 9 → 16 |
+| `yokneamHouse`, no grenades | 49% | 71% | **72%** | — → 20 |
+| `yokneamRaid` | 16% | 13% | **10%** | 30 → 30 (76% out of time) |
+
+- **The house now goes to the attacker four times in five.** Before, the
+  platoon broke at 30% down a few minutes into the fight inside and lost;
+  now the break waits, and the hour of clearing is fought out. The
+  attacker's losses are unchanged (21%); the defender's go 39% → 44%,
+  prisoners included. A defended house against three to one at the
+  point of assault: doctrine says the attack should carry it (decision 68).
+- **Grenades are still the only lever that counts** (eleven points);
+  roof, upper storey, back from the windows, holding and expecting from
+  above all read 81–84% after 103 — within noise of the defaults. Morale
+  inside did not make the defender's levers matter; the clearing is now
+  fought out, and the plan's levers still trade time for men.
+- **Retaking rooms barely moves the house** (82% → 83%): with one squad
+  inside, a defender rarely has a free room beside him that the attacker
+  has left. It shows in the fight inside alone (`counterattack.test.ts`).
+- **The raid falls back towards the out-of-time draw**: a fight there
+  ends with its defenders gone or given up, and the attacker searching an
+  empty house for twenty minutes. Before the battle waited only for a
+  contested house (defenders still in it), it waited for that too and the
+  raid read 2%; with the fix, 13% and then 10%, at the edge of the noise.
+- **A reserve's counterattack is not measured yet.** `yokneamHouse` with
+  a second RED squad as the platoon's reserve was tried in two places: 30 m
+  south-west behind the next house, and directly behind the defended house.
+  In both the battle was decided before any counterattack. In turn 1 the
+  house's squad and the reserve assault the platoon in the open at the
+  door, and the platoon works round the house onto the reserve. Attacker
+  27–29% then 0% (40 battles), median 1–2 turns. The mechanics are tested;
+  the scenario's reserve placement is put to the author.
+- Do not re-derive: the reserve first committed only when its squad left
+  the house, because the two sides fighting inside learnt of each other
+  only as the fight began, and then steered by marks that location error
+  drew about 15 m from it, short of the door. Both fixed in 104: contact
+  refreshed each minute, and the reserve goes for the door.
+
 ## The house at the edge: the levers where fights inside are common, 2026-10-20
 
 `yokneamHouse` (the author's layout, 2026-10-20): a RED squad in the

@@ -1,39 +1,29 @@
 # Handoff — where the project stands
 
-**Next, in one line: the fight inside a house is now fully coupled to the battle — windows (98), joining (99), the drill's next squad (100), plans as data (101), and a side's break reaching inside (102) — and `yokneamHouse` measures it. Next on this thread is the author's "later": morale inside the house, the battle waiting for a fight inside, and the defender's counterattack inside, designed together. The 2:1 median, the force-quality matrix and the AI commanders still wait on him.**
+**Next, in one line: his "later" is built: morale inside (103) and the counterattack inside (104). The house now goes to the attacker 83% (58% before), and grenades are still the only lever that counts. Waiting on him: where a reserve stands for the counterattack to be measured, and whether 83% on the house is right. The 2:1 median, the force-quality matrix and the AI commanders still wait too.**
 
-**Current as of 2026-10-20, night** (`334b7bb`, pushed). Since the morning's
-handoff (`401ae1e`), all in the README's rules decisions, every option the
+**Current as of 2026-10-21** (`1d881e9`, pushed). Since the last handoff
+(`e4f1d29`), both in the README's rules decisions, every option the
 author's unless marked ⚠️:
-- **The standoff fault is closed**: no stall in 3,984 fights inside; the six
-  left were the three-hour clock on two building blocks, which he kept.
-- **98, through the windows.** A defender stands at a window facing the
-  assault unless planned otherwise; fire in finds only men at facing
-  windows (and attackers in the street); fire out counts only them; a round
-  that gets in bursts in its room. Spotting, the fall of shot and morale's
-  seeing (armour fear, contagion, a rout watched) follow the windows too.
-- **99, joining a fight.** The attacking side's further forces join as new
-  teams at the door; a rallied force goes back in; the defending side is
-  refused until the counterattack inside is designed.
-- **100, the next squad** (the drill, from ATP 3-06.11 C-3 and C-107): the
-  platoon's nearest other squad follows to cover near the door and goes in
-  while the house has more storeys than squads fit to clear it.
-- **101, plans inside as data** (`Game.setInteriorPlan`, journaled): door or
-  roof, grenades; storeys held, windows or back, expected from, hold or fall
-  back. Men on a roof are seen and hit; the plan rules grenades inside.
-  Teams are doctrine's four (teams of two measured as a dominated lever).
-  The harness gives plans (`--attack-plan`, `--defence-plan`); the computer
-  keeps the defaults.
-- **`yokneamHouse`**, the scenario for telling plans apart: a RED squad in
-  Yokneam's westernmost house, a BLUE platoon already against it from the
-  town. Only grenades count (58% with, 49% without).
-- **102, a side's break reaches inside.** A broken defender's men inside
-  surrender, a broken attacker's leave by the door, judged after every
-  action; the log and debrief say so even when the game stops at the break.
+- **103, morale inside, and the battle waits.** A man the morale step
+  broke stops fighting inside: an attacker leaves, a defender falls back
+  (holding or not) and, found by an attacker, gives himself up
+  (`Soldier.captured`). Neither side's break is judged while a fight with
+  men of both sides in it goes on (a house left empty is searched, not
+  waited for). `GameOptions.moraleInside`.
+- **104, the counterattack inside.** Defenders inside retake rooms the
+  attacker took and left; a defending force's assault on an attacker
+  fighting in its house goes in at the door and clears the rooms back by
+  the same drill (the resolver's teams now belong to either side).
+  Decision 60's reserve counts a post whose house is being cleared as
+  lost and makes for the door. `GameOptions.counterattackInside`.
+- **Measured** (balance.md, *Morale inside and the counterattack*): house
+  58% → 83%, no grenades 49% → 72%, raid 16% → 10%. A reserve's
+  counterattack has no scenario yet: two placements tried, both decided
+  in turn 1 by assaults in the open.
 
-The morning's header (decisions 96–97 and the start of 98) is in
-[handoff-archive.md](handoff-archive.md), *2026-10-20 — the header as it
-ran through the day*.
+Yesterday's header (decisions 98–102, the house scenario) is in
+[handoff-archive.md](handoff-archive.md), *2026-10-20, night — the header*.
 
 This is the working note for whoever
 picks the project up next: the state of play, what is waiting on the author, and
@@ -61,19 +51,19 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `334b7bb` (2026-10-20, night)
+## Green as of `1d881e9` (2026-10-21)
 
 ```
-npm run check       lint + typecheck clean, 1,102 tests, 74 files
+npm run check       lint + typecheck clean, 1,122 tests, 76 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
                     the fight inside on every demo house (decision 96);
                     --hold-storeys 1 (a plan's), --team-size 2 (a measurement)
 npm run scenario-sim -- --n 100 --scenario yokneamRaid
-                    the raid: 16% (balance.md)
+                    the raid: 10% since decisions 103-104 (16% before)
 npm run scenario-sim -- --n 200 --scenario yokneamHouse
-                    the house: 58%, about 130 fights inside in 200 battles
+                    the house: 83% since decisions 103-104 (58% before)
 npm run scenario-sim -- … --attack-plan entry=top,grenades=no --defence-plan storeys=1,windows=no,expects=above,hold
                     each side's plan inside a building (decision 101)
 node tools/smart-attacker.mjs [scenario] [turns]
@@ -128,11 +118,20 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-20)
 
-- **His "later", to design together** (README decision 102): morale inside
-  the house (a man who breaks stops fighting there), the battle not judged
-  while a fight inside goes on, and the defender's counterattack inside
-  (decision 99 refuses it for now). Ask before building; it is the next
-  thread on closed terrain.
+- **Where a reserve stands, to measure the counterattack inside**
+  (decision 104). Tried 30 m south-west behind the next house and directly
+  behind the defended one. Both times the battle was decided in turn 1:
+  the house's squad and the reserve assault the platoon in the open at
+  the door, or the platoon works round onto the reserve (balance.md). Ask:
+  where, and should a reserve hold fire until committed?
+- **Is 83% right for the house?** Three to one at the point of assault
+  against one squad in a house, the break now waiting for the clearing
+  (decisions 68, 103). Grenades still the only lever (72% without).
+- **Today's ⚠️, none questioned yet:** cornered means found (an attacker
+  has him in sight), and he gives himself up before that attacker fires;
+  a broken attacker or counterattacker is gone at once (no walk out); a
+  room is retaken only with nobody of the attacker's in it; a
+  counterattack goes in only at the front door, with grenades.
 - **For the UX pass:** the screen marks the enemy a force is fighting
   inside as a target; the engine refuses that shot ("נלחם בתוך מבנה").
 - **Today's ⚠️, none questioned yet:** a squad spent at half the men it
@@ -374,6 +373,11 @@ One rules question is **open but not asked**, because nothing needs it yet:
 
 ## Do not re-propose
 
+- **A battle that waits for an empty house.** Decision 103 waits only
+  while men of both sides are in a fight inside; waiting for the
+  attacker's twenty-minute search of a house its defenders had left put
+  the raid at 2%, nearly all out of time.
+
 Closed deliberately, with reasons that are not obvious from the code:
 
 - **Team size in a plan inside.** Measured 2026-10-20: teams of two cleared
@@ -577,13 +581,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**His "later" on closed terrain**, as one design put to him first (cards,
-then build): morale inside the house, the battle waiting for a fight inside,
-and the defender's counterattack inside. Why it matters: on `yokneamHouse` no
-fight inside ever finishes — a side breaks a few minutes in, while clearing
-takes an hour — so the plan's levers act only through the first minutes'
-losses, and only grenades show (balance.md, *The house at the edge*). With
-morale inside and the battle waiting, the hour of clearing would count.
+**The reserve's placement, then its measurement**: once the author says
+where a reserve stands, generate the scenario (the spec's shape is
+`yokneam-house.json` plus a `"reserve": true` squad of the same platoon),
+and measure the counterattack inside against no counterattack. Watch turn
+1: a reserve near the door assaults the platoon in the open before any
+fight inside begins.
 
 **Smaller, whenever:** the UX pass's targetable marker for an enemy fought
 inside; whether the computer should give plans once a scenario can tell the
