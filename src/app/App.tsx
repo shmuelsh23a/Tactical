@@ -206,7 +206,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       vsComputer === "defend"
         ? new ComputerDefender(built.game, defender, built)
         : vsComputer === "attack"
-          ? new ComputerAttacker(built.game, attacker, briefedObjective(built.game, attacker, defender), built)
+          ? new ComputerAttacker(built.game, attacker, briefedObjective(built.game, attacker, defender, undefined, built.reserves ?? []), built)
           : null;
     // The computer plans before the player does; its plan is drawn only on its own map.
     ai?.plan(built.game);

@@ -17,7 +17,7 @@ import type { Game, Point } from "../engine/index.js";
 function play(seed: number, turns: number, report?: DrillReport): { game: Game; shots: number; planned: readonly Point[] } {
   const built = telAzekaAssaultListing.build(seed);
   const g = built.game;
-  const ai = new ComputerAttacker(g, "BLUE", briefedObjective(g, "BLUE", "RED"), built);
+  const ai = new ComputerAttacker(g, "BLUE", briefedObjective(g, "BLUE", "RED", undefined, built.reserves ?? []), built);
   const planned = ai.plan(g);
   // Closing a turn begins the next, so the game is begun once.
   if (turns > 0) g.beginTurn();
@@ -53,8 +53,9 @@ describe("the computer attacking a position (single-player)", () => {
   it("is briefed on where the defence is thought to be, not where it is", () => {
     const built = telAzekaAssaultListing.build(1000);
     const g = built.game;
-    const told = briefedObjective(g, "BLUE", "RED");
-    const red = g.units.filter((u) => u.side === "RED" && u.kind !== "command");
+    const told = briefedObjective(g, "BLUE", "RED", undefined, built.reserves ?? []);
+    // The position held: the reserve is not in the brief (decision 105).
+    const red = g.units.filter((u) => u.side === "RED" && u.kind !== "command" && !(built.reserves ?? []).includes(u.id));
     const truth = {
       x: red.reduce((t, u) => t + u.position.x, 0) / red.length,
       y: red.reduce((t, u) => t + u.position.y, 0) / red.length,
@@ -64,7 +65,7 @@ describe("the computer attacking a position (single-player)", () => {
     // (rules decision 51) — the plan is wrong, which is the point.
     expect(off).toBeGreaterThan(1);
     // Drawn from the planning stream: the same seed briefs it the same way.
-    expect(briefedObjective(telAzekaAssaultListing.build(1000).game, "BLUE", "RED")).toEqual(told);
+    expect(briefedObjective(telAzekaAssaultListing.build(1000).game, "BLUE", "RED", undefined, built.reserves ?? [])).toEqual(told);
   });
 
   it("comes on at the position, and plays the same way every time from the same seed", () => {
@@ -122,7 +123,7 @@ describe("a battle against the attacking computer, saved and resumed", () => {
     const start = () => {
       const built = telAzekaAssaultListing.build(1000);
       const g = built.game;
-      const ai = new ComputerAttacker(g, "BLUE", briefedObjective(g, "BLUE", "RED"), built);
+      const ai = new ComputerAttacker(g, "BLUE", briefedObjective(g, "BLUE", "RED", undefined, built.reserves ?? []), built);
       ai.plan(g);
       g.beginTurn();
       return { g, ai, ground: built };

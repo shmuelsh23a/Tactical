@@ -3380,9 +3380,25 @@ on the stated reasoning, still awaiting the author's word.
       fighting inside it.
     - ⚠️ Ours: retaking a room needs nobody of the attacker's in it, and a
       defender with no enemy in his own room; a counterattack goes in only
-      at the front door, with grenades. No scenario measures the reserve's
-      counterattack yet: where a reserve stands decided the battle before
-      it (balance.md), so its place waits on the author.
+      at the front door, with grenades. Where a reserve stands decided the
+      battle before any counterattack until decision 105.
+105. ✅ **A reserve holds its fire until committed, and the attacker is not
+    briefed on it** (the author, 2026-10-21, both as recommended). Placed
+    near the house, a reserve assaulted the attacker in the open in turn 1,
+    and the attacker's brief, aimed at the mean of every defending force,
+    sent the platoon to a point between the house and a reserve 80 m off it.
+    - **The reserve** (decision 60's drill, `counterattack.holdFire`) does
+      not fire or assault until it is committed: it is kept for the
+      counterattack. Its standing order already held its fire; now its
+      assault is held too.
+    - **The brief is the position held**: the computer attacker's objective
+      (`briefedObjective`, and the harness's tasking) leaves a scenario's
+      reserves out. This moves every scenario with a reserve, the reference
+      battles among them; re-measured on balance.md.
+    - `yokneamHouseReserve`: `yokneamHouse` with a second RED squad as the
+      platoon's reserve 88 m south of the house's door, in full cover, out
+      of sight of the platoon's start (the author: "farther back").
+      ⚠️ Ours: the exact spot.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

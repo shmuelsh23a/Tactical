@@ -116,9 +116,11 @@ export interface SquadDrill {
    * assault rule, and once no enemy is seen on the position it takes the
    * position and holds it. A mark older than that (decision 57) does not
    * count: the enemy may have gone. Null: the reserve stays where it is and
-   * fights from there.
+   * fights from there. `holdFire`: until it is committed the reserve does
+   * not give itself away — no fire, no assault (the author, 2026-10-21,
+   * decision 105: "farther back, holding fire").
    */
-  counterattack: { lostWithin: number; gait: MovementMode } | null;
+  counterattack: { lostWithin: number; gait: MovementMode; holdFire?: boolean } | null;
   /**
    * Shoot back at what is shooting at you (Battle Drill 2 step 11a(1): the
    * squad in contact "destroys or suppresses enemy weapons that are firing
@@ -317,7 +319,7 @@ export const PLAIN_SCRIPT: SquadDrill = {
   heavyWeapons: HEAVY_WEAPONS,
   breakContact: null,
   commandGroupBehind: 80,
-  counterattack: { lostWithin: 50, gait: "run" },
+  counterattack: { lostWithin: 50, gait: "run", holdFire: true },
 };
 
 /**
@@ -349,7 +351,7 @@ export const WESTERN_DRILL: SquadDrill = {
   heavyWeapons: HEAVY_WEAPONS,
   breakContact: { readyShareBelow: 0.5, fallBack: 150 },
   commandGroupBehind: 80,
-  counterattack: { lostWithin: 50, gait: "run" },
+  counterattack: { lostWithin: 50, gait: "run", holdFire: true },
 };
 
 /**
@@ -1321,6 +1323,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // — unless the company has gone in and told it to give a base of fire.
     if (task.company?.scouts.has(u.id) && !(task.company.scoutsFire && !task.company.hold)) continue;
     const retaking = task.attacking || !drill.counterattack ? undefined : state?.counterattacking.get(u.id);
+    // A reserve not yet committed holds its fire (decision 105): it is kept for the counterattack.
+    if (!task.attacking && drill.counterattack?.holdFire && task.reserves?.has(u.id) && !retaking) continue;
     const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
     // The counterattack inside (decision 104): at the door of the house being cleared, it goes in.
     const door = foe ? counterDoor(game, side, foe) : undefined;

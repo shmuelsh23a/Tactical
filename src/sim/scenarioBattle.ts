@@ -240,7 +240,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   // The tasking: where the defence is, spoilt by an observer's error from the
   // start line — drawn exactly as the browser tool draws it, so a seed puts
   // the plan in the same wrong place in both.
-  const defence = g.units.filter((u) => u.side === defender && u.kind !== "command");
+  // The position held, not the reserve kept hidden behind it (decision 105), as `briefedObjective` does.
+  const defence = g.units.filter((u) => u.side === defender && u.kind !== "command" && !(reserves ?? []).includes(u.id));
   const own = g.units.filter((u) => u.side === attacker && u.kind !== "command");
   const truth = mean(defence);
   const startLine = mean(own);

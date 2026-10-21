@@ -31,11 +31,13 @@ describe("the doctrinal gate on an assault", () => {
   });
 
   it("changes the battle, and the same seed changes it the same way", () => {
-    const a = play({ ...RECON, suppressionGate: GATE });
-    const b = play({ ...RECON, suppressionGate: GATE });
+    // Seed 1001: since the brief left the reserve out (decision 105), seed
+    // 1000's battle comes out the same either way (7 seeds in 10 differ).
+    const a = play({ ...RECON, suppressionGate: GATE }, 1001);
+    const b = play({ ...RECON, suppressionGate: GATE }, 1001);
     expect(a).toEqual(b);
     // …and it is not simply the ungated battle under another name.
-    expect(a).not.toEqual(play(RECON));
+    expect(a).not.toEqual(play(RECON, 1001));
   });
 
   it("leaves a company with no gate exactly as it was", () => {

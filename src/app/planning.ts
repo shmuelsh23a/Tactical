@@ -47,10 +47,13 @@ const mean = (us: readonly Unit[]): Point => ({
  * plan is part of the opposition, not a handicap we invented.
  *
  * `rangeShare` is the harness's `FirePlanChoices.planningError`; left out,
- * decision 51's own figure stands.
+ * decision 51's own figure stands. `reserves`, the scenario's (required,
+ * so no caller briefs on a reserve by leaving it out): left out of where
+ * the defence is (decision 105).
  */
-export function briefedObjective(game: Game, attacker: Side, defender: Side, rangeShare?: number): Point {
-  const held = game.units.filter((u) => u.side === defender && u.kind !== "command");
+export function briefedObjective(game: Game, attacker: Side, defender: Side, rangeShare: number | undefined, reserves: readonly string[]): Point {
+  // The position held, not a reserve kept hidden behind it (decision 105): nobody briefs the attacker on that.
+  const held = game.units.filter((u) => u.side === defender && u.kind !== "command" && !reserves.includes(u.id));
   const own = game.units.filter((u) => u.side === attacker && u.kind !== "command");
   if (!held.length || !own.length) return { x: 0, y: 0 };
   return estimateFrom(new Rng(unitSeed(game.seed, "#planning-error")), mean(own), mean(held), rangeShare);

@@ -6,6 +6,7 @@ import { telAzekaAssault2Listing } from "./scenarios/telAzekaAssault2.js";
 import { yokneamUrbanListing } from "./scenarios/yokneamUrban.js";
 import { yokneamRaidListing } from "./scenarios/yokneamRaid.js";
 import { yokneamHouseListing } from "./scenarios/yokneamHouse.js";
+import { yokneamHouseReserveListing } from "./scenarios/yokneamHouseReserve.js";
 import type { Scenario, ScenarioListing } from "./scenarios/types.js";
 
 export type { Scenario, ScenarioListing };
@@ -30,6 +31,7 @@ export const SCENARIOS: readonly ScenarioListing[] = [
   yokneamUrbanListing,
   yokneamRaidListing,
   yokneamHouseListing,
+  yokneamHouseReserveListing,
 ];
 
 /** The listing a `?scenario=` id names, or undefined for none or an unknown one. */

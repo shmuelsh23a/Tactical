@@ -17,6 +17,7 @@ import { angleBetween, bearingDegrees } from "../engine/index.js";
 const FACES_AWAY: Record<string, string> = {
   yokneamRaid: "the militia faces the low ground in the north; the raid is inserted from the east",
   yokneamHouse: "the squad faces the open ground to the west; the platoon is already against the house from the town (the author, 2026-10-20)",
+  yokneamHouseReserve: "yokneamHouse with a reserve (decision 105): the house's squad faces west as there; the reserve, 88 m south of it, keeps the spec's facing 0 and is out of the facing test's question until committed",
 };
 
 describe("prepared defenders face the attack's start line", () => {

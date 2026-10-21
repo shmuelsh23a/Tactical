@@ -500,6 +500,23 @@ describe("a defending platoon's reserve (rules decision 60)", () => {
     expect(state.counterattacking.has(reserve.id)).toBe(false);
   });
 
+  it("gives nothing away until committed: no assault, no fire, an enemy close or not (decision 105)", () => {
+    const { g, reserve } = field();
+    const state = new DrillState();
+    move(g, defend(), state);
+    g.addUnit(makeInfantry("B2", "BLUE", "squad", { x: 0, y: -112 }, 8)); // right on top of it
+    g.advanceToPhase("combat");
+    const acted: string[] = [];
+    const assault = g.assault.bind(g), fire = g.fire.bind(g);
+    g.assault = (a, t, n) => (acted.push(a), assault(a, t, n));
+    g.fire = ((a: string, ...rest: unknown[]) => (acted.push(a), (fire as (...x: unknown[]) => unknown)(a, ...rest))) as typeof g.fire;
+    drillCombat(g, defend(), PLAIN_SCRIPT, state);
+    expect(acted).not.toContain(reserve.id);
+    // Without the rule, as before decision 105, it assaults what is on top of it.
+    drillCombat(g, defend(), { ...PLAIN_SCRIPT, counterattack: { ...PLAIN_SCRIPT.counterattack!, holdFire: false } }, state);
+    expect(acted).toContain(reserve.id);
+  });
+
   it("assaults the enemy on the post before a nearer one off it", () => {
     const { g, reserve, forward, enemy } = field({ x: 0, y: 10 });
     const state = new DrillState();
