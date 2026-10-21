@@ -3521,7 +3521,19 @@ on the stated reasoning, still awaiting the author's word.
       setting of the criteria beats holding in the scenarios measured is
       the rule working, not a dominated control to fix: the criteria are
       the commander's to use when holding is worse still, and going early
-      costs next to nothing. Not to be re-proposed as a trap.
+      costs next to nothing. Not to be re-proposed as a trap.110. ✅ **The 2:1 median stands at 19.5%** (the author, 2026-10-21, on
+    the recommendation). The reference plans at two to one give the
+    attacker 19.5% against decision 68's 20–35%: within the noise of the
+    band (a cell is worth ±10 points), and what doctrine expects of an
+    attack at two to one — three to one at the point of assault, and
+    decision 68's own "usually fails". Accepted, not tuned.
+    - **The real gap is the fire question**: the reference plans' attacker
+      calls fire through the typed question, which offers no priority
+      target and no missions held back, so decision 93's doctrinal fire
+      plan cannot be expressed through it (the standard measurement, which
+      can, reads 31% at 2:1). Bringing that question to doctrine is the
+      next step on this thread: it is also what Jev will be asked.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

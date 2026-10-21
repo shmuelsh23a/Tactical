@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 103-109 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, a battle's score, smoke before the bound and a delay mission. Breaking contact pays nowhere measured, and he ruled that a deliberate cost (doctrine's warning about displacing under pressure). Next: the 2:1 median, the force-quality matrix and the AI commanders, which wait on him.**
+**Next, in one line: decisions 103-109 are built: morale inside, the counterattack inside, a reserve held back, the house left only by order, disengagement criteria, a battle's score, smoke before the bound and a delay mission. Breaking contact pays nowhere measured, and he ruled that a deliberate cost (doctrine's warning about displacing under pressure). The 2:1 median is accepted (decision 110); next, the force-quality matrix re-run for his ruling, the fire question brought to doctrine, and an AI-commander pilot within a budget he sets.**
 
 **Current as of 2026-10-21, night** (decision 109's commit; pushed as far as GitHub could be reached). Since the last handoff
 (`e4f1d29`), both in the README's rules decisions, every option the
@@ -159,12 +159,10 @@ The 2026-10-01 version of this section, with its tables and the rulings of
   `yokneamHouse`'s positions, 90-turn limit, quality and the squad facing
   west.
 
-- **The reference plans' 2:1 median is 18.5%**, just under 20 (standard
-  measurement 31%). The stall is fixed (an assault that is spent commits
-  the rest and lifts the fires; one scout a platoon); what is left is the
-  plans that split the company at two to one being shot up — doctrine's
-  three to one at the point of assault, and decision 68's "usually fails".
-  Accept?
+- **The fire question to doctrine** (decision 110): the 2:1 median was
+  accepted at 19.5%; the gap left is that the typed fire question offers no
+  priority target and no missions held back (decision 93). Next on that
+  thread, and what Jev will be asked.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
 - **The force-quality matrix** (decision 83) has waited on his view of its
