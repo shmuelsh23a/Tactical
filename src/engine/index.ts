@@ -347,6 +347,7 @@ export {
   type FireMission,
   type RegisteredTarget,
   type PreparedPosition,
+  type DisengagementPlan,
   type MoveResult,
   type ChargeWorkReport,
   type WithCoveringFire,

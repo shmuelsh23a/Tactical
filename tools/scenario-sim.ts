@@ -131,6 +131,16 @@ function interiorPlan(flag: string): InteriorPlan | undefined {
   }
   return plan;
 }
+/** `--defender-disengage loss=0.5,back=150` (decision 107). */
+function disengagePlan(): { lossShare: number; back: number } | undefined {
+  const text = value("--defender-disengage");
+  if (text === undefined) return undefined;
+  const kv = Object.fromEntries(text.split(",").map((p) => p.split("=")));
+  const lossShare = Number(kv.loss), back = Number(kv.back);
+  if (!(lossShare > 0 && lossShare <= 1) || !(back > 0)) throw new Error('--defender-disengage: "loss=<0..1>,back=<metres>"');
+  return { lossShare, back };
+}
+const disengage = disengagePlan();
 const attackPlan = interiorPlan("--attack-plan");
 const defencePlan = interiorPlan("--defence-plan");
 
@@ -142,7 +152,7 @@ for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
   const seeds = Array.from({ length: n }, (_, i) => first + i);
-  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}), ...(attackPlan || defencePlan ? { interiorPlans: { ...(attackPlan ? { attack: attackPlan } : {}), ...(defencePlan ? { defence: defencePlan } : {}) } } : {}) });
+  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}), ...(disengage ? { disengage } : {}), ...(attackPlan || defencePlan ? { interiorPlans: { ...(attackPlan ? { attack: attackPlan } : {}), ...(defencePlan ? { defence: defencePlan } : {}) } } : {}) });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);

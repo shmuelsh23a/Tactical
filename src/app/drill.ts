@@ -444,6 +444,118 @@ export interface DrillReport {
  * and which forces have already broken contact — a force falls back once, and
  * then holds where it fell back to.
  */
+/**
+ * A squad breaking contact by the drill (rules decision 107): Break Contact,
+ * TC 3-21.76 (2025), 07-SQD-D9505. One team suppresses while the other
+ * bounds back, screened by smoke where it has it, then they change over,
+ * until both are at the position the commander named.
+ */
+export interface BreakingContact {
+  /** The team split off it to bound by turns with it; absent for a squad too small to split, which goes whole. */
+  team?: string;
+  /** Its next position: where the commander's criteria send it. */
+  to: Point;
+  /** The force bounding now; the other suppresses. */
+  mover: string;
+  /** Where this bound ends. */
+  bound?: Point;
+  /** This bound's smoke is fired. */
+  smoked?: boolean;
+  /** Screens fired in this break, against {@link BREAK_CONTACT_SCREENS}. */
+  screens?: number;
+}
+
+function copyBreak(b: BreakingContact): BreakingContact {
+  return { ...b, to: { ...b.to }, ...(b.bound ? { bound: { ...b.bound } } : {}) };
+}
+
+/**
+ * Rifle-grenade screens a break may fire (decision 107, ⚠️ ours): the moving
+ * team "employs smoke" (step 5), but a squad carries a few rounds, not one
+ * a bound; decision 101's screening smoke is likewise capped.
+ */
+export const BREAK_CONTACT_SCREENS = 2;
+
+/**
+ * How far a bound goes (decision 107, ⚠️ ours): Break Contact's note, the
+ * distance "should not exceed small arms range to ensure supporting fire"
+ * (TC 3-21.76 (2025), 07-SQD-D9505, step 3).
+ */
+export const BREAK_CONTACT_BOUND_M = 100;
+/** Fewer fit men than this and a squad goes back whole rather than in two teams (⚠️ ours: a team of two each). */
+const BREAK_CONTACT_MIN_MEN = 4;
+
+/**
+ * Break contact on the commander's criteria (decision 107): a defending
+ * squad whose disengagement criteria are met — an enemy its side has seen
+ * past its line, or its losses at its share — breaks contact by the drill,
+ * to its next position. Not once it is fighting inside a house (too late:
+ * the criteria are to go before being decisively engaged, ATP 3-21.8
+ * (2024), para 5-35), and never under a plan to hold to the last.
+ */
+function breakContact(game: Game, task: DrillTask, state: DrillState, forces: Unit[], enemies: Unit[]): Set<string> {
+  const inBreak = new Set<string>();
+  if (task.attacking) return inBreak;
+  const seen = enemies.map((e) => e.position);
+  for (const u of forces) {
+    if (u.kind !== "infantry" || !inPlay(u) || state.breaking.has(u.id) || [...state.breaking.values()].some((b) => b.team === u.id)) continue;
+    if (state.brokeContact.has(u.id) || state.counterattacking.has(u.id)) continue; // broken contact once already, or committed
+    if (game.interior.inFight(u.id) || game.interior.orderFor(u.id)?.fallBack === false) continue;
+    if (!game.disengagementMet(u.id, seen)) continue;
+    const to = game.disengagementPosition(u.id);
+    if (!to) continue;
+    const men = (u.soldiers ?? []).filter((m) => !m.neutralized);
+    let team: string | undefined;
+    if (men.length >= BREAK_CONTACT_MIN_MEN) {
+      try {
+        // The team in contact stays to suppress (step 2); the rest moves first.
+        team = game.detachTeam(u.id, men.slice(Math.ceil(men.length / 2)).map((m) => m.id)).id;
+      } catch {
+        // A force that cannot split (its nerve gone, say) goes back whole.
+      }
+    }
+    state.breaking.set(u.id, { ...(team ? { team } : {}), to, mover: team ?? u.id });
+    // It leaves its post on purpose: no reserve counterattacks it (decision 60).
+    state.displaced.add(u.id);
+    if (team) state.displaced.add(team);
+  }
+  for (const [id, b] of [...state.breaking]) {
+    const live = [id, b.team].filter((x): x is string => !!x && game.units.some((u) => u.id === x && inPlay(u)));
+    if (live.length === 0) { state.breaking.delete(id); continue; }
+    const there = (x: string) => distance(game.getUnit(x).position, b.to) <= 5;
+    if (live.every(there)) {
+      // In its assigned position (step 9b): it holds there.
+      for (const x of live) { state.posts.set(x, { ...b.to }); state.brokeContact.add(x); game.setStandingOrder(x, { gait: "normal" }); }
+      state.breaking.delete(id);
+      continue;
+    }
+    for (const x of live) inBreak.add(x);
+    // The first bound is the moving team's (step 5); after each, the team that bounded overwatches and the
+    // other goes (step 8) — unless it is already there, or gone.
+    const first = !b.bound && live.includes(b.mover);
+    const done = first || !live.includes(b.mover) || distance(game.getUnit(b.mover).position, b.bound!) <= 2 || there(b.mover);
+    if (done) {
+      const other = live.find((x) => x !== b.mover && !there(x));
+      const next = first ? b.mover : (other ?? live.find((x) => !there(x))!);
+      const from = game.getUnit(next).position;
+      const d = distance(from, b.to);
+      b.mover = next;
+      b.bound = d <= BREAK_CONTACT_BOUND_M ? { ...b.to } : toward(from, b.to, BREAK_CONTACT_BOUND_M);
+      b.smoked = false;
+    }
+    for (const x of live) {
+      const now = game.standingOrderFor(x);
+      if (x === b.mover) {
+        const going = now?.gait === "run" && now.withdraw === true && !!now.destination && distance(now.destination, b.bound!) < 1e-6;
+        if (!going) game.setStandingOrder(x, { gait: "run", destination: { ...b.bound! }, withdraw: true });
+      } else if (!(now?.gait === "normal" && !now.destination && !now.withdraw)) {
+        game.setStandingOrder(x, { gait: "normal" });
+      }
+    }
+  }
+  return inBreak;
+}
+
 export class DrillState {
   private readonly strength = new Map<string, number>();
   readonly fellBack = new Set<string>();
@@ -468,6 +580,10 @@ export class DrillState {
   readonly baseOfFire = new Set<string>();
   /** The next squad following into each house its side is clearing (decision 100): building to squad. */
   readonly following = new Map<string, string>();
+  /** Squads breaking contact by the drill on their disengagement criteria (decision 107). */
+  readonly breaking = new Map<string, BreakingContact>();
+  /** Forces that have broken contact and hold their next position (decision 107): each breaks once. */
+  readonly brokeContact = new Set<string>();
 
   startingStrength(u: Unit): number {
     let n = this.strength.get(u.id);
@@ -494,6 +610,8 @@ export class DrillState {
       divided: [...this.divided],
       baseOfFire: [...this.baseOfFire],
       following: [...this.following],
+      breaking: [...this.breaking].map(([k, v]) => [k, copyBreak(v)]),
+      brokeContact: [...this.brokeContact],
     };
   }
 
@@ -514,6 +632,9 @@ export class DrillState {
     (snap.divided ?? []).forEach((id) => s.divided.add(id));
     (snap.baseOfFire ?? []).forEach((id) => s.baseOfFire.add(id));
     fill(s.following, snap.following ?? []);
+    // Copied: the drill changes a break in place, which must not reach back into the save (decision 107).
+    (snap.breaking ?? []).forEach(([k, v]) => s.breaking.set(k, copyBreak(v)));
+    (snap.brokeContact ?? []).forEach((id) => s.brokeContact.add(id));
     return s;
   }
 }
@@ -530,6 +651,9 @@ export interface DrillStateSnapshot {
   baseOfFire?: string[];
   /** The next squad following into each house (decision 100). */
   following?: [string, string][];
+  /** Squads breaking contact, and those that have (decision 107). */
+  breaking?: [string, BreakingContact][];
+  brokeContact?: string[];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -907,6 +1031,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
   }
+  // The commander's disengagement criteria (decision 107): those breaking contact move by the drill's bounds.
+  const breakingNow = breakContact(game, task, state, forces, enemies);
 
   // Battle Drill 2A: a squad that has come into contact divides into two
   // fire teams, the part in contact holding as the support-by-fire team
@@ -951,6 +1077,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const follows = followers(game, task, drill, state);
   forces.forEach((u, i) => {
     if (!inPlay(u)) return;
+    if (breakingNow.has(u.id)) return; // its order is Break Contact's (decision 107)
     state.startingStrength(u);
     // The next squad behind one clearing a house (decision 100): up to cover
     // near the door, and, when it goes in, no nearer than within reach.
@@ -1326,6 +1453,21 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // A reserve not yet committed holds its fire (decision 105): it is kept for the counterattack.
     if (!task.attacking && drill.counterattack?.holdFire && task.reserves?.has(u.id) && !retaking) continue;
     const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
+    // Break Contact (decision 107): smoke where the side can (step 5), at most BREAK_CONTACT_SCREENS a break.
+    // ⚠️ Ours: fire comes after movement, so a screen laid as the bound ends covers the changeover and the next bound.
+    const breaking = [...(state?.breaking.values() ?? [])].find((b) => b.mover === u.id && !b.smoked && (b.screens ?? 0) < BREAK_CONTACT_SCREENS);
+    if (breaking) {
+      breaking.smoked = true;
+      const mark = enemies.filter((e) => distance(u.position, e.position) <= RIFLE_GRENADE_RANGE).sort((a, b) => distance(u.position, a.position) - distance(u.position, b.position))[0];
+      if (mark) {
+        try {
+          game.deploySmoke("rifleGrenade", side, { ...mark.position });
+          breaking.screens = (breaking.screens ?? 0) + 1;
+        } catch {
+          // No grenadier within reach, or the side may not: it goes unscreened.
+        }
+      }
+    }
     // The counterattack inside (decision 104): at the door of the house being cleared, it goes in.
     const door = foe ? counterDoor(game, side, foe) : undefined;
     if (foe && door && u.kind === "infantry" && !game.interior.inFight(u.id) && distance(u.position, door) <= ASSAULT_RANGE_M) {
@@ -1389,7 +1531,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // A defender holding a house fights from it: leaving it — to reposition, or to go out and
     // attack — is a commander's decision, never the drill's (decision 106; no doctrine prescribes it).
     const holdsHouse = !task.attacking && game.closedTerrain && game.interior.buildingAt(game.terrain, u.position) !== undefined;
-    if (u.kind !== "command" && !fight && !holdsHouse && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
+    // A force breaking contact fires to get away, and never charges (decision 107).
+    const breakingNow = [...(state?.breaking ?? [])].some(([id, b]) => id === u.id || b.team === u.id);
+    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {

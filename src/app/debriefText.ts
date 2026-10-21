@@ -9,6 +9,7 @@ import {
   sectorBonus,
 } from "../engine/index.js";
 import type {
+  DisengagementPlan,
   InteriorPlan,
   InteriorReport,
   ActionOutcome,
@@ -477,6 +478,18 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
 }
 
 /**
+ * A force's disengagement criteria (rules decision 107), in one line: what
+ * makes it go, and where.
+ */
+export function describeDisengagement(plan: DisengagementPlan): string {
+  const when: string[] = [];
+  if (plan.line) when.push("אויב חוצה את קו הניתוק");
+  if (plan.lossShare !== undefined) when.push(`${Math.round(plan.lossShare * 100)}% מאנשיו מחוץ לקרב`);
+  const where = plan.position ? `אל (${Math.round(plan.position.x)}, ${Math.round(plan.position.y)})` : "אל העמדה החלופית";
+  return `${when.join(" או ")} · ${where}`;
+}
+
+/**
  * A force's plan for a fight inside a building (rules decision 101), in one
  * line: only what it says, the defaults left unsaid.
  */
@@ -667,6 +680,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${who(action.unitId)} ${action.on ? "יצא לסיור" : "חזר מסיור"}`;
     case "setInteriorPlan":
       return `${who(action.unitId)} — תוכנית לקרב בתוך מבנה: ${describeInteriorPlan(action.plan)}`;
+    case "setDisengagement":
+      return action.plan ? `${who(action.unitId)} — תנאי ניתוק: ${describeDisengagement(action.plan)}` : `${who(action.unitId)} — תנאי הניתוק בוטלו`;
     case "layCharge":
       return action.type
         ? `${who(action.unitId)} מתחיל להניח ${chargeHe(action.type)}`
@@ -944,6 +959,9 @@ export function describeOutcome(
 
     case "setInteriorPlan":
       return "הדרך פנימה נקבעת עם תחילת הקרב; רימונים, נסיגה או החזקה — בכל תור";
+
+    case "setDisengagement":
+      return outcome.plan ? "כשתנאי מתקיים — ניתוק מגע בתרגולת, אל העמדה הבאה" : "הכוח נשאר בעמדתו";
 
     case "layCharge":
       return outcome.type

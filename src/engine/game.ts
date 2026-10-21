@@ -210,6 +210,26 @@ const MORTARS: ReadonlySet<string> = new Set(["mortar", "lightMortar", "heavyMor
 /** The most tubes an allotment's fire unit may name (decision 93): a battery's six. */
 const MAX_FIRE_UNIT_TUBES = 6;
 
+/** Which side of a line a point is on: the sign of the cross product, 0 on it. */
+function sideOfLine(line: { from: Point; to: Point }, p: Point): number {
+  return (line.to.x - line.from.x) * (p.y - line.from.y) - (line.to.y - line.from.y) * (p.x - line.from.x);
+}
+
+/**
+ * A defending force's disengagement criteria (rules decision 107; ATP 3-21.8
+ * (2024), para 5-35): the commander's decision, made in advance, of when the
+ * force breaks contact and where it goes. Any criterion met and it goes;
+ * its drill carries it out (Break Contact, TC 3-21.76 (2025), 07-SQD-D9505).
+ */
+export interface DisengagementPlan {
+  /** A disengagement line (ADP 3-90): an enemy seen past it, on the force's side, and the force goes. */
+  line?: { from: Point; to: Point };
+  /** The share of the force's men, as it stood when given the plan, out of the fight: "to preserve friendly combat power". */
+  lossShare?: number;
+  /** Where it goes: its next position. Left out, its prepared alternate position (decision 38). */
+  position?: Point;
+}
+
 /**
  * An alternate position a side prepared in mission planning (rules decision
  * 38): ground made ready for `forUnitId` to fall back to. Any force of the
@@ -935,6 +955,8 @@ export class Game {
    * be rebuilt on replay so a later default id does not collide.
    */
   private readonly teamsDetached = new Map<string, number>();
+  /** Each force's disengagement criteria (decision 107), with its strength and its side of the line when given. */
+  private readonly disengagements = new Map<string, { plan: DisengagementPlan; men: number; lineSide: number }>();
   /** Alternate positions prepared in mission planning — copies. */
   get preparedPositions(): PreparedPosition[] {
     return cloneForRecord(this.prepared);
@@ -1930,9 +1952,17 @@ export class Game {
       observationPost: false,
     };
     this.units.push(team);
-    // Its parent's plan for a fight inside goes with it (decision 101).
+    // Its parent's plan for a fight inside goes with it (decision 101), and its disengagement criteria (decision 107).
     const order = this.interior.orderFor(unitId);
     if (order) this.interior.setOrder(id, order);
+    // Each part counts its losses from the fit men it has: the men already down stay with the parent, and so does their count.
+    const criteria = this.disengagements.get(unitId);
+    if (criteria) {
+      const fitTaken = taking.filter((s) => !s.neutralized).length;
+      const position = criteria.plan.position ?? this.alternatePositionFor(unitId)?.at; // the parent's place to go is the team's
+      this.disengagements.set(id, { ...criteria, plan: { ...criteria.plan, ...(position ? { position: { ...position } } : {}) }, men: fitTaken });
+      this.disengagements.set(unitId, { ...criteria, men: Math.max(0, criteria.men - fitTaken) });
+    }
     this.teamsDetached.set(unitId, (this.teamsDetached.get(unitId) ?? 1) + 1);
     this.journal({ kind: "detachTeam", unitId, soldierIds: [...wanted], opts: { id, ...(opts.name ? { name: opts.name } : {}), ...(opts.echelon ? { echelon: opts.echelon } : {}) } });
     return cloneForRecord(team);
@@ -3040,6 +3070,68 @@ export class Game {
     if (plan.holdStoreys !== undefined && !(Array.isArray(plan.holdStoreys) && plan.holdStoreys.length > 0 && plan.holdStoreys.every((k) => Number.isInteger(k) && k >= 0))) throw new Error("storeys are counted from 0, the ground floor");
     this.interior.setOrder(unitId, plan);
     this.journal({ kind: "setInteriorPlan", unitId, plan: cloneForRecord(plan) });
+  }
+
+  /**
+   * A defending force's disengagement criteria (rules decision 107, the
+   * author, 2026-10-21): when it breaks contact — an enemy past a line, its
+   * losses at a share — and where it goes, its next position or else its
+   * prepared alternate. The commander's decision made in advance (ATP
+   * 3-21.8 (2024), paras 5-35, 5-38); the drill carries it out. Null calls
+   * them off. Refused with no criterion, or nowhere to go.
+   */
+  setDisengagement(unitId: string, plan: DisengagementPlan | null): void {
+    const unit = this.getUnit(unitId);
+    if (plan === null) {
+      this.disengagements.delete(unitId);
+      this.journal({ kind: "setDisengagement", unitId, plan: null });
+      return;
+    }
+    if (unit.kind !== "infantry") throw new Error(`${unitId} is not infantry: only infantry breaks contact by the drill`);
+    if (!plan.line && plan.lossShare === undefined) throw new Error("disengagement criteria need a line or a share of losses");
+    if (plan.lossShare !== undefined && !(plan.lossShare > 0 && plan.lossShare <= 1)) throw new Error("a share of losses is more than 0 and at most 1");
+    const finite = (p: Point) => Number.isFinite(p.x) && Number.isFinite(p.y);
+    if ((plan.position && !finite(plan.position)) || (plan.line && !(finite(plan.line.from) && finite(plan.line.to)))) throw new Error("a point off every map");
+    if (plan.line && distance(plan.line.from, plan.line.to) < 1) throw new Error("a disengagement line needs two points apart");
+    if (!plan.position && !this.alternatePositionFor(unitId)) throw new Error("nowhere to go: name its next position, or prepare an alternate one");
+    const lineSide = plan.line ? Math.sign(sideOfLine(plan.line, unit.position)) : 0;
+    if (plan.line && lineSide === 0) throw new Error("the force stands on its own disengagement line: draw it in front of the force");
+    // Losses count from the men fit when the plan is given, not those down before it.
+    this.disengagements.set(unitId, { plan: cloneForRecord(plan), men: (unit.soldiers ?? []).filter((s) => !s.neutralized).length, lineSide });
+    this.journal({ kind: "setDisengagement", unitId, plan: cloneForRecord(plan) });
+  }
+
+  /** A force's disengagement criteria, if it has any — a copy. */
+  disengagementFor(unitId: string): DisengagementPlan | undefined {
+    const d = this.disengagements.get(unitId);
+    return d && cloneForRecord(d.plan);
+  }
+
+  /**
+   * Are a force's disengagement criteria met (decision 107)? `enemies` are
+   * where its side has seen the enemy — the commander's line is crossed by
+   * an enemy seen past it, never by one where nobody saw him.
+   */
+  disengagementMet(unitId: string, enemies: readonly Point[]): boolean {
+    const d = this.disengagements.get(unitId);
+    if (!d) return false;
+    const unit = this.getUnit(unitId);
+    if (d.plan.lossShare !== undefined && d.men > 0) {
+      const out = d.men - (unit.soldiers ?? []).filter((s) => !s.neutralized).length;
+      if (out / d.men >= d.plan.lossShare) return true;
+    }
+    if (d.plan.line && d.lineSide !== 0) {
+      const line = d.plan.line;
+      if (enemies.some((p) => Math.sign(sideOfLine(line, p)) === d.lineSide)) return true;
+    }
+    return false;
+  }
+
+  /** Where a force breaking contact goes (decision 107): its next position, or its prepared alternate. */
+  disengagementPosition(unitId: string): Point | undefined {
+    const d = this.disengagements.get(unitId);
+    if (!d) return undefined;
+    return d.plan.position ? { ...d.plan.position } : this.alternatePositionFor(unitId)?.at;
   }
 
   /**

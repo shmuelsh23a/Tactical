@@ -3426,6 +3426,44 @@ on the stated reasoning, still awaiting the author's word.
     - A decision made in advance — disengagement criteria (ATP 3-21.8
       (2024), paras 5-35, 5-38) — would be a plan field the commander
       fills; not built.
+107. ✅ **Disengagement criteria in a defender's plan** (the author,
+    2026-10-21, as recommended except as noted). The commander's decision,
+    made in advance, of when a defending force breaks contact and where it
+    goes: "the protocols that specify those circumstances where a friendly
+    force must break contact" (ATP 3-21.8 (2024), para 5-35, after FM 3-90).
+    `Game.setDisengagement`, journaled; `null` calls them off.
+    - **What may trigger it** (the author chose two of four): an enemy seen
+      past a **disengagement line** the commander draws (ADP 3-90's term), or
+      the force's **losses** at a share he sets, counted from its strength
+      when given — "to preserve friendly combat power". Any one met.
+    - **Where it goes**: a position the plan names, its next one; left out,
+      its prepared alternate position (decision 38); with neither, the
+      criteria are refused.
+    - **How it goes: by Break Contact** (the author's choice over a plain
+      withdrawal; TC 3-21.76 (2025), 07-SQD-D9505): the squad splits in two
+      teams; the moving team bounds back while the team in contact stays
+      and suppresses, with rifle-grenade smoke where the side can (two
+      screens a break, ⚠️ ours); neither charges while it goes; then they
+      change over, bound by bound, until both are in the
+      named position, where they hold. A bound is at most 100 m — the drill
+      says it "should not exceed small arms range to ensure supporting
+      fire" (⚠️ the figure ours); a squad of fewer than four fit men goes
+      back whole (⚠️ ours).
+    - **Not once fighting inside a house**: too late then — the criteria are
+      to go before being decisively engaged; and never under a plan to hold
+      to the last (decision 101), the commander's decision to stay.
+    - A team split off the force carries its criteria and its place to go;
+      losses count from the men fit when the criteria were given, those down
+      before staying with the parent. The line is judged on the side's marks
+      of the enemy, not where he truly is; a force may not stand on its own
+      line.
+    - Measured (balance.md, *Disengagement criteria*): at losses of half it
+      never fires — the side breaks first; at a quarter it hands the
+      attacker the ground (Tel Azeka 21% → 49%), **a dominated option** as
+      the game scores battles today. Put to the author.
+    - The drill carries them out for a side the computer plays and in the
+      harness (`--defender-disengage loss=0.5,back=150`); a player executes
+      his own, as with any order. No screen sets them yet (the UX pass).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

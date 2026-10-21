@@ -132,6 +132,12 @@ export interface ScenarioBattleOptions {
    * the defaults, "unless otherwise planned".
    */
   interiorPlans?: { attack?: InteriorPlan; defence?: InteriorPlan };
+  /**
+   * Disengagement criteria for every defending squad but the reserves
+   * (decision 107): a share of losses, and its next position `back` metres
+   * straight back from the attack's start line.
+   */
+  disengage?: { lossShare: number; back: number };
   /** The company's squads go by covered ground (`CompanyOrders.coveredRoutes`); on unless false. */
   coveredRoutes?: boolean;
   /** The company's platoons close together (`CompanyOrders.arriveTogether`); on unless false. */
@@ -276,6 +282,15 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   // Each side's plan for a fight inside (decision 101), for every infantry force of it.
   for (const [side, plan] of [[attacker, opts.interiorPlans?.attack], [defender, opts.interiorPlans?.defence]] as const) {
     if (plan) for (const u of g.units) if (u.side === side && u.kind === "infantry") g.setInteriorPlan(u.id, plan);
+  }
+  if (opts.disengage) {
+    for (const u of g.units) {
+      if (u.side !== defender || u.kind !== "infantry" || (reserves ?? []).includes(u.id)) continue;
+      const dx = u.position.x - startLine.x, dy = u.position.y - startLine.y, d = Math.hypot(dx, dy) || 1;
+      const clamp = (v: number, hi: number) => Math.min(hi - 1, Math.max(1, v));
+      const position = { x: clamp(u.position.x + (dx / d) * opts.disengage.back, mapWidth), y: clamp(u.position.y + (dy / d) * opts.disengage.back, mapHeight) };
+      g.setDisengagement(u.id, { lossShare: opts.disengage.lossShare, position });
+    }
   }
 
   const ask = opts.decide;

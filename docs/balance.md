@@ -5254,6 +5254,38 @@ container.
   for every man, several times a step. Indexing the leaders by side once per
   step would take most of it away. Not done, since nothing is slow yet.
 
+## Disengagement criteria, 2026-10-21 (decision 107)
+
+`scenario-sim` with `--defender-disengage loss=<share>,back=150`: every
+defending squad but the reserves breaks contact by Break Contact when its
+losses reach the share, to a position 150 m straight back from the attack's
+start line. 100 battles from seed 1000 (the house 200):
+
+| Scenario | No criteria | Losses at half | **Losses at a quarter** | Squads breaking contact (quarter) |
+|---|---|---|---|---|
+| `telAzekaAssault` (3:1) | 21% | 21% | **49%** | 137 |
+| `telAzekaAssault2` (2:1) | 12% | 12% | **20%** | 120 |
+| `yokneamRaid` | 11% | 11% | 9% | 3 |
+| `yokneamHouse` | 88% | 88% | 88% | 8 |
+
+- **At half it never fires**: the same battles to the last digit. The
+  defending side breaks (half its men down or broken, decision 44) before
+  any one squad has lost half.
+- **At a quarter, breaking contact only helps the attacker**: it gives up
+  the ground, and the game scores the battle by the break and the
+  objective, not by the combat power a squad kept. The defender's losses
+  hardly move (28% → 30%). **A dominated option as the game stands**: no
+  setting of it is better for the defender here. Put to the author.
+- In the house it barely fires: once a fight inside begins it may not
+  (decision 107), and that is turn 1.
+- Re-measured after the review's fixes (no charging while breaking, a smoke
+  budget): 49% and 20%, the same story.
+- **Our figures** (⚠️, decision 107): a bound at most **100 m**
+  (`BREAK_CONTACT_BOUND_M`, "should not exceed small arms range"); a squad
+  of fewer than **4** fit men goes back whole; **2** rifle-grenade screens
+  a break (`BREAK_CONTACT_SCREENS`), each laid as a bound ends, so it covers
+  the changeover and the next bound.
+
 ## The house held from inside, with and without a reserve, 2026-10-21 (decision 106)
 
 The drill's defender in a house fights from it; leaving it is the

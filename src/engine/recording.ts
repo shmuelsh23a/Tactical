@@ -32,6 +32,7 @@ import {
   type FireMission,
   type SmokeOrder,
   type WithCoveringFire,
+  type DisengagementPlan,
 } from "./game.js";
 import { stateDigest } from "./digest.js";
 import type { MoraleReport } from "./morale.js";
@@ -110,6 +111,8 @@ export type RecordedAction =
   | { kind: "setScouting"; unitId: string; on: boolean }
   /** A force's plan for a fight inside a building (rules decision 101). */
   | { kind: "setInteriorPlan"; unitId: string; plan: InteriorPlan }
+  /** A defending force's disengagement criteria (rules decision 107); null calls them off. */
+  | { kind: "setDisengagement"; unitId: string; plan: DisengagementPlan | null }
   | {
       kind: "setObservationSector";
       unitId: string;
@@ -559,6 +562,7 @@ export type ActionOutcome =
   | { kind: "setCovering"; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; on: boolean }
   | { kind: "setInteriorPlan"; plan: InteriorPlan }
+  | { kind: "setDisengagement"; plan: DisengagementPlan | null }
   | { kind: "setObservationSector"; sector: ObservationSector | null };
 
 /** A decision the replay could not carry out, and why. */
@@ -864,6 +868,10 @@ export function replayWithOutcomes(
       case "setInteriorPlan":
         game.setInteriorPlan(action.unitId, cloneForRecord(action.plan));
         outcome = { kind: "setInteriorPlan", plan: action.plan };
+        break;
+      case "setDisengagement":
+        game.setDisengagement(action.unitId, action.plan && cloneForRecord(action.plan));
+        outcome = { kind: "setDisengagement", plan: action.plan };
         break;
       case "layCharge":
         game.layCharge(action.unitId, action.type);
