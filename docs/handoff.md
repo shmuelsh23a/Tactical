@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the drill audit is closed and every drill is in its band — the doctrinal reference 71.5% / 49.5% (decision 118's 70–75% / 45–50%), the plain drill 54% at 3:1 (40–55%) once fires in depth became the doctrinal drill's only (the author, 2026-10-23, after a probe). Next: the computer defender preparing alternate positions, so decision 119's displace does something in computer play.**
+**Next, in one line: decision 120 (the computer defender prepares alternate positions, doctrinal drill only) is built, reviewed and pushed, but NOT yet measured — the re-measure was stopped at the author's request (2026-10-23). Resume with it: the doctrinal reference's 16 cells and the four scenarios (recipe under *Do not re-derive*), then compare with balance.md, *after decision 119* (71.5% / 49.5%); the plain drill prepares none and needs no re-run.**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -65,10 +65,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `62353b5` (2026-10-23)
+## Green as of `a826685` (2026-10-23)
 
 ```
-npm run check       lint + typecheck clean, 1,204 tests, 83 files
+npm run check       lint + typecheck clean, 1,210 tests, 83 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -662,8 +662,15 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The audit's leftovers are built** (decision 119) and the plain drill's
-3:1 is ruled. Next, in order: the computer defender and the harness
+**First, the re-measure for decision 120** (stopped, not started over):
+`jev-sim --rule <variant> --drill reference --seed 1000 --n 100` for the
+eight plans on both tel assaults (A at 3:1 200), and `scenario-sim` on
+company, urban, raid (100) and house (200). It wakes decision 60's rule
+that a displaced squad's post is not counterattacked; watch the house
+and urban cells.
+
+**The audit's leftovers are built** (decision 119), the plain drill's
+3:1 is ruled, and decision 120 is built. Then, in order: the computer defender and the harness
 preparing alternate positions, so decision 119's displace does something in
 computer play (a placement rule to put to him); why the mass assault (A)
 is the doctrinal drill's best plan by eleven points at 3:1 (a probe,
