@@ -293,6 +293,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
           mapHeight,
           opts.defenderFirePlan === "open" ? "open" : "deadGround",
           legacyFire ? undefined : DOCTRINAL_DEFENDER_TARGETS,
+          !legacyFire,
         )
       : [];
   for (const w of tubesOf(g, defender)) for (const t of defenderTargets) g.registerTarget(defender, w, t);

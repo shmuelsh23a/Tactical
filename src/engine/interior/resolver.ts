@@ -781,7 +781,10 @@ export class InteriorFight {
     if (team.entered < men.length) team.entered++;
     const enemies = this.enemiesIn(team.storey, team.room, team.side);
     if (team.searching && enemies.length > 0) {
-      for (const m of men) this.walk(m, enemies[0]!.cell, team.room, 0);
+      // #1 and #2 go round to the part they cannot see; #3 and #4 hold their points and cover
+      // them — "#1 and #2 … may move deeper into the room while overwatched by the other team
+      // members" (TC 3-21.76 (2025), 07-SQD-D9509; drill audit, I6). A team of two goes together.
+      men.forEach((m, k) => this.walk(m, k < 2 ? enemies[0]!.cell : team.points[k % team.points.length]!, team.room, 0));
     } else {
       men.forEach((m, k) => { if (k < team.entered) this.walk(m, team.points[k % team.points.length]!, team.room, 0); });
     }

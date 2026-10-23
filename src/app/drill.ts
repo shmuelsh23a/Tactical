@@ -102,8 +102,14 @@ export interface SquadDrill {
    * `contactWithin` metres, runs `metres` to the rear — once. It leaves its
    * prepared position, roof and all, for ground the enemy's guns have not
    * registered. Absent: it stays in its hole.
+   *
+   * `alternateOnly`: only a force with an alternate position prepared for it
+   * goes, and to that — "an alternate position … when the primary position
+   * becomes untenable" (ATP 3-21.8 (2024), para 5-22; drill audit, D6) —
+   * never one holding a house, which leaves only by its commander's order
+   * (decision 106).
    */
-  displace?: { metres: number; contactWithin: number };
+  displace?: { metres: number; contactWithin: number; alternateOnly?: boolean };
   /**
    * Counterattack (rules decision 60, author 2026-09-30: "a squad in reserve;
    * platoon counterattacks by drill"). A defending platoon's reserve
@@ -120,8 +126,15 @@ export interface SquadDrill {
    * fights from there. `holdFire`: until it is committed the reserve does
    * not give itself away — no fire, no assault (the author, 2026-10-21,
    * decision 105: "farther back, holding fire").
+   *
+   * `flank`: the reserve goes in from the side — first to a point this many
+   * metres to one side of the lost post, across the enemy's line of
+   * approach, the side nearer it, in the nearest cover there — "from a new
+   * or unexpected direction" (ATP 3-21.8 (2024), para 3-105; drill audit,
+   * D6). With the enemy already in assault reach, it goes straight in.
+   * Absent: straight at him.
    */
-  counterattack: { lostWithin: number; gait: MovementMode; holdFire?: boolean } | null;
+  counterattack: { lostWithin: number; gait: MovementMode; holdFire?: boolean; flank?: number } | null;
   /**
    * Shoot back at what is shooting at you (Battle Drill 2 step 11a(1): the
    * squad in contact "destroys or suppresses enemy weapons that are firing
@@ -435,6 +448,8 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   leaderForward: { behind: 50 },
   consolidate: { nothingWithin: 100, arc: 120 },
   coverInPlace: { within: 25 },
+  displace: { metres: 100, contactWithin: 300, alternateOnly: true },
+  counterattack: { lostWithin: 50, gait: "run", holdFire: true, flank: 100 },
   screeningSmoke: { screens: 4 },
   fireTeams: { splitAt: 300, minMen: 6 },
   machineGuns: { range: 800 },
@@ -652,6 +667,8 @@ export class DrillState {
   readonly breaking = new Map<string, BreakingContact>();
   /** Forces that have broken contact and hold their next position (decision 107): each breaks once. */
   readonly brokeContact = new Set<string>();
+  /** Reserves that have reached their flank and go in from it (`counterattack.flank`). */
+  readonly flanked = new Set<string>();
   /** A defending side's platoons whose fire has been opened (`massedOpening`): the rest of each fires with it. */
   readonly opened = new Set<string>();
   /** The attacker has found the enemy at its objective: only then can it seize it (`consolidate`). */
@@ -700,6 +717,7 @@ export class DrillState {
       brokeContact: [...this.brokeContact],
       ...(this.opened.size ? { opened: [...this.opened] } : {}),
       ...(this.objectiveFound ? { objectiveFound: true } : {}),
+      ...(this.flanked.size ? { flanked: [...this.flanked] } : {}),
     };
   }
 
@@ -725,6 +743,7 @@ export class DrillState {
     (snap.brokeContact ?? []).forEach((id) => s.brokeContact.add(id));
     (snap.opened ?? []).forEach((k) => s.opened.add(k));
     s.objectiveFound = snap.objectiveFound ?? false;
+    (snap.flanked ?? []).forEach((id) => s.flanked.add(id));
     return s;
   }
 }
@@ -748,6 +767,8 @@ export interface DrillStateSnapshot {
   opened?: string[];
   /** The attacker has found the enemy at its objective. */
   objectiveFound?: boolean;
+  /** Reserves that have reached their flank. */
+  flanked?: string[];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -914,6 +935,21 @@ function waitNear(game: Game, door: Point, defender: Point, house: readonly Poin
   if (best) return best;
   const open = toward(door, from, Math.min(reach / 2, distance(door, from)));
   return distance(open, defender) <= reach && distance(open, door) <= reach ? open : undefined;
+}
+
+/**
+ * Where a counterattack comes in from (`counterattack.flank`): `metres` to
+ * the side of the lost `post`, square to the line from where the enemy came
+ * (`from`), the side nearer the reserve (ties to the left), in the nearest
+ * cover within 25 m of it if there is any. None when the post is where he came from.
+ */
+function flankOf(game: Game, at: Point, post: Point, from: Point, metres: number): Point | undefined {
+  const d = distance(post, from);
+  if (d === 0) return undefined;
+  const px = -(from.y - post.y) / d, py = (from.x - post.x) / d;
+  const sides = [1, -1].map((k) => ({ x: post.x + k * px * metres, y: post.y + k * py * metres }));
+  const side = distance(at, sides[1]!) < distance(at, sides[0]!) ? sides[1]! : sides[0]!;
+  return coverNear(game, side, 25) ?? side;
 }
 
 /**
@@ -1313,6 +1349,16 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         game.setStandingOrder(u.id, distance(u.position, door) <= ASSAULT_RANGE_M - 4 ? { gait: "normal" } : { gait: drill.counterattack.gait, destination: { ...door } });
         return;
       }
+      // By a flank first (`counterattack.flank`), unless he is already in reach.
+      const close = foe !== undefined && distance(u.position, foe.position) <= drill.assault.range + 5;
+      if (drill.counterattack.flank && foe && !close && !state.flanked.has(u.id)) {
+        const via = flankOf(game, u.position, retaking, task.objective, drill.counterattack.flank);
+        if (via && distance(u.position, via) > 15) {
+          game.setStandingOrder(u.id, { gait: drill.counterattack.gait, destination: via });
+          return;
+        }
+        state.flanked.add(u.id);
+      }
       if (foe) {
         game.setStandingOrder(
           u.id,
@@ -1332,7 +1378,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       drill.displace &&
       u.downUnderShelling &&
       !state.displaced.has(u.id) &&
-      !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin)
+      !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin) &&
+      !(drill.displace.alternateOnly && (!game.alternatePositionFor(u.id) || (game.closedTerrain && game.interior.buildingAt(game.terrain, u.position) !== undefined)))
     ) {
       // A withdrawal, so a pinned force may still go; its fire discipline
       // goes with it.
@@ -1530,7 +1577,11 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     if (company && job === "assault") {
       // Waiting for the fires to lift: stop short of the enemy until they do.
       if (company.holdShort && nearest && distance(u.position, nearest.position) <= HOLD_SHORT_M) {
-        stay();
+        // In the nearest cover (`coverInPlace`): the element "deploys into covered positions"
+        // (ATP 3-21.10 (2026), para 2-172; drill audit, A13).
+        const hide = drill.coverInPlace ? coverNear(game, u.position, drill.coverInPlace.within) : undefined;
+        if (hide && distance(hide, u.position) > 1) game.setStandingOrder(u.id, { gait: "normal", destination: hide });
+        else stay();
         return;
       }
       // Together (ours, balance.md, forty-fifth round): a platoon that has come

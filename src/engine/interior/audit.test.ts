@@ -200,3 +200,29 @@ describe("a team with nobody left re-forms (I1)", () => {
     expect(team.phase).toBe("pick");
   });
 });
+
+describe("dead space: #1 and #2 search, #3 and #4 cover (I6)", () => {
+  it("sends the first two at the hidden enemy and keeps the other two on their points", () => {
+    const f = fightOf(3, 1) as Inside;
+    const plan = f.plan;
+    const w = plan.width;
+    const enemy = f.soldiers.find((m: Inside) => m.side !== f.attackerSide);
+    const room = plan.storeys[enemy.storey].roomOf[enemy.cell];
+    const cells: number[] = [];
+    plan.storeys[enemy.storey].roomOf.forEach((r: number, i: number) => { if (r === room) cells.push(i); });
+    const team = f.teams[0];
+    const far = (i: number) => cells.slice().sort((a, b) => Math.hypot((b % w) - (i % w), Math.floor(b / w) - Math.floor(i / w)) - Math.hypot((a % w) - (i % w), Math.floor(a / w) - Math.floor(i / w)))[0];
+    // All four inside, on points away from him; he in a corner they do not see yet.
+    const start = far(enemy.cell);
+    Object.assign(team, { storey: enemy.storey, room, phase: "enter", entered: 4, searching: true, points: [start, start, start, start] });
+    for (const m of team.members) Object.assign(m, { storey: enemy.storey, cell: start });
+    const d = (i: number) => Math.hypot((i % w) - (enemy.cell % w), Math.floor(i / w) - Math.floor(enemy.cell / w));
+    const before = team.members.map((m: Inside) => d(m.cell));
+    f.enter(team, team.members);
+    const after = team.members.map((m: Inside) => d(m.cell));
+    expect(after[0]).toBeLessThan(before[0]);
+    expect(after[1]).toBeLessThan(before[1]);
+    expect(team.members[2].cell).toBe(start);
+    expect(team.members[3].cell).toBe(start);
+  });
+});

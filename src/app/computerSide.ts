@@ -184,6 +184,15 @@ export const DOCTRINAL_DEFENDER_TARGETS = 5;
 const DEFENDER_PLAN_BAND_M = { near: 100, far: 400 } as const;
 /** No two closer than this: each covers its 100 m on-the-mark radius (ours). */
 const DEFENDER_TARGET_SPACING_M = 120;
+/**
+ * The plan in depth (decision 119, drill audit D6): one target far out on
+ * ground the positions watch, "engaging the enemy at long-range by
+ * supporting fires disrupts the momentum" (ATP 3-21.8 (2024), para 5-123),
+ * within this band; and one just behind the positions, "behind positions"
+ * (para B-17), to fire on a penetration and support the counterattack.
+ * ⚠️ Ours: the band and the 50 m.
+ */
+export const DEFENDER_DEPTH_M = { longNear: 500, longFar: 800, behind: 50 } as const;
 
 /**
  * The defending company's fire plan (a harness policy, ours; rules decision 38
@@ -203,6 +212,8 @@ export function planDefenderFires(
   height: number,
   prefer: "deadGround" | "open" = "deadGround",
   count = DEFENDER_TARGETS,
+  /** In depth (decision 119): the last two of `count` are a long-range target and one behind the positions. */
+  depth = false,
 ): Point[] {
   const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
   if (!own.length || !g.terrain) return [];
@@ -213,15 +224,17 @@ export function planDefenderFires(
   const uy = (attackFrom.y - centre.y) / range;
   const query = { terrain: g.terrain, watchers: own.map((u) => u.position), watcherEye: EYE_HEIGHT.fullCover, reach: Infinity };
   const candidates: { at: Point; dead: boolean; along: number; off: number }[] = [];
+  const far: { at: Point; along: number; off: number }[] = [];
   for (let x = 0; x <= width; x += 20) {
     for (let y = 0; y <= height; y += 20) {
       const dx = x - centre.x;
       const dy = y - centre.y;
       const along = dx * ux + dy * uy;
-      if (along < DEFENDER_PLAN_BAND_M.near || along > DEFENDER_PLAN_BAND_M.far) continue;
       const off = Math.abs(dx * uy - dy * ux);
       if (off > along) continue; // within 45° of the line of attack
       const at = { x, y };
+      if (depth && along >= DEFENDER_DEPTH_M.longNear && along <= DEFENDER_DEPTH_M.longFar && !isDeadGround(query, at)) far.push({ at, along, off });
+      if (along < DEFENDER_PLAN_BAND_M.near || along > DEFENDER_PLAN_BAND_M.far) continue;
       candidates.push({ at, dead: isDeadGround(query, at), along, off });
     }
   }
@@ -233,9 +246,20 @@ export function planDefenderFires(
     (a, b) => first * (Number(b.dead) - Number(a.dead)) || a.along - b.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x,
   );
   const chosen: Point[] = [];
+  const near = depth ? Math.max(2, count - 2) : count;
   for (const c of candidates) {
-    if (chosen.length >= count) break;
+    if (chosen.length >= near) break;
     if (chosen.every((p) => distance(p, c.at) >= DEFENDER_TARGET_SPACING_M)) chosen.push(c.at);
+  }
+  if (depth && count > near) {
+    // The farthest watched ground in the band, nearest the line of attack; ties by position.
+    const long = far.sort((a, b) => b.along - a.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x)[0];
+    if (long) chosen.push(long.at);
+    // Just behind the positions, on the line of attack.
+    if (chosen.length < count) {
+      const behind = { x: centre.x - ux * DEFENDER_DEPTH_M.behind, y: centre.y - uy * DEFENDER_DEPTH_M.behind };
+      if (behind.x >= 0 && behind.y >= 0 && behind.x <= width && behind.y <= height) chosen.push(behind);
+    }
   }
   return chosen;
 }
@@ -350,8 +374,10 @@ function callDoctrinalDefenderFire(g: Game, side: Side, registered: readonly Poi
     g.callForFire(side, tube, threat.position, { method: "effect" });
     return "cover";
   }
+  // Clear of its own forces, as every mission (decision 119: the target behind its positions is
+  // fired on only once its men are out of the way).
   const onPlan = foes
-    .filter((f) => planned.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M))
+    .filter((f) => planned.some((r) => distance(r, f.position) <= ADJUSTMENT_RADIUS_M) && nearestOwn(f.position) > LIFT_AT_M)
     .sort((a, b) => nearestOwn(a.position) - nearestOwn(b.position))[0];
   if (onPlan) {
     g.callForFire(side, tube, onPlan.position, { method: "effect" });
@@ -421,7 +447,7 @@ export class ComputerDefender {
   plan(g: Game): readonly Point[] {
     const tubes = tubesOf(g, this.side);
     if (!tubes.length) return [];
-    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS);
+    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS, true);
     for (const w of tubes) for (const t of this.targets) g.registerTarget(this.side, w, t);
     return this.targets;
   }
