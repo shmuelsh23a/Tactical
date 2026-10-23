@@ -3727,7 +3727,10 @@ on the stated reasoning, still awaiting the author's word.
       one holding a house (decision 106). ATP 3-21.8 (2024), para 5-22.
       **Inert in computer play for now**: neither the computer defender nor
       the harness prepares an alternate position, so only a player's does.
-    - **The defender's fire plan in depth** (D6): of decision 93's five
+    - **The defender's fire plan in depth** (D6; **the doctrinal drill's
+      only**, `fireInDepth` — the author, 2026-10-23, after a probe showed
+      it alone lifted the plain drill's 3:1 from 54% to 59%; the plain
+      drill plans its five targets close, as before): of decision 93's five
       targets, the FPF, the priority target and one more in the close
       band as before; then one far out on ground its positions watch,
       500–800 m (para 5-123), and one 50 m behind its forward positions,

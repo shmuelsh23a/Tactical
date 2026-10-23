@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 119 built the audit's leftovers (hold short in cover, dead-space search by #1/#2, the defender's fire plan in depth, a flanking counterattack, the alternate position — inert in computer play). Re-measured (balance.md, *after decision 119*): the doctrinal reference is inside both its decision-118 bands (71.5% / 49.5%); the plain drill rose to 59% at 3:1, 4 over its 40–55% — put to the author, most likely the shared fire plan in depth.**
+**Next, in one line: the drill audit is closed and every drill is in its band — the doctrinal reference 71.5% / 49.5% (decision 118's 70–75% / 45–50%), the plain drill 54% at 3:1 (40–55%) once fires in depth became the doctrinal drill's only (the author, 2026-10-23, after a probe). Next: the computer defender preparing alternate positions, so decision 119's displace does something in computer play.**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -68,7 +68,7 @@ out of here on purpose:
 ## Green as of `62353b5` (2026-10-23)
 
 ```
-npm run check       lint + typecheck clean, 1,203 tests, 83 files
+npm run check       lint + typecheck clean, 1,204 tests, 83 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -138,10 +138,9 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-21, night)
 
-- **Open (2026-10-23): the plain drill at 3:1 is 59%, 4 over 40–55%**,
-  after decision 119's shared defender fire plan in depth (balance.md).
-  The doctrinal reference is in both its bands. His call: accept, or give
-  the plain (untrained) defender the old close fire plan.
+- **Ruled 2026-10-23**: fires in depth are the doctrinal drill's only
+  (`fireInDepth`); a probe showed they alone lifted the plain drill's 3:1
+  to 59% (the lift clearance changed nothing). Plain back to 54%.
 - **Decision 119's ⚠️, none questioned yet**: displace with no enemy
   within 300 m, the long-range band 500–800 m, the target 50 m behind,
   the flank 100 m (balance.md, *The drill audit's own figures*).
@@ -663,8 +662,8 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The audit's leftovers are built** (decision 119). Next, in order: the
-plain drill's 3:1 (above, his call); the computer defender and the harness
+**The audit's leftovers are built** (decision 119) and the plain drill's
+3:1 is ruled. Next, in order: the computer defender and the harness
 preparing alternate positions, so decision 119's displace does something in
 computer play (a placement rule to put to him); why the mass assault (A)
 is the doctrinal drill's best plan by eleven points at 3:1 (a probe,

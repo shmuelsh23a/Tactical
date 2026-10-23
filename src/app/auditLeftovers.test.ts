@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { Game, makeInfantry } from "../engine/index.js";
+import { Game, makeCommandGroup, makeInfantry } from "../engine/index.js";
 import type { CompanyOrders } from "./company.js";
 import { DOCTRINAL_DRILL, DrillState, drillMovement, type DrillTask, type SquadDrill } from "./drill.js";
-import { DEFENDER_DEPTH_M, DOCTRINAL_DEFENDER_TARGETS, planDefenderFires } from "./computerSide.js";
+import { ComputerDefender, DEFENDER_DEPTH_M, DOCTRINAL_DEFENDER_TARGETS, planDefenderFires } from "./computerSide.js";
+import { PLAIN_SCRIPT } from "./drill.js";
 
 /**
  * The drill audit's leftovers, ruled 2026-10-23 (decision 119): the hold
@@ -241,5 +242,23 @@ describe("the second review of decision 119, pinned", () => {
     g.advanceToPhase("movement");
     drillMovement(g, task, DOCTRINAL_DRILL, state);
     expect(state.flankVia.get(reserve.id)!.x).toBeGreaterThan(500);
+  });
+});
+
+describe("fires in depth are the doctrinal drill's (the author, 2026-10-23)", () => {
+  it("plans a long-range target only for a defender fighting by doctrine", () => {
+    const plans = [DOCTRINAL_DRILL, PLAIN_SCRIPT].map((drill) => {
+      const g = new Game({ seed: 3, enforceC2: false, terrain: { objects: [] }, fireSupport: { RED: [{ weapon: "lightMortar", missions: 8, roundsForEffect: 10, tubes: 2 }] } });
+      g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 500, y: 200 }, 9));
+      g.addUnit(makeInfantry("R-2", "RED", "squad", { x: 560, y: 200 }, 9));
+      g.addUnit(makeInfantry("B-1", "BLUE", "squad", { x: 530, y: 1400 }, 9));
+      g.addUnit(makeCommandGroup("RED-COY", "RED", "company", { x: 530, y: 100 }));
+      const plan = new ComputerDefender(g, "RED", { mapWidth: 1100, mapHeight: 1500 }, drill).plan(g);
+      expect(plan.length).toBeGreaterThan(0);
+      return plan;
+    });
+    const far = (plan: readonly { y: number }[]) => plan.some((p) => p.y - 200 >= DEFENDER_DEPTH_M.longNear);
+    expect(far(plans[0]!)).toBe(true);
+    expect(far(plans[1]!)).toBe(false);
   });
 });

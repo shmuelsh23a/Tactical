@@ -293,7 +293,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
           mapHeight,
           opts.defenderFirePlan === "open" ? "open" : "deadGround",
           legacyFire ? undefined : DOCTRINAL_DEFENDER_TARGETS,
-          !legacyFire,
+          !legacyFire && !!defenderDrill.fireInDepth,
           reserves ?? [],
         )
       : [];

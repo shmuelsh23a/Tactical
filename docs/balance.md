@@ -6340,3 +6340,9 @@ switches, not kept):
 - **The lift clearance never decides a battle here**: on Tel Azeka no
   planned mission was held for the defender's own men being near.
 - The mass assault (A) is unmoved in every variant (68%).
+- **Ruled** (the author, 2026-10-23): fires in depth are the doctrinal
+  drill's only (`fireInDepth`). The plain drill plans its five targets
+  close, as before, so its medians are the depth-off row: **54% at 3:1**
+  (in 40–55%) and, as before decision 119, about 26.5% at 2:1 — the plain
+  "A + flank" cell re-run: 54%, as the probe. The doctrinal reference is
+  unchanged (71.5% / 49.5%).

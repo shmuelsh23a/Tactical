@@ -257,6 +257,13 @@ export interface SquadDrill {
    */
   coverInPlace?: { within: number };
   /**
+   * A defender plans its fires in depth (decision 119, the author's ruling
+   * of 2026-10-23: for doctrine only): of its five targets, one far out and
+   * one behind its positions (`planDefenderFires`). Absent: all five close,
+   * as before — the untrained variant's plan.
+   */
+  fireInDepth?: boolean;
+  /**
    * Screening smoke from the squad's own launchers (Battle Drill 2 step
    * 11a(3): the squad in contact "places **screening smoke** (M203 and
    * M320) to prevent the enemy from seeing the manoeuvre element"; 2A step
@@ -448,6 +455,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   leaderForward: { behind: 50 },
   consolidate: { nothingWithin: 100, arc: 120 },
   coverInPlace: { within: 25 },
+  fireInDepth: true,
   displace: { metres: 100, contactWithin: 300, alternateOnly: true },
   counterattack: { lostWithin: 50, gait: "run", holdFire: true, flank: 100 },
   screeningSmoke: { screens: 4 },

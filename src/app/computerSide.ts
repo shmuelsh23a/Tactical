@@ -455,7 +455,7 @@ export class ComputerDefender {
   plan(g: Game): readonly Point[] {
     const tubes = tubesOf(g, this.side);
     if (!tubes.length) return [];
-    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS, true, [...(this.task.reserves ?? [])]);
+    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS, !!this.drill.fireInDepth, [...(this.task.reserves ?? [])]);
     for (const w of tubes) for (const t of this.targets) g.registerTarget(this.side, w, t);
     return this.targets;
   }
