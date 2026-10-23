@@ -193,6 +193,8 @@ const DEFENDER_TARGET_SPACING_M = 120;
  * ⚠️ Ours: the band and the 50 m.
  */
 export const DEFENDER_DEPTH_M = { longNear: 500, longFar: 800, behind: 50 } as const;
+// The target behind fires on a penetration of the forward positions once its men are clear of it —
+// the mortars' lift holds it off our own, so it prepares the counterattack rather than going in with it.
 
 /**
  * The defending company's fire plan (a harness policy, ours; rules decision 38
@@ -214,6 +216,8 @@ export function planDefenderFires(
   count = DEFENDER_TARGETS,
   /** In depth (decision 119): the last two of `count` are a long-range target and one behind the positions. */
   depth = false,
+  /** Forces not on the forward positions (the reserve): left out of where "behind the positions" is. */
+  rear: readonly string[] = [],
 ): Point[] {
   const own = g.units.filter((u) => u.side === side && u.kind === "infantry");
   if (!own.length || !g.terrain) return [];
@@ -253,11 +257,15 @@ export function planDefenderFires(
   }
   if (depth && count > near) {
     // The farthest watched ground in the band, nearest the line of attack; ties by position.
-    const long = far.sort((a, b) => b.along - a.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x)[0];
+    const long = far
+      .sort((a, b) => b.along - a.along || a.off - b.off || a.at.y - b.at.y || a.at.x - b.at.x)
+      .find((c) => chosen.every((p) => distance(p, c.at) >= DEFENDER_TARGET_SPACING_M));
     if (long) chosen.push(long.at);
-    // Just behind the positions, on the line of attack.
+    // Just behind the forward positions (the reserve left out), on the line of attack.
     if (chosen.length < count) {
-      const behind = { x: centre.x - ux * DEFENDER_DEPTH_M.behind, y: centre.y - uy * DEFENDER_DEPTH_M.behind };
+      const forward = own.filter((u) => !rear.includes(u.id));
+      const front = forward.length ? mean(forward) : centre;
+      const behind = { x: front.x - ux * DEFENDER_DEPTH_M.behind, y: front.y - uy * DEFENDER_DEPTH_M.behind };
       if (behind.x >= 0 && behind.y >= 0 && behind.x <= width && behind.y <= height) chosen.push(behind);
     }
   }
@@ -415,7 +423,7 @@ export class ComputerDefender {
   ) {
     const enemy = g.units.filter((u) => u.side !== side && u.kind !== "command");
     const startLine = enemy.length ? mean(enemy) : mean(g.units.filter((u) => u.side === side));
-    this.task = { side, attacking: false, objective: startLine, reserves: new Set(ground.reserves ?? []) };
+    this.task = { side, attacking: false, objective: startLine, reserves: new Set(ground.reserves ?? []), extent: { width: ground.mapWidth, height: ground.mapHeight } };
   }
 
   /**
@@ -447,7 +455,7 @@ export class ComputerDefender {
   plan(g: Game): readonly Point[] {
     const tubes = tubesOf(g, this.side);
     if (!tubes.length) return [];
-    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS, true);
+    this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS, true, [...(this.task.reserves ?? [])]);
     for (const w of tubes) for (const t of this.targets) g.registerTarget(this.side, w, t);
     return this.targets;
   }

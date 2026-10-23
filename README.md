@@ -3711,6 +3711,41 @@ on the stated reasoning, still awaiting the author's word.
       against 20–35%, **in**.
     - In code: `SUPPRESSED_TARGETS` beside `TARGETS` in
       `src/sim/balance.ts`. Nothing in the rules moves.
+119. ✅ **The drill audit's leftovers** (the author, 2026-10-23; every
+    option the recommended one, and both further D6 options too):
+    - **The hold short in cover** (A13): an assault held short of the
+      enemy halts in the nearest cover within 25 m (`coverInPlace`) — the
+      element "deploys into covered positions" (ATP 3-21.10 (2026), para
+      2-172). No smoke of its own: the company's mortars already screen.
+    - **#1 and #2 search a room's dead space** (I6): #3 and #4 stay on
+      their points and cover them (TC 3-21.76 (2025), 07-SQD-D9509).
+    - **A shelled defender to its alternate position** (D6, the doctrinal
+      drill's `displace.alternateOnly`): only a force with one prepared
+      goes, and to it, with no enemy known within 300 m (⚠️ ours); never
+      one holding a house (decision 106). ATP 3-21.8 (2024), para 5-22.
+      **Inert in computer play for now**: neither the computer defender nor
+      the harness prepares an alternate position, so only a player's does.
+    - **The defender's fire plan in depth** (D6): of decision 93's five
+      targets, the FPF, the priority target and one more in the close
+      band as before; then one far out on ground its positions watch,
+      500–800 m (para 5-123), and one 50 m behind its forward positions,
+      the reserve left out (para B-17), for a penetration (⚠️ ours, the band
+      and the 50 m). A planned mission now fires only with the defender's
+      own forces beyond the mortar's 100 m lift of the mark, as every other
+      mission (decision 116's cover mission did already) — so the target
+      behind prepares the counterattack and lifts as the reserve closes; it
+      does not go in with it.
+    - **The counterattack by a flank** (D6, `counterattack.flank`): the
+      reserve goes first to a point 100 m (⚠️ ours) to one side of the
+      lost post, across the enemy's line of approach, the side nearer it,
+      in the nearest cover there, then goes in — "from a new or unexpected
+      direction" (para 3-105). The point is chosen once and held to, the
+      enemy on the post in sight or not; on the map and out of every house,
+      else the other side, else straight in. With the enemy already in
+      assault reach, it goes straight in. A house is still gone into by its
+      door (decision 104).
+    - A recording with a fight inside, made before this, replays
+      differently (I6 moves #3 and #4).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

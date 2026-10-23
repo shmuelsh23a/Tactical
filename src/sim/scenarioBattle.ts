@@ -294,6 +294,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
           opts.defenderFirePlan === "open" ? "open" : "deadGround",
           legacyFire ? undefined : DOCTRINAL_DEFENDER_TARGETS,
           !legacyFire,
+          reserves ?? [],
         )
       : [];
   for (const w of tubesOf(g, defender)) for (const t of defenderTargets) g.registerTarget(defender, w, t);
@@ -383,7 +384,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
 
   const tasks: Record<Side, DrillTask> = {
     [attacker]: { side: attacker, attacking: true, objective, extent: { width: mapWidth, height: mapHeight } },
-    [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []) },
+    [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []), extent: { width: mapWidth, height: mapHeight } },
   } as Record<Side, DrillTask>;
   const state = new DrillState();
 

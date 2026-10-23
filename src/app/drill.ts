@@ -669,6 +669,8 @@ export class DrillState {
   readonly brokeContact = new Set<string>();
   /** Reserves that have reached their flank and go in from it (`counterattack.flank`). */
   readonly flanked = new Set<string>();
+  /** The flank point each counterattacking reserve is going to, chosen once. */
+  readonly flankVia = new Map<string, Point>();
   /** A defending side's platoons whose fire has been opened (`massedOpening`): the rest of each fires with it. */
   readonly opened = new Set<string>();
   /** The attacker has found the enemy at its objective: only then can it seize it (`consolidate`). */
@@ -718,6 +720,7 @@ export class DrillState {
       ...(this.opened.size ? { opened: [...this.opened] } : {}),
       ...(this.objectiveFound ? { objectiveFound: true } : {}),
       ...(this.flanked.size ? { flanked: [...this.flanked] } : {}),
+      ...(this.flankVia.size ? { flankVia: [...this.flankVia].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
     };
   }
 
@@ -744,6 +747,7 @@ export class DrillState {
     (snap.opened ?? []).forEach((k) => s.opened.add(k));
     s.objectiveFound = snap.objectiveFound ?? false;
     (snap.flanked ?? []).forEach((id) => s.flanked.add(id));
+    (snap.flankVia ?? []).forEach(([k, p]) => s.flankVia.set(k, { ...p }));
     return s;
   }
 }
@@ -767,8 +771,9 @@ export interface DrillStateSnapshot {
   opened?: string[];
   /** The attacker has found the enemy at its objective. */
   objectiveFound?: boolean;
-  /** Reserves that have reached their flank. */
+  /** Reserves that have reached their flank, and where each is going. */
   flanked?: string[];
+  flankVia?: [string, Point][];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -941,15 +946,25 @@ function waitNear(game: Game, door: Point, defender: Point, house: readonly Poin
  * Where a counterattack comes in from (`counterattack.flank`): `metres` to
  * the side of the lost `post`, square to the line from where the enemy came
  * (`from`), the side nearer the reserve (ties to the left), in the nearest
- * cover within 25 m of it if there is any. None when the post is where he came from.
+ * cover within 25 m of it if there is any — on the map and out of every
+ * house, else the other side; neither, none (it goes straight in).
  */
-function flankOf(game: Game, at: Point, post: Point, from: Point, metres: number): Point | undefined {
+function flankOf(game: Game, at: Point, post: Point, from: Point, metres: number, extent?: { width: number; height: number }): Point | undefined {
   const d = distance(post, from);
   if (d === 0) return undefined;
   const px = -(from.y - post.y) / d, py = (from.x - post.x) / d;
-  const sides = [1, -1].map((k) => ({ x: post.x + k * px * metres, y: post.y + k * py * metres }));
-  const side = distance(at, sides[1]!) < distance(at, sides[0]!) ? sides[1]! : sides[0]!;
-  return coverNear(game, side, 25) ?? side;
+  const sides = [1, -1]
+    .map((k) => ({ x: post.x + k * px * metres, y: post.y + k * py * metres }))
+    .sort((a, b) => distance(at, a) - distance(at, b));
+  // On the map and out of every house (one is gone into by its door, decision 104), the nearer side first.
+  const onMap = (q: Point) => !extent || (q.x >= 0 && q.y >= 0 && q.x <= extent.width && q.y <= extent.height);
+  const inHouse = (q: Point) => game.terrain.objects.some((o) => o.kind === "building" && o.footprint.shape === "polygon" && pointInPolygon(q, o.footprint.points));
+  for (const side of sides) {
+    if (!onMap(side) || inHouse(side)) continue;
+    const hide = coverNear(game, side, 25);
+    return hide && onMap(hide) ? hide : side;
+  }
+  return undefined;
 }
 
 /**
@@ -975,19 +990,25 @@ export function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly U
 /**
  * The nearest point with ground cover within `within` metres of `p`
  * (`p` itself if it has some), never inside a building — going into one is
- * a fight of its own (decision 96). None that near: undefined.
+ * a fight of its own (decision 96) — and, given `notNearer`, never nearer
+ * any of those points than `p` is. None that near: undefined.
  */
-function coverNear(game: Game, p: Point, within: number): Point | undefined {
-  if (game.groundCoverAt(p) !== "none") return p;
+function coverNear(game: Game, p: Point, within: number, notNearer: readonly Point[] = []): Point | undefined {
   const houses = game.terrain.objects.filter((o) => o.kind === "building" && o.footprint.shape === "polygon");
+  const inHouse = (q: Point) => houses.some((o) => o.footprint.shape === "polygon" && pointInPolygon(q, o.footprint.points));
+  // No nearer any of `notNearer` (the enemy) than `p` is: cover is not bought by closing on him.
+  const gap = (q: Point) => Math.min(...notNearer.map((e) => distance(q, e)));
+  const keep = notNearer.length ? gap(p) : -Infinity;
+  if (!inHouse(p) && game.groundCoverAt(p) !== "none") return p;
   for (let r = 5; r <= within; r += 5) {
     let best: Point | undefined;
     let bestD = Infinity;
     for (let k = 0; k < 16; k++) {
       const a = (k * Math.PI) / 8;
       const q = { x: p.x + r * Math.cos(a), y: p.y + r * Math.sin(a) };
-      if (houses.some((o) => o.footprint.shape === "polygon" && pointInPolygon(q, o.footprint.points))) continue;
+      if (inHouse(q)) continue;
       if (game.groundCoverAt(q) === "none") continue;
+      if (notNearer.length && gap(q) < keep) continue;
       const d = distance(q, p);
       if (d < bestD) { bestD = d; best = q; }
     }
@@ -1349,16 +1370,23 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         game.setStandingOrder(u.id, distance(u.position, door) <= ASSAULT_RANGE_M - 4 ? { gait: "normal" } : { gait: drill.counterattack.gait, destination: { ...door } });
         return;
       }
-      // By a flank first (`counterattack.flank`), unless he is already in reach.
+      // By a flank first (`counterattack.flank`), unless he is already in reach. Chosen once and
+      // held to — whether the enemy on the post is in sight or not — until it is reached.
       const close = foe !== undefined && distance(u.position, foe.position) <= drill.assault.range + 5;
-      if (drill.counterattack.flank && foe && !close && !state.flanked.has(u.id)) {
-        const via = flankOf(game, u.position, retaking, task.objective, drill.counterattack.flank);
+      if (drill.counterattack.flank && !close && !state.flanked.has(u.id)) {
+        if (!state.flankVia.has(u.id) && foe) {
+          const via = flankOf(game, u.position, retaking, task.objective, drill.counterattack.flank, task.extent);
+          if (via) state.flankVia.set(u.id, via);
+          else state.flanked.add(u.id);
+        }
+        const via = state.flankVia.get(u.id);
         if (via && distance(u.position, via) > 15) {
-          game.setStandingOrder(u.id, { gait: drill.counterattack.gait, destination: via });
+          game.setStandingOrder(u.id, { gait: drill.counterattack.gait, destination: { ...via } });
           return;
         }
-        state.flanked.add(u.id);
+        if (via) state.flanked.add(u.id);
       }
+      if (close) state.flanked.add(u.id);
       if (foe) {
         game.setStandingOrder(
           u.id,
@@ -1579,7 +1607,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       if (company.holdShort && nearest && distance(u.position, nearest.position) <= HOLD_SHORT_M) {
         // In the nearest cover (`coverInPlace`): the element "deploys into covered positions"
         // (ATP 3-21.10 (2026), para 2-172; drill audit, A13).
-        const hide = drill.coverInPlace ? coverNear(game, u.position, drill.coverInPlace.within) : undefined;
+        // Never nearer the enemy than it stopped: the hold line keeps it out of its own shells' danger close.
+        const hide = drill.coverInPlace ? coverNear(game, u.position, drill.coverInPlace.within, enemies.map((e) => e.position)) : undefined;
         if (hide && distance(hide, u.position) > 1) game.setStandingOrder(u.id, { gait: "normal", destination: hide });
         else stay();
         return;

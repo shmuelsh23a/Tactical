@@ -101,3 +101,22 @@ describe("the defender's mortars cover forces on the move (D3)", () => {
     expect(calls.mock.calls.at(-1)![2]).toEqual(g.contactFor("RED", foe.id)!.lastKnownPosition);
   });
 });
+
+describe("a planned mission only with the defender's own men clear (decision 119)", () => {
+  it("holds a planned target while its own squad is within the lift of the mark, and fires once it is clear", () => {
+    const g = new Game({ seed: 3, trackIntel: true, enforceC2: false, fireSupport: { RED: [{ weapon: "lightMortar", missions: 8, roundsForEffect: 10, tubes: 2 }] } });
+    g.addUnit(makeCommandGroup("RED-COY", "RED", "company", { x: 0, y: -400 }));
+    const own = g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 160 }, 9));
+    const foe = g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: 250 }, 9));
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    g.fire(foe.id, own.id, { weapon: "smallArms" }); // found by its fire
+    g.advanceToPhase("summary");
+    g.advanceToPhase("targeting");
+    // The plan: an FPF and a priority target far off, a third target on the foe.
+    const plan = [{ x: 900, y: 900 }, { x: 950, y: 950 }, { x: 0, y: 250 }];
+    expect(callDefenderFire(g, "RED", plan)).not.toBe("plan");
+    own.position = { x: 0, y: 0 }; // its squad back, beyond the 100 m lift
+    expect(callDefenderFire(g, "RED", plan)).toBe("plan");
+  });
+});

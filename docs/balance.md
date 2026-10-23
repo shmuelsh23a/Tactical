@@ -6227,6 +6227,10 @@ behaviour turns out to decide battles:
 | a clearing team keeps | 2 men | `resolver.ts`, `postGuard` | a team gives up a man as security only while two are left to clear (I1) |
 | the overwatch share | half | `resolver.ts`, `pick` | of a squad's teams on a storey, half at most go in at once (I4) |
 | a remainder that clears | 3 men | `coupling.ts`, `stackOf` | three left over clear as a team; one or two follow as the trail (I5) |
+| a defender displaces with no enemy within | 300 m | `drill.ts`, doctrinal `displace` | a shelled force goes to its alternate position only with nobody that close (decision 119) |
+| the long-range target | 500–800 m | `computerSide.ts`, `DEFENDER_DEPTH_M` | the band its far planned target is chosen in, on watched ground (decision 119) |
+| the target behind | 50 m | `computerSide.ts`, `DEFENDER_DEPTH_M` | how far behind its positions the last planned target lies (decision 119) |
+| the counterattack's flank | 100 m | `drill.ts`, doctrinal `counterattack.flank` | how far to the side of the lost post the reserve goes in from (decision 119) |
 
 Gone with I7: `grenadeUpstairsFactor` and `grenadeUpstairsSelfHitFactor`
 — a grenade is no longer thrown up the stairs.
