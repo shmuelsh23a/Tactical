@@ -6320,3 +6320,23 @@ inert in computer play). Same cells as the 21st's: `jev-sim --rule
 - `scenario-sim` on the reference drill (100 battles, the house 200),
   21st → now: `telAzekaCompany` 61% → **49%**, `yokneamUrban` 65% →
   **78%**, `yokneamRaid` 4% → **3%**, `yokneamHouse` 88% → **88%**.
+
+### Why the plain drill rose: the fire plan in depth, all of it (probe, 2026-10-23)
+
+The plain drill, Tel Azeka 3:1, the eight plans, with each of decision
+119's two shared defender changes switched off in turn (temporary
+switches, not kept):
+
+| Variant | Median | Against the cells |
+|---|---|---|
+| As built | 59% | — |
+| Depth plan off | **54%** | every cell identical to before decision 119 |
+| Lift clearance off | **59%** | every cell identical to as built |
+| Both off | 54% | identical to depth off |
+
+- **The fire plan in depth is the whole of it**: moving two of the five
+  planned targets out of the close band (one far out, one behind) costs
+  the plain defender 5 points at 3:1.
+- **The lift clearance never decides a battle here**: on Tel Azeka no
+  planned mission was held for the defender's own men being near.
+- The mass assault (A) is unmoved in every variant (68%).
