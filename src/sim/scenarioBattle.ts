@@ -40,6 +40,7 @@ import {
   priorityReserve,
   mortarFree,
   planDefenderFires,
+  prepareAlternatePositions,
   type AttackerFireTally,
   type FirePlanChoices,
 } from "../app/computerSide.js";
@@ -298,6 +299,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
         )
       : [];
   for (const w of tubesOf(g, defender)) for (const t of defenderTargets) g.registerTarget(defender, w, t);
+  // Its alternate positions, where its drill moves to them (decision 120).
+  prepareAlternatePositions(g, defender, startLine, defenderDrill, reserves ?? [], { width: mapWidth, height: mapHeight });
   // Each side's plan for a fight inside (decision 101), for every infantry force of it.
   for (const [side, plan] of [[attacker, opts.interiorPlans?.attack], [defender, opts.interiorPlans?.defence]] as const) {
     if (plan) for (const u of g.units) if (u.side === side && u.kind === "infantry") g.setInteriorPlan(u.id, plan);

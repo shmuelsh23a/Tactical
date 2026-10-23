@@ -1,4 +1,4 @@
-import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, EYE_HEIGHT, distance, type Game, type Point, type Side, type Unit } from "../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, EYE_HEIGHT, distance, pointInPolygon, type Game, type Point, type Side, type Unit } from "../engine/index.js";
 import { ScriptedCompany, type CompanyPlan, type CompanySnapshot } from "./company.js";
 import { isDeadGround } from "./deadGround.js";
 import {
@@ -272,6 +272,66 @@ export function planDefenderFires(
   return chosen;
 }
 
+/**
+ * Where the computer defender's alternate positions go (decision 120, the
+ * author, 2026-10-23): 50–100 m from the post to its flank or rear, never
+ * forward, on ground with cover outside every building, from which the
+ * force still sees the point `watch` metres in front of its post toward the
+ * attack — "the alternate position covers the same area as the primary
+ * position … slightly to the front, flank, or rear" (ATP 3-21.8 (2024),
+ * para 5-22). ⚠️ Ours: the 50–100 m and the 200 m.
+ */
+export const ALTERNATE_POSITION_M = { near: 50, far: 100, watch: 200 } as const;
+
+/**
+ * Prepare an alternate position for each of `side`'s forward forces, in
+ * planning (decision 120): every infantry force and machine-gun team but
+ * its reserves (`rear`) and any force in a building (it leaves only by
+ * order, decision 106), at the nearest point that meets
+ * {@link ALTERNATE_POSITION_M}; none where there is no such point. Only for
+ * a drill that moves to one (`displace.alternateOnly`). Returns them, by force.
+ */
+export function prepareAlternatePositions(
+  g: Game,
+  side: Side,
+  attackFrom: Point,
+  drill: SquadDrill,
+  rear: readonly string[] = [],
+  extent?: { width: number; height: number },
+): Map<string, Point> {
+  const out = new Map<string, Point>();
+  if (!drill.displace?.alternateOnly || !g.terrain) return out;
+  const houses = g.terrain.objects.filter((o) => o.kind === "building" && o.footprint.shape === "polygon");
+  const inHouse = (p: Point) => houses.some((o) => o.footprint.shape === "polygon" && pointInPolygon(p, o.footprint.points));
+  for (const u of g.units) {
+    if (u.side !== side || u.kind !== "infantry" || rear.includes(u.id) || inHouse(u.position)) continue;
+    const d = distance(u.position, attackFrom);
+    if (d === 0) continue;
+    const ux = (attackFrom.x - u.position.x) / d, uy = (attackFrom.y - u.position.y) / d;
+    const watch = { x: u.position.x + ux * ALTERNATE_POSITION_M.watch, y: u.position.y + uy * ALTERNATE_POSITION_M.watch };
+    let best: Point | undefined;
+    for (let r = ALTERNATE_POSITION_M.near; r <= ALTERNATE_POSITION_M.far && !best; r += 10) {
+      for (let k = 0; k < 24 && !best; k++) {
+        const a = (k * Math.PI) / 12;
+        const q = { x: u.position.x + r * Math.cos(a), y: u.position.y + r * Math.sin(a) };
+        if ((q.x - u.position.x) * ux + (q.y - u.position.y) * uy > 0) continue; // never forward
+        if (extent && (q.x < 0 || q.y < 0 || q.x > extent.width || q.y > extent.height)) continue;
+        if (inHouse(q) || g.groundCoverAt(q) === "none") continue;
+        if (isDeadGround({ terrain: g.terrain, watchers: [q], watcherEye: EYE_HEIGHT.fullCover, reach: Infinity }, watch)) continue;
+        best = q;
+      }
+    }
+    if (!best) continue;
+    try {
+      g.prepareAlternatePosition(u.id, best);
+      out.set(u.id, best);
+    } catch {
+      // Not in planning, or it has one already: it goes without.
+    }
+  }
+  return out;
+}
+
 /** What the defender's fire went on: its FPF, its priority target, a planned target, a mark firing on it, or (before decision 93) the nearest. */
 export type DefenderCall = "fpf" | "priority" | "plan" | "cover" | "suppress" | "nearest";
 
@@ -453,6 +513,8 @@ export class ComputerDefender {
 
   /** Mission planning (decision 38): its mortar targets, registered; returns them. */
   plan(g: Game): readonly Point[] {
+    // Its alternate positions, where its drill moves to them (decision 120).
+    prepareAlternatePositions(g, this.side, this.task.objective, this.drill, [...(this.task.reserves ?? [])], this.task.extent);
     const tubes = tubesOf(g, this.side);
     if (!tubes.length) return [];
     this.targets = planDefenderFires(g, this.side, this.task.objective, this.ground.mapWidth, this.ground.mapHeight, "deadGround", DOCTRINAL_DEFENDER_TARGETS, !!this.drill.fireInDepth, [...(this.task.reserves ?? [])]);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Game, makeCommandGroup, makeInfantry } from "../engine/index.js";
 import type { CompanyOrders } from "./company.js";
 import { DOCTRINAL_DRILL, DrillState, drillMovement, type DrillTask, type SquadDrill } from "./drill.js";
-import { ComputerDefender, DEFENDER_DEPTH_M, DOCTRINAL_DEFENDER_TARGETS, planDefenderFires } from "./computerSide.js";
+import { ALTERNATE_POSITION_M, ComputerDefender, DEFENDER_DEPTH_M, DOCTRINAL_DEFENDER_TARGETS, planDefenderFires, prepareAlternatePositions } from "./computerSide.js";
 import { PLAIN_SCRIPT } from "./drill.js";
 
 /**
@@ -260,5 +260,41 @@ describe("fires in depth are the doctrinal drill's (the author, 2026-10-23)", ()
     const far = (plan: readonly { y: number }[]) => plan.some((p) => p.y - 200 >= DEFENDER_DEPTH_M.longNear);
     expect(far(plans[0]!)).toBe(true);
     expect(far(plans[1]!)).toBe(false);
+  });
+});
+
+describe("the computer defender's alternate positions (decision 120)", () => {
+  // RED holds at (500, 500), the attack from the south (y 1100). Trees give cover around it.
+  const tree = (id: string, x: number, y: number) => ({ id, kind: "tree" as const, footprint: { shape: "circle" as const, center: { x, y }, radius: 4 } });
+  function field(drill: SquadDrill, objects: ReturnType<typeof tree>[] = [tree("rear", 500, 430), tree("front", 560, 570)]) {
+    const g = new Game({ seed: 3, enforceC2: false, terrain: { objects } });
+    const post = g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 500, y: 500 }, 9));
+    const reserve = g.addUnit(makeInfantry("RED-1-R", "RED", "squad", { x: 500, y: 350 }, 9));
+    const made = prepareAlternatePositions(g, "RED", { x: 500, y: 1100 }, drill, [reserve.id], { width: 1000, height: 1200 });
+    return { g, post, reserve, made };
+  }
+
+  it("prepares one to the flank or rear, in cover, that still covers the ground in front — never forward", () => {
+    const { g, post, made } = field(DOCTRINAL_DRILL);
+    const at = made.get(post.id)!;
+    expect(at).toBeDefined();
+    expect(g.alternatePositionFor(post.id)?.at).toEqual(at);
+    expect(at.y).toBeLessThanOrEqual(500); // the tree in front is not taken
+    expect(g.groundCoverAt(at)).not.toBe("none");
+    const d = Math.hypot(at.x - 500, at.y - 500);
+    expect(d).toBeGreaterThanOrEqual(ALTERNATE_POSITION_M.near);
+    expect(d).toBeLessThanOrEqual(ALTERNATE_POSITION_M.far);
+  });
+
+  it("gives the reserve none, and the plain drill none at all", () => {
+    expect(field(DOCTRINAL_DRILL).made.has("RED-1-R")).toBe(false);
+    expect(field(PLAIN_SCRIPT).made.size).toBe(0);
+  });
+
+  it("gives none where there is no cover to go to, and none to a force in a house", () => {
+    expect(field(DOCTRINAL_DRILL, []).made.size).toBe(0);
+    const house = { id: "h", kind: "building" as const, footprint: { shape: "polygon" as const, points: [{ x: 490, y: 490 }, { x: 510, y: 490 }, { x: 510, y: 510 }, { x: 490, y: 510 }] } };
+    const { made } = field(DOCTRINAL_DRILL, [tree("rear", 500, 430), house as unknown as ReturnType<typeof tree>]);
+    expect(made.has("RED-1-1")).toBe(false);
   });
 });
