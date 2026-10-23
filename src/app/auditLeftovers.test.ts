@@ -132,9 +132,9 @@ describe("the review of decision 119, pinned", () => {
     enemy.neutralized = true; // gone from its picture
     const before = Math.hypot(reserve.position.x - via.x, reserve.position.y - via.y);
     next();
-    // Still on its way to the flank, not turned toward the post.
+    // Still on its way to the flank (west), not turned toward the post (due south of it).
     expect(Math.hypot(reserve.position.x - via.x, reserve.position.y - via.y)).toBeLessThan(before);
-    expect(g.standingOrderFor(reserve.id)?.destination ?? via).toEqual(via);
+    expect(reserve.position.x).toBeLessThan(429);
   });
 
   it("takes the other side when the nearer one is off the map", () => {
@@ -197,5 +197,49 @@ describe("the long-range target is on watched ground (decision 119)", () => {
     // The band runs to y 1000; the block hides everything past 920.
     expect(plan[3]!.y).toBeLessThanOrEqual(900); // its near face, not the hidden ground beyond
     expect(plan[3]!.y - 200).toBeGreaterThanOrEqual(DEFENDER_DEPTH_M.longNear);
+  });
+});
+
+describe("the second review of decision 119, pinned", () => {
+  it("takes cover away from the enemy while held short", () => {
+    const oak = { id: "oak", kind: "tree" as const, footprint: { shape: "circle" as const, center: { x: 0, y: 312 }, radius: 4 } };
+    const g = new Game({ seed: 3, trackIntel: false, enforceC2: false, terrain: { objects: [oak] } });
+    const u = g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 330 }, 9));
+    g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 500 }, 9));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    const drill: SquadDrill = { ...DOCTRINAL_DRILL, fireTeams: undefined };
+    const company: CompanyOrders = { scouts: new Map(), scoutsLieUp: false, hold: false, waitAt: new Map(), platoonOf: new Map([["BLUE-1-1", "BLUE-1"]]), fallBackTo: { x: 0, y: 0 }, holdShort: true };
+    drillMovement(g, { side: "BLUE", attacking: true, objective: { x: 0, y: 500 }, company }, drill, new DrillState());
+    expect(g.groundCoverAt(u.position)).not.toBe("none");
+    expect(u.position.y).toBeLessThan(330);
+  });
+
+  it("puts the target behind behind the forward squads, the reserve left out", () => {
+    const g = new Game({ seed: 3, enforceC2: false, terrain: { objects: [] } });
+    g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 500, y: 200 }, 9));
+    g.addUnit(makeInfantry("R-2", "RED", "squad", { x: 560, y: 200 }, 9));
+    g.addUnit(makeInfantry("R-R", "RED", "squad", { x: 530, y: 50 }, 9)); // the reserve, well back
+    const plan = planDefenderFires(g, "RED", { x: 530, y: 1400 }, 1100, 1500, "deadGround", DOCTRINAL_DEFENDER_TARGETS, true, ["R-R"]);
+    expect(plan.at(-1)).toEqual({ x: 530, y: 200 - DEFENDER_DEPTH_M.behind });
+  });
+
+  it("does not flank through a house: the other side, or straight in", () => {
+    // A house on the west flank point: the reserve, west of the post, goes east about.
+    const house = { id: "h", kind: "building" as const, footprint: { shape: "polygon" as const, points: [{ x: 380, y: 480 }, { x: 420, y: 480 }, { x: 420, y: 520 }, { x: 380, y: 520 }] } };
+    const g = new Game({ seed: 3, trackIntel: false, enforceC2: false, terrain: { objects: [house] } });
+    const reserve = g.addUnit(makeInfantry("RED-A-1", "RED", "squad", { x: 450, y: 400 }, 8));
+    const forward = g.addUnit(makeInfantry("RED-A-2", "RED", "squad", { x: 500, y: 500 }, 8));
+    g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 500, y: 530 }, 8));
+    g.beginTurn();
+    const task: DrillTask = { side: "RED", attacking: false, objective: { x: 500, y: 1100 }, reserves: new Set([reserve.id]), extent: { width: 1000, height: 1200 } };
+    const state = new DrillState();
+    g.advanceToPhase("movement");
+    drillMovement(g, task, DOCTRINAL_DRILL, state);
+    forward.neutralized = true;
+    g.advanceToPhase("summary");
+    g.advanceToPhase("movement");
+    drillMovement(g, task, DOCTRINAL_DRILL, state);
+    expect(state.flankVia.get(reserve.id)!.x).toBeGreaterThan(500);
   });
 });

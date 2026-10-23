@@ -3716,7 +3716,9 @@ on the stated reasoning, still awaiting the author's word.
     - **The hold short in cover** (A13): an assault held short of the
       enemy halts in the nearest cover within 25 m (`coverInPlace`) — the
       element "deploys into covered positions" (ATP 3-21.10 (2026), para
-      2-172). No smoke of its own: the company's mortars already screen.
+      2-172) — never nearer the enemy than it stopped, which keeps it out
+      of its own shells' danger close; a squad already in a house stays in
+      it. No smoke of its own: the company's mortars already screen.
     - **#1 and #2 search a room's dead space** (I6): #3 and #4 stay on
       their points and cover them (TC 3-21.76 (2025), 07-SQD-D9509).
     - **A shelled defender to its alternate position** (D6, the doctrinal
@@ -3730,7 +3732,8 @@ on the stated reasoning, still awaiting the author's word.
       band as before; then one far out on ground its positions watch,
       500–800 m (para 5-123), and one 50 m behind its forward positions,
       the reserve left out (para B-17), for a penetration (⚠️ ours, the band
-      and the 50 m). A planned mission now fires only with the defender's
+      and the 50 m). With no watched ground in the band clear of the close
+      targets, there is no long-range target, and the plan has four. A planned mission now fires only with the defender's
       own forces beyond the mortar's 100 m lift of the mark, as every other
       mission (decision 116's cover mission did already) — so the target
       behind prepares the counterattack and lifts as the reserve closes; it

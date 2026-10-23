@@ -989,9 +989,10 @@ export function seizedBy(task: DrillTask, drill: SquadDrill, enemies: readonly U
 
 /**
  * The nearest point with ground cover within `within` metres of `p`
- * (`p` itself if it has some), never inside a building — going into one is
- * a fight of its own (decision 96) — and, given `notNearer`, never nearer
- * any of those points than `p` is. None that near: undefined.
+ * (`p` itself if it has some, a house included), else never one inside a
+ * building — going into one is a fight of its own (decision 96) — and,
+ * given `notNearer`, never nearer any of those points than `p` is. None
+ * that near: undefined.
  */
 function coverNear(game: Game, p: Point, within: number, notNearer: readonly Point[] = []): Point | undefined {
   const houses = game.terrain.objects.filter((o) => o.kind === "building" && o.footprint.shape === "polygon");
@@ -999,7 +1000,8 @@ function coverNear(game: Game, p: Point, within: number, notNearer: readonly Poi
   // No nearer any of `notNearer` (the enemy) than `p` is: cover is not bought by closing on him.
   const gap = (q: Point) => Math.min(...notNearer.map((e) => distance(q, e)));
   const keep = notNearer.length ? gap(p) : -Infinity;
-  if (!inHouse(p) && game.groundCoverAt(p) !== "none") return p;
+  // Where it stands, if that is cover: a house it is already in included (the flank point is kept out of houses by its caller).
+  if (game.groundCoverAt(p) !== "none") return p;
   for (let r = 5; r <= within; r += 5) {
     let best: Point | undefined;
     let bestD = Infinity;
@@ -1387,6 +1389,7 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
         if (via) state.flanked.add(u.id);
       }
       if (close) state.flanked.add(u.id);
+      if (state.flanked.has(u.id)) state.flankVia.delete(u.id); // reached: nothing left to keep
       if (foe) {
         game.setStandingOrder(
           u.id,
