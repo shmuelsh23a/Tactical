@@ -6287,3 +6287,36 @@ A at 3:1 200, four jobs at a time.
   and, by decision 68's own 25-point step, 45–50% at 2:1 (42.5%, 2.5
   under, accepted as noise); the plain drill stays on 40–55% / 20–35%
   (54% / 26.5%, in). Nothing tuned.
+
+## The re-measure after decision 119, 2026-10-23
+
+The audit's leftovers built (decision 119: the hold short in cover, #1
+and #2 searching dead space, the defender's fire plan in depth and its
+lift clearance, the counterattack by a flank, the alternate position —
+inert in computer play). Same cells as the 21st's: `jev-sim --rule
+<variant> --drill <reference|plain> --seed 1000 --n 100`, A at 3:1 200.
+
+| Plan | Plain (21st → now) | Doctrinal (21st → now) |
+|---|---|---|
+| A calibrated | 68 / 30 → **68 / 35** | 86 / 53 → **86 / 55** |
+| A + flank | 54 / 27 → **59 / 34** | 62 / 60 → **70 / 63** |
+| B deliberate | 57 / 26 → **59 / 33** | 72 / 42 → **80 / 51** |
+| E fire-heavy | 68 / 40 → **62 / 47** | 68 / 44 → **68 / 48** |
+| D flank | 54 / 28 → **53 / 31** | 66 / 37 → **65 / 45** |
+| A + move up | 51 / 17 → **58 / 22** | 72 / 43 → **76 / 45** |
+| B + move up | 53 / 17 → **60 / 22** | 70 / 35 → **63 / 37** |
+| C hasty | 49 / 17 → **59 / 23** | 75 / 32 → **73 / 56** |
+| **Median** | 54% / 26.5% → **59% / 32%** | 71% / 42.5% → **71.5% / 49.5%** |
+| Band (decision 118) | 40–55% / 20–35%: **3:1 over by 4** | 70–75% / 45–50%: **both in** |
+
+- **The doctrinal drill is now inside both of its bands** (decision 118's
+  2:1 shortfall, 2.5 points, closed: 49.5%).
+- **The plain drill moved up**, 3:1 by 5 points to 59%, 4 over its band.
+  It shares the defender's new fire plan — two of its five targets moved
+  from the close band to the far one and behind, and planned fire held off
+  while the defender's own men are within the lift — but not the doctrinal
+  defender's flank counterattack. Most likely the fire plan (not probed).
+  **Not ruled**: put to the author.
+- `scenario-sim` on the reference drill (100 battles, the house 200),
+  21st → now: `telAzekaCompany` 61% → **49%**, `yokneamUrban` 65% →
+  **78%**, `yokneamRaid` 4% → **3%**, `yokneamHouse` 88% → **88%**.

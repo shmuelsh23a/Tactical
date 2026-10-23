@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the drill audit and its balance ruling are closed — decisions 113–117 bring every drill to doctrine, the doctrinal drill is the reference, and decision 118 judges it on the bands' strong-suppression row (71% in 70–75% at 3:1; 42.5% against 45–50% at 2:1, accepted) while the plain drill sits in 40–55% / 20–35% (54% / 26.5%). Nothing was tuned. Next: the threads the audit put aside (below, *What I would pick up next*).**
+**Next, in one line: decision 119 built the audit's leftovers (hold short in cover, dead-space search by #1/#2, the defender's fire plan in depth, a flanking counterattack, the alternate position — inert in computer play). Re-measured (balance.md, *after decision 119*): the doctrinal reference is inside both its decision-118 bands (71.5% / 49.5%); the plain drill rose to 59% at 3:1, 4 over its 40–55% — put to the author, most likely the shared fire plan in depth.**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -65,10 +65,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `d2a99b0` (2026-10-21, night)
+## Green as of `62353b5` (2026-10-23)
 
 ```
-npm run check       lint + typecheck clean, 1,187 tests, 82 files
+npm run check       lint + typecheck clean, 1,203 tests, 83 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -138,6 +138,13 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### Open (2026-10-21, night)
 
+- **Open (2026-10-23): the plain drill at 3:1 is 59%, 4 over 40–55%**,
+  after decision 119's shared defender fire plan in depth (balance.md).
+  The doctrinal reference is in both its bands. His call: accept, or give
+  the plain (untrained) defender the old close fire plan.
+- **Decision 119's ⚠️, none questioned yet**: displace with no enemy
+  within 300 m, the long-range band 500–800 m, the target 50 m behind,
+  the flank 100 m (balance.md, *The drill audit's own figures*).
 - **Ruled, decision 118**: the doctrinal drill is the bands'
   strong-suppression case (70–75% at 3:1; 45–50% at 2:1, ⚠️ ours by
   decision 68's own step); the plain drill keeps 40–55% / 20–35%. Both in
@@ -656,13 +663,13 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**The balance is ruled** (decision 118). What I would take next, in order:
-the audit's divergences left as they are (A13 hold-short in the open, D6
-the defender's long-range and behind-the-position fires, I6 dead-space
-searching), each a card; why the mass assault (A) is the doctrinal
-drill's best plan by eleven points at 3:1 (a probe, free); and the
-plans doctrine names that a player cannot yet set inside a house (the
-entry point, the room order, top-down by an inside stair).
+**The audit's leftovers are built** (decision 119). Next, in order: the
+plain drill's 3:1 (above, his call); the computer defender and the harness
+preparing alternate positions, so decision 119's displace does something in
+computer play (a placement rule to put to him); why the mass assault (A)
+is the doctrinal drill's best plan by eleven points at 3:1 (a probe,
+free); and the plans doctrine names that a player cannot yet set inside a
+house (the entry point, the room order, top-down by an inside stair).
 
 **After that, as before:** separate the reserve's worth in
 `yokneamHouseReserve` (a `counterattackInside` harness flag); why the
