@@ -4,6 +4,7 @@ import type { CompanyOrders } from "./company.js";
 import { DOCTRINAL_DRILL, DrillState, drillMovement, type DrillTask, type SquadDrill } from "./drill.js";
 import { ALTERNATE_POSITION_M, ComputerDefender, DEFENDER_DEPTH_M, DOCTRINAL_DEFENDER_TARGETS, planDefenderFires, prepareAlternatePositions } from "./computerSide.js";
 import { PLAIN_SCRIPT } from "./drill.js";
+import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
 
 /**
  * The drill audit's leftovers, ruled 2026-10-23 (decision 119): the hold
@@ -275,7 +276,8 @@ describe("the computer defender's alternate positions (decision 120)", () => {
   }
 
   it("prepares one to the flank or rear, in cover, that still covers the ground in front — never forward", () => {
-    const { g, post, made } = field(DOCTRINAL_DRILL);
+    // A tree 50 m out to the front, off the line it watches, nearer than the one 70 m behind: forward is never taken.
+    const { g, post, made } = field(DOCTRINAL_DRILL, [tree("rear", 500, 430), tree("front", 540, 530)]);
     const at = made.get(post.id)!;
     expect(at).toBeDefined();
     expect(g.alternatePositionFor(post.id)?.at).toEqual(at);
@@ -296,5 +298,34 @@ describe("the computer defender's alternate positions (decision 120)", () => {
     const house = { id: "h", kind: "building" as const, footprint: { shape: "polygon" as const, points: [{ x: 490, y: 490 }, { x: 510, y: 490 }, { x: 510, y: 510 }, { x: 490, y: 510 }] } };
     const { made } = field(DOCTRINAL_DRILL, [tree("rear", 500, 430), house as unknown as ReturnType<typeof tree>]);
     expect(made.has("RED-1-1")).toBe(false);
+  });
+});
+
+describe("the computer defender's alternate positions, the review pinned (decision 120)", () => {
+  const tree = (id: string, x: number, y: number) => ({ id, kind: "tree" as const, footprint: { shape: "circle" as const, center: { x, y }, radius: 4 } });
+
+  it("refuses cover that cannot see the ground in front of the post", () => {
+    // A long block of houses just in front of the post hides the ground it covers from everything behind.
+    const block = { id: "block", kind: "building" as const, footprint: { shape: "polygon" as const, points: [{ x: 300, y: 515 }, { x: 700, y: 515 }, { x: 700, y: 525 }, { x: 300, y: 525 }] } };
+    const g = new Game({ seed: 3, enforceC2: false, terrain: { objects: [block, tree("rear", 500, 430)] } });
+    const post = g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 500, y: 500 }, 9));
+    const made = prepareAlternatePositions(g, "RED", { x: 500, y: 1100 }, DOCTRINAL_DRILL, [], { width: 1000, height: 1200 });
+    expect(made.has(post.id)).toBe(false);
+  });
+
+  it("keeps to the map", () => {
+    // The post on the north edge: the only cover lies off the map behind it.
+    const g = new Game({ seed: 3, enforceC2: false, terrain: { objects: [tree("off", 500, -60)] } });
+    const post = g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 500, y: 10 }, 9));
+    expect(prepareAlternatePositions(g, "RED", { x: 500, y: 1100 }, DOCTRINAL_DRILL, [], { width: 1000, height: 1200 }).has(post.id)).toBe(false);
+  });
+
+  it("is prepared by the browser's computer defender on a real scenario", () => {
+    const built = telAzekaAssaultListing.build(1000);
+    const attacker = built.game.attackers[0] ?? "BLUE";
+    const defender = attacker === "RED" ? "BLUE" : "RED";
+    new ComputerDefender(built.game, defender, built).plan(built.game);
+    const forward = built.game.units.filter((u) => u.side === defender && u.kind === "infantry" && !(built.reserves ?? []).includes(u.id));
+    expect(forward.some((u) => built.game.alternatePositionFor(u.id))).toBe(true);
   });
 });

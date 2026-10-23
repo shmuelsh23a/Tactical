@@ -6231,6 +6231,9 @@ behaviour turns out to decide battles:
 | the long-range target | 500–800 m | `computerSide.ts`, `DEFENDER_DEPTH_M` | the band its far planned target is chosen in, on watched ground (decision 119) |
 | the target behind | 50 m | `computerSide.ts`, `DEFENDER_DEPTH_M` | how far behind its positions the last planned target lies (decision 119) |
 | the counterattack's flank | 100 m | `drill.ts`, doctrinal `counterattack.flank` | how far to the side of the lost post the reserve goes in from (decision 119) |
+| an alternate position's ring | 50–100 m | `computerSide.ts`, `ALTERNATE_POSITION_M` | how far from its post the computer defender prepares a force's alternate position, flank or rear (decision 120) |
+| the ground it must still cover | 200 m | `computerSide.ts`, `ALTERNATE_POSITION_M` | the point in front of the post the alternate position must see (decision 120) |
+| the search step | 5 m | `computerSide.ts`, `ALTERNATE_POSITION_M` | the ring spacing and arc between points tried for an alternate position (decision 120) |
 
 Gone with I7: `grenadeUpstairsFactor` and `grenadeUpstairsSelfHitFactor`
 — a grenade is no longer thrown up the stairs.

@@ -1,4 +1,4 @@
-import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, EYE_HEIGHT, distance, pointInPolygon, type Game, type Point, type Side, type Unit } from "../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, EYE_HEIGHT, PREPARED_POSITION_REACH_M, distance, pointInPolygon, type Game, type Point, type Side, type Unit } from "../engine/index.js";
 import { ScriptedCompany, type CompanyPlan, type CompanySnapshot } from "./company.js";
 import { isDeadGround } from "./deadGround.js";
 import {
@@ -279,9 +279,9 @@ export function planDefenderFires(
  * force still sees the point `watch` metres in front of its post toward the
  * attack — "the alternate position covers the same area as the primary
  * position … slightly to the front, flank, or rear" (ATP 3-21.8 (2024),
- * para 5-22). ⚠️ Ours: the 50–100 m and the 200 m.
+ * para 5-22). ⚠️ Ours: the 50–100 m, the 200 m, and the 5 m it searches by.
  */
-export const ALTERNATE_POSITION_M = { near: 50, far: 100, watch: 200 } as const;
+export const ALTERNATE_POSITION_M = { near: 50, far: 100, watch: 200, step: 5 } as const;
 
 /**
  * Prepare an alternate position for each of `side`'s forward forces, in
@@ -303,31 +303,39 @@ export function prepareAlternatePositions(
   if (!drill.displace?.alternateOnly || !g.terrain) return out;
   const houses = g.terrain.objects.filter((o) => o.kind === "building" && o.footprint.shape === "polygon");
   const inHouse = (p: Point) => houses.some((o) => o.footprint.shape === "polygon" && pointInPolygon(p, o.footprint.points));
+  const own = g.units.filter((o) => o.side === side && !o.neutralized);
   for (const u of g.units) {
-    if (u.side !== side || u.kind !== "infantry" || rear.includes(u.id) || inHouse(u.position)) continue;
+    // Forward squads and guns: not the reserve, not a force in a house, not an observation post or a scout.
+    if (u.side !== side || u.kind !== "infantry" || rear.includes(u.id) || inHouse(u.position) || u.observationPost || u.scouting) continue;
+    if (g.alternatePositionFor(u.id)) continue; // one already: a player's, or a plan made before
     const d = distance(u.position, attackFrom);
     if (d === 0) continue;
     const ux = (attackFrom.x - u.position.x) / d, uy = (attackFrom.y - u.position.y) / d;
     const watch = { x: u.position.x + ux * ALTERNATE_POSITION_M.watch, y: u.position.y + uy * ALTERNATE_POSITION_M.watch };
+    // Ring by ring outward, every few metres of arc, so no stand of cover is stepped over; on a ring,
+    // the rearmost first, then by bearing. The eye is a man's in full cover, the strictest: a point
+    // passed sees as well or better once it is occupied.
     let best: Point | undefined;
-    for (let r = ALTERNATE_POSITION_M.near; r <= ALTERNATE_POSITION_M.far && !best; r += 10) {
-      for (let k = 0; k < 24 && !best; k++) {
-        const a = (k * Math.PI) / 12;
+    for (let r = ALTERNATE_POSITION_M.near; r <= ALTERNATE_POSITION_M.far && !best; r += ALTERNATE_POSITION_M.step) {
+      const n = Math.ceil((2 * Math.PI * r) / ALTERNATE_POSITION_M.step);
+      let bestAlong = Infinity;
+      for (let k = 0; k < n; k++) {
+        const a = (2 * Math.PI * k) / n;
         const q = { x: u.position.x + r * Math.cos(a), y: u.position.y + r * Math.sin(a) };
-        if ((q.x - u.position.x) * ux + (q.y - u.position.y) * uy > 0) continue; // never forward
+        const along = (q.x - u.position.x) * ux + (q.y - u.position.y) * uy;
+        if (along > 0 || along >= bestAlong) continue; // never forward; the rearmost on the ring
         if (extent && (q.x < 0 || q.y < 0 || q.x > extent.width || q.y > extent.height)) continue;
         if (inHouse(q) || g.groundCoverAt(q) === "none") continue;
+        // Its prepared cover reaches any force of the side within its reach (preparedCoverAt): not beside another.
+        if (own.some((o) => o.id !== u.id && distance(o.position, q) <= PREPARED_POSITION_REACH_M)) continue;
         if (isDeadGround({ terrain: g.terrain, watchers: [q], watcherEye: EYE_HEIGHT.fullCover, reach: Infinity }, watch)) continue;
         best = q;
+        bestAlong = along;
       }
     }
     if (!best) continue;
-    try {
-      g.prepareAlternatePosition(u.id, best);
-      out.set(u.id, best);
-    } catch {
-      // Not in planning, or it has one already: it goes without.
-    }
+    g.prepareAlternatePosition(u.id, best);
+    out.set(u.id, best);
   }
   return out;
 }

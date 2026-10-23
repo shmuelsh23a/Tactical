@@ -3725,8 +3725,7 @@ on the stated reasoning, still awaiting the author's word.
       drill's `displace.alternateOnly`): only a force with one prepared
       goes, and to it, with no enemy known within 300 m (⚠️ ours); never
       one holding a house (decision 106). ATP 3-21.8 (2024), para 5-22.
-      **Inert in computer play for now**: neither the computer defender nor
-      the harness prepares an alternate position, so only a player's does.
+      In computer play since decision 120, which prepares them.
     - **The defender's fire plan in depth** (D6; **the doctrinal drill's
       only**, `fireInDepth` — the author, 2026-10-23, after a probe showed
       it alone lifted the plain drill's 3:1 from 54% to 59%; the plain
@@ -3752,6 +3751,26 @@ on the stated reasoning, still awaiting the author's word.
       door (decision 104).
     - A recording with a fight inside, made before this, replays
       differently (I6 moves #3 and #4).
+120. ✅ **The computer defender prepares alternate positions** (the author,
+    2026-10-23; every option the recommended one). In planning, for each
+    forward infantry force and machine-gun team — not the reserve (it has
+    no post, decision 60), not a force in a house (it leaves only by order,
+    decision 106) — the nearest point 50–100 m to the flank or rear of its
+    post, never forward, on ground with cover outside every building, from
+    which it still sees the point 200 m in front of its post toward the
+    attack: "the alternate position covers the same area as the primary
+    position … slightly to the front, flank, or rear" (ATP 3-21.8 (2024),
+    para 5-22). None where no such point exists; none beside another of
+    the side's forces (a prepared position's cover reaches any force within
+    25 m); none for an observation post or a scout. Searched outward ring
+    by ring every 5 m of arc, the rearmost on the nearest ring first; seen
+    from the eye of a man in full cover, the strictest. ⚠️ Ours: the 50–100
+    m, the 200 m and the 5 m. **The doctrinal drill only**
+    (`displace.alternateOnly`, the drill that moves to them), in the
+    browser defender and the harness both; decision 119's displace now acts
+    in computer play — and with it an older rule wakes: a squad that went to
+    its alternate position left its post on purpose, so the reserve does
+    not counterattack that post (decision 60).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
