@@ -6429,3 +6429,58 @@ within 50 m on any bearing). The doctrinal reference, `jev-sim --rule
 - `scenario-sim` (100 battles, the house 200): `telAzekaCompany` **49%**,
   `yokneamUrban` **78%**, `yokneamRaid` **3%**, `yokneamHouse` **88%** — as
   after decision 119.
+
+## Why the mass assault leads, and what a longer deadline does (probe, 2026-10-25)
+
+**A's choices one at a time** (doctrinal drill, Tel Azeka 3:1, 200 battles
+each; `jev-sim --rule <choice> --drill reference`):
+
+| Change from A | Wins | Out of time | Attacker lost |
+|---|---|---|---|
+| none (A) | 86% | 8% | 13.2 |
+| bound by platoon | 86% | 10% | 12.1 |
+| base of fire | 82% | 6% | 15.3 |
+| hold short | 78% | 11% | 14.3 |
+| fires first (`prep`) | **72%** | **30%** | 10.3 |
+
+- **Two ways to lose to A.** The patient plans (fires first, a flank, E,
+  D) lose to the **clock**: a quarter to a third of their battles run out
+  of the 45 turns, with the lowest losses of any plan. The quick plans
+  (move up, hasty) lose to **casualties**: they go in at turn 12–19, not
+  21, and lose 17–19.5 men, not 13. A sits between the two.
+
+**The deadline at 60 and 90 turns** (`--time-limit`, the eight plans, 100
+battles a cell, A at 3:1 200):
+
+| Plan | Doctrinal 45 → **60** → 90 (3:1 / 2:1) | Plain 45 → **90** (3:1 / 2:1) |
+|---|---|---|
+| A calibrated | 86 / 55 → **87 / 62** → 88 / 62 | 68 / 35 → **70 / 32** |
+| A + flank | 71 / 63 → **85 / 73** → 85 / 73 | 59 / 34 → **62 / 30** |
+| B deliberate | 79 / 51 → **85 / 56** → 86 / 57 | 59 / 33 → **68 / 30** |
+| E fire-heavy | 68 / 48 → **83 / 69** → 83 / 69 | 62 / 47 → **70 / 41** |
+| D flank | 64 / 46 → **70 / 52** → 70 / 52 | 53 / 31 → **65 / 33** |
+| A + move up | 77 / 45 → **77 / 46** → 77 / 46 | 58 / 22 → **51 / 17** |
+| B + move up | 63 / 36 → **64 / 39** → 64 / 39 | 60 / 22 → **55 / 17** |
+| C hasty | 72 / 55 → **73 / 55** → 73 / 55 | 59 / 23 → **49 / 17** |
+| **Median** | 71.5 / 49.5 → **80 / 55.5** → 80 / 55.5 | 54 / 26.5 (decision 119's plain) → **63.5 / 30** |
+
+- **Every battle is decided by turn 60**: 60 and 90 are identical, cell
+  for cell.
+- **The order flips to doctrine's**: given time, the patient plans catch A
+  (flank 85%, deliberate 85%, fire-heavy 83% against A's 87%) and the
+  hasty ones fall to the bottom (move up 77%, hasty 73%).
+- **Every median rises past its band**: doctrinal 80% / 55.5% against
+  70–75% / 45–50%; plain 63.5% at 3:1 against 40–55%.
+- (The plain column at 45 here is the depth-off plain drill of decision
+  119's ruling, measured with the plain rule cells of 2026-10-23.)
+
+**What doctrine says about time** (the corpus, checked by text search):
+"the more time a commander takes to prepare for an operation, the more
+opportunity the enemy has to prepare" (ADP 3-90 (2019), para 1-39);
+"waiting for perfect intelligence and synchronization may increase risk
+or close a window of opportunity" (ADP 6-0 (2026), para 1-86); a deadline
+is stated in the order — "seizes OBJ … NLT H+15" (FM 5-0) — but **doctrine
+gives no figure for how long a company attack takes**, and a missed NLT
+leads to a decision (bypass, deliberate attack, defend; FM 3-90, para
+4-47), not an automatic loss. The defender improves with time, but over
+hours (ATP 3-21.8 (2024), paras 5-222, 5-246).
