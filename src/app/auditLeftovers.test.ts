@@ -13,36 +13,55 @@ import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
 const defend: DrillTask = { side: "RED", attacking: false, objective: { x: 0, y: -600 } };
 
 describe("a shelled defender goes to its alternate position, and only to that (D6, decision 121)", () => {
-  // Untenable (decision 121): pinned under the shelling, and an enemy closed to within 50 m.
-  function shelled(alternate: boolean, o: { pinned?: boolean; enemyAt?: number } = {}) {
+  // Untenable (decision 121): shelled this turn or last, pinned, and an enemy within 50 m on any bearing.
+  type Shelling = { noteFire(t: unknown, kind: "indirect", amount: number): void };
+  function shelled(alternate: boolean, o: { suppression?: number; enemies?: { x: number; y: number }[]; shelledTurnsAgo?: number | null } = {}) {
     const g = new Game({ seed: 3, trackIntel: false, enforceC2: false });
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));
     if (alternate) g.prepareAlternatePosition(red.id, { x: 0, y: 80 });
-    if (o.enemyAt !== undefined) g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: -o.enemyAt }, 9));
+    (o.enemies ?? []).forEach((p, k) => g.addUnit(makeInfantry(`B${k}`, "BLUE", "squad", p, 9)));
     g.beginTurn();
+    const ago = o.shelledTurnsAgo === undefined ? 0 : o.shelledTurnsAgo;
+    if (ago !== null) {
+      for (let t = 0; t < ago; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+      (g as unknown as Shelling).noteFire(red, "indirect", 0);
+      for (let t = 0; t < ago; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    }
     red.downUnderShelling = true;
-    if (o.pinned ?? true) red.suppression = 100;
+    red.suppression = o.suppression ?? 100;
     g.advanceToPhase("movement");
     const state = new DrillState();
     drillMovement(g, defend, DOCTRINAL_DRILL, state);
     return { red, state };
   }
+  const close = [{ x: 0, y: -40 }];
 
-  it("goes, to the position prepared for it, once pinned with the enemy at 50 m", () => {
-    const { red, state } = shelled(true, { enemyAt: 40 });
+  it("goes, to the position prepared for it, once untenable", () => {
+    const { red, state } = shelled(true, { enemies: close });
     expect(state.displaced.has(red.id)).toBe(true);
     expect(red.position.y).toBeGreaterThan(0);
   });
 
   it("stays with none prepared", () => {
-    const { red, state } = shelled(false, { enemyAt: 40 });
+    const { red, state } = shelled(false, { enemies: close });
     expect(state.displaced.has(red.id)).toBe(false);
     expect(red.position).toEqual({ x: 0, y: 0 });
   });
 
-  it("stays while the position is still tenable: shelled but not pinned, or pinned with no enemy close", () => {
-    expect(shelled(true, { enemyAt: 40, pinned: false }).state.displaced.size).toBe(0);
-    expect(shelled(true, { enemyAt: 120 }).state.displaced.size).toBe(0);
+  it("goes for an enemy closed on its flank, whatever lies farther off in front", () => {
+    // 40 m due east (off its southward sector), another 200 m in front.
+    expect(shelled(true, { enemies: [{ x: 40, y: 0 }, { x: 0, y: -200 }] }).state.displaced.size).toBe(1);
+  });
+
+  it("holds to 50 m: an enemy at 49 m makes it untenable, one at 51 m does not", () => {
+    expect(shelled(true, { enemies: [{ x: 0, y: -49 }] }).state.displaced.size).toBe(1);
+    expect(shelled(true, { enemies: [{ x: 0, y: -51 }] }).state.displaced.size).toBe(0);
+  });
+
+  it("stays while still tenable: suppressed but not pinned, or not shelled this turn or last", () => {
+    expect(shelled(true, { enemies: close, suppression: 25 }).state.displaced.size).toBe(0);
+    expect(shelled(true, { enemies: close, shelledTurnsAgo: null }).state.displaced.size).toBe(0);
+    expect(shelled(true, { enemies: close, shelledTurnsAgo: 3 }).state.displaced.size).toBe(0);
     expect(shelled(true).state.displaced.size).toBe(0);
   });
 });
@@ -191,6 +210,7 @@ describe("the review of decision 119, pinned", () => {
     inside.prepareAlternatePosition(b.id, { x: 0, y: 80 });
     inside.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: -40 }, 9)); // untenable but for the house: closed to 40 m
     inside.beginTurn();
+    (inside as unknown as { noteFire(t: unknown, kind: "indirect", amount: number): void }).noteFire(b, "indirect", 0);
     b.downUnderShelling = true;
     b.suppression = 100;
     inside.advanceToPhase("movement");
