@@ -6401,3 +6401,31 @@ displacing at all (alternates prepared, never used), 2:1 only.
 - The trigger is `downUnderShelling` — men gone to ground under shellfire,
   any shelling — which doctrine's "when the primary position becomes
   untenable" (ATP 3-21.8 (2024), para 5-22) does not obviously mean.
+
+## The re-measure after decision 121, 2026-10-24
+
+A defender goes to its alternate position only when its post is
+untenable (decision 121: shelled this turn or last, pinned, an enemy seen
+within 50 m on any bearing). The doctrinal reference, `jev-sim --rule
+<variant> --drill reference --seed 1000 --n 100`, A at 3:1 200:
+
+| Plan | After 120 → **after 121** (3:1 / 2:1) |
+|---|---|
+| A calibrated | 88 / 60 → **86 / 55** |
+| A + flank | 74 / 61 → **71 / 63** |
+| B deliberate | 72 / 56 → **79 / 51** |
+| E fire-heavy | 76 / 55 → **68 / 48** |
+| D flank | 76 / 52 → **64 / 46** |
+| A + move up | 82 / 45 → **77 / 45** |
+| B + move up | 71 / 37 → **63 / 36** |
+| C hasty | 79 / 57 → **72 / 55** |
+| **Median** | 76% / 55.5% → **71.5% / 49.5%** |
+| Band (decision 118) | 70–75% / 45–50%: **both in** |
+
+- **Back where it was after decision 119**, cell by cell within a point
+  or two: the untenable trigger is met rarely, so a squad leaves its post
+  only in the narrow case the author named. The plain drill (no `displace`)
+  is unchanged at 54% / 26.5%.
+- `scenario-sim` (100 battles, the house 200): `telAzekaCompany` **49%**,
+  `yokneamUrban` **78%**, `yokneamRaid` **3%**, `yokneamHouse` **88%** — as
+  after decision 119.

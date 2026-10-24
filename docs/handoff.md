@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 120 is measured (balance.md, *after decision 120*): preparing alternate positions took the doctrinal reference over both its bands, 76% at 3:1 (70–75%) and 55.5% at 2:1 (45–50%). Put to the author; the cause is not yet separated (a squad leaving its post under shellfire, or the reserve not counterattacking a post left on purpose).**
+**Next, in one line: decisions 120–121 are built and measured — the computer defender prepares alternate positions and goes to one only when its post is untenable (shelled this turn or last, pinned, an enemy within 50 m); every drill is back in its band (doctrinal 71.5% / 49.5%, plain 54% / 26.5%). Next: why the mass assault (A) is the doctrinal drill's best plan by about ten points at 3:1 (a free probe), then the plans a player cannot yet set inside a house.**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -65,10 +65,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `a826685` (2026-10-23)
+## Green as of `de1d11d` (2026-10-24)
 
 ```
-npm run check       lint + typecheck clean, 1,210 tests, 83 files
+npm run check       lint + typecheck clean, 1,213 tests, 83 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -662,8 +662,8 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Done 2026-10-24: the re-measure for decision 120** (balance.md); the
-doctrinal drill went over both bands — his call next. The recipe, kept:
+**Done 2026-10-24: decisions 120–121 measured** (balance.md): over both
+bands after 120, back in after 121's untenable trigger. The recipe, kept:
 `jev-sim --rule <variant> --drill reference --seed 1000 --n 100` for the
 eight plans on both tel assaults (A at 3:1 200), and `scenario-sim` on
 company, urban, raid (100) and house (200). It wakes decision 60's rule
