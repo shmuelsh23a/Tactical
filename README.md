@@ -3771,6 +3771,17 @@ on the stated reasoning, still awaiting the author's word.
     in computer play — and with it an older rule wakes: a squad that went to
     its alternate position left its post on purpose, so the reserve does
     not counterattack that post (decision 60).
+121. ✅ **A defender goes to its alternate position only when its post is
+    untenable** (the author, 2026-10-24, his own option, on the probe of
+    decision 120). Pinned under the shelling, and an enemy it knows of
+    closed to within 50 m — "when the primary position becomes untenable"
+    (ATP 3-21.8 (2024), para 5-22). It replaces the doctrinal drill's old
+    guard, which moved a squad under any shelling with no enemy within
+    300 m. The probe (balance.md, 2026-10-24): moving under any shelling
+    cost the defender 4.5 points at 3:1 and 6 at 2:1, all of decision 120's
+    effect; the reserve not counterattacking a post left on purpose
+    (decision 60) cost nothing. The plain and Western drills keep their
+    `displace` as it was.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

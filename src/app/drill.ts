@@ -108,8 +108,15 @@ export interface SquadDrill {
    * becomes untenable" (ATP 3-21.8 (2024), para 5-22; drill audit, D6) —
    * never one holding a house, which leaves only by its commander's order
    * (decision 106).
+   *
+   * `untenable` (decision 121, the author, 2026-10-24): it goes only when
+   * the position "becomes untenable" (para 5-22) — the force pinned under
+   * the shelling and an enemy it knows of closed to within `enemyWithin`
+   * metres — in place of the `contactWithin` guard, which kept it from
+   * going with an enemy near. Any shelling at all moved it too soon: the
+   * attack took the post it left (balance.md, the probe of 2026-10-24).
    */
-  displace?: { metres: number; contactWithin: number; alternateOnly?: boolean };
+  displace?: { metres: number; contactWithin: number; alternateOnly?: boolean; untenable?: { enemyWithin: number } };
   /**
    * Counterattack (rules decision 60, author 2026-09-30: "a squad in reserve;
    * platoon counterattacks by drill"). A defending platoon's reserve
@@ -456,7 +463,7 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   consolidate: { nothingWithin: 100, arc: 120 },
   coverInPlace: { within: 25 },
   fireInDepth: true,
-  displace: { metres: 100, contactWithin: 300, alternateOnly: true },
+  displace: { metres: 100, contactWithin: 300, alternateOnly: true, untenable: { enemyWithin: 50 } },
   counterattack: { lostWithin: 50, gait: "run", holdFire: true, flank: 100 },
   screeningSmoke: { screens: 4 },
   fireTeams: { splitAt: 300, minMen: 6 },
@@ -1417,7 +1424,9 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       drill.displace &&
       u.downUnderShelling &&
       !state.displaced.has(u.id) &&
-      !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin) &&
+      (drill.displace.untenable
+        ? suppressionLevel(u) === "pinned" && !!nearest && distance(u.position, nearest.position) <= drill.displace.untenable.enemyWithin
+        : !(nearest && distance(u.position, nearest.position) <= drill.displace.contactWithin)) &&
       !(drill.displace.alternateOnly && (!game.alternatePositionFor(u.id) || (game.closedTerrain && game.interior.buildingAt(game.terrain, u.position) !== undefined)))
     ) {
       // A withdrawal, so a pinned force may still go; its fire discipline

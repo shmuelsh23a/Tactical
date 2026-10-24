@@ -12,29 +12,38 @@ import { telAzekaAssaultListing } from "./scenarios/telAzekaAssault.js";
  */
 const defend: DrillTask = { side: "RED", attacking: false, objective: { x: 0, y: -600 } };
 
-describe("a shelled defender goes to its alternate position, and only to that (D6)", () => {
-  function shelled(alternate: boolean) {
-    const g = new Game({ seed: 3, enforceC2: false });
+describe("a shelled defender goes to its alternate position, and only to that (D6, decision 121)", () => {
+  // Untenable (decision 121): pinned under the shelling, and an enemy closed to within 50 m.
+  function shelled(alternate: boolean, o: { pinned?: boolean; enemyAt?: number } = {}) {
+    const g = new Game({ seed: 3, trackIntel: false, enforceC2: false });
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));
     if (alternate) g.prepareAlternatePosition(red.id, { x: 0, y: 80 });
-    red.downUnderShelling = true;
+    if (o.enemyAt !== undefined) g.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: -o.enemyAt }, 9));
     g.beginTurn();
+    red.downUnderShelling = true;
+    if (o.pinned ?? true) red.suppression = 100;
     g.advanceToPhase("movement");
     const state = new DrillState();
     drillMovement(g, defend, DOCTRINAL_DRILL, state);
     return { red, state };
   }
 
-  it("goes, to the position prepared for it", () => {
-    const { red, state } = shelled(true);
+  it("goes, to the position prepared for it, once pinned with the enemy at 50 m", () => {
+    const { red, state } = shelled(true, { enemyAt: 40 });
     expect(state.displaced.has(red.id)).toBe(true);
     expect(red.position.y).toBeGreaterThan(0);
   });
 
-  it("stays in its hole with none prepared", () => {
-    const { red, state } = shelled(false);
+  it("stays with none prepared", () => {
+    const { red, state } = shelled(false, { enemyAt: 40 });
     expect(state.displaced.has(red.id)).toBe(false);
     expect(red.position).toEqual({ x: 0, y: 0 });
+  });
+
+  it("stays while the position is still tenable: shelled but not pinned, or pinned with no enemy close", () => {
+    expect(shelled(true, { enemyAt: 40, pinned: false }).state.displaced.size).toBe(0);
+    expect(shelled(true, { enemyAt: 120 }).state.displaced.size).toBe(0);
+    expect(shelled(true).state.displaced.size).toBe(0);
   });
 });
 
@@ -180,8 +189,10 @@ describe("the review of decision 119, pinned", () => {
     const inside = new Game({ seed: 3, enforceC2: false, closedTerrain: true, terrain: { objects: [house] } });
     const b = inside.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 9));
     inside.prepareAlternatePosition(b.id, { x: 0, y: 80 });
-    b.downUnderShelling = true;
+    inside.addUnit(makeInfantry("B", "BLUE", "squad", { x: 0, y: -40 }, 9)); // untenable but for the house: closed to 40 m
     inside.beginTurn();
+    b.downUnderShelling = true;
+    b.suppression = 100;
     inside.advanceToPhase("movement");
     const s2 = new DrillState();
     drillMovement(inside, defend, DOCTRINAL_DRILL, s2);
