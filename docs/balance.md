@@ -6379,3 +6379,24 @@ purpose, the reserve does not counterattack that post (decision 60).
 - `scenario-sim` (100 battles, the house 200), after 119 → after 120:
   `telAzekaCompany` 49% → **51%**, `yokneamUrban` 78% → **78%**,
   `yokneamRaid` 3% → **3%**, `yokneamHouse` 88% → **88%**.
+
+### Why the defender lost ground: leaving its post, all of it (probe, 2026-10-24)
+
+The doctrinal drill with temporary switches (not kept): the reserve
+counterattacking a post left on purpose, both tel assaults; and no squad
+displacing at all (alternates prepared, never used), 2:1 only.
+
+| Variant | 3:1 | 2:1 |
+|---|---|---|
+| After decision 119 | 71.5% | 49.5% |
+| After decision 120 (as built) | 76% | 55.5% |
+| The reserve counterattacks displaced posts | **76%** (every cell identical) | **55.5%** (each cell within a point) |
+| No squad displaces | — | **49.5%** (each cell within a point of after 119) |
+
+- **The squad leaving its post under shellfire is the whole cost**: a
+  defender gone to ground under the attacker's mortars runs for its
+  alternate position, and the attack takes the post it left.
+- **The reserve rule (decision 60) costs nothing measurable**.
+- The trigger is `downUnderShelling` — men gone to ground under shellfire,
+  any shelling — which doctrine's "when the primary position becomes
+  untenable" (ATP 3-21.8 (2024), para 5-22) does not obviously mean.
