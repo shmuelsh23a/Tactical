@@ -103,6 +103,8 @@ const attackerBreakpoint = value("--attacker-breakpoint") === undefined ? undefi
 if (attackerBreakpoint !== undefined && !(attackerBreakpoint > 0 && attackerBreakpoint < 1)) throw new Error("--attacker-breakpoint: a share in (0, 1)");
 const engine = {
   defenderFirePlan,
+  // The mission's deadline in place of the scenario's (decision 58): a measurement switch.
+  ...(value("--time-limit") ? { timeLimit: Number(value("--time-limit")) } : {}),
   // The drill's covered routes and arriving together (balance.md, forty-fifth round), on unless turned off.
   ...(args.includes("--no-covered") ? { coveredRoutes: false } : {}),
   ...(args.includes("--no-together") ? { arriveTogether: false } : {}),

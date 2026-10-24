@@ -97,6 +97,11 @@ export interface ScenarioBattleOptions {
   /** Stop here. The mission's deadline (`timeLimit`, decision 58) unless given; 60 turns with none. */
   maxTurns?: number;
   /**
+   * The mission's deadline in place of the scenario's (decision 58), for a
+   * measurement: when the attack fails on time, and the score's time share.
+   */
+  timeLimit?: number;
+  /**
    * The defending company's fire plan (`planDefenderFires`): its mortar
    * targets registered on the dead ground in front of it, fired on as the
    * attacker crosses them. On unless false; false is every table before
@@ -253,6 +258,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   if (opts.qualityOff?.includes("grenades")) quality.qualityGapGrenades = false;
   if (opts.qualityOff?.includes("breakpoint")) quality.qualityBreakpoint = false;
   if (opts.suppressionByChance !== undefined) g.suppressionByChance = opts.suppressionByChance;
+  if (opts.timeLimit !== undefined) (g as { timeLimit: number | undefined }).timeLimit = opts.timeLimit;
   if (opts.quality) dressQuality(g, opts.quality);
   if (opts.fireSupport === false) for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
   const attacker: Side = g.attackers[0] ?? "BLUE";

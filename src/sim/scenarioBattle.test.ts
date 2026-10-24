@@ -209,3 +209,11 @@ describe("each side's plan inside a building, from the harness (decision 101)", 
     }
   });
 });
+
+describe("the mission's deadline as a measurement switch (timeLimit)", () => {
+  it("replaces the scenario's: a 3-turn deadline ends the battle on time by turn 3", () => {
+    const r = runScenarioBattle(telAzekaAssaultListing, 1000, { drill: PLAIN_SCRIPT, fire: DEFAULT_FIRE_CHOICES, timeLimit: 3 });
+    expect(r.turns).toBeLessThanOrEqual(3);
+    expect(r.winner).not.toBe("BLUE");
+  });
+});
