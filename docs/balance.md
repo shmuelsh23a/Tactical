@@ -6349,3 +6349,33 @@ switches, not kept):
   (in 40–55%) and, as before decision 119, about 26.5% at 2:1 — the plain
   "A + flank" cell re-run: 54%, as the probe. The doctrinal reference is
   unchanged (71.5% / 49.5%).
+
+## The re-measure after decision 120, 2026-10-24
+
+The computer defender prepares alternate positions (doctrinal drill
+only), so a shelled squad now goes to one — and, having left its post on
+purpose, the reserve does not counterattack that post (decision 60).
+`jev-sim --rule <variant> --drill reference --seed 1000 --n 100`, A at 3:1
+200; the plain drill prepares none and is unchanged (54% / 26.5%).
+
+| Plan | Doctrinal, after 119 → **after 120** (3:1 / 2:1) |
+|---|---|
+| A calibrated | 86 / 55 → **88 / 60** |
+| A + flank | 70 / 63 → **74 / 61** |
+| B deliberate | 80 / 51 → **72 / 56** |
+| E fire-heavy | 68 / 48 → **76 / 55** |
+| D flank | 65 / 45 → **76 / 52** |
+| A + move up | 76 / 45 → **82 / 45** |
+| B + move up | 63 / 37 → **71 / 37** |
+| C hasty | 73 / 56 → **79 / 57** |
+| **Median** | 71.5% / 49.5% → **76% / 55.5%** |
+| Band (decision 118) | 70–75% / 45–50%: **over by 1 / by 5.5** |
+
+- **The alternate positions cost the defender** 4.5 points at 3:1 and 6
+  at 2:1, taking the doctrinal drill over both its bands. Not yet
+  separated: the squad leaving its post under shellfire, against the
+  reserve no longer counterattacking a post left on purpose. **Not
+  ruled**: put to the author.
+- `scenario-sim` (100 battles, the house 200), after 119 → after 120:
+  `telAzekaCompany` 49% → **51%**, `yokneamUrban` 78% → **78%**,
+  `yokneamRaid` 3% → **3%**, `yokneamHouse` 88% → **88%**.

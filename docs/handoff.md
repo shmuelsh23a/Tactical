@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 120 (the computer defender prepares alternate positions, doctrinal drill only) is built, reviewed and pushed, but NOT yet measured — the re-measure was stopped at the author's request (2026-10-23). Resume with it: the doctrinal reference's 16 cells and the four scenarios (recipe under *Do not re-derive*), then compare with balance.md, *after decision 119* (71.5% / 49.5%); the plain drill prepares none and needs no re-run.**
+**Next, in one line: decision 120 is measured (balance.md, *after decision 120*): preparing alternate positions took the doctrinal reference over both its bands, 76% at 3:1 (70–75%) and 55.5% at 2:1 (45–50%). Put to the author; the cause is not yet separated (a squad leaving its post under shellfire, or the reserve not counterattacking a post left on purpose).**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -662,7 +662,8 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**First, the re-measure for decision 120** (stopped, not started over):
+**Done 2026-10-24: the re-measure for decision 120** (balance.md); the
+doctrinal drill went over both bands — his call next. The recipe, kept:
 `jev-sim --rule <variant> --drill reference --seed 1000 --n 100` for the
 eight plans on both tel assaults (A at 3:1 200), and `scenario-sim` on
 company, urban, raid (100) and house (200). It wakes decision 60's rule
