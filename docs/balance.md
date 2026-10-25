@@ -6510,7 +6510,8 @@ with 4 missions). `jev-sim --rule <variant> --drill <reference|plain>
 | Band | 70–75 / 45–50: **1 under / in** | 40–55 / 20–35: **in / 0.5 under** |
 
 - **Every median is in its band or within a point of it** — inside the
-  noise of 100 battles a plan (±5).
+  noise of 100 battles a plan (±5). **Accepted as in band** (the author,
+  2026-10-25).
 - **The mass assault still leads**, by about 10 points at 3:1 on both
   drills: the patient plans no longer lose to the clock but now meet the
   reinforcement.

@@ -259,7 +259,8 @@ def reinforcement(spec: dict[str, Any]) -> dict[str, Any] | None:
         dress["readiness"] = level
     sizes = [4] if quarter < 6 else [squad_size] * max(1, round(quarter / squad_size))
     centre = round(2 * deadline / 3)
-    window = [max(1, centre - REINFORCEMENT_SPREAD), centre + REINFORCEMENT_SPREAD]
+    # Never in the last REINFORCEMENT_SPREAD turns, when it could no longer matter (the author, 2026-10-25).
+    window = [max(1, centre - REINFORCEMENT_SPREAD), min(centre + REINFORCEMENT_SPREAD, deadline - REINFORCEMENT_SPREAD)]
     # The line from the attackers' start through the defenders, to the map edge behind them.
     mean = lambda fs: (sum(f["at"][0] for f in fs) / len(fs), sum(f["at"][1] for f in fs) / len(fs))
     ax, ay = mean(infantry(next(iter(sorted(attackers)))) or spec["forces"])

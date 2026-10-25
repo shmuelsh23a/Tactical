@@ -3818,8 +3818,15 @@ on the stated reasoning, still awaiting the author's word.
       platoon's (decisions 60, 119).
     - In the engine: `GameOptions.reinforcements`, its turn drawn from its
       own stream so the game's dice are untouched; the recording carries
-      the option and a replay brings it in again — its missions counted
-      once.
+      the option, its drawn turn and its men, and a replay — or a re-fight
+      under other dice — brings it in again, its missions counted once.
+    - **A window ends at least 5 turns before the deadline** (the author,
+      2026-10-25): a reinforcement on the last turn could no longer matter.
+      Only the delay mission moves, to 5–10 against its turn 15.
+    - **Re-measured and accepted** (the author, 2026-10-25; balance.md):
+      doctrinal 69% / 45.5%, plain 49% / 19.5% — two of them a point or
+      less outside decision 118's bands, inside the noise of 100 battles a
+      plan, and recorded as in band. Nothing tuned.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

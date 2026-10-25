@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 122 makes time cost the attacker — 60-turn deadlines (where shorter) and a defender's reinforcement in every scenario (a quarter of its men at ⅔ of the deadline ±5, with 4 missions; the brief gives the window). Re-measured: doctrinal 69% / 45.5% (1 under 70–75 at 3:1), plain 49% / 19.5% (0.5 under 20–35 at 2:1) — put to the author, with the delay mission's window (5–15 against its turn 15).**
+**Next, in one line: decision 122 is closed — time costs the attacker (60-turn deadlines where shorter, and a defender's reinforcement in every scenario, its window in the brief), re-measured and accepted in band (doctrinal 69% / 45.5%, plain 49% / 19.5%). Next on the threads: the debrief's narration of a reinforcement's arrival, the engine-only build's `structuredClone`, and why the mass assault still leads by about 10 points.**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -662,10 +662,9 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**Open (2026-10-25)**: the medians after decision 122 are a point or less
-outside two bands (his call: accept as noise, or tune); the delay
-mission's reinforcement window is 5–15 against its turn 15 (it can come on
-the last turn); the debrief does not yet narrate a reinforcement's arrival
+**Ruled 2026-10-25**: the medians after decision 122 accepted as in band;
+a reinforcement's window ends at least 5 turns before the deadline (the
+delay mission 5–10). **Open**: the debrief does not yet narrate a reinforcement's arrival
 (the live log does); the engine-only build (`tsconfig.engine.json`) fails
 on `structuredClone` in `interior/coupling.ts`, from before decision 120 —
 `npm run check` does not run it.

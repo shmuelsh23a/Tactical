@@ -43,7 +43,7 @@ export function buildTelAzekaDelayScenario(seed = 1967): Scenario {
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "platoon", RED: "platoon" },
     // The defender's reinforcement (rules decision 122): written by the tool from the spec.
-    reinforcements: [{ side: "RED", window: [5, 15], units: [makeInfantry("RED-REINF-1", "RED", "team", { x: 650, y: 10 }, 4, "תגבורת 1")] }],
+    reinforcements: [{ side: "RED", window: [5, 10], units: [makeInfantry("RED-REINF-1", "RED", "team", { x: 650, y: 10 }, 4, "תגבורת 1")] }],
     terrain: buildTelAzekaDelayTerrain(),
   });
 
@@ -67,7 +67,7 @@ export function buildTelAzekaDelayScenario(seed = 1967): Scenario {
 export const telAzekaDelayListing: ScenarioListing = {
   id: "telAzekaDelay",
   title: "תל עזקה — עיכוב",
-  brief: "כחול: תוקף את תל עזקה מדרום. אדום: מחזיק בתל ומעכב את התקיפה. לפני הקרב כל צד מתכנן את משימתו. על המגן להשהות את התקיפה עד תור 15. תגבורת של המגן עשויה להגיע בין תור 5 לתור 15.",
+  brief: "כחול: תוקף את תל עזקה מדרום. אדום: מחזיק בתל ומעכב את התקיפה. לפני הקרב כל צד מתכנן את משימתו. על המגן להשהות את התקיפה עד תור 15. תגבורת של המגן עשויה להגיע בין תור 5 לתור 10.",
   mapWidth: 1200,
   mapHeight: 1000,
   build: buildTelAzekaDelayScenario,
