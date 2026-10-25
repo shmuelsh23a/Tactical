@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 122 is closed — time costs the attacker (60-turn deadlines where shorter, and a defender's reinforcement in every scenario, its window in the brief), re-measured and accepted in band (doctrinal 69% / 45.5%, plain 49% / 19.5%). Next on the threads: the debrief's narration of a reinforcement's arrival, the engine-only build's `structuredClone`, and why the mass assault still leads by about 10 points.**
+**Next, in one line: narrate a reinforcement's arrival in the debrief, for the side it reinforced (the author said yes, 2026-10-25, for this session). Decision 122 is closed: time costs the attacker — 60-turn deadlines where shorter, and a defender's reinforcement in every scenario, its window in the brief — re-measured and accepted in band (doctrinal 69% / 45.5%, plain 49% / 19.5%).**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -65,7 +65,7 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `96dc8dc` (2026-10-25)
+## Green as of `e1073a0` (2026-10-25)
 
 ```
 npm run check       lint + typecheck clean, 1,227 tests, 85 files
@@ -662,6 +662,21 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
+**First: the debrief narrates a reinforcement's arrival** (agreed with the
+author, 2026-10-25). The live log tells the reinforced side
+(`reinforcementHe`, `App.tsx` `logArrivals`), but the debrief reads only
+recorded actions, and an arrival is not one: it happens inside `beginTurn`
+from `recording.reinforcements` (each with its drawn `turn`). Where to hook
+it: the debrief's per-step outcomes (`replayForReview`, the `beginTurn`
+step in `recording.ts` ~732 carries no `arrived`) — return the arrivals on
+that step's outcome and narrate them in `debriefText.ts`, visible to the
+reinforced side only (`debriefView.ts`; the other side learns of it by
+seeing it, as of any force). Test it per side, as
+`src/app/reinforcement.test.ts` does the lens. Then the next threads: the
+engine-only build's `structuredClone` (below), and why the mass assault
+still leads by about 10 points at 3:1 on both drills (balance.md, *after
+decision 122*).
+
 **Ruled 2026-10-25**: the medians after decision 122 accepted as in band;
 a reinforcement's window ends at least 5 turns before the deadline (the
 delay mission 5–10). **Open**: the debrief does not yet narrate a reinforcement's arrival
@@ -692,6 +707,17 @@ did not; the typed fire question brought to doctrine (decision 110); the
 UX pass's targetable marker for an enemy fought inside.
 
 ## Traps that cost real time
+
+- **`advanceToPhase(p)` while already in `p` does nothing**: a test loop
+  `while (g.turn < n) g.advanceToPhase("initiative")` never advances and
+  runs vitest out of memory. Go to "summary" first, then "initiative".
+- **Long heredocs with Hebrew or nested quotes break Git Bash's parser**
+  ("unexpected EOF"): write the edit as a Python script with the Write
+  tool and run it with `py <file> "$(pwd)"`.
+- **A scenario that ends by turn 12–14 cannot show a time rule**: the
+  `scenario-sim` cells (company, urban, house) did not move with decision
+  122 because their battles end before any reinforcement comes. Measure
+  time on the tel assaults.
 
 - **A long measurement reads the source files as each job starts**: edit
   code while one runs and its cells are measured on mixed code. Stop it
