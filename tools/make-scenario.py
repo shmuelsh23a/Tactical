@@ -245,7 +245,19 @@ def reinforcement(spec: dict[str, Any]) -> dict[str, Any] | None:
     if men == 0:
         return None
     quarter = men / 4
-    sizes = [4] if quarter < 6 else [8] * max(1, round(quarter / 8))
+    # Like the defenders' own squads (the review of decision 122): their most common size, quality,
+    # motivation, experience and readiness, so a raid's irregulars are reinforced by irregulars.
+    squads = [f for f in infantry(defender) if not f.get("mediumMg")] or infantry(defender)
+    def modal(key: str) -> Any:
+        values = [json.dumps(f.get(key), sort_keys=True) for f in squads]
+        best = max(sorted(set(values)), key=values.count)
+        return json.loads(best)
+    squad_size = int(modal("soldiers") or 8)
+    dress = {k: modal(k) for k in ("quality", "motivation", "experience") if modal(k) is not None}
+    level = modal("readiness") if modal("readiness") is not None else spec.get("readiness", {}).get(defender)
+    if level is not None:
+        dress["readiness"] = level
+    sizes = [4] if quarter < 6 else [squad_size] * max(1, round(quarter / squad_size))
     centre = round(2 * deadline / 3)
     window = [max(1, centre - REINFORCEMENT_SPREAD), centre + REINFORCEMENT_SPREAD]
     # The line from the attackers' start through the defenders, to the map edge behind them.
@@ -270,7 +282,7 @@ def reinforcement(spec: dict[str, Any]) -> dict[str, Any] | None:
         off = (k - (len(sizes) - 1) / 2) * 15.0
         x = min(max(ex + px * off, inset), w - inset)
         y = min(max(ey + py * off, inset), h - inset)
-        units.append({"id": f"{defender}-REINF-{k + 1}", "soldiers": n, "at": [round(x), round(y)], "name": f"תגבורת {k + 1}"})
+        units.append({"id": f"{defender}-REINF-{k + 1}", "soldiers": n, "at": [round(x), round(y)], "name": f"תגבורת {k + 1}", "dress": dress})
     fire = []
     allotted = {a["weapon"]: a for a in spec.get("fireSupport", {}).get(defender, [])}
     lightest = next((w_ for w_ in TUBE_ORDER if w_ in allotted), None)
@@ -677,11 +689,20 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
         lines.append("    commandEchelon: { " + pairs + " },")
     r = reinforcement(spec)
     if r:
-        units = ", ".join(
-            "makeInfantry(" + ts(u["id"]) + ", " + ts(r["side"]) + ", " + ts("squad" if u["soldiers"] >= 8 else "team")
-            + ", { x: " + num(u["at"][0]) + ", y: " + num(u["at"][1]) + " }, " + str(u["soldiers"]) + ", " + ts(u["name"]) + ")"
-            for u in r["units"]
-        )
+        def made(u: dict[str, Any]) -> str:
+            base = (
+                "makeInfantry(" + ts(u["id"]) + ", " + ts(r["side"]) + ", " + ts("team" if u["soldiers"] <= 4 else "squad")
+                + ", { x: " + num(u["at"][0]) + ", y: " + num(u["at"][1]) + " }, " + str(u["soldiers"]) + ", " + ts(u["name"]) + ")"
+            )
+            d = u["dress"]
+            parts = []
+            if "quality" in d:
+                parts.append("forceQuality({ type: " + ts(d["quality"]["type"]) + ", experience: " + ts(d["quality"]["experience"]) + " })")
+            plain = {k: d[k] for k in ("motivation", "experience", "readiness") if k in d}
+            if plain:
+                parts.append("{ " + ", ".join(k + ": " + (str(v) if isinstance(v, int) else ts(v)) for k, v in plain.items()) + " }")
+            return "Object.assign(" + base + ", " + ", ".join(parts) + ")" if parts else base
+        units = ", ".join(made(u) for u in r["units"])
         fire = ", ".join(
             "{ weapon: \"" + a["weapon"] + "\", missions: " + str(a["missions"])
             + (", roundsForEffect: " + str(a["roundsForEffect"]) if "roundsForEffect" in a else "")

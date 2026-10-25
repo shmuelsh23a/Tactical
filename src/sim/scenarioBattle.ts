@@ -99,6 +99,8 @@ export interface ScenarioBattleOptions {
   /**
    * The mission's deadline in place of the scenario's (decision 58), for a
    * measurement: when the attack fails on time, and the score's time share.
+   * The reinforcement's window (decision 122) stays the scenario's: it was
+   * drawn when the game was made.
    */
   timeLimit?: number;
   /**
@@ -237,7 +239,8 @@ const LIFTED_CLEAR_M = 300;
 export function dressQuality(g: Game, quality: Partial<Record<Side, ForceQuality>>): void {
   if (g.turn > 0) throw new Error("dressQuality: a game already under way; dress its forces before addUnit");
   for (const [side, cell] of Object.entries(quality) as [Side, ForceQuality][]) {
-    for (const u of g.units) {
+    // Its reinforcements too (decision 122), dressed before they arrive.
+    for (const u of [...g.units, ...g.reinforcements.flatMap((r) => r.units)]) {
       if (u.side !== side || !u.soldiers?.some((s) => s.morale)) continue;
       Object.assign(u, forceQuality(cell));
       for (const s of u.soldiers) delete s.morale;
@@ -260,7 +263,10 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   if (opts.suppressionByChance !== undefined) g.suppressionByChance = opts.suppressionByChance;
   if (opts.timeLimit !== undefined) (g as { timeLimit: number | undefined }).timeLimit = opts.timeLimit;
   if (opts.quality) dressQuality(g, opts.quality);
-  if (opts.fireSupport === false) for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
+  if (opts.fireSupport === false) {
+    for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
+    for (const r of g.reinforcements) for (const a of r.fire ?? []) a.missions = 0; // what a reinforcement brings too (decision 122)
+  }
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;

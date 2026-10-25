@@ -26,12 +26,13 @@ export type Viewpoint = Side | "umpire";
 /** The contacts each side held after a given action. */
 export type Contacts = Record<Side, Set<string>>;
 
-/** Which side each force belongs to, read out of the recording's own setup. */
+/** Which side each force belongs to, read out of the recording's own setup — its reinforcements' too (decision 122). */
 export function unitSides(recording: GameRecording): Map<string, Side> {
   const sides = new Map<string, Side>();
   for (const action of recording.actions) {
     if (action.kind === "addUnit") sides.set(action.unit.id, action.unit.side);
   }
+  for (const r of recording.reinforcements ?? []) for (const u of r.units) sides.set(u.id, u.side);
   return sides;
 }
 

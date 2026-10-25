@@ -1,3 +1,4 @@
+import { SCENARIOS } from "../app/scenario.js";
 import { describe, it, expect } from "vitest";
 import Anthropic from "@anthropic-ai/sdk";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
@@ -135,7 +136,10 @@ describe("the order from battalion", () => {
     for (const id of ["telAzekaAssault", "telAzekaAssault2"]) {
       const words = ORDERS[id]!.join(" ").toLowerCase();
       expect(words).toContain("turn 60");
-      expect(words).toContain("between turns 35 and 45"); // the enemy's reinforcement (decision 122)
+      // The enemy's reinforcement (decision 122), as the scenario itself has it: the order is written by hand, so it is held to the data.
+      const r = SCENARIOS.find((s) => s.id === id)!.build(1000).game.reinforcements[0]!;
+      expect(words).toContain(`between turns ${r.window[0]} and ${r.window[1]}`);
+      expect(words).toContain(`about ${r.fire![0]!.missions} more mortar missions`);
       // Jev leans to an option whose words the state repeats (docs/balance.md, thirty-fourth round).
       for (const option of ["reserve", "assault", "base of fire", "halt", "withdraw", "carry on", "bound", "hold short", "lift"]) expect(words).not.toContain(option);
     }

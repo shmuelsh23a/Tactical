@@ -259,7 +259,17 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
   if (r.timeLimit !== undefined && !(Number.isInteger(r.timeLimit) && (r.timeLimit as number) > 0)) throw malformed("timeLimit");
   if (r.delayUntil !== undefined && !(Number.isInteger(r.delayUntil) && (r.delayUntil as number) > 0)) throw malformed("delayUntil");
-  if (r.reinforcements !== undefined && !Array.isArray(r.reinforcements)) throw malformed("reinforcements");
+  if (r.reinforcements !== undefined) {
+    const ok = (x: unknown): boolean => {
+      const o = x as { side?: unknown; window?: unknown; units?: unknown };
+      return (
+        typeof o === "object" && o !== null && (o.side === "RED" || o.side === "BLUE") && Array.isArray(o.window) && o.window.length === 2 &&
+        Array.isArray(o.units) && o.units.length > 0 &&
+        (o.units as unknown[]).every((u) => typeof u === "object" && u !== null && typeof (u as { id?: unknown }).id === "string" && (u as { side?: unknown }).side === o.side)
+      );
+    };
+    if (!Array.isArray(r.reinforcements) || !r.reinforcements.every(ok)) throw malformed("reinforcements");
+  }
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }

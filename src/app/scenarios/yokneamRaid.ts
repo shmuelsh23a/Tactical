@@ -53,7 +53,7 @@ export function buildYokneamRaidScenario(seed = 2031): Scenario {
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "platoon", RED: "company" },
     // The defender's reinforcement (rules decision 122): written by the tool from the spec.
-    reinforcements: [{ side: "RED", window: [15, 25], units: [makeInfantry("RED-REINF-1", "RED", "squad", { x: 10, y: 368 }, 8, "תגבורת 1")] }],
+    reinforcements: [{ side: "RED", window: [15, 25], units: [Object.assign(makeInfantry("RED-REINF-1", "RED", "squad", { x: 10, y: 375 }, 7, "תגבורת 1"), forceQuality({ type: "irregular", experience: "experienced" }), { readiness: 1 }), Object.assign(makeInfantry("RED-REINF-2", "RED", "squad", { x: 12, y: 360 }, 7, "תגבורת 2"), forceQuality({ type: "irregular", experience: "experienced" }), { readiness: 1 })] }],
     terrain: buildYokneamRaidTerrain(),
   });
 

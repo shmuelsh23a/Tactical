@@ -175,6 +175,8 @@ export function unitNames(recording: GameRecording): Map<string, string> {
   for (const action of recording.actions) {
     if (action.kind === "addUnit") names.set(action.unit.id, action.unit.name);
   }
+  // A force that came during the battle (decision 122) is named as the others are.
+  for (const r of recording.reinforcements ?? []) for (const u of r.units) names.set(u.id, u.name);
   return names;
 }
 
@@ -1020,6 +1022,7 @@ export function recordingExtent(recording: GameRecording): { width: number; heig
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   };
+  for (const r of recording.reinforcements ?? []) for (const u of r.units) see(u.position);
   for (const action of recording.actions) {
     switch (action.kind) {
       case "addUnit":

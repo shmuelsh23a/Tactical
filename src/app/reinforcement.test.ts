@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Game, makeInfantry } from "../engine/index.js";
 import { DOCTRINAL_DRILL, DrillState, REINFORCEMENT_BEHIND_M, drillCombat, drillMovement, type DrillTask } from "./drill.js";
+import { actionVisibleTo, lensFor, unitSides } from "./debriefView.js";
+import { unitNames } from "./debriefText.js";
 
 /**
  * The defender's reinforcement in the drill (rules decision 122): on arrival
@@ -51,5 +53,33 @@ describe("a reinforcement joins the defence as a reserve (decision 122)", () => 
     g.getUnit("BLUE-1-1").position = { x: 500, y: 520 }; // on the post
     turn(g, task, state);
     expect(state.counterattacking.has("RED-R1")).toBe(true);
+  });
+});
+
+describe("a reinforcement in the debrief (decision 122)", () => {
+  it("is its own side's force, by name, though no setup action added it", () => {
+    const g = new Game({
+      seed: 3,
+      enforceC2: false,
+      reinforcements: [{ side: "RED", window: [2, 2], units: [makeInfantry("RED-R1", "RED", "squad", { x: 0, y: -300 }, 8, "תגבורת 1")] }],
+    });
+    g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 900 }, 8));
+    const nextTurn = (game: Game) => {
+      if (game.turn > 0) game.advanceToPhase("summary");
+      game.beginTurn();
+    };
+    const due = g.reinforcements[0]!.turn;
+    for (let t = 0; t < due; t++) nextTurn(g);
+    g.advanceToPhase("movement");
+    g.setStandingOrder("RED-R1", { gait: "normal", destination: { x: 0, y: -250 } });
+    const rec = g.toRecording();
+    const sides = unitSides(rec);
+    expect(sides.get("RED-R1")).toBe("RED");
+    expect(unitNames(rec).get("RED-R1")).toBe(g.getUnit("RED-R1").name);
+    const order = rec.actions.findIndex((a) => a.kind === "setStandingOrder");
+    const lens = lensFor("RED", order, [], sides);
+    expect(lens.isOwn("RED-R1")).toBe(true);
+    expect(actionVisibleTo(rec.actions[order]!, "RED", lens, sides)).toBe(true);
   });
 });

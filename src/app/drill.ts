@@ -1265,7 +1265,8 @@ export const REINFORCEMENT_BEHIND_M = 100;
  * the middle of its posts, away from where the attack came from; on the map.
  */
 function reinforcementPost(game: Game, task: DrillTask, state: DrillState, arrivals: ReadonlySet<string>): Point | undefined {
-  const own = game.units.filter((u) => u.side === task.side && (task.reserves?.has(u.id) ?? false) && !arrivals.has(u.id) && inPlay(u));
+  // The side's own reserve still waiting: not one already gone in after a lost post.
+  const own = game.units.filter((u) => u.side === task.side && (task.reserves?.has(u.id) ?? false) && !arrivals.has(u.id) && inPlay(u) && !state.counterattacking.has(u.id));
   if (own.length) return { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length };
   const posts = [...state.posts.values()];
   if (!posts.length) return undefined;
@@ -1339,11 +1340,17 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     for (const u of forces) {
       if (u.kind === "infantry" && !reserves.has(u.id) && !state.posts.has(u.id)) state.posts.set(u.id, { ...u.position });
     }
-    // A reinforcement just arrived: where it waits, chosen once (decision 122).
-    for (const u of forces) {
-      if (!arrivals.has(u.id) || state.reinforcementPosts.has(u.id)) continue;
-      const at = reinforcementPost(game, task, state, arrivals);
-      if (at) state.reinforcementPosts.set(u.id, at);
+    // A reinforcement just arrived: where it waits, chosen once (decision 122) — its forces
+    // side by side, 15 m apart across the line of the attack, not on one spot.
+    const come = forces.filter((u) => arrivals.has(u.id) && !state.reinforcementPosts.has(u.id));
+    const at = come.length ? reinforcementPost(game, task, state, arrivals) : undefined;
+    if (at) {
+      const d = distance(at, task.objective) || 1;
+      const px = -(task.objective.y - at.y) / d, py = (task.objective.x - at.x) / d;
+      come.forEach((u, k) => {
+        const off = (k - (come.length - 1) / 2) * 15;
+        state.reinforcementPosts.set(u.id, { x: at.x + px * off, y: at.y + py * off });
+      });
     }
     commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
   }
@@ -1423,7 +1430,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     const retaking = task.attacking ? undefined : state.counterattacking.get(u.id);
     // An arrived reinforcement goes up to where it waits as a reserve, its fire held (decision 122).
-    const waitAt = task.attacking || retaking ? undefined : state.reinforcementPosts.get(u.id);
+    // Not once it has left for its alternate position (decision 121): that order stands.
+    const waitAt = task.attacking || retaking || state.displaced.has(u.id) ? undefined : state.reinforcementPosts.get(u.id);
     if (waitAt && distance(u.position, waitAt) > 10) {
       game.setStandingOrder(u.id, { gait: "normal", destination: { ...waitAt }, holdFire: true, engagementRange: triggerLine(u, drill, state.opened) });
       return;

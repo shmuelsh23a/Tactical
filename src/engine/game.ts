@@ -274,8 +274,14 @@ export interface ReinforcementOption {
   window: [number, number];
   /** Its forces, where they come onto the map. */
   units: Unit[];
-  /** Fire missions that come with it, added to its side's allotment on arrival. */
+  /** Fire missions that come with it, added to its side's allotment on arrival — a side on a rationed allotment only. */
   fire?: FireAllotment[];
+  /**
+   * The turn it arrives, when already drawn: a recording carries it, so a
+   * what-if re-fight under other dice keeps the arrival it is comparing
+   * against. Absent: drawn when the game is made.
+   */
+  turn?: number;
 }
 
 /** A reinforcement as the game holds it: its option, and the turn drawn for it. */
@@ -1438,9 +1444,15 @@ export class Game {
       if (!this.sides.includes(r.side)) throw new Error(`reinforcements[${i}]: cannot read side ${JSON.stringify(r.side)}`);
       if (!(Number.isInteger(lo) && Number.isInteger(hi) && lo! >= 1 && hi! >= lo!)) throw new Error(`reinforcements[${i}]: cannot read window ${JSON.stringify(r.window)}`);
       if (!Array.isArray(r.units) || r.units.length === 0) throw new Error(`reinforcements[${i}]: no forces`);
-      const turn = new Rng(unitSeed(opts.seed, `${REINFORCEMENT_STREAM}${i}`)).int(lo!, hi!);
-      return { side: r.side, window: [lo!, hi!], units: cloneForRecord(r.units), ...(r.fire?.length ? { fire: cloneForRecord(r.fire) } : {}), turn };
+      if (r.turn !== undefined && !(Number.isInteger(r.turn) && r.turn >= lo! && r.turn <= hi!)) throw new Error(`reinforcements[${i}]: cannot read turn ${JSON.stringify(r.turn)}`);
+      const turn = r.turn ?? new Rng(unitSeed(opts.seed, `${REINFORCEMENT_STREAM}${i}`)).int(lo!, hi!);
+      // Its men drawn now, as a force set up is drawn at addUnit, and recorded so: a re-roll keeps them.
+      const units = cloneForRecord(r.units);
+      if (this.morale) for (const u of units) generateMorale(u, opts.seed);
+      return { side: r.side, window: [lo!, hi!] as [number, number], units, ...(r.fire?.length ? { fire: cloneForRecord(r.fire) } : {}), turn };
     });
+    const pending = this.reinforcements.flatMap((r) => r.units.map((u) => u.id));
+    if (new Set(pending).size !== pending.length) throw new Error("reinforcements: two forces with one id");
     // A delay is the attack's deadline too (decision 109): one clock, never two.
     if (this.delayUntil !== undefined && this.timeLimit !== undefined) throw new Error("a delay mission's turn is the attack's deadline: give delayUntil or timeLimit, not both");
     // Without the knowledge model nothing is reported, so nothing could be off.
@@ -1549,8 +1561,7 @@ export class Game {
   private recordedFireSupport(): Partial<Record<Side, FireAllotment[]>> {
     const out: Partial<Record<Side, FireAllotment[]>> = {};
     for (const [side, list] of Object.entries(this.fireSupport) as [Side, FireAllotment[] | undefined][]) {
-      const kept = (list ?? []).filter((a) => !this.arrivedAllotments.has(a));
-      if (kept.length || !this.arrivedAllotments.size) out[side] = kept;
+      out[side] = (list ?? []).filter((a) => !this.arrivedAllotments.has(a));
     }
     return out;
   }
@@ -1615,9 +1626,8 @@ export class Game {
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       ...(this.delayUntil !== undefined ? { delayUntil: this.delayUntil } : {}),
-      ...(this.reinforcements.length
-        ? { reinforcements: this.reinforcements.map(({ turn: _t, ...r }) => cloneForRecord(r)) }
-        : {}),
+      // With their drawn turns and their men as drawn: a replay, or a re-fight under other dice, brings the same.
+      ...(this.reinforcements.length ? { reinforcements: this.reinforcements.map((r) => cloneForRecord(r)) } : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.mapTerrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.mapTerrain) }),
@@ -1676,6 +1686,9 @@ export class Game {
   }
 
   addUnit(unit: Unit): Unit {
+    if (this.reinforcements.some((r, i) => !this.arrivedReinforcements.has(i) && r.units.some((u) => u.id === unit.id))) {
+      throw new Error(`${unit.id} is a reinforcement's: it comes onto the map by itself`);
+    }
     this.placeUnit(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
@@ -1696,9 +1709,11 @@ export class Game {
         if (this.units.some((x) => x.id === u.id)) throw new Error(`reinforcements[${i}]: ${u.id} is already on the map`);
         this.placeUnit(cloneForRecord(u));
       }
-      for (const a of r.fire ?? []) {
+      // Missions add to a rationed allotment only: a side with none fires unrationed already, and one would ration it.
+      const list = this.fireSupport[r.side];
+      for (const a of list ? (r.fire ?? []) : []) {
         const copy = cloneForRecord(a);
-        (this.fireSupport[r.side] ??= []).push(copy);
+        list!.push(copy);
         this.arrivedAllotments.add(copy);
       }
       out.push({ side: r.side, unitIds: r.units.map((u) => u.id) });

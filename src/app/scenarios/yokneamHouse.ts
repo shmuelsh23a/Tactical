@@ -56,7 +56,7 @@ export function buildYokneamHouseScenario(seed = 2032): Scenario {
     attackers: ["BLUE"],
     commandEchelon: { BLUE: "platoon", RED: "platoon" },
     // The defender's reinforcement (rules decision 122): written by the tool from the spec.
-    reinforcements: [{ side: "RED", window: [55, 65], units: [makeInfantry("RED-REINF-1", "RED", "team", { x: 10, y: 463 }, 4, "תגבורת 1")] }],
+    reinforcements: [{ side: "RED", window: [55, 65], units: [Object.assign(makeInfantry("RED-REINF-1", "RED", "team", { x: 10, y: 463 }, 4, "תגבורת 1"), forceQuality({ type: "regular", experience: "experienced" }))] }],
     terrain: buildYokneamHouseTerrain(),
   });
 

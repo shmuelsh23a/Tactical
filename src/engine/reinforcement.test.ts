@@ -86,6 +86,39 @@ describe("a reinforcement (rules decision 122)", () => {
     expect(reports).toEqual([{ side: "RED", unitIds: ["RED-R1"] }]);
   });
 
+  it("keeps its turn and its men in a re-fight under other dice", () => {
+    const g = battle();
+    const rec = g.toRecording();
+    const again = new Game({ ...options(77), reinforcements: rec.reinforcements });
+    expect(again.reinforcements[0]!.turn).toBe(g.reinforcements[0]!.turn);
+    expect(again.reinforcements[0]!.units).toEqual(g.reinforcements[0]!.units);
+  });
+
+  it("leaves the game's own dice as they were until it comes", () => {
+    const g = battle(3, [20, 20]);
+    const plain = new Game({ ...options(3), reinforcements: undefined });
+    plain.addUnit(makeCommandGroup("RED-COY", "RED", "company", { x: 0, y: -200 }));
+    plain.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 0 }, 8));
+    plain.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 900 }, 8));
+    for (let t = 0; t < 5; t++) {
+      expect(nextTurn(g).initiativeOrder).toEqual(nextTurn(plain).initiativeOrder);
+    }
+    expect(g.rng.next()).toBe(plain.rng.next());
+  });
+
+  it("refuses two forces with one id, and a setup force taking a reinforcement's id", () => {
+    const twice = options().reinforcements![0]!;
+    expect(() => new Game({ ...options(), reinforcements: [twice, twice] })).toThrow(/one id/);
+    expect(() => battle().addUnit(makeInfantry("RED-R1", "RED", "squad", { x: 0, y: 0 }, 8))).toThrow(/reinforcement/);
+  });
+
+  it("brings no missions to a side that fires unrationed", () => {
+    const g = new Game({ ...options(), fireSupport: undefined });
+    g.addUnit(makeCommandGroup("RED-COY", "RED", "company", { x: 0, y: -200 }));
+    for (let t = 0; t <= g.reinforcements[0]!.turn; t++) nextTurn(g);
+    expect(g.fireSupport.RED).toBeUndefined();
+  });
+
   it("refuses a window it cannot read", () => {
     expect(() => new Game({ ...options(), reinforcements: [{ ...options().reinforcements![0]!, window: [8, 4] }] })).toThrow(/window/);
   });
