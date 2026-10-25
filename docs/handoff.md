@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decisions 120–121 are built and measured — the computer defender prepares alternate positions and goes to one only when its post is untenable (shelled this turn or last, pinned, an enemy within 50 m); every drill is back in its band (doctrinal 71.5% / 49.5%, plain 54% / 26.5%). Next: why the mass assault (A) is the doctrinal drill's best plan by about ten points at 3:1 (a free probe), then the plans a player cannot yet set inside a house.**
+**Next, in one line: decision 122 makes time cost the attacker — 60-turn deadlines (where shorter) and a defender's reinforcement in every scenario (a quarter of its men at ⅔ of the deadline ±5, with 4 missions; the brief gives the window). Re-measured: doctrinal 69% / 45.5% (1 under 70–75 at 3:1), plain 49% / 19.5% (0.5 under 20–35 at 2:1) — put to the author, with the delay mission's window (5–15 against its turn 15).**
 
 **Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
 pushed). Since the late handoff (`e41c93d`), in the README's rules
@@ -65,10 +65,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `de1d11d` (2026-10-24)
+## Green as of `96dc8dc` (2026-10-25)
 
 ```
-npm run check       lint + typecheck clean, 1,213 tests, 83 files
+npm run check       lint + typecheck clean, 1,227 tests, 85 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -661,6 +661,14 @@ Measurements that cost real time and are already recorded:
   change.
 
 ## What I would pick up next
+
+**Open (2026-10-25)**: the medians after decision 122 are a point or less
+outside two bands (his call: accept as noise, or tune); the delay
+mission's reinforcement window is 5–15 against its turn 15 (it can come on
+the last turn); the debrief does not yet narrate a reinforcement's arrival
+(the live log does); the engine-only build (`tsconfig.engine.json`) fails
+on `structuredClone` in `interior/coupling.ts`, from before decision 120 —
+`npm run check` does not run it.
 
 **Done 2026-10-24: decisions 120–121 measured** (balance.md): over both
 bands after 120, back in after 121's untenable trigger. The recipe, kept:

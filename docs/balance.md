@@ -6488,3 +6488,33 @@ gives no figure for how long a company attack takes**, and a missed NLT
 leads to a decision (bypass, deliberate attack, defend; FM 3-90, para
 4-47), not an automatic loss. The defender improves with time, but over
 hours (ATP 3-21.8 (2024), paras 5-222, 5-246).
+
+## The re-measure after decision 122, 2026-10-25
+
+Time costs the attacker: 60-turn deadlines (where shorter) and the
+defender's reinforcement (a quarter of its men at ⅔ of the deadline ±5,
+with 4 missions). `jev-sim --rule <variant> --drill <reference|plain>
+--seed 1000 --n 100`, A at 3:1 200.
+
+| Plan | Doctrinal (after 121 → **after 122**) | Plain (after 119's ruling → **after 122**) |
+|---|---|---|
+| A calibrated | 86 / 55 → **80 / 50** | 68 / 35 → **65 / 28** |
+| A + flank | 71 / 63 → **68 / 56** | 54 / 27 → **47 / 20** |
+| B deliberate | 79 / 51 → **72 / 48** | 57 / 26 → **53 / 24** |
+| E fire-heavy | 68 / 48 → **61 / 43** | 68 / 40 → **47 / 28** |
+| D flank | 64 / 46 → **60 / 39** | 54 / 28 → **47 / 19** |
+| A + move up | 77 / 45 → **70 / 42** | 51 / 17 → **50 / 16** |
+| B + move up | 63 / 36 → **59 / 33** | 53 / 17 → **52 / 15** |
+| C hasty | 72 / 55 → **72 / 50** | 49 / 17 → **48 / 16** |
+| **Median** | 71.5 / 49.5 → **69 / 45.5** | 54 / 26.5 → **49 / 19.5** |
+| Band | 70–75 / 45–50: **1 under / in** | 40–55 / 20–35: **in / 0.5 under** |
+
+- **Every median is in its band or within a point of it** — inside the
+  noise of 100 battles a plan (±5).
+- **The mass assault still leads**, by about 10 points at 3:1 on both
+  drills: the patient plans no longer lose to the clock but now meet the
+  reinforcement.
+- `scenario-sim` (100 battles, the house 200): `telAzekaCompany` 49%,
+  `yokneamUrban` 78%, `yokneamRaid` 3%, `yokneamHouse` 88% — unchanged:
+  these battles end by turn 12–14 (the raid at its 30), before or as a
+  reinforcement comes.
