@@ -43,6 +43,11 @@ const phaseHe: Record<string, string> = {
 };
 
 /** A weapon's Hebrew name, as the log and the debrief word it. */
+/** A reinforcement come onto the map (decision 122), told to its own side: who came, by name. */
+export function reinforcementHe(names: readonly string[]): string {
+  return `הגיעה תגבורת: ${names.join(", ")}`;
+}
+
 export function weaponName(key: string): string {
   return term(weaponHe, key);
 }

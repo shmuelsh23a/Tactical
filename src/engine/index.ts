@@ -344,6 +344,8 @@ export {
   type GameOptions,
   type ReceivedFire,
   type FireAllotment,
+  type Reinforcement,
+  type ReinforcementOption,
   type FireMethod,
   type FireMission,
   type RegisteredTarget,

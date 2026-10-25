@@ -189,7 +189,7 @@ COMBAT_EXPERIENCE = {"inexperienced", "experienced", "veryExperienced"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
     "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "delayUntil", "about", "window", "forces", "charges",
-    "commandEchelon", "fireSupport", "attackers", "readiness",
+    "commandEchelon", "fireSupport", "attackers", "readiness", "reinforcement",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect", "tubes"}
 # The indirect-fire weapons a side can be allotted. Whether its echelon may
@@ -219,14 +219,78 @@ CHARGE_TYPES = {"antiPersonnel", "antiTank"}
 VEHICLE_CLASSES = {"mbt", "heavyApc", "lightApc", "soft"}
 
 
+# The defender's reinforcement (rules decision 122, the author, 2026-10-25):
+# about a quarter of its men, rounded to a fire team or to squads; arriving
+# between two-thirds of the deadline less and more REINFORCEMENT_SPREAD
+# turns; at the map edge behind the defenders, on the line from the
+# attackers' start through them; with REINFORCEMENT_MISSIONS more missions
+# of the defender's lightest tube, if it has one. ⚠️ Ours: the 4 missions,
+# the 10 m inset and the 15 m between its forces.
+REINFORCEMENT_SPREAD = 5
+REINFORCEMENT_MISSIONS = 4
+TUBE_ORDER = ["lightMortar", "mortar", "heavyMortar", "artillery"]
+
+
+def reinforcement(spec: dict[str, Any]) -> dict[str, Any] | None:
+    """The defender's reinforcement, from the spec (decision 122); None where there is none."""
+    if spec.get("reinforcement") is False or not spec.get("attackers"):
+        return None
+    attackers = set(spec["attackers"])
+    defender = next((side for side in sorted(SIDES) if side not in attackers), None)
+    deadline = spec.get("timeLimit") or spec.get("delayUntil")
+    if not defender or not deadline:
+        return None
+    infantry = lambda side: [f for f in spec["forces"] if f["side"] == side and f.get("kind") == "infantry"]
+    men = sum(int(f.get("soldiers", 0)) for f in infantry(defender))
+    if men == 0:
+        return None
+    quarter = men / 4
+    sizes = [4] if quarter < 6 else [8] * max(1, round(quarter / 8))
+    centre = round(2 * deadline / 3)
+    window = [max(1, centre - REINFORCEMENT_SPREAD), centre + REINFORCEMENT_SPREAD]
+    # The line from the attackers' start through the defenders, to the map edge behind them.
+    mean = lambda fs: (sum(f["at"][0] for f in fs) / len(fs), sum(f["at"][1] for f in fs) / len(fs))
+    ax, ay = mean(infantry(next(iter(sorted(attackers)))) or spec["forces"])
+    dx_, dy_ = mean(infantry(defender))
+    w, h = float(spec["window"]["width"]), float(spec["window"]["height"])
+    ux, uy = dx_ - ax, dy_ - ay
+    norm = (ux * ux + uy * uy) ** 0.5 or 1.0
+    ux, uy = ux / norm, uy / norm
+    inset = 10.0
+    reach = []
+    if ux > 1e-9: reach.append((w - inset - dx_) / ux)
+    if ux < -1e-9: reach.append((inset - dx_) / ux)
+    if uy > 1e-9: reach.append((h - inset - dy_) / uy)
+    if uy < -1e-9: reach.append((inset - dy_) / uy)
+    t = max(0.0, min(reach)) if reach else 0.0
+    ex, ey = dx_ + ux * t, dy_ + uy * t
+    px, py = -uy, ux
+    units = []
+    for k, n in enumerate(sizes):
+        off = (k - (len(sizes) - 1) / 2) * 15.0
+        x = min(max(ex + px * off, inset), w - inset)
+        y = min(max(ey + py * off, inset), h - inset)
+        units.append({"id": f"{defender}-REINF-{k + 1}", "soldiers": n, "at": [round(x), round(y)], "name": f"תגבורת {k + 1}"})
+    fire = []
+    allotted = {a["weapon"]: a for a in spec.get("fireSupport", {}).get(defender, [])}
+    lightest = next((w_ for w_ in TUBE_ORDER if w_ in allotted), None)
+    if lightest:
+        a = allotted[lightest]
+        fire.append({"weapon": lightest, "missions": REINFORCEMENT_MISSIONS, **({"roundsForEffect": a["roundsForEffect"]} if "roundsForEffect" in a else {}), **({"tubes": a["tubes"]} if "tubes" in a else {})})
+    return {"side": defender, "window": window, "units": units, "fire": fire}
+
+
 def brief_with_deadline(spec: dict[str, Any]) -> str:
-    """The brief, and the mission's deadline when it has one (decision 58)."""
+    """The brief, the mission's deadline when it has one (decision 58), and when the enemy may be reinforced (decision 122)."""
     brief = spec["brief"].rstrip()
     if "delayUntil" in spec:
         brief += " על המגן להשהות את התקיפה עד תור " + str(spec["delayUntil"]) + "."
-    if "timeLimit" not in spec:
-        return brief
-    return brief + " יש להשלים את המשימה עד תור " + str(spec["timeLimit"]) + "."
+    if "timeLimit" in spec:
+        brief += " יש להשלים את המשימה עד תור " + str(spec["timeLimit"]) + "."
+    r = reinforcement(spec)
+    if r:
+        brief += " תגבורת של המגן עשויה להגיע בין תור " + str(r["window"][0]) + " לתור " + str(r["window"][1]) + "."
+    return brief
 
 
 class SpecError(Exception):
@@ -319,6 +383,10 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "locationError", "spec")
     require_bool(spec, "commandSuccession", "spec")
     require_int(spec, "timeLimit", "spec", 1, 1000)
+    require(
+        spec.get("reinforcement", False) is False,
+        "spec: reinforcement is written by the tool (decision 122); the only value a spec may give is false, for none",
+    )
     require(
         "timeLimit" not in spec or bool(spec.get("attackers")),
         "spec: timeLimit needs attackers (the deadline is the attack's)",
@@ -607,6 +675,24 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
     if spec.get("commandEchelon"):
         pairs = ", ".join(f'{side}: "{e}"' for side, e in sorted(spec["commandEchelon"].items()))
         lines.append("    commandEchelon: { " + pairs + " },")
+    r = reinforcement(spec)
+    if r:
+        units = ", ".join(
+            "makeInfantry(" + ts(u["id"]) + ", " + ts(r["side"]) + ", " + ts("squad" if u["soldiers"] >= 8 else "team")
+            + ", { x: " + num(u["at"][0]) + ", y: " + num(u["at"][1]) + " }, " + str(u["soldiers"]) + ", " + ts(u["name"]) + ")"
+            for u in r["units"]
+        )
+        fire = ", ".join(
+            "{ weapon: \"" + a["weapon"] + "\", missions: " + str(a["missions"])
+            + (", roundsForEffect: " + str(a["roundsForEffect"]) if "roundsForEffect" in a else "")
+            + (", tubes: " + str(a["tubes"]) if "tubes" in a else "") + " }"
+            for a in r["fire"]
+        )
+        lines.append("    // The defender's reinforcement (rules decision 122): written by the tool from the spec.")
+        lines.append(
+            "    reinforcements: [{ side: " + ts(r["side"]) + ", window: [" + str(r["window"][0]) + ", " + str(r["window"][1]) + "], units: ["
+            + units + "]" + (", fire: [" + fire + "]" if fire else "") + " }],"
+        )
     if spec.get("fireSupport"):
         lines.append("    fireSupport: {")
         for side, allotments in sorted(spec["fireSupport"].items()):

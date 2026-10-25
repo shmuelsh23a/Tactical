@@ -110,8 +110,10 @@ describe("the company's questions", () => {
 
   it("state the mission's deadline (rules decision 58)", () => {
     const q = nextQuestion([]);
-    expect(q.view).toMatch(/Deadline: take the objective by the end of turn 45 \(45 turns left/);
-    expect(q.view).toContain("יש להשלים את המשימה עד תור 45.");
+    expect(q.view).toMatch(/Deadline: take the objective by the end of turn 60 \(60 turns left/);
+    expect(q.view).toContain("יש להשלים את המשימה עד תור 60.");
+    // And when the enemy may be reinforced (decision 122), as the brief says it.
+    expect(q.view).toContain("תגבורת של המגן עשויה להגיע בין תור 35 לתור 45.");
   });
 
   it("name what each observation point sees", () => {

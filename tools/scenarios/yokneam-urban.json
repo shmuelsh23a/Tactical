@@ -6,7 +6,7 @@
     "BLUE"
   ],
   "seed": 2027,
-  "timeLimit": 45,
+  "timeLimit": 60,
   "trackIntel": true,
   "enforceC2": true,
   "morale": true,

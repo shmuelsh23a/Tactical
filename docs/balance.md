@@ -6235,6 +6235,10 @@ behaviour turns out to decide battles:
 | an alternate position's ring | 50–100 m | `computerSide.ts`, `ALTERNATE_POSITION_M` | how far from its post the computer defender prepares a force's alternate position, flank or rear (decision 120) |
 | the ground it must still cover | 200 m | `computerSide.ts`, `ALTERNATE_POSITION_M` | the point in front of the post the alternate position must see (decision 120) |
 | the search step | 5 m | `computerSide.ts`, `ALTERNATE_POSITION_M` | the ring spacing and arc between points tried for an alternate position (decision 120) |
+| deadlines | 60 turns where shorter | the specs, `timeLimit` | decision 122 (the house 90, the raid 30 kept) |
+| a reinforcement's missions | 4 | `make-scenario.py`, `REINFORCEMENT_MISSIONS` | the defender's lightest tube's missions that come with it (decision 122) |
+| a reinforcement's window | ⅔ of the deadline ±5 | `make-scenario.py`, `REINFORCEMENT_SPREAD` | the author's; the ±5 drawn from the seed (decision 122) |
+| where a reinforcement waits | 100 m | `drill.ts`, `REINFORCEMENT_BEHIND_M` | behind the posts, when the side has no reserve of its own to wait with (decision 122) |
 
 Gone with I7: `grenadeUpstairsFactor` and `grenadeUpstairsSelfHitFactor`
 — a grenade is no longer thrown up the stairs.

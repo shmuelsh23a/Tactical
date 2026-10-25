@@ -3786,6 +3786,40 @@ on the stated reasoning, still awaiting the author's word.
     ⚠️ To watch: the trigger's 50 m is the same as the reserve's "lost
     within" 50 m, so a squad that displaces leaves a post with the enemy
     on it, which the reserve does not counterattack (decision 60).
+122. ✅ **Time costs the attacker: a longer deadline, and a defender who is
+    reinforced** (the author, 2026-10-25, on the probe of why the mass
+    assault led: patient plans lost to the 45-turn clock, not the fight;
+    every option the recommended one unless said). Doctrine: "the more
+    time a commander takes to prepare for an operation, the more
+    opportunity the enemy has to prepare" (ADP 3-90 (2019), para 1-39); a
+    deadline is stated in the order (FM 5-0), but doctrine gives no figure
+    for how long a company attack takes.
+    - **Deadlines of 60 turns where they were shorter** (decision 58's
+      figure, ours): the Tel Azeka battles, Yokneam Illit and urban. The
+      house keeps 90, the raid 30 (a raid is meant to be quick), the delay
+      mission its own turn. At 60 every battle is decided (90 measured
+      identical), so the clock no longer picks the plan.
+    - **A reinforcement for the defender, in every scenario** (the
+      author's: every scenario; at an approximate time; with more fire
+      missions). About a quarter of the defenders' men, rounded to a fire
+      team (4) or to squads (8); arriving at a turn drawn from the battle's
+      seed within ⅔ of the deadline ±5 (Tel Azeka 35–45); at the map edge
+      behind the defenders, on the line from the attackers' start through
+      them; with 4 more missions of the defender's lightest tube (⚠️ ours:
+      the 4). The attacker's brief states the window ("תגבורת של המגן
+      עשויה להגיע בין תור 35 לתור 45"; doctrine's enemy timeline, ATP
+      3-21.10 B-69), and so does the AI commander's order; the defender's
+      own side is told when it arrives, the attacker learns of it by seeing
+      it. Written by `make-scenario.py` from the spec (`"reinforcement":
+      false` for none).
+    - **On arrival it joins as a reserve** (the author's): it goes up to
+      where the side's reserve waits, or 100 m behind its posts (⚠️ ours),
+      its fire held (decision 105), and counterattacks a lost post — any
+      platoon's (decisions 60, 119).
+    - In the engine: `GameOptions.reinforcements`, its turn drawn from its
+      own stream so the game's dice are untouched; the recording carries
+      the option and a replay brings it in again — its missions counted
+      once.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

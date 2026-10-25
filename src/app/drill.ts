@@ -682,6 +682,8 @@ export class DrillState {
   readonly breaking = new Map<string, BreakingContact>();
   /** Forces that have broken contact and hold their next position (decision 107): each breaks once. */
   readonly brokeContact = new Set<string>();
+  /** Where each reinforcement that has arrived waits as a reserve (decision 122). */
+  readonly reinforcementPosts = new Map<string, Point>();
   /** Reserves that have reached their flank and go in from it (`counterattack.flank`). */
   readonly flanked = new Set<string>();
   /** The flank point each counterattacking reserve is going to, chosen once. */
@@ -735,6 +737,7 @@ export class DrillState {
       ...(this.opened.size ? { opened: [...this.opened] } : {}),
       ...(this.objectiveFound ? { objectiveFound: true } : {}),
       ...(this.flanked.size ? { flanked: [...this.flanked] } : {}),
+      ...(this.reinforcementPosts.size ? { reinforcementPosts: [...this.reinforcementPosts].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
       ...(this.flankVia.size ? { flankVia: [...this.flankVia].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
     };
   }
@@ -762,6 +765,7 @@ export class DrillState {
     (snap.opened ?? []).forEach((k) => s.opened.add(k));
     s.objectiveFound = snap.objectiveFound ?? false;
     (snap.flanked ?? []).forEach((id) => s.flanked.add(id));
+    (snap.reinforcementPosts ?? []).forEach(([k, p]) => s.reinforcementPosts.set(k, { ...p }));
     (snap.flankVia ?? []).forEach(([k, p]) => s.flankVia.set(k, { ...p }));
     return s;
   }
@@ -788,6 +792,8 @@ export interface DrillStateSnapshot {
   objectiveFound?: boolean;
   /** Reserves that have reached their flank, and where each is going. */
   flanked?: string[];
+  /** Where each arrived reinforcement waits (decision 122). */
+  reinforcementPosts?: [string, Point][];
   flankVia?: [string, Point][];
   watched: [string, number][];
   arrivedOn: [string, number][];
@@ -1240,6 +1246,35 @@ function enemyOn(post: Point, enemies: Unit[], within: number): Unit | undefined
   return best;
 }
 
+/** The ids of `side`'s reinforcements (decision 122), arrived or not. */
+function reinforcementIds(game: Game, side: Side): Set<string> {
+  return new Set(game.reinforcements.filter((r) => r.side === side).flatMap((r) => r.units.map((u) => u.id)));
+}
+
+/** A defender's reserves: its scenario's, and its reinforcements, which join as reserves (decision 122). */
+function reservesOf(game: Game, task: DrillTask): Set<string> {
+  return new Set([...(task.reserves ?? []), ...reinforcementIds(game, task.side)]);
+}
+
+/** How far behind its posts a reinforcement waits when the side has no reserve of its own to wait with (decision 122, ⚠️ ours). */
+export const REINFORCEMENT_BEHIND_M = 100;
+
+/**
+ * Where an arrived reinforcement waits (decision 122): with the side's own
+ * reserve if it has one in play, else {@link REINFORCEMENT_BEHIND_M} behind
+ * the middle of its posts, away from where the attack came from; on the map.
+ */
+function reinforcementPost(game: Game, task: DrillTask, state: DrillState, arrivals: ReadonlySet<string>): Point | undefined {
+  const own = game.units.filter((u) => u.side === task.side && (task.reserves?.has(u.id) ?? false) && !arrivals.has(u.id) && inPlay(u));
+  if (own.length) return { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length };
+  const posts = [...state.posts.values()];
+  if (!posts.length) return undefined;
+  const c = { x: posts.reduce((t, p) => t + p.x, 0) / posts.length, y: posts.reduce((t, p) => t + p.y, 0) / posts.length };
+  const back = awayFrom(c, task.objective, REINFORCEMENT_BEHIND_M);
+  const e = task.extent;
+  return e ? { x: Math.min(Math.max(back.x, 0), e.width), y: Math.min(Math.max(back.y, 0), e.height) } : back;
+}
+
 /**
  * Commit a defender's reserves (rules decision 60): each reserve not yet
  * committed goes for the nearest forward position of its own platoon that is
@@ -1249,8 +1284,9 @@ function enemyOn(post: Point, enemies: Unit[], within: number): Unit | undefined
  */
 function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState, forces: Unit[], enemies: Unit[]): void {
   const counter = drill.counterattack;
-  const reserves = task.reserves;
-  if (!counter || !reserves?.size) return;
+  const reserves = reservesOf(game, task);
+  const arrivals = reinforcementIds(game, task.side);
+  if (!counter || !reserves.size) return;
   const lost = [...state.posts].filter(([id, post]) => {
     // A squad that went to its alternate position left its post on purpose.
     if (state.displaced.has(id)) return false;
@@ -1264,8 +1300,9 @@ function commitReserves(game: Game, task: DrillTask, drill: SquadDrill, state: D
   if (lost.length === 0) return;
   for (const r of forces) {
     if (!reserves.has(r.id) || !inPlay(r) || state.counterattacking.has(r.id)) continue;
+    // A reinforcement belongs to no platoon: it answers any lost post (decision 122).
     const mine = lost
-      .filter(([id]) => platoonKey(id) === platoonKey(r.id))
+      .filter(([id]) => arrivals.has(r.id) || platoonKey(id) === platoonKey(r.id))
       .sort(([, a], [, b]) => distance(r.position, a) - distance(r.position, b));
     if (mine[0]) state.counterattacking.set(r.id, { ...mine[0][1] });
   }
@@ -1296,9 +1333,17 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   const company = task.attacking ? task.company : undefined;
   const scouts = company?.scouts ?? new Map<string, Point | null>();
   const waiting = company?.hold ?? false;
+  const reserves = task.attacking ? new Set<string>() : reservesOf(game, task);
+  const arrivals = task.attacking ? new Set<string>() : reinforcementIds(game, side);
   if (!task.attacking) {
     for (const u of forces) {
-      if (u.kind === "infantry" && !task.reserves?.has(u.id) && !state.posts.has(u.id)) state.posts.set(u.id, { ...u.position });
+      if (u.kind === "infantry" && !reserves.has(u.id) && !state.posts.has(u.id)) state.posts.set(u.id, { ...u.position });
+    }
+    // A reinforcement just arrived: where it waits, chosen once (decision 122).
+    for (const u of forces) {
+      if (!arrivals.has(u.id) || state.reinforcementPosts.has(u.id)) continue;
+      const at = reinforcementPost(game, task, state, arrivals);
+      if (at) state.reinforcementPosts.set(u.id, at);
     }
     commitReserves(game, task, drill, state, forces, freshEnemies(game, side, enemies));
   }
@@ -1377,6 +1422,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       return;
     }
     const retaking = task.attacking ? undefined : state.counterattacking.get(u.id);
+    // An arrived reinforcement goes up to where it waits as a reserve, its fire held (decision 122).
+    const waitAt = task.attacking || retaking ? undefined : state.reinforcementPosts.get(u.id);
+    if (waitAt && distance(u.position, waitAt) > 10) {
+      game.setStandingOrder(u.id, { gait: "normal", destination: { ...waitAt }, holdFire: true, engagementRange: triggerLine(u, drill, state.opened) });
+      return;
+    }
     if (retaking && drill.counterattack) {
       // The counterattack (decision 60): at the enemy on the lost position,
       // then onto the position itself; there it holds by the drill below.
@@ -1796,7 +1847,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // ("reserves must be prepared to react to this targeting", ATP 3-21.8 (2024), para 5-67; drill audit, D5).
     const attacked = () =>
       game.fireReceived(u.id, game.turn - 1).length > 0 || enemies.some((e) => distance(u.position, e.position) <= drill.assault.range);
-    if (!task.attacking && drill.counterattack?.holdFire && task.reserves?.has(u.id) && !retaking && !attacked()) continue;
+    if (!task.attacking && drill.counterattack?.holdFire && reservesOf(game, task).has(u.id) && !retaking && !attacked()) continue;
     const foe = retaking && enemyOn(retaking, freshEnemies(game, side, enemies), drill.counterattack!.lostWithin);
     // Break Contact (decision 107): smoke where the side can (step 5), at most BREAK_CONTACT_SCREENS a break.
     // ⚠️ Ours: fire comes after movement, so a screen laid as the bound ends covers the changeover and the next bound.

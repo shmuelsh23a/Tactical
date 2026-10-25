@@ -134,7 +134,8 @@ describe("the order from battalion", () => {
   it("is written for both assault scenarios, and names none of the options", () => {
     for (const id of ["telAzekaAssault", "telAzekaAssault2"]) {
       const words = ORDERS[id]!.join(" ").toLowerCase();
-      expect(words).toContain("turn 45");
+      expect(words).toContain("turn 60");
+      expect(words).toContain("between turns 35 and 45"); // the enemy's reinforcement (decision 122)
       // Jev leans to an option whose words the state repeats (docs/balance.md, thirty-fourth round).
       for (const option of ["reserve", "assault", "base of fire", "halt", "withdraw", "carry on", "bound", "hold short", "lift"]) expect(words).not.toContain(option);
     }

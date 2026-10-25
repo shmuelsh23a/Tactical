@@ -28,6 +28,7 @@ import {
   type Phase,
   type RegisteredTarget,
   type FireAllotment,
+  type ReinforcementOption,
   type FireMethod,
   type FireMission,
   type SmokeOrder,
@@ -258,6 +259,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.suppressionByChance !== undefined && typeof r.suppressionByChance !== "boolean") throw malformed("suppressionByChance");
   if (r.timeLimit !== undefined && !(Number.isInteger(r.timeLimit) && (r.timeLimit as number) > 0)) throw malformed("timeLimit");
   if (r.delayUntil !== undefined && !(Number.isInteger(r.delayUntil) && (r.delayUntil as number) > 0)) throw malformed("delayUntil");
+  if (r.reinforcements !== undefined && !Array.isArray(r.reinforcements)) throw malformed("reinforcements");
   if (r.variants !== undefined && (typeof r.variants !== "object" || r.variants === null || Array.isArray(r.variants))) {
     throw malformed("variants");
   }
@@ -499,6 +501,8 @@ export interface GameRecording {
   timeLimit?: number;
   /** A delay mission's turn (rules decision 109). */
   delayUntil?: number;
+  /** Forces that join a side during the battle, as given (rules decision 122): the replay draws their turns again. Absent: none. */
+  reinforcements?: ReinforcementOption[];
   /**
    * The ground the battle was fought on (rules decision 15). Optional, and
    * read as **flat and empty** when absent: a recording made before the map
@@ -703,6 +707,7 @@ export function replayWithOutcomes(
     suppressionByChance: recording.suppressionByChance ?? false,
     ...(recording.timeLimit !== undefined ? { timeLimit: recording.timeLimit } : {}),
     ...(recording.delayUntil !== undefined ? { delayUntil: recording.delayUntil } : {}),
+    ...(recording.reinforcements ? { reinforcements: cloneForRecord(recording.reinforcements) } : {}),
     ...(recording.terrain ? { terrain: cloneForRecord(recording.terrain) } : {}),
   });
 

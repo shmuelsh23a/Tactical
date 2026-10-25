@@ -70,6 +70,7 @@ import {
   recordingDriftNote,
   recordingLoadFailed,
   sectorWorthHe,
+  reinforcementHe,
   weaponName,
 } from "./debriefText.js";
 import type { Scenario, ScenarioListing } from "./scenario.js";
@@ -661,7 +662,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       force();
       return;
     }
-    const { initiativeOrder } = game.beginTurn();
+    const { initiativeOrder, arrived } = game.beginTurn();
+    logArrivals(arrived);
     setActivations(buildActivations(initiativeOrder));
     setActIndex(0);
     setHandoffTo(null);
@@ -700,6 +702,17 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
    * both sides of the table; the line is written for the laying side alone, so
    * it says what the debrief has always been allowed to say.
    */
+  /**
+   * A reinforcement come onto the map (decision 122): its own side is told,
+   * by name; the other side learns of it by seeing it, as of any force.
+   */
+  function logArrivals(arrived: readonly { side: Side; unitIds: string[] }[] | undefined) {
+    for (const a of arrived ?? []) {
+      const names = a.unitIds.map((id) => game.units.find((u) => u.id === id)?.name ?? id);
+      pushLog(reinforcementHe(names), "info", onlyFor(a.side));
+    }
+  }
+
   function logChargeWork(reports: ChargeWorkReport[]) {
     for (const report of reports) {
       const unit = game.units.find((u) => u.id === report.unitId);
@@ -1482,6 +1495,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     }
     // End of turn: run upkeep + begin the next turn.
     const closed = game.advanceToPhase("initiative");
+    logArrivals(closed.arrived);
     logChargeWork(closed.chargeWork);
     logInterior(closed.interior);
     logMorale(closed.morale);

@@ -168,6 +168,8 @@ function commandsStill(u: Unit): boolean {
 
 /** The location error's stream, named as no force could be (rules decision 51). */
 const LOCATION_ERROR_STREAM = "#location-error";
+/** Where each reinforcement's arrival turn is drawn from (decision 122), the index appended. */
+const REINFORCEMENT_STREAM = "#reinforcement-";
 
 /** The seven phases of a turn, in order (סדר התור). */
 export const PHASES = [
@@ -258,6 +260,27 @@ export interface FireAllotment {
    * the 81 mm at decision 36's three for every recording made before it.
    */
   tubes?: number;
+}
+
+/**
+ * A force that joins a side during the battle (rules decision 122, the
+ * author, 2026-10-25): the enemy grows stronger the longer an attack takes —
+ * "the more time a commander takes to prepare for an operation, the more
+ * opportunity the enemy has to prepare" (ADP 3-90 (2019), para 1-39).
+ */
+export interface ReinforcementOption {
+  side: Side;
+  /** The turns it may arrive in, both inclusive: its turn is drawn once, from its own stream, when the game is made. */
+  window: [number, number];
+  /** Its forces, where they come onto the map. */
+  units: Unit[];
+  /** Fire missions that come with it, added to its side's allotment on arrival. */
+  fire?: FireAllotment[];
+}
+
+/** A reinforcement as the game holds it: its option, and the turn drawn for it. */
+export interface Reinforcement extends ReinforcementOption {
+  turn: number;
 }
 
 /** A fire mission called in (rules decision 34): adjusting, then fired for effect. */
@@ -808,6 +831,8 @@ export interface GameOptions {
    * Absent: the defence holds its ground.
    */
   delayUntil?: number;
+  /** Forces that join a side during the battle (rules decision 122). Absent: none, as every battle before it. */
+  reinforcements?: ReinforcementOption[];
 }
 
 /** One burst, shell or blow a force received (see `Game.fireReceived`). */
@@ -930,6 +955,11 @@ export class Game {
   readonly timeLimit: number | undefined;
   /** A delay mission's turn (decision 109): the defenders not beaten by its end have achieved their mission. */
   readonly delayUntil: number | undefined;
+  /** Forces that join a side during the battle, each with its drawn turn (rules decision 122). The umpire's: a side learns of one by seeing it. */
+  readonly reinforcements: readonly Reinforcement[];
+  /** Which have arrived, by index; and the allotments they brought, kept out of a recording's own. */
+  private readonly arrivedReinforcements = new Set<number>();
+  private readonly arrivedAllotments = new Set<FireAllotment>();
   /** Smoke screens fired from the tubes, a side and weapon each: missions spent (rules decision 56). */
   private readonly smokeMissions: { side: Side; weapon: string }[] = [];
   /** Each side's command group in command at the start of the turn (null: none left), rules decision 55. */
@@ -1402,6 +1432,15 @@ export class Game {
     if (this.delayUntil !== undefined && !(Number.isInteger(this.delayUntil) && this.delayUntil > 0)) {
       throw new Error(`delayUntil: cannot read ${JSON.stringify(opts.delayUntil)}`);
     }
+    // Reinforcements (decision 122): each one's turn drawn from its own stream, so the game's dice are untouched.
+    this.reinforcements = (opts.reinforcements ?? []).map((r, i) => {
+      const [lo, hi] = r.window ?? [];
+      if (!this.sides.includes(r.side)) throw new Error(`reinforcements[${i}]: cannot read side ${JSON.stringify(r.side)}`);
+      if (!(Number.isInteger(lo) && Number.isInteger(hi) && lo! >= 1 && hi! >= lo!)) throw new Error(`reinforcements[${i}]: cannot read window ${JSON.stringify(r.window)}`);
+      if (!Array.isArray(r.units) || r.units.length === 0) throw new Error(`reinforcements[${i}]: no forces`);
+      const turn = new Rng(unitSeed(opts.seed, `${REINFORCEMENT_STREAM}${i}`)).int(lo!, hi!);
+      return { side: r.side, window: [lo!, hi!], units: cloneForRecord(r.units), ...(r.fire?.length ? { fire: cloneForRecord(r.fire) } : {}), turn };
+    });
     // A delay is the attack's deadline too (decision 109): one clock, never two.
     if (this.delayUntil !== undefined && this.timeLimit !== undefined) throw new Error("a delay mission's turn is the attack's deadline: give delayUntil or timeLimit, not both");
     // Without the knowledge model nothing is reported, so nothing could be off.
@@ -1506,6 +1545,16 @@ export class Game {
    * Snapshot this game as a replayable recording — seed plus the action log.
    * Feed it to {@link replayGame} to reconstruct the game exactly.
    */
+  /** The allotments as given, without what reinforcements brought (decision 122): a replay brings that again. */
+  private recordedFireSupport(): Partial<Record<Side, FireAllotment[]>> {
+    const out: Partial<Record<Side, FireAllotment[]>> = {};
+    for (const [side, list] of Object.entries(this.fireSupport) as [Side, FireAllotment[] | undefined][]) {
+      const kept = (list ?? []).filter((a) => !this.arrivedAllotments.has(a));
+      if (kept.length || !this.arrivedAllotments.size) out[side] = kept;
+    }
+    return out;
+  }
+
   toRecording(): GameRecording {
     return {
       version: 1,
@@ -1516,7 +1565,7 @@ export class Game {
       ...(this.morale ? { morale: true } : {}),
       ...(Object.keys(this.variants).length ? { variants: cloneForRecord(this.variants) } : {}),
       ...(this.presetTargets ? { registeredTargets: cloneForRecord(this.registeredTargets.slice(0, this.presetTargets)) } : {}),
-      ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.fireSupport) } : {}),
+      ...(Object.keys(this.fireSupport).length ? { fireSupport: cloneForRecord(this.recordedFireSupport()) } : {}),
       ...(Object.keys(this.commandEchelons).length ? { commandEchelon: { ...this.commandEchelons } } : {}),
       ...(this.fireSupportByEchelon ? { fireSupportByEchelon: true } : {}),
       lethality: this.lethality,
@@ -1566,6 +1615,9 @@ export class Game {
       ...(this.suppressionByChance ? { suppressionByChance: true } : {}),
       ...(this.timeLimit !== undefined ? { timeLimit: this.timeLimit } : {}),
       ...(this.delayUntil !== undefined ? { delayUntil: this.delayUntil } : {}),
+      ...(this.reinforcements.length
+        ? { reinforcements: this.reinforcements.map(({ turn: _t, ...r }) => cloneForRecord(r)) }
+        : {}),
       // The ground is part of what the decisions were taken on: a replay
       // without it would clear every sight line the battle was fought around.
       ...(this.mapTerrain === FLAT_GROUND ? {} : { terrain: cloneForRecord(this.mapTerrain) }),
@@ -1575,7 +1627,7 @@ export class Game {
 
   // ---- setup ----
 
-  addUnit(unit: Unit): Unit {
+  private placeUnit(unit: Unit): Unit {
     // A force is placed with the protection it already has, from the first
     // turn rather than the first upkeep: whatever the ground offers where it
     // stands, *and* the position it prepared before the battle — "a force that
@@ -1620,8 +1672,38 @@ export class Game {
     // (rules decision 38).
     delete unit.observationPost;
     this.units.push(unit);
+    return unit;
+  }
+
+  addUnit(unit: Unit): Unit {
+    this.placeUnit(unit);
     this.journal({ kind: "addUnit", unit: cloneForRecord(unit) });
     return unit;
+  }
+
+  /**
+   * The reinforcements due this turn come onto the map (decision 122): their
+   * forces placed as `addUnit` places one, their missions added to their
+   * side's allotment. Not journaled — the recording carries the option, and a
+   * replay brings them in again here, at the same moment.
+   */
+  private arriveReinforcements(): { side: Side; unitIds: string[] }[] {
+    const out: { side: Side; unitIds: string[] }[] = [];
+    this.reinforcements.forEach((r, i) => {
+      if (r.turn !== this.turn || this.arrivedReinforcements.has(i)) return;
+      this.arrivedReinforcements.add(i);
+      for (const u of r.units) {
+        if (this.units.some((x) => x.id === u.id)) throw new Error(`reinforcements[${i}]: ${u.id} is already on the map`);
+        this.placeUnit(cloneForRecord(u));
+      }
+      for (const a of r.fire ?? []) {
+        const copy = cloneForRecord(a);
+        (this.fireSupport[r.side] ??= []).push(copy);
+        this.arrivedAllotments.add(copy);
+      }
+      out.push({ side: r.side, unitIds: r.units.map((u) => u.id) });
+    });
+    return out;
   }
 
   /**
@@ -1655,9 +1737,11 @@ export class Game {
   // ---- turn / phase progression ----
 
   /** Start the next turn: roll initiative and enter the initiative phase. */
-  beginTurn(): { turn: number; initiativeOrder: Side[] } {
+  beginTurn(): { turn: number; initiativeOrder: Side[]; arrived?: { side: Side; unitIds: string[] }[] } {
     this.checkFirePlans();
     this.turn += 1;
+    // Before anything is counted for the turn, so the newcomers are in its ledgers (decision 122).
+    const arrived = this.arriveReinforcements();
     this.noteSuccession();
     this.phase = "initiative";
     this.initiativeOrder = this.rollInitiative();
@@ -1668,7 +1752,7 @@ export class Game {
       refreshMoraleStates(this.units, this.turn);
     }
     this.journal({ kind: "beginTurn" });
-    return { turn: this.turn, initiativeOrder: this.initiativeOrder };
+    return { turn: this.turn, initiativeOrder: this.initiativeOrder, ...(arrived.length ? { arrived } : {}) };
   }
 
   /**
@@ -1712,6 +1796,8 @@ export class Game {
     chargeWork?: ChargeWorkReport[];
     morale?: MoraleReport[];
     interior?: InteriorReport[];
+    /** Reinforcements that came onto the map as the new turn began (decision 122). */
+    arrived?: { side: Side; unitIds: string[] }[];
   } {
     const result = this.internally(() => {
       if (this.phase === "summary") {
@@ -1727,8 +1813,8 @@ export class Game {
         // A side that has broken stops fighting inside too (decision 102): judged on the state the morale step left.
         this.settleBreaksInside();
         interior.push(...this.brokenInside.splice(0));
-        this.beginTurn();
-        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}), ...(interior.length ? { interior } : {}) };
+        const begun = this.beginTurn();
+        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}), ...(interior.length ? { interior } : {}), ...(begun.arrived ? { arrived: begun.arrived } : {}) };
       }
       const idx = PHASES.indexOf(this.phase);
       this.phase = PHASES[idx + 1]!;
@@ -1771,8 +1857,10 @@ export class Game {
     chargeWork: ChargeWorkReport[];
     morale: MoraleReport[];
     interior: InteriorReport[];
+    arrived: { side: Side; unitIds: string[] }[];
   } {
     const interior: InteriorReport[] = [];
+    const arrived: { side: Side; unitIds: string[] }[] = [];
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
     const observed: Observation[] = [];
@@ -1788,11 +1876,12 @@ export class Game {
         if (step.chargeWork) chargeWork.push(...step.chargeWork);
         if (step.morale) morale.push(...step.morale);
         if (step.interior) interior.push(...step.interior);
+        if (step.arrived) arrived.push(...step.arrived);
         if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
       }
     });
     this.journal({ kind: "advanceToPhase", target });
-    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale, interior };
+    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale, interior, arrived };
   }
 
   private requirePhase(p: Phase): void {
