@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the plans doctrine names that a player cannot yet set inside a house (the entry point, the room order, top-down by an inside stair) — put the shape to the author first. Done 2026-10-28: the debrief narrates arrivals; the engine build is in `check`; the mass assault's lead is the reinforcement, accepted; decision 123, a battle is judged as the turn closed. (Alternate positions in computer play were done by decisions 120–121.)**
+**Next, in one line: build decision 124 (ruled 2026-10-28) — the inside stair as a third entry, then a breach in a chosen wall; the room order stays the drill's. Done 2026-10-28: the debrief narrates arrivals; the engine build is in `check`; the mass assault's lead is the reinforcement, accepted; decision 123, a battle is judged as the turn closed.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -155,8 +155,7 @@ The 2026-10-01 version of this section, with its tables and the rulings of
   cover, the massed opening's turn of lag, a team keeps two, half a
   squad's teams in at once, three clears.
 - **Not ruled, left as they are** (drill-audit.md): A12, A13, A15, D6, I6,
-  I7's short room and marking, and the plans not yet exposed inside (the
-  entry point, the room order, top-down by an inside stair).
+  I7's short room and marking. (The plans inside: ruled as decision 124.)
 
 ### Done 2026-10-21, night: the drill audit (steps 1–3 of his plan)
 
@@ -677,9 +676,15 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**First:** the plans doctrine names that a player cannot yet set inside a
-house (the entry point, the room order, top-down by an inside stair) — the
-shape to the author before building. (The computer defender's alternate
+**First:** build decision 124, the plans inside a house (ruled
+2026-10-28, all recommended). (1) Top-down by an inside stair as a third
+`InteriorPlan.entry` beside "door" and "top": in by the door, take the stair
+room, climb to the top storey, clear down, ground floor last; the security
+men hold the stair foot. Measure it against door and roof on the harness so
+none is dominated. (2) A breach in a side of the outline the player picks,
+by a force with charges, at the laid charge's cost (decision 16); into the
+room behind it. (3) Room order stays the drill's (nearest uncleared room
+through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
 positions, long listed here, were decisions 120–121; decision 121's ⚠️ to
 watch: its 50 m trigger equals the reserve's "lost within" 50 m.)
 

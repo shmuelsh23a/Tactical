@@ -3846,6 +3846,29 @@ on the stated reasoning, still awaiting the author's word.
     re-rolls. Derived and drawing nothing, so recordings replay unchanged.
     Re-measured at 3:1: every cell 0–2 points up, the doctrinal median 69
     → 70.5 (into its band), plain 49 → 49.5.
+124. ⏳ **The plans inside a house: the inside stair, a breach, and the
+    drill's room order** (the author, 2026-10-28, every option the
+    recommended one; ruled, not yet built):
+    - **Top-down by an inside stair is a third entry** beside the door and
+      the roof (ATP 3-06.11 (2024), para C-110). The teams go in by the door,
+      take only the stair room, climb to the top storey and clear down; the
+      ground floor is cleared last. The security men hold the stair foot,
+      C-110's "open lane to resupply and reinforce" (and C-107's stairways).
+      Gains: the whole force goes in at once (no hatch), no climb onto the
+      roof, and top-down's fallback effect. Costs: 6 s a flight up, heard,
+      and climbing under floors nobody has cleared. Measured against the
+      door and the roof so that none of the three is dominated.
+    - **The entry point: a breach in a wall the player picks.** The player
+      names a side of the house's outline; a force with charges blows a
+      breach hole there at the laid charge's cost in turns (decision 16)
+      and goes into the room behind it. A defence watching the door is
+      caught facing the wrong way. With no charge, the door. Whether an
+      infantry squad carries a breaching charge is a ruling for later.
+    - **The room order is the drill's**, not the plan's: the attacker sees
+      only the outline, and doctrine leaves room by room to the team leader
+      on the spot. Each team takes the nearest uncleared room through held
+      ground, as now; the player's say is the floor order (door, stair,
+      roof) and the entry point.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
