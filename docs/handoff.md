@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the engine-only build (`tsconfig.engine.json`) fails on `structuredClone` in `interior/coupling.ts` — fix it and add it to `npm run check`; then the free probe into why the mass assault leads by about 10 points at 3:1. Done 2026-10-28: the debrief narrates a reinforcement's arrival to its own side, and the lessons stop counting an enemy reinforcement before it comes.**
+**Next, in one line: the free probe into why the mass assault (A) leads by about 10 points at 3:1 on both drills (balance.md, *after decision 122*). Done 2026-10-28: the debrief narrates a reinforcement's arrival to its own side; the engine-only build compiles and `npm run check` runs it.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -70,7 +70,7 @@ out of here on purpose:
 ## Green as of `a2fba10` (2026-10-28)
 
 ```
-npm run check       lint + typecheck clean, 1,231 tests, 85 files
+npm run check       lint + both typechecks clean, 1,231 tests, 85 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -664,11 +664,12 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**First: the engine-only build** (`tsconfig.engine.json`) fails on
-`structuredClone` in `interior/coupling.ts`, from before decision 120;
-`npm run check` does not run it, so add it there once it passes. **Then**
-why the mass assault still leads by about 10 points at 3:1 on both drills
-(balance.md, *after decision 122*), a probe, free.
+**First:** why the mass assault still leads by about 10 points at 3:1 on
+both drills (balance.md, *after decision 122*), a probe, free.
+
+**Done 2026-10-28**: the engine-only build compiles (`structuredClone` in
+`interior/coupling.ts` replaced by a typed copy), and `npm run check` runs
+`typecheck:engine`, so CI catches a platform API in the engine.
 
 **Done 2026-10-28**: the debrief narrates a reinforcement's arrival
 (`85093c3`). The replay carries `arrived` on the step that opened the turn
