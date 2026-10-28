@@ -3848,7 +3848,7 @@ on the stated reasoning, still awaiting the author's word.
     → 70.5 (into its band), plain 49 → 49.5.
 124. ⏳ **The plans inside a house: the inside stair, a breach, and the
     drill's room order** (the author, 2026-10-28, every option the
-    recommended one; ruled, not yet built):
+    recommended one; the inside stair built 2026-10-28, the breach not yet):
     - **Top-down by an inside stair is a third entry** beside the door and
       the roof (ATP 3-06.11 (2024), para C-110). The teams go in by the door,
       take only the stair room, climb to the top storey and clear down; the
@@ -3858,6 +3858,19 @@ on the stated reasoning, still awaiting the author's word.
       roof, and top-down's fallback effect. Costs: 6 s a flight up, heard,
       and climbing under floors nobody has cleared. Measured against the
       door and the roof so that none of the three is dominated.
+      - **Built** (`InteriorPlan.entry: "stair"`, `--attack-plan
+        entry=stair`): on the ground floor only the way to the stairs is
+        taken, the room whose door is nearest the stairwell first; the
+        stair foot is held first (a security man, else a clearing man
+        while two are left); the climb is a flight a storey to the highest
+        storey not cleared, and alerts every storey it reaches, as coming
+        down does (C-103, ⚠️ ours for the way up). Fights entered this way
+        are joined like the door's. A one-storey house is entered by the
+        door. Measured (balance.md, *The inside stair, built and
+        measured*): between the door and the roof — with grenades against
+        three prepared defenders 89% cleared, 3.85 men out, 45.9 minutes,
+        against the door's 87% / 3.90 / 43.3 and the roof's 92% / 3.62 /
+        46.7; it drives nobody out.
     - **The entry point: a breach in a wall the player picks.** The player
       names a side of the house's outline; a force with charges blows a
       breach hole there at the laid charge's cost in turns (decision 16)

@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: build decision 124 (ruled 2026-10-28) — the inside stair as a third entry, then a breach in a chosen wall; the room order stays the drill's. Done 2026-10-28: the debrief narrates arrivals; the engine build is in `check`; the mass assault's lead is the reinforcement, accepted; decision 123, a battle is judged as the turn closed.**
+**Next, in one line: decision 124's breach (a side of the outline the player picks, by a force with charges). Done 2026-10-28: the inside stair built and measured (between the door and the roof; balance.md); the debrief narrates arrivals; decision 123, a battle is judged as the turn closed.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -677,11 +677,10 @@ Measurements that cost real time and are already recorded:
 ## What I would pick up next
 
 **First:** build decision 124, the plans inside a house (ruled
-2026-10-28, all recommended). (1) Top-down by an inside stair as a third
-`InteriorPlan.entry` beside "door" and "top": in by the door, take the stair
-room, climb to the top storey, clear down, ground floor last; the security
-men hold the stair foot. Measure it against door and roof on the harness so
-none is dominated. (2) A breach in a side of the outline the player picks,
+2026-10-28, all recommended). (1) Done the same day: `entry: "stair"`,
+measured with `interior-sim --storied` (balance.md, *The inside stair*) —
+between the door and the roof, close to the roof; the ⚠️ to watch: without
+grenades against defenders who hold it is the worst of the three. (2) A breach in a side of the outline the player picks,
 by a force with charges, at the laid charge's cost (decision 16); into the
 room behind it. (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate

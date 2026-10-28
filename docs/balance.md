@@ -6489,6 +6489,40 @@ leads to a decision (bypass, deliberate attack, defend; FM 3-90, para
 4-47), not an automatic loss. The defender improves with time, but over
 hours (ATP 3-21.8 (2024), paras 5-222, 5-246).
 
+## The inside stair, built and measured, 2026-10-28
+
+Decision 124's first part: in by the door, the way to the stairs, the
+climb to the top, then down; the ground floor last. `npm run interior-sim
+-- --storied` (new: every row over the same houses, those with stairs),
+seed 1000, 8 attackers in two teams, 3 defenders unless said. Cleared /
+attackers out a fight / median minutes of those cleared:
+
+| Defenders | Grenades | Door | Inside stair | Roof |
+|---|---|---|---|---|
+| none | yes | 100% / 0.25 / 22.0 | 100% / 0.24 / 23.2 | 100% / 0.26 / 24.7 |
+| 1 | yes | 100% / 1.23 / 29.0 | 100% / 1.25 / 30.2 | 100% / 1.34 / 34.6 |
+| 3 prepared, fall back, expect below | no | 77% / 4.60 / 46.6 | 80% / 4.55 / 48.0 | 81% / 4.35 / 51.7 |
+| | yes | 87% / 3.90 / 43.3 | 89% / 3.85 / 45.9 | **92% / 3.62** / 46.7 |
+| 3 prepared, **hold to the last** | no | 73% / 4.98 / 49.0 | 72% / 5.09 / 54.5 | 73% / 4.88 / 53.1 |
+| | yes | 85% / 4.28 / 45.1 | 85% / 4.10 / 47.6 | 87% / 4.14 / 48.6 |
+| 3 prepared, fall back, **expect above** | no | 78% / 4.39 / 44.7 | 83% / 4.32 / 47.4 | 81% / 4.43 / 52.3 |
+| | yes | 88% / 3.69 / 43.3 | 91% / 3.73 / 44.2 | 92% / 3.63 / 47.2 |
+
+- **The stair sits between the door and the roof.** With grenades it
+  clears 1–3 points more than the door at 1–3 minutes more; the roof
+  clears 1–3 more again at 1–3 minutes more still. Against defenders who
+  expect the attack from above it is the best buy: 91% at 44 minutes
+  against the roof's 92% at 47.
+- **Not dominated, but close to the roof.** The roof is never worse on
+  men lost and clearing with grenades; the stair is always quicker (1–3
+  minutes; 4 against one defender) and is joinable, which the roof is not
+  (decision 101: the hatch is not modelled). Without grenades against
+  defenders who hold, the stair is the worst of the three (72%, 54.5
+  minutes): the climb gains nothing against men who do not fall back,
+  and the way to the stairs costs guards.
+- **It drives nobody out** (withdrew 0, the roof 0.15–0.17): the ground
+  floor's way out is behind the attackers, held.
+
 ## The re-measure after decision 122, 2026-10-25
 
 Time costs the attacker: 60-turn deadlines (where shorter) and the
