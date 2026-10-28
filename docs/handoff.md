@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the free probe into why the mass assault (A) leads by about 10 points at 3:1 on both drills (balance.md, *after decision 122*). Done 2026-10-28: the debrief narrates a reinforcement's arrival to its own side; the engine-only build compiles and `npm run check` runs it.**
+**Next, in one line: the computer defender and the harness preparing alternate positions, so decision 119's displace does something in computer play (a placement rule to put to the author first). Done 2026-10-28: the debrief narrates arrivals; the engine build is in `check`; the mass assault's lead is the reinforcement, all of it, accepted; decision 123, a battle is judged as the turn closed.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -422,6 +422,11 @@ One rules question is **open but not asked**, because nothing needs it yet:
 
 ## Do not re-propose
 
+- **Tuning the reinforcement to level the mass assault's lead.** Ruled
+  2026-10-28: the lead is the price of a slow attack, and the window is in
+  the brief. Without the reinforcement the plans are level, so the lead is
+  timing, not a fault in the fight.
+
 - **Tuning the doctrinal drill down to 40–55%.** Decision 118: it is the
   bands' strong-suppression case (70–75% at 3:1, 45–50% at 2:1); the
   plain drill is the one judged on 40–55% / 20–35%.
@@ -494,6 +499,14 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **What the reinforcement costs each plan** (2026-10-28, balance.md): the
+  eight 3:1 plans on both drills with `--no-reinforcement` and without, 32
+  cells, about 15 minutes at eight jobs (`jev-sim --rule <variant> --drill
+  <reference|plain> --seed 1000 --n 100 --out <dir per cell>`; the default
+  `--out` is shared and each cell overwrites the last). A battle still
+  going at the arrival is won about half as often; the plans differ in how
+  often they are still going.
 
 - **The re-measure after the drill audit** (2026-10-21, balance.md): the
   16 reference cells on both drills, about 25 minutes for 32 cells at four
@@ -664,8 +677,19 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**First:** why the mass assault still leads by about 10 points at 3:1 on
-both drills (balance.md, *after decision 122*), a probe, free.
+**First:** the computer defender and the harness preparing alternate
+positions, so decision 119's displace does something in computer play — a
+placement rule to put to the author before building. Then the plans
+doctrine names that a player cannot yet set inside a house (the entry
+point, the room order, top-down by an inside stair).
+
+**Done 2026-10-28, the probe** (balance.md, *Why the mass assault still
+leads*): the lead is the reinforcement, all of it — without it the top
+four plans are level at 3:1. Ruled: accepted as the price of a slow
+attack. The probe found decision 123 (`98673fc`): a battle is judged as
+the turn closed; 3:1 medians 70.5 / 49.5, both in band. `jev-sim
+--no-reinforcement` is the switch. Cosmetic, left: on a close-of-turn
+ending the App logs the reinforcement's arrival before the game-over.
 
 **Done 2026-10-28**: the engine-only build compiles (`structuredClone` in
 `interior/coupling.ts` replaced by a typed copy), and `npm run check` runs
