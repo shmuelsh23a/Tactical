@@ -108,6 +108,8 @@ const engine = {
   // The drill's covered routes and arriving together (balance.md, forty-fifth round), on unless turned off.
   ...(args.includes("--no-covered") ? { coveredRoutes: false } : {}),
   ...(args.includes("--no-together") ? { arriveTogether: false } : {}),
+  // No reinforcement ever comes (decision 122): a measurement switch.
+  ...(args.includes("--no-reinforcement") ? { reinforcements: false as const } : {}),
   ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}),
   ...(attackerBreakpoint !== undefined ? { attackerBreakpoint } : {}),
 };

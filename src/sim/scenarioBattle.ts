@@ -143,6 +143,11 @@ export interface ScenarioBattleOptions {
    */
   fireSupport?: boolean;
   /**
+   * The scenario's reinforcements (decision 122): on unless false. Off, none
+   * ever comes — a measurement switch, for what a reinforcement costs a plan.
+   */
+  reinforcements?: boolean;
+  /**
    * Each side's plan for a fight inside a building (rules decision 101),
    * given to every infantry force of the side at mission planning. Absent:
    * the defaults, "unless otherwise planned".
@@ -267,6 +272,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     for (const list of Object.values(g.fireSupport)) for (const a of list ?? []) a.missions = 0;
     for (const r of g.reinforcements) for (const a of r.fire ?? []) a.missions = 0; // what a reinforcement brings too (decision 122)
   }
+  // Turn 0 never begins, so a reinforcement drawn for it never comes.
+  if (opts.reinforcements === false) for (const r of g.reinforcements) r.turn = 0;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
