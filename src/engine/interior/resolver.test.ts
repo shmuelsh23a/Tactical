@@ -274,6 +274,26 @@ describe("the fight inside a building (decision 96)", () => {
       for (const seed of seeds.slice(0, 10)) expect(climb(seed, ["s1", "s2"]).footHeld, `seed ${seed}`).toBe(true);
     });
 
+    it("carries a man put out above down the held stairs: no halt for floors below not yet cleared", () => {
+      const plan = generateFloorPlan(house("s1", 16, 12, 3), 1);
+      const halt = (entry: "stair" | "top") => {
+        const f = new InteriorFight({ plan, attack: { entry, grenades: false, teams: squad, security: ["s1", "s2"] }, defence: [] }, new Rng(1));
+        while (!f.finished && !f.soldiers.some((m) => m.side === "BLUE" && m.storey === 2 && !m.waiting)) f.tick();
+        const inner = f as unknown as { teams: { members: InteriorSoldier[]; halted: number; owed?: number }[]; casualty(m: InteriorSoldier): void; laneOpen(): boolean };
+        const team = inner.teams.find((t) => t.members.some((m) => m.storey === 2))!;
+        const man = team.members[team.members.length - 1]!;
+        const owes = () => Math.max(0, team.halted - f.second) + (team.owed ?? 0);
+        const before = owes();
+        man.out = true;
+        inner.casualty(man);
+        return { halted: owes() - before, lane: inner.laneOpen() };
+      };
+      const stair = halt("stair"), top = halt("top");
+      expect(stair.lane).toBe(true);
+      expect(stair.halted).toBe(CLOSE_QUARTERS.casualtySeconds);
+      expect(top.halted).toBe(CLOSE_QUARTERS.casualtySeconds * CLOSE_QUARTERS.casualtyAboveUnclearedFactor);
+    });
+
     it("sends a team that joins after the top is cleared to the storey still to clear, not the top", () => {
       let joined = 0;
       for (const seed of seeds.slice(0, 10)) {

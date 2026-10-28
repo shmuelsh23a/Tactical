@@ -1349,6 +1349,21 @@ export class InteriorFight {
     return this.entry !== "door";
   }
 
+  /**
+   * The open lane of a climb by the inside stairs (ATP 3-06.11 (2024), para
+   * C-110: "the option to keep an open lane to resupply and reinforce";
+   * decision 124): an attacker holds the stair foot, so the wounded go down
+   * it. Resupply up it is for later (the author, 2026-10-28: "We will deal
+   * with ammo later"); with a full load at each "CLEAR" it beat both other
+   * ways in on every count (balance.md).
+   */
+  private laneOpen(): boolean {
+    const s = this.plan.stairwell;
+    if (this.entry !== "stair" || !s) return false;
+    const foot = s.y * this.plan.width + s.x;
+    return this.soldiers.some((m) => m.side === this.attackerSide && this.active(m) && m.storey === 0 && m.post?.storey === 0 && m.post.cell === foot);
+  }
+
   /** An attacking team on the ground floor before the climb by the inside stairs: some storey above is not cleared yet. */
   private climbing(team: Team): boolean {
     return this.entry === "stair" && team.side === this.attackerSide && team.storey === 0
@@ -1474,9 +1489,10 @@ export class InteriorFight {
     if (!m.out) return;
     const team = this.teams.find((t) => t.members.includes(m));
     if (!team) return;
-    // Above floors not yet cleared he cannot simply be carried down and out (C-30).
+    // Above floors not yet cleared he cannot simply be carried down and out (C-30) — unless
+    // the stairs below are held, the open lane (C-110; decision 124).
     let below = false;
-    if (team.side === this.attackerSide) for (let k = 0; k < m.storey; k++) if (!this.cleared[k]!.every((v) => v === 1)) below = true;
+    if (team.side === this.attackerSide && !this.laneOpen()) for (let k = 0; k < m.storey; k++) if (!this.cleared[k]!.every((v) => v === 1)) below = true;
     const seconds = CLOSE_QUARTERS.casualtySeconds * (below ? CLOSE_QUARTERS.casualtyAboveUnclearedFactor : 1);
     // Going in, nobody stops: a man down in the doorway "should stay down until the room is
     // clear" (ATP 3-06.11 (2024), para C-63), and is seen to at "CLEAR" (drill audit, I2) —
