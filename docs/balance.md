@@ -6561,4 +6561,21 @@ still going on the turn the reinforcement came (or would have; drawn
   (morale, where a defender breaks) *and* begins N+1 (where the
   reinforcement arrives). A defender beaten at the close of the turn
   before the arrival goes on fighting: 38 battles of 1,800, the result
-  changed in 10 (about half a point). Put to the author.
+  changed in 10 (about half a point). **Ruled: judged as the turn closed
+  (decision 123).**
+- **Ruled 2026-10-28**: A's lead accepted as the price of a slow attack.
+
+**After decision 123** (the 3:1 cells with the reinforcement, the same
+seeds; 2:1 not re-run, the effect being this size):
+
+| Plan | Doctrinal 122 → **123** | Plain 122 → **123** |
+|---|---|---|
+| A calibrated | 80 → **81** | 65 → **65** |
+| A + flank | 68 → **70** | 47 → **47** |
+| B deliberate | 72 → **73** | 53 → **53** |
+| E fire-heavy | 61 → **61** | 47 → **48** |
+| D flank | 60 → **61** | 47 → **48** |
+| A + move up | 70 → **71** | 50 → **51** |
+| B + move up | 59 → **60** | 52 → **52** |
+| C hasty | 72 → **72** | 48 → **48** |
+| **Median** | 69 → **70.5** (band 70–75: in) | 49 → **49.5** (40–55: in) |
