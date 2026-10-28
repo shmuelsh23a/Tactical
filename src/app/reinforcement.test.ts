@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Game, makeInfantry } from "../engine/index.js";
 import { DOCTRINAL_DRILL, DrillState, REINFORCEMENT_BEHIND_M, drillCombat, drillMovement, type DrillTask } from "./drill.js";
-import { UMPIRE_LENS, actionVisibleTo, lensFor, replayForReview, unitSides } from "./debriefView.js";
+import { UMPIRE_LENS, actionVisibleTo, lensFor, lessonsFor, replayForReview, unitSides } from "./debriefView.js";
 import { describeOutcome, unitNames } from "./debriefText.js";
 
 /**
@@ -129,4 +129,27 @@ describe("the debrief narrates a reinforcement's arrival (decision 122)", () => 
       expect(steps.filter((s) => "arrived" in s.outcome && s.outcome.arrived)).toHaveLength(1);
     });
   }
+});
+
+describe("the lessons count a reinforcement as unseen only once it has come (decision 122)", () => {
+  it("leaves out one still due, and counts it after its turn", () => {
+    const g = new Game({
+      seed: 3,
+      enforceC2: false,
+      reinforcements: [{ side: "RED", window: [3, 3], units: [makeInfantry("RED-R1", "RED", "squad", { x: 0, y: -300 }, 8)] }],
+    });
+    g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 5000 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("summary");
+    g.advanceToPhase("initiative"); // turn 2: not yet
+    const before = g.toRecording().actions.length;
+    g.advanceToPhase("summary");
+    g.advanceToPhase("initiative"); // turn 3: it comes
+    const rec = g.toRecording();
+    const { steps, contactsAfter } = replayForReview(rec);
+    const sides = unitSides(rec);
+    expect(lessonsFor("BLUE", before, steps, contactsAfter, sides).neverDetected).toEqual(["RED-1-1"]);
+    expect(lessonsFor("BLUE", steps.length, steps, contactsAfter, sides).neverDetected.sort()).toEqual(["RED-1-1", "RED-R1"]);
+  });
 });

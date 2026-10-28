@@ -422,7 +422,15 @@ export function lessonsFor(
     }
   }
 
-  const enemies = [...sides.entries()].filter(([, s]) => s !== side).map(([id]) => id);
+  // A reinforcement is an enemy only once it has come onto the map (decision
+  // 122): one still due, or one the battle ended before, was never there to find.
+  const onMap = new Set<string>();
+  steps.forEach((step, i) => {
+    if (step.action.kind === "addUnit") onMap.add(step.action.unit.id);
+    const o = step.outcome;
+    if (i < upTo && (o.kind === "beginTurn" || o.kind === "phase")) for (const a of o.arrived ?? []) for (const id of a.unitIds) onMap.add(id);
+  });
+  const enemies = [...sides.entries()].filter(([id, s]) => s !== side && onMap.has(id)).map(([id]) => id);
   const known = contactsAfter[Math.min(upTo, contactsAfter.length) - 1]?.[side] ?? new Set<string>();
   lessons.neverDetected = enemies.filter((id) => !known.has(id));
   return lessons;
