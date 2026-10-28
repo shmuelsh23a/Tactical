@@ -6519,3 +6519,46 @@ with 4 missions). `jev-sim --rule <variant> --drill <reference|plain>
   `yokneamUrban` 78%, `yokneamRaid` 3%, `yokneamHouse` 88% — unchanged:
   these battles end by turn 12–14 (the raid at its 30), before or as a
   reinforcement comes.
+
+### Why the mass assault still leads: the reinforcement, all of it (probe, 2026-10-28)
+
+The eight plans at 3:1 (`telAzekaAssault`), both drills, with the
+reinforcement and without it: `jev-sim --rule <variant> --drill
+<reference|plain> --seed 1000 --n 100` (A 200), and the same with
+`--no-reinforcement` (a measurement switch: none ever comes). The cells
+with it reproduce *after decision 122* exactly. "Undecided" is a battle
+still going on the turn the reinforcement came (or would have; drawn
+35–45, the deadline 60), and how many of those the attack won.
+
+| Plan | Doctrinal: with → **without** | Undecided at arrival | Of those, won: with / without | Plain: with → **without** |
+|---|---|---|---|---|
+| A calibrated | 80 → **87** | 30% | 53% / 75% | 64 → **70** |
+| A + flank | 68 → **85** | 50% | 40% / 70% | 47 → **59** |
+| B deliberate | 72 → **85** | 31% | 32% / 71% | 53 → **67** |
+| E fire-heavy | 61 → **83** | 70% | 46% / 77% | 47 → **70** |
+| D flank | 60 → **70** | 46% | 30% / 49% | 47 → **65** |
+| A + move up | 70 → **77** | 12% | — | 50 → **51** |
+| B + move up | 59 → **64** | 14% | — | 52 → **55** |
+| C hasty | 72 → **73** | 10% | — | 48 → **49** |
+
+- **Without the reinforcement A's lead is gone**: doctrinal A 87, B 85,
+  flank 85, E 83 (within the ±5 of 100 battles); plain A 70, E 70, B 67.
+  The whole lead after decision 122 is the reinforcement.
+- **It is timing, not fighting**: A goes in at turn 21 and has most of its
+  battles won before turn 35 (64%); a third are still going when the
+  reinforcement comes. E fires first, goes in at turn 30, wins at a median
+  42 — inside the window — and meets it in 70% of its battles. The
+  flank and the deliberate attack meet it in a third to a half.
+- **Wherever it is met it costs about the same**: a battle still going
+  when it comes is won about half as often (roughly 70–77% → 30–53%
+  doctrinal). A meets it least, so it loses least.
+- **The hasty plans do not meet it** (decided by turn 30, 10–14% undecided)
+  and gain nothing without it: they lose to casualties, as before.
+- **Nobody runs out of time now** (0–5% in every cell): the reinforcement
+  has replaced the clock as the price of a slow attack.
+- **A turn-boundary effect, separate**: the harness and the App judge a
+  battle's end after `advanceToPhase("initiative")`, which closes turn N
+  (morale, where a defender breaks) *and* begins N+1 (where the
+  reinforcement arrives). A defender beaten at the close of the turn
+  before the arrival goes on fighting: 38 battles of 1,800, the result
+  changed in 10 (about half a point). Put to the author.
