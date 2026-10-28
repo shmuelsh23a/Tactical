@@ -104,8 +104,13 @@ export interface DefenderPost {
 
 /** How the attacker goes in. */
 export interface AttackPlan {
-  /** Through the front door and up, or onto the roof and down (top-down: TC 3-21.75 (2013), para 8-12). */
-  entry: "door" | "top";
+  /**
+   * Through the front door and up; onto the roof and down (top-down: TC
+   * 3-21.75 (2013), para 8-12); or in by the door, the stair room taken, up
+   * the inside stairs to the top storey and down from there, the ground floor
+   * last (ATP 3-06.11 (2024), para C-110; decision 124).
+   */
+  entry: "door" | "top" | "stair";
   /** A grenade into each room before entering it, while they last. */
   grenades: boolean;
   /** Teams of up to four, leader first. Each team clears its own rooms. */
@@ -269,7 +274,7 @@ export class InteriorFight {
   /** The last second a room was taken or a team went for one: a fight that stops moving for long is a standoff. */
   private lastProgress = 0;
   private readonly roomsCutOff: number;
-  private readonly entry: "door" | "top";
+  private readonly entry: "door" | "top" | "stair";
   private readonly grenadesPlanned: boolean;
   private readonly steps: number;
   private readonly expects: "below" | "above";
@@ -308,6 +313,8 @@ export class InteriorFight {
     const top = this.plan.storeys.length - 1;
     this.order = [];
     for (let k = 0; k <= top; k++) this.order.push(this.entry === "door" ? k : top - k);
+    // By the inside stairs: the way to the stairs on the ground floor first, then the top down.
+    if (this.entry === "stair" && top === 0) throw new Error("InteriorFight: a climb by the inside stairs needs a storey above");
 
     // The defenders where their plan puts them.
     for (const post of input.defence) {
@@ -322,7 +329,7 @@ export class InteriorFight {
     }
     // The attackers at their way in: outside the front door, or at the head of the stairs.
     const start = this.entryCell();
-    const firstStorey = this.order[0]!;
+    const firstStorey = this.entry === "stair" ? 0 : this.order[0]!;
     input.attack.teams.forEach((ids, k) => {
       const members = ids.map((id) => {
         const m = this.man(id, this.attackerSide, firstStorey, start, false);
@@ -430,6 +437,9 @@ export class InteriorFight {
     const p = this.plan.storeys[storey]!;
     const cleared = this.cleared[storey]!;
     const inside = (door: number) => this.around(door).find((j) => p.roomOf[j] === room);
+    const st = this.plan.stairwell;
+    // The climb by the inside stairs holds the stair foot first: the open lane (C-110; decision 124).
+    if (st && this.entry === "stair" && storey === 0 && this.stairRoom(0) === room && this.cleared.some((c, k) => k > 0 && !c.every((v) => v === 1))) return st.y * this.plan.width + st.x;
     for (let i = 0; i < p.cells.length; i++) {
       if (p.cells[i] !== DOOR) continue;
       const [a, b] = this.sidesOf(storey, i);
@@ -441,7 +451,6 @@ export class InteriorFight {
         if (c !== undefined) return c;
       }
     }
-    const st = this.plan.stairwell;
     if (st && this.stairRoom(storey) === room && this.cleared.some((c, k) => k !== storey && !c.every((v) => v === 1))) return st.y * this.plan.width + st.x;
     return undefined;
   }
@@ -665,25 +674,42 @@ export class InteriorFight {
       const going = here.filter((t) => t !== team && (t.phase === "stack" || t.phase === "enter")).length;
       if (going >= Math.max(1, Math.floor(here.length / 2))) return;
     }
+    // By the inside stairs (decision 124): on the ground floor, while a
+    // storey above is not cleared, only the way to the stairs is taken —
+    // the room whose door is nearest the stairwell first — and once the
+    // stair room is held, up to the highest storey not yet cleared — while
+    // the stairs can be walked to; cut off from them (a room on the way
+    // retaken), the team takes back the way first.
+    const climb = this.climbing(team);
+    const s0 = this.plan.stairwell;
+    const upNow = climb && s0 !== null && this.cleared[0]![this.stairRoom(0)] === 1
+      && this.distances(0, s0.y * this.plan.width + s0.x, -1, team.side)[leader.cell]! >= 0;
     // Through held ground only, so the way to the door is the way the team can walk.
     const field = this.distances(storey, leader.cell, -1, team.side);
-    let best = -1, bestRoom = -1, bestD = Infinity;
+    const toStairs0 = climb ? this.stairsField(0) : undefined;
+    let best = -1, bestRoom = -1, bestD = Infinity, bestNear = Infinity;
     for (let i = 0; i < plan.cells.length; i++) {
       if (plan.cells[i] !== DOOR) continue;
       const sides = this.sidesOf(storey, i);
       for (const [held, room] of [[sides[0], sides[1]], [sides[1], sides[0]]] as const) {
         if (room === undefined || held === undefined || room < 0) continue;
-        if (!this.toTake(team, storey, room) || claimed.has(room)) continue;
+        // Climbing, the way to the stairs is one: a room on it another team is taking is waited for, not gone round.
+        if (!this.toTake(team, storey, room) || (!climb && claimed.has(room))) continue;
         if (!(held === OUT_OF_DOORS ? storey === 0 : this.holdsRoom(team.side, storey, held))) continue;
         const d = field[i]!;
-        if (d >= 0 && d < bestD) { bestD = d; best = i; bestRoom = room; }
+        if (d < 0) continue;
+        const near = toStairs0 ? toStairs0[i]! : 0;
+        if (near < bestNear || (near === bestNear && d < bestD)) { bestNear = near; bestD = d; best = i; bestRoom = room; }
       }
     }
-    if (best >= 0) return this.assault(team, bestRoom, best, true);
+    if (best >= 0 && !upNow) return claimed.has(bestRoom) ? undefined : this.assault(team, bestRoom, best, true);
     // Nothing to take here that this team can reach. Rooms still being taken
     // by another team: wait for them. None: on to the next storey.
     let next: number | undefined;
-    if (team.side === this.attackerSide) {
+    if (team.side === this.attackerSide && climb) {
+      if (!upNow) return; // another team is taking the way to the stairs: wait for it
+      next = this.order.find((k) => k > 0 && !this.cleared[k]!.every((v) => v === 1));
+    } else if (team.side === this.attackerSide) {
       if (!this.cleared[storey]!.every((v) => v === 1)) return; // another team's rooms open the way: wait for them
       next = this.order[this.order.indexOf(storey) + 1];
     } else {
@@ -700,7 +726,9 @@ export class InteriorFight {
     const toStairs = this.distances(storey, stairs, -1, team.side);
     if (men.every((m) => toStairs[m.cell]! >= 0 && toStairs[m.cell]! <= 2)) {
       team.phase = "stairs";
-      team.until = this.second + (next > storey ? CLOSE_QUARTERS.stairUpSeconds : CLOSE_QUARTERS.stairDownSeconds);
+      // A flight a storey: the climb by the inside stairs is several (decision 124).
+      const flights = team.side === this.attackerSide ? Math.abs(next - storey) : 1;
+      team.until = this.second + flights * (next > storey ? CLOSE_QUARTERS.stairUpSeconds : CLOSE_QUARTERS.stairDownSeconds);
       this.lastProgress = Math.max(this.lastProgress, team.until);
       return;
     }
@@ -739,10 +767,18 @@ export class InteriorFight {
     const stairs = s.y * this.plan.width + s.x;
     team.storey = to;
     const down = to < from;
+    // The climb by the inside stairs (decision 124): the security men stay
+    // and hold the stair foot, C-110's "open lane to resupply and reinforce".
+    if (this.entry === "stair" && from === 0 && !down && team.side === this.attackerSide) {
+      for (const m of (team.trail ?? []).filter((x) => this.active(x) && x.storey === 0)) m.post = { storey: 0, cell: stairs };
+      team.trail = (team.trail ?? []).filter((x) => !x.post);
+    }
     for (const m of [...men, ...(team.trail ?? []).filter((x) => this.active(x) && x.storey === from)]) { m.storey = to; m.cell = stairs; m.aim = undefined; m.fromAbove = down; }
     // Boots on an enclosed stairway carry: coming down, every storey below
     // turns to watch the stairs (ATP 3-06.11 (2024), para C-103).
     if (down && team.side === this.attackerSide) for (let k = 0; k <= to; k++) this.alerted[k] = true;
+    // Climbing them past the storeys between is heard too (decision 124).
+    if (!down && this.entry === "stair" && team.side === this.attackerSide) for (let k = from + 1; k <= to; k++) this.alerted[k] = true;
     const room = this.stairRoom(to);
     if (!this.toTake(team, to, room) || this.claimed(team, to).has(room)) { team.phase = "pick"; return; }
     this.assault(team, room, stairs, false);
@@ -1094,7 +1130,7 @@ export class InteriorFight {
     // On the stairs: off them on the next storey when the flight is done.
     if (m.retreat?.offStairs !== undefined) {
       if (this.second < m.retreat.offStairs) return;
-      m.storey += this.entry === "top" ? -1 : 1;
+      m.storey += this.downward ? -1 : 1;
       m.waiting = false;
       m.retreat = undefined;
       m.aim = undefined;
@@ -1117,7 +1153,7 @@ export class InteriorFight {
       if (m.cell !== m.retreat.goal) return;
       if (m.retreat.kind === "out") { m.withdrew = true; m.aim = undefined; return; }
       if (m.retreat.kind === "stairs") {
-        m.retreat = { ...m.retreat, offStairs: this.second + (this.entry === "top" ? CLOSE_QUARTERS.stairDownSeconds : CLOSE_QUARTERS.stairUpSeconds) };
+        m.retreat = { ...m.retreat, offStairs: this.second + (this.downward ? CLOSE_QUARTERS.stairDownSeconds : CLOSE_QUARTERS.stairUpSeconds) };
         m.waiting = true; // on the flight: out of sight of both storeys
         return;
       }
@@ -1146,7 +1182,7 @@ export class InteriorFight {
     });
     if (best >= 0) return this.setRetreat(m, best, "room", taken);
     const top = this.plan.storeys.length - 1;
-    const away = this.entry === "top" ? -1 : 1;
+    const away = this.downward ? -1 : 1;
     const s = this.plan.stairwell;
     if (away < 0 && m.storey === 0) {
       const door = this.plan.outsideDoors.find((d) => reach[d]! >= 0);
@@ -1304,8 +1340,19 @@ export class InteriorFight {
   }
 
   /** How the attack came in: by the door, or from the roof. */
-  get entryWay(): "door" | "top" {
+  get entryWay(): "door" | "top" | "stair" {
     return this.entry;
+  }
+
+  /** The attack comes down from above: from the roof, or from the top storey after the climb by the inside stairs. */
+  private get downward(): boolean {
+    return this.entry !== "door";
+  }
+
+  /** An attacking team on the ground floor before the climb by the inside stairs: some storey above is not cleared yet. */
+  private climbing(team: Team): boolean {
+    return this.entry === "stair" && team.side === this.attackerSide && team.storey === 0
+      && this.order.some((k) => k > 0 && !this.cleared[k]!.every((v) => v === 1));
   }
 
   /** The teams these men are in throw a grenade into each room first, or not: their force's plan (decision 101). */
@@ -1367,7 +1414,7 @@ export class InteriorFight {
    */
   join(teams: readonly string[][], security: readonly string[] = []): void {
     if (this.finished) throw new Error("InteriorFight: the fight is over");
-    if (this.entry !== "door") throw new Error("InteriorFight: only a fight entered by the door is joined");
+    if (this.entry === "top") throw new Error("InteriorFight: a fight entered from the roof is not joined");
     const squad = this.squadsIn++;
     const start = this.entryCell();
     for (const ids of teams) {

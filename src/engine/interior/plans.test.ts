@@ -67,6 +67,17 @@ describe("plans inside, as data (decision 101)", () => {
     expect(one.g.interior.engagements).toHaveLength(0);
   });
 
+  it("goes up the inside stairs where the house has them, and by the door where it has one storey (decision 124)", () => {
+    const two = battle(2, { blue: { entry: "stair" } });
+    expect(two.assault().reason).toBe(GOES_INSIDE);
+    two.g.advanceToPhase("initiative");
+    expect(two.g.interior.entryIn("house")).toBe("stair");
+    const one = battle(2, { blue: { entry: "stair" } }, 1);
+    expect(one.assault().reason).toBe(GOES_INSIDE);
+    one.g.advanceToPhase("initiative");
+    expect(one.g.interior.entryIn("house")).toBe("door");
+  });
+
   it("throws no grenades when told not to, and starts again when told to, mid-fight", () => {
     let before = 0, after = 0;
     for (let seed = 1; seed <= 6; seed++) {

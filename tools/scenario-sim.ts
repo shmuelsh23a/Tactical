@@ -121,14 +121,14 @@ function interiorPlan(flag: string): InteriorPlan | undefined {
   const plan: InteriorPlan = {};
   for (const part of text.split(",")) {
     const [k, v] = part.split("=");
-    if (k === "entry" && (v === "door" || v === "top")) plan.entry = v;
+    if (k === "entry" && (v === "door" || v === "top" || v === "stair")) plan.entry = v;
     else if (k === "grenades" && (v === "yes" || v === "no")) plan.grenades = v === "yes";
     else if (k === "storeys" && v) plan.holdStoreys = v.split("+").map(Number);
     else if (k === "windows" && (v === "yes" || v === "no")) plan.atWindows = v === "yes";
     else if (k === "expects" && (v === "below" || v === "above")) plan.expects = v;
     else if (k === "hold" && v === undefined) plan.fallBack = false;
     else if (k === "fallback" && v === undefined) plan.fallBack = true;
-    else throw new Error(`${flag}: "${part}" is not one of entry=door|top, grenades=yes|no, storeys=0+1, windows=yes|no, expects=below|above, hold, fallback`);
+    else throw new Error(`${flag}: "${part}" is not one of entry=door|top|stair, grenades=yes|no, storeys=0+1, windows=yes|no, expects=below|above, hold, fallback`);
   }
   return plan;
 }

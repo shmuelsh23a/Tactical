@@ -503,7 +503,7 @@ export function describeDisengagement(plan: DisengagementPlan): string {
 export function describeInteriorPlan(plan: InteriorPlan): string {
   const storey = (k: number) => (k === 0 ? "קרקע" : `קומה ${k}`);
   const parts: string[] = [];
-  if (plan.entry) parts.push(plan.entry === "top" ? "כניסה מהגג" : "כניסה בדלת");
+  if (plan.entry) parts.push(plan.entry === "top" ? "כניסה מהגג" : plan.entry === "stair" ? "כניסה בדלת ועלייה במדרגות לקומה העליונה" : "כניסה בדלת");
   if (plan.grenades !== undefined) parts.push(plan.grenades ? "רימון לכל חדר" : "בלי רימונים");
   if (plan.holdStoreys?.length) parts.push(`מחזיק ב${plan.holdStoreys.map(storey).join(", ")}`);
   if (plan.atWindows !== undefined) parts.push(plan.atWindows ? "בחלונות" : "בעומק החדרים");

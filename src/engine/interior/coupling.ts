@@ -85,8 +85,13 @@ export const INTERIOR_REFUSAL = {
  * out is the author's default, "unless otherwise planned" (2026-10-20).
  */
 export interface InteriorPlan {
-  /** Attacking: by the front door (the default), or from the roof and down, which needs stairs. Fixed once the fight begins. */
-  entry?: "door" | "top";
+  /**
+   * Attacking: by the front door (the default); from the roof and down, which
+   * needs stairs; or in by the door and up the inside stairs to the top, then
+   * down (decision 124) — by the door, in a house of one storey. Fixed once
+   * the fight begins.
+   */
+  entry?: "door" | "top" | "stair";
   /** Attacking: a grenade into each room before entering it (the default). May change at any turn. */
   grenades?: boolean;
   /** Defending: the storeys its men hold, from 0 for the ground floor. All, by default. */
@@ -583,7 +588,8 @@ export class InteriorBattles {
       // (decision 101): the way in is the first assaulting force's
       // (⚠️ ours, when two go in at once with different plans); the roof needs stairs.
       const first = this.orders.get(attackers[0]!.id);
-      const entry = first?.entry === "top" && plan.stairwell && plan.storeys.length > 1 ? "top" : "door";
+      const stairs = plan.stairwell !== null && plan.storeys.length > 1;
+      const entry = stairs && (first?.entry === "top" || first?.entry === "stair") ? first.entry : "door";
       const expects = defenders.map((u) => this.orders.get(u.id)?.expects).find((x) => x !== undefined);
       const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
       // Wounds already taken outside come in with the men.
@@ -650,7 +656,7 @@ export class InteriorBattles {
         continue;
       }
       // A fight entered from the roof is joined only by its hatch, which this does not model (decision 101).
-      if (e.fight.entryWay !== "door") continue;
+      if (e.fight.entryWay === "top") continue;
       const s = this.stackOf(u);
       e.fight.join(s.teams, s.security);
       // Wounds already taken outside come in with the men.
@@ -701,7 +707,7 @@ export class InteriorBattles {
   }
 
   /** How a fight going on in a building was entered: by the door, or from the roof. */
-  entryIn(buildingId: string): "door" | "top" | undefined {
+  entryIn(buildingId: string): "door" | "top" | "stair" | undefined {
     return this.engagements.find((e) => e.buildingId === buildingId)?.fight.entryWay;
   }
 

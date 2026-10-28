@@ -43,6 +43,7 @@ describe("a fight inside a building, in Hebrew", () => {
 
   it("words a plan inside by what it says, and leaves the defaults unsaid (decision 101)", () => {
     expect(describeInteriorPlan({ entry: "top", grenades: false })).toBe("כניסה מהגג · בלי רימונים");
+    expect(describeInteriorPlan({ entry: "stair" })).toBe("כניסה בדלת ועלייה במדרגות לקומה העליונה");
     expect(describeInteriorPlan({ holdStoreys: [0, 1], atWindows: false, expects: "above", fallBack: false })).toBe(
       "מחזיק בקרקע, קומה 1 · בעומק החדרים · מצפה לתקיפה מלמעלה · מחזיק עד הסוף",
     );

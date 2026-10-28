@@ -3186,7 +3186,7 @@ export class Game {
   setInteriorPlan(unitId: string, plan: InteriorPlan): void {
     const unit = this.getUnit(unitId);
     if (unit.kind === "vehicle") throw new Error(`${unitId} does not fight inside buildings`);
-    if (plan.entry !== undefined && plan.entry !== "door" && plan.entry !== "top") throw new Error(`no such way in: ${String(plan.entry)}`);
+    if (plan.entry !== undefined && plan.entry !== "door" && plan.entry !== "top" && plan.entry !== "stair") throw new Error(`no such way in: ${String(plan.entry)}`);
     if (plan.expects !== undefined && plan.expects !== "below" && plan.expects !== "above") throw new Error(`no such direction: ${String(plan.expects)}`);
     if (plan.holdStoreys !== undefined && !(Array.isArray(plan.holdStoreys) && plan.holdStoreys.length > 0 && plan.holdStoreys.every((k) => Number.isInteger(k) && k >= 0))) throw new Error("storeys are counted from 0, the ground floor");
     this.interior.setOrder(unitId, plan);
@@ -3716,7 +3716,7 @@ export class Game {
       const joins = this.joinFights && fighting === attacker.side && inThatFight;
       const counters = this.counterattackInside && fighting !== undefined && fighting !== attacker.side && target.side === fighting && inThatFight && !this.interior.inFight(attackerId);
       if (fighting !== undefined && !joins && !counters) return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.fightingInside };
-      if (joins && this.interior.entryIn(inside.id) !== "door") return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.enteredFromRoof };
+      if (joins && this.interior.entryIn(inside.id) === "top") return { ...this.noAssault(attackerId, defenderId), reason: INTERIOR_REFUSAL.enteredFromRoof };
       // From the roof, as planned (decision 101): only down a house's stairs.
       if (fighting === undefined && this.interior.orderFor(attackerId)?.entry === "top") {
         const floors = this.interior.plan(this, inside);

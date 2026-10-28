@@ -73,8 +73,10 @@ describe("the fight inside a building (decision 96)", () => {
     expect(wings).toBeGreaterThan(0); // the cases this test is for are in it
     expect(cutOff).toBeGreaterThan(0);
     for (const seed of seeds.slice(0, 30))
-      for (const entry of ["door", "top"] as const)
+      for (const entry of ["door", "stair", "top"] as const)
         for (const building of [house(`h${seed}`, 16, 12), ell, dumbbell(`db${seed}`)]) {
+          const floors = generateFloorPlan(building, seed);
+          if (entry !== "door" && (!floors.stairwell || floors.storeys.length < 2)) continue;
           const r = fight(seed, { entry, grenades: seed % 2 === 0 }, 3, seed % 3 === 0, building);
           expect(r.outcome, `${building.id} seed ${seed} ${entry}`).not.toBe("standoff");
         }
@@ -230,6 +232,78 @@ describe("the fight inside a building (decision 96)", () => {
   it("refuses to come down from the top of a house with no stairs", () => {
     const plan = generateFloorPlan(house("bungalow", 16, 12, 1), 1);
     expect(() => new InteriorFight({ plan, attack: { entry: "top", grenades: false, teams: squad }, defence: [] }, new Rng(1))).toThrow(/stairs/);
+    expect(() => new InteriorFight({ plan, attack: { entry: "stair", grenades: false, teams: squad }, defence: [] }, new Rng(1))).toThrow(/storey above/);
+  });
+
+  describe("by the inside stairs (decision 124)", () => {
+    /** The second each storey was wholly cleared, and the ground floor when the top's first room fell. */
+    function climb(seed: number, security: string[] = []) {
+      const plan = generateFloorPlan(house(`s${seed}`, 16, 12, 3), seed);
+      const f = new InteriorFight({ plan, attack: { entry: "stair", grenades: false, teams: squad, ...(security.length ? { security } : {}) }, defence: [] }, new Rng(seed));
+      const done: number[] = plan.storeys.map(() => -1);
+      let groundAtTop = -1, topAt = -1, footHeld = false;
+      const s = plan.stairwell!;
+      const foot = s.y * plan.width + s.x;
+      while (!f.finished && f.second < 20000) {
+        f.tick();
+        f.cleared.forEach((c, k) => { if (done[k]! < 0 && c.every((v) => v === 1)) done[k] = f.second; });
+        if (groundAtTop < 0 && f.cleared[2]!.some((v) => v === 1)) {
+          groundAtTop = f.cleared[0]!.filter((v) => v === 1).length;
+          topAt = f.second;
+          footHeld = f.soldiers.some((m) => m.side === "BLUE" && m.storey === 0 && m.post?.cell === foot && !m.out);
+        }
+      }
+      return { f, plan, done, groundAtTop, topAt, footHeld };
+    }
+
+    it("takes the way to the stairs, clears from the top down, and the ground floor last", () => {
+      let partial = 0;
+      for (const seed of seeds.slice(0, 20)) {
+        const { f, plan, done, groundAtTop, topAt } = climb(seed);
+        expect(f.result().outcome, `seed ${seed}`).toBe("cleared");
+        expect(done[2]!, `seed ${seed}`).toBeLessThanOrEqual(done[1]!);
+        // The ground floor is done either on the way to the stairs (every room of it on the way) or after the storeys above.
+        expect(done[0]! < topAt || done[0]! >= done[1]!, `seed ${seed}`).toBe(true);
+        expect(groundAtTop, `seed ${seed}`).toBeGreaterThan(0); // the stair room at least
+        if (groundAtTop < plan.storeys[0]!.rooms.length - plan.storeys[0]!.cutOff.length) partial++;
+      }
+      expect(partial).toBeGreaterThan(0); // in some houses rooms below are left for last
+    });
+
+    it("leaves a security man holding the stair foot while the teams are above", () => {
+      for (const seed of seeds.slice(0, 10)) expect(climb(seed, ["s1", "s2"]).footHeld, `seed ${seed}`).toBe(true);
+    });
+
+    it("sends a team that joins after the top is cleared to the storey still to clear, not the top", () => {
+      let joined = 0;
+      for (const seed of seeds.slice(0, 10)) {
+        const plan = generateFloorPlan(house(`s${seed}`, 16, 12, 3), seed);
+        const f = new InteriorFight({ plan, attack: { entry: "stair", grenades: false, teams: [["a1", "a2", "a3", "a4"]] }, defence: [] }, new Rng(seed));
+        while (!f.finished && !f.cleared[2]!.every((v) => v === 1)) f.tick();
+        if (f.finished || f.cleared[1]!.every((v) => v === 1)) continue;
+        f.join([["j1", "j2", "j3", "j4"]]);
+        joined++;
+        while (!f.finished) {
+          f.tick();
+          expect(f.soldiers.filter((m) => m.id.startsWith("j")).every((m) => m.storey !== 2), `seed ${seed}`).toBe(true);
+        }
+        expect(f.result().outcome, `seed ${seed}`).toBe("cleared");
+      }
+      expect(joined).toBeGreaterThan(0);
+    });
+
+    it("climbs a flight a storey: later onto the top than a single flight would take", () => {
+      const plan = generateFloorPlan(house("s1", 16, 12, 3), 1);
+      const f = new InteriorFight({ plan, attack: { entry: "stair", grenades: false, teams: [["a1", "a2", "a3", "a4"]] }, defence: [] }, new Rng(1));
+      const team = (f as unknown as { teams: { phase: string }[] }).teams[0]!;
+      let onStairs = -1;
+      while (!f.finished && f.second < 20000 && !f.soldiers.some((m) => m.storey === 2)) {
+        f.tick();
+        if (onStairs < 0 && team.phase === "stairs") onStairs = f.second;
+      }
+      expect(onStairs).toBeGreaterThan(0);
+      expect(f.second - onStairs).toBeGreaterThanOrEqual(2 * CLOSE_QUARTERS.stairUpSeconds);
+    });
   });
 
   it("refuses a defender posted on a wall", () => {
