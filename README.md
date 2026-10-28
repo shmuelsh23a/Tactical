@@ -3827,6 +3827,25 @@ on the stated reasoning, still awaiting the author's word.
       doctrinal 69% / 45.5%, plain 49% / 19.5% — two of them a point or
       less outside decision 118's bands, inside the noise of 100 battles a
       plan, and recorded as in band. Nothing tuned.
+    - **The mass assault's lead is the price of a slow attack, accepted**
+      (the author, 2026-10-28; balance.md, *Why the mass assault still
+      leads*): without the reinforcement the top four plans are level at
+      3:1 (83–87%); A leads because it goes in at turn 21 and meets the
+      reinforcement in a third of its battles, the fire-heavy plan in 70%.
+      The window is in the brief, so a player can plan to finish first.
+
+123. ✅ **A battle is judged as the turn closed** (the author, 2026-10-28,
+    the recommended option). A side beaten or broken at the close of a turn
+    is beaten: a reinforcement arriving as the next turn begins does not
+    revive it. Before, the end was judged after both, and a defender beaten
+    the turn before an arrival fought on — 38 battles in 1,800, the result
+    changed in 10 (balance.md). `Game.judgedUnits` leaves a reinforcement
+    that came this turn out of the reckoning while its turn is in the
+    initiative phase, where nothing happens; `sideBroken` and
+    `sideDefeated` both judge on it, and so do the score and the what-if
+    re-rolls. Derived and drawing nothing, so recordings replay unchanged.
+    Re-measured at 3:1: every cell 0–2 points up, the doctrinal median 69
+    → 70.5 (into its band), plain 49 → 49.5.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

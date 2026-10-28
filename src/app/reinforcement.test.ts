@@ -3,6 +3,7 @@ import { Game, makeInfantry } from "../engine/index.js";
 import { DOCTRINAL_DRILL, DrillState, REINFORCEMENT_BEHIND_M, drillCombat, drillMovement, type DrillTask } from "./drill.js";
 import { UMPIRE_LENS, actionVisibleTo, lensFor, lessonsFor, replayForReview, unitSides } from "./debriefView.js";
 import { describeOutcome, unitNames } from "./debriefText.js";
+import { sideDefeated } from "./hotseat.js";
 
 /**
  * The defender's reinforcement in the drill (rules decision 122): on arrival
@@ -151,5 +152,67 @@ describe("the lessons count a reinforcement as unseen only once it has come (dec
     const sides = unitSides(rec);
     expect(lessonsFor("BLUE", before, steps, contactsAfter, sides).neverDetected).toEqual(["RED-1-1"]);
     expect(lessonsFor("BLUE", steps.length, steps, contactsAfter, sides).neverDetected.sort()).toEqual(["RED-1-1", "RED-R1"]);
+  });
+});
+
+describe("a reinforcement does not revive a battle already lost (decision 123)", () => {
+  const build = () => {
+    const g = new Game({
+      seed: 3,
+      enforceC2: false,
+      reinforcements: [{ side: "RED", window: [2, 2], units: [makeInfantry("RED-R1", "RED", "squad", { x: 0, y: -300 }, 8)] }],
+    });
+    g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 900 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("summary");
+    return g;
+  };
+
+  it("judges the side as the turn closed, though the reinforcement is on the map", () => {
+    const g = build();
+    g.getUnit("RED-1-1").neutralized = true; // beaten in turn 1
+    g.advanceToPhase("initiative"); // turn 2 begins, and the reinforcement comes
+    expect(g.units.some((u) => u.id === "RED-R1")).toBe(true);
+    expect(g.getUnit("RED-1-1").neutralized).toBe(true);
+    expect(sideDefeated(g, "RED")).toBe(true);
+  });
+
+  it("counts it once its turn is under way", () => {
+    const g = build();
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    g.getUnit("RED-1-1").neutralized = true; // beaten in turn 2, with the reinforcement there
+    expect(sideDefeated(g, "RED")).toBe(false);
+  });
+});
+
+describe("a side broken as the turn closed stays broken (decision 123)", () => {
+  it("though the reinforcement's fresh men would bring it under its breakpoint", () => {
+    const g = new Game({
+      seed: 3,
+      enforceC2: false,
+      morale: true,
+      lethality: "research",
+      qualityBreakpoint: true, // the shift is judged on the same forces
+      attackers: ["BLUE"],
+      reinforcements: [{
+        side: "RED",
+        window: [2, 2],
+        units: [makeInfantry("RED-R1", "RED", "squad", { x: 0, y: -300 }, 8), makeInfantry("RED-R2", "RED", "squad", { x: 20, y: -300 }, 8)],
+      }],
+    });
+    g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 0 }, 8));
+    g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 900 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("summary");
+    g.advanceToPhase("initiative"); // turn 2 begins, and the reinforcement comes
+    // Its men broken as the turn closed: set after the morale step, so no rally undoes it.
+    for (const man of g.getUnit("RED-1-1").soldiers!) man.morale!.state = "broken";
+    expect(g.sideBroken("RED")).toBe(true); // 8 of 8, its last turn's men
+    expect(sideDefeated(g, "RED")).toBe(true);
+    g.advanceToPhase("intel");
+    expect(g.sideBroken("RED")).toBe(false); // 8 of 24, once the turn is under way
+    expect(sideDefeated(g, "RED")).toBe(false);
   });
 });

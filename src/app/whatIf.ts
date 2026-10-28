@@ -50,7 +50,7 @@ function outcomeOf(recording: GameRecording, seed: number): WhatIfRun {
   const broken: Side[] = [];
 
   for (const side of ["BLUE", "RED"] as Side[]) {
-    const units = game.units.filter((u) => u.side === side);
+    const units = game.judgedUnits(side); // as the battle was judged (decision 123)
     for (const unit of units) {
       losses[side] += unit.soldiers
         ? fullStrength(unit) - fitSoldiers(unit)

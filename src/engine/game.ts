@@ -4596,8 +4596,23 @@ export class Game {
   }
 
   /**
+   * The forces `side` is judged on, beaten or broken (rules decision 123). A
+   * reinforcement that came this turn joins the reckoning once the turn is
+   * under way: in its initiative phase, where nothing happens, the side is
+   * judged as its last turn closed, so an arrival does not revive a battle
+   * already lost.
+   */
+  judgedUnits(side: Side): Unit[] {
+    const fresh = this.phase === "initiative"
+      ? new Set(this.reinforcements.filter((r) => r.side === side && r.turn === this.turn).flatMap((r) => r.units.map((u) => u.id)))
+      : new Set<string>();
+    return this.units.filter((u) => u.side === side && !fresh.has(u.id));
+  }
+
+  /**
    * Whether `side` has broken (rules decision 19) — the battle is over for it
    * though it still has forces on the map. Always false without morale.
+   * Judged on {@link judgedUnits} (decision 123).
    */
   sideBroken(side: Side): boolean {
     if (!this.morale) return false;
@@ -4607,18 +4622,19 @@ export class Game {
     // By posture on the research figures (rules decision 44), where a routed
     // or neutralised force counts only its men down or broken (decisions 45
     // and 48); two thirds, and such a force counted whole, on the document's.
-    if (this.lethality !== "research") return sideBroken(this.units, side);
+    const units = this.judgedUnits(side);
+    if (this.lethality !== "research") return sideBroken(units, side);
     const posture = this.attackers.includes(side) ? this.attackerBreakpoint : SIDE_BREAK_BY_POSTURE.defending;
-    const share = this.qualityBreakpoint ? Math.min(0.95, Math.max(0.05, posture + this.breakShift(side))) : posture;
-    return sideBroken(this.units, side, share, false);
+    const share = this.qualityBreakpoint ? Math.min(0.95, Math.max(0.05, posture + this.breakShift(units))) : posture;
+    return sideBroken(units, side, share, false);
   }
 
   /** A side's {@link QUALITY_BREAK_SHIFT}: its fighting men's mean, a force without a quality counted regular (rules decision 87). */
-  private breakShift(side: Side): number {
+  private breakShift(units: readonly Unit[]): number {
     let men = 0;
     let sum = 0;
-    for (const u of this.units) {
-      if (u.side !== side || u.kind === "command" || u.vehicle) continue;
+    for (const u of units) {
+      if (u.kind === "command" || u.vehicle) continue;
       const n = u.soldiers?.length ?? 0;
       men += n;
       sum += n * QUALITY_BREAK_SHIFT[u.quality?.type ?? "regular"];

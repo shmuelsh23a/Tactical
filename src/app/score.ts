@@ -69,7 +69,9 @@ export function battleScore(game: Game, winner: Side | null = battleWinner(game)
     if (side === attacker) return winner === side ? SCORE.time * Math.max(0, limit - ended) / limit : 0;
     return winner === side ? SCORE.time : SCORE.time * Math.min(ended, limit) / limit;
   };
-  const forces = game.units.map((u) => ({ id: u.id, side: u.side, ...strength(u) }));
+  // On the forces the battle was judged on (decision 123): a reinforcement come as the turn after the end began did not fight it.
+  const judged = new Set(SIDES.flatMap((side) => game.judgedUnits(side).map((u) => u.id)));
+  const forces = game.units.filter((u) => judged.has(u.id)).map((u) => ({ id: u.id, side: u.side, ...strength(u) }));
   const sides = Object.fromEntries(SIDES.map((side) => {
     const own = forces.filter((f) => f.side === side);
     const men = own.reduce((t, f) => t + f.men, 0);

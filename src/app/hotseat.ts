@@ -270,10 +270,11 @@ export function isGone(u: Unit): boolean {
  * nobody to command does not keep a battle going (author, 2026-09-23; before
  * that a hidden HQ could hold a battle open for ever, docs/balance.md) — or,
  * played with morale, when it has broken (rules decision 19). A side fielding
- * nothing but command groups is judged on those.
+ * nothing but command groups is judged on those. A reinforcement that came
+ * this turn is not counted until the turn is under way (rules decision 123).
  */
 export function sideDefeated(game: Game, side: Side): boolean {
-  const units = game.units.filter((u) => u.side === side);
+  const units = game.judgedUnits(side);
   const fighting = units.filter((u) => u.kind !== "command");
   const judged = fighting.length > 0 ? fighting : units;
   return units.length > 0 && (judged.every((u) => u.neutralized || isGone(u)) || game.sideBroken(side));
