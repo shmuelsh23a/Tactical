@@ -1,10 +1,12 @@
 # Handoff — where the project stands
 
-**Next, in one line: narrate a reinforcement's arrival in the debrief, for the side it reinforced (the author said yes, 2026-10-25, for this session). Decision 122 is closed: time costs the attacker — 60-turn deadlines where shorter, and a defender's reinforcement in every scenario, its window in the brief — re-measured and accepted in band (doctrinal 69% / 45.5%, plain 49% / 19.5%).**
+**Next, in one line: the engine-only build (`tsconfig.engine.json`) fails on `structuredClone` in `interior/coupling.ts` — fix it and add it to `npm run check`; then the free probe into why the mass assault leads by about 10 points at 3:1. Done 2026-10-28: the debrief narrates a reinforcement's arrival to its own side, and the lessons stop counting an enemy reinforcement before it comes.**
 
-**Current as of 2026-10-21, night** (`d2a99b0` and the handoff after it,
-pushed). Since the late handoff (`e41c93d`), in the README's rules
-decisions, every option the author's unless marked ⚠️:
+**Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
+Since the batch below: decisions 118–122 in the README (122, time costs the
+attacker, is the latest), and the debrief's reinforcement narration. The
+batch of 2026-10-21, night, kept here for its figures — since the late
+handoff (`e41c93d`), every option the author's unless marked ⚠️:
 - **The audit** ([drill-audit.md](drill-audit.md)): five areas read
   against the corpus by paragraph — the plain drill, the Western and
   doctrinal drills, the attacker's company, the defender, the fight inside.
@@ -65,10 +67,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `e1073a0` (2026-10-25)
+## Green as of `a2fba10` (2026-10-28)
 
 ```
-npm run check       lint + typecheck clean, 1,227 tests, 85 files
+npm run check       lint + typecheck clean, 1,231 tests, 85 files
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -662,27 +664,23 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**First: the debrief narrates a reinforcement's arrival** (agreed with the
-author, 2026-10-25). The live log tells the reinforced side
-(`reinforcementHe`, `App.tsx` `logArrivals`), but the debrief reads only
-recorded actions, and an arrival is not one: it happens inside `beginTurn`
-from `recording.reinforcements` (each with its drawn `turn`). Where to hook
-it: the debrief's per-step outcomes (`replayForReview`, the `beginTurn`
-step in `recording.ts` ~732 carries no `arrived`) — return the arrivals on
-that step's outcome and narrate them in `debriefText.ts`, visible to the
-reinforced side only (`debriefView.ts`; the other side learns of it by
-seeing it, as of any force). Test it per side, as
-`src/app/reinforcement.test.ts` does the lens. Then the next threads: the
-engine-only build's `structuredClone` (below), and why the mass assault
-still leads by about 10 points at 3:1 on both drills (balance.md, *after
-decision 122*).
+**First: the engine-only build** (`tsconfig.engine.json`) fails on
+`structuredClone` in `interior/coupling.ts`, from before decision 120;
+`npm run check` does not run it, so add it there once it passes. **Then**
+why the mass assault still leads by about 10 points at 3:1 on both drills
+(balance.md, *after decision 122*), a probe, free.
+
+**Done 2026-10-28**: the debrief narrates a reinforcement's arrival
+(`85093c3`). The replay carries `arrived` on the step that opened the turn
+— a `beginTurn` outcome, or the `phase` outcome of the step that closed
+the summary — and `describeOutcome` tells it to the reinforced side and
+the umpire only. Checked in the browser on Tel Azeka (arrival turn 36):
+RED and the umpire read it, BLUE nothing. Review found the lessons'
+"never detected" counting a reinforcement before it came (`a2fba10`).
 
 **Ruled 2026-10-25**: the medians after decision 122 accepted as in band;
 a reinforcement's window ends at least 5 turns before the deadline (the
-delay mission 5–10). **Open**: the debrief does not yet narrate a reinforcement's arrival
-(the live log does); the engine-only build (`tsconfig.engine.json`) fails
-on `structuredClone` in `interior/coupling.ts`, from before decision 120 —
-`npm run check` does not run it.
+delay mission 5–10).
 
 **Done 2026-10-24: decisions 120–121 measured** (balance.md): over both
 bands after 120, back in after 121's untenable trigger. The recipe, kept:
