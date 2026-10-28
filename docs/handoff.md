@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: the computer defender and the harness preparing alternate positions, so decision 119's displace does something in computer play (a placement rule to put to the author first). Done 2026-10-28: the debrief narrates arrivals; the engine build is in `check`; the mass assault's lead is the reinforcement, all of it, accepted; decision 123, a battle is judged as the turn closed.**
+**Next, in one line: the plans doctrine names that a player cannot yet set inside a house (the entry point, the room order, top-down by an inside stair) — put the shape to the author first. Done 2026-10-28: the debrief narrates arrivals; the engine build is in `check`; the mass assault's lead is the reinforcement, accepted; decision 123, a battle is judged as the turn closed. (Alternate positions in computer play were done by decisions 120–121.)**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -677,11 +677,11 @@ Measurements that cost real time and are already recorded:
 
 ## What I would pick up next
 
-**First:** the computer defender and the harness preparing alternate
-positions, so decision 119's displace does something in computer play — a
-placement rule to put to the author before building. Then the plans
-doctrine names that a player cannot yet set inside a house (the entry
-point, the room order, top-down by an inside stair).
+**First:** the plans doctrine names that a player cannot yet set inside a
+house (the entry point, the room order, top-down by an inside stair) — the
+shape to the author before building. (The computer defender's alternate
+positions, long listed here, were decisions 120–121; decision 121's ⚠️ to
+watch: its 50 m trigger equals the reserve's "lost within" 50 m.)
 
 **Done 2026-10-28, the probe** (balance.md, *Why the mass assault still
 leads*): the lead is the reinforcement, all of it — without it the top
@@ -716,12 +716,7 @@ that a displaced squad's post is not counterattacked; watch the house
 and urban cells.
 
 **The audit's leftovers are built** (decision 119), the plain drill's
-3:1 is ruled, and decision 120 is built. Then, in order: the computer defender and the harness
-preparing alternate positions, so decision 119's displace does something in
-computer play (a placement rule to put to him); why the mass assault (A)
-is the doctrinal drill's best plan by eleven points at 3:1 (a probe,
-free); and the plans doctrine names that a player cannot yet set inside a
-house (the entry point, the room order, top-down by an inside stair).
+3:1 is ruled, and decisions 120–123 are built.
 
 **After that, as before:** separate the reserve's worth in
 `yokneamHouseReserve` (a `counterattackInside` harness flag); why the
