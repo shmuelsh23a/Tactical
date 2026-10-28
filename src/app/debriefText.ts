@@ -42,12 +42,12 @@ const phaseHe: Record<string, string> = {
   summary: "סיכום",
 };
 
-/** A weapon's Hebrew name, as the log and the debrief word it. */
 /** A reinforcement come onto the map (decision 122), told to its own side: who came, by name. */
 export function reinforcementHe(names: readonly string[]): string {
   return `הגיעה תגבורת: ${names.join(", ")}`;
 }
 
+/** A weapon's Hebrew name, as the log and the debrief word it. */
 export function weaponName(key: string): string {
   return term(weaponHe, key);
 }
@@ -751,18 +751,25 @@ export function describeOutcome(
   const observed = shotAt == null || lens.mayKnow(shotAt);
   // The umpire has no side of its own; every other lens is somebody's.
   const umpire = lens.side == null;
+  // Reinforcements come onto the map as a turn begins (rules decision 122):
+  // told to the side they reinforce, by name, as the live log tells it. The
+  // other side learns of them by seeing them, as of any force.
+  const arrivals = (arrived: readonly { side: Side; unitIds: string[] }[] | undefined) =>
+    (arrived ?? [])
+      .filter((a) => umpire || a.side === lens.side)
+      .map((a) => reinforcementHe(a.unitIds.map(who)));
 
   switch (outcome.kind) {
     case "setup":
       return "";
 
     case "beginTurn":
-      return `יוזמה: ${outcome.initiativeOrder.join(" → ")}`;
+      return [`יוזמה: ${outcome.initiativeOrder.join(" → ")}`, ...arrivals(outcome.arrived)].join(" · ");
 
     case "phase": {
       // Indirect fire lands on the step that crossed resolvePriorArty, not on
       // the step that marked it — so it is narrated here.
-      const parts: string[] = [];
+      const parts: string[] = [...arrivals(outcome.arrived)];
       for (const screen of outcome.smokeArrived) {
         parts.push(`מסך עשן ירד (רדיוס ${screen.radius}מ')`);
       }

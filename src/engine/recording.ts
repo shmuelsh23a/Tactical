@@ -539,7 +539,13 @@ export interface GameRecording {
  */
 export type ActionOutcome =
   | { kind: "setup" }
-  | { kind: "beginTurn"; turn: number; initiativeOrder: Side[] }
+  | {
+      kind: "beginTurn";
+      turn: number;
+      initiativeOrder: Side[];
+      /** Reinforcements that came onto the map as the turn began (rules decision 122). */
+      arrived?: { side: Side; unitIds: string[] }[];
+    }
   | {
       kind: "phase";
       phase: Phase;
@@ -561,6 +567,12 @@ export type ActionOutcome =
       morale?: MoraleReport[];
       /** What the fights inside buildings did as the turn closed (rules decision 96). */
       interior?: InteriorReport[];
+      /**
+       * Reinforcements that came onto the map as the next turn began (rules
+       * decision 122) — an arrival is not an action, so it rides on the step
+       * whose turn it opened.
+       */
+      arrived?: { side: Side; unitIds: string[] }[];
     }
   | { kind: "uavSweep"; detection: DetectionResult }
   | { kind: "queueIndirectFire"; mission: PendingFireMission }
@@ -741,7 +753,12 @@ export function replayWithOutcomes(
         break;
       case "beginTurn": {
         const r = game.beginTurn();
-        outcome = { kind: "beginTurn", turn: r.turn, initiativeOrder: r.initiativeOrder };
+        outcome = {
+          kind: "beginTurn",
+          turn: r.turn,
+          initiativeOrder: r.initiativeOrder,
+          ...(r.arrived ? { arrived: r.arrived } : {}),
+        };
         break;
       }
       case "advancePhase": {
@@ -755,6 +772,7 @@ export function replayWithOutcomes(
           chargeWork: r.chargeWork ?? [],
           ...(r.morale ? { morale: r.morale } : {}),
           ...(r.interior ? { interior: r.interior } : {}),
+          ...(r.arrived ? { arrived: r.arrived } : {}),
         };
         break;
       }
@@ -769,6 +787,7 @@ export function replayWithOutcomes(
           chargeWork: r.chargeWork ?? [],
           ...(game.morale ? { morale: r.morale } : {}),
           ...(r.interior.length ? { interior: r.interior } : {}),
+          ...(r.arrived.length ? { arrived: r.arrived } : {}),
         };
         break;
       }

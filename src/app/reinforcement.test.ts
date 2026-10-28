@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Game, makeInfantry } from "../engine/index.js";
 import { DOCTRINAL_DRILL, DrillState, REINFORCEMENT_BEHIND_M, drillCombat, drillMovement, type DrillTask } from "./drill.js";
-import { actionVisibleTo, lensFor, unitSides } from "./debriefView.js";
-import { unitNames } from "./debriefText.js";
+import { UMPIRE_LENS, actionVisibleTo, lensFor, replayForReview, unitSides } from "./debriefView.js";
+import { describeOutcome, unitNames } from "./debriefText.js";
 
 /**
  * The defender's reinforcement in the drill (rules decision 122): on arrival
@@ -82,4 +82,51 @@ describe("a reinforcement in the debrief (decision 122)", () => {
     expect(lens.isOwn("RED-R1")).toBe(true);
     expect(actionVisibleTo(rec.actions[order]!, "RED", lens, sides)).toBe(true);
   });
+});
+
+describe("the debrief narrates a reinforcement's arrival (decision 122)", () => {
+  // The ways a turn opens: the App closes a turn into the next with
+  // advanceToPhase("initiative"); a tool may step out of the summary with
+  // advancePhase, or call beginTurn from it.
+  for (const opening of ["advanceToPhase", "advancePhase", "beginTurn"] as const) {
+    it(`to the side it reinforced, and the umpire, only (${opening})`, () => {
+      const g = new Game({
+        seed: 3,
+        enforceC2: false,
+        reinforcements: [{ side: "RED", window: [2, 2], units: [makeInfantry("RED-R1", "RED", "squad", { x: 0, y: -300 }, 8, "תגבורת 1")] }],
+      });
+      g.addUnit(makeInfantry("RED-1-1", "RED", "squad", { x: 0, y: 0 }, 8));
+      g.addUnit(makeInfantry("BLUE-1-1", "BLUE", "squad", { x: 0, y: 900 }, 8));
+      const due = g.reinforcements[0]!.turn;
+      g.beginTurn();
+      while (g.turn < due) {
+        if (opening === "advanceToPhase") {
+          g.advanceToPhase("summary");
+          g.advanceToPhase("initiative");
+        } else if (opening === "advancePhase") {
+          g.advanceToPhase("summary");
+          g.advancePhase();
+        } else {
+          g.advanceToPhase("summary");
+          g.beginTurn();
+        }
+      }
+      const rec = g.toRecording();
+      const { steps, contactsAfter } = replayForReview(rec);
+      const at = steps.findIndex((s) => "arrived" in s.outcome && s.outcome.arrived);
+      expect(at).toBeGreaterThanOrEqual(0);
+      expect(steps[at]!.outcome.kind).toBe(opening === "beginTurn" ? "beginTurn" : "phase");
+      const names = unitNames(rec);
+      const sides = unitSides(rec);
+      const line = (side: "RED" | "BLUE") =>
+        describeOutcome(steps[at]!.outcome, names, lensFor(side, at, contactsAfter, sides), steps[at]!.action);
+      expect(line("RED")).toContain("הגיעה תגבורת: תגבורת 1");
+      expect(line("BLUE")).not.toContain("תגבורת");
+      // The enemy still reads the rest of the step: the initiative, where it is one.
+      if (opening === "beginTurn") expect(line("BLUE")).toContain("יוזמה");
+      expect(describeOutcome(steps[at]!.outcome, names, UMPIRE_LENS, steps[at]!.action)).toContain("הגיעה תגבורת: תגבורת 1");
+      // Told once: no other step carries it.
+      expect(steps.filter((s) => "arrived" in s.outcome && s.outcome.arrived)).toHaveLength(1);
+    });
+  }
 });

@@ -694,15 +694,6 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   }
 
   /**
-   * Report what became of each force's charge-laying work as the turn closed
-   * (rules decision 16) — the charge that went in, or the work that was lost.
-   *
-   * **And where**, now that the log is filtered (rules decision 17). Decision
-   * 16 left the position off this line because every entry was readable from
-   * both sides of the table; the line is written for the laying side alone, so
-   * it says what the debrief has always been allowed to say.
-   */
-  /**
    * A reinforcement come onto the map (decision 122): its own side is told,
    * by name; the other side learns of it by seeing it, as of any force.
    */
@@ -713,6 +704,15 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     }
   }
 
+  /**
+   * Report what became of each force's charge-laying work as the turn closed
+   * (rules decision 16) — the charge that went in, or the work that was lost.
+   *
+   * **And where**, now that the log is filtered (rules decision 17). Decision
+   * 16 left the position off this line because every entry was readable from
+   * both sides of the table; the line is written for the laying side alone, so
+   * it says what the debrief has always been allowed to say.
+   */
   function logChargeWork(reports: ChargeWorkReport[]) {
     for (const report of reports) {
       const unit = game.units.find((u) => u.id === report.unitId);
