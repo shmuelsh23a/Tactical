@@ -25,11 +25,12 @@ built twice, on consecutive days, because the second session read only
 ## Commands
 
 ```bash
-npm run check        # lint + typecheck + the whole suite. The one to run.
+npm run check        # lint + both typechecks + the whole suite. The one to run.
 npm run dev          # Vite dev server, the hotseat game
 npm run build:engine # emit the engine as a standalone library -> dist/
 npm test             # vitest alone
 npm run typecheck    # strict tsc alone
+npm run typecheck:engine # the engine alone, with no platform types (no DOM, no node)
 npm run lint         # the architectural rules alone
 npm run balance      # headless battles -> the table on docs/balance.md (not part of check)
 npm run validate     # the game's numbers against the sources -> docs/validation.md (not part of check)

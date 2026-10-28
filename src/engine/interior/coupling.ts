@@ -99,6 +99,11 @@ export interface InteriorPlan {
   fallBack?: boolean;
 }
 
+/** A plan's own copy: its one array too. Spelled out, not `structuredClone`, because the engine assumes no platform (`tsconfig.engine.json`). */
+function copyPlan(plan: InteriorPlan): InteriorPlan {
+  return { ...plan, ...(plan.holdStoreys ? { holdStoreys: [...plan.holdStoreys] } : {}) };
+}
+
 /** The reason an assault gives when it goes into the building rather than being resolved outside. */
 export const GOES_INSIDE = "goes inside";
 
@@ -163,12 +168,12 @@ export class InteriorBattles {
   /** A force's plan, as last given (decision 101): a copy. */
   orderFor(unitId: string): InteriorPlan | undefined {
     const o = this.orders.get(unitId);
-    return o ? structuredClone(o) : undefined;
+    return o ? copyPlan(o) : undefined;
   }
 
   /** Keep a force's plan (decision 101). The game's, which journals it. */
   setOrder(unitId: string, plan: InteriorPlan): void {
-    this.orders.set(unitId, structuredClone(plan));
+    this.orders.set(unitId, copyPlan(plan));
   }
   /** Forces that assaulted into a building this turn: they go in as it closes. */
   private readonly entering = new Map<string, string>();
