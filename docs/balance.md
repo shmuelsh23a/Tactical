@@ -6523,6 +6523,30 @@ attackers out a fight / median minutes of those cleared:
 - **It drives nobody out** (withdrew 0, the roof 0.15–0.17): the ground
   floor's way out is behind the attackers, held.
 
+**The open lane** (the author's "give it doctrine's gain", C-110's "open
+lane to resupply and reinforce"), the stair rows again:
+
+| Defenders | Grenades | As first built | Casualties down the lane (built) | And grenades up it (taken out) |
+|---|---|---|---|---|
+| 1 | no | 100% / 1.21 / 30.2 | 100% / 1.21 / 29.5 | — |
+| 3 prepared, fall back, expect below | no | 80% / 4.55 / 48.0 | 80% / 4.57 / 46.2 | — |
+| | yes | 89% / 3.85 / 45.9 | 89% / 3.83 / 43.0 | 93% / 3.42 / 42.9 |
+| 3 prepared, hold | no | 72% / 5.09 / 54.5 | 72% / 5.10 / 52.6 | — |
+| | yes | 85% / 4.10 / 47.6 | 85% / 4.10 / 45.5 | 91% / 3.62 / 42.9 |
+| 3 prepared, expect above | no | 83% / 4.32 / 47.4 | 83% / 4.35 / 46.1 | — |
+| | yes | 91% / 3.73 / 44.2 | 91% / 3.71 / 41.8 | 96% / 3.26 / 41.0 |
+
+- **Casualties down the lane buy time, not men**: 1.5–2.9 minutes, the
+  halts no longer ×1.5. Against the door the stair is now level or a hair
+  better (89% / 3.83 / 43.0 against 87% / 3.90 / 43.3, within noise);
+  the roof keeps its lead on men lost and clearing, at 3–4 minutes more.
+  Nothing dominated.
+- **Grenades up the lane dominated everything** (a full load at each
+  "CLEAR", ⚠️ ours): grenade share of hits 15% → 25%, better than the
+  door and the roof on every count, so the roof became a trap. Ruled out
+  for now (the author: "we will deal with ammo later"); resupply returns
+  with a finite stock.
+
 ## The re-measure after decision 122, 2026-10-25
 
 Time costs the attacker: 60-turn deadlines (where shorter) and the

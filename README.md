@@ -3871,6 +3871,15 @@ on the stated reasoning, still awaiting the author's word.
         three prepared defenders 89% cleared, 3.85 men out, 45.9 minutes,
         against the door's 87% / 3.90 / 43.3 and the roof's 92% / 3.62 /
         46.7; it drives nobody out.
+      - **The open lane** (the author, 2026-10-28, on that measure: "give it
+        doctrine's gain"; then "casualties now, we will deal with ammo
+        later"). While an attacker holds the stair foot, a man put out
+        above is carried down the held stairs: no ×1.5 halt for floors
+        below not yet cleared (the roof keeps it). Re-measured: 89% / 3.83
+        / 43.0 against three prepared defenders. Grenades up the lane were
+        built and measured too — a full load at each "CLEAR" beat both
+        other ways in on every count (93% / 3.42 / 42.9) — and taken out:
+        **resupply inside is for later**, with a finite stock.
     - **The entry point: a breach in a wall the player picks.** The player
       names a side of the house's outline; a force with charges blows a
       breach hole there at the laid charge's cost in turns (decision 16)
@@ -3882,6 +3891,10 @@ on the stated reasoning, still awaiting the author's word.
       on the spot. Each team takes the nearest uncleared room through held
       ground, as now; the player's say is the floor order (door, stair,
       roof) and the entry point.
+    - **The climb is heard** (the author, 2026-10-28, the recommended
+      option): every storey it reaches turns to watch the stairs, as
+      coming down does. C-103 speaks only of coming down; the way up is
+      ours (⚠️).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

@@ -680,7 +680,11 @@ Measurements that cost real time and are already recorded:
 2026-10-28, all recommended). (1) Done the same day: `entry: "stair"`,
 measured with `interior-sim --storied` (balance.md, *The inside stair*) —
 between the door and the roof, close to the roof; the ⚠️ to watch: without
-grenades against defenders who hold it is the worst of the three. (2) A breach in a side of the outline the player picks,
+grenades against defenders who hold it is the worst of the three. Then the
+open lane: casualties go down the held stairs (no ×1.5). **Do not
+re-propose** grenades up the lane as a full load at each CLEAR: it beat
+both other ways in on every count; the author: "we will deal with ammo
+later" — resupply inside comes back with a finite stock. (2) A breach in a side of the outline the player picks,
 by a force with charges, at the laid charge's cost (decision 16); into the
 room behind it. (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
