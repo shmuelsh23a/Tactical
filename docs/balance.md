@@ -6547,6 +6547,44 @@ lane to resupply and reinforce"), the stair rows again:
   for now (the author: "we will deal with ammo later"); resupply returns
   with a finite stock.
 
+## The breach, built and measured, 2026-10-29
+
+Decision 124's second part. `npm run interior-sim -- --storied --breach`:
+the door and the stair go in by a hole blown in the face opposite the
+front door, the room behind stunned; with grenades. Cleared / attackers
+out a fight / median minutes of those cleared, against the same houses
+without it:
+
+| Defenders | Door | Door, breach | Stair | Stair, breach | Roof |
+|---|---|---|---|---|---|
+| 1 | 100% / 1.23 / 29.0 | 100% / 1.21 / 26.3 | 100% / 1.25 / 30.2 | 100% / 1.17 / 27.4 | 100% / 1.34 / 34.6 |
+| 3 prepared, fall back, expect below | 87% / 3.90 / 43.3 | 90% / 3.67 / **38.3** | 89% / 3.83 / 43.0 | **92% / 3.63** / 39.5 | 92% / 3.62 / 46.7 |
+| 3 prepared, hold | 85% / 4.28 / 45.1 | 88% / 3.96 / 40.0 | 85% / 4.10 / 45.5 | 87% / 3.93 / 42.6 | 87% / 4.14 / 48.6 |
+| 3 prepared, expect above | 88% / 3.69 / 43.3 | 91% / 3.61 / 38.4 | 91% / 3.71 / 41.8 | 92% / 3.63 / 39.7 | 92% / 3.63 / 47.2 |
+
+(The hole: the middle of the longest unbroken stretch of the wall facing
+that way, after the code review; a first cut, the middle of all that
+wall's cells, gave within 2 points and 1.5 minutes of these.)
+
+(The stair's rows without a breach are after the open lane, casualties
+only; its 1-defender row is from before it.)
+
+- **Inside, the breach beats the front door on every count**: 2–3 points
+  more cleared, fewer men out, and **3–5 minutes quicker**. It is not
+  dominated as a choice: its price is outside the house, which this
+  harness does not see — a force trained for charges (none of the
+  attacker's today), two turns of it standing within 25 m of the wall
+  doing nothing, and the work lost if it is hit.
+- **The minutes are not the stun's.** A 2 s stun on one room cannot buy
+  six minutes; the defence's watch on the front door, and a way in on the
+  far side of a house whose rooms are laid out from the door, are the
+  likely reasons. Not probed yet.
+- **The stair with a breach matches the roof on men** (3.63 against
+  3.62) at 7 minutes less. The roof keeps its place only where no breach
+  can be laid.
+- Not yet measured on the map: a breach in a scenario. No scenario gives
+  the attacker a force trained for charges.
+
 ## The re-measure after decision 122, 2026-10-25
 
 Time costs the attacker: 60-turn deadlines (where shorter) and the

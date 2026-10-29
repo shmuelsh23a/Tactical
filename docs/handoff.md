@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 124's breach (a side of the outline the player picks, by a force with charges). Done 2026-10-28: the inside stair built and measured (between the door and the roof; balance.md); the debrief narrates arrivals; decision 123, a battle is judged as the turn closed.**
+**Next, in one line: decision 124 is done (the inside stair, its open lane, the breach); pick the next roadmap item. Open from it: whether an infantry squad carries a breaching charge (no attacker has one today), and resupply inside with a finite stock.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -684,9 +684,13 @@ grenades against defenders who hold it is the worst of the three. Then the
 open lane: casualties go down the held stairs (no ×1.5). **Do not
 re-propose** grenades up the lane as a full load at each CLEAR: it beat
 both other ways in on every count; the author: "we will deal with ammo
-later" — resupply inside comes back with a finite stock. (2) A breach in a side of the outline the player picks,
-by a force with charges, at the laid charge's cost (decision 16); into the
-room behind it. (3) Room order stays the drill's (nearest uncleared room
+later" — resupply inside comes back with a finite stock. (2) The breach,
+done 2026-10-29: `layCharge(unit, "breach", { buildingId, facing })`, 2
+turns, blown as the side goes in, the room behind stunned; inside it beats
+the door on every count (balance.md, *The breach*) — its price is outside.
+⚠️ To watch: why it is 3–5 minutes quicker (not the 2 s stun; likely the
+far-side way in), and the app's buttons were not driven with a house in
+reach — no scenario puts a charge force near one. (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
 positions, long listed here, were decisions 120–121; decision 121's ⚠️ to
 watch: its 50 m trigger equals the reserve's "lost within" 50 m.)

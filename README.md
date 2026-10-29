@@ -3846,9 +3846,10 @@ on the stated reasoning, still awaiting the author's word.
     re-rolls. Derived and drawing nothing, so recordings replay unchanged.
     Re-measured at 3:1: every cell 0–2 points up, the doctrinal median 69
     → 70.5 (into its band), plain 49 → 49.5.
-124. ⏳ **The plans inside a house: the inside stair, a breach, and the
+124. ✅ **The plans inside a house: the inside stair, a breach, and the
     drill's room order** (the author, 2026-10-28, every option the
-    recommended one; the inside stair built 2026-10-28, the breach not yet):
+    recommended one; the inside stair built 2026-10-28, the breach
+    2026-10-29):
     - **Top-down by an inside stair is a third entry** beside the door and
       the roof (ATP 3-06.11 (2024), para C-110). The teams go in by the door,
       take only the stair room, climb to the top storey and clear down; the
@@ -3886,6 +3887,30 @@ on the stated reasoning, still awaiting the author's word.
       and goes into the room behind it. A defence watching the door is
       caught facing the wrong way. With no charge, the door. Whether an
       infantry squad carries a breaching charge is a ruling for later.
+      - **Its shape** (the author, 2026-10-29, every option the recommended
+        one): its own choice beside the floor order — it replaces the front
+        door for "door" and "stair", the roof ignores it; laid by decision
+        16's rules, `Game.layCharge(unit, "breach", { buildingId, facing })`,
+        by a force with charges within the assault's last bound (25 m) of
+        the wall, 2 turns lost if it moves, fires or is hit; the blast
+        stuns the room behind as a grenade does (2 s), and nobody's watch
+        changes.
+      - **Built**: the face is named by the compass, north being −y as the
+        hotseat draws the map (⚠️ ours); the hole is the middle of the wall
+        a man can walk through that faces nearest that way. The charge is
+        set at the end of the second turn and blown as its side next goes
+        in; the hole stays a way in for both sides after. The app offers it
+        for each face in reach of a force trained for charges.
+        After the code review: the force goes to the hole, not the door;
+        one breach a house, by either side, set from outside it; once
+        blown, a force goes in by whichever of the door and the hole is
+        nearer it (⚠️ ours), the roof never by it; the defence's windows
+        face the front door when the breach is blown as they go in.
+        Measured (balance.md, *The breach*): opposite the door, with
+        grenades against three prepared defenders, 90% cleared, 3.67 out,
+        38.3 minutes against the door's 87% / 3.90 / 43.3 — better inside
+        on every count; its price is outside, two turns of a force at the
+        wall.
     - **The room order is the drill's**, not the plan's: the attacker sees
       only the outline, and doctrine leaves room by room to the team leader
       on the spot. Each team takes the nearest uncleared room through held
