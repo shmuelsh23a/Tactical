@@ -6,7 +6,7 @@ import { sealRecording, verifyRecording } from "../recording.js";
 import { Rng } from "../rng.js";
 import type { MapObject } from "../terrain.js";
 import { CLOSE_QUARTERS } from "../data/interior.js";
-import { CHARGE_LAYING } from "../data/engineering.js";
+import { BREACHING_CHARGES_EACH, CHARGE_LAYING } from "../data/engineering.js";
 import { GOES_INSIDE } from "./coupling.js";
 import { CELL_KIND, FACINGS, breachCell, facingOf, generateFloorPlan, type Facing } from "./floorPlan.js";
 import { InteriorFight } from "./resolver.js";
@@ -92,18 +92,17 @@ describe("going in by the breach (decision 124)", () => {
 });
 
 describe("a breaching charge in play (decision 124)", () => {
-  /** R-1 in the house; B-1, trained for charges, 10 m out from the face opposite the door. Any seed: the face is found from the plan. */
-  function battle(seed: number) {
+  /** R-1 in the house; B-1, named the breach squad in planning, 10 m out from the face opposite the door. Any seed: the face is found from the plan. */
+  function battle(seed: number, opts: { breachingCharges?: number } = {}) {
     const h = house();
-    const g = new Game({ seed, enforceC2: false, terrain: { objects: [h] } });
+    const g = new Game({ seed, enforceC2: false, terrain: { objects: [h] }, ...opts });
     g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 6));
     const plan = g.interior.plan(g, h);
     const facing = OPPOSITE[facingOf(plan, plan.outsideDoors[0]!)!];
     const wall = g.interior.breachPoint(g, h, facing)!;
     const dx = wall.x - 108, dy = wall.y - 106, d = Math.hypot(dx, dy);
-    const b = makeInfantry("B-1", "BLUE", "squad", { x: wall.x + (10 * dx) / d, y: wall.y + (10 * dy) / d }, 8);
-    b.canLayCharges = true;
-    g.addUnit(b);
+    g.addUnit(makeInfantry("B-1", "BLUE", "squad", { x: wall.x + (10 * dx) / d, y: wall.y + (10 * dy) / d }, 8));
+    g.designateBreachElement("B-1");
     g.beginTurn();
     g.advanceToPhase("movement");
     return { g, h, facing };
@@ -140,8 +139,8 @@ describe("a breaching charge in play (decision 124)", () => {
     expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.tooFar);
     b.position = near;
     expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing: "up" as Facing })).toThrow(LAY_CHARGE_REFUSAL.noWall);
-    g.getUnit("B-1").canLayCharges = false;
-    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.untrained);
+    g.getUnit("B-1").breachingCharges = 0;
+    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.noBreachingCharge);
   });
 
   it("is one a house: refused once a charge is set, by either side, and to a force inside", () => {
@@ -151,14 +150,131 @@ describe("a breaching charge in play (decision 124)", () => {
     g.advanceToPhase("movement");
     expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing: OPPOSITE[facing] })).toThrow(LAY_CHARGE_REFUSAL.alreadyBreached);
     const red = g.getUnit("R-1");
-    red.canLayCharges = true;
+    red.breachingCharges = 1; // as an engineer force a scenario gives them to
     expect(() => g.layCharge("R-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.alreadyBreached);
   });
 
   it("is not set from inside the house", () => {
     const { g, facing } = battle(4);
     const red = g.getUnit("R-1");
-    red.canLayCharges = true;
+    red.breachingCharges = 1;
     expect(() => g.layCharge("R-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.insideIt);
+  });
+});
+
+describe("who carries breaching charges, and how many (decision 125)", () => {
+  const field = (squads: number, opts: { breachingCharges?: number } = {}) => {
+    const g = new Game({ seed: 1, enforceC2: false, terrain: { objects: [house()] }, ...opts });
+    for (let k = 1; k <= squads; k++) g.addUnit(makeInfantry(`B-${k}`, "BLUE", "squad", { x: 20 * k, y: 200 }, 8));
+    return g;
+  };
+
+  it("is a squad named in planning, one for every three squads, carrying the scenario's charges (2 by default)", () => {
+    const g = field(4);
+    g.designateBreachElement("B-1");
+    expect(g.getUnit("B-1").breachingCharges).toBe(BREACHING_CHARGES_EACH);
+    g.designateBreachElement("B-2"); // four squads: two platoons' worth
+    expect(() => g.designateBreachElement("B-3")).toThrow(/one a platoon/);
+    g.designateBreachElement("B-2", false);
+    expect(g.getUnit("B-2").breachingCharges).toBeUndefined();
+    g.designateBreachElement("B-3");
+    expect(field(3, { breachingCharges: 5 }).breachingCharges).toBe(5);
+    const h = field(3, { breachingCharges: 5 });
+    h.designateBreachElement("B-1");
+    expect(h.getUnit("B-1").breachingCharges).toBe(5);
+    h.beginTurn();
+    expect(() => h.designateBreachElement("B-2")).toThrow(/mission planning/);
+  });
+
+  it("is not a force trained only for mines and IEDs (decision 16)", () => {
+    const g = field(1);
+    g.getUnit("B-1").canLayCharges = true;
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" })).toThrow(LAY_CHARGE_REFUSAL.noBreachingCharge);
+  });
+});
+
+describe("spending breaching charges (decision 125)", () => {
+  /** B-1, the breach squad, at the north wall; the house empty, so nothing interrupts the work but the test. */
+  function atTheWall() {
+    const h = house();
+    const g = new Game({ seed: 1, enforceC2: false, terrain: { objects: [h] } });
+    const wall = g.interior.breachPoint(g, h, "north")!;
+    g.addUnit(makeInfantry("B-1", "BLUE", "squad", { x: wall.x, y: wall.y - 10 }, 8));
+    g.designateBreachElement("B-1");
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    return g;
+  }
+
+  it("takes one out to start, gives it back when called off, and spends it when the work is lost", () => {
+    const g = atTheWall();
+    const b = g.getUnit("B-1");
+    g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
+    expect(b.breachingCharges).toBe(BREACHING_CHARGES_EACH - 1);
+    g.layCharge("B-1", null);
+    expect(b.breachingCharges).toBe(BREACHING_CHARGES_EACH);
+    g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
+    b.movedThisTurn = 1; // the work is lost at the turn's end
+    g.advanceToPhase("summary");
+    g.advanceToPhase("initiative");
+    expect(b.layingCharge).toBeUndefined();
+    expect(b.breachingCharges).toBe(BREACHING_CHARGES_EACH - 1);
+  });
+
+  it("spends it when called off after the work is already lost this turn", () => {
+    const g = atTheWall();
+    const b = g.getUnit("B-1");
+    g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
+    b.movedThisTurn = 1;
+    g.layCharge("B-1", null);
+    expect(b.breachingCharges).toBe(BREACHING_CHARGES_EACH - 1);
+  });
+
+  it("moves its last charge to another wall without needing a second", () => {
+    const g = atTheWall();
+    const b = g.getUnit("B-1");
+    b.breachingCharges = 1;
+    g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
+    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing: "east" })).not.toThrow(LAY_CHARGE_REFUSAL.noBreachingCharge);
+    expect(b.breachingCharges ?? 0).toBeLessThanOrEqual(0);
+  });
+
+  it("stays with the squad when it sends a team off", () => {
+    const g = atTheWall();
+    const b = g.getUnit("B-1");
+    const team = g.detachTeam("B-1", b.soldiers!.slice(0, 2).map((s) => s.id));
+    expect(team.breachingCharges).toBeUndefined();
+    expect(team.breachElement).toBeUndefined();
+    expect(b.breachingCharges).toBe(BREACHING_CHARGES_EACH);
+  });
+
+  it("replays a scenario's own count", () => {
+    const h = house();
+    const g = new Game({ seed: 1, enforceC2: false, terrain: { objects: [h] }, breachingCharges: 3 });
+    const wall = g.interior.breachPoint(g, h, "north")!;
+    g.addUnit(makeInfantry("B-1", "BLUE", "squad", { x: wall.x, y: wall.y - 10 }, 8));
+    g.designateBreachElement("B-1");
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.getUnit("B-1").breachingCharges = 3;
+    for (const facing of ["north", "east", "north"] as const) { g.layCharge("B-1", "breach", { buildingId: "house", facing }); g.layCharge("B-1", null); }
+    g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
+    g.advanceToPhase("summary");
+    const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
+    expect(sealed.breachingCharges).toBe(3);
+    expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
+    expect(() => new Game({ seed: 1, breachingCharges: -1 })).toThrow(/whole number/);
+  });
+
+  it("spends one when the charge is set, and refuses once none are left", () => {
+    const g = atTheWall();
+    const b = g.getUnit("B-1");
+    b.breachingCharges = 1;
+    g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
+    for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    expect(g.interior.breachIn("house")?.blown).toBe(false);
+    expect(b.breachingCharges).toBe(0);
   });
 });

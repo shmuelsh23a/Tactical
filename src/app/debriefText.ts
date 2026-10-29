@@ -85,6 +85,8 @@ const term = (dict: Record<string, string>, key: string) => dict[key] ?? key;
 export function planningRefusalHe(message: string): string {
   if (/the most it may/.test(message)) return `נרשם המספר המרבי של מטרות (${MAX_REGISTERED_TARGETS_PER_WEAPON}) לאמצעי זה`;
   if (/already has its alternate/.test(message)) return "לכוח כבר הוכנה עמדה חלופית";
+  if (/breach squad\(s\), one a platoon/.test(message)) return "כבר נקבעו כיתות פריצה — אחת לכל מחלקה";
+  if (/a breach element is a squad/.test(message)) return "כיתת פריצה היא כיתת חי\"ר";
   if (/must be more than/.test(message)) return `עמדה חלופית חייבת להיות במרחק של יותר מ-${PREPARED_POSITION_REACH_M} מ' מהכוח`;
   if (/is a vehicle/.test(message)) return "רכב אינו מוצב כתצפית ואינו מכין עמדה";
   if (/and above/.test(message)) return "האמצעי אינו בסמכות הדרג";
@@ -154,6 +156,8 @@ export function reasonHe(reason?: string): string {
       return "כבר יש מטען פריצה או פרצה במבנה הזה";
     case "inside the building":
       return "מטען פריצה מוצב מבחוץ, לא מתוך המבנה";
+    case "no breaching charge":
+      return "אין לכוח מטען פריצה — רק לכיתת הפריצה או להנדסה";
     case "no one left to lay it":
       return "אין מי שיניח את המטען";
     case "already moved this turn":
@@ -676,6 +680,8 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return `${action.side}: מטרה מתוכננת ל${term(weaponHe, action.weapon)} ${at(action.at)}`;
     case "designateObservationPost":
       return `${who(action.unitId)} הוצב כתצפית`;
+    case "designateBreachElement":
+      return action.on ? `${who(action.unitId)} נקבע ככיתת הפריצה של המחלקה` : `${who(action.unitId)} אינו עוד כיתת הפריצה`;
     case "prepareAlternatePosition":
       return `${who(action.unitId)}: הוכנה עמדה חלופית ${at(action.at)}`;
     case "callForFire":

@@ -84,6 +84,7 @@ export type RecordedAction =
   // Mission planning, before the first turn (rules decision 38).
   | { kind: "registerTarget"; side: Side; weapon: string; at: Point }
   | { kind: "designateObservationPost"; unitId: string }
+  | { kind: "designateBreachElement"; unitId: string; on: boolean }
   | { kind: "prepareAlternatePosition"; unitId: string; at: Point }
   /**
    * A commander made a fire team out of part of a force (rules decision
@@ -252,6 +253,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.closedTerrain !== undefined && typeof r.closedTerrain !== "boolean") throw malformed("closedTerrain");
   if (r.windowFire !== undefined && typeof r.windowFire !== "boolean") throw malformed("windowFire");
   if (r.joinFights !== undefined && typeof r.joinFights !== "boolean") throw malformed("joinFights");
+  if (r.breachingCharges !== undefined && !(Number.isInteger(r.breachingCharges) && (r.breachingCharges as number) >= 0)) throw malformed("breachingCharges");
   if (r.breakEndsInside !== undefined && typeof r.breakEndsInside !== "boolean") throw malformed("breakEndsInside");
   if (r.moraleInside !== undefined && typeof r.moraleInside !== "boolean") throw malformed("moraleInside");
   if (r.counterattackInside !== undefined && typeof r.counterattackInside !== "boolean") throw malformed("counterattackInside");
@@ -496,6 +498,8 @@ export interface GameRecording {
   windowFire?: boolean;
   /** Whether a second assault joined a fight inside (rules decision 99). Read as **off** when absent: it was refused. */
   joinFights?: boolean;
+  /** Breaching charges a breach squad carried (decision 125), when not the default. */
+  breachingCharges?: number;
   /** Whether a side's break ended its fights inside (rules decision 102). Read as **off** when absent. */
   breakEndsInside?: boolean;
   /** Whether morale reached inside and the battle waited for a fight inside (rules decision 103). Read as **off** when absent. */
@@ -722,6 +726,7 @@ export function replayWithOutcomes(
     closedTerrain: recording.closedTerrain ?? false,
     windowFire: recording.windowFire ?? false,
     joinFights: recording.joinFights ?? false,
+    ...(recording.breachingCharges !== undefined ? { breachingCharges: recording.breachingCharges } : {}),
     breakEndsInside: recording.breakEndsInside ?? false,
     moraleInside: recording.moraleInside ?? false,
     counterattackInside: recording.counterattackInside ?? false,
@@ -843,6 +848,10 @@ export function replayWithOutcomes(
         break;
       case "designateObservationPost":
         game.designateObservationPost(action.unitId);
+        outcome = { kind: "setup" };
+        break;
+      case "designateBreachElement":
+        game.designateBreachElement(action.unitId, action.on);
         outcome = { kind: "setup" };
         break;
       case "prepareAlternatePosition":

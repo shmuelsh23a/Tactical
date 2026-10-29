@@ -134,6 +134,7 @@ export function outcomeVisibleTo(
     // Mission planning is done behind one's own lines (rules decision 38): an
     // observation post is found the way any force is, by being looked for.
     case "designateObservationPost":
+    case "designateBreachElement":
     case "prepareAlternatePosition":
     // Splitting a force is a reorganisation among one's own men (decision
     // 89). The enemy does not watch the order being given; it meets the new
@@ -240,6 +241,7 @@ export function actionVisibleTo(
     // Mission planning is done behind one's own lines (rules decision 38): an
     // observation post is found the way any force is, by being looked for.
     case "designateObservationPost":
+    case "designateBreachElement":
     case "prepareAlternatePosition":
     // Splitting a force is a reorganisation among one's own men (decision
     // 89). The enemy does not watch the order being given; it meets the new

@@ -107,7 +107,7 @@ export {
   OBSERVATION_POST_RANGE_M,
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
-export { CHARGE_LAYING } from "./data/engineering.js";
+export { BREACHING_CHARGES_EACH, CHARGE_LAYING } from "./data/engineering.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
 export {
   TURN_SECONDS,

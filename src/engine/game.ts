@@ -56,7 +56,7 @@ import {
   type SmokeSource,
 } from "./data/smoke.js";
 import { SUCCESSION_TURNS, orderInterval } from "./data/c2.js";
-import { CHARGE_LAYING } from "./data/engineering.js";
+import { BREACHING_CHARGES_EACH, CHARGE_LAYING, SQUADS_A_PLATOON } from "./data/engineering.js";
 import {
   canObserve,
   detectByMovement,
@@ -357,6 +357,8 @@ export const LAY_CHARGE_REFUSAL = {
   alreadyBreached: "already breached",
   /** A breach is set from the street, not by a force inside the house. */
   insideIt: "inside the building",
+  /** No breaching charge left, or none carried: only a breach squad or engineers have them (decision 125). */
+  noBreachingCharge: "no breaching charge",
 } as const;
 
 /**
@@ -791,6 +793,11 @@ export interface GameOptions {
    */
   joinFights?: boolean;
   /**
+   * Breaching charges a breach squad carries (decision 125): the scenario's,
+   * sized to its objective; {@link BREACHING_CHARGES_EACH} when it says nothing.
+   */
+  breachingCharges?: number;
+  /**
    * A side's break reaches inside its buildings (rules decision 102): its men
    * still fighting inside stop — a defender's give themselves up, an
    * attacker's leave by the door — and the fight ends with the house to the
@@ -961,6 +968,7 @@ export class Game {
   readonly closedTerrain: boolean;
   readonly windowFire: boolean;
   readonly joinFights: boolean;
+  readonly breachingCharges: number;
   readonly breakEndsInside: boolean;
   readonly moraleInside: boolean;
   readonly counterattackInside: boolean;
@@ -1439,6 +1447,8 @@ export class Game {
     this.closedTerrain = opts.closedTerrain ?? true;
     this.windowFire = opts.windowFire ?? true;
     this.joinFights = opts.joinFights ?? true;
+    this.breachingCharges = opts.breachingCharges ?? BREACHING_CHARGES_EACH;
+    if (!Number.isInteger(this.breachingCharges) || this.breachingCharges < 0) throw new Error(`breachingCharges must be a whole number, not ${this.breachingCharges}`);
     this.breakEndsInside = opts.breakEndsInside ?? true;
     this.moraleInside = opts.moraleInside ?? true;
     this.counterattackInside = opts.counterattackInside ?? true;
@@ -1633,6 +1643,7 @@ export class Game {
       ...(this.closedTerrain ? { closedTerrain: true } : {}),
       ...(this.windowFire ? { windowFire: true } : {}),
       ...(this.joinFights ? { joinFights: true } : {}),
+      ...(this.breachingCharges !== BREACHING_CHARGES_EACH ? { breachingCharges: this.breachingCharges } : {}),
       ...(this.breakEndsInside ? { breakEndsInside: true } : {}),
       ...(this.moraleInside ? { moraleInside: true } : {}),
       ...(this.counterattackInside ? { counterattackInside: true } : {}),
@@ -1981,6 +1992,27 @@ export class Game {
   }
 
   /**
+   * Name an infantry squad its platoon's breach element, or take the name
+   * back (decision 125, ATP 3-21.9 (2025), para 3-178: "a dismounted
+   * Infantry squad as the breach element"): it carries the scenario's
+   * breaching charges. One a platoon; the engine knows no platoons, so a
+   * side may name one for every {@link SQUADS_A_PLATOON} of its squads (⚠️ ours).
+   */
+  designateBreachElement(unitId: string, on = true): void {
+    this.requirePlanning("A breach element");
+    const unit = this.getUnit(unitId);
+    if (unit.kind !== "infantry" || unit.echelon !== "squad") throw new Error(`${unitId} is not an infantry squad: a breach element is a squad`);
+    if (on && !unit.breachElement) {
+      const squads = this.units.filter((u) => u.side === unit.side && u.kind === "infantry" && u.echelon === "squad");
+      const allowed = Math.max(1, Math.ceil(squads.length / SQUADS_A_PLATOON));
+      if (squads.filter((u) => u.breachElement).length >= allowed) throw new Error(`${unit.side} has named its ${allowed} breach squad(s), one a platoon`);
+    }
+    if (on) { unit.breachElement = true; unit.breachingCharges = this.breachingCharges; }
+    else if (unit.breachElement) { delete unit.breachElement; delete unit.breachingCharges; }
+    this.journal({ kind: "designateBreachElement", unitId, on });
+  }
+
+  /**
    * Prepare an alternate position for `unitId` at `at` (rules decision 38):
    * ground made ready as its first position was, so a force that has to move
    * off a shelled position has somewhere to go. Its cover is the force's own
@@ -2085,6 +2117,9 @@ export class Game {
       // about *this* force rather than about the ground it stands on.
       covering: undefined,
       layingCharge: undefined,
+      // The breach squad's charges stay with the squad (decision 125).
+      breachingCharges: undefined,
+      breachElement: undefined,
       observationPost: false,
     };
     this.units.push(team);
@@ -2955,13 +2990,20 @@ export class Game {
     const unit = this.getUnit(unitId);
 
     if (type === null) {
+      // Called off: a breaching charge not yet set goes back in the pack — unless
+      // the work is already lost this turn, which spends it (decision 125).
+      if (unit.layingCharge?.type === "breach" && !this.chargeWorkLost(unit)) unit.breachingCharges = (unit.breachingCharges ?? 0) + 1;
       delete unit.layingCharge;
       this.journal({ kind: "layCharge", unitId, type });
       return;
     }
     // Refusals are short keys, not sentences: they are shown to a Hebrew
     // player through `reasonHe`, the way an order's refusals are.
-    if (!unit.canLayCharges) throw new Error(LAY_CHARGE_REFUSAL.untrained);
+    // A breach in hand counts: moving it to another wall needs no second charge.
+    const breachingCharges = (unit.breachingCharges ?? 0) + (unit.layingCharge?.type === "breach" ? 1 : 0);
+    if (type === "breach" ? breachingCharges <= 0 : !unit.canLayCharges) {
+      throw new Error(type === "breach" ? LAY_CHARGE_REFUSAL.noBreachingCharge : LAY_CHARGE_REFUSAL.untrained);
+    }
     if (unit.neutralized) throw new Error(LAY_CHARGE_REFUSAL.neutralised);
     if (unit.routing) throw new Error(LAY_CHARGE_REFUSAL.routing);
     if (fitSoldiers(unit) === 0) throw new Error(LAY_CHARGE_REFUSAL.noOneLeft);
@@ -3006,6 +3048,9 @@ export class Game {
       turnsWorked: 0,
       startedTurn: this.turn,
     };
+    // Switching from a breach to other work gives its charge back; starting one takes it out (decision 125).
+    if (unit.layingCharge?.type === "breach") unit.breachingCharges = (unit.breachingCharges ?? 0) + 1;
+    if (type === "breach") unit.breachingCharges = (unit.breachingCharges ?? 0) - 1;
     unit.layingCharge = work;
     this.journal({ kind: "layCharge", unitId, type, ...(work.breach ? { breach: { ...work.breach } } : {}) });
   }
@@ -4687,6 +4732,11 @@ export class Game {
    * would add an action the replay never took. Ids still come from the game's
    * own counter, so a replay numbers it identically.
    */
+  /** Whether a force's charge work is already lost this turn: what {@link progressChargeLaying} will find at its end. */
+  private chargeWorkLost(unit: Unit): boolean {
+    return unit.neutralized || unit.movedThisTurn > 0 || unit.firedThisTurn || unit.hitThisTurn || unit.underFire;
+  }
+
   private progressChargeLaying(): ChargeWorkReport[] {
     const reports: ChargeWorkReport[] = [];
     for (const unit of this.units) {
@@ -4712,6 +4762,8 @@ export class Game {
         const building = work.breach && this.terrain.objects.find((o) => o.id === work.breach!.buildingId && o.kind === "building");
         delete unit.layingCharge;
         if (!work.breach || !building || this.interior.breachIn(building.id)) {
+          // Never set: it goes back in the pack (⚠️ ours, decision 125).
+          unit.breachingCharges = (unit.breachingCharges ?? 0) + 1;
           reports.push({ unitId: unit.id, type: "breach", position: work.position, breach: work.breach, interrupted: "gone" });
           continue;
         }

@@ -16,3 +16,17 @@ export const CHARGE_LAYING = {
    */
   turnsToLay: 2,
 } as const;
+
+/**
+ * Breaching charges (decision 125). Doctrine gives no number — supplies are
+ * sized "to breach many doors based on the size of the objective" (ATP
+ * 3-06.11 (2024), para 6-107) — so a scenario sets it; this is what a
+ * breach squad carries when it says nothing. Ours (⚠️, on balance.md).
+ */
+export const BREACHING_CHARGES_EACH = 2;
+/**
+ * Rifle squads a platoon, for how many breach squads a side may name when
+ * the engine knows no platoons (decision 125: one a platoon). Ours (⚠️):
+ * the US rifle platoon's three.
+ */
+export const SQUADS_A_PLATOON = 3;

@@ -272,6 +272,15 @@ export interface Unit {
    * flag is how a scenario says which force is one.
    */
   canLayCharges?: boolean;
+  /**
+   * Breaching charges carried (decision 125): kit of its own, apart from
+   * the mines and IEDs above. A squad the player names its platoon's breach
+   * element in planning carries them, and so does any engineer force a
+   * scenario gives them to. Each breach set, or lost with the work, spends one.
+   */
+  breachingCharges?: number;
+  /** Named its platoon's breach element in planning (decision 125). */
+  breachElement?: boolean;
   /** The charge this force is laying, while it is laying one. */
   layingCharge?: ChargeWork;
 

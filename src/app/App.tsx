@@ -114,7 +114,7 @@ type Stage = "planning" | "initiative" | "activation" | "gameover";
  * registered target, or place the selected force's alternate position. An
  * observation post is a force, so it is set from the force's card instead.
  */
-type PlanTool = "target" | "alternate" | "post";
+type PlanTool = "target" | "alternate" | "post" | "breach";
 /** Indirect-fire tube the player is marking with. */
 type Tube = "lightMortar" | "mortar" | "heavyMortar" | "artillery";
 /** Every tube, lightest first (rules decision 93 adds the 60 and 120 mm). */
@@ -651,6 +651,20 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     force();
   }
 
+  /** Name the selected squad its platoon's breach element, or take it back (decision 125). */
+  function handleBreachElement() {
+    if (!selectedOwn) return;
+    const on = !selectedOwn.breachElement;
+    try {
+      game.designateBreachElement(selectedOwn.id, on);
+      setPlanned(true);
+      pushLog(on ? `${selectedOwn.name} נקבע ככיתת הפריצה` : `${selectedOwn.name} אינו עוד כיתת הפריצה`, "info", onlyFor(viewingSide));
+    } catch (err) {
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
+    }
+    force();
+  }
+
   /** This side has planned: hand over to the next, or begin the first turn. */
   function handleEndPlanning() {
     setLeaveArmed(false);
@@ -1021,7 +1035,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     }
     pushLog(
       stopping
-        ? `${selectedOwn.name} הפסיק להציב מטען פריצה — העבודה אבדה`
+        ? `${selectedOwn.name} הפסיק להציב מטען פריצה — המטען חזר לכיתה, אלא אם העבודה כבר אבדה בתור זה`
         : `${selectedOwn.name} מתחיל להציב מטען פריצה בקיר ${facingHe[facing]} — ${CHARGE_LAYING.turnsToLay} תורות`,
       "info",
       onlyFor(viewingSide),
@@ -1036,7 +1050,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
    */
   const breachable = (() => {
     const none = { faces: [] as (typeof FACINGS)[number][], buildingId: "", breach: undefined as ReturnType<typeof game.interior.breachIn> };
-    if (!selectedOwn?.canLayCharges) return none;
+    if (!selectedOwn || (selectedOwn.breachingCharges === undefined && selectedOwn.layingCharge?.type !== "breach")) return none;
     let best = none, bestD = Infinity;
     for (const o of game.terrain.objects) {
       if (o.kind !== "building" || o.footprint.shape !== "polygon" || pointInPolygon(selectedOwn.position, o.footprint.points)) continue;
@@ -1781,6 +1795,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                   <button className={activePlanTool === "alternate" ? "on" : ""} onClick={() => setPlanTool("alternate")}>
                     עמדה חלופית
                   </button>
+                  <button className={activePlanTool === "breach" ? "on" : ""} onClick={() => setPlanTool("breach")}>
+                    כיתת פריצה
+                  </button>
                 </div>
 
                 {activePlanTool === "target" && (
@@ -1817,6 +1834,21 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                       onClick={handleObservationPost}
                     >
                       {selectedOwn?.observationPost ? `${selectedOwn.name} — תצפית` : "הצב כתצפית"}
+                    </button>
+                  </>
+                )}
+                {activePlanTool === "breach" && (
+                  <>
+                    <p className="hint">
+                      בחר כיתת חי"ר וקבע אותה ככיתת הפריצה של המחלקה (אחת לכל מחלקה): היא נושאת{" "}
+                      {game.breachingCharges} מטעני פריצה, ומציבה אותם על קיר של מבנה בטווח ההסתערות.
+                    </p>
+                    <button
+                      className="btn-primary"
+                      disabled={!selectedOwn || selectedOwn.kind !== "infantry" || selectedOwn.echelon !== "squad"}
+                      onClick={handleBreachElement}
+                    >
+                      {selectedOwn?.breachElement ? `${selectedOwn.name} — כיתת פריצה (בטל)` : "קבע ככיתת פריצה"}
                     </button>
                   </>
                 )}
@@ -2221,6 +2253,22 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                           </button>
                         ))}
                       </div>
+                      {selectedOwn.layingCharge && (
+                        <p className="hint">
+                          מניח {chargeHe(selectedOwn.layingCharge.type)} —{" "}
+                          {turnsLeftHe(
+                            CHARGE_LAYING.turnsToLay - selectedOwn.layingCharge.turnsWorked,
+                          )}
+                          . תנועה, ירי או פגיעה בכוח יאבדו את העבודה.
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {/* Breaching charges (decisions 124, 125): a breach squad's
+                      or an engineer force's kit, offered at a house in reach. */}
+                  {selectedOwn && (selectedOwn.breachingCharges !== undefined || selectedOwn.layingCharge?.type === "breach") && (
+                    <>
                       {/* A breaching charge against a house in reach (decision 124). */}
                       {breachable.breach ? (
                         <p className="hint">
@@ -2245,15 +2293,12 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                           </div>
                         </>
                       )}
-                      {selectedOwn.layingCharge && (
-                        <p className="hint">
-                          מניח {chargeHe(selectedOwn.layingCharge.type)} —{" "}
-                          {turnsLeftHe(
-                            CHARGE_LAYING.turnsToLay - selectedOwn.layingCharge.turnsWorked,
-                          )}
-                          . תנועה, ירי או פגיעה בכוח יאבדו את העבודה.
-                        </p>
-                      )}
+                      <p className="hint">
+                        מטעני פריצה: {selectedOwn.breachingCharges ?? 0}
+                        {selectedOwn.layingCharge?.type === "breach" && !selectedOwn.canLayCharges
+                          ? ` · מציב מטען פריצה — ${turnsLeftHe(CHARGE_LAYING.turnsToLay - selectedOwn.layingCharge.turnsWorked)}. תנועה, ירי או פגיעה בכוח יאבדו את העבודה.`
+                          : ""}
+                      </p>
                     </>
                   )}
 
