@@ -3948,8 +3948,10 @@ on the stated reasoning, still awaiting the author's word.
       work is lost or the charge set. A team split off the squad takes
       none. A force trained only for mines and IEDs (decision 16) no longer
       breaches: recordings from decision 124's day with such a breach will
-      not replay. Not yet: a scenario file (`tools/make-scenario.py`)
-      cannot give charges to a force or set the count.
+      not replay. A scenario file (`tools/make-scenario.py`) gives an
+      infantry force charges of its own — an attached engineer force —
+      with `"breachingCharges"` on the force, and sets a breach squad's
+      count with `"breachingCharges"` at the top.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

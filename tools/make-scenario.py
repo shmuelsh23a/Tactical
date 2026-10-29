@@ -40,6 +40,10 @@ The spec, in full — everything not marked optional is required:
                                             the report (decision 54)
       "commandSuccession": true,            optional (default true): losing a
                                             command group has effect (decision 55)
+      "breachingCharges": 3,                optional (default 2): the breaching
+                                            charges a breach squad named in
+                                            planning carries, sized to the
+                                            objective (decision 125)
       "timeLimit": 45,                      optional: the turn the attackers must
                                             win by, or the attack fails (decision
                                             58); needs "attackers", and the brief
@@ -87,6 +91,8 @@ A force may also carry, all optional:
     "baseCover": "partial"|"full" protection it holds without digging
     "scouting": true              out scouting from the start
     "canLayCharges": true         an insurgent or special force (decision 16)
+    "breachingCharges": 4         breaching charges it carries from the start:
+                                  an attached engineer force (decision 125)
     "reserve": true               held back as its platoon's reserve: it holds
                                   its position until one of the platoon's
                                   forward positions is lost, then retakes it
@@ -178,7 +184,7 @@ def load_tool(filename: str):
 WINDOW_KEYS = {"lat", "lon", "width", "height", "spacing", "place", "heightfield", "objects", "constant"}
 FORCE_KEYS = {
     "id", "name", "side", "kind", "echelon", "soldiers", "personnel", "at", "facing", "vehicleClass",
-    "camouflaged", "baseCover", "scouting", "canLayCharges", "reserve", "note",
+    "camouflaged", "baseCover", "scouting", "canLayCharges", "breachingCharges", "reserve", "note",
     "mediumMg",
     "motivation", "experience", "quality", "readiness",
 }
@@ -188,7 +194,7 @@ FORCE_TYPES = {"irregular", "regular", "elite"}
 COMBAT_EXPERIENCE = {"inexperienced", "experienced", "veryExperienced"}
 CHARGE_KEYS = {"side", "type", "at", "armed", "detected"}
 SPEC_KEYS = {
-    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "timeLimit", "delayUntil", "about", "window", "forces", "charges",
+    "slug", "title", "brief", "seed", "trackIntel", "enforceC2", "morale", "locationError", "stillDetection", "binoculars", "keepEyesOn", "commandSuccession", "breachingCharges", "timeLimit", "delayUntil", "about", "window", "forces", "charges",
     "commandEchelon", "fireSupport", "attackers", "readiness", "reinforcement",
 }
 ALLOTMENT_KEYS = {"weapon", "missions", "roundsForEffect", "tubes"}
@@ -205,7 +211,7 @@ KIND_KEYS = {
     # `facing` is a vehicle's hull, or the way any other force's position faces (decision 85).
     # `mediumMg` makes it a machine gun team: a crew-served medium machine
     # gun, firing to the published 800 m (rules decision 90).
-    "infantry": {"echelon", "soldiers", "reserve", "facing", "mediumMg"},
+    "infantry": {"echelon", "soldiers", "reserve", "facing", "mediumMg", "breachingCharges"},
     "command": {"echelon", "personnel", "facing"},
     "vehicle": {"facing", "vehicleClass"},
 }
@@ -396,6 +402,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
     require_bool(spec, "locationError", "spec")
     require_bool(spec, "commandSuccession", "spec")
     require_int(spec, "timeLimit", "spec", 1, 1000)
+    require_int(spec, "breachingCharges", "spec", 0, 50)
     require(
         spec.get("reinforcement", False) is False,
         "spec: reinforcement is written by the tool (decision 122); the only value a spec may give is false, for none",
@@ -477,6 +484,7 @@ def parse(spec: dict[str, Any]) -> dict[str, Any]:
         require("vehicleClass" not in force or force["vehicleClass"] in VEHICLE_CLASSES, f"{where}: unknown vehicleClass")
         require_bool(force, "scouting", where)
         require_bool(force, "canLayCharges", where)
+        require_int(force, "breachingCharges", where, 1, 50)
         require_bool(force, "reserve", where)
         if force.get("camouflaged") is not True:
             require_int(force, "camouflaged", where, 0, 100)
@@ -679,6 +687,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             lines.append(f"    {key}: true,")
     if spec.get("commandSuccession", True):
         lines.append("    commandSuccession: true,")
+    if "breachingCharges" in spec:
+        lines.append("    breachingCharges: " + str(spec["breachingCharges"]) + ",")
     if "timeLimit" in spec:
         lines.append("    timeLimit: " + str(spec["timeLimit"]) + ",")
     if "delayUntil" in spec:
@@ -766,6 +776,8 @@ def emit(spec: dict[str, Any], spec_path: Path) -> str:
             dressing.append("scouting = true")
         if f.get("canLayCharges"):
             dressing.append("canLayCharges = true")
+        if "breachingCharges" in f:
+            dressing.append("breachingCharges = " + str(f["breachingCharges"]))
         if "facing" in f and f["kind"] != "vehicle":
             # The way its position faces (decision 85); a vehicle's is its hull's.
             dressing.append("front = " + num(f["facing"]))
