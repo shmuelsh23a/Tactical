@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: build decision 125 (ruled 2026-10-29): a breach squad the player designates in planning, one a platoon, carrying breaching charges (scenario's count, default 2), apart from `canLayCharges`; engineers a scenario attaches too. Done 2026-10-29: decision 124 (inside stair, open lane, breach). Still open: resupply inside with a finite stock.**
+**Next, in one line: pick the next roadmap item. Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). Open from them: scenario files can't give breaching charges or set the count (`tools/make-scenario.py`); resupply inside with a finite stock; why the breach is 3–5 min quicker.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the

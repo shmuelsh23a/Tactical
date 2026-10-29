@@ -3921,9 +3921,9 @@ on the stated reasoning, still awaiting the author's word.
       coming down does. C-103 speaks only of coming down; the way up is
       ours (⚠️).
 
-125. ⏳ **Who carries a breaching charge, and how many** (the author,
+125. ✅ **Who carries a breaching charge, and how many** (the author,
     2026-10-29, asked to check doctrine first, then the recommended options;
-    ruled, not yet built):
+    built the same day):
     - **A breach squad the player designates**: in planning, one infantry
       squad a platoon may be named its breach element (ATP 3-21.9 (2025),
       para 3-178: "a dismounted Infantry squad as the breach element"), and
@@ -3938,6 +3938,18 @@ on the stated reasoning, still awaiting the author's word.
       balance.md). Doctrine gives no number — supplies are sized "to breach
       many doors based on the size of the objective" (ATP 3-06.11 (2024),
       para 6-107). A charge lost with the work is spent.
+    - **Built**: `Game.designateBreachElement(squad)` in mission planning
+      (the app's "כיתת פריצה" tool); `Unit.breachingCharges`,
+      `GameOptions.breachingCharges`. A side may name one breach squad for
+      every three of its squads — the engine knows no platoons (⚠️ ours).
+      A charge is taken out as the work starts, comes back if the work is
+      called off while it still stands, or if it is never set because the
+      house fell or was breached meanwhile (⚠️ ours), and is spent if the
+      work is lost or the charge set. A team split off the squad takes
+      none. A force trained only for mines and IEDs (decision 16) no longer
+      breaches: recordings from decision 124's day with such a breach will
+      not replay. Not yet: a scenario file (`tools/make-scenario.py`)
+      cannot give charges to a force or set the count.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
