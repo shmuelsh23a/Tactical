@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). Open from them: resupply inside with a finite stock; why the breach is 3–5 min quicker.**
+**Next, in one line: pick the next roadmap item. Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -688,8 +688,8 @@ later" — resupply inside comes back with a finite stock. (2) The breach,
 done 2026-10-29: `layCharge(unit, "breach", { buildingId, facing })`, 2
 turns, blown as the side goes in, the room behind stunned; inside it beats
 the door on every count (balance.md, *The breach*) — its price is outside.
-⚠️ To watch: why it is 3–5 minutes quicker (not the 2 s stun; likely the
-far-side way in), and the app's buttons were not driven with a house in
+Its minutes are the hole's place (the middle of the wall), probed and
+accepted 2026-10-29. ⚠️ To watch: the app's buttons were not driven with a house in
 reach — no scenario puts a charge force near one. (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
 positions, long listed here, were decisions 120–121; decision 121's ⚠️ to

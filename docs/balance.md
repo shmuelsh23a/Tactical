@@ -6577,10 +6577,36 @@ only; its 1-defender row is from before it.)
   harness does not see — a force trained for charges (none of the
   attacker's today), two turns of it standing within 25 m of the wall
   doing nothing, and the work lost if it is hit.
-- **The minutes are not the stun's.** A 2 s stun on one room cannot buy
-  six minutes; the defence's watch on the front door, and a way in on the
-  far side of a house whose rooms are laid out from the door, are the
-  likely reasons. Not probed yet.
+- **The minutes are where the hole is** (probe, 2026-10-29, below):
+  not the stun, and not the surprise.
+
+**Why the breach is quicker (probe, 2026-10-29).** `interior-sim --storied
+--only door-yes`, 3 prepared defenders unless said, with grenades; each row
+switches one thing off. Cleared / attackers out / median minutes:
+
+| Cell | Result |
+|---|---|
+| Empty house, by the front door | 100% / 0.25 / 22.0 |
+| Empty house, by the breach opposite | 100% / 0.25 / **19.6** |
+| Front door | 87% / 3.90 / 43.3 |
+| Breach opposite, as built | 90% / 3.67 / 38.3 |
+| … no stun (`--no-blast`) | 90% / 3.65 / 38.3 |
+| … no stun, the defence watching the breach (`--watched`) | 90% / 3.78 / 38.3 |
+| Breach in the front door's own face (`--breach-face beside`) | 92% / 3.51 / 39.2 |
+| … no stun, watched | 92% / 3.64 / 40.4 |
+
+- **The stun buys nothing measurable**: 2 s on one room.
+- **The surprise buys men, not minutes**: watched, 0.13 more men out a
+  fight, the same 38.3 minutes.
+- **The place buys the minutes.** An empty house is 2.4 minutes quicker by
+  the breach; the breach in the door's own face, watched and unstunned, is
+  still 2.9 minutes quicker than the door. The front door is drawn anywhere
+  along the outside wall, often near a corner; the breach goes in the
+  middle of the longest stretch of its wall, into the middle of the house,
+  so the clearing fans out both ways from the start.
+- **Ruled (the author, 2026-10-29, the recommended option): accepted.**
+  Choosing where to go in is the planner's gain — the entry point is the
+  leader's (drill audit) — and a central entry is what one chooses.
 - **The stair with a breach matches the roof on men** (3.63 against
   3.62) at 7 minutes less. The roof keeps its place only where no breach
   can be laid.

@@ -3880,7 +3880,8 @@ on the stated reasoning, still awaiting the author's word.
         / 43.0 against three prepared defenders. Grenades up the lane were
         built and measured too — a full load at each "CLEAR" beat both
         other ways in on every count (93% / 3.42 / 42.9) — and taken out:
-        **resupply inside is for later**, with a finite stock.
+        **resupply inside is for later**, with a finite stock — postponed
+        to ammunition (backlog 12), the author, 2026-10-29.
     - **The entry point: a breach in a wall the player picks.** The player
       names a side of the house's outline; a force with charges blows a
       breach hole there at the laid charge's cost in turns (decision 16)
@@ -3910,7 +3911,10 @@ on the stated reasoning, still awaiting the author's word.
         grenades against three prepared defenders, 90% cleared, 3.67 out,
         38.3 minutes against the door's 87% / 3.90 / 43.3 — better inside
         on every count; its price is outside, two turns of a force at the
-        wall.
+        wall. Its minutes come from where the hole is — the middle of the
+        wall, against a front door drawn anywhere on it — not the stun or
+        the surprise (probe, balance.md); **accepted** as the planner's
+        gain (the author, 2026-10-29).
     - **The room order is the drill's**, not the plan's: the attacker sees
       only the outline, and doctrine leaves room by room to the team leader
       on the spot. Each team takes the nearest uncleared room through held
@@ -4274,7 +4278,11 @@ Each is intended to be an independent, toggleable module:
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
 12. **Logistics** — ammunition, fuel, resupply, sustainment. For indirect fire,
     ammunition is the battalion's and above, set by the mission's parameters;
-    below that, fire is assigned as missions (decision 34).
+    below that, fire is assigned as missions (decision 34). Waiting here
+    (the author, 2026-10-29): resupply inside a house, up the inside
+    stair's open lane, with a finite stock (decision 124 — a full load at
+    each "CLEAR" beat every other way in, balance.md); and decision 16's
+    unbounded mines and IEDs.
 13. **OPORD mode — write the order, watch it executed.** A game mode where the
     player does not manoeuvre pieces at all: they write a **פקודת מבצע** and/or
     draw a plan on the map (axes, objectives, control measures, fire plan), and
