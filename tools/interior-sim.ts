@@ -12,6 +12,9 @@
  *   npm run interior-sim -- --team-size 2      # teams of two: a measurement only (balance.md)
  *   npm run interior-sim -- --storied          # only houses with stairs, so the three ways in fight over the same houses
  *   npm run interior-sim -- --breach           # door and stair go in by a breach blown in the face opposite the front door (decision 124)
+ *   npm run interior-sim -- --breach --breach-face beside   # …in the front door's own face instead: the same side of the house
+ *   npm run interior-sim -- --breach --no-blast             # …with no stun in the room behind (a probe)
+ *   npm run interior-sim -- --breach --watched              # …the defence watching the breach as it would the door (a probe)
  *
  * What it is judged against (ATP 3-06.11 (2024)): clearing is "a slow
  * methodical process" (para 3-8, whose "40-60-minutes" for "a one-floor
@@ -35,7 +38,10 @@ const ONLY = value("--only"); // e.g. "door-no": one row, for calibrating
 const HOLD = args.includes("--hold"); // the defenders hold to the last rather than fall back
 const EXPECT_ABOVE = args.includes("--expect-above"); // the defenders expect the attack from above
 const TEAM = Number(value("--team-size") ?? 4); // men to an attacking team: a measurement only, no plan sets it (the author, 2026-10-20)
-const BREACH = args.includes("--breach"); // in by a breach in the face opposite the front door, blown as they go in (decision 124)
+const BREACH = args.includes("--breach");
+const BREACH_FACE = value("--breach-face") ?? "opposite"; // opposite | beside: which face of the house, from the front door's
+const NO_BLAST = args.includes("--no-blast"); // a probe: the breach without its stun
+const WATCHED = args.includes("--watched"); // a probe: the defence expects the attack by the breach, as by a door // in by a breach in the face opposite the front door, blown as they go in (decision 124)
 const STORIED = args.includes("--storied"); // every row over the houses with stairs only (decision 124's comparison)
 const HOLD_STOREYS = value("--hold-storeys")?.split("+").map(Number); // the storeys the defenders hold, e.g. 1 or 0+1 (decision 101)
 
@@ -54,7 +60,7 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const pct = (n: number, of: number) => `${Math.round((100 * n) / of)}%`;
 const mean = (xs: number[]) => (xs.reduce((s, x) => s + x, 0) / xs.length).toFixed(2);
 
-console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${BREACH ? ", in by a breach opposite the door" : ""}`);
+console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${BREACH ? `, in by a breach ${BREACH_FACE === "beside" ? "in the door's face" : "opposite the door"}${NO_BLAST ? ", no blast" : ""}${WATCHED ? ", watched" : ""}` : ""}`);
 console.log("");
 console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Defenders withdrew (mean) | Share of hits by grenade | Rooms (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -66,14 +72,15 @@ for (const entry of ["door", "stair", "top"] as const) {
       if ((STORIED || entry !== "door") && (!plan.stairwell || plan.storeys.length < 2)) return []; // no stairs to come down, or to climb
       const rng = new Rng(SEED * 7919 + k);
       const front = plan.outsideDoors[0] === undefined ? undefined : facingOf(plan, plan.outsideDoors[0]);
-      const opposite = front && ({ north: "south", south: "north", east: "west", west: "east" } as const)[front];
+      const opposite = front && (BREACH_FACE === "beside" ? front : ({ north: "south", south: "north", east: "west", west: "east" } as const)[front]);
       const breach = BREACH && entry !== "top" && opposite ? breachCell(plan, opposite) : undefined;
       if (BREACH && entry !== "top" && breach === undefined) return []; // no wall to breach there
       if (breach !== undefined) plan.storeys[0]!.cells[breach] = CELL_KIND.door;
+      if (breach !== undefined && WATCHED) plan.outsideDoors.push(breach); // the defence's expected ways in (`fieldFromExpected`)
       const defence = HOLD_STOREYS
         ? plannedDefence(plan, [{ ids: defenders, storeys: HOLD_STOREYS, atWindows: false }], rng, PREPARED)
         : defaultDefence(plan, defenders, rng, PREPARED);
-      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams, ...(breach !== undefined ? { breach, blast: true } : {}) }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
+      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams, ...(breach !== undefined ? { breach, blast: !NO_BLAST } : {}) }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
     });
     if (rows.length === 0) continue;
     const cleared = rows.filter((r) => r.outcome === "cleared");
