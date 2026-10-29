@@ -3921,6 +3921,24 @@ on the stated reasoning, still awaiting the author's word.
       coming down does. C-103 speaks only of coming down; the way up is
       ours (⚠️).
 
+125. ⏳ **Who carries a breaching charge, and how many** (the author,
+    2026-10-29, asked to check doctrine first, then the recommended options;
+    ruled, not yet built):
+    - **A breach squad the player designates**: in planning, one infantry
+      squad a platoon may be named its breach element (ATP 3-21.9 (2025),
+      para 3-178: "a dismounted Infantry squad as the breach element"), and
+      it carries breaching charges; so does any engineer force a scenario
+      attaches (ATTP 3-06.11 (2011), para 5-92: engineers "should support
+      all breach operations"). Doctrine: riflemen serve on "demolitions and
+      wire/mine breach teams" (ATP 3-21.8 (2024), para 1-31), and explosive
+      breaching needs training beyond theirs (ATTP 3-06.11, para 5-15).
+      The breaching charge is kit of its own, apart from decision 16's
+      mines and IEDs (`canLayCharges`).
+    - **How many: the scenario's, 2 when it says nothing** (⚠️ ours, on
+      balance.md). Doctrine gives no number — supplies are sized "to breach
+      many doors based on the size of the objective" (ATP 3-06.11 (2024),
+      para 6-107). A charge lost with the work is spent.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.

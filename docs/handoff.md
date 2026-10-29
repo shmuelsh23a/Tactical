@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: decision 124 is done (the inside stair, its open lane, the breach); pick the next roadmap item. Open from it: whether an infantry squad carries a breaching charge (no attacker has one today), and resupply inside with a finite stock.**
+**Next, in one line: build decision 125 (ruled 2026-10-29): a breach squad the player designates in planning, one a platoon, carrying breaching charges (scenario's count, default 2), apart from `canLayCharges`; engineers a scenario attaches too. Done 2026-10-29: decision 124 (inside stair, open lane, breach). Still open: resupply inside with a finite stock.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the

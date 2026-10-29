@@ -163,6 +163,16 @@ automatic act in any drill is taking cover under indirect fire.
 - Not found: leaving a building on fire, falling back floor by floor (as a
   rule), or a building version of React to Indirect Fire. FM 3-06.11 (2002)
   is not in the corpus.
+- **Who breaches** (decision 125): ATP 3-21.9 (2025) para 3-178, "a
+  dismounted Infantry squad as the breach element"; ATP 3-21.8 (2024) para
+  1-31, riflemen on "demolitions and wire/mine breach teams"; ATTP 3-06.11
+  (2011) paras 5-14, 5-15, 5-92, breaching "by a separate element or
+  integrated into the assault element", extra training for explosive
+  breaching, engineers "should support all breach operations"; ATTP
+  3-06.11 para 7-74, after detonation "the clearing team moves to the entry
+  point and enters". **How many: no number** — ATP 3-06.11 (2024) para
+  6-107, "the supplies needed to breach many doors based on the size of the
+  objective".
 
 ## Not yet read, worth reading
 
