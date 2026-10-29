@@ -1,6 +1,7 @@
 import { SHELL_COVERS, type Fuze, type ShellCover } from "./data/explosives.js";
 import type { Point } from "./geometry.js";
 import type {
+  BreachTarget,
   Echelon,
   Mine,
   MovementMode,
@@ -106,7 +107,7 @@ export type RecordedAction =
   | { kind: "executeStandingOrders"; side: Side }
   | { kind: "setCamouflage"; unitId: string; on: boolean }
   /** Null calls the work off; the charge itself is derived, not recorded. */
-  | { kind: "layCharge"; unitId: string; type: Mine["type"] | null }
+  | { kind: "layCharge"; unitId: string; type: Mine["type"] | "breach" | null; breach?: BreachTarget }
   /** חיפוי: the shots it goes on to take are derived by the replay. */
   | { kind: "setCovering"; unitId: string; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; unitId: string; on: boolean }
@@ -587,7 +588,7 @@ export type ActionOutcome =
   | { kind: "setStandingOrder"; accepted: boolean }
   | { kind: "executeStandingOrders"; executions: StandingOrderExecution[] }
   | { kind: "setCamouflage"; on: boolean }
-  | { kind: "layCharge"; type: Mine["type"] | null }
+  | { kind: "layCharge"; type: Mine["type"] | "breach" | null }
   | { kind: "setCovering"; on: boolean; weapon: WeaponClass }
   | { kind: "setScouting"; on: boolean }
   | { kind: "setInteriorPlan"; plan: InteriorPlan }
@@ -912,7 +913,7 @@ export function replayWithOutcomes(
         outcome = { kind: "setDisengagement", plan: action.plan };
         break;
       case "layCharge":
-        game.layCharge(action.unitId, action.type);
+        game.layCharge(action.unitId, action.type, action.breach && { buildingId: action.breach.buildingId, facing: action.breach.facing });
         outcome = { kind: "layCharge", type: action.type };
         break;
       case "setCovering":

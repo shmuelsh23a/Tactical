@@ -19,6 +19,7 @@ import type {
   MoraleReport,
   MoraleState,
   SuppressionLevel,
+  Facing,
   Mine,
   GameRecording,
   MovementMode,
@@ -143,6 +144,16 @@ export function reasonHe(reason?: string): string {
     // …a charge that could not be started (rules decision 16)
     case "not a charge-laying force":
       return "כוח זה אינו מניח מטענים";
+    case "no such building":
+      return "אין מבנה כזה";
+    case "no wall to breach on that face":
+      return "אין קיר לפרוץ בצד זה של המבנה";
+    case "too far from the wall":
+      return "רחוק מהקיר — מטען פריצה מוצב מטווח ההסתערות";
+    case "already breached":
+      return "כבר יש מטען פריצה או פרצה במבנה הזה";
+    case "inside the building":
+      return "מטען פריצה מוצב מבחוץ, לא מתוך המבנה";
     case "no one left to lay it":
       return "אין מי שיניח את המטען";
     case "already moved this turn":
@@ -203,8 +214,11 @@ export function coveringFireHe(
 }
 
 /** What a charge is called, by kind. */
-export const chargeHe = (type: Mine["type"]) =>
-  type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
+export const chargeHe = (type: Mine["type"] | "breach") =>
+  type === "breach" ? "מטען פריצה" : type === "antiTank" ? 'מטען נ"ט' : 'מטען נ"א';
+
+/** A face of a house, by the compass (decision 124). */
+export const facingHe: Record<Facing, string> = { north: "הצפוני", east: "המזרחי", south: "הדרומי", west: "המערבי" };
 
 /**
  * What became of a force's charge-laying work, in Hebrew (rules decision 16).
@@ -224,6 +238,11 @@ export function chargeWorkHe(
 ): string {
   const where = opts.where === false ? "" : ` ${at(report.position)}`;
   if (report.mine) return `${name} סיים להניח ${chargeHe(report.type)}${where}`;
+  if (report.placed && report.breach) return `${name} הציב מטען פריצה בקיר ${facingHe[report.breach.facing]} — יופעל עם ההסתערות פנימה`;
+  if (report.breach) {
+    const lost = report.interrupted === "gone" ? "המבנה נהרס או נפרץ בינתיים" : report.interrupted === "moved" ? "זז ממקומו" : report.interrupted === "fought" ? "פתח באש" : report.interrupted === "neutralized" ? "נוטרל" : "נפגע";
+    return `${name} הפסיק להציב מטען פריצה בקיר ${facingHe[report.breach.facing]} — ${lost}, העבודה אבדה`;
+  }
   const why =
     report.interrupted === "moved"
       ? "זז ממקומו"
@@ -690,7 +709,9 @@ export function describeAction(action: RecordedAction, names: Map<string, string
     case "setDisengagement":
       return action.plan ? `${who(action.unitId)} — תנאי ניתוק: ${describeDisengagement(action.plan)}` : `${who(action.unitId)} — תנאי הניתוק בוטלו`;
     case "layCharge":
-      return action.type
+      return action.type === "breach" && action.breach
+        ? `${who(action.unitId)} מתחיל להציב מטען פריצה בקיר ${facingHe[action.breach.facing]}`
+        : action.type
         ? `${who(action.unitId)} מתחיל להניח ${chargeHe(action.type)}`
         : `${who(action.unitId)} הפסיק להניח מטען`;
     case "setCovering":

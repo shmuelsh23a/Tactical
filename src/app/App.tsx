@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import {
   ADJUSTMENT_RADIUS_M,
   ASSAULT_RANGE_M,
+  FACINGS,
   watchingAsPost,
   MAX_REGISTERED_TARGETS_PER_WEAPON,
   OBSERVATION_POST_RANGE_M,
@@ -17,6 +18,7 @@ import {
   SMOKE_RADIUS_M,
   camouflageBonus,
   distance,
+  pointInPolygon,
   fitSoldiers,
   fullStrength,
   orderInterval,
@@ -53,6 +55,7 @@ import {
   criticalHe,
   structureHe,
   chargeHe,
+  facingHe,
   chargeWorkHe,
   planningRefusalHe,
   coveringFireHe,
@@ -717,7 +720,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     for (const report of reports) {
       const unit = game.units.find((u) => u.id === report.unitId);
       if (!unit) continue;
-      pushLog(chargeWorkHe(report, unit.name), report.mine ? "info" : "fire", onlyFor(unit.side));
+      pushLog(chargeWorkHe(report, unit.name), report.mine || report.placed ? "info" : "fire", onlyFor(unit.side));
     }
   }
 
@@ -1000,6 +1003,54 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     );
     force();
   }
+
+  /**
+   * Set the selected force to placing a breaching charge against a face of a
+   * house within the assault's reach, or call it off (decision 124). The same
+   * two turns as any charge; it is blown as the force's side goes in.
+   */
+  function handleLayBreach(buildingId: string, facing: (typeof FACINGS)[number]) {
+    if (!selectedOwn || enginePhase !== "movement") return;
+    const work = selectedOwn.layingCharge;
+    const stopping = work?.type === "breach" && work.breach?.buildingId === buildingId && work.breach.facing === facing;
+    try {
+      game.layCharge(selectedOwn.id, stopping ? null : "breach", stopping ? undefined : { buildingId, facing });
+    } catch (e) {
+      pushLog(`${selectedOwn.name} — ${reasonHe((e as Error).message)}`, "info", onlyFor(viewingSide));
+      return;
+    }
+    pushLog(
+      stopping
+        ? `${selectedOwn.name} הפסיק להציב מטען פריצה — העבודה אבדה`
+        : `${selectedOwn.name} מתחיל להציב מטען פריצה בקיר ${facingHe[facing]} — ${CHARGE_LAYING.turnsToLay} תורות`,
+      "info",
+      onlyFor(viewingSide),
+    );
+    force();
+  }
+
+  /**
+   * The faces the selected force could breach from where it stands (decision
+   * 124): of the nearest house with a face in reach that has no breach yet,
+   * the force standing outside it. With the house's breach, if it has one.
+   */
+  const breachable = (() => {
+    const none = { faces: [] as (typeof FACINGS)[number][], buildingId: "", breach: undefined as ReturnType<typeof game.interior.breachIn> };
+    if (!selectedOwn?.canLayCharges) return none;
+    let best = none, bestD = Infinity;
+    for (const o of game.terrain.objects) {
+      if (o.kind !== "building" || o.footprint.shape !== "polygon" || pointInPolygon(selectedOwn.position, o.footprint.points)) continue;
+      const faces: (typeof FACINGS)[number][] = [];
+      let near = Infinity;
+      for (const facing of FACINGS) {
+        const wall = game.interior.breachPoint(game, o, facing);
+        const d = wall ? distance(selectedOwn.position, wall) : Infinity;
+        if (d <= ASSAULT_RANGE_M) { faces.push(facing); near = Math.min(near, d); }
+      }
+      if (faces.length && near < bestD) { bestD = near; best = { faces, buildingId: o.id, breach: game.interior.breachIn(o.id) }; }
+    }
+    return best;
+  })();
 
   /**
    * Put the selected force into חיפוי, or stand it down (rules decision 18).
@@ -2170,6 +2221,30 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                           </button>
                         ))}
                       </div>
+                      {/* A breaching charge against a house in reach (decision 124). */}
+                      {breachable.breach ? (
+                        <p className="hint">
+                          {breachable.breach.blown
+                            ? `הקיר ${facingHe[breachable.breach.facing]} של המבנה הקרוב נפרץ — דרך כניסה`
+                            : `מטען פריצה מוצב בקיר ${facingHe[breachable.breach.facing]} של המבנה הקרוב${breachable.breach.side === selectedOwn.side ? " — יופעל עם ההסתערות פנימה" : ""}`}
+                        </p>
+                      ) : breachable.faces.length > 0 && (
+                        <>
+                          <label>מטען פריצה בקיר:</label>
+                          <div className="seg">
+                            {breachable.faces.map((facing) => (
+                              <button
+                                key={facing}
+                                className={selectedOwn.layingCharge?.breach?.buildingId === breachable.buildingId && selectedOwn.layingCharge.breach.facing === facing ? "on" : ""}
+                                onClick={() => handleLayBreach(breachable.buildingId, facing)}
+                                title={`${CHARGE_LAYING.turnsToLay} תורות עבודה ליד הקיר; המטען מופעל כשהכוח מסתער פנימה, והחדר שמאחורי הקיר בהלם. תנועה, ירי או פגיעה בכוח מאבדות את העבודה.`}
+                              >
+                                {facingHe[facing]}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
                       {selectedOwn.layingCharge && (
                         <p className="hint">
                           מניח {chargeHe(selectedOwn.layingCharge.type)} —{" "}

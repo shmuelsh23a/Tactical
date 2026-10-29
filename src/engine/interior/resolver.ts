@@ -124,6 +124,14 @@ export interface AttackPlan {
   security?: string[];
   /** Each team's squad, in order: a squad's teams take turns going in (drill audit, I4). Absent: one squad. */
   squads?: number[];
+  /**
+   * A hole blown in the ground floor's outside wall to go in by instead of
+   * the front door (decision 124): its cell, a door now. The blast stuns the
+   * men in the room behind it as a grenade does, when it is blown as they
+   * go in (`blast`); a hole blown before is only a way in. The roof does not use it.
+   */
+  breach?: number;
+  blast?: boolean;
   /** How a top-down attack reaches the roof (ATP 3-06.11 (2024), para C-30). All take `roofAccessSeconds` for now. */
   roofAccess?: "adjacentRoof" | "ladder" | "vehicle";
 }
@@ -275,6 +283,7 @@ export class InteriorFight {
   private lastProgress = 0;
   private readonly roomsCutOff: number;
   private readonly entry: "door" | "top" | "stair";
+  private readonly breach: number | undefined;
   private readonly grenadesPlanned: boolean;
   private readonly steps: number;
   private readonly expects: "below" | "above";
@@ -298,6 +307,8 @@ export class InteriorFight {
     this.defenderSide = defenderSide;
     this.retakes = input.defenderRetakes ?? false;
     this.entry = input.attack.entry;
+    this.breach = input.attack.breach;
+    if (this.breach !== undefined && this.plan.storeys[0]!.cells[this.breach] !== DOOR) throw new Error("InteriorFight: the breach is not a way through the wall");
     this.grenadesPlanned = input.attack.grenades;
     this.expects = input.defenderExpects ?? "below";
     this.fallback = input.defenderFallback ?? "fallBack";
@@ -326,6 +337,13 @@ export class InteriorFight {
         m.window = { cell: post.window, at: post.cell };
       }
       this.soldiers.push(m);
+    }
+    // The breach's blast: the men in the room behind the wall are stunned as
+    // by a grenade (decision 124, the author: "a grenade's stun in that room").
+    if (this.breach !== undefined && input.attack.blast && this.entry !== "top") {
+      const p0 = this.plan.storeys[0]!;
+      const behind = this.around(this.breach).map((j) => p0.roomOf[j]!).find((r) => r >= 0);
+      for (const m of this.soldiers) if (m.side === defenderSide && m.storey === 0 && p0.roomOf[m.cell] === behind) m.stunnedUntil = CLOSE_QUARTERS.stunSeconds;
     }
     // The attackers at their way in: outside the front door, or at the head of the stairs.
     const start = this.entryCell();
@@ -548,10 +566,10 @@ export class InteriorFight {
     return this.streetCell();
   }
 
-  /** The street side of the front door. */
+  /** The street side of the way in on the ground floor: the breach where there is one, else the front door. */
   private streetCell(): number {
     const p = this.plan;
-    const door = p.outsideDoors[0];
+    const door = this.breach ?? p.outsideDoors[0];
     if (door === undefined) throw new Error("InteriorFight: the building has no door to the street");
     const cells = p.storeys[0]!.cells;
     for (const j of this.around(door)) if (cells[j] === OUTSIDE) return j;

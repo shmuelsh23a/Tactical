@@ -206,6 +206,66 @@ export function generateFloorPlan(building: MapObject, gameSeed: number): FloorP
 }
 
 /**
+ * A face of a house by the map's compass: north is −y, as the hotseat draws
+ * the map (terrain.ts, `Heightfield`). What the attacker can name from the
+ * outside — the outline is all he knows of it (decision 124).
+ */
+export type Facing = "north" | "east" | "south" | "west";
+export const FACINGS: readonly Facing[] = ["north", "east", "south", "west"];
+const FACING_VECTOR: Record<Facing, Point> = { north: { x: 0, y: -1 }, east: { x: 1, y: 0 }, south: { x: 0, y: 1 }, west: { x: -1, y: 0 } };
+
+/**
+ * Where a breach in a face of the house goes (decision 124): on the ground
+ * floor's outside wall that faces nearest that way (within 45°; at exactly
+ * 45°, the first of the grid's four ways in the order below), the cells a
+ * man can walk straight through, and of them the middle of the longest
+ * unbroken stretch. Undefined where no wall faces that way.
+ */
+export function breachCell(plan: FloorPlan, facing: Facing): number | undefined {
+  const cells = plan.storeys[0]!.cells, w = plan.width, h = plan.height;
+  const f = FACING_VECTOR[facing];
+  const ways = [[-1, 0], [1, 0], [0, -1], [0, 1]] as const;
+  // The grid way out (dx, dy) that faces nearest the face asked for, on the map.
+  const score = ([dx, dy]: readonly [number, number]) => (dx * plan.axis.x - dy * plan.axis.y) * f.x + (dx * plan.axis.y + dy * plan.axis.x) * f.y;
+  const way = ways.reduce((a, b) => (score(b) > score(a) + 1e-9 ? b : a));
+  if (score(way) < Math.SQRT1_2 - 1e-9) return undefined;
+  const [dx, dy] = way;
+  const through: number[] = [];
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] !== WALL) continue;
+    const x = i % w, y = (i - x) / w;
+    const ox = x + dx, oy = y + dy, ix = x - dx, iy = y - dy;
+    const outside = ox < 0 || oy < 0 || ox >= w || oy >= h || cells[oy * w + ox] === OUTSIDE;
+    if (outside && ix >= 0 && iy >= 0 && ix < w && iy < h && cells[iy * w + ix] === FLOOR) through.push(i);
+  }
+  // Unbroken stretches along the wall: the next cell along it, a step across the way out.
+  const along = dx !== 0 ? w : 1;
+  const key = (i: number) => (dx !== 0 ? i % w : Math.floor(i / w)); // the wall's line
+  const sorted = [...through].sort((a, b) => key(a) - key(b) || a - b);
+  let bestRun: number[] = [], run: number[] = [];
+  for (const i of sorted) {
+    const last = run[run.length - 1];
+    if (last !== undefined && (key(i) !== key(last) || i - last !== along)) run = [];
+    run.push(i);
+    if (run.length > bestRun.length) bestRun = [...run];
+  }
+  return bestRun.length ? bestRun[Math.floor(bestRun.length / 2)] : undefined;
+}
+
+/** The face a ground-floor wall or door cell looks out of: the compass way nearest its way out to the street. */
+export function facingOf(plan: FloorPlan, cell: number): Facing | undefined {
+  const cells = plan.storeys[0]!.cells, w = plan.width, h = plan.height;
+  const x = cell % w, y = (cell - x) / w;
+  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+    const ox = x + dx, oy = y + dy;
+    if (!(ox < 0 || oy < 0 || ox >= w || oy >= h || cells[oy * w + ox] === OUTSIDE)) continue;
+    const vx = dx * plan.axis.x - dy * plan.axis.y, vy = dx * plan.axis.y + dy * plan.axis.x;
+    return FACINGS.reduce((a, b) => (FACING_VECTOR[b].x * vx + FACING_VECTOR[b].y * vy > FACING_VECTOR[a].x * vx + FACING_VECTOR[a].y * vy ? b : a));
+  }
+  return undefined;
+}
+
+/**
  * The direction of the footprint's longest wall, as a unit vector pointing
  * east-ish (x ≥ 0), so a plan does not depend on which way round the map
  * happened to list the corners.

@@ -3,6 +3,7 @@ import type { VehicleClass } from "./data/armor.js";
 import type { Point } from "./geometry.js";
 import type { SmokeSource } from "./data/smoke.js";
 import type { CoverState } from "./data/directFire.js";
+import type { Facing } from "./interior/floorPlan.js";
 
 /** The two combatant sides. The umpire (מנחה) is not a combatant. */
 export type Side = "RED" | "BLUE";
@@ -328,6 +329,12 @@ export interface CoveringPosture {
   declaredTurn: number;
 }
 
+/** Where a breaching charge goes (decision 124): a face of a house, named from outside. */
+export interface BreachTarget {
+  buildingId: string;
+  facing: Facing;
+}
+
 /**
  * A charge being laid during play (rules decision 16).
  *
@@ -337,7 +344,10 @@ export interface CoveringPosture {
  * unit object happens to be by the time the turn ends.
  */
 export interface ChargeWork {
-  type: Mine["type"];
+  /** A charge for the ground, or a breaching charge against a house's wall (decision 124). */
+  type: Mine["type"] | "breach";
+  /** The breaching charge's wall. */
+  breach?: BreachTarget;
   position: Point;
   /** Turns of work banked. Counted at the end of each turn it survived. */
   turnsWorked: number;

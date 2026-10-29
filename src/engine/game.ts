@@ -6,10 +6,13 @@ import {
   bearingDegrees,
   distance,
   lookupBand,
+  pointInPolygon,
   segmentIntersectsCircle,
   type Point,
 } from "./geometry.js";
+import { FACINGS } from "./interior/floorPlan.js";
 import type {
+  BreachTarget,
   ChargeWork,
   CoveringPosture,
   Mine,
@@ -346,6 +349,14 @@ export const LAY_CHARGE_REFUSAL = {
   underFire: "was hit this turn",
   noOrders: "out of the order cycle",
   routing: "routing",
+  /** A breaching charge (decision 124): no house by that id, no wall on that face, or the force not within the assault's reach of it. */
+  noBuilding: "no such building",
+  noWall: "no wall to breach on that face",
+  tooFar: "too far from the wall",
+  /** One breach a house: a charge already set against it, or a hole already blown (decision 124). */
+  alreadyBreached: "already breached",
+  /** A breach is set from the street, not by a force inside the house. */
+  insideIt: "inside the building",
 } as const;
 
 /**
@@ -399,16 +410,20 @@ export type WithCoveringFire<T> = T & { coveringFire: CoveringFireResult[] };
  */
 export interface ChargeWorkReport {
   unitId: string;
-  type: Mine["type"];
+  type: Mine["type"] | "breach";
   position: Point;
   /** The charge that went in, on the turn the work was finished. */
   mine?: Mine;
+  /** A breaching charge's wall (decision 124). */
+  breach?: BreachTarget;
+  /** The breaching charge is in place against it, on the turn the work was finished. */
+  placed?: boolean;
   /**
    * What cost the force the work, when it lost it. `"hit"` is fire that
    * *landed*: a force shot at and missed goes on working — nothing in the
    * engine marks a force that was merely shot at.
    */
-  interrupted?: "moved" | "fought" | "hit" | "neutralized";
+  interrupted?: "moved" | "fought" | "hit" | "neutralized" | "gone";
 }
 
 /** What a call for smoke produced: a screen on the map, or one still in flight. */
@@ -2935,7 +2950,7 @@ export class Game {
    *
    * Passing `null` calls the work off, and what has been banked is lost.
    */
-  layCharge(unitId: string, type: Mine["type"] | null): void {
+  layCharge(unitId: string, type: Mine["type"] | "breach" | null, breach?: BreachTarget): void {
     this.requirePhase("movement");
     const unit = this.getUnit(unitId);
 
@@ -2950,6 +2965,18 @@ export class Game {
     if (unit.neutralized) throw new Error(LAY_CHARGE_REFUSAL.neutralised);
     if (unit.routing) throw new Error(LAY_CHARGE_REFUSAL.routing);
     if (fitSoldiers(unit) === 0) throw new Error(LAY_CHARGE_REFUSAL.noOneLeft);
+    // A breaching charge (decision 124): against a face of a house, from
+    // within the assault's last bound of it.
+    if (type === "breach") {
+      const building = breach && this.terrain.objects.find((o) => o.id === breach.buildingId && o.kind === "building" && o.footprint.shape === "polygon");
+      if (!breach || !building || building.footprint.shape !== "polygon") throw new Error(LAY_CHARGE_REFUSAL.noBuilding);
+      if (!FACINGS.includes(breach.facing)) throw new Error(LAY_CHARGE_REFUSAL.noWall);
+      if (this.interior.breachIn(building.id)) throw new Error(LAY_CHARGE_REFUSAL.alreadyBreached);
+      if (pointInPolygon(unit.position, building.footprint.points)) throw new Error(LAY_CHARGE_REFUSAL.insideIt);
+      const wall = this.interior.breachPoint(this, building, breach.facing);
+      if (!wall) throw new Error(LAY_CHARGE_REFUSAL.noWall);
+      if (distance(unit.position, wall) > ASSAULT_RANGE_M) throw new Error(LAY_CHARGE_REFUSAL.tooFar);
+    }
     // The turn has to be spent on the work, so a force that has already used
     // some of its bound cannot start one with what is left of it.
     if (unit.movedThisTurn > 0) throw new Error(LAY_CHARGE_REFUSAL.alreadyMoved);
@@ -2974,12 +3001,13 @@ export class Game {
 
     const work: ChargeWork = {
       type,
+      ...(type === "breach" && breach ? { breach: { buildingId: breach.buildingId, facing: breach.facing } } : {}),
       position: { ...unit.position },
       turnsWorked: 0,
       startedTurn: this.turn,
     };
     unit.layingCharge = work;
-    this.journal({ kind: "layCharge", unitId, type });
+    this.journal({ kind: "layCharge", unitId, type, ...(work.breach ? { breach: { ...work.breach } } : {}) });
   }
 
   /**
@@ -3704,7 +3732,8 @@ export class Game {
       this.closedTerrain && attacker.kind === "infantry" && (target.kind === "infantry" || target.kind === "command") && !target.surrendered
         ? (foughtIn ? this.terrain.objects.find((o) => o.id === foughtIn.buildingId) : this.interior.buildingAt(this.terrain, target.position))
         : undefined;
-    const door = inside ? this.interior.frontDoor(this, inside) : undefined;
+    // The way in: the front door, or a breach in the wall (decision 124).
+    const door = inside ? this.interior.wayIn(this, inside, attacker) : undefined;
     if (inside && door && distance(attacker.position, target.position) <= ASSAULT_RANGE_M) {
       // A fight already going on in it: the attacking side's forces join it
       // (decision 99); the defending side's counterattack in, at the door, on
@@ -4671,11 +4700,25 @@ export class Game {
         : undefined;
       if (interrupted) {
         delete unit.layingCharge;
-        reports.push({ unitId: unit.id, type: work.type, position: work.position, interrupted });
+        reports.push({ unitId: unit.id, type: work.type, position: work.position, ...(work.breach ? { breach: work.breach } : {}), interrupted });
         continue;
       }
       work.turnsWorked += 1;
       if (work.turnsWorked < CHARGE_LAYING.turnsToLay) continue;
+      // A breaching charge is set against the wall, to be blown as its side
+      // goes in (decision 124) — unless the house fell, or another breach
+      // went in first, while the work was on.
+      if (work.type === "breach") {
+        const building = work.breach && this.terrain.objects.find((o) => o.id === work.breach!.buildingId && o.kind === "building");
+        delete unit.layingCharge;
+        if (!work.breach || !building || this.interior.breachIn(building.id)) {
+          reports.push({ unitId: unit.id, type: "breach", position: work.position, breach: work.breach, interrupted: "gone" });
+          continue;
+        }
+        this.interior.placeBreach(this, building, work.breach.facing, unit.side);
+        reports.push({ unitId: unit.id, type: "breach", position: work.position, breach: work.breach, placed: true });
+        continue;
+      }
 
       const mine: Mine = {
         id: this.nextId("mine"),

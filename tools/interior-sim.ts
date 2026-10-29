@@ -11,6 +11,7 @@
  *   npm run interior-sim -- --hold-storeys 1   # a plan's lever (decision 101)
  *   npm run interior-sim -- --team-size 2      # teams of two: a measurement only (balance.md)
  *   npm run interior-sim -- --storied          # only houses with stairs, so the three ways in fight over the same houses
+ *   npm run interior-sim -- --breach           # door and stair go in by a breach blown in the face opposite the front door (decision 124)
  *
  * What it is judged against (ATP 3-06.11 (2024)): clearing is "a slow
  * methodical process" (para 3-8, whose "40-60-minutes" for "a one-floor
@@ -19,7 +20,7 @@
  * 8-12); hand grenades the most-used explosive (para B-35); casualties
  * higher than in the open (para C-8).
  */
-import { Rng, defaultDefence, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
+import { CELL_KIND, Rng, breachCell, defaultDefence, facingOf, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
 import { RAMAT_MENASHE_OBJECTS } from "../src/app/maps/ramatMenasheObjects.js";
 
 const args = process.argv.slice(2);
@@ -34,6 +35,7 @@ const ONLY = value("--only"); // e.g. "door-no": one row, for calibrating
 const HOLD = args.includes("--hold"); // the defenders hold to the last rather than fall back
 const EXPECT_ABOVE = args.includes("--expect-above"); // the defenders expect the attack from above
 const TEAM = Number(value("--team-size") ?? 4); // men to an attacking team: a measurement only, no plan sets it (the author, 2026-10-20)
+const BREACH = args.includes("--breach"); // in by a breach in the face opposite the front door, blown as they go in (decision 124)
 const STORIED = args.includes("--storied"); // every row over the houses with stairs only (decision 124's comparison)
 const HOLD_STOREYS = value("--hold-storeys")?.split("+").map(Number); // the storeys the defenders hold, e.g. 1 or 0+1 (decision 101)
 
@@ -52,7 +54,7 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const pct = (n: number, of: number) => `${Math.round((100 * n) / of)}%`;
 const mean = (xs: number[]) => (xs.reduce((s, x) => s + x, 0) / xs.length).toFixed(2);
 
-console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}`);
+console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${BREACH ? ", in by a breach opposite the door" : ""}`);
 console.log("");
 console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Defenders withdrew (mean) | Share of hits by grenade | Rooms (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -63,10 +65,15 @@ for (const entry of ["door", "stair", "top"] as const) {
       const plan = generateFloorPlan(h, SEED);
       if ((STORIED || entry !== "door") && (!plan.stairwell || plan.storeys.length < 2)) return []; // no stairs to come down, or to climb
       const rng = new Rng(SEED * 7919 + k);
+      const front = plan.outsideDoors[0] === undefined ? undefined : facingOf(plan, plan.outsideDoors[0]);
+      const opposite = front && ({ north: "south", south: "north", east: "west", west: "east" } as const)[front];
+      const breach = BREACH && entry !== "top" && opposite ? breachCell(plan, opposite) : undefined;
+      if (BREACH && entry !== "top" && breach === undefined) return []; // no wall to breach there
+      if (breach !== undefined) plan.storeys[0]!.cells[breach] = CELL_KIND.door;
       const defence = HOLD_STOREYS
         ? plannedDefence(plan, [{ ids: defenders, storeys: HOLD_STOREYS, atWindows: false }], rng, PREPARED)
         : defaultDefence(plan, defenders, rng, PREPARED);
-      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
+      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams, ...(breach !== undefined ? { breach, blast: true } : {}) }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
     });
     if (rows.length === 0) continue;
     const cleared = rows.filter((r) => r.outcome === "cleared");

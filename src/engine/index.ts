@@ -32,6 +32,7 @@ export type {
   TankPart,
   VehicleState,
   Unit,
+  BreachTarget,
   ChargeWork,
   CoveringPosture,
   ObservationSector,
@@ -223,10 +224,14 @@ export {
 } from "./data/terrain.js";
 export {
   CELL_KIND,
+  FACINGS,
+  breachCell,
   buildingStoreys,
+  facingOf,
   floorPlanSeed,
   generateFloorPlan,
   type CellKind,
+  type Facing,
   type FloorPlan,
   type Room,
   type Stairwell,
