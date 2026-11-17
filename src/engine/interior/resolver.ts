@@ -340,11 +340,7 @@ export class InteriorFight {
     }
     // The breach's blast: the men in the room behind the wall are stunned as
     // by a grenade (decision 124, the author: "a grenade's stun in that room").
-    if (this.breach !== undefined && input.attack.blast && this.entry !== "top") {
-      const p0 = this.plan.storeys[0]!;
-      const behind = this.around(this.breach).map((j) => p0.roomOf[j]!).find((r) => r >= 0);
-      for (const m of this.soldiers) if (m.side === defenderSide && m.storey === 0 && p0.roomOf[m.cell] === behind) m.stunnedUntil = CLOSE_QUARTERS.stunSeconds;
-    }
+    if (this.breach !== undefined && input.attack.blast && this.entry !== "top") this.stunBehind(this.breach);
     // The attackers at their way in: outside the front door, or at the head of the stairs.
     const start = this.entryCell();
     const firstStorey = this.entry === "stair" ? 0 : this.order[0]!;
@@ -568,12 +564,25 @@ export class InteriorFight {
 
   /** The street side of the way in on the ground floor: the breach where there is one, else the front door. */
   private streetCell(): number {
-    const p = this.plan;
-    const door = this.breach ?? p.outsideDoors[0];
+    const door = this.breach ?? this.plan.outsideDoors[0];
     if (door === undefined) throw new Error("InteriorFight: the building has no door to the street");
-    const cells = p.storeys[0]!.cells;
+    return this.streetSide(door);
+  }
+
+  /** The street cell outside a ground-floor way through the wall. */
+  private streetSide(door: number): number {
+    const cells = this.plan.storeys[0]!.cells;
     for (const j of this.around(door)) if (cells[j] === OUTSIDE) return j;
     return door;
+  }
+
+  /** A breach's blast (decision 124, the author: "a grenade's stun in that room"): the defenders in the room behind the wall. */
+  private stunBehind(breach: number): void {
+    const p0 = this.plan.storeys[0]!;
+    const behind = this.around(breach).map((j) => p0.roomOf[j]!).find((r) => r >= 0);
+    for (const m of this.soldiers) {
+      if (m.side === this.defenderSide && !m.out && !m.withdrew && m.storey === 0 && p0.roomOf[m.cell] === behind) m.stunnedUntil = Math.max(m.stunnedUntil, this.second + CLOSE_QUARTERS.stunSeconds);
+    }
   }
 
   private stairRoom(storey: number): number {
@@ -1443,13 +1452,17 @@ export class InteriorFight {
    * taken — the same drill as those already inside. Only by the door: a
    * top-down attack's hatch takes its own teams in turn. A man who left the
    * fight (his force broke, and has rallied) comes back in the same way,
-   * with what he has left.
+   * with what he has left. A force with a breach of its own (the author,
+   * 2026-11-17) comes in by it instead — a way through the wall already, its
+   * blast, if blown as they come, stunning the room behind.
    */
-  join(teams: readonly string[][], security: readonly string[] = []): void {
+  join(teams: readonly string[][], security: readonly string[] = [], by?: { breach: number; blast: boolean }): void {
     if (this.finished) throw new Error("InteriorFight: the fight is over");
     if (this.entry === "top") throw new Error("InteriorFight: a fight entered from the roof is not joined");
+    if (by && this.plan.storeys[0]!.cells[by.breach] !== DOOR) throw new Error("InteriorFight: the breach is not a way through the wall");
     const squad = this.squadsIn++;
-    const start = this.entryCell();
+    if (by?.blast) this.stunBehind(by.breach);
+    const start = by ? this.streetSide(by.breach) : this.entryCell();
     for (const ids of teams) {
       const members = ids.map((id) => this.comeIn(id, 0, start));
       this.teams.push({ side: this.attackerSide, members, storey: 0, phase: "pick", room: -1, approach: -1, points: [], until: 0, entered: 0, searching: false, contact: false, halted: 0, grenades: this.grenadesPlanned, squad });

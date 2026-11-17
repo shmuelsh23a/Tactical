@@ -353,7 +353,7 @@ export const LAY_CHARGE_REFUSAL = {
   noBuilding: "no such building",
   noWall: "no wall to breach on that face",
   tooFar: "too far from the wall",
-  /** One charge a house a side: its own already set against it, or a hole already blown (decision 124; an enemy's charge is no bar). */
+  /** One charge a wall: its side's own already set against it, or a hole already blown in it (decision 124; an enemy's charge is no bar). */
   alreadyBreached: "already breached",
   /** A breach is set from the street, not by a force inside the house. */
   insideIt: "inside the building",
@@ -3016,8 +3016,9 @@ export class Game {
       const building = breach && this.terrain.objects.find((o) => o.id === breach.buildingId && o.kind === "building" && o.footprint.shape === "polygon");
       if (!breach || !building || building.footprint.shape !== "polygon") throw new Error(LAY_CHARGE_REFUSAL.noBuilding);
       if (!FACINGS.includes(breach.facing)) throw new Error(LAY_CHARGE_REFUSAL.noWall);
-      // Its own charge there, or a hole blown: an enemy's charge, which it cannot know of, is no bar (the author, 2026-11-17).
-      if (this.interior.breachIn(building.id, unit.side)) throw new Error(LAY_CHARGE_REFUSAL.alreadyBreached);
+      // Its own charge on that wall, or a hole blown in it: an enemy's charge, which it cannot know of, is no bar,
+      // nor a breach on another wall (the author, 2026-11-17).
+      if (this.interior.breachOn(this, building, breach.facing, unit.side)) throw new Error(LAY_CHARGE_REFUSAL.alreadyBreached);
       if (pointInPolygon(unit.position, building.footprint.points)) throw new Error(LAY_CHARGE_REFUSAL.insideIt);
       const wall = this.interior.breachPoint(this, building, breach.facing);
       if (!wall) throw new Error(LAY_CHARGE_REFUSAL.noWall);
@@ -4765,7 +4766,7 @@ export class Game {
       if (work.type === "breach") {
         const building = work.breach && this.terrain.objects.find((o) => o.id === work.breach!.buildingId && o.kind === "building");
         delete unit.layingCharge;
-        if (!work.breach || !building || this.interior.breachIn(building.id, unit.side)) {
+        if (!work.breach || !building || this.interior.breachOn(this, building, work.breach.facing, unit.side)) {
           // Never set: it goes back in the pack (⚠️ ours, decision 125).
           unit.breachingCharges = (unit.breachingCharges ?? 0) + 1;
           reports.push({ unitId: unit.id, type: "breach", position: work.position, breach: work.breach, interrupted: "gone" });

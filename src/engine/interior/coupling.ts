@@ -8,7 +8,7 @@ import { CASUALTY_RULES } from "../data/casualties.js";
 import { CLOSE_QUARTERS, STOREY_HEIGHT_M } from "../data/interior.js";
 import { EYE_HEIGHT } from "../data/terrain.js";
 import { TURN_SECONDS } from "../data/lethality.js";
-import { CELL_KIND, breachCell, generateFloorPlan, type Facing, type FloorPlan } from "./floorPlan.js";
+import { CELL_KIND, FACINGS, breachCell, generateFloorPlan, type Facing, type FloorPlan } from "./floorPlan.js";
 import { InteriorFight, defaultDefence, plannedDefence, type InteriorOutcome } from "./resolver.js";
 
 /**
@@ -42,8 +42,20 @@ export interface InteriorEngagement {
   startedTurn: number;
   /** The street point the attackers went in by, when it was a breach (decision 124); else the front door. */
   way?: Point;
+  /** The wall cell of that breach. */
+  wayCell?: number;
   /** The wall they went in through, when it was a breach: blown as they went in, or a hole already there. */
   breached?: { facing: Facing; blown: boolean };
+}
+
+/** A breaching charge against a house's wall, or the hole it blew (decision 124). */
+interface Breach {
+  side: Side;
+  cell: number;
+  facing: Facing;
+  blown: boolean;
+  /** The force that set it: a charge taken off the wall by the other side's hole goes back to it. */
+  setBy: string;
 }
 
 /** What a building's fight did this turn, for the log and the debrief. */
@@ -60,6 +72,8 @@ export interface InteriorReport {
   counterattacked?: string[];
   /** On the turn it began by a breach (decision 124): the wall, and whether the charge was blown as they went in. */
   breached?: { facing: Facing; blown: boolean };
+  /** Forces that joined this turn by a breach of their own (the author, 2026-11-17): the wall, and whether blown as they went in. */
+  joinBreached?: { facing: Facing; blown: boolean }[];
   /** Men put out this turn, each side. */
   attackersOut: number;
   defendersOut: number;
@@ -190,16 +204,18 @@ export class InteriorBattles {
   private readonly entering = new Map<string, string>();
   private readonly plans = new Map<string, FloorPlan>();
   /**
-   * Breaching charges placed against a house's wall (decision 124), by
-   * building: whose, and the wall cell. Blown as that side next goes in;
-   * the hole stays a way in for everyone after. One a side: an enemy's
-   * charge, unseen, does not stop a side setting its own (the author,
-   * 2026-11-17); one hole a house, so the first blown sends the other's
-   * charge back to the force that set it (the author, 2026-11-17).
+   * Breaching charges placed against a house's walls (decision 124), by
+   * building: whose, the wall cell, and the force that set it. Blown as that
+   * force's side next goes in by it; the hole stays a way in for everyone
+   * after. **One a wall** (the author, 2026-11-17): a house takes a charge or
+   * a hole on each of its walls, by either side, and a side as many as it
+   * has charges. An enemy's charge, unseen, does not stop a side setting its
+   * own on the same wall; the first blown there sends the other's back to the
+   * force that set it.
    */
-  private readonly breaches = new Map<string, { side: Side; cell: number; facing: Facing; blown: boolean; setBy: string }[]>();
-  /** Forces going in this turn by a breach rather than the front door (decision 124). */
-  private readonly byHole = new Set<string>();
+  private readonly breaches = new Map<string, Breach[]>();
+  /** Forces going in this turn by a breach rather than the front door (decision 124): which. */
+  private readonly byHole = new Map<string, Breach>();
 
   /** Is this force in a fight inside a building? */
   inFight(unitId: string): boolean {
@@ -230,64 +246,122 @@ export class InteriorBattles {
   }
 
   /**
-   * Where a force goes into a building from the street (decision 124): into
-   * a fight already on, by the way that fight went in (the defending side's
-   * counterattack by the front door); else by a breach — its side's charge,
-   * or a hole already blown that is nearer it than the door — and from the
-   * roof never; else by the front door.
+   * Where a force goes into a building from the street (decision 124): by a
+   * breach — a charge it set itself (the nearest, if it set several; the
+   * author, 2026-11-17), else the nearest of its side's charges and the holes already blown;
+   * a hole, when the side has no charge on the house, only where it is
+   * nearer than the door (⚠️ ours) — and from the roof never; else, into a
+   * fight already on, by the way that fight went in; else by the front door.
+   * The defending side's counterattack goes in by the front door.
    */
   wayIn(world: InteriorWorld, building: MapObject, force: Unit): Point | undefined {
     const door = this.frontDoor(world, building);
     const e = this.engagements.find((x) => x.buildingId === building.id);
-    if (e) return e.attackerSide === force.side ? (e.way ?? door) : door;
-    return this.holeFor(world, building, force) ?? door;
+    if (e && e.attackerSide !== force.side) return door;
+    const hole = this.holeFor(world, building, force);
+    return hole ? this.streetPoint(this.plan(world, building), hole.cell) : (e?.way ?? door);
   }
 
-  /** The breach a force would go in by, when there is no fight on in the building: see {@link wayIn}. */
-  private holeFor(world: InteriorWorld, building: MapObject, force: Unit): Point | undefined {
-    const b = this.breachFor(building.id, force.side);
-    if (!b || this.orders.get(force.id)?.entry === "top") return undefined;
-    const hole = this.streetPoint(this.plan(world, building), b.cell);
-    if (!b.blown) return hole; // its own side's charge: breachFor tells no other
+  /**
+   * The breach a force would go in by (see {@link wayIn}), if any: none into
+   * a fight its side defends or one entered from the roof, nor for a force
+   * whose plan is the roof.
+   */
+  private holeFor(world: InteriorWorld, building: MapObject, force: Unit): Breach | undefined {
+    if (this.orders.get(force.id)?.entry === "top") return undefined;
+    const e = this.engagements.find((x) => x.buildingId === building.id);
+    if (e && (e.attackerSide !== force.side || e.fight.entryWay === "top")) return undefined;
+    const plan = this.plan(world, building);
+    const known = this.breachesOf(building.id).filter((b) => b.blown || b.side === force.side);
+    if (!known.length) return undefined;
+    const far = (b: Breach) => distance(force.position, this.streetPoint(plan, b.cell));
+    const nearest = (list: Breach[]) => list.reduce((a, b) => (far(b) < far(a) ? b : a));
+    // A force that set a charge goes in by it, blowing it, wherever it stands (the author, 2026-11-17).
+    const set = known.filter((b) => !b.blown && b.setBy === force.id);
+    if (set.length) return nearest(set);
+    const best = nearest(known);
+    // With a charge of its own, or into a fight that went in by a hole (that hole is among them), the nearest.
+    if (known.some((b) => !b.blown) || e?.way) return best;
     const door = this.frontDoor(world, building);
-    return !door || distance(force.position, hole) < distance(force.position, door) ? hole : undefined;
+    return !door || far(best) < distance(force.position, door) ? best : undefined;
+  }
+
+  private breachesOf(buildingId: string): Breach[] {
+    return this.breaches.get(buildingId) ?? [];
+  }
+
+  /**
+   * The breach a force chose as it went in, as it stands now: itself, or —
+   * if that wall was opened by the other side in between and its charge came
+   * off — the hole there.
+   */
+  private liveHole(buildingId: string, chosen: Breach | undefined): Breach | undefined {
+    if (!chosen) return undefined;
+    const list = this.breachesOf(buildingId);
+    return list.includes(chosen) ? chosen : list.find((x) => x.cell === chosen.cell && x.blown);
+  }
+
+  /**
+   * Blow a charge as its side goes in by it (decision 124): the wall cell a
+   * way through, and the other side's charge on that wall, not yet blown,
+   * back to the force that set it (the author, 2026-11-17). True when it was
+   * a charge just now — the room behind stunned — not a hole already there.
+   */
+  private blow(world: InteriorWorld, building: MapObject, hole: Breach): boolean {
+    if (hole.blown) return false;
+    this.plan(world, building).storeys[0]!.cells[hole.cell] = CELL_KIND.door;
+    hole.blown = true;
+    const kept: Breach[] = [];
+    for (const b of this.breachesOf(building.id)) {
+      if (b === hole || b.cell !== hole.cell) { kept.push(b); continue; }
+      const owner = world.units.find((u) => u.id === b.setBy);
+      if (owner) owner.breachingCharges = (owner.breachingCharges ?? 0) + 1;
+    }
+    this.breaches.set(building.id, kept);
+    return true;
   }
 
   /**
    * The breaches placed or blown, for the state's digest: by building in id
-   * order, then by side (one a house reads as it always did). Both sides'
-   * charges — the umpire's view: a player reads {@link breachIn} with his side.
+   * order, then by wall cell, then by side (one a house reads as it always
+   * did). Both sides' charges — the umpire's view: a player reads
+   * {@link breachesIn} with his side.
    */
   breachList(): { buildingId: string; side: Side; cell: number; blown: boolean }[] {
     return [...this.breaches.entries()]
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .flatMap(([buildingId, list]) => [...list].sort((a, b) => (a.side < b.side ? -1 : a.side > b.side ? 1 : 0)).map((b) => ({ buildingId, side: b.side, cell: b.cell, blown: b.blown })));
+      .flatMap(([buildingId, list]) => [...list].sort((a, b) => a.cell - b.cell || (a.side < b.side ? -1 : a.side > b.side ? 1 : 0)).map((b) => ({ buildingId, side: b.side, cell: b.cell, blown: b.blown })));
   }
 
   /** A breaching charge in place against the wall, waiting for its side to go in (decision 124). */
   placeBreach(world: InteriorWorld, building: MapObject, facing: Facing, side: Side, setBy: string): void {
     const cell = breachCell(this.plan(world, building), facing);
     if (cell === undefined) return;
-    const all = this.breaches.get(building.id) ?? [];
-    if (all.some((b) => b.blown)) return; // one hole a house, and it stays: the caller refunds a charge set too late
-    const list = all.filter((b) => b.side !== side);
+    const all = this.breachesOf(building.id);
+    if (all.some((b) => b.cell === cell && b.blown)) return; // that wall is open already: the caller refunds a charge set too late
+    const list = all.filter((b) => !(b.cell === cell && b.side === side));
     list.push({ side, cell, facing, blown: false, setBy });
     this.breaches.set(building.id, list);
   }
 
-  /** The breach a side has in a building's wall: the hole, once one is blown (anyone's), else its own charge. */
-  private breachFor(buildingId: string, side: Side) {
-    const list = this.breaches.get(buildingId) ?? [];
-    return list.find((b) => b.blown) ?? list.find((b) => b.side === side);
+  /**
+   * The breach on one wall of a building as a side knows it: a hole blown
+   * there, else its own charge; an enemy's charge not yet blown is not told.
+   * By the face, or by the wall cell it names now, as charges are set and
+   * blown — on a house turned 45° two faces can name one cell. (Once blown,
+   * the hole is a door and the face names another cell: hence both.)
+   */
+  breachOn(world: InteriorWorld, building: MapObject, facing: Facing, side: Side): { side: Side; facing: Facing; blown: boolean } | undefined {
+    const cell = breachCell(this.plan(world, building), facing);
+    const on = this.breachesOf(building.id).filter((b) => b.facing === facing || b.cell === cell);
+    const b = on.find((x) => x.blown) ?? on.find((x) => x.side === side);
+    return b && { side: b.side, facing: b.facing, blown: b.blown };
   }
 
-  /**
-   * The breach in a building's wall as a side knows it: the hole, once one is
-   * blown, else its own charge. An enemy's charge not yet blown is not told.
-   */
-  breachIn(buildingId: string, side: Side): { side: Side; facing: Facing; blown: boolean } | undefined {
-    const b = this.breachFor(buildingId, side);
-    return b && { side: b.side, facing: b.facing, blown: b.blown };
+  /** Every breach in a building's walls as a side knows it — the holes blown, and its own charges — in compass order. */
+  breachesIn(world: InteriorWorld, building: MapObject, side: Side): { side: Side; facing: Facing; blown: boolean }[] {
+    const known = this.breachesOf(building.id).filter((b) => b.blown || b.side === side);
+    return FACINGS.flatMap((f) => known.filter((b) => b.facing === f).map((b) => ({ side: b.side, facing: b.facing, blown: b.blown })));
   }
 
   /** The street cell beside a ground-floor wall or door cell, on the map. */
@@ -504,19 +578,20 @@ export class InteriorBattles {
    * closes. The way to the door is a move like any other.
    */
   goIn(world: InteriorWorld, attacker: Unit, building: MapObject): void {
-    // By a breach where its side has one (decision 124).
-    const hole = this.engagements.some((e) => e.buildingId === building.id) ? undefined : this.holeFor(world, building, attacker);
+    // By a breach where its side has one (decision 124) — into a fight already on as well (the author, 2026-11-17).
+    const hole = this.holeFor(world, building, attacker);
     const door = this.wayIn(world, building, attacker);
     if (door) moveTo(attacker, door);
     this.entering.set(attacker.id, building.id);
-    if (hole) this.byHole.add(attacker.id);
+    if (hole) this.byHole.set(attacker.id, hole);
   }
 
   /** The turn's minute inside every building where one is being fought. */
   resolveTurn(world: InteriorWorld): InteriorReport[] {
     const reports: InteriorReport[] = [];
-    const started = new Set(this.startFights(world));
-    const { joined, countered } = this.joinFights(world);
+    const joinedBy = new Map<InteriorEngagement, { facing: Facing; blown: boolean }[]>();
+    const started = new Set(this.startFights(world, joinedBy));
+    const { joined, countered } = this.joinFights(world, joinedBy);
     this.entering.clear();
     this.byHole.clear();
     // Fighting room by room, each side goes on knowing who it is fighting, minute by minute
@@ -624,6 +699,7 @@ export class InteriorBattles {
         ...(started.has(e) && e.breached ? { breached: { ...e.breached } } : {}),
         ...(joined.get(e)?.length ? { joined: joined.get(e) } : {}),
         ...(countered.get(e)?.length ? { counterattacked: countered.get(e) } : {}),
+        ...(joinedBy.get(e)?.length ? { joinBreached: joinedBy.get(e) } : {}),
         attackersOut,
         defendersOut,
         defendersWithdrew,
@@ -645,7 +721,7 @@ export class InteriorBattles {
    * fights from outside"). Buildings are taken in map order, so a replay
    * starts the same fights.
    */
-  private startFights(world: InteriorWorld): InteriorEngagement[] {
+  private startFights(world: InteriorWorld, joinedBy: Map<InteriorEngagement, { facing: Facing; blown: boolean }[]>): InteriorEngagement[] {
     const begun: InteriorEngagement[] = [];
     const free = (u: Unit) => !this.inFight(u.id) && !u.surrendered && fit(u).length > 0;
     for (const b of world.terrain.objects) {
@@ -664,7 +740,7 @@ export class InteriorBattles {
       const defenderSide: Side = attackerSide0 === "BLUE" ? "RED" : "BLUE";
       const plan = this.plan(world, b);
       // The way in (decision 124): the first assaulting force's, a breach or the front door.
-      const hole = this.byHole.has(attackers[0]!.id) ? this.breachFor(b.id, attackers[0]!.side) : undefined;
+      const hole = this.liveHole(b.id, this.byHole.get(attackers[0]!.id));
       if (plan.outsideDoors.length === 0 && !hole) continue; // no way in
       const rng = new Rng(unitSeed(world.seed, `interior:${b.id}:${world.turn}`));
       // Unless otherwise planned, one defender a room (✅ the author,
@@ -690,10 +766,18 @@ export class InteriorBattles {
             toward,
           )
         : defaultDefence(plan, defenders.flatMap((u) => fit(u).map((s) => s.id)), rng, prepared, toward);
+      // Forces going in at once by a breach of their own on another wall (the
+      // author, 2026-11-17) come in by it, as forces joining do; the rest by the first force's way.
+      const firstEntry = this.orders.get(attackers[0]!.id)?.entry;
+      const ownWay = (u: Unit) => {
+        const h = this.liveHole(b.id, this.byHole.get(u.id));
+        return h && h.cell !== hole?.cell && firstEntry !== "top" ? h : undefined;
+      };
+      const apart = new Map(attackers.slice(1).flatMap((u) => { const h = ownWay(u); return h ? [[u.id, h] as const] : []; }));
       const teams: string[][] = [];
       const security: string[] = [];
       const squads: number[] = [];
-      attackers.forEach((u, k) => {
+      attackers.filter((u) => !apart.has(u.id)).forEach((u, k) => {
         const s = this.stackOf(u);
         teams.push(...s.teams);
         squads.push(...s.teams.map(() => k));
@@ -712,19 +796,17 @@ export class InteriorBattles {
       // The breach (decision 124): blown now if still a charge — the room
       // behind stunned — and gone in by; the hole stays a way in after.
       const breach = hole && entry !== "top" ? hole.cell : undefined;
-      const stuns = hole !== undefined && breach !== undefined && !hole.blown;
-      if (hole && breach !== undefined) {
-        plan.storeys[0]!.cells[hole.cell] = CELL_KIND.door;
-        hole.blown = true;
-        // One hole a house: the other side's charge, not yet blown, goes back to
-        // the force that set it, as a charge still being laid does (the author, 2026-11-17).
-        for (const other of this.breaches.get(b.id) ?? []) {
-          const owner = other === hole ? undefined : world.units.find((u) => u.id === other.setBy);
-          if (owner) owner.breachingCharges = (owner.breachingCharges ?? 0) + 1;
-        }
-        this.breaches.set(b.id, [hole]);
-      }
+      const stuns = hole !== undefined && breach !== undefined && this.blow(world, b, hole);
       const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}), ...(breach !== undefined ? { breach, blast: stuns } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
+      const opened: { facing: Facing; blown: boolean }[] = [];
+      for (const u of attackers) {
+        const h = apart.get(u.id);
+        if (!h) continue;
+        const s = this.stackOf(u);
+        const blast = this.blow(world, b, h);
+        fight.join(s.teams, s.security, { breach: h.cell, blast });
+        opened.push({ facing: h.facing, blown: blast });
+      }
       // Wounds already taken outside come in with the men.
       const index = this.soldierIndex(world, { attackerUnits: attackers.map((u) => u.id), defenderUnits: defenders.map((u) => u.id) });
       for (const m of fight.soldiers) {
@@ -740,10 +822,11 @@ export class InteriorBattles {
         attackerUnits: attackers.map((u) => u.id),
         defenderUnits: defenders.map((u) => u.id),
         startedTurn: world.turn,
-        ...(hole && breach !== undefined ? { way: this.streetPoint(plan, hole.cell), breached: { facing: hole.facing, blown: stuns } } : {}),
+        ...(hole && breach !== undefined ? { way: this.streetPoint(plan, hole.cell), wayCell: hole.cell, breached: { facing: hole.facing, blown: stuns } } : {}),
       };
       this.engagements.push(e);
       begun.push(e);
+      if (opened.length) joinedBy.set(e, opened);
     }
     return begun;
   }
@@ -766,7 +849,7 @@ export class InteriorBattles {
    * the same. A defending side's force counterattacks in (decision 104):
    * new teams at the front door, clearing the attacker's rooms back.
    */
-  private joinFights(world: InteriorWorld): { joined: Map<InteriorEngagement, string[]>; countered: Map<InteriorEngagement, string[]> } {
+  private joinFights(world: InteriorWorld, joinedBy: Map<InteriorEngagement, { facing: Facing; blown: boolean }[]>): { joined: Map<InteriorEngagement, string[]>; countered: Map<InteriorEngagement, string[]> } {
     const joined = new Map<InteriorEngagement, string[]>();
     const countered = new Map<InteriorEngagement, string[]>();
     for (const u of world.units) {
@@ -792,7 +875,15 @@ export class InteriorBattles {
       // A fight entered from the roof is joined only by its hatch, which this does not model (decision 101).
       if (e.fight.entryWay === "top") continue;
       const s = this.stackOf(u);
-      e.fight.join(s.teams, s.security);
+      // By a breach of its own other than the fight's way (the author, 2026-11-17): blown as it goes in, the room behind stunned.
+      const own = this.liveHole(e.buildingId, this.byHole.get(u.id));
+      const hole = own && own.cell !== e.wayCell ? own : undefined;
+      const building = hole && world.terrain.objects.find((o) => o.id === e.buildingId);
+      if (hole && building) {
+        const blast = this.blow(world, building, hole);
+        e.fight.join(s.teams, s.security, { breach: hole.cell, blast });
+        joinedBy.set(e, [...(joinedBy.get(e) ?? []), { facing: hole.facing, blown: blast }]);
+      } else e.fight.join(s.teams, s.security);
       // Wounds already taken outside come in with the men.
       for (const m of e.fight.soldiers) {
         const s = men.find((x) => x.id === m.id);

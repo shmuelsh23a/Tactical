@@ -84,6 +84,19 @@ describe("going in by the breach (decision 124)", () => {
     expect(f.result().outcome === "cleared" || !f.finished).toBe(true);
   });
 
+  it("lets a joiner in by a hole of its own, the room behind stunned as it is blown", () => {
+    const { plan, cell, post } = holed(6, "south");
+    const f = new InteriorFight({ plan, attack: { entry: "door", grenades: false, teams: [["a1", "a2", "a3", "a4"]] }, defence: [{ id: "d1", storey: 0, cell: post }] }, new Rng(1));
+    expect(f.soldiers.find((m) => m.id === "d1")!.stunnedUntil).toBe(0);
+    for (let k = 0; k < 3; k++) f.tick(); // partway through: the stun runs from now
+    f.join([["j1", "j2", "j3", "j4"]], [], { breach: cell, blast: true });
+    expect(f.soldiers.find((m) => m.id === "d1")!.stunnedUntil).toBe(f.second + CLOSE_QUARTERS.stunSeconds);
+    const w = plan.width, at = f.soldiers.find((m) => m.id === "j1")!.cell;
+    expect([cell - 1, cell + 1, cell - w, cell + w]).toContain(at);
+    const wall = breachCell(generateFloorPlan(house(), 6), "east")!; // still a wall in this plan
+    expect(() => f.join([["k1"]], [], { breach: wall, blast: true })).toThrow(/breach/);
+  });
+
   it("refuses a hole that is not one", () => {
     const plan = generateFloorPlan(house(), 5);
     const cell = breachCell(plan, "west")!; // still a wall
@@ -114,7 +127,7 @@ describe("a breaching charge in play (decision 124)", () => {
     expect(cell).toBeDefined();
     g.layCharge("B-1", "breach", { buildingId: "house", facing });
     for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
-    expect(g.interior.breachIn("house", "BLUE")).toEqual({ side: "BLUE", facing, blown: false });
+    expect(g.interior.breachOn(g, h, facing, "BLUE")).toEqual({ side: "BLUE", facing, blown: false });
     expect(g.getUnit("B-1").layingCharge).toBeUndefined();
     g.advanceToPhase("combat");
     expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
@@ -122,7 +135,7 @@ describe("a breaching charge in play (decision 124)", () => {
     const hole = g.interior.breachPoint(g, h, facing)!;
     expect(distance(g.getUnit("B-1").position, hole)).toBeLessThan(1);
     const closed = g.advanceToPhase("initiative");
-    expect(g.interior.breachIn("house", "BLUE")!.blown).toBe(true);
+    expect(g.interior.breachOn(g, h, facing, "BLUE")!.blown).toBe(true);
     const e = g.interior.engagements[0]!;
     expect(e.way).toEqual(hole);
     // The turn's report says how they went in, for the log and the debrief.
@@ -200,58 +213,160 @@ describe("a breaching charge in play (decision 124)", () => {
     expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.noBreachingCharge);
   });
 
-  it("is one a house a side: its own charge bars a second, an enemy's unseen one does not (the author, 2026-11-17)", () => {
+  /** An engineer force of `side` (a scenario gives it charges) 50% further out from the house's middle (108, 106) than the breach point on `face`. */
+  function outside(g: Game, h: MapObject, id: string, side: "BLUE" | "RED", face: Facing) {
+    const wall = g.interior.breachPoint(g, h, face)!;
+    const u = makeInfantry(id, side, "squad", { x: wall.x + (wall.x - 108) * 0.5, y: wall.y + (wall.y - 106) * 0.5 }, 6);
+    u.breachingCharges = 1;
+    g.addUnit(u);
+    return u;
+  }
+
+  it("is one a wall: its own charge or a hole bars a second there; an enemy's unseen one does not, nor a breach on another wall (the author, 2026-11-17)", () => {
     const { g, h, facing } = battle(3);
-    // R-2, an engineer force a scenario gave charges to, outside the face B-1 is not at:
-    // half again as far out from the house's middle (108, 106) as that wall.
-    const wall = g.interior.breachPoint(g, h, OPPOSITE[facing])!;
-    const r2 = makeInfantry("R-2", "RED", "squad", { x: wall.x + (wall.x - 108) * 0.5, y: wall.y + (wall.y - 106) * 0.5 }, 6);
-    r2.breachingCharges = 1;
-    g.addUnit(r2);
+    outside(g, h, "R-2", "RED", facing); // at BLUE's wall
+    outside(g, h, "R-3", "RED", OPPOSITE[facing]); // at the wall across the house
     g.layCharge("B-1", "breach", { buildingId: "house", facing });
     for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
     g.advanceToPhase("movement");
-    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing: OPPOSITE[facing] })).toThrow(LAY_CHARGE_REFUSAL.alreadyBreached);
-    // RED is not told of BLUE's charge, and sets its own.
-    expect(g.interior.breachIn("house", "RED")).toBeUndefined();
-    g.layCharge("R-2", "breach", { buildingId: "house", facing: OPPOSITE[facing] });
+    g.getUnit("B-1").breachingCharges = 1;
+    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.alreadyBreached);
+    // RED is not told of BLUE's charge, and sets its own: on the same wall, and on the one across.
+    expect(g.interior.breachesIn(g, h, "RED")).toEqual([]);
+    g.layCharge("R-2", "breach", { buildingId: "house", facing });
+    g.layCharge("R-3", "breach", { buildingId: "house", facing: OPPOSITE[facing] });
     for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
-    expect(g.interior.breachIn("house", "RED")).toEqual({ side: "RED", facing: OPPOSITE[facing], blown: false });
-    expect(g.interior.breachIn("house", "BLUE")).toEqual({ side: "BLUE", facing, blown: false });
-    expect(g.interior.breachList().map((b) => b.side)).toEqual(["BLUE", "RED"]);
-    // BLUE goes in by its own; the hole is the house's one, and RED's charge comes off the wall.
+    expect(g.interior.breachOn(g, h, facing, "RED")).toEqual({ side: "RED", facing, blown: false });
+    expect(g.interior.breachOn(g, h, facing, "BLUE")).toEqual({ side: "BLUE", facing, blown: false });
+    expect(g.interior.breachesIn(g, h, "BLUE")).toEqual([{ side: "BLUE", facing, blown: false }]);
+    expect(g.interior.breachesIn(g, h, "RED")).toHaveLength(2);
+    // BLUE goes in by its own: RED's charge on that wall comes off it, back to R-2; R-3's, across the house, stays.
     g.advanceToPhase("combat");
     expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
     g.advanceToPhase("initiative");
-    expect(g.interior.breachList()).toEqual([expect.objectContaining({ side: "BLUE", blown: true })]);
-    expect(g.interior.breachIn("house", "RED")).toEqual({ side: "BLUE", facing, blown: true });
+    expect(g.interior.breachList().map((b) => [b.side, b.blown])).toEqual(expect.arrayContaining([["BLUE", true], ["RED", false]]));
+    expect(g.interior.breachList()).toHaveLength(2);
+    expect(g.interior.breachOn(g, h, facing, "RED")).toEqual({ side: "BLUE", facing, blown: true });
+    expect(g.interior.breachOn(g, h, OPPOSITE[facing], "RED")).toEqual({ side: "RED", facing: OPPOSITE[facing], blown: false });
+    expect(g.interior.breachOn(g, h, OPPOSITE[facing], "BLUE")).toBeUndefined(); // RED's still unseen
     expect(g.getUnit("R-2").breachingCharges).toBe(1); // back to the force that set it (the author, 2026-11-17)
+    expect(g.getUnit("R-3").breachingCharges).toBe(0);
     const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
     expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
   });
 
-  it("goes back in the pack when the enemy's hole is blown while the work is on", () => {
+  it("goes back in the pack when the enemy's hole is blown in its wall while the work is on", () => {
     const { g, h, facing } = battle(3);
-    const wall = g.interior.breachPoint(g, h, OPPOSITE[facing])!;
-    const r2 = makeInfantry("R-2", "RED", "squad", { x: wall.x + (wall.x - 108) * 0.5, y: wall.y + (wall.y - 106) * 0.5 }, 6);
-    r2.breachingCharges = 1;
-    g.addUnit(r2);
+    outside(g, h, "R-2", "RED", facing);
     g.layCharge("B-1", "breach", { buildingId: "house", facing });
     for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
-    // RED starts its own the turn BLUE goes in: BLUE's hole is blown as that turn closes, RED's work a turn short.
+    // RED starts its own on that wall the turn BLUE goes in: BLUE's hole is blown as that turn closes, RED's work a turn short.
     g.advanceToPhase("movement");
-    g.layCharge("R-2", "breach", { buildingId: "house", facing: OPPOSITE[facing] });
+    g.layCharge("R-2", "breach", { buildingId: "house", facing });
     g.advanceToPhase("combat");
     expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
     g.advanceToPhase("initiative");
-    expect(g.interior.breachIn("house", "RED")).toEqual({ side: "BLUE", facing, blown: true });
+    expect(g.interior.breachOn(g, h, facing, "RED")).toEqual({ side: "BLUE", facing, blown: true });
     g.advanceToPhase("movement");
-    expect(() => g.layCharge("R-2", "breach", { buildingId: "house", facing: OPPOSITE[facing] })).toThrow(LAY_CHARGE_REFUSAL.alreadyBreached);
+    expect(() => g.layCharge("R-2", "breach", { buildingId: "house", facing })).toThrow(LAY_CHARGE_REFUSAL.alreadyBreached);
     // Its second turn of work ends with the wall already open: never set, so the charge comes back.
     const closed = g.advanceToPhase("initiative");
     expect(closed.chargeWork.find((r) => r.unitId === "R-2")?.interrupted).toBe("gone");
     expect(g.getUnit("R-2").breachingCharges).toBe(1);
     expect(g.interior.breachList()).toEqual([expect.objectContaining({ side: "BLUE", blown: true })]);
+  });
+
+  it("blows the side's own charge, not the enemy's set first on the same wall", () => {
+    const { g, h, facing } = battle(3);
+    outside(g, h, "R-2", "RED", facing);
+    // RED sets first, BLUE second: both on BLUE's wall.
+    g.layCharge("R-2", "breach", { buildingId: "house", facing });
+    g.advanceToPhase("summary"); g.advanceToPhase("initiative"); g.advanceToPhase("movement");
+    g.layCharge("B-1", "breach", { buildingId: "house", facing });
+    for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    expect(g.interior.breachList().map((b) => b.side)).toEqual(["BLUE", "RED"]);
+    const blueLeft = g.getUnit("B-1").breachingCharges;
+    g.advanceToPhase("combat");
+    expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
+    g.advanceToPhase("initiative");
+    // The hole is BLUE's; RED's charge back to R-2; BLUE's spent.
+    expect(g.interior.breachList()).toEqual([expect.objectContaining({ side: "BLUE", blown: true })]);
+    expect(g.getUnit("R-2").breachingCharges).toBe(1);
+    expect(g.getUnit("B-1").breachingCharges).toBe(blueLeft);
+  });
+
+  it("takes forces going in at once by different walls each by its own (the author, 2026-11-17)", () => {
+    const { g, h, facing } = battle(1);
+    const b2 = outside(g, h, "B-2", "BLUE", OPPOSITE[facing]);
+    g.layCharge("B-1", "breach", { buildingId: "house", facing });
+    g.layCharge("B-2", "breach", { buildingId: "house", facing: OPPOSITE[facing] });
+    for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    g.advanceToPhase("combat");
+    expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
+    expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE);
+    expect(distance(b2.position, g.interior.breachPoint(g, h, OPPOSITE[facing])!)).toBeLessThan(1);
+    const closed = g.advanceToPhase("initiative");
+    const report = closed.interior.find((r) => r.began)!;
+    expect(report.attackerUnits).toEqual(["B-1", "B-2"]);
+    expect(report.breached).toEqual({ facing, blown: true });
+    expect(report.joinBreached).toEqual([{ facing: OPPOSITE[facing], blown: true }]);
+    expect(g.interior.breachesIn(g, h, "BLUE").map((b) => b.blown)).toEqual([true, true]);
+    const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
+    expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
+  });
+
+  // Seed 1: B-1's fight is still on the turn after it went in.
+  it("takes a force in by the charge it set, though a hole is nearer it (the author, 2026-11-17)", () => {
+    const { g, h, facing } = battle(1);
+    // B-2 stands 3 m out from the hole B-1 will blow, and sets its own on a wall beside it.
+    const hole = g.interior.breachPoint(g, h, facing)!;
+    const d = Math.hypot(hole.x - 108, hole.y - 106);
+    const b2 = makeInfantry("B-2", "BLUE", "squad", { x: hole.x + (3 * (hole.x - 108)) / d, y: hole.y + (3 * (hole.y - 106)) / d }, 6);
+    b2.breachingCharges = 1;
+    g.addUnit(b2);
+    const beside = FACINGS.find((f) => f !== facing && f !== OPPOSITE[facing] && g.interior.breachPoint(g, h, f) && distance(b2.position, g.interior.breachPoint(g, h, f)!) <= 25)!;
+    expect(beside).toBeDefined();
+    g.layCharge("B-1", "breach", { buildingId: "house", facing });
+    g.layCharge("B-2", "breach", { buildingId: "house", facing: beside });
+    for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    g.advanceToPhase("combat");
+    g.assault("B-1", "R-1", 0);
+    g.advanceToPhase("initiative");
+    expect(g.interior.inFight("R-1")).toBe(true);
+    expect(distance(b2.position, hole)).toBeLessThan(distance(b2.position, g.interior.breachPoint(g, h, beside)!));
+    g.advanceToPhase("combat");
+    expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE);
+    expect(distance(b2.position, g.interior.breachPoint(g, h, beside)!)).toBeLessThan(1);
+    const report = g.advanceToPhase("initiative").interior.find((r) => r.buildingId === "house")!;
+    expect(report.joinBreached).toEqual([{ facing: beside, blown: true }]);
+  });
+
+  // Seed 1: B-1's fight is still on the turn after it went in, as the "fighting inside" test above relies on too.
+  it("lets a second force join the fight by its own breach, blown as it goes in (the author, 2026-11-17)", () => {
+    const { g, h, facing } = battle(1);
+    const b2 = outside(g, h, "B-2", "BLUE", OPPOSITE[facing]);
+    g.layCharge("B-1", "breach", { buildingId: "house", facing });
+    g.layCharge("B-2", "breach", { buildingId: "house", facing: OPPOSITE[facing] });
+    for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    expect(g.interior.breachesIn(g, h, "BLUE")).toHaveLength(2);
+    g.advanceToPhase("combat");
+    g.assault("B-1", "R-1", 0);
+    const first = g.advanceToPhase("initiative");
+    expect(first.interior.find((r) => r.began)?.breached).toEqual({ facing, blown: true });
+    expect(g.interior.breachOn(g, h, OPPOSITE[facing], "BLUE")?.blown).toBe(false); // B-2's waits for B-2
+    expect(g.interior.inFight("R-1")).toBe(true);
+    g.advanceToPhase("combat");
+    expect(g.assault("B-2", "R-1", 0).reason).toBe(GOES_INSIDE);
+    // B-2 goes to its own hole, not to the way the fight began.
+    expect(distance(b2.position, g.interior.breachPoint(g, h, OPPOSITE[facing])!)).toBeLessThan(1);
+    const second = g.advanceToPhase("initiative");
+    const report = second.interior.find((r) => r.buildingId === "house")!;
+    expect(report.joined).toEqual(["B-2"]);
+    expect(report.joinBreached).toEqual([{ facing: OPPOSITE[facing], blown: true }]);
+    expect(g.interior.breachesIn(g, h, "BLUE").map((b) => b.blown)).toEqual([true, true]);
+    expect(g.interior.breachesIn(g, h, "RED")).toHaveLength(2); // both holes are open to everyone
+    const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
+    expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
   });
 
   it("is not set from inside the house", () => {
@@ -374,7 +489,7 @@ describe("spending breaching charges (decision 125)", () => {
     b.breachingCharges = 1;
     g.layCharge("B-1", "breach", { buildingId: "house", facing: "north" });
     for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
-    expect(g.interior.breachIn("house", "BLUE")?.blown).toBe(false);
+    expect(g.interior.breachOn(g, g.terrain.objects[0]!, "north", "BLUE")?.blown).toBe(false);
     expect(b.breachingCharges).toBe(0);
   });
 });
