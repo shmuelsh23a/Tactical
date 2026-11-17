@@ -194,10 +194,10 @@ export class InteriorBattles {
    * building: whose, and the wall cell. Blown as that side next goes in;
    * the hole stays a way in for everyone after. One a side: an enemy's
    * charge, unseen, does not stop a side setting its own (the author,
-   * 2026-11-17); one hole a house, so the first blown takes the other's
-   * charge with it (⚠️ ours).
+   * 2026-11-17); one hole a house, so the first blown sends the other's
+   * charge back to the force that set it (the author, 2026-11-17).
    */
-  private readonly breaches = new Map<string, { side: Side; cell: number; facing: Facing; blown: boolean }[]>();
+  private readonly breaches = new Map<string, { side: Side; cell: number; facing: Facing; blown: boolean; setBy: string }[]>();
   /** Forces going in this turn by a breach rather than the front door (decision 124). */
   private readonly byHole = new Set<string>();
 
@@ -265,13 +265,13 @@ export class InteriorBattles {
   }
 
   /** A breaching charge in place against the wall, waiting for its side to go in (decision 124). */
-  placeBreach(world: InteriorWorld, building: MapObject, facing: Facing, side: Side): void {
+  placeBreach(world: InteriorWorld, building: MapObject, facing: Facing, side: Side, setBy: string): void {
     const cell = breachCell(this.plan(world, building), facing);
     if (cell === undefined) return;
     const all = this.breaches.get(building.id) ?? [];
     if (all.some((b) => b.blown)) return; // one hole a house, and it stays: the caller refunds a charge set too late
     const list = all.filter((b) => b.side !== side);
-    list.push({ side, cell, facing, blown: false });
+    list.push({ side, cell, facing, blown: false, setBy });
     this.breaches.set(building.id, list);
   }
 
@@ -716,7 +716,12 @@ export class InteriorBattles {
       if (hole && breach !== undefined) {
         plan.storeys[0]!.cells[hole.cell] = CELL_KIND.door;
         hole.blown = true;
-        // One hole a house: the other side's charge, not yet blown, goes with it (⚠️ ours).
+        // One hole a house: the other side's charge, not yet blown, goes back to
+        // the force that set it, as a charge still being laid does (the author, 2026-11-17).
+        for (const other of this.breaches.get(b.id) ?? []) {
+          const owner = other === hole ? undefined : world.units.find((u) => u.id === other.setBy);
+          if (owner) owner.breachingCharges = (owner.breachingCharges ?? 0) + 1;
+        }
         this.breaches.set(b.id, [hole]);
       }
       const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}), ...(breach !== undefined ? { breach, blast: stuns } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);

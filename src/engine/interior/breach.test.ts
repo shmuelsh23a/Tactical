@@ -219,13 +219,13 @@ describe("a breaching charge in play (decision 124)", () => {
     expect(g.interior.breachIn("house", "RED")).toEqual({ side: "RED", facing: OPPOSITE[facing], blown: false });
     expect(g.interior.breachIn("house", "BLUE")).toEqual({ side: "BLUE", facing, blown: false });
     expect(g.interior.breachList().map((b) => b.side)).toEqual(["BLUE", "RED"]);
-    // BLUE goes in by its own; the hole is the house's one, and RED's charge goes with it (⚠️ ours).
+    // BLUE goes in by its own; the hole is the house's one, and RED's charge comes off the wall.
     g.advanceToPhase("combat");
     expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
     g.advanceToPhase("initiative");
     expect(g.interior.breachList()).toEqual([expect.objectContaining({ side: "BLUE", blown: true })]);
     expect(g.interior.breachIn("house", "RED")).toEqual({ side: "BLUE", facing, blown: true });
-    expect(g.getUnit("R-2").breachingCharges).toBe(0); // spent with the wall, not given back
+    expect(g.getUnit("R-2").breachingCharges).toBe(1); // back to the force that set it (the author, 2026-11-17)
     const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
     expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
   });

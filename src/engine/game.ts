@@ -4771,7 +4771,7 @@ export class Game {
           reports.push({ unitId: unit.id, type: "breach", position: work.position, breach: work.breach, interrupted: "gone" });
           continue;
         }
-        this.interior.placeBreach(this, building, work.breach.facing, unit.side);
+        this.interior.placeBreach(this, building, work.breach.facing, unit.side, unit.id);
         reports.push({ unitId: unit.id, type: "breach", position: work.position, breach: work.breach, placed: true });
         continue;
       }
