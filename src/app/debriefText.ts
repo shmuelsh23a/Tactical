@@ -343,8 +343,13 @@ const COMPASS_HE = [
  */
 export function describeSector(sector: ObservationSector): string {
   const bearing = ((sector.bearing % 360) + 360) % 360;
-  const point = COMPASS_HE[Math.round((360 - bearing) / 45) % 8] ?? "";
-  return `${point} (${Math.round(bearing)}°, ${Math.round(sector.width)}°)`;
+  return `${compassHe(bearing)} (${Math.round(bearing)}°, ${Math.round(sector.width)}°)`;
+}
+
+/** The compass point a bearing (degrees off +x, the map's y down) falls in. */
+export function compassHe(bearing: number): string {
+  const b = ((bearing % 360) + 360) % 360;
+  return COMPASS_HE[Math.round((360 - b) / 45) % 8] ?? "";
 }
 
 /** What a sector is worth, in the percentages the player is being offered. */
@@ -478,6 +483,13 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
     `${report.roomsCleared}/${report.rooms} חדרים טוהרו`,
     losses,
   ];
+  // The way in, when it was a breach (decision 124): both sides know a wall was blown, or the hole gone in by.
+  if (report.breached) {
+    const wall = `בקיר ${facingHe[report.breached.facing]}`;
+    parts.splice(1, 0, report.breached.blown
+      ? (reader == null || attacking ? `מטען הפריצה הופעל — נכנסו דרך פרצה ${wall}` : `האויב פרץ את הקיר ${facingHe[report.breached.facing]} ונכנס דרכו`)
+      : `הכניסה דרך הפרצה ${wall}`);
+  }
   // More of the attacking side came in (decision 99): its own side by name, the defender only that more came.
   if (report.joined?.length) {
     parts.splice(1, 0, reader == null || attacking ? `${names(report.joined)} הצטרף לקרב במבנה` : "כוח אויב נוסף נכנס למבנה");

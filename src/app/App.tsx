@@ -17,6 +17,7 @@ import {
   SMOKE_GRENADE_THROW_M,
   SMOKE_RADIUS_M,
   camouflageBonus,
+  bearingDegrees,
   distance,
   pointInPolygon,
   fitSoldiers,
@@ -56,6 +57,7 @@ import {
   structureHe,
   chargeHe,
   facingHe,
+  compassHe,
   chargeWorkHe,
   planningRefusalHe,
   coveringFireHe,
@@ -1044,16 +1046,22 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   }
 
   /**
-   * The faces the selected force could breach from where it stands (decision
-   * 124): of the nearest house with a face in reach that has no breach yet,
-   * the force standing outside it. With the house's breach, if it has one.
+   * The houses the selected force could breach from where it stands (decision
+   * 124), each with its faces in reach and its breach if it has one: every
+   * house in reach, not only the nearest, so a squad in the cover of one house
+   * can still pick the enemy's next door. Named by direction and distance (to
+   * its nearest wall in reach), a
+   * house the side knows an enemy in first, then the nearest. None while the
+   * force fights inside: no one is out at a wall.
    */
   const breachable = (() => {
-    const none = { faces: [] as (typeof FACINGS)[number][], buildingId: "", breach: undefined as ReturnType<typeof game.interior.breachIn> };
-    if (!selectedOwn || (selectedOwn.breachingCharges === undefined && selectedOwn.layingCharge?.type !== "breach")) return none;
-    let best = none, bestD = Infinity;
+    type House = { buildingId: string; faces: (typeof FACINGS)[number][]; near: number; label: string; enemyIn: boolean; breach: ReturnType<typeof game.interior.breachIn> };
+    if (!selectedOwn || (selectedOwn.breachingCharges === undefined && selectedOwn.layingCharge?.type !== "breach")) return [] as House[];
+    if (game.interior.inFight(selectedOwn.id)) return [] as House[];
+    const houses: House[] = [];
     for (const o of game.terrain.objects) {
       if (o.kind !== "building" || o.footprint.shape !== "polygon" || pointInPolygon(selectedOwn.position, o.footprint.points)) continue;
+      const pts = o.footprint.points;
       const faces: (typeof FACINGS)[number][] = [];
       let near = Infinity;
       for (const facing of FACINGS) {
@@ -1061,9 +1069,15 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
         const d = wall ? distance(selectedOwn.position, wall) : Infinity;
         if (d <= ASSAULT_RANGE_M) { faces.push(facing); near = Math.min(near, d); }
       }
-      if (faces.length && near < bestD) { bestD = near; best = { faces, buildingId: o.id, breach: game.interior.breachIn(o.id) }; }
+      if (!faces.length) continue;
+      const centre = { x: pts.reduce((t, p) => t + p.x, 0) / pts.length, y: pts.reduce((t, p) => t + p.y, 0) / pts.length };
+      const enemyIn = visibleEnemies.some((u) => pointInPolygon(u.position, pts));
+      const label = `המבנה ${Math.round(near)} מ' ${compassHe(bearingDegrees(selectedOwn.position, centre))}ה${enemyIn ? " — אויב מזוהה בתוכו" : ""}`;
+      // An enemy's charge not yet blown is his secret: shown only once the wall is open.
+      const breach = game.interior.breachIn(o.id);
+      houses.push({ buildingId: o.id, faces, near, label, enemyIn, breach: breach && (breach.blown || breach.side === selectedOwn.side) ? breach : undefined });
     }
-    return best;
+    return houses.sort((a, b) => Number(b.enemyIn) - Number(a.enemyIn) || a.near - b.near);
   })();
 
   /**
@@ -2238,7 +2252,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                       16). Only a force trained for it — an insurgent or a
                       special force — gets the control at all, so the panel
                       stays as it was for everyone else. */}
-                  {selectedOwn?.canLayCharges && (
+                  {selectedOwn?.canLayCharges && !game.interior.inFight(selectedOwn.id) && (
                     <>
                       <label>הנחת מטען:</label>
                       <div className="seg">
@@ -2269,30 +2283,32 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                       or an engineer force's kit, offered at a house in reach. */}
                   {selectedOwn && (selectedOwn.breachingCharges !== undefined || selectedOwn.layingCharge?.type === "breach") && (
                     <>
-                      {/* A breaching charge against a house in reach (decision 124). */}
-                      {breachable.breach ? (
-                        <p className="hint">
-                          {breachable.breach.blown
-                            ? `הקיר ${facingHe[breachable.breach.facing]} של המבנה הקרוב נפרץ — דרך כניסה`
-                            : `מטען פריצה מוצב בקיר ${facingHe[breachable.breach.facing]} של המבנה הקרוב${breachable.breach.side === selectedOwn.side ? " — יופעל עם ההסתערות פנימה" : ""}`}
-                        </p>
-                      ) : breachable.faces.length > 0 && (
-                        <>
-                          <label>מטען פריצה בקיר:</label>
-                          <div className="seg">
-                            {breachable.faces.map((facing) => (
-                              <button
-                                key={facing}
-                                className={selectedOwn.layingCharge?.breach?.buildingId === breachable.buildingId && selectedOwn.layingCharge.breach.facing === facing ? "on" : ""}
-                                onClick={() => handleLayBreach(breachable.buildingId, facing)}
-                                title={`${CHARGE_LAYING.turnsToLay} תורות עבודה ליד הקיר; המטען מופעל כשהכוח מסתער פנימה, והחדר שמאחורי הקיר בהלם. תנועה, ירי או פגיעה בכוח מאבדות את העבודה.`}
-                              >
-                                {facingHe[facing]}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
+                      {/* A breaching charge against a house in reach (decision 124), each house named. */}
+                      {breachable.map((house) => (
+                        <div key={house.buildingId}>
+                          <label>{house.label}</label>
+                          {house.breach ? (
+                            <p className="hint">
+                              {house.breach.blown
+                                ? `הקיר ${facingHe[house.breach.facing]} נפרץ — דרך כניסה`
+                                : `מטען פריצה מוצב בקיר ${facingHe[house.breach.facing]}${house.breach.side === selectedOwn.side ? " — יופעל עם ההסתערות פנימה" : ""}`}
+                            </p>
+                          ) : (
+                            <div className="seg">
+                              {house.faces.map((facing) => (
+                                <button
+                                  key={facing}
+                                  className={selectedOwn.layingCharge?.breach?.buildingId === house.buildingId && selectedOwn.layingCharge.breach.facing === facing ? "on" : ""}
+                                  onClick={() => handleLayBreach(house.buildingId, facing)}
+                                  title={`${CHARGE_LAYING.turnsToLay} תורות עבודה ליד הקיר; המטען מופעל כשהכוח מסתער פנימה, והחדר שמאחורי הקיר בהלם. תנועה, ירי או פגיעה בכוח מאבדות את העבודה.`}
+                                >
+                                  {facingHe[facing]}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                       <p className="hint">
                         מטעני פריצה: {selectedOwn.breachingCharges ?? 0}
                         {selectedOwn.layingCharge?.type === "breach" && !selectedOwn.canLayCharges
