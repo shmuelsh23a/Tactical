@@ -15,6 +15,8 @@
  *   npm run interior-sim -- --breach --breach-face beside   # …in the front door's own face instead: the same side of the house
  *   npm run interior-sim -- --breach --no-blast             # …with no stun in the room behind (a probe)
  *   npm run interior-sim -- --breach --watched              # …the defence watching the breach as it would the door (a probe)
+ *   npm run interior-sim -- --breach --second-breach        # …and half the teams in at once by a second hole, in a face beside the first (the author, 2026-11-17)
+ *   npm run interior-sim -- --breach --second-breach --one-hole   # …its baseline: the same houses, every team by the first hole
  *
  * What it is judged against (ATP 3-06.11 (2024)): clearing is "a slow
  * methodical process" (para 3-8, whose "40-60-minutes" for "a one-floor
@@ -23,7 +25,7 @@
  * 8-12); hand grenades the most-used explosive (para B-35); casualties
  * higher than in the open (para C-8).
  */
-import { CELL_KIND, Rng, breachCell, defaultDefence, facingOf, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
+import { CELL_KIND, InteriorFight, Rng, breachCell, defaultDefence, facingOf, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
 import { RAMAT_MENASHE_OBJECTS } from "../src/app/maps/ramatMenasheObjects.js";
 
 const args = process.argv.slice(2);
@@ -42,6 +44,8 @@ const BREACH = args.includes("--breach");
 const BREACH_FACE = value("--breach-face") ?? "opposite"; // opposite | beside: which face of the house, from the front door's
 const NO_BLAST = args.includes("--no-blast"); // a probe: the breach without its stun
 const WATCHED = args.includes("--watched"); // a probe: the defence expects the attack by the breach, as by a door // in by a breach in the face opposite the front door, blown as they go in (decision 124)
+const SECOND = args.includes("--second-breach");
+const ONE_HOLE = args.includes("--one-hole"); // with --second-breach: the same houses, all by the first hole (the comparison's baseline) // half the teams by a second hole beside the first, at once (several holes a house, the author, 2026-11-17)
 const STORIED = args.includes("--storied"); // every row over the houses with stairs only (decision 124's comparison)
 const HOLD_STOREYS = value("--hold-storeys")?.split("+").map(Number); // the storeys the defenders hold, e.g. 1 or 0+1 (decision 101)
 
@@ -60,7 +64,7 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const pct = (n: number, of: number) => `${Math.round((100 * n) / of)}%`;
 const mean = (xs: number[]) => (xs.reduce((s, x) => s + x, 0) / xs.length).toFixed(2);
 
-console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${BREACH ? `, in by a breach ${BREACH_FACE === "beside" ? "in the door's face" : "opposite the door"}${NO_BLAST ? ", no blast" : ""}${WATCHED ? ", watched" : ""}` : ""}`);
+console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${BREACH ? `, in by a breach ${BREACH_FACE === "beside" ? "in the door's face" : "opposite the door"}${NO_BLAST ? ", no blast" : ""}${WATCHED ? ", watched" : ""}${SECOND ? (ONE_HOLE ? ", houses with a second wall to breach, all by the first" : ", half the teams by a second hole beside it") : ""}` : ""}`);
 console.log("");
 console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Defenders withdrew (mean) | Share of hits by grenade | Rooms (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -77,10 +81,24 @@ for (const entry of ["door", "stair", "top"] as const) {
       if (BREACH && entry !== "top" && breach === undefined) return []; // no wall to breach there
       if (breach !== undefined) plan.storeys[0]!.cells[breach] = CELL_KIND.door;
       if (breach !== undefined && WATCHED) plan.outsideDoors.push(breach); // the defence's expected ways in (`fieldFromExpected`)
+      // A second hole in a face beside the first (the first of the two that has a wall to breach).
+      const beside = opposite && ((opposite === "north" || opposite === "south") ? (["east", "west"] as const) : (["north", "south"] as const));
+      const second = SECOND && breach !== undefined && beside ? beside.map((f) => breachCell(plan, f)).find((c) => c !== undefined && c !== breach) : undefined;
+      if (SECOND && breach !== undefined && second === undefined) return []; // no second wall to breach
       const defence = HOLD_STOREYS
         ? plannedDefence(plan, [{ ids: defenders, storeys: HOLD_STOREYS, atWindows: false }], rng, PREPARED)
         : defaultDefence(plan, defenders, rng, PREPARED);
-      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams, ...(breach !== undefined ? { breach, blast: !NO_BLAST } : {}) }, defence, defenderFallback: HOLD ? "hold" : "fallBack", defenderExpects: EXPECT_ABOVE ? "above" : "below" }, rng)];
+      const input = { defence, defenderFallback: HOLD ? "hold" as const : "fallBack" as const, defenderExpects: EXPECT_ABOVE ? "above" as const : "below" as const };
+      if (second !== undefined && !ONE_HOLE) {
+        // The first half by the first hole, the rest by the second, both blown as they go in.
+        const half = Math.ceil(teams.length / 2);
+        const fight = new InteriorFight({ plan, attack: { entry, grenades, teams: teams.slice(0, half), breach: breach!, blast: !NO_BLAST }, ...input }, rng);
+        plan.storeys[0]!.cells[second] = CELL_KIND.door;
+        if (teams.length > half) fight.join(teams.slice(half), [], { breach: second, blast: !NO_BLAST });
+        while (!fight.finished) fight.tick();
+        return [fight.result()];
+      }
+      return [resolveInteriorFight({ plan, attack: { entry, grenades, teams, ...(breach !== undefined ? { breach, blast: !NO_BLAST } : {}) }, ...input }, rng)];
     });
     if (rows.length === 0) continue;
     const cleared = rows.filter((r) => r.outcome === "cleared");
