@@ -3903,7 +3903,7 @@ on the stated reasoning, still awaiting the author's word.
         in; the hole stays a way in for both sides after. The app offers it
         for each face in reach of a force trained for charges.
         After the code review: the force goes to the hole, not the door;
-        one breach a house, by either side (one a side since 2026-11-17,
+        one breach a house, by either side (one a wall since 2026-11-17,
         below), set from outside it; once
         blown, a force goes in by whichever of the door and the hole is
         nearer it (⚠️ ours), the roof never by it; the defence's windows
@@ -3928,17 +3928,40 @@ on the stated reasoning, still awaiting the author's word.
         refused at `layCharge`, lost as `"fought"`. Recordings with such
         work no longer replay. **The blast is told** to both sides in the
         log and the debrief (`InteriorReport.breached`).
-      - **An enemy's charge is no bar** (the author, 2026-11-17, asked as
-        the refusal told a player the enemy had charged that house): one
-        charge a house **a side**, not one a house. A side's own charge or
-        a hole already blown still bars a second; `breachIn(building,
-        side)` tells a side only those. One hole a house stays: the first
-        blown sends the other side's charge, not yet blown, **back to the
-        force that set it** (the author, 2026-11-17, the recommended option),
-        as a charge still being laid when the hole is blown comes back — so
-        timing never decides whether it is spent. Recordings where both
-        sides laid a charge on one house in overlapping turns no longer
-        replay.
+      - **Holes, one a wall** (the author, 2026-11-17, in three steps).
+        First an enemy's charge was made no bar (the refusal told a player
+        the enemy had charged that house); then the author asked why one
+        hole should block another — it was ours, the fight's one way in —
+        and ruled **several holes a house, one a wall**. A wall takes one
+        charge or hole: a side's own charge on it, or a hole blown in it,
+        bars a second there; an enemy's charge not yet blown does not, nor
+        anything on another wall. A side may set charges on as many walls
+        as it has charges in reach (the recommended option).
+        `breachOn(building, facing, side)` and `breachesIn(building,
+        side)` tell a side only its own charges and the holes. The first
+        blown on a wall sends the other side's charge there **back to the
+        force that set it** (the recommended option), as a charge still
+        being laid when that wall is opened comes back — timing never
+        decides whether it is spent.
+      - **A force joining a fight goes in by its own breach** (the author,
+        2026-11-17, the recommended option): its charge blown as it comes,
+        the room behind stunned (`InteriorFight.join(teams, security, {
+        breach, blast })`), or an open hole of the house. So do forces
+        going in together by different walls: the first starts the fight,
+        the rest come in by their own. **A force goes in by a charge it set
+        itself**, the nearest if several, though a hole is nearer it (the
+        author, 2026-11-17, the recommended option); else by the nearest of
+        its side's charges and the open holes — with neither, a hole only
+        where nearer than the door, or than the fight's way (⚠️ ours). Both
+        sides are told (`InteriorReport.joinBreached`). ⚠️ Ours, from the
+        review: every attacking team on the ground floor, and a
+        counterattack, may use a hole once it is open; an attacker who
+        breaks leaves by the fight's way, not his own hole; the blast
+        spares the attacker's own men already in that room. Not measured:
+        the interior sim's single-breach figures are unchanged by it.
+        Recordings where both sides laid a charge on one house in
+        overlapping turns, or with charges on two walls of one house from
+        earlier today's builds, no longer replay.
     - **The room order is the drill's**, not the plan's: the attacker sees
       only the outline, and doctrine leaves room by room to the team leader
       on the spot. Each team takes the nearest uncleared room through held
