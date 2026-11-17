@@ -3903,7 +3903,8 @@ on the stated reasoning, still awaiting the author's word.
         in; the hole stays a way in for both sides after. The app offers it
         for each face in reach of a force trained for charges.
         After the code review: the force goes to the hole, not the door;
-        one breach a house, by either side, set from outside it; once
+        one breach a house, by either side (one a side since 2026-11-17,
+        below), set from outside it; once
         blown, a force goes in by whichever of the door and the hole is
         nearer it (⚠️ ours), the roof never by it; the defence's windows
         face the front door when the breach is blown as they go in.
@@ -3926,9 +3927,15 @@ on the stated reasoning, still awaiting the author's word.
         it is drawn into a fight (one rule, judged at the turn's end):
         refused at `layCharge`, lost as `"fought"`. Recordings with such
         work no longer replay. **The blast is told** to both sides in the
-        log and the debrief (`InteriorReport.breached`). Open, not asked:
-        the engine's "already breached" refusal tells a player the enemy
-        has a charge on that house.
+        log and the debrief (`InteriorReport.breached`).
+      - **An enemy's charge is no bar** (the author, 2026-11-17, asked as
+        the refusal told a player the enemy had charged that house): one
+        charge a house **a side**, not one a house. A side's own charge or
+        a hole already blown still bars a second; `breachIn(building,
+        side)` tells a side only those. One hole a house stays: the first
+        blown takes the other side's charge, not yet blown, with it (⚠️
+        ours — spent, not given back). Recordings where both sides laid a
+        charge on one house in overlapping turns no longer replay.
     - **The room order is the drill's**, not the plan's: the attacker sees
       only the outline, and doctrine leaves room by room to the team leader
       on the spot. Each team takes the nearest uncleared room through held
