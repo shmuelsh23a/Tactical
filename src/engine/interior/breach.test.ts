@@ -121,13 +121,70 @@ describe("a breaching charge in play (decision 124)", () => {
     // The force goes to the hole, not the front door, and the fight starts there.
     const hole = g.interior.breachPoint(g, h, facing)!;
     expect(distance(g.getUnit("B-1").position, hole)).toBeLessThan(1);
-    g.advanceToPhase("initiative");
+    const closed = g.advanceToPhase("initiative");
     expect(g.interior.breachIn("house")!.blown).toBe(true);
     const e = g.interior.engagements[0]!;
     expect(e.way).toEqual(hole);
+    // The turn's report says how they went in, for the log and the debrief.
+    expect(closed.interior.find((r) => r.began)?.breached).toEqual({ facing, blown: true });
     expect(g.interior.plan(g, h).storeys[0]!.cells[cell!]).toBe(CELL_KIND.door);
     const sealed = JSON.parse(JSON.stringify(sealRecording(g.toRecording())));
     expect(verifyRecording(sealed)).toEqual({ checked: true, ok: true });
+  });
+
+  // Seed 1: a fight the first turn does not finish, so B-1 is still inside it in the next movement phase.
+  it("is not started by a force fighting inside: its men are in the rooms, not at a wall", () => {
+    const { g, h, facing } = battle(1);
+    g.layCharge("B-1", "breach", { buildingId: "house", facing });
+    for (let t = 0; t < CHARGE_LAYING.turnsToLay; t++) { g.advanceToPhase("summary"); g.advanceToPhase("initiative"); }
+    g.advanceToPhase("combat");
+    g.assault("B-1", "R-1", 0);
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    expect(g.interior.inFight("B-1")).toBe(true);
+    expect(g.getUnit("B-1").breachingCharges).toBe(BREACHING_CHARGES_EACH - 1);
+    const other = FACINGS.find((f) => f !== facing && g.interior.breachPoint(g, h, f) !== undefined)!;
+    expect(() => g.layCharge("B-1", "breach", { buildingId: "house", facing: other })).toThrow("fighting inside a building");
+    expect(g.getUnit("B-1").breachingCharges).toBe(BREACHING_CHARGES_EACH - 1);
+  });
+
+  it("is not started at the next house either, by a force fighting in this one", () => {
+    // A second house just east of the first, every face of it in reach of the hole B-1 went in by.
+    const h = house();
+    const next: MapObject = { id: "next", kind: "building", height: 3, footprint: { shape: "polygon", points: [{ x: 120, y: 100 }, { x: 130, y: 100 }, { x: 130, y: 110 }, { x: 120, y: 110 }] } };
+    const g = new Game({ seed: 1, enforceC2: false, terrain: { objects: [h, next] } });
+    g.addUnit(makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 6));
+    g.addUnit(makeInfantry("B-1", "BLUE", "squad", { x: 118, y: 106 }, 8));
+    g.designateBreachElement("B-1");
+    g.beginTurn();
+    g.advanceToPhase("combat");
+    expect(g.assault("B-1", "R-1", 0).reason).toBe(GOES_INSIDE);
+    g.advanceToPhase("initiative");
+    g.advanceToPhase("movement");
+    expect(g.interior.inFight("B-1")).toBe(true);
+    const face = FACINGS.find((f) => { const w = g.interior.breachPoint(g, next, f); return w !== undefined && distance(g.getUnit("B-1").position, w) <= 30; })!;
+    expect(face).toBeDefined();
+    expect(() => g.layCharge("B-1", "breach", { buildingId: "next", facing: face })).toThrow("fighting inside a building");
+    expect(g.getUnit("B-1").breachingCharges).toBe(BREACHING_CHARGES_EACH);
+  });
+
+  it("loses work already under way when the force is drawn into a fight inside (one rule, judged at the turn's end)", () => {
+    // R-1, trained for charges, starts a mine where it stands inside the house; B-1 assaults in that turn.
+    const h = house();
+    const g = new Game({ seed: 1, enforceC2: false, terrain: { objects: [h] } });
+    const red = makeInfantry("R-1", "RED", "squad", { x: 108, y: 106 }, 6);
+    red.canLayCharges = true;
+    g.addUnit(red);
+    g.addUnit(makeInfantry("B-1", "BLUE", "squad", { x: 118, y: 106 }, 8));
+    g.beginTurn();
+    g.advanceToPhase("movement");
+    g.layCharge("R-1", "antiPersonnel");
+    g.advanceToPhase("combat");
+    g.assault("B-1", "R-1", 0);
+    const closed = g.advanceToPhase("initiative");
+    expect(g.interior.inFight("R-1")).toBe(true);
+    expect(g.getUnit("R-1").layingCharge).toBeUndefined();
+    expect(closed.chargeWork.find((r) => r.unitId === "R-1")?.interrupted).toBe("fought");
   });
 
   it("is refused out of the assault's reach of the wall, on no house, and to a force not trained for it", () => {

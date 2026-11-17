@@ -42,6 +42,8 @@ export interface InteriorEngagement {
   startedTurn: number;
   /** The street point the attackers went in by, when it was a breach (decision 124); else the front door. */
   way?: Point;
+  /** The wall they went in through, when it was a breach: blown as they went in, or a hole already there. */
+  breached?: { facing: Facing; blown: boolean };
 }
 
 /** What a building's fight did this turn, for the log and the debrief. */
@@ -56,6 +58,8 @@ export interface InteriorReport {
   joined?: string[];
   /** Forces of the defending side that came in to counterattack this turn (decision 104). */
   counterattacked?: string[];
+  /** On the turn it began by a breach (decision 124): the wall, and whether the charge was blown as they went in. */
+  breached?: { facing: Facing; blown: boolean };
   /** Men put out this turn, each side. */
   attackersOut: number;
   defendersOut: number;
@@ -595,6 +599,7 @@ export class InteriorBattles {
         attackerUnits: [...e.attackerUnits],
         defenderUnits: [...e.defenderUnits],
         began: started.has(e),
+        ...(started.has(e) && e.breached ? { breached: { ...e.breached } } : {}),
         ...(joined.get(e)?.length ? { joined: joined.get(e) } : {}),
         ...(countered.get(e)?.length ? { counterattacked: countered.get(e) } : {}),
         attackersOut,
@@ -703,7 +708,7 @@ export class InteriorBattles {
         attackerUnits: attackers.map((u) => u.id),
         defenderUnits: defenders.map((u) => u.id),
         startedTurn: world.turn,
-        ...(hole && breach !== undefined ? { way: this.streetPoint(plan, hole.cell) } : {}),
+        ...(hole && breach !== undefined ? { way: this.streetPoint(plan, hole.cell), breached: { facing: hole.facing, blown: stuns } } : {}),
       };
       this.engagements.push(e);
       begun.push(e);

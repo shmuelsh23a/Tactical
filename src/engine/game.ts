@@ -3006,6 +3006,9 @@ export class Game {
     }
     if (unit.neutralized) throw new Error(LAY_CHARGE_REFUSAL.neutralised);
     if (unit.routing) throw new Error(LAY_CHARGE_REFUSAL.routing);
+    // Its men are in a fight room by room: no one is outside to work at a wall or a road.
+    // (Work already under way is lost the same way, in progressChargeLaying.)
+    if (this.interior.inFight(unitId)) throw new Error(INTERIOR_REFUSAL.fightingInside);
     if (fitSoldiers(unit) === 0) throw new Error(LAY_CHARGE_REFUSAL.noOneLeft);
     // A breaching charge (decision 124): against a face of a house, from
     // within the assault's last bound of it.
@@ -4734,7 +4737,7 @@ export class Game {
    */
   /** Whether a force's charge work is already lost this turn: what {@link progressChargeLaying} will find at its end. */
   private chargeWorkLost(unit: Unit): boolean {
-    return unit.neutralized || unit.movedThisTurn > 0 || unit.firedThisTurn || unit.hitThisTurn || unit.underFire;
+    return unit.neutralized || unit.movedThisTurn > 0 || unit.firedThisTurn || this.interior.inFight(unit.id) || unit.hitThisTurn || unit.underFire;
   }
 
   private progressChargeLaying(): ChargeWorkReport[] {
@@ -4745,7 +4748,7 @@ export class Game {
       const interrupted =
         unit.neutralized ? "neutralized"
         : unit.movedThisTurn > 0 ? "moved"
-        : unit.firedThisTurn ? "fought"
+        : unit.firedThisTurn || this.interior.inFight(unit.id) ? "fought" // in a fight room by room, no one is at the work
         : unit.hitThisTurn || unit.underFire ? "hit"
         : undefined;
       if (interrupted) {
