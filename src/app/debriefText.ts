@@ -494,6 +494,16 @@ export function interiorReportHe(report: InteriorReport, nameOf: (id: string) =>
   if (report.joined?.length) {
     parts.splice(1, 0, reader == null || attacking ? `${names(report.joined)} הצטרף לקרב במבנה` : "כוח אויב נוסף נכנס למבנה");
   }
+  // More came in by a breach of their own (the author, 2026-11-17): both sides know the wall — after who came, in order.
+  if (report.joinBreached?.length) {
+    const lines = report.joinBreached.map((j) => {
+      const wall = `בקיר ${facingHe[j.facing]}`;
+      return reader == null || attacking
+        ? (j.blown ? `מטען פריצה נוסף הופעל — נכנסו דרך פרצה ${wall}` : `נכנסו גם דרך הפרצה ${wall}`)
+        : (j.blown ? `האויב פרץ את הקיר ${facingHe[j.facing]} ונכנס דרכו` : `האויב נכנס גם דרך הפרצה ${wall}`);
+    });
+    parts.splice(parts.length - 2, 0, ...lines); // before the rooms and the losses
+  }
   // The defending side came in to counterattack (decision 104): its own side by name, the attacker only that it came.
   if (report.counterattacked?.length) {
     parts.splice(1, 0, reader == null || !attacking ? `${names(report.counterattacked)} פתח בהתקפת נגד בתוך המבנה` : "האויב פתח בהתקפת נגד בתוך המבנה");

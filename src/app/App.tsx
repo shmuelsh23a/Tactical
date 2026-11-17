@@ -1047,7 +1047,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
 
   /**
    * The houses the selected force could breach from where it stands (decision
-   * 124), each with its faces in reach and its breach if it has one: every
+   * 124), each with its faces in reach still free and the breaches its side
+   * knows of in its walls — one a wall (the author, 2026-11-17): every
    * house in reach, not only the nearest, so a squad in the cover of one house
    * can still pick the enemy's next door. Named by direction and distance (to
    * its nearest wall in reach), a
@@ -1055,7 +1056,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
    * force fights inside: no one is out at a wall.
    */
   const breachable = (() => {
-    type House = { buildingId: string; faces: (typeof FACINGS)[number][]; near: number; label: string; enemyIn: boolean; breach: ReturnType<typeof game.interior.breachIn> };
+    type House = { buildingId: string; faces: (typeof FACINGS)[number][]; near: number; label: string; enemyIn: boolean; breaches: ReturnType<typeof game.interior.breachesIn> };
     if (!selectedOwn || (selectedOwn.breachingCharges === undefined && selectedOwn.layingCharge?.type !== "breach")) return [] as House[];
     if (game.interior.inFight(selectedOwn.id)) return [] as House[];
     const houses: House[] = [];
@@ -1073,8 +1074,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       const centre = { x: pts.reduce((t, p) => t + p.x, 0) / pts.length, y: pts.reduce((t, p) => t + p.y, 0) / pts.length };
       const enemyIn = visibleEnemies.some((u) => pointInPolygon(u.position, pts));
       const label = `המבנה ${Math.round(near)} מ' ${compassHe(bearingDegrees(selectedOwn.position, centre))}ה${enemyIn ? " — אויב מזוהה בתוכו" : ""}`;
-      // As the side knows it: its own charge or a hole; an enemy's charge not yet blown is his secret.
-      houses.push({ buildingId: o.id, faces, near, label, enemyIn, breach: game.interior.breachIn(o.id, selectedOwn.side) });
+      // As the side knows them: its own charges and the holes; an enemy's charge not yet blown is his secret.
+      const breaches = game.interior.breachesIn(game, o, selectedOwn.side);
+      houses.push({ buildingId: o.id, faces: faces.filter((f) => !breaches.some((b) => b.facing === f)), near, label, enemyIn, breaches });
     }
     return houses.sort((a, b) => Number(b.enemyIn) - Number(a.enemyIn) || a.near - b.near);
   })();
@@ -2286,13 +2288,14 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                       {breachable.map((house) => (
                         <div key={house.buildingId}>
                           <label>{house.label}</label>
-                          {house.breach ? (
-                            <p className="hint">
-                              {house.breach.blown
-                                ? `הקיר ${facingHe[house.breach.facing]} נפרץ — דרך כניסה`
-                                : `מטען פריצה מוצב בקיר ${facingHe[house.breach.facing]} — יופעל עם ההסתערות פנימה`}
+                          {house.breaches.map((b) => (
+                            <p className="hint" key={b.facing}>
+                              {b.blown
+                                ? `הקיר ${facingHe[b.facing]} נפרץ — דרך כניסה`
+                                : `מטען פריצה מוצב בקיר ${facingHe[b.facing]} — יופעל עם ההסתערות פנימה`}
                             </p>
-                          ) : (
+                          ))}
+                          {house.faces.length > 0 && (
                             <div className="seg">
                               {house.faces.map((facing) => (
                                 <button

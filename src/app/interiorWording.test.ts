@@ -51,6 +51,15 @@ describe("a fight inside a building, in Hebrew", () => {
     expect(interiorReportHe(report, names, "BLUE")).not.toContain("פרצה");
   });
 
+  it("tells both sides of a second force in by a breach of its own (the author, 2026-11-17)", () => {
+    const joined = { ...report, began: false, joined: ["B-1"], joinBreached: [{ facing: "south" as const, blown: true }] };
+    expect(interiorReportHe(joined, names, "BLUE")).toContain("מטען פריצה נוסף הופעל — נכנסו דרך פרצה בקיר הדרומי");
+    expect(interiorReportHe(joined, names, "RED")).toContain("האויב פרץ את הקיר הדרומי ונכנס דרכו");
+    expect(interiorReportHe(joined, names, "RED")).not.toContain("כיתה 1");
+    const old = { ...joined, joinBreached: [{ facing: "west" as const, blown: false }] };
+    expect(interiorReportHe(old, names, "RED")).toContain("האויב נכנס גם דרך הפרצה בקיר המערבי");
+  });
+
   it("words a plan inside by what it says, and leaves the defaults unsaid (decision 101)", () => {
     expect(describeInteriorPlan({ entry: "top", grenades: false })).toBe("כניסה מהגג · בלי רימונים");
     expect(describeInteriorPlan({ entry: "stair" })).toBe("כניסה בדלת ועלייה במדרגות לקומה העליונה");
