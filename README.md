@@ -3933,9 +3933,12 @@ on the stated reasoning, still awaiting the author's word.
         charge a house **a side**, not one a house. A side's own charge or
         a hole already blown still bars a second; `breachIn(building,
         side)` tells a side only those. One hole a house stays: the first
-        blown takes the other side's charge, not yet blown, with it (⚠️
-        ours — spent, not given back). Recordings where both sides laid a
-        charge on one house in overlapping turns no longer replay.
+        blown sends the other side's charge, not yet blown, **back to the
+        force that set it** (the author, 2026-11-17, the recommended option),
+        as a charge still being laid when the hole is blown comes back — so
+        timing never decides whether it is spent. Recordings where both
+        sides laid a charge on one house in overlapping turns no longer
+        replay.
     - **The room order is the drill's**, not the plan's: the attacker sees
       only the outline, and doctrine leaves room by room to the team leader
       on the spot. Each team takes the nearest uncleared room through held

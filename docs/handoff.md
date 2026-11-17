@@ -696,7 +696,7 @@ a force fighting inside lays no charge, the blast is told. Driving trap: the
 house's squad stays unseen until a BLUE squad stands at its wall, around
 (385, 561) — 5–9 turns before an assault can be ordered. Ruled the same
 day: an enemy's charge is no bar — one charge a house a side; the first
-blown takes the other's with it (⚠️ ours). (3) Room order stays the drill's (nearest uncleared room
+blown sends the other's back to the force that set it (both the author's). (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
 positions, long listed here, were decisions 120–121; decision 121's ⚠️ to
 watch: its 50 m trigger equals the reserve's "lost within" 50 m.)
