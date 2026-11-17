@@ -192,9 +192,12 @@ export class InteriorBattles {
   /**
    * Breaching charges placed against a house's wall (decision 124), by
    * building: whose, and the wall cell. Blown as that side next goes in;
-   * the hole stays a way in for everyone after.
+   * the hole stays a way in for everyone after. One a side: an enemy's
+   * charge, unseen, does not stop a side setting its own (the author,
+   * 2026-11-17); one hole a house, so the first blown takes the other's
+   * charge with it (⚠️ ours).
    */
-  private readonly breaches = new Map<string, { side: Side; cell: number; facing: Facing; blown: boolean }>();
+  private readonly breaches = new Map<string, { side: Side; cell: number; facing: Facing; blown: boolean }[]>();
   /** Forces going in this turn by a breach rather than the front door (decision 124). */
   private readonly byHole = new Set<string>();
 
@@ -242,29 +245,48 @@ export class InteriorBattles {
 
   /** The breach a force would go in by, when there is no fight on in the building: see {@link wayIn}. */
   private holeFor(world: InteriorWorld, building: MapObject, force: Unit): Point | undefined {
-    const b = this.breaches.get(building.id);
+    const b = this.breachFor(building.id, force.side);
     if (!b || this.orders.get(force.id)?.entry === "top") return undefined;
     const hole = this.streetPoint(this.plan(world, building), b.cell);
-    if (!b.blown) return b.side === force.side ? hole : undefined;
+    if (!b.blown) return hole; // its own side's charge: breachFor tells no other
     const door = this.frontDoor(world, building);
     return !door || distance(force.position, hole) < distance(force.position, door) ? hole : undefined;
   }
 
-  /** The breaches placed or blown, for the state's digest: by building, in id order. */
+  /**
+   * The breaches placed or blown, for the state's digest: by building in id
+   * order, then by side (one a house reads as it always did). Both sides'
+   * charges — the umpire's view: a player reads {@link breachIn} with his side.
+   */
   breachList(): { buildingId: string; side: Side; cell: number; blown: boolean }[] {
-    return [...this.breaches.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([buildingId, b]) => ({ buildingId, side: b.side, cell: b.cell, blown: b.blown }));
+    return [...this.breaches.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .flatMap(([buildingId, list]) => [...list].sort((a, b) => (a.side < b.side ? -1 : a.side > b.side ? 1 : 0)).map((b) => ({ buildingId, side: b.side, cell: b.cell, blown: b.blown })));
   }
 
   /** A breaching charge in place against the wall, waiting for its side to go in (decision 124). */
   placeBreach(world: InteriorWorld, building: MapObject, facing: Facing, side: Side): void {
     const cell = breachCell(this.plan(world, building), facing);
     if (cell === undefined) return;
-    this.breaches.set(building.id, { side, cell, facing, blown: false });
+    const all = this.breaches.get(building.id) ?? [];
+    if (all.some((b) => b.blown)) return; // one hole a house, and it stays: the caller refunds a charge set too late
+    const list = all.filter((b) => b.side !== side);
+    list.push({ side, cell, facing, blown: false });
+    this.breaches.set(building.id, list);
   }
 
-  /** The breach in a building's wall, placed or blown. */
-  breachIn(buildingId: string): { side: Side; facing: Facing; blown: boolean } | undefined {
-    const b = this.breaches.get(buildingId);
+  /** The breach a side has in a building's wall: the hole, once one is blown (anyone's), else its own charge. */
+  private breachFor(buildingId: string, side: Side) {
+    const list = this.breaches.get(buildingId) ?? [];
+    return list.find((b) => b.blown) ?? list.find((b) => b.side === side);
+  }
+
+  /**
+   * The breach in a building's wall as a side knows it: the hole, once one is
+   * blown, else its own charge. An enemy's charge not yet blown is not told.
+   */
+  breachIn(buildingId: string, side: Side): { side: Side; facing: Facing; blown: boolean } | undefined {
+    const b = this.breachFor(buildingId, side);
     return b && { side: b.side, facing: b.facing, blown: b.blown };
   }
 
@@ -642,7 +664,7 @@ export class InteriorBattles {
       const defenderSide: Side = attackerSide0 === "BLUE" ? "RED" : "BLUE";
       const plan = this.plan(world, b);
       // The way in (decision 124): the first assaulting force's, a breach or the front door.
-      const hole = this.byHole.has(attackers[0]!.id) ? this.breaches.get(b.id) : undefined;
+      const hole = this.byHole.has(attackers[0]!.id) ? this.breachFor(b.id, attackers[0]!.side) : undefined;
       if (plan.outsideDoors.length === 0 && !hole) continue; // no way in
       const rng = new Rng(unitSeed(world.seed, `interior:${b.id}:${world.turn}`));
       // Unless otherwise planned, one defender a room (✅ the author,
@@ -691,7 +713,12 @@ export class InteriorBattles {
       // behind stunned — and gone in by; the hole stays a way in after.
       const breach = hole && entry !== "top" ? hole.cell : undefined;
       const stuns = hole !== undefined && breach !== undefined && !hole.blown;
-      if (hole && breach !== undefined) { plan.storeys[0]!.cells[hole.cell] = CELL_KIND.door; hole.blown = true; }
+      if (hole && breach !== undefined) {
+        plan.storeys[0]!.cells[hole.cell] = CELL_KIND.door;
+        hole.blown = true;
+        // One hole a house: the other side's charge, not yet blown, goes with it (⚠️ ours).
+        this.breaches.set(b.id, [hole]);
+      }
       const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}), ...(breach !== undefined ? { breach, blast: stuns } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
       // Wounds already taken outside come in with the men.
       const index = this.soldierIndex(world, { attackerUnits: attackers.map((u) => u.id), defenderUnits: defenders.map((u) => u.id) });

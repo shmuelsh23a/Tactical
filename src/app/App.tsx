@@ -1073,9 +1073,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       const centre = { x: pts.reduce((t, p) => t + p.x, 0) / pts.length, y: pts.reduce((t, p) => t + p.y, 0) / pts.length };
       const enemyIn = visibleEnemies.some((u) => pointInPolygon(u.position, pts));
       const label = `המבנה ${Math.round(near)} מ' ${compassHe(bearingDegrees(selectedOwn.position, centre))}ה${enemyIn ? " — אויב מזוהה בתוכו" : ""}`;
-      // An enemy's charge not yet blown is his secret: shown only once the wall is open.
-      const breach = game.interior.breachIn(o.id);
-      houses.push({ buildingId: o.id, faces, near, label, enemyIn, breach: breach && (breach.blown || breach.side === selectedOwn.side) ? breach : undefined });
+      // As the side knows it: its own charge or a hole; an enemy's charge not yet blown is his secret.
+      houses.push({ buildingId: o.id, faces, near, label, enemyIn, breach: game.interior.breachIn(o.id, selectedOwn.side) });
     }
     return houses.sort((a, b) => Number(b.enemyIn) - Number(a.enemyIn) || a.near - b.near);
   })();
@@ -2291,7 +2290,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                             <p className="hint">
                               {house.breach.blown
                                 ? `הקיר ${facingHe[house.breach.facing]} נפרץ — דרך כניסה`
-                                : `מטען פריצה מוצב בקיר ${facingHe[house.breach.facing]}${house.breach.side === selectedOwn.side ? " — יופעל עם ההסתערות פנימה" : ""}`}
+                                : `מטען פריצה מוצב בקיר ${facingHe[house.breach.facing]} — יופעל עם ההסתערות פנימה`}
                             </p>
                           ) : (
                             <div className="seg">
