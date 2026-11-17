@@ -3957,8 +3957,12 @@ on the stated reasoning, still awaiting the author's word.
         review: every attacking team on the ground floor, and a
         counterattack, may use a hole once it is open; an attacker who
         breaks leaves by the fight's way, not his own hole; the blast
-        spares the attacker's own men already in that room. Not measured:
-        the interior sim's single-breach figures are unchanged by it.
+        spares the attacker's own men already in that room. Measured
+        (balance.md, *A second hole*): half the teams by a second hole
+        beside the first, at once, against three prepared defenders —
+        1–4 points more cleared, 0.1–0.3 fewer out, 0–4 minutes quicker;
+        a small gain, not a dominating one, its price a second charge and
+        a second force at a wall. The single-breach figures are unchanged.
         Recordings where both sides laid a charge on one house in
         overlapping turns, or with charges on two walls of one house from
         earlier today's builds, no longer replay.

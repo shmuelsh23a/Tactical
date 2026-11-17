@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -699,8 +699,9 @@ day, all the author's: a house takes one charge or hole **a wall**, several
 a house; an enemy's charge is no bar; the first blown on a wall sends the
 other side's charge there back to its force; a force joining a fight goes in
 by its own breach, blowing it, and a force goes in by the charge it set even
-past a nearer hole. The second hole's worth is not measured — the
-interior sim breaches once. (3) Room order stays the drill's (nearest uncleared room
+past a nearer hole. A second hole, measured the same day
+(balance.md, *A second hole*, `interior-sim --second-breach`): a small gain,
+1–4 points cleared, 0–4 minutes — do not re-derive. (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
 positions, long listed here, were decisions 120–121; decision 121's ⚠️ to
 watch: its 50 m trigger equals the reserve's "lost within" 50 m.)

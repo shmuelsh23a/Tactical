@@ -6613,6 +6613,39 @@ switches one thing off. Cleared / attackers out / median minutes:
 - Not yet measured on the map: a breach in a scenario. No scenario gives
   the attacker a force trained for charges.
 
+**A second hole (2026-11-17).** After the author ruled several holes a
+house, one a wall: `npm run interior-sim -- --storied --breach
+--second-breach [--one-hole] --prepared --defenders 3 --attackers N`.
+Half the teams go in by the hole opposite the door, the rest at the same
+moment by a second hole in a face beside it, both blown as they go in
+(`InteriorFight.join`); `--one-hole` is the same houses, all by the first.
+249 houses with stairs and a second wall to breach (the one-hole figures
+are the table above's to the decimal, so the set is the same). Cleared /
+attackers out a fight / median minutes of those cleared:
+
+| Attackers | Cell | One hole | Two holes |
+|---|---|---|---|
+| 8 | Door, grenades | 90% / 3.67 / 38.3 | **94% / 3.51** / 38.9 |
+| 8 | Door, none | 80% / 4.26 / 41.6 | 84% / 4.23 / 40.9 |
+| 8 | Stair, grenades | 92% / 3.63 / 39.5 | 93% / 3.55 / 39.5 |
+| 8 | Stair, none | 79% / 4.54 / 45.1 | 81% / 4.27 / **42.6** |
+| 16 | Door, grenades | 100% / 3.53 / 37.2 | 100% / 3.42 / **35.0** |
+| 16 | Door, none | 99% / 4.69 / 39.2 | 99% / 4.38 / 37.2 |
+| 16 | Stair, grenades | 100% / 3.38 / 40.0 | 100% / 3.20 / 38.3 |
+| 16 | Stair, none | 97% / 4.87 / 45.9 | 98% / 4.60 / **41.6** |
+
+- **A second hole helps a little, on every count and every cell**: 1–4
+  points more cleared where there is room for it (8 attackers), 0.1–0.3
+  fewer men out a fight, and 0–4 minutes quicker — most without grenades
+  and on the stair, where one way in is slowest.
+- **It does not dominate the single hole**: its price is outside, as the
+  first's is — a second charge (a breach squad carries two), a second
+  force standing two turns at a second wall, and that work lost if it is
+  hit. Inside, the gain is smaller than the first hole's over the door
+  (2–3 points, 3–5 minutes).
+- Not measured: the second hole on the map, or a joiner coming in later
+  by its own hole rather than at once.
+
 ## The re-measure after decision 122, 2026-10-25
 
 Time costs the attacker: 60-turn deadlines (where shorter) and the
