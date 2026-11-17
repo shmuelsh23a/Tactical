@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*. Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -689,8 +689,13 @@ done 2026-10-29: `layCharge(unit, "breach", { buildingId, facing })`, 2
 turns, blown as the side goes in, the room behind stunned; inside it beats
 the door on every count (balance.md, *The breach*) — its price is outside.
 Its minutes are the hole's place (the middle of the wall), probed and
-accepted 2026-10-29. ⚠️ To watch: the app's buttons were not driven with a house in
-reach — no scenario puts a charge force near one. (3) Room order stays the drill's (nearest uncleared room
+accepted 2026-10-29. Driven in the app 2026-11-17 (yokneamHouse: name
+`כיתה 1` the breach squad in planning; the defended house is "21 מ' מערבה"
+on its card): the card lists every house in reach by distance and direction,
+a force fighting inside lays no charge, the blast is told. Driving trap: the
+house's squad stays unseen until a BLUE squad stands at its wall, around
+(385, 561) — 5–9 turns before an assault can be ordered. Open, not asked:
+"already breached" tells a player the enemy charged that house. (3) Room order stays the drill's (nearest uncleared room
 through held ground) — do not re-propose it as a plan setting. (The computer defender's alternate
 positions, long listed here, were decisions 120–121; decision 121's ⚠️ to
 watch: its 50 m trigger equals the reserve's "lost within" 50 m.)

@@ -3915,6 +3915,20 @@ on the stated reasoning, still awaiting the author's word.
         wall, against a front door drawn anywhere on it — not the stun or
         the surprise (probe, balance.md); **accepted** as the planner's
         gain (the author, 2026-10-29).
+      - **Driven in the app** (2026-11-17, yokneamHouse): three fixes.
+        The card offered only the nearest house, unnamed — from BLUE's
+        start that is its own cover house, so the charge went there and
+        the assault went in by the front door. It now lists **every house
+        in reach, named by distance (to its nearest wall in reach) and
+        direction**, a house with an enemy in sight inside first (⚠️ ours);
+        an enemy's charge not yet blown is not shown. **A force fighting
+        inside lays no charge**, and work already under way is lost when
+        it is drawn into a fight (one rule, judged at the turn's end):
+        refused at `layCharge`, lost as `"fought"`. Recordings with such
+        work no longer replay. **The blast is told** to both sides in the
+        log and the debrief (`InteriorReport.breached`). Open, not asked:
+        the engine's "already breached" refusal tells a player the enemy
+        has a charge on that house.
     - **The room order is the drill's**, not the plan's: the attacker sees
       only the outline, and doctrine leaves room by room to the team leader
       on the spot. Each team takes the nearest uncleared room through held
