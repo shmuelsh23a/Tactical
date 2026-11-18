@@ -58,6 +58,20 @@ things without waiting for the whole of it on every keystroke. **Never report
 work as done without running `npm run check` and quoting the result** (test count, exit status). If a player can see the change,
 drive it in the browser too — see *Verifying a change in the actual game*.
 
+**The verification procedure** (the author's, for every project; installed
+2026-11-18). Before a commit: run the checks and, where a player can see the
+change, drive it. Before committing non-trivial work: a review against
+[docs/review-checklist.md](docs/review-checklist.md) and the triggered items of
+[REVIEW.md](REVIEW.md); fix what it finds and send the fixes back to the same
+reviewer. End every commit message with `Verified: <what was run>` or
+`Verified: none - <why>`. A check still red after three rounds of fixing: stop
+and ask the author. Never make a check pass by weakening it. A change to a
+check itself (REVIEW.md, CI, hooks, the reviewer's instructions) goes in its
+own commit, ahead of the code it judges. A defect that got past the checks
+becomes a REVIEW.md item: trigger, check, incident. For Claude Code the same
+rules are in `CLAUDE.md` (installed by the kit) and the step-by-step is the
+`verify` skill in `.claude/skills/`.
+
 ## What is enforced, and what is asked
 
 Most of the traps below are **checked by the build**, not left to whoever reads

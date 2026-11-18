@@ -138,6 +138,20 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ## Waiting on the author
 
+### The verification procedure (2026-11-18)
+
+- **The commit gate is in observe mode**: `.claude/hooks/sop/` logs to
+  `~/.claude/sop-gate.log` what it would have blocked and blocks nothing.
+  Read the log after a week or two; enforce with
+  `py C:\Lunete\sop\install.py --repo . --mode enforce`.
+- **CI's `npm run build` step reports without failing the run** (new on
+  Linux). Once it has been green there, drop its `continue-on-error` in
+  `.github/workflows/ci.yml`, in a commit of its own.
+- **`.claude/agents/code-reviewer.md` was kept** (the installer leaves a
+  filled-in agent alone). It reads REVIEW.md through
+  `docs/review-checklist.md` section 7; the kit's own agent is the
+  alternative.
+
 ### Open (2026-10-21, night)
 
 - **Ruled 2026-10-23**: fires in depth are the doctrinal drill's only
