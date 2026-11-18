@@ -52,7 +52,7 @@ supported to **2028-04-30**; 22 would have run out in April 2027, and **20 went
 end-of-life on 2026-04-30**, which is what this pin was moved off. Checked
 against `nodejs/Release`, not remembered.
 
-`npm run check` is what CI runs. The hooks in `.claude/` run its two halves —
+`npm run check` and `npm run build` are what CI runs, and either fails it. The hooks in `.claude/` run `check`'s two halves —
 `typecheck` after each edit, the suite before finishing — so they gate the same
 things without waiting for the whole of it on every keystroke. **Never report
 work as done without running `npm run check` and quoting the result** (test count, exit status). If a player can see the change,
