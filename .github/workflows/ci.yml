@@ -3,11 +3,22 @@
 # `npm run check` is the single entry point: the same command a contributor or
 # an agent runs locally. The hooks in .claude/ run its two halves as a faster
 # local gate, so everything is defined by the same npm scripts.
+#
+# Every push, on any branch, and every pull request: sessions push their work to
+# branches of their own (AGENTS.md), and a branch is checked before anyone opens
+# a pull request from it. Nothing here needs a key or a paid service; the sims
+# that do (jev-sim --jev, --claude) are never run in CI. A push to a branch with
+# an open pull request runs the job twice (push and pull_request); accepted.
+#
+# The suite has run on this job (ubuntu-latest) since before 2026-10, so it
+# fails the run when red. `npm run build` is new here (2026-11-18): it has run
+# on Windows, not yet on this job, so it reports without failing the run until
+# it has been green here; then drop its continue-on-error (waiting in
+# docs/handoff.md). It runs even when check is red, so it always reports.
 name: check
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 jobs:
@@ -23,3 +34,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: npm run build (reports, does not fail the run yet; see the top of this file)
+        if: ${{ !cancelled() }}
+        run: npm run build
+        continue-on-error: true
