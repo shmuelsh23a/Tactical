@@ -14,7 +14,7 @@ before every commit. Every command below was run on 2026-11-18 at `7f3a0eb`, on 
 
 ```bash
 npm run check    # eslint src + tsc (app) + tsc (engine, no platform types) + vitest run
-npm run build    # vite build -> dist/ (gitignored); not part of check
+npm run build    # vite build -> dist/ (gitignored); not part of check, but CI runs it and fails on it
 ```
 
 - **Pass:** `npm run check` exits 0 and vitest ends with `Test Files 86 passed (86)` /
@@ -91,8 +91,6 @@ finding. Compare against the same command at the base commit, not against memory
   saved battle (`&saved=1`). A change to any of those must be driven there.
 - **`npm run build:engine`** (the standalone engine library) is run by neither `check` nor
   CI; `typecheck:engine` is the nearest check.
-- **`npm run build` does not fail CI yet** (`continue-on-error` in `.github/workflows/ci.yml`
-  until it has been green on Linux).
 - **No browser run in CI.** The drive in step 2 is by hand (or by the agent's browser
   pane). `tools/smart-attacker.mjs` (a scripted attacker through Playwright, dev server on
   :5199) was not run when this skill was written and is not part of it.
