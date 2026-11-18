@@ -94,6 +94,13 @@ go and read the other.
 - A claim about a rate ("this is now findable") deserves a measured test, not a
   single-seed anecdote.
 
+## 7. REVIEW.md
+
+[`REVIEW.md`](../REVIEW.md) at the repository root holds the items this project
+has actually paid for, each with a trigger read from the diff. Read it from the
+base branch (`git show main:REVIEW.md`, where it exists there), not from the change, check every item
+whose trigger matches, and name the ones you checked.
+
 ## Reporting
 
 A one-line verdict — **SHIP** / **FIX FIRST** / **DISCUSS** — then findings
