@@ -10,11 +10,10 @@
 # that do (jev-sim --jev, --claude) are never run in CI. A push to a branch with
 # an open pull request runs the job twice (push and pull_request); accepted.
 #
-# The suite has run on this job (ubuntu-latest) since before 2026-10, so it
-# fails the run when red. `npm run build` is new here (2026-11-18): it has run
-# on Windows, not yet on this job, so it reports without failing the run until
-# it has been green here; then drop its continue-on-error (waiting in
-# docs/handoff.md). It runs even when check is red, so it always reports.
+# `npm run check` and `npm run build` both fail the run when red. The build was
+# added on 2026-11-18, reporting only until it had been green here (run
+# 44312406633, 2026-11-18). It runs even when check is red, so a red run still
+# says whether it builds; it is skipped only when the install itself failed.
 name: check
 
 on:
@@ -32,9 +31,9 @@ jobs:
           # so "works on my machine" and "works in CI" mean the same thing.
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - id: install
+        run: npm ci
       - run: npm run check
-      - name: npm run build (reports, does not fail the run yet; see the top of this file)
-        if: ${{ !cancelled() }}
+      - name: npm run build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run build
-        continue-on-error: true
