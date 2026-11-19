@@ -5583,9 +5583,9 @@ ruled; the first and the second measured, the third is the first's code. `scenar
 - **The reserve is worth fifty points.** It is committed in nine battles in
   ten and gets into the fight inside in two in five, by turn 3 or 4. It costs the
   attacker more than twice the men (44% against 17%) and its own side more
-  too (54%). Draws, 10%, are battles where both sides break. How much of it
-  is the counterattack inside rather than the reserve's fight at the door is
-  not separated yet.
+  too (54%). Draws, 10%, are battles where both sides break. Separated
+  2026-11-19 (*The reserve's worth, separated*): nearly all of it is the
+  reserve being there; the counterattack inside changes how, not who.
 - ⚠️ The reserve's spot (88 m south of the door, in full cover) is ours.
 
 ## The reserve held back, and the brief without it, 2026-10-21 (decision 105)
@@ -6548,6 +6548,58 @@ lane to resupply and reinforce"), the stair rows again:
   door and the roof on every count, so the roof became a trap. Ruled out
   for now (the author: "we will deal with ammo later"); resupply returns
   with a finite stock.
+
+## The reserve's worth, separated, 2026-11-19
+
+What `yokneamHouseReserve`'s reserve buys, split (decision 106's open
+question). `npm run scenario-sim -- --scenario <id> --n 200` (seed 1000
+unless marked; ±7 points at 95%, ±10 on a difference), with
+`--no-counterattack` (the reserve holds where it is, decision 60 off) and
+`--no-counterattack-inside` (new: `GameOptions.counterattackInside` off,
+decision 104 — no room retaken inside; a defending force's assault on
+attackers in its house refused, so the reserve fights outside only; the
+reserve committed only once its squad's post is lost, not while the house
+is being cleared round it; no turn-by-turn contact between the sides in a
+fight inside). Attacker wins / defender wins (out of time) / median turns /
+attacker down / defender down / counterattacked (still on the post at the
+end):
+
+| Scenario | Cell | Result |
+|---|---|---|
+| `yokneamHouse` | as built | **88%** / 13% (6%) / 12 / 16% / 42% / — |
+| `yokneamHouse` | no counterattack inside | 87% / 13% (6%) / 12 / 16% / 42% / — |
+| `yokneamHouseReserve` | as built | **51%** / 43% (6%) / 9 / 40% / 54% / 89% (3%) |
+| `yokneamHouseReserve` | no counterattack inside | 44% / 49% (7%) / 28 / 24% / 33% / 82% (22%) |
+| `yokneamHouseReserve` | as built, `--seed 2000` | **45%** / 44% (6%) / 10 / 42% / 53% / 93% (8%) |
+| `yokneamHouseReserve` | no counterattack inside, `--seed 2000` | 47% / 46% (7%) / 30 / 25% / 35% / 82% (17%) |
+| `yokneamHouseReserve` | the reserve holds | 50% / 48% (21%) / 47 / 20% / 26% / — |
+| `yokneamHouseReserve` | both off | 43% / 53% (24%) / 46 / 20% / 26% / — |
+
+("Still on the post at the end": a committed reserve in play within 25 m of
+the post it was sent to when the battle ends, whoever won — `retaken`, a
+share of all battles.)
+
+- **The reserve is worth about 40 points now** (88% → 51% and 45% on two
+  seed ranges; the house alone run on seed 1000 only), not the fifty of 2026-10-21 (38%): the decisions since
+  moved the cell.
+- **Nearly all of it is the reserve being there**, not what it does: held
+  where it is, never committed, it still takes the attacker to 50%, and the
+  battles run long — median 47 turns, a fifth ending on time. Why is not
+  traced; a guess: the attacker is not briefed on it (decision 105) and
+  meets it only after the house.
+- **What the counterattack inside changes is how, not who**: wins move 7
+  points one way on one seed range and 2 the other way on the second —
+  noise. Both ranges agree on the rest: with it, the battle is decided by
+  turn 9–10 instead of 28–30, with half again as many men down on both
+  sides, and fewer reserves still on the post at the end (3–8% against
+  17–22%). Off, the reserve is also committed later (only once the post
+  is lost); how much of the slower battle is that is not separated.
+- **The house's own men retaking rooms are worth nothing measurable**
+  (`yokneamHouse`, 88% against 87%).
+- **Ruled (the author, 2026-11-19, the recommended option, on the seed-1000
+  rows): kept as built.** The win gap was noise and the second range
+  confirms it; doctrine asks for local counterattacks (ATP 3-06.11 (2024),
+  para 4-96).
 
 ## The breach, built and measured, 2026-10-29
 

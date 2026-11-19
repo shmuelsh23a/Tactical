@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built. Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -752,8 +752,13 @@ and urban cells.
 **The audit's leftovers are built** (decision 119), the plain drill's
 3:1 is ruled, and decisions 120–123 are built.
 
-**After that, as before:** separate the reserve's worth in
-`yokneamHouseReserve` (a `counterattackInside` harness flag); why the
+**Done 2026-11-19: the reserve's worth separated** (balance.md, *The
+reserve's worth, separated*; `scenario-sim --no-counterattack-inside`):
+about 40 points (88% → 51% / 45% on two seed ranges), nearly all of it the
+reserve being there; the counterattack inside changes how, not who (shorter,
+bloodier battles) — kept as built (the author) — do not re-derive.
+
+**After that, as before:** why the
 plain script's Tel Azeka moved with the brief while the reference plans
 did not; the typed fire question brought to doctrine (decision 110); the
 UX pass's targetable marker for an enemy fought inside.

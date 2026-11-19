@@ -3382,6 +3382,14 @@ on the stated reasoning, still awaiting the author's word.
       defender with no enemy in his own room; a counterattack goes in only
       at the front door, with grenades. Where a reserve stands decided the
       battle before any counterattack until decision 105.
+    - **Measured 2026-11-19** (balance.md, *The reserve's worth,
+      separated*; `scenario-sim --no-counterattack-inside`): in
+      `yokneamHouseReserve` the counterattack inside changes how, not who
+      wins — 51% against 44% off on one seed range, 45% against 47% on
+      another — and makes the battle short and costly: decided by turn
+      9–10 instead of 28–30, half again as many men down on both sides.
+      **Kept as built** (the author, the recommended option): doctrine's
+      local counterattack, at a measured price.
 105. ✅ **A reserve holds its fire until committed, and the attacker is not
     briefed on it** (the author, 2026-10-21, both as recommended). Placed
     near the house, a reserve assaulted the attacker in the open in turn 1,
