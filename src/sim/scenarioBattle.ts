@@ -148,6 +148,17 @@ export interface ScenarioBattleOptions {
    */
   reinforcements?: boolean;
   /**
+   * The defender's counterattack inside (`GameOptions.counterattackInside`,
+   * decision 104): on unless false. Off, as for a recording made before it:
+   * defenders inside stand or fall back; a defending force's assault on
+   * attackers in its house is refused; a reserve is committed only once its
+   * squad's post is lost, not while the house is cleared round it; and the
+   * sides in a fight inside no longer keep contact turn by turn. A
+   * measurement switch, for what the counterattack inside is worth apart
+   * from the reserve's fight outside.
+   */
+  counterattackInside?: boolean;
+  /**
    * Each side's plan for a fight inside a building (rules decision 101),
    * given to every infantry force of the side at mission planning. Absent:
    * the defaults, "unless otherwise planned".
@@ -274,6 +285,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   }
   // Turn 0 never begins, so a reinforcement drawn for it never comes.
   if (opts.reinforcements === false) for (const r of g.reinforcements) r.turn = 0;
+  if (opts.counterattackInside === false) (g as { counterattackInside: boolean }).counterattackInside = false;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
@@ -1181,7 +1193,7 @@ export interface ScenarioSummary {
   defenderScore: number;
   /** Every battle's own result, for a reading the summary does not make. */
   results: ScenarioBattleResult[];
-  /** Battles in which the defender's reserve counterattacked (decision 60), and in which it held the position at the end. */
+  /** Battles in which the defender's reserve counterattacked (decision 60), and in which a committed reserve still in play stood on the post it was sent to when the battle ended (whoever won). */
   counterattacked: number;
   retaken: number;
   /** Means a battle (decisions 76–78); vehicles out as a share of each side's vehicles. */

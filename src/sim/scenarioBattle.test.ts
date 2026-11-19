@@ -210,6 +210,22 @@ describe("each side's plan inside a building, from the harness (decision 101)", 
   });
 });
 
+describe("the counterattack inside as a measurement switch (decision 104)", () => {
+  it("is the game's own unless switched off, and off when it is", () => {
+    const seen: boolean[] = [];
+    for (const counterattackInside of [undefined, false] as const) {
+      runScenarioBattle(telAzekaAssaultListing, 11, {
+        drill: PLAIN_SCRIPT,
+        fire: DEFAULT_FIRE_CHOICES,
+        maxTurns: 1,
+        ...(counterattackInside === false ? { counterattackInside } : {}),
+        onTurn: (g) => seen.push(g.counterattackInside),
+      });
+    }
+    expect(seen).toEqual([true, false]);
+  });
+});
+
 describe("the mission's deadline as a measurement switch (timeLimit)", () => {
   it("replaces the scenario's: a 3-turn deadline ends the battle on time by turn 3", () => {
     const r = runScenarioBattle(telAzekaAssaultListing, 1000, { drill: PLAIN_SCRIPT, fire: DEFAULT_FIRE_CHOICES, timeLimit: 3 });
