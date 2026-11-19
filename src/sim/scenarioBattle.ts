@@ -159,6 +159,13 @@ export interface ScenarioBattleOptions {
    */
   counterattackInside?: boolean;
   /**
+   * The attacker briefed on the defence with its reserves (true), as before
+   * decision 105: the tasking aimed at the mean of every defending force. A
+   * measurement switch, for what the brief alone moves; the reserves stay
+   * reserves.
+   */
+  briefReserves?: boolean;
+  /**
    * Each side's plan for a fight inside a building (rules decision 101),
    * given to every infantry force of the side at mission planning. Absent:
    * the defaults, "unless otherwise planned".
@@ -296,7 +303,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   // start line — drawn exactly as the browser tool draws it, so a seed puts
   // the plan in the same wrong place in both.
   // The position held, not the reserve kept hidden behind it (decision 105), as `briefedObjective` does.
-  const defence = g.units.filter((u) => u.side === defender && u.kind !== "command" && !(reserves ?? []).includes(u.id));
+  const defence = g.units.filter((u) => u.side === defender && u.kind !== "command" && (opts.briefReserves || !(reserves ?? []).includes(u.id)));
   const own = g.units.filter((u) => u.side === attacker && u.kind !== "command");
   const truth = mean(defence);
   const startLine = mean(own);

@@ -110,6 +110,8 @@ const engine = {
   ...(args.includes("--no-together") ? { arriveTogether: false } : {}),
   // No reinforcement ever comes (decision 122): a measurement switch.
   ...(args.includes("--no-reinforcement") ? { reinforcements: false as const } : {}),
+  // The attacker briefed on the defence with its reserves, as before decision 105: a measurement switch.
+  ...(args.includes("--brief-reserves") ? { briefReserves: true as const } : {}),
   ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}),
   ...(attackerBreakpoint !== undefined ? { attackerBreakpoint } : {}),
 };
@@ -180,6 +182,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   if (attackerBreakpoint !== undefined) framing += `, attacker breaks at ${Math.round(attackerBreakpoint * 100)}%`;
   if (args.includes("--no-covered")) framing += ", no covered routes";
   if (args.includes("--no-together")) framing += ", platoons not together";
+  if (args.includes("--brief-reserves")) framing += ", briefed on the reserves too";
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;

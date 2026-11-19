@@ -226,6 +226,26 @@ describe("the counterattack inside as a measurement switch (decision 104)", () =
   });
 });
 
+describe("the brief with the reserves as a measurement switch (before decision 105)", () => {
+  it("aims the attacker's registered fires elsewhere when the reserves are counted in", () => {
+    const aimed = (briefReserves: boolean) => {
+      let game: import("../engine/index.js").Game | undefined;
+      runScenarioBattle(telAzekaAssaultListing, 11, {
+        drill: PLAIN_SCRIPT,
+        fire: { ...DEFAULT_FIRE_CHOICES, planningError: 0 },
+        maxTurns: 1,
+        ...(briefReserves ? { briefReserves } : {}),
+        onTurn: (g) => (game ??= g),
+      });
+      return game!.registeredTargets.filter((t) => t.side === game!.attackers[0]).map((t) => t.at);
+    };
+    const now = aimed(false);
+    const before = aimed(true);
+    expect(now.length).toBeGreaterThan(0);
+    expect(before).not.toEqual(now);
+  });
+});
+
 describe("the mission's deadline as a measurement switch (timeLimit)", () => {
   it("replaces the scenario's: a 3-turn deadline ends the battle on time by turn 3", () => {
     const r = runScenarioBattle(telAzekaAssaultListing, 1000, { drill: PLAIN_SCRIPT, fire: DEFAULT_FIRE_CHOICES, timeLimit: 3 });
