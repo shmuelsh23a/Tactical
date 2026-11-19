@@ -18,6 +18,7 @@ export {
   withinRadius,
   segmentIntersectsCircle,
   pointInPolygon,
+  distanceToPolygon,
   type Point,
   type RangeBand,
 } from "./geometry.js";

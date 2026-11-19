@@ -1,6 +1,6 @@
 import { battleScore, type SideScore } from "../app/score.js";
 import { delayHeld, outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
-import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, designateBreachSquads, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
@@ -464,6 +464,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   // counters, so mirroring them into the result after each call leaves
   // the tables exactly as they were.
   const attackerFire: AttackerFireTally = { missions: 0, smoke: 0 };
+  // Its breach squads, named in planning as a player names them (decision 125), where its drill breaches.
+  designateBreachSquads(g, attacker, drill, (u) => company.isScout(u));
   g.beginTurn();
   for (let turn = 1; turn <= maxTurns; turn++) {
     result.turns = turn;

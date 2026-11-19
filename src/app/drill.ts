@@ -1,14 +1,19 @@
 import {
   ASSAULT_RANGE_M,
   EXPLOSIVES,
+  FACINGS,
+  facingOf,
   GOES_INSIDE,
   RIFLE_GRENADIERS,
   angleBetween,
+  distanceToPolygon,
   pointInPolygon,
   bearingDegrees,
   distance,
   suppressionLevel,
+  type Facing,
   type Game,
+  type MapObject,
   type MovementMode,
   type Point,
   type Side,
@@ -70,6 +75,16 @@ export interface SquadDrill {
    * research figures (rules decision 46), for the force on the document's.
    */
   assault: { range: number; grenades: number };
+  /**
+   * The breach (decisions 124–125, the author's rulings of 2026-11-19): an
+   * attacking side's breach squad charges a wall of every house it knows an
+   * enemy to be in — the wall in reach nearest it, never the front door's
+   * face — and does not clear; the squads that would assault that house hold
+   * until the charge is set, then go in by it. A second charge on another
+   * wall if the first is lost and the squad still fit, then the door. The
+   * rest stop waiting after `waitTurns` turns (⚠️ ours). Absent: no breach.
+   */
+  breach?: { waitTurns: number };
   /**
    * The squad's grenadiers (author, 2026-09-28): one 40 mm launcher for every
    * `menPerLauncher` men still fighting — two in a nine-man squad, one in a
@@ -469,6 +484,8 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   fireTeams: { splitAt: 300, minMen: 6 },
   machineGuns: { range: 800 },
   baseOfFirePosition: { minRange: 150 },
+  // Two turns to set a charge, one to reach the wall, a second try: six (⚠️ ours).
+  breach: { waitTurns: 6 },
 };
 
 /**
@@ -692,6 +709,10 @@ export class DrillState {
   readonly opened = new Set<string>();
   /** The attacker has found the enemy at its objective: only then can it seize it (`consolidate`). */
   objectiveFound = false;
+  /** Each breach squad's house and how its charges there have gone (`breach`). */
+  readonly breachJobs = new Map<string, BreachJob>();
+  /** Houses the breach was given up on: the door it is (`breach`). */
+  readonly breachGaveUp = new Set<string>();
 
   /**
    * Where `side`'s forces are moving under the enemy's eyes on the drill's
@@ -739,6 +760,8 @@ export class DrillState {
       ...(this.flanked.size ? { flanked: [...this.flanked] } : {}),
       ...(this.reinforcementPosts.size ? { reinforcementPosts: [...this.reinforcementPosts].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
       ...(this.flankVia.size ? { flankVia: [...this.flankVia].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
+      ...(this.breachJobs.size ? { breachJobs: [...this.breachJobs].map(([k, j]) => [k, copyJob(j)] as [string, BreachJob]) } : {}),
+      ...(this.breachGaveUp.size ? { breachGaveUp: [...this.breachGaveUp] } : {}),
     };
   }
 
@@ -767,6 +790,8 @@ export class DrillState {
     (snap.flanked ?? []).forEach((id) => s.flanked.add(id));
     (snap.reinforcementPosts ?? []).forEach(([k, p]) => s.reinforcementPosts.set(k, { ...p }));
     (snap.flankVia ?? []).forEach(([k, p]) => s.flankVia.set(k, { ...p }));
+    (snap.breachJobs ?? []).forEach(([k, j]) => s.breachJobs.set(k, copyJob(j)));
+    (snap.breachGaveUp ?? []).forEach((b) => s.breachGaveUp.add(b));
     return s;
   }
 }
@@ -795,6 +820,9 @@ export interface DrillStateSnapshot {
   /** Where each arrived reinforcement waits (decision 122). */
   reinforcementPosts?: [string, Point][];
   flankVia?: [string, Point][];
+  /** Each breach squad's house, and the houses given up on (`breach`). */
+  breachJobs?: [string, BreachJob][];
+  breachGaveUp?: string[];
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -1367,6 +1395,16 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     for (const u of forces) {
       if (u.kind !== "infantry" || u.echelon !== "squad" || !inPlay(u)) continue;
       if (state.divided.has(u.id) || scouts.has(u.id)) continue;
+      // A breach squad stays whole while it has a breach to make — a house given it, a charge in
+      // hand, or a charge and a house its side knows to breach: none of it clears (the author,
+      // 2026-11-19). With none — open ground, its charges spent — it fights as any squad.
+      if (
+        u.breachElement &&
+        (u.layingCharge ||
+          state.breachJobs.has(u.id) ||
+          (drill.breach && (u.breachingCharges ?? 0) > 0 && enemies.some((e) => breachableHouse(game, state, side, e) !== undefined)))
+      )
+        continue;
       // Battle Drill 2A is the squad *assault*: a squad on support, security
       // or in reserve fires or waits whole.
       const k = platoonIn(company, u.id);
@@ -1402,9 +1440,12 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
   }
   const follows = followers(game, task, drill, state);
+  // The breach squads' work, before the rest (`breach`): theirs is not the drill's march.
+  const breaching = drill.breach && task.attacking && !waiting ? breachMoves(game, task, drill.breach, state, forces, enemies, scouts) : new Set<string>();
   forces.forEach((u, i) => {
     if (!inPlay(u)) return;
     if (breakingNow.has(u.id)) return; // its order is Break Contact's (decision 107)
+    if (breaching.has(u.id)) return;
     state.startingStrength(u);
     // The next squad behind one clearing a house (decision 100): up to cover
     // near the door, and, when it goes in, no nearer than within reach.
@@ -1820,6 +1861,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
   const follows = followers(game, task, drill, state);
   // Still forces first, then the quicker (rules decision 72).
   for (const u of game.firingOrder(side).filter(inPlay)) {
+    // A force at charge work spends the turn on it: a shot or an assault would throw it away (decision 16).
+    if (u.layingCharge) continue;
     // The next squad goes in after the one clearing (decision 100): an
     // assault on the house's defender joins the fight (decision 99).
     const follow = follows.get(u.id);
@@ -1940,7 +1983,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const holdsHouse = !task.attacking && game.closedTerrain && game.interior.buildingAt(game.terrain, u.position) !== undefined;
     // A force breaking contact fires to get away, and never charges (decision 107).
     const breakingNow = [...(state?.breaking ?? [])].some(([id, b]) => id === u.id || b.team === u.id);
-    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
+    // A house whose breach is being made is gone into by it, once it is set (`breach`).
+    const awaitsBreach = task.attacking && waitsForBreach(game, state, side, u, target, !!task.company?.hold);
+    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !awaitsBreach && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {
@@ -2001,4 +2046,233 @@ export function fireGrenadiers(
     if (!r.fired) break;
   }
   return volleys;
+}
+
+/** A breach squad's house, and how its charges there have gone (`SquadDrill.breach`). */
+export interface BreachJob {
+  buildingId: string;
+  /** The turn it was given the house: the rest wait from then, for `waitTurns`. */
+  since: number;
+  /** The walls it has started a charge on, in order: a second goes on another (the author, 2026-11-19). */
+  faces: Facing[];
+  /** The turn its charge was first seen set: the rest go in by it within `waitTurns` of it, or the squad is let go. */
+  setOn?: number;
+}
+
+function copyJob(j: BreachJob): BreachJob {
+  return { buildingId: j.buildingId, since: j.since, faces: [...j.faces], ...(j.setOn !== undefined ? { setOn: j.setOn } : {}) };
+}
+
+/**
+ * How far off a house an enemy's mark may be drawn and still be taken to be
+ * in it (⚠️ ours): a report is drawn with its error (decision 51), and a
+ * defender seen at a window is marked beside the wall as often as inside it.
+ */
+export const HOUSE_MARK_M = 15;
+
+/**
+ * The house a known enemy is in, as its side judges from his mark: the
+ * building it stands in, else the nearest within {@link HOUSE_MARK_M}, on
+ * closed terrain.
+ */
+function houseOf(game: Game, at: Point): MapObject | undefined {
+  if (!game.closedTerrain) return undefined;
+  const inIt = game.interior.buildingAt(game.terrain, at);
+  if (inIt) return inIt;
+  let best: { o: MapObject; d: number } | undefined;
+  for (const o of game.terrain.objects) {
+    if (o.kind !== "building" || o.footprint.shape !== "polygon") continue;
+    const d = distanceToPolygon(at, o.footprint.points);
+    if (d <= HOUSE_MARK_M && (!best || d < best.d)) best = { o, d };
+  }
+  return best?.o;
+}
+
+/**
+ * The house an enemy's mark makes one to breach (`breach`), for both halves
+ * of the rule — the breach squads' work and the rest's wait: an infantry or
+ * command force in a house the side is not already fighting in, and not
+ * given up on.
+ */
+function breachableHouse(game: Game, state: DrillState, side: Side, e: Unit): MapObject | undefined {
+  if (e.kind !== "infantry" && e.kind !== "command") return undefined;
+  const h = houseOf(game, e.position);
+  return h && game.interior.attackerSideIn(h.id) !== side && !state.breachGaveUp.has(h.id) ? h : undefined;
+}
+
+/**
+ * Name each platoon's breach squad at mission planning, as a player may
+ * (decision 125): its last squad by the scenario's numbering that is not a
+ * scout (⚠️ ours) — a scout goes ahead alone to find the enemy. A platoon
+ * that has one named keeps it. Only where the drill breaches.
+ */
+export function designateBreachSquads(game: Game, side: Side, drill: SquadDrill, scout: (u: Unit) => boolean = () => false): string[] {
+  if (!drill.breach) return [];
+  const squads = game.units.filter((u) => u.side === side && u.kind === "infantry" && u.echelon === "squad" && !scout(u));
+  const platoons = new Map<string, Unit[]>();
+  for (const u of squads) platoons.set(platoonKey(u.id), [...(platoons.get(platoonKey(u.id)) ?? []), u]);
+  const named: string[] = [];
+  for (const list of platoons.values()) {
+    if (list.some((u) => u.breachElement)) continue;
+    const last = [...list].sort((a, b) => a.id.localeCompare(b.id)).at(-1)!;
+    try {
+      game.designateBreachElement(last.id);
+      named.push(last.id);
+    } catch (e) {
+      // The side has named all it may (one a platoon, as the engine counts them); anything else is a fault.
+      if (!(e instanceof Error) || !e.message.includes("one a platoon")) throw e;
+    }
+  }
+  return named;
+}
+
+/**
+ * The breach squads' turn (`SquadDrill.breach`, the author's rulings of
+ * 2026-11-19): each takes the nearest house it knows an enemy in, goes to the
+ * wall in reach nearest it — never the front door's face — and sets a charge
+ * there. Set, it holds by it: the rest go in by it. Lost, it tries another
+ * wall with its second charge; after that, or with none left, or once the
+ * rest have waited `waitTurns`, the house is the door's. Returns the squads
+ * whose order this was.
+ */
+function breachMoves(
+  game: Game,
+  task: DrillTask,
+  breach: NonNullable<SquadDrill["breach"]>,
+  state: DrillState,
+  forces: readonly Unit[],
+  enemies: readonly Unit[],
+  scouts: ReadonlyMap<string, Point | null>,
+): Set<string> {
+  const ordered = new Set<string>();
+  if (!game.closedTerrain) return ordered;
+  const side = task.side;
+  // Houses a known enemy is in, that the side is not already fighting in.
+  const houses = new Map<string, MapObject>();
+  for (const e of enemies) {
+    const h = breachableHouse(game, state, side, e);
+    if (h) houses.set(h.id, h);
+  }
+  const giveUp = (u: Unit, job: BreachJob) => {
+    state.breachGaveUp.add(job.buildingId);
+    state.breachJobs.delete(u.id);
+  };
+  for (const u of forces) {
+    if (!u.breachElement || u.kind !== "infantry" || scouts.has(u.id)) continue;
+    let job = state.breachJobs.get(u.id);
+    if (!inPlay(u) || game.interior.inFight(u.id)) {
+      if (job) giveUp(u, job);
+      continue;
+    }
+    const was = job ? game.terrain.objects.find((o) => o.id === job!.buildingId) : undefined;
+    // Gone in (by its hole or any way): its work there is done.
+    if (job && (!was || game.interior.attackerSideIn(was.id) === side)) {
+      state.breachJobs.delete(u.id);
+      job = undefined;
+    }
+    if (!job) {
+      if ((u.breachingCharges ?? 0) <= 0) continue;
+      const taken = new Set([...state.breachJobs.values()].map((j) => j.buildingId));
+      const near = [...houses.values()]
+        .filter((h) => !taken.has(h.id))
+        .map((h) => ({ h, d: Math.min(...FACINGS.map((f) => game.interior.breachPoint(game, h, f)).filter((p): p is Point => !!p).map((p) => distance(u.position, p))) }))
+        .filter((x) => Number.isFinite(x.d))
+        .sort((a, b) => a.d - b.d)[0];
+      if (!near) continue;
+      job = { buildingId: near.h.id, since: game.turn, faces: [] };
+      state.breachJobs.set(u.id, job);
+    }
+    const h = game.terrain.objects.find((o) => o.id === job!.buildingId)!;
+    ordered.add(u.id);
+    // At work, or its charge set: it holds by the wall.
+    const set = game.interior.breachesIn(game, h, side).some((b) => b.side === side && !b.blown);
+    if (set) {
+      job.setOn ??= game.turn;
+      // Set and not gone in by within the wait, or no enemy known in the house any more: its work there
+      // is over, and it fights by the drill — by its own charge, if it goes in (the author, 2026-11-19).
+      if (game.turn - job.setOn >= breach.waitTurns || !houses.has(h.id)) {
+        giveUp(u, job);
+        ordered.delete(u.id);
+        continue;
+      }
+    }
+    if (u.layingCharge?.type === "breach" || set) {
+      game.setStandingOrder(u.id, { gait: "normal" });
+      continue;
+    }
+    // Two tries, charges left, and the rest not waited out.
+    if (job.faces.length >= 2 || (u.breachingCharges ?? 0) <= 0 || game.turn - job.since >= breach.waitTurns) {
+      giveUp(u, job);
+      ordered.delete(u.id);
+      continue;
+    }
+    const face = breachFace(game, h, u, job.faces);
+    const wall = face && game.interior.breachPoint(game, h, face);
+    if (!face || !wall) {
+      giveUp(u, job);
+      ordered.delete(u.id);
+      continue;
+    }
+    // A charge is set from the street, never from within the walls (`LAY_CHARGE_REFUSAL.insideIt`).
+    const within = h.footprint.shape === "polygon" && pointInPolygon(u.position, h.footprint.points);
+    if (!within && distance(u.position, wall) <= ASSAULT_RANGE_M - 2 && u.movedThisTurn === 0) {
+      try {
+        game.layCharge(u.id, "breach", { buildingId: h.id, facing: face });
+        job.faces.push(face);
+        continue;
+      } catch {
+        // Under fire, or not under orders: it holds where it is and tries next turn.
+        game.setStandingOrder(u.id, { gait: "normal" });
+        continue;
+      }
+    }
+    // Up to the wall: 5 m out from it, on the street side.
+    const c = buildingCentre(h);
+    const d = distance(wall, c) || 1;
+    game.setStandingOrder(u.id, { gait: "normal", destination: { x: wall.x + ((wall.x - c.x) * 5) / d, y: wall.y + ((wall.y - c.y) * 5) / d } });
+  }
+  return ordered;
+}
+
+/** The wall a breach squad charges: in reach of the house, nearest it, never the front door's face, not one tried. */
+function breachFace(game: Game, h: MapObject, u: Unit, tried: readonly Facing[]): Facing | undefined {
+  const plan = game.interior.plan(game, h);
+  const door = plan.outsideDoors[0];
+  const doorFace = door === undefined ? undefined : facingOf(plan, door);
+  return FACINGS.map((f) => ({ f, p: game.interior.breachPoint(game, h, f) }))
+    .filter((x): x is { f: Facing; p: Point } => !!x.p && x.f !== doorFace && !tried.includes(x.f) && !game.interior.breachOn(game, h, x.f, u.side))
+    .sort((a, b) => distance(u.position, a.p) - distance(u.position, b.p))[0]?.f;
+}
+
+function buildingCentre(h: MapObject): Point {
+  const pts = h.footprint.shape === "polygon" ? h.footprint.points : [];
+  return pts.length ? { x: pts.reduce((t, p) => t + p.x, 0) / pts.length, y: pts.reduce((t, p) => t + p.y, 0) / pts.length } : { x: 0, y: 0 };
+}
+
+/**
+ * Whether a force holds off assaulting a house because its side's breach
+ * there is being made (`breach`): every force while the charge is not yet
+ * set, and the breach squad itself until the hole is blown — it does not
+ * clear (the author, 2026-11-19).
+ */
+function waitsForBreach(game: Game, state: DrillState | undefined, side: Side, u: Unit, target: Unit, holding: boolean): boolean {
+  if (!state) return false;
+  const h = breachableHouse(game, state, side, target);
+  if (!h) return false;
+  for (const [squadId, job] of state.breachJobs) {
+    if (job.buildingId !== h.id) continue;
+    const squad = game.getUnit(squadId);
+    if (!inPlay(squad) || game.interior.inFight(squadId)) continue;
+    if (squadId === u.id) return true;
+    return !game.interior.breachesIn(game, h, side).some((b) => b.side === side && !b.blown);
+  }
+  // Found only this turn: a breach squad free to take it is given it next turn, and the rest hold for it.
+  const taken = new Set([...state.breachJobs.keys()]);
+  // Only for a house with a wall it can charge, and a company not holding: else no job will
+  // ever come (`breachMoves` gives none while it holds), and the wait would never end.
+  if (holding) return false;
+  return game.units.some(
+    (s) =>
+      s.side === side && s.breachElement && !taken.has(s.id) && (s.breachingCharges ?? 0) > 0 && inPlay(s) && !game.interior.inFight(s.id) && breachFace(game, h, s, []) !== undefined,
+  );
 }

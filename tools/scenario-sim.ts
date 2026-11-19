@@ -18,6 +18,7 @@
  *   npm run scenario-sim -- --no-counterattack      # the defender's reserve holds where it is (decision 60 off)
  *   npm run scenario-sim -- --no-counterattack-inside   # no counterattack inside the house (decision 104 off): the reserve fights outside only
  *   npm run scenario-sim -- --brief-reserves        # the attacker briefed on the defence with its reserves, as before decision 105
+ *   npm run scenario-sim -- --no-breach             # the attacker names no breach squad and breaches no house (as before 2026-11-19)
  *   npm run scenario-sim -- … --smoke 4 --prep-fires  # the company screens its crossing with 4 smoke missions and fires its plan when nothing is sure
  *   npm run scenario-sim -- --no-defender-plan      # the defender registers no targets (every table before the twenty-eighth round)
  *   npm run scenario-sim -- --no-fire-support      # no side calls a mortar or a gun: a small-arms fight
@@ -59,6 +60,8 @@ const defenderDrill: SquadDrill = args.includes("--no-counterattack") ? { ...dri
 if (value("--watch")) drill.scouting = { watchTurns: Number(value("--watch")) };
 // To isolate the base-of-fire firing position (ATP 3-21.8 para 3-102).
 if (args.includes("--no-firing-position")) delete drill.baseOfFirePosition;
+// No breach squad and no breach (decisions 124–125, the computer's since 2026-11-19): a measurement switch.
+if (args.includes("--no-breach")) delete drill.breach;
 const recon = value("--recon");
 const company: CompanyPlan = {
   ...(recon
@@ -148,7 +151,7 @@ const disengage = disengagePlan();
 const attackPlan = interiorPlan("--attack-plan");
 const defencePlan = interiorPlan("--defence-plan");
 
-console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-counterattack-inside") ? ", no counterattack inside" : ""}${args.includes("--brief-reserves") ? ", briefed on the reserves too" : ""}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}${attackPlan ? `, attack plan ${JSON.stringify(attackPlan)}` : ""}${defencePlan ? `, defence plan ${JSON.stringify(defencePlan)}` : ""}\n`);
+console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-counterattack-inside") ? ", no counterattack inside" : ""}${args.includes("--brief-reserves") ? ", briefed on the reserves too" : ""}${args.includes("--no-breach") ? ", no breach" : ""}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}${attackPlan ? `, attack plan ${JSON.stringify(attackPlan)}` : ""}${defencePlan ? `, defence plan ${JSON.stringify(defencePlan)}` : ""}\n`);
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
 const urban: string[] = [];

@@ -4,6 +4,7 @@ import { isDeadGround } from "./deadGround.js";
 import {
   DrillState,
   REFERENCE_DRILL,
+  designateBreachSquads,
   drillCombat,
   drillMovement,
   type DrillReport,
@@ -926,6 +927,8 @@ export class ComputerAttacker {
 
   /** Mission planning (decision 38): its plan's points, registered; returns them. */
   plan(g: Game): readonly Point[] {
+    // Its breach squads, named as a player names them (decision 125), where its drill breaches.
+    designateBreachSquads(g, this.side, this.drill, (u) => this.company.isScout(u));
     const tubes = tubesOf(g, this.side);
     if (!this.choices.register || !tubes.length) return [];
     for (const w of tubes) for (const t of this.planned) g.registerTarget(this.side, w, t);
