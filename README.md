@@ -3529,7 +3529,8 @@ on the stated reasoning, still awaiting the author's word.
       setting of the criteria beats holding in the scenarios measured is
       the rule working, not a dominated control to fix: the criteria are
       the commander's to use when holding is worse still, and going early
-      costs next to nothing. Not to be re-proposed as a trap.110. ✅ **The 2:1 median stands at 19.5%** (the author, 2026-10-21, on
+      costs next to nothing. Not to be re-proposed as a trap.
+110. ✅ **The 2:1 median stands at 19.5%** (the author, 2026-10-21, on
     the recommendation). The reference plans at two to one give the
     attacker 19.5% against decision 68's 20–35%: within the noise of the
     band (a cell is worth ±10 points), and what doctrine expects of an
@@ -3541,6 +3542,17 @@ on the stated reasoning, still awaiting the author's word.
       plan cannot be expressed through it (the standard measurement, which
       can, reads 31% at 2:1). Bringing that question to doctrine is the
       next step on this thread: it is also what Jev will be asked.
+    - **Corrected 2026-11-19** (the author, the recommended option): the
+      bullet above was stale when written. The typed question had been
+      brought to doctrine on 2026-10-12 (`80d8f62`, question set
+      2026-10-12.1, decision 93's *The typed questions*): a priority target
+      asked in planning, its missions held back, offered in every fire
+      question. Measured that day (balance.md, *The fire question by
+      doctrine*), on that day's baseline: the fire policy is not what holds
+      the 2:1 down — its median 8–13% under the old, the doctrinal and the
+      doctrinal-with-opportunity answers (decision 112 later found what did:
+      a base of fire that could not see). The bullet copied balance.md's *The stale tables on the new
+      baseline*, written earlier that day, before the change. Closed.
 111. ✅ **The breakpoint by force type halved** (the author, 2026-10-21,
     on the force-quality matrix re-run: "soften the compounding").
     Decision 87's shift is now irregular −5 points, elite +10 (was −10,

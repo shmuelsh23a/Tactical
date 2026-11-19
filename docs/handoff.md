@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -211,10 +211,9 @@ The 2026-10-01 version of this section, with its tables and the rulings of
   `yokneamHouse`'s positions, 90-turn limit, quality and the squad facing
   west.
 
-- **The fire question to doctrine** (decision 110): the 2:1 median was
-  accepted at 19.5%; the gap left is that the typed fire question offers no
-  priority target and no missions held back (decision 93). Next on that
-  thread, and what Jev will be asked.
+- **The fire question to doctrine** (decision 110): closed 2026-11-19 —
+  it had been done on 2026-10-12 (`80d8f62`) and measured not to be what
+  holds the 2:1 down; decision 110's bullet was stale and is corrected.
 - **Running the AI commanders costs real API spend.** Not blocked
   (`tools/env.ts` reads `.env`, keys set); starting them is his call.
 - **Our own figures in the fight inside**, all ⚠️ and listed on balance.md:
@@ -765,8 +764,12 @@ Azeka and the brief, closed*; `--brief-reserves` on `scenario-sim` and
 30% → 39% from seed 2000 — and today the brief moves nothing above the
 noise — do not re-derive.
 
-**After that, as before:** the typed fire question brought to doctrine (decision 110); the
-UX pass's targetable marker for an enemy fought inside.
+**Done 2026-11-19: the typed fire question, closed** — already brought to
+doctrine on 2026-10-12 (`80d8f62`; balance.md, *The fire question by
+doctrine*); decision 110's note that it was not is corrected — do not
+re-propose.
+
+**After that, as before:** the UX pass's targetable marker for an enemy fought inside.
 
 ## Traps that cost real time
 

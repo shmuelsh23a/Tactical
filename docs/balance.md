@@ -192,7 +192,8 @@ here does fire by doctrine. So this table is "new allotment, old attacker
 fire" — the cell that gave 9% at 2:1 in the standard measurement too —
 and the 2:1's fall is that, not the rules. Bringing the fire question to
 doctrine (a priority target, rounds held back) is a change to what Jev is
-asked: a question for the author.
+asked: a question for the author. (Done the same day: *The fire question
+by doctrine*, above.)
 
 E fire-heavy at 72% is over the 3:1 band: holding short under fire and
 firing most missions first is the plan the new rules reward most.
