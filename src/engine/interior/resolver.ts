@@ -151,6 +151,15 @@ export interface InteriorFightInput {
   attackerSide?: Side;
   /** Decision 104: a defender not holding goes back into a room beside his that the attacker took and has left. */
   defenderRetakes?: boolean;
+  /**
+   * Ammunition counted (rules decision 127): a man goes in with the grenades
+   * he has left (`grenadesOf`), and while the stair foot is held — the open
+   * lane, "to resupply and reinforce" (ATP 3-06.11 (2024), para C-110) — a
+   * team at its "CLEAR" is passed grenades up it from outside the fight, one
+   * at a time while `laneSupply` gives one, each man to a full load. Absent:
+   * every man goes in with `CLOSE_QUARTERS.grenadesEach`, as before.
+   */
+  ammo?: { grenadesOf: (id: string) => number; laneSupply?: (id: string) => boolean };
 }
 
 /**
@@ -298,10 +307,17 @@ export class InteriorFight {
   private retaken = 0;
   /** Per storey, how many times a room on it changed hands: what a defender looks at to see whether anything is new. */
   private readonly changes: number[];
+  private readonly ammo: InteriorFightInput["ammo"];
+
+  /** The grenades a man goes in with: his own where they are counted (decision 127), else a full load. */
+  private grenadesFor(id: string): number {
+    return this.ammo ? this.ammo.grenadesOf(id) : CLOSE_QUARTERS.grenadesEach;
+  }
 
   constructor(input: InteriorFightInput, rng: Rng) {
     this.plan = input.plan;
     this.rng = rng;
+    this.ammo = input.ammo;
     this.attackerSide = input.attackerSide ?? "BLUE";
     const defenderSide: Side = this.attackerSide === "BLUE" ? "RED" : "BLUE";
     this.defenderSide = defenderSide;
@@ -348,7 +364,7 @@ export class InteriorFight {
       const members = ids.map((id) => {
         const m = this.man(id, this.attackerSide, firstStorey, start, false);
         // Every man carries his grenades; the plan says whether he throws them (decision 101).
-        m.grenades = CLOSE_QUARTERS.grenadesEach;
+        m.grenades = this.grenadesFor(id);
         this.soldiers.push(m);
         return m;
       });
@@ -398,13 +414,14 @@ export class InteriorFight {
         if (t.trail) t.trail = t.trail.filter((x) => x !== back);
       }
       Object.assign(back, { withdrew: false, waiting: false, storey, cell, fromAbove: false });
+      if (this.ammo) back.grenades = this.ammo.grenadesOf(id); // what he has now (decision 127)
       back.aim = undefined;
       back.retreat = undefined;
       back.post = undefined;
       return back;
     }
     const m = this.man(id, this.attackerSide, storey, cell, false);
-    m.grenades = CLOSE_QUARTERS.grenadesEach;
+    m.grenades = this.grenadesFor(id);
     this.soldiers.push(m);
     return m;
   }
@@ -659,6 +676,7 @@ export class InteriorFight {
           if (team.side === this.attackerSide) {
             this.cleared[team.storey]![team.room] = 1;
             this.postGuard(team);
+            this.passUpTheLane(team);
           }
           else if (this.cleared[team.storey]![team.room]) { this.cleared[team.storey]![team.room] = 0; this.retaken++; }
           // 6: a room a defender already went back into is not taken back twice.
@@ -1380,15 +1398,28 @@ export class InteriorFight {
    * The open lane of a climb by the inside stairs (ATP 3-06.11 (2024), para
    * C-110: "the option to keep an open lane to resupply and reinforce";
    * decision 124): an attacker holds the stair foot, so the wounded go down
-   * it. Resupply up it is for later (the author, 2026-10-28: "We will deal
-   * with ammo later"); with a full load at each "CLEAR" it beat both other
-   * ways in on every count (balance.md).
+   * it, and with ammunition counted grenades come up it from outside the
+   * fight, a finite stock (decision 127; a full load at each "CLEAR" from
+   * nowhere beat both other ways in on every count, balance.md).
    */
   private laneOpen(): boolean {
     const s = this.plan.stairwell;
     if (this.entry !== "stair" || !s) return false;
     const foot = s.y * this.plan.width + s.x;
     return this.soldiers.some((m) => m.side === this.attackerSide && this.active(m) && m.storey === 0 && m.post?.storey === 0 && m.post.cell === foot);
+  }
+
+  /**
+   * Grenades passed up the open lane at a team's "CLEAR" (decision 127):
+   * while the stair foot is held, each man still in the fight is brought back
+   * to a full load from what is outside, while there is any.
+   */
+  private passUpTheLane(team: Team): void {
+    const supply = this.ammo?.laneSupply;
+    if (!supply || !this.laneOpen()) return;
+    for (const m of team.members) {
+      while (this.active(m) && m.grenades < CLOSE_QUARTERS.grenadesEach && supply(m.id)) m.grenades++;
+    }
   }
 
   /** An attacking team on the ground floor before the climb by the inside stairs: some storey above is not cleared yet. */
@@ -1489,6 +1520,7 @@ export class InteriorFight {
         if (back) {
           if (back.side === this.attackerSide || !back.withdrew || back.out) throw new Error(`InteriorFight: ${id} is already in the fight`);
           Object.assign(back, { withdrew: false, waiting: false, storey: 0, cell: start, fromAbove: false, counter: true, prepared: false });
+          if (this.ammo) back.grenades = this.ammo.grenadesOf(id); // what he has now (decision 127)
           back.aim = undefined;
           back.retreat = undefined;
           back.retake = undefined;
@@ -1496,7 +1528,7 @@ export class InteriorFight {
           return back;
         }
         const m = this.man(id, this.defenderSide, 0, start, false);
-        m.grenades = CLOSE_QUARTERS.grenadesEach;
+        m.grenades = this.grenadesFor(id);
         m.counter = true;
         this.soldiers.push(m);
         return m;

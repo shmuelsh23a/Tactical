@@ -229,7 +229,13 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     unit.readiness === undefined &&
     unit.surprisedUntilTurn === undefined &&
     unit.front === undefined &&
-    !unit.observationSector
+    !unit.observationSector &&
+    // Its ammunition is its own (decision 127).
+    !unit.ammo &&
+    !unit.ammoBearer &&
+    !unit.carried &&
+    unit.charges === undefined &&
+    !unit.soldiers?.some((s) => s.rounds !== undefined || s.grenades !== undefined)
   ) {
     return unit;
   }
@@ -248,6 +254,11 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     // The arc it watches is its own plan too (decision 14), and since
     // decision 85 the arc it can be caught from outside.
     observationSector: _os,
+    // What it carries, and what it carries for others (decision 127).
+    ammo: _am,
+    ammoBearer: _ab,
+    carried: _ca,
+    charges: _ch,
     routing,
     surrendered,
     ...rest
@@ -256,7 +267,7 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
     ...rest,
     ...(seenNow && routing ? { routing } : {}),
     ...(seenNow && surrendered ? { surrendered } : {}),
-    soldiers: unit.soldiers?.map(({ traits: _t, morale: _m, leader: _l, ...s }) => s),
+    soldiers: unit.soldiers?.map(({ traits: _t, morale: _m, leader: _l, rounds: _rd, grenades: _gr, ...s }) => s),
   };
 }
 

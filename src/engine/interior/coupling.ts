@@ -146,6 +146,13 @@ export interface InteriorWorld {
   readonly moraleInside?: boolean;
   /** Decision 104: defenders inside retake rooms, and the defending side counterattacks in. */
   readonly counterattackInside?: boolean;
+  /**
+   * Ammunition counted (rules decision 127): men go in with the grenades they
+   * have, and up the open lane come their own force's from outside the
+   * fight, then one from `ammoSupply.outside` — a cache or bearer of the side by the
+   * house — while it gives one.
+   */
+  readonly ammoSupply?: { outside: (side: Side, buildingId: string) => boolean };
 }
 
 /** A man of a force fighting inside whom the street can see, and who can see it (decision 98). */
@@ -651,6 +658,7 @@ export class InteriorBattles {
         }
       }
       const damageBefore = new Map(e.fight.soldiers.map((m) => [m.id, m.damage]));
+      const grenadesBefore = new Map(e.fight.soldiers.map((m) => [m.id, m.grenades]));
       const outBefore = new Set(e.fight.soldiers.filter((m) => m.out).map((m) => m.id));
       for (let k = 0; k < ticks && !e.fight.finished; k++) e.fight.tick();
       let attackersOut = 0, defendersOut = 0, defendersWithdrew = 0, attackersWithdrew = 0, defendersYielded = 0;
@@ -658,6 +666,11 @@ export class InteriorBattles {
         const entry = byId.get(m.id);
         if (!entry) continue;
         this.writeBack(m, damageBefore.get(m.id) ?? 0, outBefore.has(m.id), entry.soldier, entry.unit, world.turn);
+        // What he threw this minute, or was passed up the lane, where it is counted (decision 127): the
+        // change only — a defender the fight never armed keeps his, and a grenade a man outside gave stays given.
+        if (world.ammoSupply && entry.soldier.grenades !== undefined) {
+          entry.soldier.grenades = Math.max(0, entry.soldier.grenades + m.grenades - (grenadesBefore.get(m.id) ?? m.grenades));
+        }
         if (m.out && !outBefore.has(m.id)) {
           if (m.yielded) defendersYielded++;
           else if (m.side === e.attackerSide) attackersOut++;
@@ -797,7 +810,7 @@ export class InteriorBattles {
       // behind stunned — and gone in by; the hole stays a way in after.
       const breach = hole && entry !== "top" ? hole.cell : undefined;
       const stuns = hole !== undefined && breach !== undefined && this.blow(world, b, hole);
-      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}), ...(breach !== undefined ? { breach, blast: stuns } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}) }, rng);
+      const fight = new InteriorFight({ plan, attack: { entry, grenades: true, teams, squads, ...(security.length ? { security } : {}), ...(breach !== undefined ? { breach, blast: stuns } : {}) }, defence, attackerSide, ...(expects ? { defenderExpects: expects } : {}), ...(world.counterattackInside ? { defenderRetakes: true } : {}), ...(world.ammoSupply ? { ammo: this.ammoFor(world, b.id) } : {}) }, rng);
       const opened: { facing: Facing; blown: boolean }[] = [];
       for (const u of attackers) {
         const h = apart.get(u.id);
@@ -939,6 +952,27 @@ export class InteriorBattles {
   /** The side attacking in a building's fight, if one is going on there. */
   attackerSideIn(buildingId: string): Side | undefined {
     return this.engagements.find((e) => e.buildingId === buildingId)?.attackerSide;
+  }
+
+  /**
+   * A fight's ammunition (decision 127): each man's own grenades as he goes
+   * in, and the open lane's supply — a grenade from a man of his force who
+   * is not in the fight, else from `world.ammoSupply.outside`.
+   */
+  private ammoFor(world: InteriorWorld, buildingId: string): { grenadesOf: (id: string) => number; laneSupply: (id: string) => boolean } {
+    const owner = (id: string) => world.units.find((u) => u.soldiers?.some((s) => s.id === id));
+    return {
+      grenadesOf: (id) => owner(id)?.soldiers?.find((s) => s.id === id)?.grenades ?? CLOSE_QUARTERS.grenadesEach,
+      laneSupply: (id) => {
+        const unit = owner(id);
+        if (!unit) return false;
+        const e = this.engagements.find((x) => x.buildingId === buildingId);
+        const inside = new Set((e?.fight.soldiers ?? []).filter((m) => !m.withdrew).map((m) => m.id));
+        const donor = (unit.soldiers ?? []).find((s) => !inside.has(s.id) && (s.grenades ?? 0) > 0);
+        if (donor) { donor.grenades = (donor.grenades ?? 0) - 1; return true; }
+        return world.ammoSupply?.outside(unit.side, buildingId) ?? false;
+      },
+    };
   }
 
   private unit(world: InteriorWorld, id: string): Unit {

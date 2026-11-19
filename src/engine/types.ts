@@ -120,6 +120,13 @@ export interface Soldier {
   outBy?: "smallArms" | "explosive";
   /** Gave himself up inside a building, broken and cornered (rules decision 103): out of the battle, a prisoner, not hit. */
   captured?: boolean;
+  /**
+   * His ammunition (rules decision 127, decision 73's "one counter a man"):
+   * the rounds for his weapon, and his hand grenades. Absent in a game
+   * played without ammunition, where nobody runs out.
+   */
+  rounds?: number;
+  grenades?: number;
 }
 
 /** Parts of an armoured vehicle, per the armour-damage table (טבלת נזק שריון). */
@@ -281,6 +288,21 @@ export interface Unit {
   breachingCharges?: number;
   /** Named its platoon's breach element in planning (decision 125). */
   breachElement?: boolean;
+  /**
+   * Decision 16's mines and IEDs it carries, in a game played with
+   * ammunition (rules decision 127): the scenario's number, 2 when it says
+   * nothing. Absent: unbounded, as before.
+   */
+  charges?: number;
+  /**
+   * What the squad carries apart from its men's own (rules decision 127),
+   * until weapons move to the man (decision 73): its 40 mm and its rockets.
+   */
+  ammo?: SquadAmmo;
+  /** Named its side's ammunition bearers in planning (decision 127): it carries `carried` forward. */
+  ammoBearer?: boolean;
+  /** The ammunition a bearer squad carries for others (decision 127). */
+  carried?: AmmoStock;
   /** The charge this force is laying, while it is laying one. */
   layingCharge?: ChargeWork;
 
@@ -324,6 +346,40 @@ export interface Unit {
   routing?: boolean;
   /** The force broke with the enemy on top of it and gave itself up. */
   surrendered?: boolean;
+}
+
+/** What a squad carries on the squad rather than on a man (rules decision 127). */
+export interface SquadAmmo {
+  rifleGrenades: number;
+  rockets: number;
+}
+
+/** A stock of ammunition: a cache's, or what a bearer squad carries (rules decision 127). */
+export interface AmmoStock {
+  rounds: number;
+  grenades: number;
+  rifleGrenades: number;
+  rockets: number;
+}
+
+/**
+ * An ammunition cache put out in mission planning (rules decision 127):
+ * "a pre-positioned and concealed supply point" (ATP 3-21.10 (2026), para
+ * 4-46). Its side's only: the enemy never sees one, and takes it by
+ * reaching it unguarded.
+ */
+export interface AmmoCache {
+  id: string;
+  side: Side;
+  position: Point;
+  stock: AmmoStock;
+  /** A defender's, at a squad's position or its alternate: whose. */
+  forUnitId?: string;
+  /**
+   * Taken by the enemy (decision 127): gone from play, but still on its
+   * side's map until one of its own forces comes to it and finds it gone.
+   */
+  taken?: boolean;
 }
 
 /**

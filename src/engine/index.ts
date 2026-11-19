@@ -33,6 +33,9 @@ export type {
   TankPart,
   VehicleState,
   Unit,
+  AmmoCache,
+  AmmoStock,
+  SquadAmmo,
   BreachTarget,
   ChargeWork,
   CoveringPosture,
@@ -109,6 +112,8 @@ export {
   PREPARED_POSITION_REACH_M,
 } from "./data/planning.js";
 export { BREACHING_CHARGES_EACH, CHARGE_LAYING } from "./data/engineering.js";
+export { BASIC_LOAD, CONSERVE, RESUPPLY, ROUNDS_A_TURN } from "./data/ammunition.js";
+export { ammunitionState, basicRounds, conserving, tracksAmmunition, type AmmunitionReport } from "./ammunition.js";
 export { CASUALTY_RULES, ASSAULT } from "./data/casualties.js";
 export {
   TURN_SECONDS,
@@ -341,6 +346,7 @@ export {
   Game,
   HOLDING_FIRE,
   HOLDING_COVERING_FIRE,
+  OUT_OF_AMMUNITION,
   LAY_CHARGE_REFUSAL,
   MORALE_REFUSAL,
   SMOKE_REFUSAL,

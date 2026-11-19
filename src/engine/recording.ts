@@ -13,6 +13,7 @@ import type {
 } from "./types.js";
 import type { SmokeSource } from "./data/smoke.js";
 import type { InteriorPlan, InteriorReport } from "./interior/coupling.js";
+import type { AmmunitionReport } from "./ammunition.js";
 import type {
   DirectFireOptions,
   DirectFireResult,
@@ -85,6 +86,9 @@ export type RecordedAction =
   | { kind: "registerTarget"; side: Side; weapon: string; at: Point }
   | { kind: "designateObservationPost"; unitId: string }
   | { kind: "designateBreachElement"; unitId: string; on: boolean }
+  | { kind: "placeCache"; side: Side; at: Point; forUnitId?: string }
+  | { kind: "removeCache"; side: Side; cacheId: string }
+  | { kind: "designateAmmoBearers"; unitId: string; on: boolean }
   | { kind: "prepareAlternatePosition"; unitId: string; at: Point }
   /**
    * A commander made a fire team out of part of a force (rules decision
@@ -254,6 +258,8 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.windowFire !== undefined && typeof r.windowFire !== "boolean") throw malformed("windowFire");
   if (r.joinFights !== undefined && typeof r.joinFights !== "boolean") throw malformed("joinFights");
   if (r.breachingCharges !== undefined && !(Number.isInteger(r.breachingCharges) && (r.breachingCharges as number) >= 0)) throw malformed("breachingCharges");
+  if (r.ammunition !== undefined && typeof r.ammunition !== "boolean") throw malformed("ammunition");
+  if (r.charges !== undefined && !(Number.isInteger(r.charges) && (r.charges as number) >= 0)) throw malformed("charges");
   if (r.breakEndsInside !== undefined && typeof r.breakEndsInside !== "boolean") throw malformed("breakEndsInside");
   if (r.moraleInside !== undefined && typeof r.moraleInside !== "boolean") throw malformed("moraleInside");
   if (r.counterattackInside !== undefined && typeof r.counterattackInside !== "boolean") throw malformed("counterattackInside");
@@ -500,6 +506,10 @@ export interface GameRecording {
   joinFights?: boolean;
   /** Breaching charges a breach squad carried (decision 125), when not the default. */
   breachingCharges?: number;
+  /** Whether ammunition was counted (rules decision 127). Read as **off** when absent: nobody ran out. */
+  ammunition?: boolean;
+  /** Mines and IEDs a force that might lay them carried (decision 127), when not the default. */
+  charges?: number;
   /** Whether a side's break ended its fights inside (rules decision 102). Read as **off** when absent. */
   breakEndsInside?: boolean;
   /** Whether morale reached inside and the battle waited for a fight inside (rules decision 103). Read as **off** when absent. */
@@ -572,6 +582,8 @@ export type ActionOutcome =
       morale?: MoraleReport[];
       /** What the fights inside buildings did as the turn closed (rules decision 96). */
       interior?: InteriorReport[];
+      /** What ammunition did as the turn closed (rules decision 127). */
+      ammunition?: AmmunitionReport[];
       /**
        * Reinforcements that came onto the map as the next turn began (rules
        * decision 122) — an arrival is not an action, so it rides on the step
@@ -727,6 +739,8 @@ export function replayWithOutcomes(
     windowFire: recording.windowFire ?? false,
     joinFights: recording.joinFights ?? false,
     ...(recording.breachingCharges !== undefined ? { breachingCharges: recording.breachingCharges } : {}),
+    ammunition: recording.ammunition ?? false,
+    ...(recording.charges !== undefined ? { charges: recording.charges } : {}),
     breakEndsInside: recording.breakEndsInside ?? false,
     moraleInside: recording.moraleInside ?? false,
     counterattackInside: recording.counterattackInside ?? false,
@@ -778,6 +792,7 @@ export function replayWithOutcomes(
           chargeWork: r.chargeWork ?? [],
           ...(r.morale ? { morale: r.morale } : {}),
           ...(r.interior ? { interior: r.interior } : {}),
+          ...(r.ammunition ? { ammunition: r.ammunition } : {}),
           ...(r.arrived ? { arrived: r.arrived } : {}),
         };
         break;
@@ -793,6 +808,7 @@ export function replayWithOutcomes(
           chargeWork: r.chargeWork ?? [],
           ...(game.morale ? { morale: r.morale } : {}),
           ...(r.interior.length ? { interior: r.interior } : {}),
+          ...(r.ammunition.length ? { ammunition: r.ammunition } : {}),
           ...(r.arrived.length ? { arrived: r.arrived } : {}),
         };
         break;
@@ -852,6 +868,18 @@ export function replayWithOutcomes(
         break;
       case "designateBreachElement":
         game.designateBreachElement(action.unitId, action.on);
+        outcome = { kind: "setup" };
+        break;
+      case "placeCache":
+        game.placeCache(action.side, action.at, action.forUnitId);
+        outcome = { kind: "setup" };
+        break;
+      case "removeCache":
+        game.removeCache(action.cacheId);
+        outcome = { kind: "setup" };
+        break;
+      case "designateAmmoBearers":
+        game.designateAmmoBearers(action.unitId, action.on);
         outcome = { kind: "setup" };
         break;
       case "prepareAlternatePosition":

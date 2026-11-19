@@ -77,11 +77,12 @@ describe("fire plans that set missions aside (decision 93)", () => {
   });
 
   it("holds the reserve unless it fires it where it was set aside for", () => {
-    // Seeds from the standard measurement's run: 1008 and 1010 end with the
+    // Seeds from the standard measurement's run: 1005 and 1007 end with the
     // FPF never fired — the case the defender's check bites on — and 1000
-    // and 1002 with it fired, all of it and once.
+    // and 1002 with it fired. Re-picked with ammunition (decision 127): 1008
+    // and 1010 fire it now, the battles having moved, not the reserve.
     const firedFpf: number[] = [];
-    for (const seed of [1000, 1002, 1008, 1010]) {
+    for (const seed of [1000, 1002, 1005, 1007]) {
       let game: Game | undefined;
       runScenarioBattle(telAzekaAssaultListing, seed, { ...opts, onTurn: (g) => (game = g) });
       const g = game!;

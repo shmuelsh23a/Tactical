@@ -1,4 +1,4 @@
-import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, EYE_HEIGHT, PREPARED_POSITION_REACH_M, distance, pointInPolygon, type Game, type Point, type Side, type Unit } from "../engine/index.js";
+import { ADJUSTMENT_RADIUS_M, CE_PER_SIGMA, EYE_HEIGHT, PREPARED_POSITION_REACH_M, RESUPPLY, distance, pointInPolygon, type AmmoCache, type Game, type Point, type Side, type Unit } from "../engine/index.js";
 import { ScriptedCompany, type CompanyPlan, type CompanySnapshot } from "./company.js";
 import { isDeadGround } from "./deadGround.js";
 import {
@@ -337,6 +337,26 @@ export function prepareAlternatePositions(
     if (!best) continue;
     g.prepareAlternatePosition(u.id, best);
     out.set(u.id, best);
+  }
+  return out;
+}
+
+/**
+ * An attacker's ammunition caches in mission planning (rules decision 127):
+ * one a platoon, where its squads stand at the start (⚠️ ours: the computer
+ * names no bearers, and its squads go back to no cache; they refill only
+ * where they are). A defender's need no placing: the engine stocks its
+ * positions as planning ends. Returns the caches.
+ */
+export function placeCaches(g: Game, side: Side): AmmoCache[] {
+  if (!g.ammunition || !g.attackers.includes(side)) return [];
+  const out: AmmoCache[] = [];
+  const squads = g.units.filter((u) => u.side === side && u.kind === "infantry" && u.echelon === "squad" && !u.neutralized);
+  const allowed = Math.max(1, Math.ceil(squads.length / 3)) - g.cachesOf(side).length;
+  for (let k = 0; k < allowed && k * 3 < squads.length; k++) {
+    const group = squads.slice(k * 3, k * 3 + 3);
+    const at = { x: group.reduce((t, u) => t + u.position.x, 0) / group.length, y: group.reduce((t, u) => t + u.position.y, 0) / group.length };
+    if (g.units.some((u) => u.side === side && distance(u.position, at) <= RESUPPLY.placeWithinM)) out.push(g.placeCache(side, at));
   }
   return out;
 }
@@ -929,6 +949,8 @@ export class ComputerAttacker {
   plan(g: Game): readonly Point[] {
     // Its breach squads, named as a player names them (decision 125), where its drill breaches.
     designateBreachSquads(g, this.side, this.drill, (u) => this.company.isScout(u));
+    // Its caches, where its squads start (decision 127).
+    placeCaches(g, this.side);
     const tubes = tubesOf(g, this.side);
     if (!this.choices.register || !tubes.length) return [];
     for (const w of tubes) for (const t of this.planned) g.registerTarget(this.side, w, t);

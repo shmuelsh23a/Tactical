@@ -23,7 +23,21 @@ import type {
   Side,
   Unit,
 } from "./types.js";
-import type { Echelon, MovementMode, Readiness } from "./types.js";
+import type { AmmoCache, AmmoStock, Echelon, MovementMode, Readiness, Soldier } from "./types.js";
+import { BASIC_LOAD, CONSERVE, RESUPPLY } from "./data/ammunition.js";
+import {
+  drewAny,
+  firingMen,
+  issueLoad,
+  refillFrom,
+  shareOut,
+  spendRounds,
+  squadLoads,
+  squadStockKey,
+  stockEmpty,
+  tracksAmmunition,
+  type AmmunitionReport,
+} from "./ammunition.js";
 import { ECHELON_RANK } from "./data/c2.js";
 import {
   MAX_ALTERNATE_POSITIONS_PER_FORCE,
@@ -32,7 +46,7 @@ import {
 } from "./data/planning.js";
 import { MOVEMENT_PROFILES, UNDER_FIRE_SPEED_MULTIPLIER } from "./data/movement.js";
 import { ARES_AIRBURST, EXPLOSIVES, MORTAR_DOWN_CHECKED, RIFLE_GRENADIERS, SHELL_VS_MEN, shellVsMen, type Fuze, type ShellCover, type ShellVsMen } from "./data/explosives.js";
-import { DOCTRINE_MORTARS, FIRE_UNIT_TUBES, explosiveEntry, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
+import { DOCTRINE_MORTARS, FIRE_UNIT_TUBES, GRENADES_CARRIED, explosiveEntry, LETHALITIES, LETHAL_AREA_M2, type Checked, RATE_OF_FIRE, RESEARCH_ROUNDS_FOR_EFFECT, freshness, rollRate, type Lethality } from "./data/lethality.js";
 import {
   ADJUSTMENT_RADIUS_M,
   BURST_HEIGHT_M,
@@ -336,6 +350,16 @@ export const HOLDING_FIRE = "holding fire";
  */
 export const HOLDING_COVERING_FIRE = "holding covering fire";
 
+/** An assault's ammunition, read before it lands (rules decision 127). */
+interface AssaultAmmoPlan {
+  going: Soldier[];
+  replying?: Soldier[];
+  ammo: { armed: boolean[]; grenades: number[]; replyArmed?: boolean[] };
+}
+
+/** Refusal reason when none of a force's men has a round or a round of that weapon left (rules decision 127). */
+export const OUT_OF_AMMUNITION = "out of ammunition";
+
 /**
  * Why a force may not start laying a charge (rules decision 16). Short keys
  * rather than sentences, so the UI words them in Hebrew through `reasonHe`
@@ -359,6 +383,8 @@ export const LAY_CHARGE_REFUSAL = {
   insideIt: "inside the building",
   /** No breaching charge left, or none carried: only a breach squad or engineers have them (decision 125). */
   noBreachingCharge: "no breaching charge",
+  /** Its mines and IEDs all laid or lost (decision 127): a stock of charges, as breaching charges. */
+  noCharges: "no charges left",
 } as const;
 
 /**
@@ -798,6 +824,20 @@ export interface GameOptions {
    */
   breachingCharges?: number;
   /**
+   * Ammunition is counted (rules decision 127, backlog 12): each man's rounds
+   * and grenades, a squad's 40 mm and rockets, used up as they fire; a force
+   * below half its load conserves; shared out, and refilled from caches and
+   * bearers. On by default; a recording made before it reads it as off,
+   * where nobody ran out.
+   */
+  ammunition?: boolean;
+  /**
+   * Decision 16's mines and IEDs a force that may lay them carries, in a game
+   * with ammunition (decision 127): the scenario's; {@link BASIC_LOAD}'s 2
+   * when it says nothing.
+   */
+  charges?: number;
+  /**
    * A side's break reaches inside its buildings (rules decision 102): its men
    * still fighting inside stop — a defender's give themselves up, an
    * attacker's leave by the door — and the fight ends with the house to the
@@ -969,6 +1009,12 @@ export class Game {
   readonly windowFire: boolean;
   readonly joinFights: boolean;
   readonly breachingCharges: number;
+  /** Whether ammunition is counted (rules decision 127). */
+  readonly ammunition: boolean;
+  /** Mines and IEDs a force that may lay them carries (decision 127). */
+  readonly charges: number;
+  /** The ammunition caches put out in planning (decision 127), each its side's only. */
+  readonly caches: AmmoCache[] = [];
   readonly breakEndsInside: boolean;
   readonly moraleInside: boolean;
   readonly counterattackInside: boolean;
@@ -1449,6 +1495,9 @@ export class Game {
     this.joinFights = opts.joinFights ?? true;
     this.breachingCharges = opts.breachingCharges ?? BREACHING_CHARGES_EACH;
     if (!Number.isInteger(this.breachingCharges) || this.breachingCharges < 0) throw new Error(`breachingCharges must be a whole number, not ${this.breachingCharges}`);
+    this.ammunition = opts.ammunition ?? true;
+    this.charges = opts.charges ?? BASIC_LOAD.charges;
+    if (!Number.isInteger(this.charges) || this.charges < 0) throw new Error(`charges must be a whole number, not ${this.charges}`);
     this.breakEndsInside = opts.breakEndsInside ?? true;
     this.moraleInside = opts.moraleInside ?? true;
     this.counterattackInside = opts.counterattackInside ?? true;
@@ -1644,6 +1693,8 @@ export class Game {
       ...(this.windowFire ? { windowFire: true } : {}),
       ...(this.joinFights ? { joinFights: true } : {}),
       ...(this.breachingCharges !== BREACHING_CHARGES_EACH ? { breachingCharges: this.breachingCharges } : {}),
+      ...(this.ammunition ? { ammunition: true } : {}),
+      ...(this.charges !== BASIC_LOAD.charges ? { charges: this.charges } : {}),
       ...(this.breakEndsInside ? { breakEndsInside: true } : {}),
       ...(this.moraleInside ? { moraleInside: true } : {}),
       ...(this.counterattackInside ? { counterattackInside: true } : {}),
@@ -1695,6 +1746,9 @@ export class Game {
     // why not the game's rng. Before the journal entry, like the cover: the
     // recording carries the men as they were drawn, and a replay keeps them.
     if (this.morale) generateMorale(unit, this.seed);
+    // Its basic load (decision 127), where it carries none already: before the
+    // journal entry too, so the recording carries what it came with.
+    if (this.ammunition) issueLoad(unit, this.charges);
     // Which of the traits' rules act on its men (decisions 69 and 71): the
     // game's switches, read off the force where the men are hit and aim.
     // Set from the options every time, so a replay plays the recording's.
@@ -1780,6 +1834,7 @@ export class Game {
   /** Start the next turn: roll initiative and enter the initiative phase. */
   beginTurn(): { turn: number; initiativeOrder: Side[]; arrived?: { side: Side; unitIds: string[] }[] } {
     this.checkFirePlans();
+    if (this.turn === 0) this.stockDefenderPositions();
     this.turn += 1;
     // Before anything is counted for the turn, so the newcomers are in its ledgers (decision 122).
     const arrived = this.arriveReinforcements();
@@ -1837,6 +1892,8 @@ export class Game {
     chargeWork?: ChargeWorkReport[];
     morale?: MoraleReport[];
     interior?: InteriorReport[];
+    /** What ammunition did as the turn closed (decision 127): shared out, drawn, caches emptied or taken. */
+    ammunition?: AmmunitionReport[];
     /** Reinforcements that came onto the map as the new turn began (decision 122). */
     arrived?: { side: Side; unitIds: string[] }[];
   } {
@@ -1846,16 +1903,16 @@ export class Game {
         // The minute inside every building being fought for (rules decision
         // 96), before the upkeep: the morale step finds its losses itself.
         const interior = this.closedTerrain
-          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire, moraleInside: this.moraleInside && this.morale, counterattackInside: this.counterattackInside })
+          ? this.interior.resolveTurn({ units: this.units, terrain: this.terrain, turn: this.turn, seed: this.seed, contact: (a, b) => this.exchangeContact(a, b), windowFire: this.windowFire, moraleInside: this.moraleInside && this.morale, counterattackInside: this.counterattackInside, ...(this.ammunition ? { ammoSupply: { outside: (side: Side, buildingId: string) => this.grenadeFromOutside(side, buildingId) } } : {}) })
           : [];
         // The turn ends here, and with it any charge-laying work that was
         // going on: the step that closes the turn reports what became of it.
-        const { chargeWork, morale } = this.endOfTurnUpkeep();
+        const { chargeWork, morale, ammunition } = this.endOfTurnUpkeep();
         // A side that has broken stops fighting inside too (decision 102): judged on the state the morale step left.
         this.settleBreaksInside();
         interior.push(...this.brokenInside.splice(0));
         const begun = this.beginTurn();
-        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}), ...(interior.length ? { interior } : {}), ...(begun.arrived ? { arrived: begun.arrived } : {}) };
+        return { phase: this.phase, chargeWork, ...(this.morale ? { morale } : {}), ...(interior.length ? { interior } : {}), ...(ammunition.length ? { ammunition } : {}), ...(begun.arrived ? { arrived: begun.arrived } : {}) };
       }
       const idx = PHASES.indexOf(this.phase);
       this.phase = PHASES[idx + 1]!;
@@ -1898,9 +1955,11 @@ export class Game {
     chargeWork: ChargeWorkReport[];
     morale: MoraleReport[];
     interior: InteriorReport[];
+    ammunition: AmmunitionReport[];
     arrived: { side: Side; unitIds: string[] }[];
   } {
     const interior: InteriorReport[] = [];
+    const ammunition: AmmunitionReport[] = [];
     const arrived: { side: Side; unitIds: string[] }[] = [];
     const resolved: IndirectFireResult[] = [];
     const smokeArrived: SmokeScreen[] = [];
@@ -1917,12 +1976,13 @@ export class Game {
         if (step.chargeWork) chargeWork.push(...step.chargeWork);
         if (step.morale) morale.push(...step.morale);
         if (step.interior) interior.push(...step.interior);
+        if (step.ammunition) ammunition.push(...step.ammunition);
         if (step.arrived) arrived.push(...step.arrived);
         if (++guard > 100) throw new Error(`advanceToPhase: "${target}" not reached`);
       }
     });
     this.journal({ kind: "advanceToPhase", target });
-    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale, interior, arrived };
+    return { phase: this.phase, resolved, smokeArrived, observed, chargeWork, morale, interior, ammunition, arrived };
   }
 
   private requirePhase(p: Phase): void {
@@ -2002,6 +2062,7 @@ export class Game {
     this.requirePlanning("A breach element");
     const unit = this.getUnit(unitId);
     if (unit.kind !== "infantry" || unit.echelon !== "squad") throw new Error(`${unitId} is not an infantry squad: a breach element is a squad`);
+    if (on && unit.ammoBearer) throw new Error(`${unitId} is its side's ammunition bearers`);
     if (on && !unit.breachElement) {
       const squads = this.units.filter((u) => u.side === unit.side && u.kind === "infantry" && u.echelon === "squad");
       const allowed = Math.max(1, Math.ceil(squads.length / SQUADS_A_PLATOON));
@@ -2010,6 +2071,103 @@ export class Game {
     if (on) { unit.breachElement = true; unit.breachingCharges = this.breachingCharges; }
     else if (unit.breachElement) { delete unit.breachElement; delete unit.breachingCharges; }
     this.journal({ kind: "designateBreachElement", unitId, on });
+  }
+
+  /** A side's infantry squads: what one-a-platoon allowances are counted from (the engine knows no platoons). */
+  private squadsOf(side: Side): Unit[] {
+    return this.units.filter((u) => u.side === side && u.kind === "infantry" && u.echelon === "squad");
+  }
+
+  /** Whether a side attacks here: the attacker's caches are placed and sized as an attacker's (decision 127). */
+  private attacks(side: Side): boolean {
+    return this.attackers.includes(side);
+  }
+
+  /**
+   * Put out an attacker's ammunition cache in mission planning (rules
+   * decision 127; ATP 3-21.8 (2024), para 5-74): one for every three of its
+   * squads, within 100 m of one of its forces, three squads' loads. Its
+   * side's only. A defender's are not placed: they stand at its positions by
+   * themselves as planning ends ({@link stockDefenderPositions}), and
+   * placing one is refused.
+   */
+  placeCache(side: Side, at: Point, forUnitId?: string): AmmoCache {
+    this.requirePlanning("An ammunition cache");
+    if (!this.ammunition) throw new Error("this game does not count ammunition");
+    if (!Number.isFinite(at?.x) || !Number.isFinite(at?.y)) throw new Error(`cannot place a cache at ${JSON.stringify(at)}`);
+    if (!this.attacks(side)) throw new Error(`a defender's caches are at its positions already`);
+    const allowed = Math.max(1, Math.ceil(this.squadsOf(side).length / SQUADS_A_PLATOON));
+    if (this.caches.filter((c) => c.side === side).length >= allowed) throw new Error(`${side} has placed its ${allowed} cache(s), one a platoon`);
+    if (!this.units.some((u) => u.side === side && distance(u.position, at) <= RESUPPLY.placeWithinM)) {
+      throw new Error(`a cache goes within ${RESUPPLY.placeWithinM} m of one of ${side}'s forces`);
+    }
+    const cache: AmmoCache = { id: this.nextId("cache"), side, position: { x: at.x, y: at.y }, stock: squadLoads(RESUPPLY.attackerCacheLoads) };
+    this.caches.push(cache);
+    // `forUnitId` stays in the signature and the action's shape only so the debrief can word an older action; it is not read.
+    void forUnitId;
+    this.journal({ kind: "placeCache", side, at: { ...cache.position } });
+    return cloneForRecord(cache);
+  }
+
+  /** Take back a cache put out in planning (decision 127). */
+  removeCache(cacheId: string): void {
+    this.requirePlanning("An ammunition cache");
+    const i = this.caches.findIndex((c) => c.id === cacheId);
+    if (i < 0) throw new Error(`no cache ${cacheId}`);
+    const [cache] = this.caches.splice(i, 1);
+    this.journal({ kind: "removeCache", side: cache!.side, cacheId });
+  }
+
+  /**
+   * A defender's caches are not a choice (decision 127, the author: a
+   * control that is never worse is no control): as planning ends every
+   * defending squad has one at its position and one at its alternate, if it
+   * prepared one — "in or near fighting positions" (ATP 3-06.11 (2024),
+   * para 4-38). Not journaled: a replay places them again here. Only where
+   * the game knows who attacks; a side that attacks places its own.
+   */
+  private stockDefenderPositions(): void {
+    if (!this.ammunition || this.attackers.length === 0) return;
+    for (const u of this.units) {
+      if (this.attacks(u.side) || u.kind !== "infantry" || u.echelon !== "squad" || u.neutralized) continue;
+      const spots = [u.position, this.alternatePositionFor(u.id)?.at].filter((p): p is Point => !!p);
+      for (const at of spots.slice(0, RESUPPLY.defenderCachesEach)) {
+        this.caches.push({ id: this.nextId("cache"), side: u.side, position: { x: at.x, y: at.y }, stock: squadLoads(RESUPPLY.defenderCacheLoads), forUnitId: u.id });
+      }
+    }
+  }
+
+  /** A side's own caches, as its map shows them: the enemy's are never shown (decision 127). */
+  cachesOf(side: Side): AmmoCache[] {
+    // A cache the enemy took is still on its side's map, as its side last knew it (decision 127).
+    return this.caches.filter((c) => c.side === side).map((c) => {
+      const { taken: _t, ...known } = cloneForRecord(c);
+      return _t ? { ...known, stock: this.knownStock.get(c.id) ?? known.stock } : known;
+    });
+  }
+
+  /** What a side last knew a cache held, kept when the enemy takes it (decision 127). */
+  private readonly knownStock = new Map<string, AmmoStock>();
+
+  /**
+   * Name an infantry squad its side's ammunition bearers, or take the name
+   * back (rules decision 127; the first sergeant's work, ATP 3-21.8 (2024),
+   * para 8-34): it carries three squads' loads forward for the others, and
+   * fights as a squad. One for every three squads, as the breach squad.
+   */
+  designateAmmoBearers(unitId: string, on = true): void {
+    this.requirePlanning("Ammunition bearers");
+    if (!this.ammunition) throw new Error("this game does not count ammunition");
+    const unit = this.getUnit(unitId);
+    if (unit.kind !== "infantry" || unit.echelon !== "squad") throw new Error(`${unitId} is not an infantry squad: bearers are a squad`);
+    if (on && !unit.ammoBearer) {
+      if (unit.breachElement) throw new Error(`${unitId} is its platoon's breach squad`);
+      const allowed = Math.max(1, Math.ceil(this.squadsOf(unit.side).length / SQUADS_A_PLATOON));
+      if (this.squadsOf(unit.side).filter((u) => u.ammoBearer).length >= allowed) throw new Error(`${unit.side} has named its ${allowed} bearer squad(s), one a platoon`);
+    }
+    if (on) { unit.ammoBearer = true; unit.carried = squadLoads(RESUPPLY.bearerLoads); }
+    else if (unit.ammoBearer) { delete unit.ammoBearer; delete unit.carried; }
+    this.journal({ kind: "designateAmmoBearers", unitId, on });
   }
 
   /**
@@ -2121,7 +2279,17 @@ export class Game {
       breachingCharges: undefined,
       breachElement: undefined,
       observationPost: false,
+      // A bearer's load and the mines stay with the squad too (decision 127); its men's own go with them.
+      ammoBearer: undefined,
+      carried: undefined,
+      ...(parent.charges !== undefined ? { charges: 0 } : {}),
     };
+    // The squad's 40 mm and rockets, shared by the men each part takes (⚠️ ours, rounded).
+    if (parent.ammo) {
+      const share = (n: number) => Math.round((n * taking.length) / men.length);
+      team.ammo = { rifleGrenades: share(parent.ammo.rifleGrenades), rockets: share(parent.ammo.rockets) };
+      parent.ammo = { rifleGrenades: parent.ammo.rifleGrenades - team.ammo.rifleGrenades, rockets: parent.ammo.rockets - team.ammo.rockets };
+    }
     this.units.push(team);
     // Its parent's plan for a fight inside goes with it (decision 101), and its disengagement criteria (decision 107).
     const order = this.interior.orderFor(unitId);
@@ -2993,6 +3161,8 @@ export class Game {
       // Called off: a breaching charge not yet set goes back in the pack — unless
       // the work is already lost this turn, which spends it (decision 125).
       if (unit.layingCharge?.type === "breach" && !this.chargeWorkLost(unit)) unit.breachingCharges = (unit.breachingCharges ?? 0) + 1;
+      // A mine or IED not yet laid goes back in the pack too, where they are counted (decision 127).
+      if (unit.layingCharge && unit.layingCharge.type !== "breach" && this.ammunition && unit.charges !== undefined && !this.chargeWorkLost(unit)) unit.charges += 1;
       delete unit.layingCharge;
       this.journal({ kind: "layCharge", unitId, type });
       return;
@@ -3003,6 +3173,10 @@ export class Game {
     const breachingCharges = (unit.breachingCharges ?? 0) + (unit.layingCharge?.type === "breach" ? 1 : 0);
     if (type === "breach" ? breachingCharges <= 0 : !unit.canLayCharges) {
       throw new Error(type === "breach" ? LAY_CHARGE_REFUSAL.noBreachingCharge : LAY_CHARGE_REFUSAL.untrained);
+    }
+    // Its mines and IEDs, where they are counted (decision 127): one in hand counts, as a breach's does.
+    if (type !== "breach" && this.ammunition && unit.charges !== undefined && unit.charges + (unit.layingCharge && unit.layingCharge.type !== "breach" ? 1 : 0) <= 0) {
+      throw new Error(LAY_CHARGE_REFUSAL.noCharges);
     }
     if (unit.neutralized) throw new Error(LAY_CHARGE_REFUSAL.neutralised);
     if (unit.routing) throw new Error(LAY_CHARGE_REFUSAL.routing);
@@ -3056,6 +3230,11 @@ export class Game {
     // Switching from a breach to other work gives its charge back; starting one takes it out (decision 125).
     if (unit.layingCharge?.type === "breach") unit.breachingCharges = (unit.breachingCharges ?? 0) + 1;
     if (type === "breach") unit.breachingCharges = (unit.breachingCharges ?? 0) - 1;
+    // …and a mine's or an IED's the same way, where they are counted (decision 127).
+    if (this.ammunition && unit.charges !== undefined) {
+      if (unit.layingCharge && unit.layingCharge.type !== "breach") unit.charges += 1;
+      if (type !== "breach") unit.charges -= 1;
+    }
     unit.layingCharge = work;
     this.journal({ kind: "layCharge", unitId, type, ...(work.breach ? { breach: { ...work.breach } } : {}) });
   }
@@ -3169,6 +3348,9 @@ export class Game {
             : null;
         actor.position = destination;
         if (!at) continue;
+        // Who answers, where ammunition is counted (decision 127): a coverer with none left does not.
+        const firing = posture.weapon === "sustainedMg" ? undefined : this.firingMenFor(coverer, at);
+        if (firing && firing.size === 0) continue;
 
         // The shot is taken with the force standing where it was caught, and
         // on the cover the ground gives *there*. `unit.cover` is only written
@@ -3217,6 +3399,7 @@ export class Game {
           })(),
               hasLineOfSight: true,
           ...(windows?.pool ? { targetPool: windows.pool } : {}),
+          ...(firing ? { shooterIds: firing } : {}),
         });
         // What it was behind against this fire, as the hit read it, for the
         // suppression the burst puts on it (decision 91): before its cover is put back.
@@ -3225,6 +3408,7 @@ export class Game {
         actor.position = destination;
 
         if (!result.fired) continue;
+        if (firing) this.spendFor(coverer, result.shooters, firing);
         if (unready) this.surprise(actor);
         delete coverer.covering;
         // Where it was caught, not where the bound ended (flanking reads it).
@@ -3393,7 +3577,10 @@ export class Game {
    * be rewritten before it can be sent out to look.
    */
   gaitFor(unit: Unit, mode: MovementMode): MovementMode {
-    return unit.scouting ? SCOUTING.maxGait : mode;
+    if (unit.scouting) return SCOUTING.maxGait;
+    // Ammunition bearers walk while they carry any of their load (decision 127, the author: its price).
+    if (unit.ammoBearer && unit.carried && !stockEmpty(unit.carried)) return "normal";
+    return mode;
   }
 
   /**
@@ -3516,11 +3703,17 @@ export class Game {
     const moraleRefusal = this.moraleRefusal(attacker, true) ?? this.sameFightRefusal(attacker, target) ?? this.headsDownRefusal(attacker, target);
     // Through the windows nobody sees anybody (decision 98): a shot never taken draws no answer.
     const blind = this.throughWindows(attacker, target)?.seen === false ? NO_LINE_OF_SIGHT : undefined;
-    if (moraleRefusal || blind || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    // Who fires, where ammunition is counted (decision 127): a man with rounds,
+    // and below half the force's load only half of them — unless it spares none.
+    const firing = opts.weapon === "sustainedMg" ? undefined : this.firingMenFor(attacker, target, false, this.throughWindows(attacker, target)?.shooters);
+    const dry = firing && firing.size === 0 && this.hasReadyMen(attacker, this.throughWindows(attacker, target)?.shooters) ? OUT_OF_AMMUNITION : undefined;
+    // The men the resolver is given (decision 127): who is charged for the shot is exactly who could take it.
+    let firedBy: ReadonlySet<string> | undefined;
+    if (moraleRefusal || blind || dry || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       // A shot never taken draws no answer.
       return {
         fired: false,
-        reason: moraleRefusal ?? blind ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
+        reason: moraleRefusal ?? blind ?? dry ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hitChance: 0,
         shooters: 0,
@@ -3565,14 +3758,19 @@ export class Game {
       // where either force fights inside (decision 98).
       ...(() => {
         const w = this.throughWindows(attacker, target);
-        if (!w) return { hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target) };
+        firedBy = firing;
+        if (!w) return { hasLineOfSight: opts.hasLineOfSight ?? this.hasLineOfSight(attacker, target), ...(firing ? { shooterIds: firing } : {}) };
+        const at = w.shooters && firing ? new Set([...w.shooters].filter((id) => firing.has(id))) : (w.shooters ?? firing);
+        if (firing) firedBy = at;
         return {
           hasLineOfSight: w.seen,
-          ...(w.shooters ? { shooterIds: w.shooters } : {}),
+          ...(at ? { shooterIds: at } : {}),
           ...(w.pool ? { targetPool: w.pool } : {}),
         };
       })(),
     });
+    // The men who fired spend a turn's rounds (decision 127): the first the resolver took.
+    if (fireResult.fired && firedBy) this.spendFor(attacker, fireResult.shooters, firedBy);
     if (fireResult.fired) {
       if (unready) this.surprise(target);
       this.tire(attacker, alreadyFired);
@@ -3594,6 +3792,66 @@ export class Game {
     if (this.lethality === "research" && !alreadyFired) unit.turnsFiring = (unit.turnsFiring ?? 0) + 1;
   }
 
+  /**
+   * Who of a force fires at `target` where its ammunition is counted
+   * (decision 127): its ready men with rounds — half of them below half its
+   * load, unless it spares none, on an enemy within 100 m (ATP 3-21.8
+   * (2024), para A-51) or in an assault. Undefined where nothing is counted.
+   */
+  private firingMenFor(unit: Unit, target: Unit | Point, spareNone = false, among?: ReadonlySet<string>): Set<string> | undefined {
+    if (!this.ammunition) return undefined;
+    const at = "x" in target ? target : target.position;
+    // Fighting inside, only the men at the windows that see it can fire (decision 98): the half that fires is of them.
+    const ready = readySoldiers(unit).filter((s) => !among || among.has(s.id));
+    return firingMen(unit, ready, spareNone || distance(unit.position, at) <= CONSERVE.spareNoneWithinM);
+  }
+
+  /** Whether any man of a force could fire at all — among `among` where given: out of ammunition is said only of men who could. */
+  private hasReadyMen(unit: Unit, among?: ReadonlySet<string>): boolean {
+    return readySoldiers(unit).some((s) => !among || among.has(s.id));
+  }
+
+  /**
+   * An assault where ammunition is counted (decision 127): every man with
+   * rounds fires — it spares none (ATP 3-21.8 (2024), para A-51) — and
+   * throws no more grenades than he has; the defender replies with the men
+   * who have rounds.
+   */
+  private assaultAmmo(attacker: Unit, defender: Unit): AssaultAmmoPlan | undefined {
+    if (!this.ammunition || !tracksAmmunition(attacker)) return undefined;
+    // Taken before the assault lands, as the resolver takes them: a man the reply puts down still went in.
+    const going = readySoldiers(attacker);
+    const replying = tracksAmmunition(defender) ? readySoldiers(defender) : undefined;
+    return {
+      going,
+      ...(replying ? { replying } : {}),
+      ammo: {
+        armed: going.map((s) => (s.rounds ?? 0) > 0),
+        grenades: going.map((s) => s.grenades ?? 0),
+        ...(replying ? { replyArmed: replying.map((s) => (s.rounds ?? 0) > 0) } : {}),
+      },
+    };
+  }
+
+  /** What an assault spent (decision 127): a turn's rounds a man who fired, the grenades thrown, and the reply's rounds. */
+  private spendAssault(attacker: Unit, defender: Unit, plan: AssaultAmmoPlan, grenades: number, replied: boolean): void {
+    spendRounds(attacker, plan.going.filter((s) => (s.rounds ?? 0) > 0));
+    if (this.lethality === "research") {
+      const perMan = Math.max(0, Math.min(GRENADES_CARRIED, Math.floor(grenades)));
+      for (const s of plan.going) s.grenades = Math.max(0, (s.grenades ?? 0) - perMan);
+    } else {
+      // On the document's figures the count is the force's: taken from the men in turn.
+      let left = Math.max(0, Math.floor(grenades));
+      for (const s of plan.going) { const g = Math.min(left, s.grenades ?? 0); s.grenades = (s.grenades ?? 0) - g; left -= g; }
+    }
+    if (replied && plan.replying) spendRounds(defender, plan.replying.filter((s) => (s.rounds ?? 0) > 0));
+  }
+
+  /** The first `count` of the men the resolver was given, as it takes them, spend a turn's rounds (decision 127). */
+  private spendFor(unit: Unit, count: number, given: ReadonlySet<string>): void {
+    spendRounds(unit, readySoldiers(unit).filter((s) => given.has(s.id)).slice(0, count));
+  }
+
   fireExplosive(
     weaponKey: string,
     attackerId: string,
@@ -3606,10 +3864,13 @@ export class Game {
     const target = this.getUnit(targetId);
     const moraleRefusal = this.moraleRefusal(attacker, true) ?? this.sameFightRefusal(attacker, target) ?? this.headsDownRefusal(attacker, target);
     const blind = this.throughWindows(attacker, target)?.seen === false ? NO_LINE_OF_SIGHT : undefined;
-    if (moraleRefusal || blind || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    // Its 40 mm or its rockets, where they are counted (decision 127).
+    const stockKey = this.ammunition && attacker.ammo ? squadStockKey(weaponKey) : undefined;
+    const dry = stockKey && attacker.ammo![stockKey] <= 0 ? OUT_OF_AMMUNITION : undefined;
+    if (moraleRefusal || blind || dry || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       return {
         fired: false,
-        reason: moraleRefusal ?? blind ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
+        reason: moraleRefusal ?? blind ?? dry ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hit: false,
         hitChance: 0,
@@ -3659,7 +3920,9 @@ export class Game {
       ...(this.qualityGapGrenades && this.qualityGap && QUALITY_GAP_EXPLOSIVES.has(weaponKey)
         ? { blastFactor: (u: Unit) => (u.side === attacker.side ? 1 : this.qualityAim(attacker, u)) }
         : {}),
+      ...(stockKey ? { maxRounds: attacker.ammo![stockKey] } : {}),
     });
+    if (result.fired && stockKey) attacker.ammo![stockKey] = Math.max(0, attacker.ammo![stockKey] - (result.rounds ?? 1));
     if (result.fired) {
       this.tire(attacker, alreadyFired);
       this.exchangeContact(attacker, target);
@@ -3874,6 +4137,7 @@ export class Game {
       };
     }
     const reply = this.variants.assaultReplyChance;
+    const ammoPlan = this.assaultAmmo(attacker, defender);
     const result = resolveAssault(this.rng, attacker, defender, {
       grenades,
       turn: this.turn,
@@ -3884,7 +4148,10 @@ export class Game {
         : {}),
       // Ruling 1, on trial: the defender fires back, at a rate being measured.
       ...(reply ? { replyChance: reply } : {}),
+      // Who has rounds, and the grenades each carries (decision 127).
+      ...(ammoPlan ? { ammo: ammoPlan.ammo } : {}),
     });
+    if (result.fired && ammoPlan) this.spendAssault(attacker, defender, ammoPlan, grenades, !!reply);
     if (result.fired) {
       this.exchangeContact(attacker, defender);
       this.noteFire(defender, "assault", SUPPRESSION.assault, attacker.position, undefined, attacker.id);
@@ -4354,7 +4621,7 @@ export class Game {
     return this.agilityFireOrder && this.morale ? firingOrder(own) : own;
   }
 
-  private endOfTurnUpkeep(): { chargeWork: ChargeWorkReport[]; morale: MoraleReport[] } {
+  private endOfTurnUpkeep(): { chargeWork: ChargeWorkReport[]; morale: MoraleReport[]; ammunition: AmmunitionReport[] } {
     // A report nobody has refreshed for three turns is no longer a contact —
     // unless marks stay where last seen (rules decision 57).
     if (!this.keepStaleMarks) this.intel.expire(this.turn, OBSERVATION.contactExpiryTurns);
@@ -4369,6 +4636,8 @@ export class Game {
     // Before the flags clear too: a man tires on what he did this turn (decision 71).
     for (const u of this.units) updateFatigue(u, this.climbedThisTurn.get(u.id) ?? 0);
     this.climbedThisTurn.clear();
+    // Before the flags clear as well: a quiet turn is one the force neither fired nor was fired on (decision 127).
+    const ammunition = this.ammunition ? this.resupply() : [];
 
     endTurnUnitUpkeep(
       this.units,
@@ -4379,7 +4648,86 @@ export class Game {
       // A position faces the way it was dug (decision 85).
       this.directionalCover ? (u) => this.frontFor(u) : undefined,
     );
-    return { chargeWork, morale };
+    return { chargeWork, morale, ammunition };
+  }
+
+  /**
+   * A grenade up the open lane from outside the fight (decision 127): from a
+   * cache of the side within reach of the house, else from a bearer squad of
+   * the side there, not itself in a fight. Whether there was one.
+   */
+  private grenadeFromOutside(side: Side, buildingId: string): boolean {
+    const building = this.terrain.objects.find((o) => o.id === buildingId);
+    if (!building) return false;
+    const near = (p: Point) => distanceToFootprint(building.footprint, p) <= RESUPPLY.reachM;
+    const stock =
+      this.caches.find((c) => c.side === side && !c.taken && c.stock.grenades > 0 && near(c.position))?.stock ??
+      this.units.find((u) => u.side === side && u.ammoBearer && !u.neutralized && (u.carried?.grenades ?? 0) > 0 && !this.interior.inFight(u.id) && near(u.position))?.carried;
+    if (!stock) return false;
+    stock.grenades -= 1;
+    return true;
+  }
+
+  /** Neither fired nor fired on this turn, nor fighting inside: a turn to see to its ammunition (decision 127). */
+  private quietTurn(u: Unit): boolean {
+    return !u.firedThisTurn && !u.hitThisTurn && !u.underFire && !this.interior.inFight(u.id) && this.fireReceived(u.id, this.turn).length === 0;
+  }
+
+  /**
+   * The turn's ammunition (rules decision 127), in three steps: a cache an
+   * enemy reached with none of its owner's forces there is taken; every
+   * force on a quiet turn shares out among its men (ATP 3-21.8 (2024), para
+   * 4-118); and a quiet force that held still within reach of a cache of its
+   * side, or of a quiet bearer squad, draws from it toward its basic load —
+   * a cache first, the bearer's load being the one that moves.
+   */
+  private resupply(): AmmunitionReport[] {
+    const reports: AmmunitionReport[] = [];
+    const reach = RESUPPLY.reachM;
+    const standing = (u: Unit) => !u.neutralized && !u.surrendered;
+    for (const cache of [...this.caches]) {
+      const near = (u: Unit) => standing(u) && distance(u.position, cache.position) <= reach;
+      const own = this.units.find((u) => u.side === cache.side && near(u));
+      // Its own side, come to a cache the enemy took, finds it gone: only now does it leave their map.
+      if (cache.taken) {
+        if (own) {
+          this.caches.splice(this.caches.indexOf(cache), 1);
+          reports.push({ kind: "cacheLost", cacheId: cache.id, side: cache.side, by: own.id });
+        }
+        continue;
+      }
+      if (own) continue;
+      const by = this.units.find((u) => u.side !== cache.side && u.kind !== "vehicle" && near(u));
+      if (!by) continue;
+      // Out of play, but its side is not told: it still has it on its map (the fog of war).
+      this.knownStock.set(cache.id, { ...cache.stock });
+      cache.taken = true;
+      cache.stock = { rounds: 0, grenades: 0, rifleGrenades: 0, rockets: 0 };
+      reports.push({ kind: "cacheTaken", cacheId: cache.id, side: cache.side, position: { ...cache.position }, by: by.id });
+    }
+    const quiet = new Set(this.units.filter((u) => tracksAmmunition(u) && !u.neutralized && this.quietTurn(u)).map((u) => u.id));
+    for (const u of this.units) {
+      if (!quiet.has(u.id)) continue;
+      if (shareOut(u)) reports.push({ kind: "sharedOut", unitId: u.id });
+      if (u.movedThisTurn > 0) continue;
+      const near = (p: Point) => distance(u.position, p) <= reach;
+      const sources: { from: "cache" | "bearer"; id: string; stock: AmmoStock; cache?: AmmoCache }[] = [
+        ...this.caches.filter((c) => c.side === u.side && !c.taken && near(c.position)).sort((a, b) => distance(u.position, a.position) - distance(u.position, b.position))
+          .map((c) => ({ from: "cache" as const, id: c.id, stock: c.stock, cache: c })),
+        // Its own load too, for a bearer (the author, 2026-11-19: it pays for it by walking).
+        ...this.units.filter((b) => b.side === u.side && b.ammoBearer && b.carried && quiet.has(b.id) && near(b.position))
+          .map((b) => ({ from: "bearer" as const, id: b.id, stock: b.carried! })),
+      ];
+      for (const s of sources) {
+        const drawn = refillFrom(u, s.stock);
+        if (drewAny(drawn)) reports.push({ kind: "refilled", unitId: u.id, from: s.from, sourceId: s.id, drawn });
+        if (s.cache && stockEmpty(s.stock)) {
+          this.caches.splice(this.caches.indexOf(s.cache), 1);
+          reports.push({ kind: "cacheEmpty", cacheId: s.cache.id, side: s.cache.side });
+        }
+      }
+    }
+    return reports;
   }
 
   // ---- morale (rules decision 19) ----

@@ -40,6 +40,7 @@ import {
   priorityReserve,
   mortarFree,
   planDefenderFires,
+  placeCaches,
   prepareAlternatePositions,
   type AttackerFireTally,
   type FirePlanChoices,
@@ -158,6 +159,8 @@ export interface ScenarioBattleOptions {
    * from the reserve's fight outside.
    */
   counterattackInside?: boolean;
+  /** Ammunition counted (`GameOptions.ammunition`, rules decision 127). `false` takes the loads off the scenario's forces: every table before it. */
+  ammunition?: boolean;
   /**
    * The attacker briefed on the defence with its reserves (true), as before
    * decision 105: the tasking aimed at the mean of every defending force. A
@@ -293,6 +296,15 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   // Turn 0 never begins, so a reinforcement drawn for it never comes.
   if (opts.reinforcements === false) for (const r of g.reinforcements) r.turn = 0;
   if (opts.counterattackInside === false) (g as { counterattackInside: boolean }).counterattackInside = false;
+  // Nobody counts ammunition (decision 127 off), as before 2026-11-19: a measurement's switch, the loads taken back off the forces.
+  if (opts.ammunition === false) {
+    (g as { ammunition: boolean }).ammunition = false;
+    for (const u of g.units) {
+      for (const s of u.soldiers ?? []) { delete s.rounds; delete s.grenades; }
+      delete u.ammo;
+      delete u.charges;
+    }
+  }
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
@@ -339,6 +351,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   for (const w of tubesOf(g, defender)) for (const t of defenderTargets) g.registerTarget(defender, w, t);
   // Its alternate positions, where its drill moves to them (decision 120).
   prepareAlternatePositions(g, defender, startLine, defenderDrill, reserves ?? [], { width: mapWidth, height: mapHeight });
+  // The attacker's caches, where it starts (decision 127); the defender's stand at its positions by themselves.
+  placeCaches(g, attacker);
   // Each side's plan for a fight inside (decision 101), for every infantry force of it.
   for (const [side, plan] of [[attacker, opts.interiorPlans?.attack], [defender, opts.interiorPlans?.defence]] as const) {
     if (plan) for (const u of g.units) if (u.side === side && u.kind === "infantry") g.setInteriorPlan(u.id, plan);

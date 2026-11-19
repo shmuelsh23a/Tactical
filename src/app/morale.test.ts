@@ -51,9 +51,19 @@ describe("what the enemy may see of a force's morale", () => {
   });
 
   it("a game without morale hands the force over untouched", () => {
-    const g = new Game({ seed: 4 });
+    // Without ammunition too: since decision 127 a force's load is its own, and is taken off.
+    const g = new Game({ seed: 4, ammunition: false });
     const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
     expect(outsideView(red, true)).toBe(red);
+  });
+
+  it("does not show what a force carries (rules decision 127)", () => {
+    const g = new Game({ seed: 4 });
+    const red = g.addUnit(makeInfantry("R", "RED", "squad", { x: 0, y: 0 }, 8));
+    const seen = outsideView(red, true);
+    expect(seen.ammo).toBeUndefined();
+    expect(seen.soldiers!.some((s) => s.rounds !== undefined || s.grenades !== undefined)).toBe(false);
+    expect(red.soldiers![0]!.rounds).toBe(210);
   });
 });
 

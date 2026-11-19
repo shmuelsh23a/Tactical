@@ -62,6 +62,7 @@ export function stateDigest(game: Game): string {
       ...(game.marksHeld.length ? { onTheMark: game.marksHeld } : {}),
       ...(game.preparedPositions.length ? { preparedPositions: game.preparedPositions } : {}),
       ...(game.interior.breachList().length ? { breaches: game.interior.breachList() } : {}),
+      ...(game.caches.length ? { caches: game.caches } : {}),
       rng: game.rng.getState(),
     }),
   );

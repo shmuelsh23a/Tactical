@@ -6,9 +6,11 @@ import {
   PREPARED_POSITION_REACH_M,
   SMOKE_GRENADE_THROW_M,
   SMOKE_REFUSAL,
+  RESUPPLY,
   sectorBonus,
 } from "../engine/index.js";
 import type {
+  AmmunitionReport,
   DisengagementPlan,
   InteriorPlan,
   InteriorReport,
@@ -86,6 +88,14 @@ export function planningRefusalHe(message: string): string {
   if (/the most it may/.test(message)) return `נרשם המספר המרבי של מטרות (${MAX_REGISTERED_TARGETS_PER_WEAPON}) לאמצעי זה`;
   if (/already has its alternate/.test(message)) return "לכוח כבר הוכנה עמדה חלופית";
   if (/breach squad\(s\), one a platoon/.test(message)) return "כבר נקבעו כיתות פריצה — אחת לכל מחלקה";
+  // Ammunition in planning (decision 127).
+  if (/cache\(s\), one a platoon/.test(message)) return "כבר הוצבו מטמוני תחמושת — אחד לכל מחלקה";
+  if (/a cache goes within/.test(message)) return `מטמון תחמושת מוצב עד ${RESUPPLY.placeWithinM} מ' מכוח שלך`;
+  if (/a defender's caches are at its positions/.test(message)) return "מטמוני המגן מוצבים מעצמם בעמדות הכיתות ובעמדותיהן החלופיות";
+  if (/bearer squad\(s\), one a platoon/.test(message)) return "כבר נקבעו כיתות תחמושת — אחת לכל מחלקה";
+  if (/bearers are a squad/.test(message)) return "כיתת תחמושת היא כיתת חי\"ר";
+  if (/breach squad$/.test(message)) return "הכיתה היא כיתת הפריצה של המחלקה";
+  if (/does not count ammunition/.test(message)) return "במשחק זה התחמושת אינה נספרת";
   if (/a breach element is a squad/.test(message)) return "כיתת פריצה היא כיתת חי\"ר";
   if (/must be more than/.test(message)) return `עמדה חלופית חייבת להיות במרחק של יותר מ-${PREPARED_POSITION_REACH_M} מ' מהכוח`;
   if (/is a vehicle/.test(message)) return "רכב אינו מוצב כתצפית ואינו מכין עמדה";
@@ -95,6 +105,42 @@ export function planningRefusalHe(message: string): string {
   if (message === SMOKE_REFUSAL.noThrower) return `אין לוחם שלנו במרחק הטלה (${SMOKE_GRENADE_THROW_M} מ') מהמקום`;
   if (message === SMOKE_REFUSAL.noLauncher) return "אין מטולאי שלנו בטווח רימון רובה מהמקום";
   return message;
+}
+
+/**
+ * A force's ammunition as its own side reads it (decision 127): the share of
+ * a full load its fit men hold, and whether it conserves. Never the enemy's.
+ */
+export function ammoHe(state: { rounds: number; full: number; conserving: boolean } | undefined): string {
+  if (!state || state.full === 0) return "";
+  if (state.rounds === 0) return " · אזלה התחמושת";
+  const pct = Math.round((100 * state.rounds) / state.full);
+  return ` · תחמ' ${pct}%${state.conserving ? " (חוסך באש)" : ""}`;
+}
+
+/** The full count, for a force's tooltip (decision 127). */
+export function ammoDetailHe(state: { rounds: number; full: number; grenades: number; rifleGrenades: number; rockets: number } | undefined): string {
+  if (!state) return "";
+  return `כדורים ${state.rounds}/${state.full} · רימוני יד ${state.grenades} · רימוני רובה ${state.rifleGrenades} · רקטות ${state.rockets}`;
+}
+
+/** What ammunition did as the turn closed, worded for the side it is about (decision 127). */
+export function ammunitionHe(report: AmmunitionReport, name: (id: string) => string): string | undefined {
+  switch (report.kind) {
+    case "sharedOut":
+      return undefined; // the squad leader's routine: not worth a line
+    case "refilled": {
+      const d = report.drawn;
+      const what = [d.rounds ? `${d.rounds} כדורים` : "", d.grenades ? `${d.grenades} רימונים` : "", d.rifleGrenades ? `${d.rifleGrenades} רימוני רובה` : "", d.rockets ? `${d.rockets} רקטות` : ""].filter(Boolean).join(", ");
+      return `${name(report.unitId)} התחמש ${report.from === "cache" ? "ממטמון" : `מ${name(report.sourceId)}`}: ${what}`;
+    }
+    case "cacheEmpty":
+      return "מטמון תחמושת התרוקן";
+    case "cacheTaken":
+      return `${name(report.by)} מצא מטמון תחמושת של האויב ולקח אותו`;
+    case "cacheLost":
+      return `${name(report.by)} הגיע למטמון התחמושת — המטמון איננו`;
+  }
 }
 
 export function reasonHe(reason?: string): string {
@@ -120,6 +166,10 @@ export function reasonHe(reason?: string): string {
       return "הכוח בפקודת אחזקת אש";
     case "holding covering fire":
       return "הכוח בחיפוי — הפעולה לתור זה נוצלה";
+    case "out of ammunition":
+      return "אזלה התחמושת";
+    case "no charges left":
+      return "לא נותרו מטענים";
     // …an order that could not be carried out
     case "neutralised":
       return "מנוטרל";
@@ -706,6 +756,12 @@ export function describeAction(action: RecordedAction, names: Map<string, string
       return action.on ? `${who(action.unitId)} נקבע ככיתת הפריצה של המחלקה` : `${who(action.unitId)} אינו עוד כיתת הפריצה`;
     case "prepareAlternatePosition":
       return `${who(action.unitId)}: הוכנה עמדה חלופית ${at(action.at)}`;
+    case "placeCache":
+      return `${action.side}: מטמון תחמושת ${at(action.at)}${action.forUnitId ? ` ל${who(action.forUnitId)}` : ""}`;
+    case "removeCache":
+      return `${action.side}: מטמון תחמושת בוטל`;
+    case "designateAmmoBearers":
+      return action.on ? `${who(action.unitId)} נקבע ככיתת התחמושת` : `${who(action.unitId)} אינו עוד כיתת התחמושת`;
     case "callForFire":
       return `${action.side}: בקשת אש ${term(weaponHe, action.weaponKey)} ${at(action.target)} — ${
         action.opts.method === "effect" ? "אש לאפקט מייד" : "תיקון ואש לאפקט"

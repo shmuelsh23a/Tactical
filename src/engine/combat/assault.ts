@@ -71,6 +71,14 @@ export function resolveAssault(
     /** A factor on the assault's fire, and on the reply's (the quality gap, rules decision 84). Absent: 1. */
     fireFactor?: number;
     replyFactor?: number;
+    /**
+     * Where ammunition is counted (rules decision 127), in the order
+     * {@link readySoldiers} lists the men: which of the attacker's men have
+     * rounds to fire, and the grenades each has; and which of the
+     * defender's have rounds to reply. A man with none fires none; a man
+     * throws no more than he has. Absent: every man, every grenade.
+     */
+    ammo?: { armed: readonly boolean[]; grenades: readonly number[]; replyArmed?: readonly boolean[] };
   } = {},
 ): AssaultResult {
   const turn = opts.turn ?? 0;
@@ -94,12 +102,14 @@ export function resolveAssault(
   if (readySoldiers(attacker).length === 0) return { ...result, reason: "no fit shooters" };
   result.fired = true;
   // Taken before the assault lands: the reply is fired by the men who were there.
-  const replyAccuracy = opts.replyChance == null ? null : shooterAccuracy(defender);
+  const replyArmed = opts.ammo?.replyArmed;
+  const replyAccuracy = opts.replyChance == null ? null : shooterAccuracy(defender).filter((_, k) => !replyArmed || replyArmed[k]);
 
   // Assault fire.
   // Only the men still willing go in, each as steady as he is (rules decision 19).
   const accuracy = shooterAccuracy(attacker);
   for (let i = 0; i < accuracy.length; i++) {
+    if (opts.ammo && !opts.ammo.armed[i]) continue;
     if (!rng.chance(Math.min(1, ASSAULT.fireHitChance * accuracy[i]! * (opts.fireFactor ?? 1)))) continue;
     const hit = woundHit(rng, defender, turn, "smallArms");
     if (hit.missed) continue; // a lucky man (rules decision 69)
@@ -112,7 +122,9 @@ export function resolveAssault(
   // each lands on the defender's position as a blast (rules decision 46).
   const research = opts.lethality === "research";
   const perMan = Math.max(0, Math.min(GRENADES_CARRIED, Math.floor(opts.grenades ?? 0)));
-  const grenades = research ? accuracy.length * perMan : (opts.grenades ?? 0);
+  const grenades = research
+    ? opts.ammo ? opts.ammo.grenades.reduce((t, g) => t + Math.min(perMan, g), 0) : accuracy.length * perMan
+    : Math.min(opts.grenades ?? 0, opts.ammo ? opts.ammo.grenades.reduce((t, g) => t + g, 0) : Infinity);
   for (let i = 0; i < grenades; i++) {
     if (research) {
       const caught = resolveBlast(rng, "grenade", defender.position, [defender], turn, undefined, "research").targets[0];

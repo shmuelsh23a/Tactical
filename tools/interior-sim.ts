@@ -11,6 +11,8 @@
  *   npm run interior-sim -- --hold-storeys 1   # a plan's lever (decision 101)
  *   npm run interior-sim -- --team-size 2      # teams of two: a measurement only (balance.md)
  *   npm run interior-sim -- --storied          # only houses with stairs, so the three ways in fight over the same houses
+ *   npm run interior-sim -- --storied --lane 18  # ammunition counted (decision 127): 18 grenades outside, passed up the stair's open lane
+ *   npm run interior-sim -- --own 1            # …each man going in with 1 grenade left, not his 2
  *   npm run interior-sim -- --breach           # door and stair go in by a breach blown in the face opposite the front door (decision 124)
  *   npm run interior-sim -- --breach --breach-face beside   # …in the front door's own face instead: the same side of the house
  *   npm run interior-sim -- --breach --no-blast             # …with no stun in the room behind (a probe)
@@ -25,7 +27,7 @@
  * 8-12); hand grenades the most-used explosive (para B-35); casualties
  * higher than in the open (para C-8).
  */
-import { CELL_KIND, InteriorFight, Rng, breachCell, defaultDefence, facingOf, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
+import { CELL_KIND, CLOSE_QUARTERS, InteriorFight, Rng, breachCell, defaultDefence, facingOf, generateFloorPlan, plannedDefence, resolveInteriorFight, type InteriorResult, type MapObject } from "../src/engine/index.js";
 import { RAMAT_MENASHE_OBJECTS } from "../src/app/maps/ramatMenasheObjects.js";
 
 const args = process.argv.slice(2);
@@ -48,6 +50,9 @@ const SECOND = args.includes("--second-breach");
 const ONE_HOLE = args.includes("--one-hole"); // with --second-breach: the same houses, all by the first hole (the comparison's baseline) // half the teams by a second hole beside the first, at once (several holes a house, the author, 2026-11-17)
 const STORIED = args.includes("--storied"); // every row over the houses with stairs only (decision 124's comparison)
 const HOLD_STOREYS = value("--hold-storeys")?.split("+").map(Number); // the storeys the defenders hold, e.g. 1 or 0+1 (decision 101)
+// Ammunition counted (decision 127): the grenades a man goes in with, and the finite stock passed up the open lane.
+const OWN = value("--own");
+const LANE = value("--lane");
 
 const houses: MapObject[] = RAMAT_MENASHE_OBJECTS.filter((o) => o.kind === "building")
   .slice(0, HOUSES)
@@ -64,7 +69,7 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const pct = (n: number, of: number) => `${Math.round((100 * n) / of)}%`;
 const mean = (xs: number[]) => (xs.reduce((s, x) => s + x, 0) / xs.length).toFixed(2);
 
-console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${BREACH ? `, in by a breach ${BREACH_FACE === "beside" ? "in the door's face" : "opposite the door"}${NO_BLAST ? ", no blast" : ""}${WATCHED ? ", watched" : ""}${SECOND ? (ONE_HOLE ? ", houses with a second wall to breach, all by the first" : ", half the teams by a second hole beside it") : ""}` : ""}`);
+console.log(`interior-sim: ${houses.length} houses, ${ATTACKERS} attackers (${teams.length} teams) against ${DEFENDERS} defenders${PREPARED ? " in prepared positions" : ""}${HOLD ? ", holding to the last" : ", falling back"}${EXPECT_ABOVE ? ", expecting the attack from above" : ""}${HOLD_STOREYS ? `, holding storeys ${HOLD_STOREYS.join("+")}` : ""}${TEAM !== 4 ? `, teams of ${TEAM}` : ""}, seed ${SEED}${STOREYS ? `, ${STOREYS} storeys each` : ""}${STORIED ? ", houses with stairs only" : ""}${OWN !== undefined || LANE !== undefined ? `, ${OWN ?? CLOSE_QUARTERS.grenadesEach} grenades a man, ${LANE ?? 0} up the lane` : ""}${BREACH ? `, in by a breach ${BREACH_FACE === "beside" ? "in the door's face" : "opposite the door"}${NO_BLAST ? ", no blast" : ""}${WATCHED ? ", watched" : ""}${SECOND ? (ONE_HOLE ? ", houses with a second wall to breach, all by the first" : ", half the teams by a second hole beside it") : ""}` : ""}`);
 console.log("");
 console.log("| Entry | Grenades | Cleared | Repulsed | Standoff | Minutes (median, of those cleared) | Attackers out (mean a fight) | killed (mean) | Defenders out (mean) | Defenders withdrew (mean) | Share of hits by grenade | Rooms (median) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -88,7 +93,11 @@ for (const entry of ["door", "stair", "top"] as const) {
       const defence = HOLD_STOREYS
         ? plannedDefence(plan, [{ ids: defenders, storeys: HOLD_STOREYS, atWindows: false }], rng, PREPARED)
         : defaultDefence(plan, defenders, rng, PREPARED);
-      const input = { defence, defenderFallback: HOLD ? "hold" as const : "fallBack" as const, defenderExpects: EXPECT_ABOVE ? "above" as const : "below" as const };
+      let lane = Number(LANE ?? 0);
+      const ammo = OWN !== undefined || LANE !== undefined
+        ? { ammo: { grenadesOf: () => Number(OWN ?? CLOSE_QUARTERS.grenadesEach), laneSupply: () => (lane > 0 ? (lane--, true) : false) } }
+        : {};
+      const input = { defence, defenderFallback: HOLD ? "hold" as const : "fallBack" as const, defenderExpects: EXPECT_ABOVE ? "above" as const : "below" as const, ...ammo };
       if (second !== undefined && !ONE_HOLE) {
         // The first half by the first hole, the rest by the second, both blown as they go in.
         const half = Math.ceil(teams.length / 2);

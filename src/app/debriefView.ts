@@ -135,6 +135,7 @@ export function outcomeVisibleTo(
     // observation post is found the way any force is, by being looked for.
     case "designateObservationPost":
     case "designateBreachElement":
+    case "designateAmmoBearers":
     case "prepareAlternatePosition":
     // Splitting a force is a reorganisation among one's own men (decision
     // 89). The enemy does not watch the order being given; it meets the new
@@ -153,6 +154,9 @@ export function outcomeVisibleTo(
     case "checkFire":
     case "deploySmoke":
     case "registerTarget":
+    // A cache is put out behind one's own lines, and "concealed" (decision 127).
+    case "placeCache":
+    case "removeCache":
       return action.side === side;
     // Shooting at a mark is not the same as watching it fall. A side always
     // gets a line for its own fire — how many of its men fired and at what
@@ -222,6 +226,8 @@ export function actionVisibleTo(
     case "checkFire":
     case "deploySmoke":
     case "registerTarget":
+    case "placeCache":
+    case "removeCache":
       return action.side === side;
     case "issueOrders":
     case "setStandingOrder":
@@ -242,6 +248,7 @@ export function actionVisibleTo(
     // observation post is found the way any force is, by being looked for.
     case "designateObservationPost":
     case "designateBreachElement":
+    case "designateAmmoBearers":
     case "prepareAlternatePosition":
     // Splitting a force is a reorganisation among one's own men (decision
     // 89). The enemy does not watch the order being given; it meets the new

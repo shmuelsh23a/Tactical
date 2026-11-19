@@ -281,6 +281,8 @@ export function resolveDirectExplosive(
      * chance by his force; 1 for everyone unless given.
      */
     blastFactor?: (unit: Unit) => number;
+    /** The rounds the firer has left (rules decision 127): it fires no more than these. Absent: not counted. */
+    maxRounds?: number;
   } = {},
 ): DirectExplosiveResult {
   const lethality = opts.lethality ?? "document";
@@ -309,7 +311,8 @@ export function resolveDirectExplosive(
   // crew's rate for the turn, lower as it tires (rules decision 42). The crew
   // stops when the target is down.
   const rof = lethality === "research" ? RATE_OF_FIRE[weaponKey] : undefined;
-  const rate = rof ? rollRate(rof, freshness(attacker.turnsFiring ?? 0), rng.next()) : 1;
+  const drawn = rof ? rollRate(rof, freshness(attacker.turnsFiring ?? 0), rng.next()) : 1;
+  const rate = opts.maxRounds === undefined ? drawn : Math.min(drawn, opts.maxRounds);
   const candidates = [target, ...(opts.collateral ?? [])];
   const blasts: BlastResult[] = [];
   let rounds = 0;
