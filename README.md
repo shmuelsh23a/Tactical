@@ -4072,6 +4072,50 @@ on the stated reasoning, still awaiting the author's word.
         battle over sooner, the defender breaking under rifle grenades
         while the platoon waits. `scenario-sim --no-breach` plays it as
         before.
+126. ✅ **OPORD mode (backlog 13): how it is built** (the author, 2026-11-19,
+    ten ruling cards on a research brief; nothing built yet). Doctrine read
+    for it: the company OPORD's five paragraphs (ATP 3-21.10 (2026), Fig B-6,
+    paras B-122–B-128), the platoon's (ATP 3-21.8 (2024), Fig 2-5), WARNORD
+    and FRAGORD (B-13, B-29; ATP 3-21.8 para 2-53), the commander's intent
+    (ADP 6-0 paras 1-64–1-66, 1-77–1-78) and the attack's control measures
+    (ATP 3-21.10 para 2-134).
+    - **Build order:** a structured order (typed fields, tasks bound to
+      pins on the map) compiled to the company plan the engine already
+      carries out (`CompanyPlan`, `PlatoonTask`, standing orders, fire
+      plans, `InteriorPlan`); then the drawn battle chart; free text parsed
+      by a model last, as a layer over the same structure.
+    - **Who carries it out, by echelon:** below company, the order is
+      compiled by rule and a subordinate is asked a typed question only
+      where the plan breaks; above company, a hosted LLM with RAG over the
+      doctrine, when it is developed. Narrows backlog 15's "Jev decides
+      for platoon and up".
+    - **First scenario:** the Tel Azeka company attack, whose order text
+      (`src/sim/opord.ts`) and eight reference plans exist: the plans
+      written as orders must play the same as their hand-built form.
+    - **When the plan breaks** a subordinate acts by the commander's intent
+      (ADP 6-0 paras 1-77–1-78), and **the player can issue a FRAGORD** any
+      turn, gated by the פו"ש table (decision 6) plus one turn's delay.
+      No planning clock before H-hour: the order is written before turn 1.
+    - **Control measures:** the whole of ATP 3-21.10 para 2-134 — LD, phase
+      lines, checkpoints, boundaries, probable line of deployment, final
+      coordination line, assault positions, support-by-fire and
+      attack-by-fire positions, limit of advance, fire support
+      coordination measures, and the defence's engagement areas. ⚠️ Not the
+      smaller set recommended; the first slice may still take a core of
+      them as one data type, the author's call.
+    - **A toggle per game**; click control stays as the development shell.
+    - **Both Hebrew and English** for the order and its wording. ⚠️ Not the
+      recommended Hebrew-only UI; it doubles the wording to keep.
+    - **The recording holds the order and the resulting actions:** the
+      order, versioned, for the debrief and תוכנית או מזל; the actions for
+      exact replay.
+    - **Gaps this leaves to build** (none exists): control measures as
+      journaled map objects; tasks bound to a place; triggers and
+      conditions ("on PL X", "on order", "be prepared"); the FRAGORD as an
+      order object; intent read when a plan stops fitting; an order check
+      (backbrief), which belongs to the UX pass. An LOA or any such
+      measure the player can leave off must cost something, or it is a
+      dominated choice.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
@@ -4410,6 +4454,12 @@ Each is intended to be an independent, toggleable module:
     *when* a force may receive orders, and this mode supplies *what* the order
     says and lets the engine interpret it — the persistent standing-orders model
     considered and set aside when C2 was implemented, at OPORD scale.
+
+    **Decided 2026-11-19: rules decision 126** — build order, who executes by
+    echelon, first scenario, FRAGORD, control measures, recording. The list
+    below is what stood open before it; backlog 15 answers adjudication and
+    parsing below company, and the model's size and where it runs stay open
+    for the above-company LLM.
 
     **To settle before building** (deliberately not decided here):
 
