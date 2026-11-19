@@ -104,6 +104,7 @@ import { Debrief } from "./Debrief.js";
 import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
+import { untargetableInside } from "./insideTargets.js";
 
 /** An aim point this close to the caller's own forces is danger close: said in the log, not refused (rules decision 63, S4). */
 const DANGER_CLOSE_M = 150;
@@ -1765,8 +1766,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
               staleContactIds={staleIds}
               reportSpreads={spreads}
               awaitingOrderIds={awaitingOrders}
+              untargetableIds={enginePhase === "combat" ? untargetableInside(game, selectedOwn, combatAction, visibleUnits) : undefined}
               assaultReach={
-                enginePhase === "combat" && combatAction === "assault" && selectedOwn
+                enginePhase === "combat" && combatAction === "assault" && selectedOwn && !game.interior.inFight(selectedOwn.id)
                   ? ASSAULT_RANGE_M
                   : null
               }

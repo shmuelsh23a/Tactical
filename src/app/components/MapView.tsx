@@ -82,6 +82,8 @@ interface MapViewProps {
   reportSpreads?: ReadonlyMap<string, number>;
   /** Friendly forces that cannot manoeuvre this turn for want of orders (C2). */
   awaitingOrderIds: Set<string>;
+  /** Enemies the selected force cannot fire at or assault because of a fight inside (decision 98): not marked as targets. */
+  untargetableIds?: ReadonlySet<string>;
   /** Assault reach (metres) to ring the selected force with, when assaulting. */
   assaultReach: number | null;
   /** Smoke screens on the map — physical, so both sides see them. */
@@ -343,6 +345,7 @@ export function MapView(props: MapViewProps) {
           selected={u.id === selectedId}
           phase={phase}
           awaitingOrders={props.awaitingOrderIds.has(u.id)}
+          targetable={!props.untargetableIds?.has(u.id)}
           stale={props.staleContactIds.has(u.id)}
           onSelectUnit={props.onSelectUnit}
           onFireAt={props.onFireAt}
@@ -391,6 +394,8 @@ interface TokenProps {
   awaitingOrders: boolean;
   /** A last-known mark rather than a sighting — drawn faded, with a query ring. */
   stale: boolean;
+  /** An enemy the selected force may take on in the combat phase: false while a fight inside rules it out (decision 98). */
+  targetable: boolean;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
 }
@@ -402,6 +407,7 @@ function Token({
   phase,
   awaitingOrders,
   stale,
+  targetable,
   onSelectUnit,
   onFireAt,
 }: TokenProps) {
@@ -425,7 +431,7 @@ function Token({
     unit.neutralized ? "token-neutralised" : "",
     awaitingOrders ? "token-no-orders" : "",
     stale ? "token-stale" : "",
-    !friendly && phase === "combat" ? "token-targetable" : "",
+    !friendly && phase === "combat" && targetable ? "token-targetable" : "",
   ].join(" ");
 
   // APP-6 headquarters staff: a vertical stave from the lower-left of the
@@ -436,6 +442,7 @@ function Token({
 
   return (
     <g className={cls} onClick={handleClick}>
+      {!friendly && phase === "combat" && !targetable && <title>הכוח הנבחר נלחם בתוך מבנה</title>}
       {selected && (
         <circle cx={unit.position.x} cy={unit.position.y} r={22} className="selection-ring" />
       )}
