@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected); and the enemy fought inside no longer marked as a target (the UX pass). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected); and the enemy fought inside no longer marked as a target (the UX pass); and the computer breaches (four rulings, accepted). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -780,8 +780,14 @@ may not join (joinFights off, the enemy not in that fight, a fight entered
 from the roof) and sees a crosshair — marking those would tell it who is in
 the fight.
 
-**The queue is empty.** Next: the breach on the map (the computer attacker
-lays charges, decisions 124–125), or a backlog item.
+**Done 2026-11-19: the computer breaches** (README decision 125, *The
+computer breaches*; balance.md, *The computer's breach*): the author's four
+rulings and two after the review, built and accepted on the fixed figures —
+the lone house 88% → 78%, the house with a reserve as often at half the
+losses; `scenario-sim --no-breach` for the old tables — do not re-derive.
+
+**The queue is empty.** Next: a backlog item (README *Later development
+iterations*).
 
 ## Traps that cost real time
 

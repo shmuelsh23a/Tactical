@@ -4027,6 +4027,51 @@ on the stated reasoning, still awaiting the author's word.
       infantry force charges of its own — an attached engineer force —
       with `"breachingCharges"` on the force, and sets a breach squad's
       count with `"breachingCharges"` at the top.
+    - **The computer breaches** (the author, 2026-11-19, four rulings, each
+      the recommended option, on ATP 3-06.11 (2024) app. C):
+      - **Every defended house**: where its side knows an enemy inside and
+        has a breach squad with a charge — doors are "where enemy forces
+        are most likely to focus their defenses" (para C-45).
+      - **The wall in reach nearest it, never the front door's face**:
+        "compromise easy access for surprise" (para C-23).
+      - **The rest wait, then go in by it**: the breach squad sets the
+        charge and does not clear — breach "with a separate element"
+        (para C-41) — and the squads that would assault that house hold
+        until it is set, then go in at once (para C-40). It stays whole —
+        no Battle Drill 2A split while it has the breach to make — and
+        holds its fire while it works (the author, after the review).
+      - **A charge nobody goes in by lets the squad go** (the author, the
+        same day): 6 turns after it is set, or once no enemy is known in
+        the house, it fights by the drill again — by its own charge, if it
+        goes in.
+      - **A second charge on another wall if the first is lost, then the
+        door** — doctrine is silent on a failed building breach; the
+        nearest is "breach at a secondary portal" (ATP 3-21.51 (2019),
+        para 3-142).
+      - Built: `SquadDrill.breach` (the reference drill's; the plain drill
+        has none), `designateBreachSquads` at mission planning in the
+        harness and the browser's computer attacker, the drill's
+        `breachJobs` kept in a saved battle. ⚠️ Ours: the breach squad is
+        each platoon's last squad that is not a scout; the rest stop
+        waiting after 6 turns, and the squad is let go 6 after its charge
+        is set; an enemy's mark within 15 m of a house
+        (`HOUSE_MARK_M`) is taken to be in it — a report is drawn with its
+        error; a breach squad standing within a house's outline steps out
+        to 5 m off the wall to lay. It stays whole only while it has a
+        breach to make; on open ground it splits as any squad. Driven in
+        the app after the review's fixes (yokneamHouse, `vs=attacker`, the
+        human RED): the breach squad, whole, set its charge on the east
+        wall (the door on the north) by turn 7; with the company's other
+        two squads scouting nobody came to go in by it, so on turn 13 it
+        was let go and on turn 14 went in by its own hole; RED read only
+        "האויב פרץ את הקיר המזרחי ונכנס דרכו".
+      - **Measured and accepted** (the author, the same day, twice — the
+        first time on figures a bug skewed; balance.md, *The computer's
+        breach*): the lone house 88% → 78% (two windows: 89% → 77%); the
+        house with a reserve 51% → 50% at half the attacker's losses; the
+        battle over sooner, the defender breaking under rifle grenades
+        while the platoon waits. `scenario-sim --no-breach` plays it as
+        before.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

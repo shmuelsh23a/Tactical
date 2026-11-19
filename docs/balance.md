@@ -6555,6 +6555,58 @@ lane to resupply and reinforce"), the stair rows again:
   for now (the author: "we will deal with ammo later"); resupply returns
   with a finite stock.
 
+## The computer's breach, 2026-11-19
+
+The author's rulings (README decision 125, *The computer breaches*): the
+reference drill's breach squad charges the wall nearest it, never the
+door's, whole and holding its fire; the rest hold until it is set and go in
+by it; a second charge on another wall, then the door; a charge nobody goes
+in by within the wait lets the squad go. `npm run scenario-sim --
+--scenario <id> --n 200 --seed <s> [--no-breach]`; `--no-breach`
+reproduces the tables before it to the point (88% and 51% on seed 1000).
+Attacker wins / defender wins (out of time) / median turns / attacker down /
+defender down / out by HE:
+
+| Scenario | Seeds | No breach | Breach |
+|---|---|---|---|
+| `yokneamHouse` | 1000 | 88% / 13% (6%) / 12 / 16% / 42% / 41% | **78%** / 22% (5%) / **3** / 13% / 44% / **70%** |
+| `yokneamHouse` | 2000 | 89% / 11% (9%) / 15 / 17% / 42% / 35% | **77%** / 22% (8%) / **3** / 12% / 43% / **70%** |
+| `yokneamHouseReserve` | 1000 | 51% / 43% (6%) / 9 / 40% / 54% / 25% | 50% / 44% (5%) / 6 / **20%** / 36% / 62% |
+| `yokneamHouseReserve` | 2000 | 45% / 44% (6%) / 10 / 42% / 53% / 23% | 49% / 45% (6%) / 6 / **21%** / 36% / 58% |
+| `yokneamUrban` | 1000 | 78% / 21% (3%) / 13 / 5% / 32% / 82% | 74% / 26% (1%) / 13 / 5% / 32% / 83% |
+| `yokneamUrban` | 2000 | 76% / 22% (3%) / 14 / 5% / 32% / 84% | 75% / 22% (3%) / 13 / 5% / 32% / 84% |
+| `yokneamRaid` | 1000 | 5% / 93% (64%) / 30 / 19% / 11% / 50% | 4% / 95% (54%) / 30 / 21% / 9% / 74% |
+| `yokneamRaid` | 2000 | 3% / 95% (72%) / 30 / 18% / 10% / 50% | 5% / 93% (58%) / 30 / 19% / 9% / 76% |
+| `telAzekaAssault` | 1000 (100) | 67% / 31% (0%) / 14 / 9% / 32% / 18% | the same, to the point |
+| `telAzekaAssault2` | 1000 (100) | 31% / 68% (0%) / 13 / 13% / 23% / 22% | the same, to the point |
+
+How each charge ended (a probe, 200 battles from seed 1000, before the
+last fix below): set 55 times and lost to the enemy's fire 3 in
+`yokneamHouse`; set 87, lost 10, in `yokneamHouseReserve`. Open ground —
+the tel — has no house to breach, and the breach squad fights there as any
+squad (the review: a first cut kept it whole there too, and moved the tel
+by 5–6 points with no breach ever made).
+
+- **Against the lone house it costs about 11 points** on both windows
+  (defender wins 13% → 22%): the platoon holds outside while the charge is
+  laid, where the rush at the door won.
+- **Against the house with a reserve it wins as often at half the losses**
+  (40% → 21%; the defence's 54% → 36%).
+- **Battles end sooner and by explosives**: the median by turn 3–6, the
+  share out by HE to 58–76% — the platoon fires rifle grenades into the
+  windows while it waits, and the defender breaks before anyone goes in.
+- **The raid's wins do not move, its clock does**: out of time 64–72% →
+  54–58%, and out by HE 50% → 74–76%. Urban moves 1–4 points down, inside the noise.
+- **Accepted as built** (the author, 2026-11-19, the recommended option),
+  first on figures a bug skewed — the breach squad fired while laying and
+  lost its own charge (8 of 27 layings in 100 battles) — then again on the
+  fixed figures (79/76% and 51/46%; these, after the last fix, are within
+  3 points of them): not a dominated choice; it costs in one house and pays
+  in losses in the other.
+- ⚠️ Ours, as the README lists: the last non-scout squad, 6 turns' wait
+  for the charge and 6 for going in by it, 15 m from a house, the step out
+  to lay.
+
 ## Tel Azeka and the brief, closed, 2026-11-19
 
 The question left by decision 105 (*The reserve held back*, above): why the
