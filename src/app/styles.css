@@ -141,6 +141,9 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .alternate rect { fill: none; stroke: var(--ok); stroke-width: 2; }
 .alternate line { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 4 5; opacity: 0.7; }
 .alternate text { fill: var(--ok); }
+.cache { pointer-events: none; }
+.cache polygon { fill: none; stroke: var(--ok); stroke-width: 2; }
+.cache text { fill: var(--ok); font-size: 15px; font-weight: 600; }
 .observation-post circle { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 1 4; }
 /* Smoke still in flight: shown in the colour of the screen it will become. */
 .aim-smoke circle, .aim-smoke line { stroke: #d6dee6; }

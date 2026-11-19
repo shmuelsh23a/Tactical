@@ -1,5 +1,9 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
+  BASIC_LOAD,
+  RESUPPLY,
+  ammunitionState,
+  type AmmunitionReport,
   ADJUSTMENT_RADIUS_M,
   ASSAULT_RANGE_M,
   FACINGS,
@@ -52,6 +56,9 @@ import {
   stateDigest,
 } from "../engine/index.js";
 import {
+  ammoDetailHe,
+  ammoHe,
+  ammunitionHe,
   casualtyReport,
   criticalHe,
   structureHe,
@@ -117,7 +124,7 @@ type Stage = "planning" | "initiative" | "activation" | "gameover";
  * registered target, or place the selected force's alternate position. An
  * observation post is a force, so it is set from the force's card instead.
  */
-type PlanTool = "target" | "alternate" | "post" | "breach";
+type PlanTool = "target" | "alternate" | "post" | "breach" | "cache" | "bearers";
 /** Indirect-fire tube the player is marking with. */
 type Tube = "lightMortar" | "mortar" | "heavyMortar" | "artillery";
 /** Every tube, lightest first (rules decision 93 adds the 60 and 120 mm). */
@@ -487,7 +494,10 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     selectedOwn.echelon !== "team" &&
     enginePhase === "movement" &&
     splitFrom >= 4;
-  const effectiveGait: Gait = scoutingSelected ? "normal" : gait;
+  // A scout walks; so does an ammunition bearer while it carries any of its load (decision 127): the engine's own gait.
+  // An ammunition bearer with any of its load on its back walks (decision 127).
+  const walksLoaded = !scoutingSelected && !!selectedOwn && game.gaitFor(selectedOwn, "run") === "normal";
+  const effectiveGait: Gait = selectedOwn ? (game.gaitFor(selectedOwn, scoutingSelected ? "normal" : gait) as Gait) : scoutingSelected ? "normal" : gait;
   // The engine's own budget: under fire, a rush at its slowest man's pace, tired men (decisions 69, 71, 82).
   const moveCap =
     selectedOwn && enginePhase === "movement" && selectedCanManoeuvre ? game.moveBudget(selectedOwn.id, effectiveGait) : null;
@@ -632,6 +642,16 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
         }
         game.prepareAlternatePosition(selectedOwn.id, { x, y });
         pushLog(`${selectedOwn.name}: הוכנה עמדה חלופית (${Math.round(x)}, ${Math.round(y)})`, "info", onlyFor(side));
+      } else if (activePlanTool === "cache") {
+        // A click on one of its own caches takes it back; anywhere else puts one out (decision 127).
+        const mine = game.cachesOf(side).find((c) => Math.hypot(c.position.x - x, c.position.y - y) <= 15);
+        if (mine) {
+          game.removeCache(mine.id);
+          pushLog("מטמון התחמושת בוטל", "info", onlyFor(side));
+        } else {
+          game.placeCache(side, { x, y });
+          pushLog(`מטמון תחמושת הוצב (${Math.round(x)}, ${Math.round(y)})`, "info", onlyFor(side));
+        }
       } else {
         return;
       }
@@ -666,6 +686,32 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
     }
     force();
+  }
+
+  /** Name the selected squad its side's ammunition bearers, or take it back (decision 127). */
+  function handleAmmoBearers() {
+    if (!selectedOwn) return;
+    const on = !selectedOwn.ammoBearer;
+    try {
+      game.designateAmmoBearers(selectedOwn.id, on);
+      setPlanned(true);
+      pushLog(on ? `${selectedOwn.name} נקבע ככיתת התחמושת` : `${selectedOwn.name} אינו עוד כיתת התחמושת`, "info", onlyFor(viewingSide));
+    } catch (err) {
+      pushLog(planningRefusalHe((err as Error).message), "info", onlyFor(viewingSide));
+    }
+    force();
+  }
+
+  /** What ammunition did as the turn closed (decision 127): each line to the side it is about. */
+  function logAmmunition(reports: AmmunitionReport[]) {
+    const name = (id: string) => game.units.find((u) => u.id === id)?.name ?? id;
+    for (const report of reports) {
+      const line = ammunitionHe(report, name);
+      if (!line) continue;
+      // A cache found is the finder's news: the side that lost it is not told.
+      const side = report.kind === "cacheTaken" ? game.units.find((u) => u.id === report.by)?.side : report.kind === "cacheEmpty" || report.kind === "cacheLost" ? report.side : game.units.find((u) => u.id === report.unitId)?.side;
+      if (side) pushLog(line, "info", onlyFor(side));
+    }
   }
 
   /** This side has planned: hand over to the next, or begin the first turn. */
@@ -1578,6 +1624,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     const closed = game.advanceToPhase("initiative");
     logArrivals(closed.arrived);
     logChargeWork(closed.chargeWork);
+    logAmmunition(closed.ammunition);
     logInterior(closed.interior);
     logMorale(closed.morale);
     // Morale can end a battle with no shot fired this step: a side breaks.
@@ -1778,6 +1825,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
               mines={knownMines}
               registeredTargets={game.registeredTargets.filter((t) => t.side === viewingSide)}
               alternatePositions={game.preparedPositions.filter((p) => p.side === viewingSide)}
+              caches={game.cachesOf(viewingSide)}
               standingOrders={game.units
                 .filter((u) => u.side === viewingSide)
                 .flatMap((u) => orderOverlay(game.standingOrderFor(u.id), u, visibleUnits))}
@@ -1815,6 +1863,18 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                   <button className={activePlanTool === "breach" ? "on" : ""} onClick={() => setPlanTool("breach")}>
                     כיתת פריצה
                   </button>
+                  {game.ammunition && (
+                    <>
+                      {game.attackers.includes(planningSide) && (
+                        <button className={activePlanTool === "cache" ? "on" : ""} onClick={() => setPlanTool("cache")}>
+                          מטמון תחמושת
+                        </button>
+                      )}
+                      <button className={activePlanTool === "bearers" ? "on" : ""} onClick={() => setPlanTool("bearers")}>
+                        כיתת תחמושת
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {activePlanTool === "target" && (
@@ -1866,6 +1926,34 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                       onClick={handleBreachElement}
                     >
                       {selectedOwn?.breachElement ? `${selectedOwn.name} — כיתת פריצה (בטל)` : "קבע ככיתת פריצה"}
+                    </button>
+                  </>
+                )}
+                {activePlanTool === "cache" && game.attackers.includes(planningSide) && (
+                  <p className="hint">
+                    לחץ על המפה, עד {RESUPPLY.placeWithinM} מ' מכוח שלך: מטמון אחד לכל מחלקה, ובו תחמושת ל-
+                    {RESUPPLY.attackerCacheLoads} כיתות. כוח שעומד במקום תור שלם עד {RESUPPLY.reachM} מ' ממנו, בלי לירות ובלי
+                    שירו עליו, מתחמש ממנו. האויב אינו רואה מטמון — אבל אם יגיע אליו ואין שם איש משלך, ייקח אותו. לחיצה על
+                    מטמון שלך מבטלת אותו.
+                  </p>
+                )}
+                {game.ammunition && !game.attackers.includes(planningSide) && game.attackers.length > 0 && (
+                  <p className="hint">
+                    תחמושת: בעמדת כל כיתה, ובעמדתה החלופית אם הוכנה, יש מטמון ובו תחמושת לכיתה — הם מוצבים עם סיום התכנון.
+                  </p>
+                )}
+                {activePlanTool === "bearers" && (
+                  <>
+                    <p className="hint">
+                      בחר כיתת חי"ר וקבע אותה ככיתת התחמושת (אחת לכל מחלקה): היא נושאת תחמושת ל-{RESUPPLY.bearerLoads} כיתות,
+                      נלחמת ככל כיתה, ומחמשת כוח שעומד עד {RESUPPLY.reachM} מ' ממנה בתור שבו שתיהן לא ירו ולא נורו.
+                    </p>
+                    <button
+                      className="btn-primary"
+                      disabled={!selectedOwn || selectedOwn.kind !== "infantry" || selectedOwn.echelon !== "squad"}
+                      onClick={handleAmmoBearers}
+                    >
+                      {selectedOwn?.ammoBearer ? `${selectedOwn.name} — כיתת תחמושת (בטל)` : "קבע ככיתת תחמושת"}
                     </button>
                   </>
                 )}
@@ -2029,9 +2117,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                       רגיל (≤50מ')
                     </button>
                     <button
-                      className={gait === "run" && !scoutingSelected ? "on" : ""}
-                      disabled={scoutingSelected}
-                      title={scoutingSelected ? "כוח בסיור נע בהליכה בלבד" : undefined}
+                      className={gait === "run" && effectiveGait === "run" ? "on" : ""}
+                      disabled={scoutingSelected || walksLoaded}
+                      title={scoutingSelected ? "כוח בסיור נע בהליכה בלבד" : walksLoaded ? "כיתת תחמושת נושאת את המטען — נעה בהליכה בלבד" : undefined}
                       onClick={() => setGait("run")}
                     >
                       ריצה (≤100מ')
@@ -2657,9 +2745,12 @@ function Roster({
               awaitingOrders.has(u.id) ? "no-orders" : ""
             }`}
             onClick={() => onSelect(u.id)}
+            title={ammoDetailHe(ammunitionState(u))}
           >
             {u.name} —{" "}
             {u.kind === "vehicle" ? "טנק" : `${fitSoldiers(u)}/${fullStrength(u)}`}
+            {ammoHe(ammunitionState(u))}
+            {u.ammoBearer && ` · כיתת תחמושת${u.carried ? ` (${Math.round((100 * u.carried.rounds) / (RESUPPLY.bearerLoads * RESUPPLY.squadMen * BASIC_LOAD.rifleRounds))}%)` : ""}`}
             {u.firedThisTurn && " · ירה"}
             {watchingAsPost(u) && " · תצפית"}
             {game.alternatePositionFor(u.id) && " · עמדה חלופית"}

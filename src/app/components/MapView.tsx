@@ -3,6 +3,7 @@ import type {
   Mine,
   Point,
   PreparedPosition,
+  AmmoCache,
   RegisteredTarget,
   PendingFireMission,
   PendingSmokeMission,
@@ -113,6 +114,8 @@ interface MapViewProps {
    */
   registeredTargets?: readonly RegisteredTarget[];
   alternatePositions?: readonly PreparedPosition[];
+  /** The viewing side's ammunition caches (decision 127): its own only — a cache is concealed. */
+  caches?: readonly AmmoCache[];
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
@@ -295,6 +298,12 @@ export function MapView(props: MapViewProps) {
           </g>
         );
       })}
+      {(props.caches ?? []).map((c) => (
+        <g key={`cache-${c.id}`} className="cache">
+          <polygon points={`${c.position.x},${c.position.y - 11} ${c.position.x + 11},${c.position.y} ${c.position.x},${c.position.y + 11} ${c.position.x - 11},${c.position.y}`} />
+          <text x={c.position.x + 14} y={c.position.y + 4}>תחמושת</text>
+        </g>
+      ))}
       {units
         .filter((u) => u.side === viewingSide && watchingAsPost(u) && !u.neutralized)
         .map((u) => (
