@@ -32,3 +32,6 @@ docs/Doctrine/**/chunks.parquet
 # index: derived from chunks.parquet, the same hundreds of MB, and rebuilt
 # in about fifteen seconds with --rebuild-vectors.
 docs/Doctrine/**/vectors.*
+
+# A doctrine tool's key file, never committed (2026-11-19)
+docs/Doctrine/**/voyage_key.txt
