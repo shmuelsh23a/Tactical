@@ -5592,7 +5592,8 @@ ruled; the first and the second measured, the third is the first's code. `scenar
 
 A reserve holds fire until committed; the attacker's brief (the harness's
 tasking and the browser's computer attacker) leaves reserves out. Every
-scenario with a reserve moves.
+scenario with a reserve moves. (2026-11-19: not `telAzekaAssault` — its plain
+script's drop was seed noise; *Tel Azeka and the brief, closed*.)
 
 **The reference plans** (`jev-sim --rule <variant> --seed 1000 --n 100`,
 A at 3:1 `--n 200`), the same command as *The stale tables on the new
@@ -5613,21 +5614,25 @@ baseline*:
 
 The medians hardly move: the 3:1 is in its band, and the 2:1 is 19.5%
 against 18.5% (*Waiting on the author*), still just under. Why they move
-so much less than the plain script's Tel Azeka (below) is not yet looked
-into.
+so much less than the plain script's Tel Azeka (below) was not looked
+into; closed 2026-11-19 (*Tel Azeka and the brief, closed*): the plain
+script's drop was seed noise (30% → 39% on seeds from 2000), and today
+neither it nor plan A at 3:1 moves with the brief.
 
 **`scenario-sim`**, 100 battles from seed 1000 unless marked:
 
 | Scenario | Before (`2ab4d75`) | After |
 |---|---|---|
-| `telAzekaAssault`, the plain script | 36% | **21%** (hold fire alone: 33%) |
+| `telAzekaAssault`, the plain script | 36% | **21%** (hold fire alone: 33%; seed noise, 2026-11-19: 30% → 39% from seed 2000) |
 | `yokneamRaid` | 10% | **5%** (counterattacked 6% → 36%) |
 | `yokneamUrban` | — | 58% |
 | `telAzekaCompany` | — | 30% |
 | `yokneamHouse` (200) | 83% | 83% (no reserve) |
 | `yokneamHouseReserve` (200) | — | **43%**, median 3 turns |
 
-- **The drop in the plain script's Tel Azeka is the brief**, not the
+- (Corrected 2026-11-19, *Tel Azeka and the brief, closed*: the drop does
+  not replicate on another seed window — noise, not the brief.) **The drop
+  in the plain script's Tel Azeka is the brief**, not the
   reserve's held fire (33% with that alone). Its tasking was aimed at the
   mean of the defence with its reserve 100–112 m back; on the position
   held it plans differently. The reference plans' medians are not moved.
@@ -6548,6 +6553,42 @@ lane to resupply and reinforce"), the stair rows again:
   door and the roof on every count, so the roof became a trap. Ruled out
   for now (the author: "we will deal with ammo later"); resupply returns
   with a finite stock.
+
+## Tel Azeka and the brief, closed, 2026-11-19
+
+The question left by decision 105 (*The reserve held back*, above): why the
+plain script's Tel Azeka fell 36% → 21% with it while the reference plans
+hardly moved. **It was seed noise.** `--brief-reserves` (new, on
+`scenario-sim` and `jev-sim`) briefs the attacker on the defence with its
+reserves, as before decision 105; the reserves stay reserves.
+`telAzekaAssault` (3:1). Attacker wins:
+
+| Run | Seeds | Before 105 / brief with the reserves | After 105 / today's brief |
+|---|---|---|---|
+| October, `2ab4d75` → `0dbf84a`, the plain script | 1000, 100 | 36% | 21% |
+| October, the same two commits | **2000, 200** | **30%** | **39%** |
+| Today, the plain script (`scenario-sim --drill plain`) | 1000, 100 | 34% | 33% |
+| Today, the plain script | 2000, 200 | 31% | 30% |
+| Today, the doctrinal drill, no company plan | 1000, 100 | 75% | 67% |
+| Today, the reference plan A (`jev-sim --rule --drill reference`) | 1000, 100 | 86% | 84% |
+| Today, plan A on the plain drill (`jev-sim --rule --drill plain`) | 1000, 100 | 55% | 60% |
+
+(±10 points at 95% on 100 battles, ±7 on 200; ±14 and ±10 on a difference.
+The October rows are run in worktrees at those commits; the first
+reproduces the published figures exactly.)
+
+- **October's drop does not replicate**: the same two commits on a disjoint
+  window go the other way, 30% → 39%. Its 12 points beyond hold fire
+  (33%, *The reserve held back*) were inside the ±14 of a difference; the
+  conclusion there that the drop "is the brief" was noise.
+- **Today the brief moves nothing above the noise** in any of the five
+  pairs; the plain script's two windows agree (34/33, 31/30). An effect
+  under about 10 points is not ruled out. Only plan A at 3:1 was run of the
+  reference plans; the other seven and the 2:1 were not.
+- In the `scenario-sim` pairs the other columns (attacker and defender
+  down, out of time) move by a point or two; `jev-sim` prints wins only.
+- **Ruled (the author, 2026-11-19, the recommended option): closed**, on the
+  seed-1000 rows; the second window says why. The switch is kept.
 
 ## The reserve's worth, separated, 2026-11-19
 
