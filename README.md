@@ -514,7 +514,8 @@ on the stated reasoning, still awaiting the author's word.
     Two riders (⚠️): **armour cannot be assaulted** — the document models no
     infantry close assault on a vehicle, only נגד רק"מ as a weapon — and the
     **number of grenades is the player's choice** (0–3 in the UI) with no
-    ammunition tracked, since logistics is still a roadmap item.
+    ammunition tracked, since logistics is still a roadmap item. *Since
+    decision 127 a man throws no more than he still carries.*
 
 12. ✅ **A side sees what it has detected — and a force that holds still is
     hidden** (ruled by the author 2026-08-13). The document is explicit that the
@@ -861,7 +862,8 @@ on the stated reasoning, still awaiting the author's word.
     worse than not. Put to the author 2026-09-16 and **deferred to
     logistics/ammunition (backlog 12)** at his word: a stock of charges per
     force is the same mechanism as rounds per force, and inventing a separate
-    one here would be a limit to unpick later. Do not add one before then.
+    one here would be a limit to unpick later. *Settled by decision 127: the
+    scenario's charges, 2 when it says nothing, as breaching charges.*
 
     **The live log now says where, too.** This decision originally left the
     charge's position off the live log line, because every entry in that log
@@ -2238,7 +2240,9 @@ on the stated reasoning, still awaiting the author's word.
     - **Kit**: his **weapon** (each man fires his own weapon's table, so a
       squad's fire changes as its gunner falls), the **weight** he carries
       (read by decisions 69 and 71), his **ammunition**, used up as he
-      fires (this settles backlog 12 at the man), and **equipment** —
+      fires (this settles backlog 12 at the man; *built by decision 127*,
+      rounds and grenades a man, the 40 mm and rockets on the squad until
+      weapons move to the man), and **equipment** —
       binoculars, radio, night sights, medical kit, demolitions — which is
       what makes a skill possible.
     - **A comrade takes up a fallen specialist's weapon** after a turn, at
@@ -4117,6 +4121,100 @@ on the stated reasoning, still awaiting the author's word.
       measure the player can leave off must cost something, or it is a
       dominated choice.
 
+127. ✅ **Ammunition (backlog 12): per man, conserved, shared out, cached
+    and carried** (the author, 2026-11-19, two rounds of cards on doctrine,
+    every option the recommended one; "check doctrine" on caches, then the
+    recommended; three more on the tradeoffs after the review). Doctrine:
+    docs/sources.md, *Ammunition*. On by default (`GameOptions.ammunition`);
+    a recording made before it reads it as off, where nobody ran out.
+    - **What is counted — per man** (decision 73 as ruled): each man's
+      rounds and hand grenades; until weapons move to the man, a squad's
+      40 mm and rockets on the squad. Doctrine's example load (ATP 3-21.9
+      (2025) fig 6-8; TC 3-21.76 (2025) table 2-9): **210 rounds, 2 M67**
+      a man; an M240's **825** split over its team; **21 × 40 mm** a
+      launcher the squad starts with; **2 rockets** a rifle squad (ATP
+      3-21.8 (2024), note after para 1-11). A fallen man's stays with his
+      squad. A vehicle's rounds are not counted yet. ⚠️ Ours: every man of a
+      rifle squad a rifleman (the automatic rifleman's 625 is not apart);
+      the belts split by crew; a team split off a squad takes its share of
+      the 40 mm and rockets, rounded.
+    - **Spending**: a man who fires spends the sustained rate — **15** a
+      rifleman, **100** an M240 shared by its crew (TC 3-22.9 (2016) 8-18;
+      ATP 3-21.8 (2024) table C-8). ⚠️ Ours: a turn of fire read as a
+      minute of it. A man with none does not fire; a force with none is
+      refused ("אזלה התחמושת"), drawing no die. A launcher fires no more
+      than the 40 mm left; an assault throws no more grenades than each man
+      carries.
+    - **Running low — conserve below half**: below half its load (its fit
+      men's rounds) a force fires only **half its men**, those holding most —
+      to "arrive at the objective with ammunition" (ATP 3-21.8 (2024),
+      table B-2). **It spares none in an assault or on an enemy within
+      100 m** (para A-51, "spare no ammunition"). ⚠️ Ours: 100 m, which
+      half.
+    - **Resupply** (the author: "share out + caches + carrying party; when
+      we develop above company — logistics elements", which come with
+      backlog 3):
+      - **Share out**: a force pools its men's rounds and grenades, a
+        fallen man's too, on a turn it neither fires nor is fired on (ATP
+        3-21.8 (2024), para 4-118).
+      - **Caches** (ATP 3-21.8 (2024), paras 5-74, 5-103, 5-112; ATP
+        3-06.11 (2024), para 4-38; ATP 3-21.10 (2026), para 4-46):
+        **a defender's are automatic** — a squad's load at each defending
+        squad's position and at its alternate, placed as planning ends (the
+        author, after the review: a control that is never worse is no
+        control); **an attacker's** are placed in planning, **one for every
+        three squads, within 100 m of its forces, three squads' loads** — a
+        choice kept (the author: where to put it is the decision, safe and
+        far or forward and findable). A defending force that arrives later
+        as a reinforcement (decision 122) gets no cache: they stand at the
+        positions as planning ends. Their ids are drawn then, so every later
+        id in such a game moves by them.
+        An enemy force that reaches a cache with none of its owner's within
+        25 m takes it; its owner is not told until one of its own forces
+        comes to it and finds it gone.
+      - **A bearer squad** (the first sergeant's work, ATP 3-21.8 (2024),
+        para 8-34): one for every three squads may be named in planning; it
+        carries **three squads' loads**, fights as a squad, and **walks
+        while it carries any of it** (the author, after the review: its
+        price) — so it may also top its own men up from it. Not also the
+        breach squad.
+      - A force draws from a cache or a bearer within **25 m** on a turn it
+        **holds still**, neither firing nor fired on (the author), toward
+        its basic load; a cache before a bearer.
+      - ⚠️ Ours: the sizes (a squad's load is nine men's), 100 m, 25 m.
+    - **Inside a house** (closing decision 124's postponement): a man goes
+      in with the grenades he has left, and what he throws is spent. While
+      the stair foot is held, at each "CLEAR" grenades come **up the open
+      lane** (ATP 3-06.11 (2024), para C-110) to bring each man back to two:
+      from his own force's men outside the fight, then from a cache or
+      bearer of his side within 25 m of the house — a finite stock, where
+      the full load from nowhere (balance.md, *The inside stair*) beat every
+      other way in.
+    - **Mines and IEDs a stock** (closing decision 16's deferral): a force
+      that may lay them carries the scenario's (`chargesCarried`), **2** when
+      it says nothing, as breaching charges; one called off goes back, one
+      lost with the work is spent.
+    - **Built**: `src/engine/ammunition.ts`, `data/ammunition.ts`;
+      `Game.placeCache`, `removeCache`, `designateAmmoBearers`, `cachesOf`;
+      the app's "מטמון תחמושת" and "כיתת תחמושת" planning tools, a force's
+      share of its load on the roster ("תחמ' 64% (חוסך באש)", the full count
+      in its tooltip), its side's caches on its map, and the turn's refills
+      and finds in its log. The enemy's ammunition and caches are never
+      shown. The computer: its defender's caches are the engine's; its
+      attacker puts one a platoon where its squads start and names no
+      bearers (⚠️ ours). `scenario-sim --no-ammo` plays every table before
+      it; `interior-sim --lane N --own N` measures the lane.
+    - **Measured** (balance.md, *Ammunition, built and measured*): the tel
+      attacks lose 1–7 points on two windows (mean −3.8, every cell the
+      same way), through conserving — a third to three-fifths of forces go
+      below half at some turn, 2–5% of men are dry at the end; the houses
+      are unchanged, over before anyone runs low. Inside, nothing passed up
+      the lane plays the old fight exactly; nine grenades up it buy what the
+      full load did (93% / 3.46 / 42.9 against three prepared defenders) —
+      ahead of the door and the roof on one window, not on a second (the
+      roof loses fewer men, the door is quicker), so ⚠️ nothing dominated;
+      its price is the stock outside (a bearer or cache by the house).
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -4438,11 +4536,14 @@ Each is intended to be an independent, toggleable module:
 11. **Electronic warfare** — jamming, comms degradation (interacts with C2 & UAV).
 12. **Logistics** — ammunition, fuel, resupply, sustainment. For indirect fire,
     ammunition is the battalion's and above, set by the mission's parameters;
-    below that, fire is assigned as missions (decision 34). Waiting here
-    (the author, 2026-10-29): resupply inside a house, up the inside
-    stair's open lane, with a finite stock (decision 124 — a full load at
-    each "CLEAR" beat every other way in, balance.md); and decision 16's
-    unbounded mines and IEDs.
+    below that, fire is assigned as missions (decision 34). ✅ **Ammunition
+    built 2026-11-19 as rules decision 127**: per man, conserved below half,
+    shared out, caches and a bearer squad, grenades inside from the stock and
+    up the open lane, mines and IEDs a stock. **Still to come**: fuel and wider
+    sustainment; logistics elements as units when echelons go above company
+    (the author: "when we develop above company — logistics elements",
+    backlog 3); a vehicle's rounds; smoke grenades and pots counted; the
+    computer seeking resupply (its squads refill only where they stand).
 13. **OPORD mode — write the order, watch it executed.** A game mode where the
     player does not manoeuvre pieces at all: they write a **פקודת מבצע** and/or
     draw a plan on the map (axes, objectives, control measures, fire plan), and

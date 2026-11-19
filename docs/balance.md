@@ -863,11 +863,15 @@ tweak later when we get to balancing — write it down". So: written down.
 | A smoke grenade's throw | **35 m** from a man of the side (rifle-grenade smoke: the rifle grenade's 100 m from infantry with a rifle grenadier, a launcher per four men still fighting) | TC 3-23.30 (2021) app. B, the M18 standing; ✅ author, decision 97 | [`data/smoke.ts`](../src/engine/data/smoke.ts), `Game.requireThrower` |
 | Charge trigger radius | **10 m** of the path walked | ✅ author, decision 10 | [`combat/mines.ts`](../src/engine/combat/mines.ts). Keep it **below** the 20 m search band: the gap between the two is the ground where a walking force finds a charge without treading on it, which is the only thing its 30% roll buys. Raise it to 20 m and the search stops being a hedge and becomes the sole guard. |
 | Assault reach | **25 m** | ✅ author, decision 11 | [`combat/assault.ts`](../src/engine/combat/assault.ts) |
-| Grenades per assault | **0–3, no ammunition tracked** | ours, decision 11 | UI |
+| Grenades per assault | **0–3 a man asked, no more than he carries** (since decision 127) | ours, decision 11; the stock ✅ author, decision 127 | UI; `Soldier.grenades` |
 | Indirect fire | **one mission + one screen per side per turn** | ✅ author, decision 8 | UI limit over an engine that models `roundsPerTurn`. Correct *for the platoon-leader slice* — a platoon commander calls for fire, he does not own a battery. Replaced by a real battery unit at battalion and above (backlog 3), so retune this only within the current echelon. |
-| Laying a charge in play | **2 turns** of work | ✅ author, decision 16 | [`data/engineering.ts`](../src/engine/data/engineering.ts). "Tentatively 2 turns" — his word, 2026-09-16. What the turns *cost* was ours and is now his (confirmed 2026-09-16): a turn in which it moves, fires, **is hit** or is neutralised loses the work outright rather than banking it, and starting the work replaces the force's standing order. Shorten the work and a charge becomes a routine move; let the work be banked across interruptions and the cost stops being two quiet turns at all. **Unbounded**: no stock, no cooldown — a force that keeps surviving may keep laying, and for a force that was going to sit still anyway the two turns are free. Raised with the author 2026-09-16 and **deferred to ammunition (backlog 12)** at his word — the limit belongs there, not here. |
+| Laying a charge in play | **2 turns** of work | ✅ author, decision 16 | [`data/engineering.ts`](../src/engine/data/engineering.ts). "Tentatively 2 turns" — his word, 2026-09-16. What the turns *cost* was ours and is now his (confirmed 2026-09-16): a turn in which it moves, fires, **is hit** or is neutralised loses the work outright rather than banking it, and starting the work replaces the force's standing order. Shorten the work and a charge becomes a routine move; let the work be banked across interruptions and the cost stops being two quiet turns at all. Since decision 127 a stock: **2 a force, the scenario's if it says** (`chargesCarried`), as breaching charges — no longer unbounded. |
 | Breaching charges a breach squad carries (`BREACHING_CHARGES_EACH`) | **2** | ⚠️ ours, decision 125 | Doctrine gives no number (ATP 3-06.11 (2024), para 6-107: sized "to breach many doors based on the size of the objective"); a scenario sets its own (`GameOptions.breachingCharges`). A charge lost with the work is spent; one called off while the work still stands, or never set because the house fell or was breached meanwhile, goes back. |
 | Breach squads a side may name (`SQUADS_A_PLATOON`) | **one for every 3 squads** | ⚠️ ours, decision 125 | "One a platoon", with no platoons in the engine: the US rifle platoon's three squads. |
+| A man's load (`BASIC_LOAD`) | **210 rounds, 2 grenades**; an M240 team's **825** split over its crew; a squad's **21 × 40 mm a launcher** and **2 rockets** | doctrine's example load (ATP 3-21.9 (2025) fig 6-8, TC 3-21.76 (2025) table 2-9), ✅ author per man, decision 127; ⚠️ ours: every man of a rifle squad a rifleman, the belts split by crew | [`data/ammunition.ts`](../src/engine/data/ammunition.ts) |
+| Rounds a turn of fire (`ROUNDS_A_TURN`) | **15** a rifleman, **100** an M240 shared by its crew | sustained rates, TC 3-22.9 (2016) 8-18, ATP 3-21.8 (2024) table C-8; ⚠️ ours: a turn of fire as a minute of it | the one figure that decides how soon a force runs low |
+| Conserving (`CONSERVE`) | below **half** its load a force fires **half** its men, those holding most; all within **100 m** and in an assault | ✅ author, decision 127; ⚠️ ours: 100 m, which half | 33–61% of the tel's forces conserve at some turn (below) |
+| Caches and bearers (`RESUPPLY`) | defender: a squad's load at each squad's position and alternate, **automatic**; attacker: **1 a platoon, 3 loads, within 100 m**; bearers **1 a platoon, 3 loads, walk while loaded**; drawn within **25 m**, holding still, neither firing nor fired on; a squad's load is **9 men's** | ✅ author, decision 127; ⚠️ ours: the sizes, 100 m, 25 m, 9 men | doctrine gives no number (ATP 3-21.8 (2024) 5-74, ATP 3-06.11 (2024) 4-38) |
 | Who may lay one in play | **an insurgent or special force** | ✅ author, decision 16 | A `canLayCharges` flag the scenario sets, until force *types* arrive with echelon scaling (backlog 3). The demo gives it to RED-1 so the rule can be played — ⚠️ ours, and one line to delete when types land. |
 | Covering-fire sampling step | **5 m** along the bound | ours, decision 18 | [`combat/covering.ts`](../src/engine/combat/covering.ts). How finely a bound is walked looking for the first place a covering force could shoot. It is an occlusion question, not a cover one: a gap between two objects narrower than 5 m can be stepped over by the sampler, so a mover can cross a narrow slot unshot. Smaller is more faithful and costs a sight test per step. |
 | Fog-of-war fallback radius | **300 m** (`SPOT_RANGE_M`) | ours | [`app/hotseat.ts`](../src/app/hotseat.ts) — only used when `trackIntel` is off |
@@ -6554,6 +6558,75 @@ lane to resupply and reinforce"), the stair rows again:
   door and the roof on every count, so the roof became a trap. Ruled out
   for now (the author: "we will deal with ammo later"); resupply returns
   with a finite stock.
+
+## Ammunition, built and measured, 2026-11-19 (decision 127)
+
+The author's rulings (backlog 12, two rounds of cards, every option the
+recommended one but "check doctrine" on caches): per man; a dry man does not
+fire, and below half its load a force fires half its men except in an
+assault or within 100 m; shared out on a quiet turn; caches and a bearer
+squad; grenades inside from the stock and up the open lane; mines and IEDs a
+stock. After the review, on the tradeoffs: bearers walk while loaded, a
+defender's caches are automatic, and drawing needs holding still.
+
+**Before** is `HEAD` (88bb46b), run from a clean checkout; **after** is the
+same windows with ammunition on, run on a frozen copy of the tree committed
+(after the review's fixes and the author's last three rulings). `--no-ammo` on the new code reproduces
+`HEAD` digit for digit on both windows, so off is off. 200 battles a window,
+the reference drill.
+
+| Scenario | Window | Attacker wins | Defender wins | Attacker down | Defender down | Out by HE | Turns |
+|---|---|---|---|---|---|---|---|
+| telAzekaAssault | 1000 | 73% → 72% | 26% → 27% | 9% → 9% | 33% → 32% | 18% → 20% | 14 → 15 |
+| | 2000 | 77% → 71% | 23% → 26% | 9% → 9% | 33% → 32% | 16% → 17% | 14 → 15 |
+| telAzekaAssault2 | 1000 | 33% → 26% | 66% → 74% | 14% → 13% | 23% → 21% | 23% → 24% | 13 → 13 |
+| | 2000 | 30% → 29% | 69% → 69% | 14% → 13% | 22% → 21% | 23% → 24% | 12 → 13 |
+| yokneamHouse | 1000 / 2000 | 78% / 77%, unchanged | | | | | 3 |
+| yokneamHouseReserve | 1000 / 2000 | 50% / 49% → 50% / 48% | | | | | 6 |
+| yokneamIllit | 1000 / 2000 | 10% / 7% → 9% / 10% | | | | | 13 |
+
+- **The tel attacks lose 1–7 points, every cell the same way** (mean −3.8):
+  small in each window, but four of four. The battle runs a turn longer and
+  kills a little less on both sides; explosives' share rises 1–2 points as
+  small arms hold back.
+- **What does it is conserving, not running dry** (100 battles, seed 1000):
+  33% of the attacker's forces on telAzekaAssault and 42% on the 2:1 go below
+  half their load at some turn, and 56–61% of the defender's — the defender
+  fires more turns (median 7, p90 12, measured before the change). At the
+  battle's end only 2–5% of fit men are dry. A base of fire at range that
+  holds back half its men suppresses less, and the assault it covers goes in
+  against more.
+- **Grenades and the 40 mm hardly move on the tel**: the harness's squads
+  rarely assault or come inside rifle-grenade reach there; the houses are
+  over in 3–6 turns, before anyone runs low.
+- ⚠️ **The computer does not seek resupply**: its attacker puts out its
+  caches where it starts and names no bearers, so its squads refill only
+  where they stand. A player who plans resupply can do better than these
+  tables; the computer seeking it is a follow-up.
+
+**Inside, up the open lane** (`interior-sim --storied --prepared --lane N`,
+249 houses with stairs, 8 attackers against 3 prepared defenders falling
+back, grenades on; cleared / attackers out a fight / minutes):
+
+| Way in | Before (`HEAD`) | Lane 0 | Lane 9 | Lane 18 |
+|---|---|---|---|---|
+| stair | 89% / 3.83 / 43.0 | 89% / 3.83 / 43.0 | 93% / 3.46 / 42.9 | 94% / 3.45 / 43.4 |
+| door (no lane) | 87% / 3.90 / 43.3 | | | |
+| top (no lane) | 92% / 3.62 / 46.7 | | | |
+
+- **Nothing passed up, nothing changes**: a man going in with his own two is
+  the old fight, digit for digit.
+- ⚠️ **Nine grenades up the lane buy about what the full load from nowhere
+  did** (93% / 3.42 / 42.9, *The inside stair*), the grenades' share of hits
+  15% → 21–24%. On seed 1000 that put the stair ahead of the door and the
+  roof on every count; **on a second window it does not dominate** (seed
+  2000, lane 9: stair 94% / 3.57 / 43.8, door 92% / 3.77 / 42.3, roof 93% /
+  3.53 / 48.6 — the roof loses fewer men, the door is quicker). Its price is
+  having the stock outside (the squad's own men outside the fight, or a
+  cache or bearer within 25 m of the house), which the harness gives free.
+  For the author, if it comes up again: whether passing grenades up should
+  take time.
+
 
 ## The computer's breach, 2026-11-19
 

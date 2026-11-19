@@ -174,6 +174,51 @@ automatic act in any drill is taking cover under indirect fire.
   6-107, "the supplies needed to breach many doors based on the size of the
   objective".
 
+### Ammunition (2026-11-19, decision 127)
+
+Searched in full in the session notes (`ammo-doctrine.md`); what the rules
+rest on:
+
+- **No load is standard.** "Combat loads are not standardized nor are
+  quantities established since all are mission dependent" (ATP 3-21.9
+  (2025), para 6-54; ATP 3-21.71 (2024), para 6-13). A dismounted squad
+  "must plan for only the basic load" (ATP 3-21.8 (2024), para C-139).
+- **The example loads, the same in two manuals**: ATP 3-21.9 (2025), fig
+  6-8 (p. 310), and TC 3-21.76 (2025), table 2-9 (p. 48). M4 210 rounds; M249
+  625; M240 825 a gun; M320 21 × 40 mm; M67 "Two per Soldier"; AT4 "One per
+  TM". Also ATP 3-21.18 (2025), table 3-1: "210 rounds and 7 magazines". Two
+  shoulder-launched munitions a rifle squad: ATP 3-21.8 (2024), the note
+  after para 1-11. The M240 team's load by position: ATP 3-21.8 (2024),
+  table C-6.
+- **Rates**: M4 slow fire about 12–15 a minute, rapid 45 (TC 3-22.9 (2016),
+  paras 8-18, 8-19); M240 100 / 200 / 650–950 sustained / rapid / cyclic
+  (ATP 3-21.8 (2024), table C-8); sustained fire "conserves ammunition"
+  (para C-52). **No small-arms rate of supply** is in the corpus: the one
+  figure in time is a hypothetical underground platoon using twice its
+  rifle load in 12 hours (ATP 3-21.51 (2019), para 7-7, table 7-1).
+- **Running low**: status bands green ≥ 85%, amber 70–84%, red 50–69%,
+  black < 50% (ATP 3-21.8 (2024), para 2-80) — combat effectiveness, not a
+  trigger. Troops must "arrive at the objective with ammunition" (table
+  B-2); on the final protective line "spare no ammunition" (para A-51).
+  No point at which fire slows is given.
+- **Resupply**: planned and emergency (ATP 3-21.8 (2024), para 8-19);
+  pre-positioned supplies and caches (para 8-21); the first sergeant
+  "carries additional ammunition forward to the platoons" in contact (para
+  8-34); redistribution in consolidation and reorganization (paras 4-118,
+  4-153, 5-169); the squad leader "ensures the redistribution of
+  ammunition" (TC 3-21.76 (2025), para 1-14).
+- **Caches**: the platoon leader's planning "includes pre-positioning of
+  ammunition caches" (ATP 3-21.8 (2024), para 5-74); at alternate and
+  subsequent positions (para 5-103); behind the platoon positions in
+  defilade (para 5-112); "in or near fighting positions … at primary,
+  supplemental, and alternate battle positions" (ATP 3-06.11 (2024), para
+  4-38); "a pre-positioned and concealed supply point" that may be found
+  or booby-trapped (ATP 3-21.10 (2026), para 4-46). **No number or size.**
+- **Inside**: stairwell control keeps "an open lane to resupply and
+  reinforce" (ATP 3-06.11 (2024), para C-110); hand grenades are "the most
+  used explosive munitions", carry extra (para B-35). No grenades-a-building
+  figure.
+
 ## Not yet read, worth reading
 
 - DTIC was down for maintenance all of 2026-10-03:

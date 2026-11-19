@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected); and the enemy fought inside no longer marked as a target (the UX pass); and the computer breaches (four rulings, accepted). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: pick the next roadmap item. Done 2026-11-19 (late): ammunition, backlog 12, built as decision 127 — per man, conserved below half, shared out, caches (a defender's automatic) and a bearer squad that walks while loaded, grenades inside from the stock and up the open lane, mines and IEDs a stock; measured on two windows (the tel attacks −1 to −7 points, through conserving; balance.md). Follow-ups in backlog 12: the computer seeking resupply, a vehicle's rounds, smoke counted, fuel. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected); and the enemy fought inside no longer marked as a target (the UX pass); and the computer breaches (four rulings, accepted). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
 
 **Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -432,6 +432,11 @@ One rules question is **open but not asked**, because nothing needs it yet:
 
 ## Do not re-propose
 
+- **A defender's caches as a planning choice, or a bearer squad that pays
+  nothing.** Ruled 2026-11-19 (decision 127): placing a defender's cache was
+  never worse, so it is automatic; bearers walk while loaded. The
+  attacker's cache stays a choice — where is the decision.
+
 - **Tuning the reinforcement to level the mass assault's lead.** Ruled
   2026-10-28: the lead is the price of a slow attack, and the window is in
   the brief. Without the reinforcement the plans are level, so the lead is
@@ -686,6 +691,22 @@ Measurements that cost real time and are already recorded:
   change.
 
 ## What I would pick up next
+
+**Ammunition's follow-ups (decision 127, 2026-11-19):** (1) the computer
+seeking resupply — its squads refill only where they stand, so a player who
+plans resupply beats the tables; (2) a vehicle's rounds; (3) smoke pots and
+rifle-grenade smoke counted (the doctrine load is in sources.md); (4) fuel
+and wider sustainment, and logistics units with echelons above company
+(backlog 3, the author's word). Traps: `scenario-sim --no-ammo` strips the
+loads after `addUnit` journals them — a measurement switch, never replayed;
+a defender's caches are placed inside the first `beginTurn` and draw ids
+there, so every later id in such a game shifted; `ROUNDS_A_TURN` is the
+one figure that decides how soon a force runs low. Review's low notes left
+for later: a run order given to a loaded bearer is stored as a walk (the
+App issues the engine's gait), so it walks on once empty until re-ordered;
+the lane-donor test's guard would also pass on a throw before the break.
+The lane: nine grenades up it near the old full load, not dominant on two
+windows (balance.md).
 
 **First:** build decision 124, the plans inside a house (ruled
 2026-10-28, all recommended). (1) Done the same day: `entry: "stair"`,
