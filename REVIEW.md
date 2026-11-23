@@ -119,3 +119,16 @@ and this file triggers.
   days of tables were measured through a drill whose forces never fired, all internally
   consistent and all wrong (docs/handoff.md, recorded 2026-10-11 in `9696f48`). A `--swap`
   run put a bias that was not there at the top of the 2026-09-23 handoff.
+
+### An optional-chained call whose argument does something
+- **Trigger:** the diff adds or changes a call of the form `x?.f(…)` or `x?.[k](…)` whose
+  argument does work: an engine call (`advanceToPhase`, `beginTurn`, any `game.` method
+  that changes state), a draw, a log line, an assignment.
+- **Check:** when `x` is undefined JavaScript skips the call *and its arguments*. The
+  work is done in its own statement first, and only the result is passed:
+  `const r = game.advanceToPhase(p); x?.heard(r.resolved);`.
+- **Why:** twice in one change (decision 129, 2026-11-23): `asked?.heard(g.advanceToPhase(…))`
+  in the headless runner stopped every battle without an asked commander at its first
+  phase, caught by comparing `scenario-sim` before and after; and
+  `ordered.current?.heard(game.advanceToPhase("targeting"))` in `App.tsx` skipped the
+  turn's first advance in hotseat and against the computer, caught by review.
