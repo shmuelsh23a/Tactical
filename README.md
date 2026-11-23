@@ -4286,6 +4286,62 @@ on the stated reasoning, still awaiting the author's word.
       (`yokneamUrban` from seed 4002). Only battles that used to stop
       change.
 
+129. ✅ **OPORD mode in the app: the order form, and watching it carried
+    out** (the author, 2026-11-23, four ruling cards). The picker offers
+    *פקודת מבצע (מול המחשב)* (`?vs=opord`) on the two Tel Azeka attacks
+    (`OPORD_SCENARIOS`): the player writes the attacking company's order,
+    the computer holds the position, and both sides are played by the
+    engine.
+    - **Watching: a turn a click, and auto-play with a pause.** *תור הבא*
+      plays a whole turn; *הרצה אוטומטית* plays one every 3, 1.5 or 0.6
+      seconds until paused or the battle ends. The map stays the
+      attacker's picture throughout (its fog of war), and the log tells it
+      what its forces saw.
+    - **The form in the sidebar, the places on the map**: the five
+      paragraphs where the planning tools are; the observation points,
+      flanks, assault position and the fire plan's three points drawn as
+      markers, a click choosing one (an observation point goes to the
+      scout being placed). Eight templates: the reference plans. What is
+      wrong with the order is listed under it in Hebrew, and it cannot be
+      given until nothing is.
+    - **Functional now, the UX/UI pass later**, with the drawn battle
+      chart (step 3), once it is clear what the screens are.
+    - **Hebrew now** (amends decision 126's Hebrew and English): the order
+      is worded in Hebrew; its structure stays language-neutral. **An
+      English version of the whole game is a roadmap stage of its own**
+      (backlog 24).
+    - **One question loop, two drivers.** The company's typed questions
+      moved from `src/sim/scenarioBattle.ts` to `src/app/askedCompany.ts`
+      (`AskedAttacker`), with the question set and the order's commander;
+      the headless runner and the browser (`OrderedAttacker`) both play
+      it. Proven by playing 100 asked battles (five scenarios, four rule
+      variants, five seeds) before and after: every question, picture,
+      answer and result the same; and `scenario-sim` the same on three
+      scenarios. The browser's battle is not the runner's to the shot:
+      there each side fires and moves in its own activation in initiative
+      order, where the runner fires the attacker's mortars first and asks
+      its movement questions before either side moves.
+    - **The objective as briefed is shown** (the author, on review: "it's
+      the tasking"): the map marks where the brief puts the enemy — its
+      true centre spoilt by decision 51's error, the point the computer
+      attacker and the harness plan on — and the observation points,
+      flanks and assault position built from it. A human attacker in the
+      other modes still has only the brief's words; giving them the same
+      marked objective is for later, so the modes match.
+    - **The recording file carries the order** (decision 126): *שמור
+      הקלטה* in OPORD mode writes the order and what was done by the
+      intent (`opord`) beside the actions that replay the battle.
+    - ⚠️ Ours: an OPORD battle is **not kept for resuming** yet (its
+      company has no snapshot; a reload starts over); the debrief does not
+      show the order yet; paragraphs 4 and 5 are not on the form (nothing
+      reads them); the flank and assault-position markers are where the
+      battle would put them on the brief's enemy, not on the enemy found;
+      the order's company fights by `ORDERED_DRILL`, the drill the asked
+      commander is measured with (`jev-sim`: the reference drill, a scout
+      watching a turn at its post); the Hebrew names of the control
+      measures (`MEASURE_HE`) are ours, for the author to put in the
+      IDF's terms.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -4630,8 +4686,10 @@ Each is intended to be an independent, toggleable module:
     **Started 2026-11-23: rules decision 128** — the order as data, compiled
     to the typed questions; the eight reference plans written as orders play
     as their hand-built form (`jev-sim --opord`); what each control measure
-    does, and the order of work. Next: the question loop into `app/` and the
-    order form; then the measures one at a time.
+    does, and the order of work. **In the app the same day: decision 129** —
+    the order form, and the battle watched turn by turn or auto-played
+    (`?vs=opord`). Next: the measures one at a time, the drawn battle chart
+    with the UX/UI pass, resuming an OPORD battle, the order in the debrief.
 
     **Decided 2026-11-19: rules decision 126** — build order, who executes by
     echelon, first scenario, FRAGORD, control measures, recording. The list
@@ -5062,3 +5120,9 @@ Each is intended to be an independent, toggleable module:
     from house to house (through walls, across streets), clearing a house,
     and what the scripted drill does in a town (it walks to the enemy's
     centre and stops).
+24. **An English version of the whole game** (the author, 2026-11-23,
+    decision 129). Today every string a player reads is Hebrew, worded in
+    `debriefText.ts` and across the components; the order's structure is
+    already language-neutral. The stage: every player-facing string given
+    an English wording beside its Hebrew, a language setting, and the
+    layout mirrored for left-to-right.

@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: OPORD mode's step 2 — move the company question loop (`askPlan`, `askGo`, `askPlatoons`, `askScouts`, `askAttackerFire` in `src/sim/scenarioBattle.ts`) into `app/` so the browser can carry an order, then the order form with pins on Tel Azeka (decision 128). Done 2026-11-23: OPORD mode's first slice, decision 128 — the order as data (`src/app/order.ts`), compiled to the typed questions (`src/sim/orderCommander.ts`), the eight reference plans written as orders (`src/sim/referenceOrders.ts`) answering exactly as their `--rule` form over 320 battles (`npm run jev-sim -- --opord parity --n 20`), and what each 2-134 measure will do (seven rulings, README decision 128). Every measure is typed; those not carried out yet are refused by `validateOrder`, so each one that lands is a line moved into `CARRIED_OUT`. Waiting on nothing from the author for step 2. Before the form: `validateOrder`'s problems become codes the app words in Hebrew and English (they are English prose today), and a file's unknown keys and a flank `side` outside west/east are refused (both still pass silently; the review's leftovers). After it, the measures one at a time, each measured: pursuit and the LOA's security push (moves every attack table), sectors and boundaries, the FSCMs, the PLD, phase lines, pins; then the defence order. Ammunition (decision 127) follow-ups stay in backlog 12.**
+**Next, in one line: pick OPORD mode's next piece with the author — the control measures one at a time (pursuit without an LOA and the LOA's security push first: it moves every attack table), the drawn battle chart with the UX/UI pass (decision 129: the form is functional now, the pass comes with the chart), resuming an OPORD battle (`OrderedAttacker` has no snapshot; an OPORD battle neither saves nor clears the slot), the order in the debrief, or giving the other modes' human attacker the briefed objective on the map (the author ruled it the tasking). Done 2026-11-23: decision 129 — OPORD mode in the app (`?vs=opord`, the two Tel Azeka attacks): the order form in the sidebar with its places clicked on the map, eight templates, problems in Hebrew; the battle a turn a click or auto-played; intent lines in the log; the recording carries the order. The company's question loop moved to `src/app/askedCompany.ts` (`AskedAttacker`), one loop for the runner and the browser, proven by 100 asked battles identical before and after. English for the whole game is backlog 24. ⚠️ to show the author: `MEASURE_HE` (the measures' Hebrew names, ours) and `ORDERED_DRILL`.**
 
-**Current as of 2026-11-23** (`00d3b89` and the records after it, pushed). The batch below, of 2026-10-28, is kept for its figures.
+**Current as of 2026-11-23, afternoon** (`de15e38` and the records after it, pushed). The batch below, of 2026-10-28, is kept for its figures.
 Since the batch below: decisions 118–122 in the README (122, time costs the
 attacker, is the latest), and the debrief's reinforcement narration. The
 batch of 2026-10-21, night, kept here for its figures — since the late
@@ -67,10 +67,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `00d3b89` (2026-11-23)
+## Green as of `de15e38` (2026-11-23)
 
 ```
-npm run check       lint + both typechecks clean, 1,332 tests, 90 files
+npm run check       lint + both typechecks clean, 1,351 tests, 92 files
 npm run jev-sim -- --opord parity --n 20
                     the reference plans written as orders against their --rule
                     form, question by question (decision 128); all 8 the same
