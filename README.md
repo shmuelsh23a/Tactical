@@ -4391,7 +4391,8 @@ on the stated reasoning, still awaiting the author's word.
       tradeoff decision 128 asked of it (it must cost something to leave
       off) has nothing to act on in today's scenarios, and waits for one
       where the battle goes on past the objective (a counterattack, a
-      reinforcement, a deeper mission).
+      reinforcement, a deeper mission). The author, 2026-11-23: such a
+      scenario is to be designed later, with him.
     - ⚠️ Ours: the far side 50 m past the objective; squads keep their
       place across the line of attack (within half the objective's 100 m)
       and a 12 m gap, stepping along in 15 m to find one, and stay within
