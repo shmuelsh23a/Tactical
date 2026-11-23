@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick OPORD mode's next piece with the author — the control measures one at a time (pursuit without an LOA and the LOA's security push first: it moves every attack table), the drawn battle chart with the UX/UI pass (decision 129: the form is functional now, the pass comes with the chart), resuming an OPORD battle (`OrderedAttacker` has no snapshot; an OPORD battle neither saves nor clears the slot), the order in the debrief, or giving the other modes' human attacker the briefed objective on the map (the author ruled it the tasking). Done 2026-11-23: decision 129 — OPORD mode in the app (`?vs=opord`, the two Tel Azeka attacks): the order form in the sidebar with its places clicked on the map, eight templates, problems in Hebrew; the battle a turn a click or auto-played; intent lines in the log; the recording carries the order. The company's question loop moved to `src/app/askedCompany.ts` (`AskedAttacker`), one loop for the runner and the browser, proven by 100 asked battles identical before and after. English for the whole game is backlog 24. ⚠️ to show the author: `MEASURE_HE` (the measures' Hebrew names, ours) and `ORDERED_DRILL`.**
+**Next, in one line: pick OPORD mode's next piece with the author — the other control measures one at a time (sectors of fire and boundaries next: distribution and dispersion, decision 128), the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot), the order in the debrief — and raise with him that the limit of advance measures as nothing today: a battle ends when a side breaks, and the defence nearly always breaks before the objective is seized, so the LOA's tradeoff (decision 128: leaving it off must cost something) waits for a scenario that goes on past the objective. Done 2026-11-23, afternoon: decision 130 — the trained drill crosses to the far side and holds (ATP 3-21.10 para 2-181, never pursuing: para 2-3, which amended decision 128's pursuit), the untrained drill still chases; a limit of advance nobody crosses with one fresh squad pushed out to it; the order form's LOA (100–400 m past the objective). Measured (balance.md): a point at most on the standard windows but yokneamHouseReserve's second (48% → 44%); `--no-far-side` reproduces the old code exactly. Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours).**
 
-**Current as of 2026-11-23, afternoon** (`de15e38` and the records after it, pushed). The batch below, of 2026-10-28, is kept for its figures.
+**Current as of 2026-11-23, evening** (`792ea19` and the records after it, pushed). The batch below, of 2026-10-28, is kept for its figures.
 Since the batch below: decisions 118–122 in the README (122, time costs the
 attacker, is the latest), and the debrief's reinforcement narration. The
 batch of 2026-10-21, night, kept here for its figures — since the late
@@ -67,10 +67,10 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `de15e38` (2026-11-23)
+## Green as of `792ea19` (2026-11-23)
 
 ```
-npm run check       lint + both typechecks clean, 1,351 tests, 92 files
+npm run check       lint + both typechecks clean, 1,366 tests, 93 files
 npm run jev-sim -- --opord parity --n 20
                     the reference plans written as orders against their --rule
                     form, question by question (decision 128); all 8 the same

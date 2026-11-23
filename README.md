@@ -4243,7 +4243,8 @@ on the stated reasoning, still awaiting the author's word.
       objective as the scenario gives them, H-hour as a trigger, one
       checkpoint (a flank or a scout's post), the assault position, the
       support-by-fire task, the FCL at the drill's hold-short distance.
-    - **The limit of advance: both.** Without an LOA the drill pursues an
+    - **The limit of advance: both** (amended by decision 130, on
+      doctrine: the trained drill never pursues). Without an LOA the drill pursues an
       enemy that flees the objective, into its depth fires; with one, the
       company stops at it and pushes a security squad out to it (FM 3-90
       A-53), which sees the counterattack or the reinforcement coming and
@@ -4341,6 +4342,68 @@ on the stated reasoning, still awaiting the author's word.
       watching a turn at its post); the Hebrew names of the control
       measures (`MEASURE_HE`) are ours, for the author to put in the
       IDF's terms.
+
+130. ✅ **After the objective: the far side, and the limit of advance**
+    (the author, 2026-11-23, three ruling cards; amends decision 128's
+    "pursuit without an LOA" once doctrine was read). Doctrine: ATP
+    3-21.10 (2026) para 2-181 — the assaulting squads "move quickly across
+    the objective. When they reach the far side, they take up hasty
+    fighting positions and continue to fire at the withdrawing enemy";
+    para 2-3 — a rifle company pursues "only… as part of a larger element
+    of a higher HQ"; FM 3-90 (2023) para A-53 — the attacking unit "does
+    not advance any of its elements or assets beyond the LOA, but… can
+    push its security forces to that limit".
+    - **Doctrine for the trained drill**: the reference (doctrinal) drill,
+      once the objective is seized, crosses to the far side
+      (`consolidate.farSide`) and holds there in the nearest cover, facing
+      on along the line of attack, firing at what withdraws and never
+      following it; an enemy that comes into reach there is left to the
+      fire phase, not chased. **The untrained (plain) drill keeps chasing**
+      the nearest enemy it knows of, as it always has; an LOA stops it at
+      the line.
+    - **One fresh squad to the LOA**: with an LOA, once the objective is
+      seized, the assaulting squad on it with the most fit men (free: not
+      breaching, following into a house, fallen back, a held base of fire
+      or breaking contact) goes to the line on the line of attack, takes
+      the nearest cover short of it and watches outward; only if another
+      squad stays on the objective. Chosen once.
+    - **The LOA is a line nobody crosses**: every attacking force's move
+      is held short of it, no assault goes onto an enemy past it, and the
+      command group's place behind its company is held short of it too.
+    - **On the order form: a distance past the objective**, 100 to 400 m,
+      drawn across the map square to the line of attack, and kept on the
+      map through the battle. A drawn line comes with the battle chart.
+    - **The command group stays behind its company**: once the company
+      has crossed to the far side, "behind" is measured back toward the
+      start line rather than away from the objective (it walked out in
+      front of a company standing past the objective). Before then, as it
+      always was: applied from the first turn, it moved every battle from
+      its approach (the house scenarios 4–12 points, with nobody ever
+      consolidating), which a seed-by-seed probe found and this undid.
+    - **Measured** (docs/balance.md, *The far side and the limit of
+      advance*): the standard windows move a point at most, but
+      yokneamHouseReserve's second window (48% → 44%); the reference
+      plans' medians 63.5% → 64% at 3:1 and 37% → 36.5% at 2:1.
+      `--no-far-side` reproduces the old code digit for digit, so off is
+      off. A battle ends when a side breaks, and the defence nearly always
+      breaks before the objective is seized, so the far side plays only
+      where it holds on — and the LOA changes nothing measurable: the
+      tradeoff decision 128 asked of it (it must cost something to leave
+      off) has nothing to act on in today's scenarios, and waits for one
+      where the battle goes on past the objective (a counterattack, a
+      reinforcement, a deeper mission).
+    - ⚠️ Ours: the far side 50 m past the objective; squads keep their
+      place across the line of attack (within half the objective's 100 m)
+      and a 12 m gap, stepping along in 15 m to find one, and stay within
+      95 m of the objective; no room there (houses, other squads, the
+      line) and a squad consolidates where it stands, facing on. The
+      security squad's cover within 40 m of its point; a force stopped
+      5 m short of the line; the line drawn 1,500 m each way. A squad
+      pulled off the objective by a counterattack walks back to its far
+      side once the objective is seized again. A job whose place is past
+      the LOA (a breach, a scout post, a door to follow in by) is held at
+      the line and never given up. A force out of command keeps the order
+      it had and may cross the line: it never got the word.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

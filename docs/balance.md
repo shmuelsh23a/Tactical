@@ -6628,6 +6628,65 @@ back, grenades on; cleared / attackers out a fight / minutes):
   take time.
 
 
+## The far side and the limit of advance, built and measured, 2026-11-23 (decision 130)
+
+The author's rulings (three cards, after doctrine was read: ATP 3-21.10
+(2026) paras 2-181 and 2-3, FM 3-90 (2023) para A-53): the trained drill
+crosses to the far side of the objective and holds there, firing at what
+withdraws, never following; the untrained drill keeps chasing, and an LOA
+stops it; with an LOA one fresh squad goes out to it.
+
+**Before** is `HEAD` (6c1b34c), run from a clean checkout; **after** is
+the same windows on a frozen copy of the tree committed (after the
+review's five rounds). 200 battles a window, the reference drill;
+`--no-far-side` on the new code reproduces `HEAD` digit for digit on
+telAzekaAssault and telAzekaAssault2, both windows, so off is off.
+
+| Scenario | Window | Attacker wins | Defender wins | Draws | Turns |
+|---|---|---|---|---|---|
+| telAzekaAssault | 1000 | 72% → 72% | 27% → 27% | 1% → 1% | 15 → 15 |
+| | 2000 | 71% → 70% | 26% → 28% | 3% → 3% | 15 → 15 |
+| telAzekaAssault2 | 1000 | 26% → 26% | 74% → 74% | 1% → 1% | 13 → 13 |
+| | 2000 | 29% → 28% | 69% → 70% | 3% → 3% | 13 → 13 |
+| yokneamHouse | 1000 / 2000 | 78% / 77%, unchanged | | | 3 |
+| yokneamHouseReserve | 1000 | 50% → 50% | 44% → 44% | 6% → 7% | 6 → 6 |
+| | 2000 | 48% → 44% | 45% → 47% | 7% → 9% | 6 → 6 |
+| yokneamIllit | 1000 / 2000 | 9% / 10% → 8% / 11% | | | 13 |
+
+**The reference plans** (`jev-sim --rule`, 100 battles from seed 1000):
+3:1 median 63.5% → 64%, 2:1 37% → 36.5%; no plan moves more than 3
+points (D flank 50% → 53% at 3:1).
+
+- **Little moves, and that is the finding.** A battle ends when a side
+  breaks, and on these scenarios the defence nearly always breaks before
+  the company has seized the objective: the far side only plays where it
+  holds on (yokneamHouseReserve's reserve). A seed-by-seed probe there
+  found the one battle in 60 that changed parting from `HEAD` on the turn
+  the objective was seized (three squads consolidating in place before,
+  crossing now).
+- **The limit of advance changes nothing measurable today**: no LOA, 100 m
+  and 300 m give the same row on telAzekaAssault, telAzekaAssault2 and
+  yokneamHouse, and a point apart on yokneamHouseReserve (window 1000:
+  50% / 50% / 49%). The untrained drill chases no further with an LOA at
+  200 m than without one on either tel window (33% and 8%, identical
+  rows): the battle is over before anyone reaches the line. So decision
+  128's "an LOA left off must cost something" has nothing to act on yet;
+  it waits for a scenario that goes on past the objective.
+- **Found and undone on the way**: the command group's "behind" measured
+  toward the start line from the first turn moved every battle from its
+  approach (yokneamHouseReserve 48% → 36% on window 2000, with nobody
+  consolidating); applied only once the company has crossed, it no
+  longer does.
+
+Ours (⚠️): the far side 50 m past the objective (`consolidate.farSide`),
+within 95 m of it (`FAR_SIDE_MARGIN_M` 5 inside `nothingWithin`), squads
+kept 12 m apart (`FAR_SIDE_GAP_M`), stepping 15 m along to find room
+(`FAR_SIDE_STEP_M`), each in the nearest cover within `coverInPlace`'s
+25 m; the security squad's cover within 40 m (`SECURITY_COVER_M`); a
+force stopped 5 m short of the line (`LOA_SHORT_M`); the line drawn
+1,500 m each way (`LOA_HALF_WIDTH_M`); the form's 100–400 m
+(`LOA_RANGE_M`).
+
 ## The computer's breach, 2026-11-19
 
 The author's rulings (README decision 125, *The computer breaches*): the
