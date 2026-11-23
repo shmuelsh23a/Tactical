@@ -190,7 +190,16 @@ describe("the doctrinal drill's halts, consolidation and screens (drill audit, A
     g.advanceToPhase("movement");
     drillMovement(g, task, drill, state);
     expect(support.position.y).toBeGreaterThan(100);
-    expect(assault.observationSector).toBeDefined(); // consolidating, facing on
+    // Across to the far side first (decision 130: ATP 3-21.10 para 2-181), then consolidating there, facing on.
+    const far = state.farSide.get(assault.id)!;
+    expect(far.y).toBeGreaterThan(500);
+    for (let t = 0; t < 3 && !assault.observationSector; t++) {
+      g.advanceToPhase("summary");
+      g.advanceToPhase("movement");
+      drillMovement(g, task, drill, state);
+    }
+    expect(assault.observationSector).toBeDefined();
+    expect(assault.position.y).toBeGreaterThan(500);
   });
 
   it("lets the support team of a divided squad screen, being the one near enough", () => {

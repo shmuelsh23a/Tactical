@@ -112,7 +112,8 @@ export type ControlMeasure =
   | { kind: "finalCoordinationLine"; line?: Line; holdUntilLifted: boolean }
   | { kind: "supportByFirePosition"; name: string; platoon: string; at: Place }
   | { kind: "attackByFirePosition"; name: string; platoon: string; at: Place }
-  | { kind: "limitOfAdvance"; line: Line }
+  /** A drawn line, or (for now, decision 130) `beyondM` metres past the objective, square to the line of attack. */
+  | { kind: "limitOfAdvance"; line?: Line; beyondM?: number }
   // Direct fire control (FM 3-90 paras A-80–A-88).
   | { kind: "sectorOfFire"; platoon: string; fromBearing: number; toBearing: number }
   | { kind: "targetReferencePoint"; name: string; at: Place }
@@ -228,6 +229,7 @@ export type OrderProblemCode =
   | "onlyOneCheckpoint"
   | "oneAssaultPosition"
   | "oneFinalCoordinationLine"
+  | "oneLimitOfAdvance"
   // Triggers.
   | "triggerMissing"
   | "triggerEmpty"
@@ -265,7 +267,20 @@ const CARRIED_OUT: Partial<Record<MeasureKind, (m: ControlMeasure) => string | u
   finalCoordinationLine: (m) => (m.kind === "finalCoordinationLine" && !m.line ? undefined : "only at the drill's hold-short distance, not a drawn line, for now"),
   supportByFirePosition: (m) =>
     m.kind === "supportByFirePosition" && isSuggested(m.at, "smallArmsReach") ? undefined : "only where the base-of-fire drill stops, for now",
+  limitOfAdvance: (m) =>
+    m.kind === "limitOfAdvance" && !m.line && Number.isInteger(m.beyondM) && m.beyondM! >= LOA_RANGE_M.min && m.beyondM! <= LOA_RANGE_M.max
+      ? undefined
+      : `only a distance past the objective, ${LOA_RANGE_M.min} to ${LOA_RANGE_M.max} m, for now`,
 };
+
+/** The order's limit of advance, in metres past the objective; undefined with none. */
+export function limitOfAdvanceM(order: CompanyOrder): number | undefined {
+  const m = order.execution.measures.find((x) => x.kind === "limitOfAdvance");
+  return m && m.kind === "limitOfAdvance" ? m.beyondM : undefined;
+}
+
+/** How far past the objective the form offers a limit of advance (the author, decision 130). */
+export const LOA_RANGE_M = { min: 100, max: 400 } as const;
 
 function isSuggested(p: Place | Line, what: string): boolean {
   return "suggested" in p && p.suggested === what;
@@ -367,6 +382,7 @@ export function validateOrder(order: CompanyOrder, platoons?: readonly string[])
   if (measures.filter((m) => m.kind === "checkpoint").length > 1) out.push(problem("onlyOneCheckpoint", "checkpoint: only one is carried out, for now"));
   if (measures.filter((m) => m.kind === "assaultPosition").length > 1) out.push(problem("oneAssaultPosition", "assaultPosition: one a company"));
   if (measures.filter((m) => m.kind === "finalCoordinationLine").length > 1) out.push(problem("oneFinalCoordinationLine", "finalCoordinationLine: one a company"));
+  if (measures.filter((m) => m.kind === "limitOfAdvance").length > 1) out.push(problem("oneLimitOfAdvance", "limitOfAdvance: one a company"));
   out.push(...triggerProblems(ex.timeOfAttack, "timeOfAttack"));
   for (const m of measures) {
     if (m.kind !== "assaultPosition") continue;

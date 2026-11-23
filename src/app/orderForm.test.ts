@@ -56,6 +56,7 @@ describe("the order form's model (decision 128)", () => {
 describe("the order form's map marks", () => {
   const ground = {
     objective: { x: 500, y: 300 },
+    startLine: { x: 500, y: 900 },
     observationPoints: [{ x: 100, y: 100 }, { x: 900, y: 100 }],
     flanks: [{ side: "west" as const, at: { x: 300, y: 400 } }, { side: "east" as const, at: { x: 700, y: 400 } }],
     assaultPosition: { x: 500, y: 550 },
@@ -80,6 +81,20 @@ describe("the order form's map marks", () => {
     expect(c.moveUp).toBe("found");
     expect(applyMark(c, "target:centre", 1, 2).priority).toBe("none");
     expect(applyMark(c, "target:west", 1, 2).priority).toBe("west");
+  });
+
+  it("writes a limit of advance into the order, reads it back, and draws it across the line of attack (decision 130)", () => {
+    const c = { ...base, loa: 200 };
+    const order = orderOf(c, "telAzekaAssault", "BLUE");
+    expect(order.execution.measures).toContainEqual({ kind: "limitOfAdvance", beyondM: 200 });
+    expect(validateOrder(order, PLATOONS)).toEqual([]);
+    expect(choicesOf(order)?.loa).toBe(200);
+    const line = formMarks(ground, c).find((m) => m.kind === "loa")!;
+    // Start line south (y 900), objective at y 300: the line 200 m on, at y 100, square across.
+    expect(line.at.y).toBeCloseTo(100);
+    expect(line.to!.y).toBeCloseTo(100);
+    expect(Math.abs(line.to!.x - line.at.x)).toBeGreaterThan(100);
+    expect(formMarks(ground, base).some((m) => m.kind === "loa")).toBe(false);
   });
 
   it("writes a post placed on the map into the order, and leaves the battle's own choice unwritten", () => {

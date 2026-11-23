@@ -1,6 +1,7 @@
 import { ORDER_VERSION, type CompanyOrder, type ControlMeasure, type OrderTask, type Trigger } from "./order.js";
 import type { ReferenceOrder } from "./referenceOrders.js";
 import type { Side } from "../engine/index.js";
+import { limitOfAdvanceFrom } from "./drill.js";
 
 /**
  * The order form's model (OPORD mode, decision 128): the choices the form
@@ -42,6 +43,8 @@ export interface OrderChoices {
   priority: "centre" | "west" | "east" | "none";
   policy: CompanyOrder["execution"]["fires"]["policy"];
   holdFireUntilHHour: boolean;
+  /** A limit of advance this many metres past the objective (decision 130); 0 for none. */
+  loa: number;
 }
 
 export const OBJECTIVE_NAME = "OBJ";
@@ -97,6 +100,7 @@ export function orderOf(c: OrderChoices, scenario: string, side: Side, byTurn?: 
   if (c.holdShort) measures.push({ kind: "finalCoordinationLine", holdUntilLifted: true });
   if (c.moveUp !== "no")
     measures.push({ kind: "assaultPosition", at: { suggested: "lastCover" }, occupy: c.moveUp === "found" ? { when: "enemyFound" } : { when: "atOnce" } });
+  if (c.loa > 0) measures.push({ kind: "limitOfAdvance", beyondM: c.loa });
   if (c.axis !== "straight")
     measures.push({
       kind: "checkpoint",
@@ -152,6 +156,7 @@ export function choicesOf(o: CompanyOrder): OrderChoices | undefined {
     priority: ex.fires.priorityTarget,
     policy: ex.fires.policy,
     holdFireUntilHHour: ex.fires.holdUntilTimeOfAttack,
+    loa: m("limitOfAdvance")?.beyondM ?? 0,
   };
 }
 
@@ -182,6 +187,7 @@ export function defaultChoices(templates: readonly ReferenceOrder[]): OrderChoic
       priority: "centre",
       policy: "doctrine",
       holdFireUntilHHour: false,
+      loa: 0,
     }
   );
 }
@@ -211,15 +217,17 @@ export interface FormMark {
   id: string;
   at: { x: number; y: number };
   label: string;
-  kind: "op" | "flank" | "assault" | "target" | "objective";
+  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa";
   chosen: boolean;
+  /** A line's other end: the mark is drawn from `at` to here. */
+  to?: { x: number; y: number };
 }
 
 const TARGET_NAMES = { centre: "מרכז", west: "מערב", east: "מזרח" } as const;
 
 /** The places the form draws, from what the battle will offer and what is chosen. */
 export function formMarks(
-  ground: { objective: { x: number; y: number }; observationPoints: readonly { x: number; y: number }[]; flanks: readonly { side: "west" | "east"; at: { x: number; y: number } }[]; assaultPosition: { x: number; y: number } | undefined; planned: readonly { x: number; y: number }[]; platoons: readonly string[] },
+  ground: { objective: { x: number; y: number }; startLine: { x: number; y: number }; observationPoints: readonly { x: number; y: number }[]; flanks: readonly { side: "west" | "east"; at: { x: number; y: number } }[]; assaultPosition: { x: number; y: number } | undefined; planned: readonly { x: number; y: number }[]; platoons: readonly string[] },
   c: OrderChoices,
 ): FormMark[] {
   const posts = effectivePosts(c, ground.platoons.length).map((r) => postAsTaken(r, ground.observationPoints.length));
@@ -231,6 +239,18 @@ export function formMarks(
   for (const f of ground.flanks)
     marks.push({ id: `flank:${f.side}`, at: f.at, label: f.side === "west" ? "אגף מערבי" : "אגף מזרחי", kind: "flank", chosen: c.axis === f.side || (c.axis === "flank" && f === ground.flanks[0]) });
   if (ground.assaultPosition) marks.push({ id: "assault", at: ground.assaultPosition, label: "עמדת הסתערות (בערך)", kind: "assault", chosen: c.moveUp !== "no" });
+  if (c.loa > 0) {
+    const loa = limitOfAdvanceFrom(ground.startLine, ground.objective, c.loa);
+    const across = { x: -loa.beyond.y * loa.halfWidth, y: loa.beyond.x * loa.halfWidth };
+    marks.push({
+      id: "loa",
+      at: { x: loa.at.x - across.x, y: loa.at.y - across.y },
+      to: { x: loa.at.x + across.x, y: loa.at.y + across.y },
+      label: `קו גבול התקדמות — ${c.loa} מ' מעבר ליעד`,
+      kind: "loa",
+      chosen: true,
+    });
+  }
   (["centre", "west", "east"] as const).forEach((t, i) => {
     const at = ground.planned[i];
     if (at) marks.push({ id: `target:${t}`, at, label: `מטרה ${i + 1} — ${TARGET_NAMES[t]}${c.priority === t ? " (עדיפות)" : ""}`, kind: "target", chosen: c.priority === t });

@@ -88,7 +88,7 @@ import { ORDERS } from "../src/sim/opord.js";
 import { ruleDecide } from "../src/app/ruleCommander.js";
 import { orderDecider, type IntentNote } from "../src/app/orderCommander.js";
 import { REFERENCE_ORDERS } from "../src/app/referenceOrders.js";
-import type { CompanyOrder } from "../src/app/order.js";
+import { limitOfAdvanceM, type CompanyOrder } from "../src/app/order.js";
 import { platoonKey } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
@@ -106,7 +106,15 @@ const answers: string[] = file && existsSync(file) ? JSON.parse(readFileSync(fil
 const drillArg = value("--drill") ?? "reference";
 const drillBase = drillArg === "western" ? WESTERN_DRILL : drillArg === "plain" ? PLAIN_SCRIPT : drillArg === "reference" ? REFERENCE_DRILL : undefined;
 if (!drillBase) throw new Error(`--drill: "${drillArg}" is not one of reference, plain, western`);
-const drill = { ...drillBase, scouting: { watchTurns: 1 } };
+const drillWatching = { ...drillBase, scouting: { watchTurns: 1 } };
+// Consolidating where it stands, not across on the far side (before decision 130): a measurement switch.
+const drill =
+  args.includes("--no-far-side") && drillWatching.consolidate
+    ? { ...drillWatching, consolidate: { nothingWithin: drillWatching.consolidate.nothingWithin, arc: drillWatching.consolidate.arc } }
+    : drillWatching;
+// A limit of advance N metres past the objective (decision 130); an order's own, given one, is its.
+const loaArg = value("--loa") === undefined ? undefined : Number(value("--loa"));
+if (loaArg !== undefined && !(loaArg > 0)) throw new Error("--loa: metres past the objective, more than 0");
 const decide = fromAnswers(answers);
 // Where the scripted defender registers its mortars (`--defender-plan`): dead ground (the default), open ground, or nothing.
 const defenderPlan = value("--defender-plan") ?? "dead";
@@ -120,6 +128,7 @@ const attackerBreakpoint = value("--attacker-breakpoint") === undefined ? undefi
 if (attackerBreakpoint !== undefined && !(attackerBreakpoint > 0 && attackerBreakpoint < 1)) throw new Error("--attacker-breakpoint: a share in (0, 1)");
 const engine = {
   defenderFirePlan,
+  ...(loaArg !== undefined ? { limitOfAdvanceM: loaArg } : {}),
   // The mission's deadline in place of the scenario's (decision 58): a measurement switch.
   ...(value("--time-limit") ? { timeLimit: Number(value("--time-limit")) } : {}),
   // The drill's covered routes and arriving together (balance.md, forty-fifth round), on unless turned off.
@@ -175,12 +184,16 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   let framing = "rule";
   const order = ORDERS[id];
   let written: CompanyOrder | undefined;
+  let orderLoa: { limitOfAdvanceM?: number } = {};
   if (opordArg) {
     const ref = opordArg.startsWith("ref:") ? REFERENCE_ORDERS.find((r) => `ref:${r.key}` === opordArg) : undefined;
     if (opordArg.startsWith("ref:") && !ref) throw new Error(`--opord: "${opordArg}" is not one of ${REFERENCE_ORDERS.map((r) => `ref:${r.key}`).join(", ")}`);
     if (ref && !ref.scenarios.includes(id)) throw new Error(`--opord: ${opordArg} is written for ${ref.scenarios.join(" and ")}, not ${id}`);
     // A reference order plays on each scenario it is written for, under that scenario's name.
     written = ref ? { ...ref.order, scenario: id } : (JSON.parse(readFileSync(opordArg, "utf8")) as CompanyOrder);
+    // The order's limit of advance reaches the drill (decision 130): nothing the order says is dropped.
+    const m = limitOfAdvanceM(written);
+    if (m !== undefined) orderLoa = { limitOfAdvanceM: m };
     const o = written;
     // An order is for its scenario and its side: played elsewhere its platoons and places mean something else.
     if (o.scenario !== id) throw new Error(`--opord: the order was written for ${o.scenario}, not ${id}`);
@@ -267,7 +280,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     try {
       const c = commander();
       const { result, answers: given, log } = await playWithAsker(
-        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, ...engine, decide: d }),
+        (d) => runScenarioBattle(listing, s, { drill, fire: DEFAULT_FIRE_CHOICES, ...engine, ...orderLoa, decide: d }),
         timed(c.ask),
       );
       const plan = c.plan?.();

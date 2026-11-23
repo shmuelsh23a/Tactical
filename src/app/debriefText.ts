@@ -1,5 +1,5 @@
 import type { IntentNote } from "./orderCommander.js";
-import { GO_ASKED_EVERY, type MeasureKind, type OrderProblem, type OrderProblemCode } from "./order.js";
+import { GO_ASKED_EVERY, LOA_RANGE_M, type MeasureKind, type OrderProblem, type OrderProblemCode } from "./order.js";
 import {
   ASSAULT_RANGE_M,
   CHARGE_LAYING,
@@ -1279,10 +1279,14 @@ export function orderProblemHe(p: OrderProblem): string {
     noObjective: () => "אין יעד (המינימום: קו יציאה, שעת ש׳ ויעד)",
     objectiveUnplaced: () => `המשימה נותנת יעד "${p.name}", ואין אמצעי שממקם אותו`,
     notCarriedOut: () => `${kind}: עדיין לא מבוצע במשחק`,
-    formNotYet: () => `${kind}: בינתיים רק במקום שהמשחק מציע`,
+    formNotYet: () =>
+      p.kind === "limitOfAdvance"
+        ? `${kind}: בינתיים רק במרחק ${LOA_RANGE_M.min} עד ${LOA_RANGE_M.max} מ' מעבר ליעד`
+        : `${kind}: בינתיים רק במקום שהמשחק מציע`,
     onlyOneCheckpoint: () => "בינתיים מבוצעת נקודת ציון אחת בלבד",
     oneAssaultPosition: () => "עמדת הסתערות אחת לפלוגה",
     oneFinalCoordinationLine: () => "קו תיאום אחרון אחד לפלוגה",
+    oneLimitOfAdvance: () => "קו גבול התקדמות אחד לפלוגה",
     triggerMissing: () => `${where}: לא נקבע מתי`,
     triggerEmpty: () => `${where}: תנאי ריק`,
     triggerUnknown: () => `${where}: "${p.name}" אינו תנאי מוכר`,

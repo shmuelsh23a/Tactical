@@ -59,6 +59,14 @@ const defenderDrill: SquadDrill = args.includes("--no-counterattack") ? { ...dri
 // How a scout bounds and looks is the drill's; which squads scout, from where,
 // and when the rest go are the company commander's (src/app/company.ts).
 if (value("--watch")) drill.scouting = { watchTurns: Number(value("--watch")) };
+// Consolidating where it stands, not across on the far side (before decision 130): a measurement switch.
+if (args.includes("--no-far-side") && drill.consolidate) {
+  const { farSide: _far, ...rest } = drill.consolidate;
+  drill.consolidate = rest;
+}
+// A limit of advance N metres past the objective (decision 130).
+const loaM = value("--loa") === undefined ? undefined : Number(value("--loa"));
+if (loaM !== undefined && !(loaM > 0)) throw new Error("--loa: metres past the objective, more than 0");
 // To isolate the base-of-fire firing position (ATP 3-21.8 para 3-102).
 if (args.includes("--no-firing-position")) delete drill.baseOfFirePosition;
 // No breach squad and no breach (decisions 124–125, the computer's since 2026-11-19): a measurement switch.
@@ -152,7 +160,7 @@ const disengage = disengagePlan();
 const attackPlan = interiorPlan("--attack-plan");
 const defencePlan = interiorPlan("--defence-plan");
 
-console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-counterattack-inside") ? ", no counterattack inside" : ""}${args.includes("--brief-reserves") ? ", briefed on the reserves too" : ""}${args.includes("--no-breach") ? ", no breach" : ""}${args.includes("--no-ammo") ? ", no ammunition counted" : ""}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}${attackPlan ? `, attack plan ${JSON.stringify(attackPlan)}` : ""}${defencePlan ? `, defence plan ${JSON.stringify(defencePlan)}` : ""}\n`);
+console.log(`${n} battles a scenario from seed ${first}, ${drill.name}${defenderDrill.counterattack ? "" : ", no counterattack"}${args.includes("--no-counterattack-inside") ? ", no counterattack inside" : ""}${args.includes("--brief-reserves") ? ", briefed on the reserves too" : ""}${args.includes("--no-breach") ? ", no breach" : ""}${args.includes("--no-ammo") ? ", no ammunition counted" : ""}${args.includes("--no-far-side") ? ", consolidating where it stands" : ""}${loaM !== undefined ? `, limit of advance ${loaM} m past the objective` : ""}${args.includes("--no-defender-plan") ? ", no defender fire plan" : ""}, company ${JSON.stringify(company)}, fire ${JSON.stringify(fire)}${value("--quality") ? `, quality ${value("--quality")}` : ""}${args.includes("--no-fire-support") ? ", no fire support" : ""}${args.includes("--flat-suppression") ? ", flat suppression (before decision 91)" : ""}${args.includes("--shell-amounts") ? ", shell suppression as amounts (before decision 92)" : ""}${attackPlan ? `, attack plan ${JSON.stringify(attackPlan)}` : ""}${defencePlan ? `, defence plan ${JSON.stringify(defencePlan)}` : ""}\n`);
 console.log("| Scenario | Attacker wins | Defender wins (out of time) | Draws | Turns (median) | Attacker down | Defender down | Out by HE | Down while waiting (median) | Counterattacked (held at end) |");
 console.log("|---|---|---|---|---|---|---|---|---|---|");
 const urban: string[] = [];
@@ -161,7 +169,7 @@ for (const id of ids) {
   const listing = SCENARIOS.find((s) => s.id === id);
   if (!listing) throw new Error(`--scenario: "${id}" is not one of ${SCENARIOS.map((s) => s.id).join(", ")}`);
   const seeds = Array.from({ length: n }, (_, i) => first + i);
-  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--no-counterattack-inside") ? { counterattackInside: false } : {}), ...(args.includes("--no-ammo") ? { ammunition: false } : {}), ...(args.includes("--brief-reserves") ? { briefReserves: true } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}), ...(value("--time-limit") ? { timeLimit: Number(value("--time-limit")) } : {}), ...(disengage ? { disengage } : {}), ...(value("--quality-off") ? { qualityOff: value("--quality-off")!.split(",") as ("gap" | "grenades" | "breakpoint")[] } : {}), ...(attackPlan || defencePlan ? { interiorPlans: { ...(attackPlan ? { attack: attackPlan } : {}), ...(defencePlan ? { defence: defencePlan } : {}) } } : {}) });
+  const s = runScenario(listing, seeds, { drill, defenderDrill, company, fire, quality, ...(loaM !== undefined ? { limitOfAdvanceM: loaM } : {}), ...(args.includes("--no-fire-support") ? { fireSupport: false } : {}), ...(args.includes("--no-counterattack-inside") ? { counterattackInside: false } : {}), ...(args.includes("--no-ammo") ? { ammunition: false } : {}), ...(args.includes("--brief-reserves") ? { briefReserves: true } : {}), ...(args.includes("--flat-suppression") ? { suppressionByVolume: false } : {}), ...(args.includes("--shell-amounts") ? { suppressionByChance: false } : {}), ...(args.includes("--no-defender-plan") ? { defenderFirePlan: false } : {}), ...(value("--time-limit") ? { timeLimit: Number(value("--time-limit")) } : {}), ...(disengage ? { disengage } : {}), ...(value("--quality-off") ? { qualityOff: value("--quality-off")!.split(",") as ("gap" | "grenades" | "breakpoint")[] } : {}), ...(attackPlan || defencePlan ? { interiorPlans: { ...(attackPlan ? { attack: attackPlan } : {}), ...(defencePlan ? { defence: defencePlan } : {}) } } : {}) });
   const pct = (x: number) => `${Math.round((100 * x) / s.battles)}%`;
   const r = (x: number) => `${Math.round(x)}%`;
   console.log(`| ${id} | ${pct(s.attackerWins)} | ${pct(s.defenderWins)} (${pct(s.outOfTime)}) | ${pct(s.draws)} | ${s.medianTurns} | ${r(s.attackerDownPct)} | ${r(s.defenderDownPct)} | ${r(s.explosivePct)} | ${s.medianDownWhileWaiting} | ${pct(s.counterattacked)} (${pct(s.retaken)}) |`);

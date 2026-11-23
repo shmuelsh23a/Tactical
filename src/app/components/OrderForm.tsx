@@ -249,6 +249,18 @@ export function OrderForm({ ground, choices: c, onChange, placing, onPlacing, te
           <input type="checkbox" checked={c.bound} onChange={(e) => set({ bound: e.target.checked })} /> המחלקות המסתערות מדלגות בתורן
         </label>
         <label>
+          קו גבול התקדמות:{" "}
+          <select value={c.loa} onChange={(e) => set({ loa: Number(e.target.value) })}>
+            <option value={0}>ללא</option>
+            {[100, 200, 300, 400].map((m) => (
+              <option key={m} value={m}>
+                {m} מ' מעבר ליעד
+              </option>
+            ))}
+          </select>
+        </label>
+        {c.loa > 0 && <p className="hint">אף כוח לא עובר את הקו; כשהיעד נכבש, כיתה רעננה נדחפת אליו לאבטחה.</p>}
+        <label>
           <input type="checkbox" checked={c.holdShort} onChange={(e) => set({ holdShort: e.target.checked })} /> קו תיאום אחרון: ההסתערות ממתינה עד הרמת האש
         </label>
 

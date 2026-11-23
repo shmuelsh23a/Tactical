@@ -264,7 +264,20 @@ export interface SquadDrill {
    * facing the way it came — which is ours, and is the asymmetry the
    * defender's reserve has been counterattacking into (decision 60).
    */
-  consolidate?: { nothingWithin: number; arc: number };
+  consolidate?: {
+    nothingWithin: number;
+    arc: number;
+    /**
+     * Across to the far side (ATP 3-21.10 (2026) para 2-181: the squads
+     * "move quickly across the objective. When they reach the far side, they
+     * take up hasty fighting positions and continue to fire at the
+     * withdrawing enemy"): this many metres past the objective along the
+     * line of attack, in the nearest cover there (`coverInPlace`), and no
+     * further — a company does not pursue on its own (para 2-3; decision
+     * 130). Absent: it consolidates where it stands, as before 2026-11-23.
+     */
+    farSide?: number;
+  };
   /**
    * Halting and bounding into cover (drill audit, A5). Once in contact, a
    * squad that halts takes the nearest cover within `within` metres of
@@ -475,7 +488,8 @@ export const DOCTRINAL_DRILL: SquadDrill = {
   security: { arc: 120 },
   shiftToFarFlank: { clear: 100 },
   leaderForward: { behind: 50 },
-  consolidate: { nothingWithin: 100, arc: 120 },
+  // Fifty metres across (⚠️ ours, decision 130): inside `nothingWithin`, so the far side is still the objective.
+  consolidate: { nothingWithin: 100, arc: 120, farSide: 50 },
   coverInPlace: { within: 25 },
   fireInDepth: true,
   displace: { metres: 100, contactWithin: 300, alternateOnly: true, untenable: { enemyWithin: 50 } },
@@ -524,6 +538,54 @@ export interface DrillTask {
    * drill first saw it.
    */
   reserves?: ReadonlySet<string>;
+  /**
+   * An attacker's limit of advance (FM 3-90 (2023) para A-53; decision 130):
+   * no force of it goes past the line, and once the objective is seized one
+   * fresh squad is pushed out to it as security. Absent: none, as before.
+   */
+  limitOfAdvance?: LimitOfAdvance;
+}
+
+/**
+ * A limit of advance as the drill reads it: a line through `at`, square to
+ * `beyond`, the unit vector pointing past it, away from the attacker.
+ * `halfWidth` is only how much of it is drawn.
+ */
+export interface LimitOfAdvance {
+  at: Point;
+  beyond: Point;
+  halfWidth: number;
+}
+
+/** Half the drawn width of a limit of advance: it stops a force anywhere along it, so it is drawn across the map. */
+export const LOA_HALF_WIDTH_M = 1500;
+
+/** The limit of advance `metres` past `objective` on the line from `from`, square to it. */
+export function limitOfAdvanceFrom(from: Point, objective: Point, metres: number): LimitOfAdvance {
+  const d = distance(from, objective) || 1;
+  const beyond = { x: (objective.x - from.x) / d, y: (objective.y - from.y) / d };
+  return { at: { x: objective.x + beyond.x * metres, y: objective.y + beyond.y * metres }, beyond, halfWidth: LOA_HALF_WIDTH_M };
+}
+
+/** How far past the limit a point is, in metres; negative short of it. */
+export function pastLimit(loa: LimitOfAdvance, p: Point): number {
+  return (p.x - loa.at.x) * loa.beyond.x + (p.y - loa.at.y) * loa.beyond.y;
+}
+
+/** Kept this far short of the limit, so a force stopped at it stands on its own side (ours). */
+const LOA_SHORT_M = 5;
+
+/** A destination held short of the limit: moved back along the way from `from` to stop at it. */
+export function shortOfLimit(loa: LimitOfAdvance, from: Point, to: Point): Point {
+  const over = pastLimit(loa, to) + LOA_SHORT_M;
+  if (over <= 0) return to;
+  const along = pastLimit(loa, to) - pastLimit(loa, from);
+  // Going across the line: stop on the way at it. Already at it or going along it: square back onto it.
+  if (along > 0 && pastLimit(loa, from) + LOA_SHORT_M <= 0) {
+    const k = (-LOA_SHORT_M - pastLimit(loa, from)) / along;
+    return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k };
+  }
+  return { x: to.x - loa.beyond.x * over, y: to.y - loa.beyond.y * over };
 }
 
 /** Turns scouts watch from their observation point, seeing nothing, before they go on. */
@@ -713,6 +775,10 @@ export class DrillState {
   readonly breachJobs = new Map<string, BreachJob>();
   /** Houses the breach was given up on: the door it is (`breach`). */
   readonly breachGaveUp = new Set<string>();
+  /** Where each consolidating squad holds on the far side of the objective, chosen once (decision 130). */
+  readonly farSide = new Map<string, Point>();
+  /** The squad pushed out to the limit of advance as security, and where it holds; chosen once (decision 130). */
+  securityPush: { id: string; at: Point } | undefined;
 
   /**
    * Where `side`'s forces are moving under the enemy's eyes on the drill's
@@ -762,6 +828,8 @@ export class DrillState {
       ...(this.flankVia.size ? { flankVia: [...this.flankVia].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
       ...(this.breachJobs.size ? { breachJobs: [...this.breachJobs].map(([k, j]) => [k, copyJob(j)] as [string, BreachJob]) } : {}),
       ...(this.breachGaveUp.size ? { breachGaveUp: [...this.breachGaveUp] } : {}),
+      ...(this.farSide.size ? { farSide: [...this.farSide].map(([k, p]) => [k, { ...p }] as [string, Point]) } : {}),
+      ...(this.securityPush ? { securityPush: { id: this.securityPush.id, at: { ...this.securityPush.at } } } : {}),
     };
   }
 
@@ -792,6 +860,8 @@ export class DrillState {
     (snap.flankVia ?? []).forEach(([k, p]) => s.flankVia.set(k, { ...p }));
     (snap.breachJobs ?? []).forEach(([k, j]) => s.breachJobs.set(k, copyJob(j)));
     (snap.breachGaveUp ?? []).forEach((b) => s.breachGaveUp.add(b));
+    (snap.farSide ?? []).forEach(([k, p]) => s.farSide.set(k, { ...p }));
+    if (snap.securityPush) s.securityPush = { id: snap.securityPush.id, at: { ...snap.securityPush.at } };
     return s;
   }
 }
@@ -823,6 +893,9 @@ export interface DrillStateSnapshot {
   /** Each breach squad's house, and the houses given up on (`breach`). */
   breachJobs?: [string, BreachJob][];
   breachGaveUp?: string[];
+  /** The far side each consolidating squad holds, and the squad pushed out to the limit of advance (decision 130). */
+  farSide?: [string, Point][];
+  securityPush?: { id: string; at: Point };
   watched: [string, number][];
   arrivedOn: [string, number][];
   passedVia: string[];
@@ -1223,6 +1296,119 @@ function hurtingUs(game: Game, side: Side, u: Unit, known: readonly Unit[], sinc
     out.set(f.firerId, (out.get(f.firerId) ?? 0) + 1);
   }
   return out;
+}
+
+/**
+ * Where a consolidating squad holds on the far side of the objective
+ * (decision 130): `farSide` metres past it along the line of attack — from
+ * the company's start line where its orders give one, else from where the
+ * squad came — in the nearest cover within `coverInPlace` of that, and short
+ * of any limit of advance. Chosen once, so the squad does not wander.
+ */
+function farSideFor(game: Game, task: DrillTask, drill: SquadDrill, state: DrillState, company: CompanyOrders | undefined, u: Unit): Point | undefined {
+  const held = state.farSide.get(u.id);
+  if (held) return held;
+  // The line of attack: the LOA's own where there is one, so the far side and the limit agree; else from the start line.
+  let ahead = task.limitOfAdvance?.beyond;
+  if (!ahead) {
+    const from = company?.fallBackTo;
+    if (!from) return undefined; // no start line to cross from: it consolidates where it stands
+    const d = distance(from, task.objective);
+    if (d < 1) return undefined;
+    ahead = { x: (task.objective.x - from.x) / d, y: (task.objective.y - from.y) / d };
+  }
+  // Its place across the line of attack, as it came: squads that came side by side stay side by side.
+  const across = { x: -ahead.y, y: ahead.x };
+  const reach = drill.consolidate!.nothingWithin / 2;
+  const lateral = Math.max(-reach, Math.min(reach, (u.position.x - task.objective.x) * across.x + (u.position.y - task.objective.y) * across.y));
+  const metres = drill.consolidate!.farSide!;
+  // Squads that converged on one enemy keep a gap all the same: along the far side in steps until clear of the others (⚠️ ours).
+  const taken = [...state.farSide.values()];
+  const clear = (q: Point) => taken.every((t) => distance(t, q) >= FAR_SIDE_GAP_M);
+  const place = (shift: number) => ({
+    x: task.objective.x + ahead!.x * metres + across.x * (lateral + shift),
+    y: task.objective.y + ahead!.y * metres + across.y * (lateral + shift),
+  });
+  // Still the objective: inside its `nothingWithin` with a margin, or the squad would fall out of consolidation there.
+  const within = drill.consolidate!.nothingWithin - FAR_SIDE_MARGIN_M;
+  const fits = (q: Point) => clear(q) && distance(q, task.objective) <= within && !inBuilding(game, q) && (!task.limitOfAdvance || pastLimit(task.limitOfAdvance, q) <= 0);
+  const shifts = [0, 1, -1, 2, -2, 3, -3, 4, -4].map((k) => k * FAR_SIDE_STEP_M);
+  const shift = shifts.find((k) => fits(place(k)));
+  // No room on the far side (houses, other squads, the limit): it consolidates where it stands, and that is kept too.
+  let at = shift === undefined ? { ...u.position } : place(shift);
+  if (shift !== undefined) {
+    const cover = coverNear(game, at, drill.coverInPlace?.within ?? 25);
+    // Never into a house (a fight of its own, decision 96), past the LOA, off the objective, or onto another squad's spot.
+    if (cover && fits(cover)) at = cover;
+  }
+  state.farSide.set(u.id, at);
+  return at;
+}
+
+/** The gap kept between squads on the far side, and the step taken along it to find one (⚠️ ours). */
+const FAR_SIDE_GAP_M = 12;
+/** How far inside the objective's `nothingWithin` a far-side point stays (ours). */
+const FAR_SIDE_MARGIN_M = 5;
+const FAR_SIDE_STEP_M = 15;
+
+/** Whether a point is inside a building's footprint. */
+function inBuilding(game: Game, p: Point): boolean {
+  return game.terrain.objects.some((o) => o.kind === "building" && o.footprint.shape === "polygon" && pointInPolygon(p, o.footprint.points));
+}
+
+/**
+ * The squad pushed out to the limit of advance (decision 130: "one fresh
+ * squad"): of the assaulting squads on the objective, not a scout, not in a
+ * fight inside, the one with the most fit men (by id on a tie); where it
+ * goes, the nearest cover to the limit on the line of attack, short of it.
+ */
+function securityFor(
+  game: Game,
+  task: DrillTask,
+  drill: SquadDrill,
+  state: DrillState,
+  company: CompanyOrders | undefined,
+  forces: readonly Unit[],
+  scouts: ReadonlyMap<string, Point | null>,
+  loa: LimitOfAdvance,
+): { id: string; at: Point } | undefined {
+  const fit = (u: Unit) => (u.soldiers ?? []).filter((m) => !m.neutralized && m.morale?.state !== "broken").length;
+  // Only a squad free to go: not on a breach, not following into a house, not fallen back, not a held base of fire, not breaking contact.
+  const following = new Set(state.following.values());
+  const busy = (u: Unit) =>
+    !!u.breachElement || following.has(u.id) || state.fellBack.has(u.id) || state.baseOfFire.has(u.id) || state.breaking.has(u.id) || state.breachJobs.has(u.id);
+  const candidates = forces
+    .filter((u) => u.kind === "infantry" && u.echelon === "squad" && inPlay(u) && !scouts.has(u.id) && !game.interior.inFight(u.id) && !busy(u))
+    .filter((u) => {
+      const k = platoonIn(company, u.id);
+      return ((k && company?.platoonTasks?.get(k)) ?? "assault") === "assault";
+    })
+    .filter((u) => distance(u.position, task.objective) <= drill.consolidate!.nothingWithin)
+    .sort((a, b) => fit(b) - fit(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  // Another stays on the objective: a company of one squad does not empty its objective to watch past it (⚠️ ours).
+  if (candidates.length < 2) return undefined;
+  const squad = candidates[0]!;
+  // The point of the limit on the line of attack through the objective, short of it; the nearest cover there, short of it too, out of houses.
+  const k = pastLimit(loa, task.objective) + LOA_SHORT_M;
+  const onLine = { x: task.objective.x - loa.beyond.x * k, y: task.objective.y - loa.beyond.y * k };
+  const cover = coverNear(game, onLine, SECURITY_COVER_M);
+  const at = cover && !inBuilding(game, cover) && pastLimit(loa, cover) <= 0 ? cover : onLine;
+  return { id: squad.id, at };
+}
+
+/** How far from its point on the limit the security squad looks for cover (⚠️ ours). */
+const SECURITY_COVER_M = 40;
+
+/** Every move of the side's forces held short of the limit of advance (decision 130). */
+function holdShortOfLimit(game: Game, forces: readonly Unit[], loa: LimitOfAdvance): void {
+  for (const u of forces) {
+    const order = game.standingOrderFor(u.id);
+    if (!order?.destination || pastLimit(loa, order.destination) + LOA_SHORT_M <= 0) continue;
+    const to = shortOfLimit(loa, u.position, order.destination);
+    const { destination: _was, ...rest } = order;
+    // Refused (out of command, decision 6): it keeps the order it has, and may go on past the line — it never got the word.
+    game.setStandingOrder(u.id, distance(to, u.position) < 2 ? rest : { ...rest, destination: to });
+  }
 }
 
 function axisOf(u: Unit, task: DrillTask): number {
@@ -1665,6 +1851,28 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     if (drill.consolidate && task.attacking && enemies.some((e) => distance(e.position, task.objective) <= drill.consolidate!.nothingWithin)) state.objectiveFound = true;
     const seized = seizedBy(task, drill, enemies, forces, company, state.objectiveFound);
+    // Security pushed out to the limit of advance (FM 3-90 A-53; decision 130): one fresh squad, chosen once.
+    const loa = task.attacking ? task.limitOfAdvance : undefined;
+    if (seized && loa && drill.consolidate && !state.securityPush) state.securityPush = securityFor(game, task, drill, state, company, forces, scouts, loa);
+    if (state.securityPush?.id === u.id && loa) {
+      const at = state.securityPush.at;
+      if (distance(u.position, at) > 5) {
+        game.setStandingOrder(u.id, { gait: "normal", destination: { ...at } });
+        return;
+      }
+      // There: in its cover, watching on past the limit, where a counterattack or the enemy's reinforcement comes from.
+      const out = bearingDegrees(loa.at, { x: loa.at.x + loa.beyond.x, y: loa.at.y + loa.beyond.y });
+      const now = u.observationSector;
+      if (!now || Math.abs(now.bearing - out) > 1 || now.width !== drill.consolidate!.arc) {
+        try {
+          game.setObservationSector(u.id, { bearing: out, width: drill.consolidate!.arc });
+        } catch {
+          // A force that cannot be given an arc just holds the ground.
+        }
+      }
+      stay();
+      return;
+    }
     if (seized && company && job === "support") {
       // Step 14b: the base of fire moves up onto the objective, and holds it with the rest.
       if (distance(u.position, task.objective) > drill.consolidate!.nothingWithin) {
@@ -1709,10 +1917,27 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     // seized the enemy positions": nothing known near the objective as
     // well as near the squad, or a squad 100 m short of a position it has
     // not reached would stop there (drill audit, A7).
-    if (seized && (job === "assault" || job === "support") && distance(u.position, task.objective) <= drill.consolidate!.nothingWithin) {
-      const near = enemies.filter((e) => distance(u.position, e.position) <= drill.consolidate!.nothingWithin);
+    // A squad holding its far side stays in consolidation wherever that is (decision 130).
+    if (seized && (job === "assault" || job === "support") && (state.farSide.has(u.id) || distance(u.position, task.objective) <= drill.consolidate!.nothingWithin)) {
+      // Judged from where it stood before it crossed: once it holds the far side, an enemy that
+      // comes into reach there is left to the fire phase (para 2-181), not chased off the objective.
+      const holdsFar = state.farSide.has(u.id);
+      const near = holdsFar ? [] : enemies.filter((e) => distance(u.position, e.position) <= drill.consolidate!.nothingWithin);
       if (!near.length) {
-        const onward = axisOf(u, task);
+        // Across to the far side, into the nearest cover there (para 2-181), chosen once.
+        const far = drill.consolidate!.farSide ? farSideFor(game, task, drill, state, company, u) : undefined;
+        if (far && distance(u.position, far) > 5) {
+          game.setStandingOrder(u.id, { gait: "normal", destination: { ...far } });
+          return;
+        }
+        // Facing on past the objective, along the line of attack — the LOA's, else from the start line — wherever
+        // it holds: a squad that found no room on the far side and stands short of it faces on too, not back.
+        const ahead = task.limitOfAdvance
+          ? { x: task.objective.x + task.limitOfAdvance.beyond.x, y: task.objective.y + task.limitOfAdvance.beyond.y }
+          : company?.fallBackTo && distance(company.fallBackTo, task.objective) > 1
+            ? { x: 2 * task.objective.x - company.fallBackTo.x, y: 2 * task.objective.y - company.fallBackTo.y }
+            : undefined;
+        const onward = far && ahead ? bearingDegrees(task.objective, ahead) : axisOf(u, task);
         const now = u.observationSector;
         if (!now || Math.abs(now.bearing - onward) > 1 || now.width !== drill.consolidate!.arc) {
           try {
@@ -1799,6 +2024,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
       destination: (inContact && drill.coverInPlace ? coverNear(game, end, drill.coverInPlace.within) : undefined) ?? end,
     });
   });
+  // The limit of advance (FM 3-90 A-53): no element goes past it — not a chase, not a bound, not a scout (decision 130).
+  if (task.attacking && task.limitOfAdvance) holdShortOfLimit(game, forces, task.limitOfAdvance);
   const done = game.executeStandingOrders(side);
   report?.executed?.(done);
 
@@ -1813,10 +2040,13 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   // section in contact") — which buys him the assessments of steps 8, 11
   // and 12, and exposes him for it (decision 55).
   const lead = drill.leaderForward && task.attacking && enemies.length ? nearestOwnToEnemy(live, enemies) : undefined;
-  const behind =
-    lead && drill.leaderForward
-      ? toward(lead, task.objective, -drill.leaderForward.behind)
-      : toward({ x: cx, y: cy }, task.objective, -drill.commandGroupBehind);
+  const anchor = lead ?? { x: cx, y: cy };
+  const metres = lead && drill.leaderForward ? drill.leaderForward.behind : drill.commandGroupBehind;
+  // Behind is back toward the start line once the company has crossed to the far side (decision 130): measured
+  // away from the objective, it would be out in front of a company standing past it. Before then, as it always was.
+  const back = task.attacking && state.farSide.size > 0 && company?.fallBackTo ? company.fallBackTo : undefined;
+  const raw = back ? toward(anchor, back, metres) : toward(anchor, task.objective, -metres);
+  const behind = task.attacking && task.limitOfAdvance ? shortOfLimit(task.limitOfAdvance, anchor, raw) : raw;
   for (const hq of game.units.filter((u) => u.side === side && u.kind === "command" && inPlay(u))) {
     // A defending command group keeps the squads' fire discipline: without it
     // its covering fire springs the ambush at the edge of small-arms reach on
@@ -1837,8 +2067,9 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
     }
     // An observation post holds its ground: moving would end it (decision 38).
     if (hq.observationPost || distance(hq.position, behind) < 5) continue;
+    const step = toward(hq.position, behind, 25);
     try {
-      game.moveUnit(hq.id, toward(hq.position, behind, 25));
+      game.moveUnit(hq.id, task.attacking && task.limitOfAdvance ? shortOfLimit(task.limitOfAdvance, hq.position, step) : step);
     } catch {
       // Pinned, out of budget, nowhere to go: it stays where it is.
     }
@@ -1867,7 +2098,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // assault on the house's defender joins the fight (decision 99).
     const follow = follows.get(u.id);
     const inside = follow ? game.getUnit(follow.defenderId) : undefined;
-    if (follow?.goIn && inside && distance(u.position, follow.door) <= ASSAULT_RANGE_M && distance(u.position, inside.position) <= ASSAULT_RANGE_M) {
+    const insidePastLoa = !!inside && task.attacking && !!task.limitOfAdvance && pastLimit(task.limitOfAdvance, inside.position) > 0;
+    if (follow?.goIn && inside && !insidePastLoa && distance(u.position, follow.door) <= ASSAULT_RANGE_M && distance(u.position, inside.position) <= ASSAULT_RANGE_M) {
       if (u.covering) game.setCovering(u.id, false); // a posture is no reason not to go in
       const r = game.assault(u.id, inside.id, drill.assault.grenades);
       report?.assaulted?.(u, inside, drill.assault.grenades, r);
@@ -1985,7 +2217,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const breakingNow = [...(state?.breaking ?? [])].some(([id, b]) => id === u.id || b.team === u.id);
     // A house whose breach is being made is gone into by it, once it is set (`breach`).
     const awaitsBreach = task.attacking && waitsForBreach(game, state, side, u, target, !!task.company?.hold);
-    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !awaitsBreach && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
+    // Not onto an enemy past the limit of advance: it is fired on from short of it (decision 130).
+    const pastLoa = task.attacking && !!task.limitOfAdvance && pastLimit(task.limitOfAdvance, target.position) > 0;
+    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !awaitsBreach && !pastLoa && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {

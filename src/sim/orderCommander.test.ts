@@ -34,8 +34,13 @@ describe("a company order (decisions 126 and 128)", () => {
   });
 
   it("refuses a measure the engine does not carry out yet, rather than playing as if it had read it", () => {
-    const loa: ControlMeasure = { kind: "limitOfAdvance", line: { name: "LOA", points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] } };
-    expect(texts(validateOrder(withMeasures(A, [...A.execution.measures, loa])))).toContain("limitOfAdvance: not yet carried out");
+    const pl: ControlMeasure = { kind: "phaseLine", line: { name: "PL 1", points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] } };
+    expect(texts(validateOrder(withMeasures(A, [...A.execution.measures, pl])))).toContain("phaseLine: not yet carried out");
+    // The limit of advance is carried out as a distance past the objective (decision 130), not yet as a drawn line.
+    const drawn: ControlMeasure = { kind: "limitOfAdvance", line: { name: "LOA", points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] } };
+    expect(texts(validateOrder(withMeasures(A, [...A.execution.measures, drawn]))).some((p) => /^limitOfAdvance: only a distance past the objective/.test(p))).toBe(true);
+    expect(validateOrder(withMeasures(A, [...A.execution.measures, { kind: "limitOfAdvance", beyondM: 200 }]))).toEqual([]);
+    expect(validateOrder(withMeasures(A, [...A.execution.measures, { kind: "limitOfAdvance", beyondM: 50 }]))).not.toEqual([]);
     // A pinned objective is a pin the compiler cannot place yet.
     const pinned = withMeasures(A, [A.execution.measures[0]!, { kind: "objective", name: "SHOULDER", at: { at: { x: 1, y: 1 } } }]);
     expect(texts(validateOrder(pinned)).some((p) => /^objective: only the objective the tasking gives/.test(p))).toBe(true);

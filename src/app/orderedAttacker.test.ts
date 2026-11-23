@@ -6,6 +6,9 @@ import { OrderedAttacker, orderGround } from "./orderedAttacker.js";
 import { REFERENCE_ORDERS } from "./referenceOrders.js";
 import { OrderRefused } from "./orderCommander.js";
 import { replayGame, stateDigest, type Game } from "../engine/index.js";
+import type { CompanyOrder } from "./order.js";
+import { limitOfAdvanceFrom, pastLimit } from "./drill.js";
+import { briefedObjective } from "./planning.js";
 
 /**
  * OPORD mode as the browser plays it (decision 128): the player's company
@@ -13,12 +16,18 @@ import { replayGame, stateDigest, type Game } from "../engine/index.js";
  * activation in initiative order, every phase's fire handed to the order's
  * commander — the loop `App.tsx` runs when both sides are the computer's.
  */
-function play(seed: number, orderIndex = 0, maxTurns = 60): { g: Game; ordered: OrderedAttacker; turns: number } {
+function play(
+  seed: number,
+  orderIndex = 0,
+  maxTurns = 60,
+  order: CompanyOrder = REFERENCE_ORDERS[orderIndex]!.order,
+  eachTurn?: (g: Game) => void,
+): { g: Game; ordered: OrderedAttacker; turns: number } {
   const built = telAzekaAssaultListing.build(seed);
   const g = built.game;
   const defender = new ComputerDefender(g, "RED", built);
   defender.plan(g);
-  const ordered = new OrderedAttacker(g, "BLUE", REFERENCE_ORDERS[orderIndex]!.order, built, telAzekaAssaultListing.brief, built.reserves ?? []);
+  const ordered = new OrderedAttacker(g, "BLUE", order, built, telAzekaAssaultListing.brief, built.reserves ?? []);
   g.beginTurn();
   let turns = 0;
   for (; turns < maxTurns && !sideDefeated(g, "BLUE") && !sideDefeated(g, "RED"); turns++) {
@@ -30,6 +39,7 @@ function play(seed: number, orderIndex = 0, maxTurns = 60): { g: Game; ordered: 
       else side.combat(g);
     }
     ordered.heard(g.advanceToPhase("initiative").resolved);
+    eachTurn?.(g);
   }
   return { g, ordered, turns };
 }
@@ -55,6 +65,25 @@ describe("OPORD mode in the browser's loop (decision 128)", () => {
     const hasty = play(1000, 7, 30);
     const deliberate = play(1000, 2, 30);
     expect(hasty.ordered.asked.company.released).toBeLessThan(deliberate.ordered.asked.company.released ?? Infinity);
+  }, 60_000);
+
+  it("keeps every force of the company short of the order's limit of advance, turn after turn (decision 130)", () => {
+    const base = REFERENCE_ORDERS[0]!.order;
+    const order: CompanyOrder = { ...base, execution: { ...base.execution, measures: [...base.execution.measures, { kind: "limitOfAdvance", beyondM: 100 }] } };
+    // Seed 1002: one where the company gets across the objective (most battles end with the defence broken short of it).
+    const built = telAzekaAssaultListing.build(1002);
+    const g0 = built.game;
+    const own = g0.units.filter((u) => u.side === "BLUE" && u.kind !== "command");
+    const startLine = { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length };
+    const loa = limitOfAdvanceFrom(startLine, briefedObjective(g0, "BLUE", "RED", undefined, built.reserves ?? []), 100);
+    let worst = -Infinity;
+    const { ordered } = play(1002, 0, 60, order, (g) => {
+      for (const u of g.units) if (u.side === "BLUE" && !u.neutralized && !u.routing) worst = Math.max(worst, pastLimit(loa, u.position));
+    });
+    expect(ordered.asked.company.released).toBeDefined();
+    expect(worst).toBeLessThanOrEqual(0);
+    // And it came up to the line: the test is not passed by an attack that never got there.
+    expect(worst).toBeGreaterThan(-120);
   }, 60_000);
 
   it("refuses an order that does not play before touching the game", () => {

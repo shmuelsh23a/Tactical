@@ -1,6 +1,6 @@
 import { battleScore, type SideScore } from "../app/score.js";
 import { delayHeld, outOfTime, sideDefeated } from "../app/hotseat.js";
-import { DrillState, HOLDS_POST_M, designateBreachSquads, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { DrillState, HOLDS_POST_M, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
@@ -80,6 +80,12 @@ export interface ScenarioBattleOptions {
   company?: CompanyPlan;
   /** Its fire and its picture of the enemy. */
   fire: FirePlanChoices;
+  /**
+   * A limit of advance this many metres past the objective, on the line from
+   * the start line (decision 130): the attacker goes no further, and pushes a
+   * squad out to it once the objective is seized. Absent: none.
+   */
+  limitOfAdvanceM?: number;
   /** Stop here. The mission's deadline (`timeLimit`, decision 58) unless given; 60 turns with none. */
   maxTurns?: number;
   /**
@@ -365,7 +371,13 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   const company = asked?.company ?? new ScriptedCompany(g, attacker, objective, suspected, { ...(opts.company ?? {}), ...drillChoices }, ground);
 
   const tasks: Record<Side, DrillTask> = {
-    [attacker]: { side: attacker, attacking: true, objective, extent: { width: mapWidth, height: mapHeight } },
+    [attacker]: {
+      side: attacker,
+      attacking: true,
+      objective,
+      extent: { width: mapWidth, height: mapHeight },
+      ...(opts.limitOfAdvanceM !== undefined ? { limitOfAdvance: limitOfAdvanceFrom(startLine, objective, opts.limitOfAdvanceM) } : {}),
+    },
     [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []), extent: { width: mapWidth, height: mapHeight } },
   } as Record<Side, DrillTask>;
   const state = new DrillState();

@@ -1924,7 +1924,10 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
               onTargetAt={handleTargetAt}
               {...(opord && stage === "planning" && orderPlaces
                 ? { orderMarks: formMarks(orderPlaces, orderChoices), onOrderMark: (id: string) => setOrderChoices((c) => applyMark(c, id, placing, orderPlaces.platoons.length)) }
-                : {})}
+                : opord && ordered.current && orderPlaces
+                  ? // The order's lines stay on the map once it is given: the limit of advance (decision 130).
+                    { orderMarks: formMarks(orderPlaces, orderChoices).filter((m) => m.kind === "loa") }
+                  : {})}
             />
           )}
         </div>

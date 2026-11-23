@@ -2,8 +2,8 @@ import { type Game, type IndirectFireResult, type Point, type Side, type Unit } 
 import { AskedAttacker, observationPoints } from "./askedCompany.js";
 import { assaultPointFrom, flankPointsFrom, platoonKey, type CompanyGround } from "./company.js";
 import { attackerPlan, placeCaches, tubesOf } from "./computerSide.js";
-import { DrillState, REFERENCE_DRILL, designateBreachSquads, drillCombat, drillMovement, type DrillReport, type DrillTask, type SquadDrill } from "./drill.js";
-import type { CompanyOrder } from "./order.js";
+import { DrillState, REFERENCE_DRILL, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, type DrillReport, type DrillTask, type SquadDrill } from "./drill.js";
+import { limitOfAdvanceM, type CompanyOrder } from "./order.js";
 import { orderDecider, type IntentNote } from "./orderCommander.js";
 import { briefedObjective } from "./planning.js";
 
@@ -28,8 +28,10 @@ export const ORDERED_DRILL: SquadDrill = { ...REFERENCE_DRILL, scouting: { watch
 export interface OrderGround {
   /** Where the tasking puts the enemy: the brief, spoilt by an observer's error (decision 51). */
   objective: Point;
-  /** The company's centre, where it starts: the start line. */
+  /** The company's centre, where it starts. */
   home: Point;
+  /** The start line as the battle takes it: the centre of the side's forces, command groups aside (the limit of advance is drawn from it). */
+  startLine: Point;
   /** The observation points a scout may be sent to, best first (p1, p2, …). */
   observationPoints: Point[];
   /** The flanks a company coming in on the objective could go round. */
@@ -55,9 +57,11 @@ export function orderGround(g: Game, side: Side, ground: { mapWidth: number; map
   const infantry = g.units.filter((u) => u.side === side && u.kind === "infantry");
   const home = infantry.length ? centre(infantry) : objective;
   const at: CompanyGround = { terrain: g.terrain, width: ground.mapWidth, height: ground.mapHeight };
+  const forces = g.units.filter((u) => u.side === side && u.kind !== "command");
   return {
     objective,
     home,
+    startLine: forces.length ? centre(forces) : objective,
     observationPoints: observationPoints(g, side, objective, suspected, ground.mapWidth, ground.mapHeight).candidates,
     flanks: flankPointsFrom(home, objective, suspected, at),
     assaultPosition: assaultPointFrom(home, objective, suspected, at),
@@ -113,7 +117,15 @@ export class OrderedAttacker {
     for (const w of tubesOf(g, side)) for (const t of plan.planned) g.registerTarget(side, w, t);
     placeCaches(g, side);
     designateBreachSquads(g, side, drill, (u) => this.asked.company.isScout(u));
-    this.task = { side, attacking: true, objective, extent: { width: ground.mapWidth, height: ground.mapHeight } };
+    // The order's limit of advance, on the line from the start line through the objective (decision 130).
+    const loa = limitOfAdvanceM(order);
+    this.task = {
+      side,
+      attacking: true,
+      objective,
+      extent: { width: ground.mapWidth, height: ground.mapHeight },
+      ...(loa !== undefined ? { limitOfAdvance: limitOfAdvanceFrom(startLine, objective, loa) } : {}),
+    };
   }
 
   /** Every phase's resolved fire, so the company is told what its mortars did (`AskedAttacker.heard`). */

@@ -134,8 +134,10 @@ export interface OrderMark {
   id: string;
   at: Point;
   label: string;
-  kind: "op" | "flank" | "assault" | "target" | "objective";
+  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa";
   chosen: boolean;
+  /** A line's other end: drawn from `at` to here (the limit of advance). */
+  to?: Point;
 }
 
 /**
@@ -314,7 +316,11 @@ export function MapView(props: MapViewProps) {
             props.onOrderMark?.(m.id);
           }}
         >
-          <circle cx={m.at.x} cy={m.at.y} r={m.kind === "objective" ? 40 : 22} />
+          {m.to ? (
+            <line x1={m.at.x} y1={m.at.y} x2={m.to.x} y2={m.to.y} />
+          ) : (
+            <circle cx={m.at.x} cy={m.at.y} r={m.kind === "objective" ? 40 : 22} />
+          )}
           {/* The objective's name above it, clear of the fire plan's centre point drawn on it. */}
           <text x={m.kind === "objective" ? m.at.x - 40 : m.at.x + 26} y={m.kind === "objective" ? m.at.y - 50 : m.at.y + 6}>
             {m.label}
