@@ -60,6 +60,19 @@
  * `--updates` (with it implied) sends the whole picture only when much of
  * it changed, and what changed otherwise (`pictureFor`).
  *   npm run jev-sim -- --jev --framing order --seed 1000 --n 20
+ *
+ * **A company order** (`--opord`, OPORD mode, decisions 126 and 128): the
+ * order compiled to a commander (`src/sim/orderCommander.ts`) answers the
+ * questions — from a JSON file (`src/app/order.ts`'s `CompanyOrder`), or one
+ * of the reference plans written as orders by its letter (`ref:A`, `ref:A+flank`,
+ * `ref:B`, `ref:E`, `ref:D`, `ref:A+moveup`, `ref:B+moveup`, `ref:C`;
+ * `src/sim/referenceOrders.ts`). The log carries the order and every answer
+ * the order did not give, taken by the intent. `--opord parity` holds every
+ * reference order to its `--rule` form, question by question, over `--n` seeds.
+ *
+ *   npm run jev-sim -- --opord ref:B --seed 1000 --n 20
+ *   npm run jev-sim -- --opord my-order.json --seed 1000 --n 20
+ *   npm run jev-sim -- --opord parity --seed 1000 --n 20
  */
 import "./env.js";
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -72,7 +85,11 @@ import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
 import { claudeCommander, type ClaudeAskerOptions } from "../src/sim/claude.js";
 import { ORDERS } from "../src/sim/opord.js";
-import { LIFT_AT_M, PRIORITY_CALL_M, priorityCallFor } from "../src/app/computerSide.js";
+import { ruleDecide } from "../src/sim/ruleCommander.js";
+import { orderDecider, type IntentNote } from "../src/sim/orderCommander.js";
+import { REFERENCE_ORDERS } from "../src/sim/referenceOrders.js";
+import type { CompanyOrder } from "../src/app/order.js";
+import { platoonKey } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
@@ -116,12 +133,66 @@ const engine = {
   ...(attackerBreakpoint !== undefined ? { attackerBreakpoint } : {}),
 };
 
-if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude")) {
+const opordArg = value("--opord");
+if (opordArg === "parity") {
+  // Every reference order against its --rule form, question by question (decision 126).
+  const n = Number(value("--n") ?? 1);
+  let bad = 0;
+  for (const r of REFERENCE_ORDERS) {
+    let asked = 0;
+    let first: string | undefined;
+    for (let s = seed; s < seed + n; s++) {
+      const rule = ruleDecide(new Set(r.rule));
+      const order = orderDecider(r.order, platoonsOf(s));
+      runScenarioBattle(listing, s, {
+        drill, fire: DEFAULT_FIRE_CHOICES, ...engine,
+        decide: (q) => {
+          const a = rule(q);
+          const b = order(q);
+          if (a !== b && !first) first = `seed ${s}, ${q.id}: the rule ${a}, the order ${b}`;
+          asked++;
+          return a;
+        },
+      });
+    }
+    if (first) bad++;
+    console.log(`${first ? "DIFFERS" : "SAME   "} ${r.name} (--rule ${r.rule.join(",") || "-"}): ${asked} questions over ${n} battles${first ? `; first: ${first}` : ""}`);
+  }
+  console.log(bad ? `PARITY FAILED: ${bad} of ${REFERENCE_ORDERS.length} orders differ from their rule form.` : `PARITY: all ${REFERENCE_ORDERS.length} orders answer as their rule form on ${id}, seeds ${seed}-${seed + n - 1}.`);
+  process.exit(bad ? 1 : 0);
+}
+
+/** The side's platoons, as the order names them. */
+function platoonsOf(s: number): string[] {
+  const g = listing!.build(s).game;
+  const side = g.attackers[0] ?? "BLUE";
+  return [...new Set(g.units.filter((u) => u.side === side && u.kind !== "command").map((u) => platoonKey(u.id)))];
+}
+
+if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude") || opordArg) {
   // A commander for each battle: a Claude model with a plan or a memory keeps state between questions.
-  let commander: () => { ask: Asker; plan?: () => string | undefined };
+  let commander: () => { ask: Asker; plan?: () => string | undefined; notes?: () => IntentNote[] };
   let framing = "rule";
   const order = ORDERS[id];
-  if (args.includes("--claude")) {
+  let written: CompanyOrder | undefined;
+  if (opordArg) {
+    const ref = opordArg.startsWith("ref:") ? REFERENCE_ORDERS.find((r) => `ref:${r.key}` === opordArg) : undefined;
+    if (opordArg.startsWith("ref:") && !ref) throw new Error(`--opord: "${opordArg}" is not one of ${REFERENCE_ORDERS.map((r) => `ref:${r.key}`).join(", ")}`);
+    if (ref && !ref.scenarios.includes(id)) throw new Error(`--opord: ${opordArg} is written for ${ref.scenarios.join(" and ")}, not ${id}`);
+    // A reference order plays on each scenario it is written for, under that scenario's name.
+    written = ref ? { ...ref.order, scenario: id } : (JSON.parse(readFileSync(opordArg, "utf8")) as CompanyOrder);
+    const o = written;
+    // An order is for its scenario and its side: played elsewhere its platoons and places mean something else.
+    if (o.scenario !== id) throw new Error(`--opord: the order was written for ${o.scenario}, not ${id}`);
+    const attacking = listing.build(seed).game.attackers[0] ?? "BLUE";
+    if (o.side !== attacking) throw new Error(`--opord: the order is ${o.side}'s, and ${attacking} attacks in ${id}`);
+    const platoons = platoonsOf(seed);
+    commander = () => {
+      const d = orderDecider(o, platoons);
+      return { ask: async (q) => ({ answer: d(q), confidence: 1, model: "order" }), notes: () => d.notes };
+    };
+    framing = `order:${ref ? ref.key : opordArg}`;
+  } else if (args.includes("--claude")) {
     const model = value("--claude");
     if (!model || model.startsWith("--")) throw new Error("--claude: name a model, e.g. claude-haiku-4-5");
     // The cloud sessions keep ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL for
@@ -176,7 +247,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   };
   const n = Number(value("--n") ?? 1);
   const out =
-    value("--out") ?? (args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
+    value("--out") ?? (opordArg ? "jev-runs/order" : args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
   if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
   if (fireOnTheMove !== undefined) framing += `, fire on the move ×${fireOnTheMove}`;
   if (attackerBreakpoint !== undefined) framing += `, attacker breaks at ${Math.round(attackerBreakpoint * 100)}%`;
@@ -200,8 +271,10 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
         timed(c.ask),
       );
       const plan = c.plan?.();
+      // An order's battle carries the order as written and what was taken by the intent (decision 126).
+      const ordered = written ? { order: written, byIntent: c.notes?.() ?? [] } : {};
       writeFileSync(`${out}/${id}-${s}.answers.json`, JSON.stringify(given));
-      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, framing, ...(plan ? { plan } : {}), result, log }, null, 1));
+      writeFileSync(`${out}/${id}-${s}.log.json`, JSON.stringify({ scenario: id, seed: s, framing, ...(plan ? { plan } : {}), ...ordered, result, log }, null, 1));
       if (result.winner === attacker) wins++;
       calls += log.length;
       ms += log.reduce((t, e) => t + (e.ms ?? 0), 0);
@@ -260,121 +333,8 @@ try {
   process.exit(3);
 }
 
-/**
- * The scripted commander's choices as answers (`--rule`): the standard
- * measurement's company (docs/balance.md, thirty-first round) put through the
- * questions. `extra` adds "bound" (bound by platoon), "holdshort" (hold
- * short under the fires, lifted at once on reaching the line) and "holdfire"
- * (no mission before the company goes); "anyfire" fires on the first mark
- * offered, sure or not; "rush" sends the company in as soon as the enemy is
- * found, as Jev does, instead of shelling it for four turns first; "onescout"
- * sends one scout, as Jev does, not three; "blind" sends it in at the first
- * chance (turn 5), the enemy found or not, as Sonnet and Opus do; "basefire"
- * gives the first platoon a base of fire and sends the rest in; "moveup"
- * moves the company up to an assault position once the enemy is found and
- * goes from there; "flank" goes round a flank where the ground has one (else
- * by a scout's observation point), not straight; "prep" goes only once most missions are fired on the enemy in
- * sight (or by turn 30); "noscout" sends no scouts, and the company goes at once;
- * "twoscouts" sends two; "posts-p1-p2-straight" sets where each scout watches;
- * "earlyup" moves up at the first chance, the enemy found or not.
- *
- * Fire (decision 93, in the questions): by doctrine unless told — the
- * plan's centre as the priority target, called once the company has gone
- * and its nearest squad is within its tube's call distance — PRIORITY_CALL_M,
- * or priorityCallFor the guns — and beyond its lift (offered only then);
- * else a sure mark on a planned target, else a firer in sight, never one
- * within LIFT_AT_M of its squads. "oldfire" names no priority target and
- * fires on any sure mark, squads first — every table before 2026-10-12.1;
- * "opportunity" keeps the priority target and fires on any sure mark
- * otherwise (ATP 3-21.8 B-23's "targets of opportunity").
- */
+/** The scripted commander's choices as answers (`--rule`): `ruleDecide` (src/sim/ruleCommander.ts) as an asker. */
 function ruleAsker(extra: Set<string>): Asker {
-  return async (q) => {
-    const has = (id: string) => q.options.some((o) => o.id === id);
-    const pick = (): string => {
-      if (q.id === "plan.scouts") {
-        if (extra.has("noscout")) return "0";
-        if (extra.has("onescout")) return "1";
-        if (extra.has("twoscouts")) return "2";
-        // "maxscouts", every table before 2026-10-12: as many as offered.
-        const most = Math.max(...q.options.map((o) => Number(o.id)));
-        if (extra.has("maxscouts")) return most.toString();
-        // One a platoon (2026-10-12, the author): a company of two sends two,
-        // not three out of its second platoon. Its platoons are read off its
-        // own forces in the view ("  BLUE-2-1 (infantry, squad) …").
-        const platoons = new Set([...q.view.matchAll(/^\s+([A-Z]+-\d+)-[A-Z0-9]+ \(infantry/gm)].map((m) => m[1]));
-        return Math.max(1, Math.min(most, platoons.size)).toString();
-      }
-      if (q.id.startsWith("plan.post.")) {
-        const i = Number(q.id.slice("plan.post.".length));
-        // "posts-p1-p2-straight": where each scout watches, in turn.
-        const set = [...extra].find((e) => e.startsWith("posts-"))?.split("-").slice(1);
-        if (set?.[i - 1] && has(set[i - 1]!)) return set[i - 1]!;
-        return has(`p${i}`) ? `p${i}` : "p1";
-      }
-      if (q.id === "plan.wait") return "deadGround";
-      if (/^go\.\d/.test(q.id)) {
-        if (extra.has("blind")) return "yes";
-        // "moveup": once the enemy is found, move up to an assault position chosen against it.
-        if (extra.has("moveup") && has("up") && /just found|in sight \d+ turns/.test(q.ask)) return "up";
-        // "earlyup": move up at the first chance, the enemy found or not, as Haiku does.
-        if (extra.has("earlyup") && has("up")) return "up";
-        if (extra.has("prep")) {
-          // Fire first: go once most missions are fired on the enemy in sight, or by turn 30 whatever.
-          const left = Number(/Mortar missions left: (\d+)/.exec(q.view)?.[1] ?? 0);
-          return q.turn >= 30 || / all out of action/.test(q.ask) || (/in sight ([4-9]|\d\d) turns/.test(q.ask) && left <= 4) ? "yes" : "no";
-        }
-        if (extra.has("rush") && /just found|in sight \d+ turns/.test(q.ask)) return "yes";
-        return / all out of action/.test(q.ask) || /in sight ([4-9]|\d\d) turns/.test(q.ask) ? "yes" : "no";
-      }
-      // "flank": round a flank where the ground has one, else by a scout's observation point.
-      if (q.id.startsWith("go.axis"))
-        return extra.has("flank") ? (q.options.find((o) => o.id.startsWith("flank:"))?.id ?? q.options.find((o) => o.id.startsWith("via:"))?.id ?? "straight") : "straight";
-      if (q.id.startsWith("go.support")) return "no";
-      // "basefire": the first platoon asked gives a base of fire, the rest assault.
-      if (q.id.startsWith("go.platoon")) return extra.has("basefire") && q.id.startsWith("go.platoon.BLUE-1.") ? "support" : "assault";
-      if (q.id.startsWith("go.bound")) return extra.has("bound") ? "yes" : "no";
-      if (q.id.startsWith("go.lift")) return extra.has("holdshort") ? "yes" : "no";
-      if (q.id.startsWith("lift")) return "yes";
-      // The assault spent, the rest go in.
-      if (q.id.startsWith("recommit")) return "yes";
-      // The priority target (decision 93): the plan's centre; none with "oldfire".
-      // "anyfire" is undiscriminating by design: it names none either.
-      if (q.id === "plan.priority") return extra.has("oldfire") || extra.has("anyfire") ? "none" : "t1";
-      if (q.id.startsWith("fire.")) {
-        if (extra.has("holdfire") && /has not gone in/.test(q.view)) return "hold";
-        // "anyfire": the first mark offered, whatever it is.
-        if (extra.has("anyfire")) return q.options.find((o) => o.id !== "hold" && !o.id.startsWith("smoke:") && o.id !== "priority")?.id ?? "hold";
-        const sure = (o: { label: string }) => /in sight/.test(o.label) && Number(/±(\d+) m/.exec(o.label)?.[1] ?? 999) <= 40;
-        const marks = q.options.filter((o) => !o.id.startsWith("smoke:") && o.id !== "priority" && o.id !== "hold");
-        // "oldfire", every table before decision 93 in the questions: squads first, then anything, each sure to 40 m and in sight.
-        if (extra.has("oldfire")) {
-          const fit = marks.filter(sure);
-          return (fit.find((o) => /infantry/.test(o.label)) ?? fit[0])?.id ?? "hold";
-        }
-        // Doctrine (decision 93): the priority target as the assault closes,
-        // from 400 m; else a sure mark on a planned target; else a firer on
-        // the squads, in sight; nothing else.
-        const p = q.options.find((o) => o.id === "priority");
-        const near = Number(/nearest squad is (\d+) m/.exec(p?.label ?? "")?.[1] ?? Infinity);
-        // The guns land two turns after the call, so they are called further out (decision 95).
-        const callAt = /artillery/.test(p?.label ?? "") ? priorityCallFor("artillery") : PRIORITY_CALL_M;
-        if (p && !/has not gone in/.test(q.view) && near <= callAt) return "priority";
-        // "opportunity": the priority target's reserve kept, and every other
-        // mission free for targets of opportunity, as "oldfire" chooses them
-        // (ATP 3-21.8, 2024, para B-23: "planned targets and targets of opportunity").
-        if (extra.has("opportunity")) {
-          const fit = marks.filter(sure);
-          return (fit.find((o) => /infantry/.test(o.label)) ?? fit[0])?.id ?? "hold";
-        }
-        // Not on its own squads: a mark within the lift distance of them is left alone, as the scripted commander's.
-        const clear = (o: { label: string }) => Number(/nearest squad is (\d+) m from it/.exec(o.label)?.[1] ?? Infinity) > LIFT_AT_M;
-        const planned = marks.filter((o) => sure(o) && clear(o) && /on your planned target/.test(o.label));
-        if (planned.length) return (planned.find((o) => /infantry/.test(o.label)) ?? planned[0])!.id;
-        return marks.find((o) => /FIRING ON YOUR SQUADS/.test(o.label) && /in sight/.test(o.label) && clear(o))?.id ?? "hold";
-      }
-      return has("on") ? "on" : q.options[0]!.id;
-    };
-    return { answer: pick(), confidence: 1, model: "rule" };
-  };
+  const decide = ruleDecide(extra);
+  return async (q) => ({ answer: decide(q), confidence: 1, model: "rule" });
 }

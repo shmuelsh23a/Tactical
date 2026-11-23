@@ -1,0 +1,54 @@
+{
+  "version": "2026-11-23.1",
+  "scenario": "telAzekaAssault",
+  "side": "BLUE",
+  "mission": {
+    "task": "attack",
+    "objective": "SHOULDER",
+    "byTurn": 60,
+    "purpose": "so that the battalion can use the shoulder"
+  },
+  "execution": {
+    "intent": {
+      "purpose": "The shoulder is taken so that the battalion can use it.",
+      "endState": "The enemy is off the shoulder, and the company is on it by the deadline and still able to fight."
+    },
+    "recon": {
+      "squads": "onePerPlatoon",
+      "waitIn": "deadGround",
+      "baseOfFireOnGo": false
+    },
+    "timeOfAttack": {
+      "any": [
+        {
+          "when": "enemyFound"
+        },
+        {
+          "when": "scoutsLost"
+        }
+      ]
+    },
+    "tasks": {},
+    "boundByPlatoon": false,
+    "fires": {
+      "priorityTarget": "centre",
+      "policy": "doctrine",
+      "holdUntilTimeOfAttack": false
+    },
+    "measures": [
+      {
+        "kind": "lineOfDeparture",
+        "at": {
+          "suggested": "startLine"
+        }
+      },
+      {
+        "kind": "objective",
+        "name": "SHOULDER",
+        "at": {
+          "suggested": "brief"
+        }
+      }
+    ]
+  }
+}

@@ -1,4 +1,5 @@
 import { battleScore, type SideScore } from "../app/score.js";
+import { GO_ASKED_EVERY } from "../app/order.js";
 import { delayHeld, outOfTime, sideDefeated, sideView } from "../app/hotseat.js";
 import { DrillState, HOLDS_POST_M, SCOUT_GIVE_UP_TURNS, designateBreachSquads, drillCombat, drillMovement, type DrillTask, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
@@ -408,11 +409,13 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
   };
   /** Where the company stands, once there is a company: a commander knows what it has ordered. */
   let stage: () => string | undefined = () => undefined;
+  let released = () => false;
   const question = (q: Omit<Question, "turn" | "view">): string =>
     ask!({
       ...q,
       turn: g.turn,
       view: viewOf(g, attacker, { objective, mortarLeft: mortarLeft(), gunsLeft: gunsLeft(), brief: listing.brief, startLine, reports: reports(), stage: stage() }),
+      facts: { mortarLeft: mortarLeft(), released: released(), ...q.facts },
     });
   const companyPlan = ask ? askPlan(g, attacker, objective, suspected, mapWidth, mapHeight, question) : opts.company ?? {};
   // The asked commander names its priority target (decision 93's fire plan, in the questions).
@@ -436,6 +439,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     height: mapHeight,
   });
   stage = () => companyStage(g, company);
+  released = () => company.released !== undefined;
 
   const tasks: Record<Side, DrillTask> = {
     [attacker]: { side: attacker, attacking: true, objective, extent: { width: mapWidth, height: mapHeight } },
@@ -689,7 +693,8 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
   if (company.released !== undefined) return false;
   const holding = company.holdingInSight(g);
   const lost = company.liveScouts(g).length === 0;
-  if (!holding && !lost && turn % 5 !== 0) return false;
+  // Every GO_ASKED_EVERY turns while nothing is in sight: an order's H-hour by the clock is held to the same (order.ts).
+  if (!holding && !lost && turn % GO_ASKED_EVERY !== 0) return false;
   const why = lost
     ? "Your scouts are all out of action."
     : holding
@@ -703,6 +708,8 @@ function askGo(g: Game, company: ScriptedCompany, turn: number, question: (q: Om
       id: `go.${turn}`,
       kind: company.movedUp ? "noul" : "choice",
       ask: `${why} Send the company in now?`,
+      // As the words say it: scouts lost is said first, and then nothing of the enemy in sight.
+      facts: { heldInSightTurns: !lost && holding ? company.turnsHeldInSight + 1 : 0, scoutsLost: lost },
       options: [
         { id: "yes", label: "yes: the company advances to the attack" },
         ...(company.movedUp

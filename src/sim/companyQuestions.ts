@@ -24,6 +24,27 @@ export interface Question {
   options: { id: string; label: string }[];
   /** The commander's picture of the battle when it is asked. */
   view: string;
+  /**
+   * What the question's words say, as data, for a decider that reads
+   * structure rather than prose (the compiled order, decision 126). Only
+   * what `ask` and `view` already tell the commander. Jev's and Claude's
+   * prompts are built from `ask`, `options` and `view` alone, so a fact
+   * changes no model's question; `jev-sim --json` prints the whole question,
+   * facts included, to an agent standing in for Jev.
+   */
+  facts?: QuestionFacts;
+}
+
+/** Each set by the battle on every question it asks; a question adds its own. */
+export interface QuestionFacts {
+  /** Mortar missions free to fire, the priority target's held ones aside; null with no mortars ("Mortar missions left"). */
+  mortarLeft?: number | null;
+  /** The company has gone in to the attack. */
+  released?: boolean;
+  /** A go question: turns in a row the side has held the enemy near the objective in sight (0: not in sight now). */
+  heldInSightTurns?: number;
+  /** A go question: every scout is out of action. */
+  scoutsLost?: boolean;
 }
 
 /** Answers a question with one of its options' ids. */

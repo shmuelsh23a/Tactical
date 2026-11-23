@@ -38,6 +38,8 @@ npm run scenario-sim # the generated scenarios on their real ground, headless: a
 npm run jev-sim -- --seed 11 --answers a.json  # play the company commander by typed questions, one at a time (an agent standing in for Jev)
 npm run jev-sim -- --jev --seed 1000 --n 10    # Jev itself plays the company commander (needs TYPESAFE_API_KEY and api.typesafe.ai reachable)
 npm run jev-sim -- --rule --seed 1000 --n 20   # the scripted commander's choices through the same questions (no network)
+npm run jev-sim -- --opord ref:B --seed 1000 --n 20   # a company order (OPORD mode) as the commander: ref:<plan> or a JSON file (tools/orders/)
+npm run jev-sim -- --opord parity --n 20        # every reference plan written as an order, held to its --rule form question by question
 npm run jev-probe -- --runs jev-runs            # re-ask Jev's recorded questions in other framings, to tune the question set
 npm run jev-sim -- --claude claude-haiku-4-5 --seed 1000 --n 20 --parallel 4  # a Claude model in Jev's place (needs ANTHROPIC_API_KEY and api.anthropic.com)
 node tools/smart-attacker.mjs [scenario] [turns]  # a scripted attacker plays in the browser (dev server on :5199 first; SEED=n)
