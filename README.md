@@ -4215,6 +4215,77 @@ on the stated reasoning, still awaiting the author's word.
       roof loses fewer men, the door is quicker), so ⚠️ nothing dominated;
       its price is the stock outside (a bearer or cache by the house).
 
+128. ✅ **OPORD mode's first slice: the order as data, and what each
+    control measure does** (the author, 2026-11-23, seven ruling cards;
+    doctrine: ATP 3-21.10 (2026) paras 2-134, 2-170–2-171; FM 3-90 (2023)
+    App. A, paras A-16, A-44–A-61, A-80–A-95).
+    - **The order model first; the app form after.** A company order is
+      data (`src/app/order.ts`: the five paragraphs, tasks bound to places,
+      the measures, triggers, fires) compiled to answers to the typed
+      company questions (`src/sim/orderCommander.ts`) — the seam Jev, a
+      Claude model and the scripted commander already answer, so the
+      engine stays the referee. The form in the app needs the question loop
+      moved from `sim/` into `app/` first (the browser's computer attacker
+      carries the thinner `CompanyPlan`); that is the next step.
+    - **The eight reference plans, written as orders, play as their
+      hand-built form** (`src/sim/referenceOrders.ts`): the suite holds each
+      to its `--rule` choices question by question on one battle, and
+      `jev-sim --opord parity` did on 320 (both tel assaults, seeds
+      1000–1019: about 19,000 questions, none answered differently).
+    - **What the order does not speak to is answered by the intent,
+      logged.** Below company that is the scripted commander's own choice
+      (a scout under fire, a platoon hit, the assault spent, the fires to
+      lift), and each such answer is an `IntentNote` the log carries with
+      the order, for the debrief and the backbrief to come.
+    - **All of 2-134 is carried out, not a core**; each measure is typed now
+      and refused by the order check ("not yet carried out") until it
+      works, never silently dropped. Carried out today: the LD and the
+      objective as the scenario gives them, H-hour as a trigger, one
+      checkpoint (a flank or a scout's post), the assault position, the
+      support-by-fire task, the FCL at the drill's hold-short distance.
+    - **The limit of advance: both.** Without an LOA the drill pursues an
+      enemy that flees the objective, into its depth fires; with one, the
+      company stops at it and pushes a security squad out to it (FM 3-90
+      A-53), which sees the counterattack or the reinforcement coming and
+      is exposed doing so. Pursuit is a new drill behaviour and moves every
+      attack table: measured when built.
+    - **Sectors of fire and boundaries: both.** Now: a sector holds a force
+      to targets in its arc, spreading fire over more of the enemy at the
+      cost of massing on the greatest threat (A-83, against decision 115's
+      greatest-threat-first); a boundary keeps each platoon's route in its
+      lane, dispersed under the mortars but sometimes off the best cover,
+      where without one two platoons may take one covered route and be
+      shelled together. Later: fratricide and masked fire as a combat rule,
+      which boundaries and sectors then also prevent.
+    - **Every FSCM drawable** at company, the FSCL and kill box included:
+      restrictive ones (no-fire area, restrictive fire area and line)
+      refuse a call into or across them; permissive ones (coordinated fire
+      line, free-fire area, FSCL, kill box) free the order's fire to take
+      any mark beyond or inside them, not only sure planned ones.
+    - **The defence's order after the attack's parity**: the type carries
+      the engagement area and the battle position now; its compiler, onto
+      the computer defender's posts and drill, comes once the attack is
+      proven.
+    - ⚠️ Ours: an order's places are, for now, the ones the engine offers
+      (its observation points, flanks, last cover); a pin is refused until
+      the questions can take one. The assault position is occupied before
+      H-hour when both come at once (A-44: final preparations, then the
+      assault). An order carries `ORDER_VERSION` and is refused under
+      another. A trigger is read when the company is asked whether to go:
+      every turn while it holds the enemy in sight, every fifth otherwise
+      (`GO_ASKED_EVERY`), so an H-hour by the clock must fall on a fifth
+      turn or it is refused rather than slipping unannounced. "Enemy
+      found" reads the question's words: with the scouts all lost it is
+      not found, even if another squad sees it, so an order with no
+      scouts needs a turn, "at once" or "scouts lost" for its H-hour.
+      Refused too, as dominated: a priority target under a fire policy
+      that never calls one (it only holds missions back).
+    - **The first review's fix to the rule commander**: where the ground
+      offers no observation point at all, a scout goes straight; the rule
+      answered "p1" there, which was not an option, and the battle stopped
+      (`yokneamUrban` from seed 4002). Only battles that used to stop
+      change.
+
 Still modelled by reasonable assumption (flag if you want them changed):
 
 - **Small-arms band edges** (`299-100`, `400-300`) encoded as ≤100 / ≤299 / ≤400.
@@ -4555,6 +4626,12 @@ Each is intended to be an independent, toggleable module:
     *when* a force may receive orders, and this mode supplies *what* the order
     says and lets the engine interpret it — the persistent standing-orders model
     considered and set aside when C2 was implemented, at OPORD scale.
+
+    **Started 2026-11-23: rules decision 128** — the order as data, compiled
+    to the typed questions; the eight reference plans written as orders play
+    as their hand-built form (`jev-sim --opord`); what each control measure
+    does, and the order of work. Next: the question loop into `app/` and the
+    order form; then the measures one at a time.
 
     **Decided 2026-11-19: rules decision 126** — build order, who executes by
     echelon, first scenario, FRAGORD, control measures, recording. The list

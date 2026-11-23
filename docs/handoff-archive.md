@@ -12,6 +12,10 @@ and why" — is what belongs below.
 ---
 
 
+## 2026-11-19 — the header through decision 127
+
+**Next, in one line: pick the next roadmap item. Done 2026-11-19 (late): ammunition, backlog 12, built as decision 127 — per man, conserved below half, shared out, caches (a defender's automatic) and a bearer squad that walks while loaded, grenades inside from the stock and up the open lane, mines and IEDs a stock; measured on two windows (the tel attacks −1 to −7 points, through conserving; balance.md). Follow-ups in backlog 12: the computer seeking resupply, a vehicle's rounds, smoke counted, fuel. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected); and the enemy fought inside no longer marked as a target (the UX pass); and the computer breaches (four rulings, accepted). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+
 ## 2026-10-21, late — the header through decision 112
 
 As it stood at `bea63fd`..`e41c93d`, before the drill audit (decisions 113–117).

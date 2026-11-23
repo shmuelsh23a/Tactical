@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick the next roadmap item. Done 2026-11-19 (late): ammunition, backlog 12, built as decision 127 — per man, conserved below half, shared out, caches (a defender's automatic) and a bearer squad that walks while loaded, grenades inside from the stock and up the open lane, mines and IEDs a stock; measured on two windows (the tel attacks −1 to −7 points, through conserving; balance.md). Follow-ups in backlog 12: the computer seeking resupply, a vehicle's rounds, smoke counted, fuel. Done 2026-11-17: the breach driven in the app (yokneamHouse) — three fixes, README decision 124 *Driven in the app*; and holes one a wall, several a house, joiners by their own (the author's rulings), and a second hole measured (a small gain, balance.md). Done 2026-11-19: the reserve's worth separated in yokneamHouseReserve, kept as built; and Tel Azeka and the brief closed (October's drop was seed noise); and the typed fire question closed (done 2026-10-12, decision 110 corrected); and the enemy fought inside no longer marked as a target (the UX pass); and the computer breaches (four rulings, accepted). Done 2026-10-29: decisions 124 (inside stair, open lane, breach) and 125 (a designated breach squad, 2 charges). The breach's minutes are where the hole is, accepted (balance.md). Resupply inside waits for ammunition (backlog 12), the author's word.**
+**Next, in one line: OPORD mode's step 2 — move the company question loop (`askPlan`, `askGo`, `askPlatoons`, `askScouts`, `askAttackerFire` in `src/sim/scenarioBattle.ts`) into `app/` so the browser can carry an order, then the order form with pins on Tel Azeka (decision 128). Done 2026-11-23: OPORD mode's first slice, decision 128 — the order as data (`src/app/order.ts`), compiled to the typed questions (`src/sim/orderCommander.ts`), the eight reference plans written as orders (`src/sim/referenceOrders.ts`) answering exactly as their `--rule` form over 320 battles (`npm run jev-sim -- --opord parity --n 20`), and what each 2-134 measure will do (seven rulings, README decision 128). Every measure is typed; those not carried out yet are refused by `validateOrder`, so each one that lands is a line moved into `CARRIED_OUT`. Waiting on nothing from the author for step 2. Before the form: `validateOrder`'s problems become codes the app words in Hebrew and English (they are English prose today), and a file's unknown keys and a flank `side` outside west/east are refused (both still pass silently; the review's leftovers). After it, the measures one at a time, each measured: pursuit and the LOA's security push (moves every attack table), sectors and boundaries, the FSCMs, the PLD, phase lines, pins; then the defence order. Ammunition (decision 127) follow-ups stay in backlog 12.**
 
-**Current as of 2026-10-28** (`a2fba10` and the handoff after it, pushed).
+**Current as of 2026-11-23** (`00d3b89` and the records after it, pushed). The batch below, of 2026-10-28, is kept for its figures.
 Since the batch below: decisions 118–122 in the README (122, time costs the
 attacker, is the latest), and the debrief's reinforcement narration. The
 batch of 2026-10-21, night, kept here for its figures — since the late
@@ -67,10 +67,13 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `a2fba10` (2026-10-28)
+## Green as of `00d3b89` (2026-11-23)
 
 ```
-npm run check       lint + both typechecks clean, 1,231 tests, 85 files
+npm run check       lint + both typechecks clean, 1,332 tests, 90 files
+npm run jev-sim -- --opord parity --n 20
+                    the reference plans written as orders against their --rule
+                    form, question by question (decision 128); all 8 the same
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
