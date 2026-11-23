@@ -1,4 +1,4 @@
-import { ORDER_VERSION, type CompanyOrder, type ControlMeasure, type Trigger } from "../app/order.js";
+import { ORDER_VERSION, type CompanyOrder, type ControlMeasure, type Trigger } from "./order.js";
 
 /**
  * The eight reference plans (docs/balance.md, *The reference plans*) written

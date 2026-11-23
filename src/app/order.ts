@@ -194,6 +194,63 @@ export interface CompanyOrder {
   command?: string;
 }
 
+
+/**
+ * What is wrong with an order, as data (AGENTS.md: the engine says what went
+ * wrong as data, the app words it). `code` is what the app words, in Hebrew,
+ * in `debriefText.ts` (`orderProblemHe`); `text` is the English for tools and
+ * tests; `where`, `kind`, `n`, `m` and `name` are what either wording needs.
+ */
+export interface OrderProblem {
+  code: OrderProblemCode;
+  text: string;
+  /** Where in the order: "timeOfAttack", "assaultPosition.occupy", a field's path. */
+  where?: string;
+  kind?: string;
+  name?: string;
+  n?: number;
+  m?: number;
+}
+
+export type OrderProblemCode =
+  // A file that is not an order in shape.
+  | "shape"
+  | "measureUnknown"
+  | "measureNoPlace"
+  | "version"
+  // 2-134's minimum.
+  | "noLineOfDeparture"
+  | "noObjective"
+  | "objectiveUnplaced"
+  // Measures.
+  | "notCarriedOut"
+  | "formNotYet"
+  | "onlyOneCheckpoint"
+  | "oneAssaultPosition"
+  | "oneFinalCoordinationLine"
+  // Triggers.
+  | "triggerMissing"
+  | "triggerEmpty"
+  | "triggerUnknown"
+  | "onOrderNeedsFragord"
+  | "turnWhole"
+  | "turnOffCadence"
+  | "fixedWhole"
+  | "missionsWhole"
+  | "noScoutsToFind"
+  // Reconnaissance.
+  | "reconSquads"
+  | "postOnlyOffered"
+  | "postRank"
+  | "postsTooMany"
+  // Fires, tasks.
+  | "priorityNeverCalled"
+  | "noSuchPlatoon"
+  | "securityNotOffered"
+  | "supportNotTasked";
+
+const problem = (code: OrderProblemCode, text: string, more: Omit<OrderProblem, "code" | "text"> = {}): OrderProblem => ({ code, text, ...more });
+
 /**
  * The measures the engine carries out today, and in what form. Grows a
  * measure at a time (decision 128's order of work); everything else is
@@ -214,19 +271,28 @@ function isSuggested(p: Place | Line, what: string): boolean {
   return "suggested" in p && p.suggested === what;
 }
 
-function triggerProblems(t: Trigger | undefined, where: string): string[] {
-  if (!t || typeof t !== "object") return [`${where}: no trigger`];
-  if ("all" in t && !Array.isArray(t.all)) return [`${where}: "all" is a list`];
-  if ("any" in t && !Array.isArray(t.any)) return [`${where}: "any" is a list`];
-  if ("all" in t) return t.all.length ? t.all.flatMap((x) => triggerProblems(x, where)) : [`${where}: an empty "all"`];
-  if ("any" in t) return t.any.length ? t.any.flatMap((x) => triggerProblems(x, where)) : [`${where}: an empty "any"`];
-  if (!(TRIGGER_WHENS as readonly string[]).includes(t.when)) return [`${where}: "${String(t.when)}" is not one of ${TRIGGER_WHENS.join(", ")}`];
-  if (t.when === "onOrder") return [`${where}: "on order" needs a FRAGORD, not yet carried out`];
-  if (t.when === "turn" && !(Number.isInteger(t.turn) && t.turn >= 1)) return [`${where}: a turn is a whole number from 1`];
-  if (t.when === "turn" && t.turn % GO_ASKED_EVERY !== 0)
-    return [`${where}: turn ${t.turn} is not one the company is asked on while it waits unseen (every ${GO_ASKED_EVERY}th); it would go on turn ${Math.ceil(t.turn / GO_ASKED_EVERY) * GO_ASKED_EVERY}`];
-  if (t.when === "enemyFixed" && !(Number.isInteger(t.turns) && t.turns >= 1)) return [`${where}: held in sight for a whole number of turns from 1`];
-  if (t.when === "missionsLeft" && !(Number.isInteger(t.atMost) && t.atMost >= 0)) return [`${where}: missions left is a whole number from 0`];
+function triggerProblems(t: Trigger | undefined, where: string): OrderProblem[] {
+  if (!t || typeof t !== "object") return [problem("triggerMissing", `${where}: no trigger`, { where })];
+  if ("all" in t && !Array.isArray(t.all)) return [problem("shape", `${where}: "all" is a list`, { where })];
+  if ("any" in t && !Array.isArray(t.any)) return [problem("shape", `${where}: "any" is a list`, { where })];
+  if ("all" in t) return t.all.length ? t.all.flatMap((x) => triggerProblems(x, where)) : [problem("triggerEmpty", `${where}: an empty "all"`, { where })];
+  if ("any" in t) return t.any.length ? t.any.flatMap((x) => triggerProblems(x, where)) : [problem("triggerEmpty", `${where}: an empty "any"`, { where })];
+  if (!(TRIGGER_WHENS as readonly string[]).includes(t.when))
+    return [problem("triggerUnknown", `${where}: "${String(t.when)}" is not one of ${TRIGGER_WHENS.join(", ")}`, { where, name: String(t.when) })];
+  if (t.when === "onOrder") return [problem("onOrderNeedsFragord", `${where}: "on order" needs a FRAGORD, not yet carried out`, { where })];
+  if (t.when === "turn" && !(Number.isInteger(t.turn) && t.turn >= 1)) return [problem("turnWhole", `${where}: a turn is a whole number from 1`, { where })];
+  if (t.when === "turn" && t.turn % GO_ASKED_EVERY !== 0) {
+    const slips = Math.ceil(t.turn / GO_ASKED_EVERY) * GO_ASKED_EVERY;
+    return [
+      problem("turnOffCadence", `${where}: turn ${t.turn} is not one the company is asked on while it waits unseen (every ${GO_ASKED_EVERY}th); it would go on turn ${slips}`, {
+        where,
+        n: t.turn,
+        m: slips,
+      }),
+    ];
+  }
+  if (t.when === "enemyFixed" && !(Number.isInteger(t.turns) && t.turns >= 1)) return [problem("fixedWhole", `${where}: held in sight for a whole number of turns from 1`, { where })];
+  if (t.when === "missionsLeft" && !(Number.isInteger(t.atMost) && t.atMost >= 0)) return [problem("missionsWhole", `${where}: missions left is a whole number from 0`, { where })];
   return [];
 }
 
@@ -238,94 +304,109 @@ function needsNoScouts(t: Trigger): boolean {
 }
 
 /** The shape a file must have: the type's promises checked at run time, for an order read from JSON. */
-function shapeProblems(order: CompanyOrder): string[] {
-  const out: string[] = [];
+function shapeProblems(order: CompanyOrder): OrderProblem[] {
+  const out: OrderProblem[] = [];
+  const shape = (where: string, text: string) => out.push(problem("shape", `${where}: ${text}`, { where }));
   const ex = order?.execution;
-  if (!ex || typeof ex !== "object") return ["no execution paragraph"];
-  if (!order.mission || order.mission.task !== "attack") out.push('mission.task: "attack" is the only task, for now');
-  if (!ex.recon || typeof ex.recon !== "object") out.push("execution.recon: missing");
+  if (!ex || typeof ex !== "object") return [problem("shape", "no execution paragraph", { where: "execution" })];
+  if (!order.mission || order.mission.task !== "attack") shape("mission.task", '"attack" is the only task, for now');
+  if (!ex.recon || typeof ex.recon !== "object") shape("execution.recon", "missing");
   else {
     const posts: unknown = ex.recon.posts;
-    if (posts !== undefined && (!Array.isArray(posts) || posts.some((p) => !p || typeof p !== "object"))) out.push("recon.posts: a list of places");
-    if (typeof ex.recon.baseOfFireOnGo !== "boolean") out.push("recon.baseOfFireOnGo: true or false");
-    if (ex.recon.waitIn !== "place" && ex.recon.waitIn !== "deadGround") out.push('recon.waitIn: "place" or "deadGround"');
+    if (posts !== undefined && (!Array.isArray(posts) || posts.some((p) => !p || typeof p !== "object"))) shape("recon.posts", "a list of places");
+    if (typeof ex.recon.baseOfFireOnGo !== "boolean") shape("recon.baseOfFireOnGo", "true or false");
+    if (ex.recon.waitIn !== "place" && ex.recon.waitIn !== "deadGround") shape("recon.waitIn", '"place" or "deadGround"');
   }
-  if (typeof ex.boundByPlatoon !== "boolean") out.push("boundByPlatoon: true or false");
-  if (!ex.fires || typeof ex.fires !== "object") out.push("execution.fires: missing");
+  if (typeof ex.boundByPlatoon !== "boolean") shape("boundByPlatoon", "true or false");
+  if (!ex.fires || typeof ex.fires !== "object") shape("execution.fires", "missing");
   else {
-    if (!FIRE_POLICIES.includes(ex.fires.policy)) out.push(`fires.policy: one of ${FIRE_POLICIES.join(", ")}`);
-    if (!(PRIORITY_TARGETS as readonly string[]).includes(ex.fires.priorityTarget)) out.push(`fires.priorityTarget: one of ${PRIORITY_TARGETS.join(", ")}`);
-    if (typeof ex.fires.holdUntilTimeOfAttack !== "boolean") out.push("fires.holdUntilTimeOfAttack: true or false");
+    if (!FIRE_POLICIES.includes(ex.fires.policy)) shape("fires.policy", `one of ${FIRE_POLICIES.join(", ")}`);
+    if (!(PRIORITY_TARGETS as readonly string[]).includes(ex.fires.priorityTarget)) shape("fires.priorityTarget", `one of ${PRIORITY_TARGETS.join(", ")}`);
+    if (typeof ex.fires.holdUntilTimeOfAttack !== "boolean") shape("fires.holdUntilTimeOfAttack", "true or false");
   }
-  if (!ex.tasks || typeof ex.tasks !== "object") out.push("execution.tasks: missing");
-  else for (const [k, t] of Object.entries(ex.tasks)) if (!TASKS.includes(t)) out.push(`tasks.${k}: one of ${TASKS.join(", ")}`);
-  if (!Array.isArray(ex.measures)) out.push("execution.measures: a list");
+  if (!ex.tasks || typeof ex.tasks !== "object") shape("execution.tasks", "missing");
+  else for (const [k, t] of Object.entries(ex.tasks)) if (!TASKS.includes(t)) shape(`tasks.${k}`, `one of ${TASKS.join(", ")}`);
+  if (!Array.isArray(ex.measures)) shape("execution.measures", "a list");
   else
     for (const m of ex.measures) {
-      if (!m || typeof m.kind !== "string" || !Object.hasOwn(MEASURE_KINDS, m.kind)) out.push(`measure "${String(m?.kind)}": not a control measure`);
-      else if (PLACED.includes(m.kind) && (!(m as { at?: unknown }).at || typeof (m as { at?: unknown }).at !== "object")) out.push(`${m.kind}: no place ("at")`);
-      else if (m.kind === "finalCoordinationLine" && typeof m.holdUntilLifted !== "boolean") out.push("finalCoordinationLine.holdUntilLifted: true or false");
+      if (!m || typeof m.kind !== "string" || !Object.hasOwn(MEASURE_KINDS, m.kind))
+        out.push(problem("measureUnknown", `measure "${String(m?.kind)}": not a control measure`, { name: String(m?.kind) }));
+      else if (PLACED.includes(m.kind) && (!(m as { at?: unknown }).at || typeof (m as { at?: unknown }).at !== "object"))
+        out.push(problem("measureNoPlace", `${m.kind}: no place ("at")`, { kind: m.kind }));
+      else if (m.kind === "finalCoordinationLine" && typeof m.holdUntilLifted !== "boolean") shape("finalCoordinationLine.holdUntilLifted", "true or false");
     }
   return out;
 }
 
 /**
- * What is wrong with an order, as data the app words; empty when it plays.
- * `platoons`, where given, are the platoons the side has (`platoonKey`).
+ * What is wrong with an order; empty when it plays. `platoons`, where given,
+ * are the platoons the side has (`platoonKey`).
  */
-export function validateOrder(order: CompanyOrder, platoons?: readonly string[]): string[] {
+export function validateOrder(order: CompanyOrder, platoons?: readonly string[]): OrderProblem[] {
   // A file that is not an order in shape is not read further: the checks below trust the type.
   const shape = shapeProblems(order);
   if (shape.length) return shape;
-  const out: string[] = [];
-  if (order.version !== ORDER_VERSION) out.push(`version ${order.version}: this engine reads orders of version ${ORDER_VERSION}`);
+  const out: OrderProblem[] = [];
+  if (order.version !== ORDER_VERSION) out.push(problem("version", `version ${order.version}: this engine reads orders of version ${ORDER_VERSION}`, { name: order.version }));
   const ex = order.execution;
   const measures = ex.measures;
   // 2-134's minimum: the LD and the objective (the time to initiate is `timeOfAttack`).
-  if (!measures.some((m) => m.kind === "lineOfDeparture")) out.push("no line of departure (ATP 3-21.10 para 2-134: the minimum)");
+  if (!measures.some((m) => m.kind === "lineOfDeparture")) out.push(problem("noLineOfDeparture", "no line of departure (ATP 3-21.10 para 2-134: the minimum)"));
   const objectives = measures.filter((m) => m.kind === "objective");
-  if (!objectives.length) out.push("no objective (ATP 3-21.10 para 2-134: the minimum)");
-  if (!objectives.some((m) => m.kind === "objective" && m.name === order.mission.objective)) out.push(`the mission names objective "${order.mission.objective}", which no measure places`);
+  if (!objectives.length) out.push(problem("noObjective", "no objective (ATP 3-21.10 para 2-134: the minimum)"));
+  if (!objectives.some((m) => m.kind === "objective" && m.name === order.mission.objective))
+    out.push(problem("objectiveUnplaced", `the mission names objective "${order.mission.objective}", which no measure places`, { name: order.mission.objective }));
   for (const m of measures) {
     const check = CARRIED_OUT[m.kind];
-    if (!check) out.push(`${m.kind}: not yet carried out`);
+    if (!check) out.push(problem("notCarriedOut", `${m.kind}: not yet carried out`, { kind: m.kind }));
     else {
       const why = check(m);
-      if (why) out.push(`${m.kind}: ${why}`);
+      if (why) out.push(problem("formNotYet", `${m.kind}: ${why}`, { kind: m.kind }));
     }
   }
-  if (measures.filter((m) => m.kind === "checkpoint").length > 1) out.push("checkpoint: only one is carried out, for now");
-  if (measures.filter((m) => m.kind === "assaultPosition").length > 1) out.push("assaultPosition: one a company");
-  if (measures.filter((m) => m.kind === "finalCoordinationLine").length > 1) out.push("finalCoordinationLine: one a company");
+  if (measures.filter((m) => m.kind === "checkpoint").length > 1) out.push(problem("onlyOneCheckpoint", "checkpoint: only one is carried out, for now"));
+  if (measures.filter((m) => m.kind === "assaultPosition").length > 1) out.push(problem("oneAssaultPosition", "assaultPosition: one a company"));
+  if (measures.filter((m) => m.kind === "finalCoordinationLine").length > 1) out.push(problem("oneFinalCoordinationLine", "finalCoordinationLine: one a company"));
   out.push(...triggerProblems(ex.timeOfAttack, "timeOfAttack"));
   for (const m of measures) {
     if (m.kind !== "assaultPosition") continue;
     const problems = triggerProblems(m.occupy, "assaultPosition.occupy");
     out.push(...problems);
-    if (!problems.length && ex.recon.squads === 0 && !needsNoScouts(m.occupy)) out.push("assaultPosition.occupy: with no scouts it waits for an enemy found that nobody is sent to find");
+    if (!problems.length && ex.recon.squads === 0 && !needsNoScouts(m.occupy))
+      out.push(problem("noScoutsToFind", "assaultPosition.occupy: with no scouts it waits for an enemy found that nobody is sent to find", { where: "assaultPosition.occupy" }));
   }
   // Reconnaissance.
   const { squads, posts } = ex.recon;
-  if (squads !== "onePerPlatoon" && !(Number.isInteger(squads) && squads >= 0 && squads <= 3)) out.push("recon.squads: 0 to 3, or one a platoon");
+  if (squads !== "onePerPlatoon" && !(Number.isInteger(squads) && squads >= 0 && squads <= 3)) out.push(problem("reconSquads", "recon.squads: 0 to 3, or one a platoon"));
   for (const [i, p] of (posts ?? []).entries()) {
     if (isSuggested(p, "towardObjective")) continue;
-    if (!("suggested" in p) || p.suggested !== "observationPoint") out.push(`recon.posts[${i}]: only an observation point the engine offers, or straight toward the objective, for now`);
-    else if (!(Number.isInteger(p.rank) && p.rank >= 1)) out.push(`recon.posts[${i}]: a rank from 1`);
+    if (!("suggested" in p) || p.suggested !== "observationPoint")
+      out.push(problem("postOnlyOffered", `recon.posts[${i}]: only an observation point the engine offers, or straight toward the objective, for now`, { n: i + 1 }));
+    else if (!(Number.isInteger(p.rank) && p.rank >= 1)) out.push(problem("postRank", `recon.posts[${i}]: a rank from 1`, { n: i + 1 }));
   }
-  if (typeof squads === "number" && (posts?.length ?? 0) > squads) out.push(`recon.posts: ${posts!.length} posts for ${squads} scouts`);
+  if (typeof squads === "number" && (posts?.length ?? 0) > squads)
+    out.push(problem("postsTooMany", `recon.posts: ${posts!.length} posts for ${squads} scouts`, { n: posts!.length, m: squads }));
   // With no scouts out the company is never told it has found the enemy: H-hour has to come some other way.
-  if (squads === 0 && !needsNoScouts(ex.timeOfAttack)) out.push("timeOfAttack: with no scouts it waits for an enemy found that nobody is sent to find; add a turn, at once, or the scouts lost");
+  if (squads === 0 && !needsNoScouts(ex.timeOfAttack))
+    out.push(problem("noScoutsToFind", "timeOfAttack: with no scouts it waits for an enemy found that nobody is sent to find; add a turn, at once, or the scouts lost", { where: "timeOfAttack" }));
   // A priority target the fire policy never calls only holds missions back (FIRE_RESERVE.attackerPriority).
   if (ex.fires.priorityTarget !== "none" && (ex.fires.policy === "sureMarks" || ex.fires.policy === "anyMark"))
-    out.push(`fires: the ${ex.fires.policy} policy never calls a priority target, so naming one only holds its missions back; name none, or fire by doctrine or opportunity`);
+    out.push(
+      problem(
+        "priorityNeverCalled",
+        `fires: the ${ex.fires.policy} policy never calls a priority target, so naming one only holds its missions back; name none, or fire by doctrine or opportunity`,
+        { name: ex.fires.policy },
+      ),
+    );
   // Tasks and the positions that go with them.
   for (const [key, task] of Object.entries(ex.tasks)) {
-    if (platoons && !platoons.includes(key)) out.push(`tasks: the side has no platoon ${key}`);
-    if (task === "security") out.push(`tasks.${key}: security is not offered when the company goes, for now`);
+    if (platoons && !platoons.includes(key)) out.push(problem("noSuchPlatoon", `tasks: the side has no platoon ${key}`, { name: key }));
+    if (task === "security") out.push(problem("securityNotOffered", `tasks.${key}: security is not offered when the company goes, for now`, { name: key }));
   }
   for (const m of measures) {
     if (m.kind !== "supportByFirePosition") continue;
-    if (ex.tasks[m.platoon] !== "support") out.push(`supportByFirePosition ${m.name}: platoon ${m.platoon} is not given the support task`);
+    if (ex.tasks[m.platoon] !== "support")
+      out.push(problem("supportNotTasked", `supportByFirePosition ${m.name}: platoon ${m.platoon} is not given the support task`, { name: m.platoon }));
   }
   return out;
 }

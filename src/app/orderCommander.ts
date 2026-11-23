@@ -1,4 +1,4 @@
-import { validateOrder, type CompanyOrder, type ControlMeasure, type Trigger } from "../app/order.js";
+import { validateOrder, type CompanyOrder, type ControlMeasure, type OrderProblem, type Trigger } from "./order.js";
 import type { Decider, Question } from "./companyQuestions.js";
 import { fireAnswer, platoonsInView, ruleDecide } from "./ruleCommander.js";
 
@@ -27,8 +27,8 @@ export interface IntentNote {
 
 /** An order that does not play, and why (`validateOrder`'s problems). */
 export class OrderRefused extends Error {
-  constructor(readonly problems: readonly string[]) {
-    super(`the order does not play: ${problems.join("; ")}`);
+  constructor(readonly problems: readonly OrderProblem[]) {
+    super(`the order does not play: ${problems.map((p) => p.text).join("; ")}`);
   }
 }
 

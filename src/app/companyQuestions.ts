@@ -1,4 +1,4 @@
-import { sideView } from "../app/hotseat.js";
+import { sideView } from "./hotseat.js";
 import { MORALE_RULES } from "../engine/index.js";
 import { CE_PER_SIGMA, bearingDegrees, distance, groundHeight, type Game, type Point, type Side, type Unit } from "../engine/index.js";
 

@@ -4,7 +4,7 @@ import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, notInSight, runScenarioBattle } from "./scenarioBattle.js";
 import { Game, makeInfantry } from "../engine/index.js";
 import { ScriptedCompany } from "../app/company.js";
-import { NeedAnswer, casualtiesSeen, fromAnswers, underFire, viewOf, type Question } from "./companyQuestions.js";
+import { NeedAnswer, casualtiesSeen, fromAnswers, underFire, viewOf, type Question } from "../app/companyQuestions.js";
 
 /**
  * The company commander's decisions as typed questions — what Jev will be

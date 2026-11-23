@@ -3,7 +3,7 @@ import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, dressQuality, runScenarioBattle, runScenario } from "./scenarioBattle.js";
 import { planDefenderFires } from "../app/computerSide.js";
-import type { Question } from "./companyQuestions.js";
+import type { Question } from "../app/companyQuestions.js";
 import { isDeadGround } from "../app/deadGround.js";
 import { EYE_HEIGHT, MORALE_RULES, distance } from "../engine/index.js";
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Game, makeCommandGroup, makeInfantry, type Terrain } from "../engine/index.js";
 import { SUPPORT_SET_MAX_TURNS, ScriptedCompany, type CompanyOrders } from "./company.js";
 import { DOCTRINAL_DRILL, DrillState, drillCombat, drillMovement, seizedBy, type DrillTask, type SquadDrill } from "./drill.js";
-import { askAttackerFire } from "../sim/scenarioBattle.js";
+import { askAttackerFire } from "./askedCompany.js";
 import { DEFAULT_FIRE_CHOICES, callAttackerFire } from "./computerSide.js";
 
 /**
@@ -237,8 +237,8 @@ describe("the review's fixes, pinned (drill audit A7, A8, ruling 6)", () => {
     const { g, c, red, calls } = fired(true);
     const mark = g.contactFor("BLUE", red.id)!.lastKnownPosition;
     let label = "";
-    const result = { missions: { RED: 0, BLUE: 0 } } as unknown as Parameters<typeof askAttackerFire>[3];
-    askAttackerFire(g, "BLUE", c, result, (q) => {
+    const tally = { missions: 0, smoke: 0 };
+    askAttackerFire(g, "BLUE", c, tally, (q) => {
       const p = q.options.find((o) => o.id === "priority");
       if (p) label = p.label;
       return p ? "priority" : "hold";

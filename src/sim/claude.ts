@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Question } from "./companyQuestions.js";
+import type { Question } from "../app/companyQuestions.js";
 import { MISSION, type Asker } from "./jev.js";
 import type { Order } from "./opord.js";
 

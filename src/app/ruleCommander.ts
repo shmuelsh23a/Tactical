@@ -1,5 +1,5 @@
-import { LIFT_AT_M, PRIORITY_CALL_M, priorityCallFor } from "../app/computerSide.js";
-import type { FirePolicy } from "../app/order.js";
+import { LIFT_AT_M, PRIORITY_CALL_M, priorityCallFor } from "./computerSide.js";
+import type { FirePolicy } from "./order.js";
 import type { Decider, Question } from "./companyQuestions.js";
 
 /**

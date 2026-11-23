@@ -3,7 +3,7 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
-import { QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "./companyQuestions.js";
+import { QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "../app/companyQuestions.js";
 import { MISSION, jevAsker, jevRequest, playWithAsker, type Asker } from "./jev.js";
 
 /**

@@ -1,5 +1,5 @@
 import type { JsonValue, TypeSafeClient } from "@typesafe-ai/sdk";
-import { NeedAnswer, QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "./companyQuestions.js";
+import { NeedAnswer, QUESTION_SET_VERSION, fromAnswers, type Decider, type Question } from "../app/companyQuestions.js";
 import type { Order } from "./opord.js";
 
 /**

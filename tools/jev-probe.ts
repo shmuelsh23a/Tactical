@@ -18,7 +18,7 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT, REFERENCE_DRILL, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
-import { NeedAnswer, fromAnswers, type Question } from "../src/sim/companyQuestions.js";
+import { NeedAnswer, fromAnswers, type Question } from "../src/app/companyQuestions.js";
 import { jevAsker, jevRequest, JEV_FRAMINGS, type JevFraming } from "../src/sim/jev.js";
 
 const args = process.argv.slice(2);

@@ -81,13 +81,13 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT, REFERENCE_DRILL, WESTERN_DRILL } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
-import { NeedAnswer, fromAnswers } from "../src/sim/companyQuestions.js";
+import { NeedAnswer, fromAnswers } from "../src/app/companyQuestions.js";
 import { JEV_FRAMINGS, jevAsker, playWithAsker, type Asker, type JevFraming } from "../src/sim/jev.js";
 import { claudeCommander, type ClaudeAskerOptions } from "../src/sim/claude.js";
 import { ORDERS } from "../src/sim/opord.js";
-import { ruleDecide } from "../src/sim/ruleCommander.js";
-import { orderDecider, type IntentNote } from "../src/sim/orderCommander.js";
-import { REFERENCE_ORDERS } from "../src/sim/referenceOrders.js";
+import { ruleDecide } from "../src/app/ruleCommander.js";
+import { orderDecider, type IntentNote } from "../src/app/orderCommander.js";
+import { REFERENCE_ORDERS } from "../src/app/referenceOrders.js";
 import type { CompanyOrder } from "../src/app/order.js";
 import { platoonKey } from "../src/app/company.js";
 

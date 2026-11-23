@@ -15,7 +15,7 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { SCENARIOS } from "../src/app/scenario.js";
 import { PLAIN_SCRIPT } from "../src/app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "../src/sim/scenarioBattle.js";
-import { NeedAnswer, fromAnswers, type Question } from "../src/sim/companyQuestions.js";
+import { NeedAnswer, fromAnswers, type Question } from "../src/app/companyQuestions.js";
 import { jevAsker, type Asker } from "../src/sim/jev.js";
 import { claudeAsker } from "../src/sim/claude.js";
 

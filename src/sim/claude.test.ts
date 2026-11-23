@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { telAzekaAssaultListing } from "../app/scenarios/telAzekaAssault.js";
 import { PLAIN_SCRIPT } from "../app/drill.js";
 import { DEFAULT_FIRE_CHOICES, runScenarioBattle } from "./scenarioBattle.js";
-import { fromAnswers, type Question } from "./companyQuestions.js";
+import { fromAnswers, type Question } from "../app/companyQuestions.js";
 import { CLAUDE_SYSTEM, claudeAsker, claudeCommander, claudePrompt, pictureFor } from "./claude.js";
 import { MISSION, jevRequest, playWithAsker } from "./jev.js";
 import { ORDERS } from "./opord.js";
