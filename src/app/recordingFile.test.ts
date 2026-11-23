@@ -17,6 +17,13 @@ describe("reading a saved battle", () => {
     expect(divergesAt).toBeNull();
   });
 
+  it("reads an OPORD battle's file, the order carried beside the actions (decision 126), as the same battle", async () => {
+    const withOrder = { ...sealed, opord: { order: { version: "x" }, byIntent: [] } };
+    const { recording, divergesAt } = await readRecording(asFile(JSON.stringify(withOrder)));
+    expect(recording.actions.length).toBe(sealed.actions.length);
+    expect(divergesAt).toBeNull();
+  });
+
   it("still opens a recording the rules have moved under, and says where", async () => {
     // Another seed is the cheapest way to make every fingerprint disagree.
     const moved = { ...sealed, seed: sealed.seed + 1 };

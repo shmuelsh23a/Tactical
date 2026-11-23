@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ScenarioListing } from "../scenario.js";
-import type { ComputerRole } from "../App.js";
+import { OPORD_SCENARIOS, type ComputerRole } from "../App.js";
 
 interface ScenarioPickerProps {
   scenarios: readonly ScenarioListing[];
@@ -63,9 +63,13 @@ export function ScenarioPicker({ scenarios, onPick, saved, onResume, savedProble
         <button className={vsComputer === "attack" ? "on" : ""} onClick={() => setVsComputer("attack")}>
           מול המחשב (אתה המגן)
         </button>
+        <button className={vsComputer === "opord" ? "on" : ""} onClick={() => setVsComputer("opord")}>
+          פקודת מבצע (מול המחשב)
+        </button>
       </div>
+      {vsComputer === "opord" && <p className="picker-note">כתוב את פקודת הפלוגה התוקפת, וצפה בה מבוצעת. בינתיים בתרחישי תל עזקה.</p>}
       <ul className="picker-list">
-        {scenarios.map((s) => (
+        {scenarios.filter((s) => vsComputer !== "opord" || OPORD_SCENARIOS.includes(s.id)).map((s) => (
           <li key={s.id}>
             <button className="picker-card" onClick={() => onPick(s, vsComputer)}>
               <h2>{s.title}</h2>

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { GameRecording } from "../engine/index.js";
-import { App, type ComputerRole } from "./App.js";
+import { App, OPORD_SCENARIOS, type ComputerRole } from "./App.js";
 import { Debrief } from "./Debrief.js";
 import { recordingLoadFailed, sessionProblemHe } from "./debriefText.js";
 import { readRecording } from "./recordingFile.js";
@@ -26,8 +26,8 @@ const PARAM = "scenario";
  */
 const VS = "vs";
 /** What each `?vs=` spelling means, and what to write for each role. */
-const VS_ROLE: Readonly<Record<string, ComputerRole>> = { computer: "defend", attacker: "attack" };
-const VS_PARAM: Readonly<Record<ComputerRole, string>> = { defend: "computer", attack: "attacker" };
+const VS_ROLE: Readonly<Record<string, ComputerRole>> = { computer: "defend", attacker: "attack", opord: "opord" };
+const VS_PARAM: Readonly<Record<ComputerRole, string>> = { defend: "computer", attack: "attacker", opord: "opord" };
 /**
  * `&saved=1`: this tab's battle has been saved, so a reload comes back to it.
  * Set by the game once it has first saved, never by a pick — a battle picked
@@ -129,7 +129,9 @@ export function Root() {
     const params = new URL(window.location.href).searchParams;
     const listing = findScenario(params.get(PARAM));
     if (!listing) return { picked: null, notice: null };
-    const vsComputer = VS_ROLE[params.get(VS) ?? ""];
+    const asked = VS_ROLE[params.get(VS) ?? ""];
+    // OPORD mode only where it is offered: elsewhere the address opens the battle as hotseat.
+    const vsComputer = asked === "opord" && !OPORD_SCENARIOS.includes(listing.id) ? undefined : asked;
     if (params.get(SAVED) !== "1") return { picked: { listing, round: 0, vsComputer }, notice: null };
     // A reload of a saved battle comes back to it, if it is still the one saved here.
     const back = resumeStored();

@@ -116,10 +116,26 @@ interface MapViewProps {
   alternatePositions?: readonly PreparedPosition[];
   /** The viewing side's ammunition caches (decision 127): its own only — a cache is concealed. */
   caches?: readonly AmmoCache[];
+  /**
+   * The order form's places (OPORD mode, decision 128): the observation
+   * points, flanks, last cover and fire-plan points the battle will offer,
+   * each clickable to choose it, the chosen ones marked.
+   */
+  orderMarks?: readonly OrderMark[];
+  onOrderMark?: (id: string) => void;
   onSelectUnit: (id: string) => void;
   onFireAt: (id: string) => void;
   onMoveTo: (x: number, y: number) => void;
   onTargetAt: (x: number, y: number) => void;
+}
+
+/** A place the order form offers on the map. */
+export interface OrderMark {
+  id: string;
+  at: Point;
+  label: string;
+  kind: "op" | "flank" | "assault" | "target" | "objective";
+  chosen: boolean;
 }
 
 /**
@@ -285,6 +301,23 @@ export function MapView(props: MapViewProps) {
           <line x1={t.at.x - 14} y1={t.at.y + 14} x2={t.at.x + 14} y2={t.at.y - 14} />
           <text x={t.at.x + 18} y={t.at.y - 10}>
             {weaponName(t.weapon)} {i + 1}
+          </text>
+        </g>
+      ))}
+      {(props.orderMarks ?? []).map((m) => (
+        <g
+          key={`order-${m.id}`}
+          className={`order-mark order-${m.kind}${m.chosen ? " chosen" : ""}`}
+          onClick={(e) => {
+            // The mark, not the map under it: a click here chooses a place, it does not plan a target.
+            e.stopPropagation();
+            props.onOrderMark?.(m.id);
+          }}
+        >
+          <circle cx={m.at.x} cy={m.at.y} r={m.kind === "objective" ? 40 : 22} />
+          {/* The objective's name above it, clear of the fire plan's centre point drawn on it. */}
+          <text x={m.kind === "objective" ? m.at.x - 40 : m.at.x + 26} y={m.kind === "objective" ? m.at.y - 50 : m.at.y + 6}>
+            {m.label}
           </text>
         </g>
       ))}

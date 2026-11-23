@@ -1,3 +1,5 @@
+import type { IntentNote } from "./orderCommander.js";
+import { GO_ASKED_EVERY, type MeasureKind, type OrderProblem, type OrderProblemCode } from "./order.js";
 import {
   ASSAULT_RANGE_M,
   CHARGE_LAYING,
@@ -1220,4 +1222,137 @@ function loadProblemHe(problem: LoadProblem): string {
       return never;
     }
   }
+}
+
+/**
+ * Where in an order a problem is, as the order form names it (OPORD mode,
+ * decision 128). A path the form does not name is shown as it is.
+ */
+const ORDER_FIELD_HE: Readonly<Record<string, string>> = {
+  timeOfAttack: "שעת ש׳",
+  "assaultPosition.occupy": "עמדת ההסתערות",
+  "recon.posts": "נקודות התצפית",
+  "recon.waitIn": "מקום ההמתנה",
+  "recon.baseOfFireOnGo": "בסיס אש של הסיירים",
+  boundByPlatoon: "דילוג במחלקות",
+  "fires.policy": "מדיניות האש",
+  "fires.priorityTarget": "מטרת העדיפות",
+  "fires.holdUntilTimeOfAttack": "עצירת אש עד שעת ש׳",
+};
+
+/** A control measure's Hebrew name (ATP 3-21.10 para 2-134; the IDF's terms where it has one). */
+export const MEASURE_HE: Readonly<Record<MeasureKind, string>> = {
+  lineOfDeparture: "קו יציאה",
+  pointOfDeparture: "נקודת יציאה",
+  objective: "יעד",
+  checkpoint: "נקודת ציון",
+  phaseLine: "קו בקרה",
+  axisOfAdvance: "ציר התקדמות",
+  directionOfAttack: "כיוון התקפה",
+  boundary: "גבול גזרה",
+  probableLineOfDeployment: "קו פריסה משוער",
+  assaultPosition: "עמדת הסתערות",
+  finalCoordinationLine: "קו תיאום אחרון",
+  supportByFirePosition: "עמדת חיפוי באש",
+  attackByFirePosition: "עמדת תקיפה באש",
+  limitOfAdvance: "קו גבול התקדמות",
+  sectorOfFire: "גזרת אש",
+  targetReferencePoint: "נקודת ייחוס",
+  triggerLine: "קו פתיחה באש",
+  engagementCriteria: "תנאי פתיחה באש",
+  engagementPriority: "סדר עדיפות במטרות",
+  fscm: "אמצעי תיאום אש",
+  engagementArea: "שטח השמדה",
+  battlePosition: "עמדת קרב",
+};
+
+/** An order's problem, worded for the player (`validateOrder`'s codes). */
+export function orderProblemHe(p: OrderProblem): string {
+  const where = p.where ? (ORDER_FIELD_HE[p.where] ?? p.where) : "";
+  const kind = p.kind ? (MEASURE_HE[p.kind as MeasureKind] ?? p.kind) : "";
+  const words: Record<OrderProblemCode, () => string> = {
+    shape: () => `הקובץ אינו פקודה תקינה: ${where}`,
+    measureUnknown: () => `"${p.name}" אינו אמצעי בקרה`,
+    measureNoPlace: () => `ל${kind} אין מקום`,
+    version: () => `הפקודה נכתבה בגרסה ${p.name}, והמשחק קורא גרסה אחרת`,
+    noLineOfDeparture: () => "אין קו יציאה (המינימום: קו יציאה, שעת ש׳ ויעד)",
+    noObjective: () => "אין יעד (המינימום: קו יציאה, שעת ש׳ ויעד)",
+    objectiveUnplaced: () => `המשימה נותנת יעד "${p.name}", ואין אמצעי שממקם אותו`,
+    notCarriedOut: () => `${kind}: עדיין לא מבוצע במשחק`,
+    formNotYet: () => `${kind}: בינתיים רק במקום שהמשחק מציע`,
+    onlyOneCheckpoint: () => "בינתיים מבוצעת נקודת ציון אחת בלבד",
+    oneAssaultPosition: () => "עמדת הסתערות אחת לפלוגה",
+    oneFinalCoordinationLine: () => "קו תיאום אחרון אחד לפלוגה",
+    triggerMissing: () => `${where}: לא נקבע מתי`,
+    triggerEmpty: () => `${where}: תנאי ריק`,
+    triggerUnknown: () => `${where}: "${p.name}" אינו תנאי מוכר`,
+    onOrderNeedsFragord: () => `${where}: "בפקודה" דורש פקודת שינוי (פק"ש), שעדיין לא קיימת`,
+    turnWhole: () => `${where}: תור הוא מספר שלם מ-1`,
+    turnOffCadence: () => `${where}: הפלוגה נשאלת אם לצאת כל ${GO_ASKED_EVERY} תורות כשאינה רואה את האויב, כך שתור ${p.n} יידחה לתור ${p.m}`,
+    fixedWhole: () => `${where}: מספר התורות בקשר עין הוא מספר שלם מ-1`,
+    missionsWhole: () => `${where}: מספר המשימות הנותרות הוא מספר שלם מ-0`,
+    noScoutsToFind: () => `${where}: בלי סיירים אין מי שימצא את האויב — קבע תור, "מיד" או "כשהסיירים אבדו"`,
+    reconSquads: () => "מספר הסיירים: 0 עד 3, או אחד למחלקה",
+    postOnlyOffered: () => `נקודת התצפית של סייר ${p.n}: בינתיים רק נקודה שהמשחק מציע, או ישר לעבר היעד`,
+    postRank: () => `נקודת התצפית של סייר ${p.n}: מספר נקודה מ-1`,
+    postsTooMany: () => `${p.n} נקודות תצפית ל-${p.m} סיירים`,
+    priorityNeverCalled: () => "מדיניות האש שנבחרה אינה יורה על מטרת עדיפות, כך שמטרה כזו רק מחזיקה משימות בצד — בחר \"ללא\", או אש לפי תורה או לפי הזדמנות",
+    noSuchPlatoon: () => `אין לצד מחלקה ${p.name}`,
+    securityNotOffered: () => `מחלקה ${p.name}: אבטחת אגפים ועורף עדיין לא מוצעת ביציאה`,
+    supportNotTasked: () => `מחלקה ${p.name} בעמדת חיפוי באש, אך לא קיבלה משימת חיפוי`,
+  };
+  return words[p.code]();
+}
+
+/**
+ * What a subordinate did where the order did not say (decision 128's intent
+ * notes), told to the side that gave the order. `name` words a force's id.
+ */
+export function intentNoteHe(n: IntentNote, name: (id: string) => string): string {
+  const parts = n.question.split(".");
+  const lead = n.why === "not on offer" ? "המקום שנקבע בפקודה אינו זמין" : "הפקודה לא אמרה";
+  let what: string;
+  switch (parts[0]) {
+    case "scout": {
+      const who = name(parts[1] ?? "");
+      what =
+        n.answer === "on"
+          ? `${who} ממשיך כפי שנצטווה`
+          : n.answer === "here"
+            ? `${who} נשאר במקומו ומתצפת`
+            : n.answer === "back"
+              ? `${who} חוזר לפלוגה`
+              : `${who} עובר לנקודת תצפית על אויב שנמצא מחוץ לתוכנית`;
+      break;
+    }
+    case "platoon": {
+      const p = `מחלקה ${parts[1] ?? ""}`;
+      what =
+        n.answer === "on"
+          ? `${p} ממשיכה במשימתה`
+          : n.answer === "assault"
+            ? `${p} עוברת להסתערות`
+            : n.answer === "support"
+              ? `${p} עוברת לחיפוי באש`
+              : n.answer === "halt"
+                ? `${p} נעצרת ותופסת מחסה`
+                : `${p} נסוגה לקו היציאה`;
+      break;
+    }
+    case "recommit":
+      what = n.answer === "yes" ? "ההסתערות נשחקה — הכוח שנותר נכנס להסתער" : "ההסתערות נשחקה — הכוח שנותר נשאר במקומו";
+      break;
+    case "lift":
+      what = n.answer === "yes" ? "ההסתערות בקו התיאום — האש מורמת והיא נכנסת" : "ההסתערות ממתינה בקו התיאום";
+      break;
+    case "plan":
+      what = n.answer === "straight" ? `סייר ${parts[2] ?? ""} יוצא ישר לעבר היעד` : `סייר ${parts[2] ?? ""} לנקודת התצפית הטובה ביותר`;
+      break;
+    case "go":
+      what = n.answer === "straight" ? "הפלוגה יוצאת ישר ליעד" : "הפלוגה יוצאת דרך נקודת התצפית של סייר";
+      break;
+    default:
+      what = `${n.question}: ${n.answer}`;
+  }
+  return `${lead} — לפי כוונת המפקד: ${what}`;
 }

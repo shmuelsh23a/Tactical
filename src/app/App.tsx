@@ -85,6 +85,7 @@ import {
   reinforcementHe,
   weaponName,
 } from "./debriefText.js";
+import { intentNoteHe, orderProblemHe } from "./debriefText.js";
 import type { Scenario, ScenarioListing } from "./scenario.js";
 import {
   buildActivations,
@@ -112,6 +113,12 @@ import { readRecording } from "./recordingFile.js";
 import { LogPanel } from "./components/LogPanel.js";
 import { Handoff } from "./components/Handoff.js";
 import { untargetableInside } from "./insideTargets.js";
+import { OrderedAttacker, orderGround } from "./orderedAttacker.js";
+import { validateOrder } from "./order.js";
+import { OrderRefused } from "./orderCommander.js";
+import { REFERENCE_ORDERS } from "./referenceOrders.js";
+import { applyMark, defaultChoices, formMarks, orderOf, scoutCount, type OrderChoices } from "./orderForm.js";
+import { OrderForm } from "./components/OrderForm.js";
 
 /** An aim point this close to the caller's own forces is danger close: said in the log, not refused (rules decision 63, S4). */
 const DANGER_CLOSE_M = 150;
@@ -183,11 +190,21 @@ interface AppProps {
   onSaved?: () => void;
 }
 
-/** Which side the computer takes in single-player. */
-export type ComputerRole = "defend" | "attack";
+/**
+ * Which side the computer takes in single-player. `"opord"` is OPORD mode
+ * (decision 128): the player writes the attacking company's order, the
+ * computer holds the position, and both sides are played out by the engine.
+ */
+export type ComputerRole = "defend" | "attack" | "opord";
 
-/** The computer, whichever side it plays. */
-type ComputerSide = ComputerDefender | ComputerAttacker;
+/** The scenarios OPORD mode is offered on: the first is decision 126's, Tel Azeka's company attack. */
+export const OPORD_SCENARIOS: readonly string[] = ["telAzekaAssault", "telAzekaAssault2"];
+
+/** How long auto-play waits between turns, in milliseconds (OPORD mode). */
+const AUTOPLAY_DELAYS = [3000, 1500, 600] as const;
+
+/** The computer, whichever side it plays — the player's order's company included. */
+type ComputerSide = ComputerDefender | ComputerAttacker | OrderedAttacker;
 
 /**
  * A `?seed=` in the address plays the battle on other dice — for testing the
@@ -218,7 +235,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     const attacker = built.game.attackers[0] ?? "BLUE";
     const defender = attacker === "RED" ? "BLUE" : "RED";
     const ai =
-      vsComputer === "defend"
+      vsComputer === "defend" || vsComputer === "opord"
         ? new ComputerDefender(built.game, defender, built)
         : vsComputer === "attack"
           ? new ComputerAttacker(built.game, attacker, briefedObjective(built.game, attacker, defender, undefined, built.reserves ?? []), built)
@@ -229,6 +246,12 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   }
   const { scn, ai } = initRef.current;
   const game = scn.game;
+  const opord = vsComputer === "opord";
+  /** OPORD mode: the player's company, once its order is given (null while it is written). */
+  const ordered = useRef<OrderedAttacker | null>(null);
+  /** The computer playing `side`, if one is. */
+  const computerFor = (side: Side): ComputerSide | null =>
+    ai?.side === side ? ai : ordered.current?.side === side ? ordered.current : null;
   const computer: Side | undefined = ai?.side;
   /** The player's side in single-player; null in hotseat, where the screen passes between two. */
   const human: Side | null = computer ? (computer === "RED" ? "BLUE" : "RED") : null;
@@ -265,6 +288,22 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   /** Which side is planning, as an index into the sides a person plays (rules decision 38). */
   const [planningIndex, setPlanningIndex] = useState(resume?.ui.planningIndex ?? 0);
   const [planTool, setPlanTool] = useState<PlanTool>("target");
+  // ---- OPORD mode (decision 128) ----
+  /** The attacking side, whose order the player writes. */
+  const orderSide: Side = game.attackers[0] ?? "BLUE";
+  /** Where the battle will offer the order's places, read once before anything moves. */
+  const [orderPlaces] = useState(() => (opord && !resumed ? orderGround(game, orderSide, scn, scn.reserves ?? []) : null));
+  const [orderChoices, setOrderChoices] = useState<OrderChoices>(() => defaultChoices(REFERENCE_ORDERS));
+  /** Which scout a click on an observation point places, kept to the scouts the order sends. */
+  const [placingRaw, setPlacing] = useState(1);
+  const placing = orderPlaces ? Math.min(placingRaw, Math.max(1, scoutCount(orderChoices, orderPlaces.platoons.length))) : 1;
+  const writtenOrder = orderOf(orderChoices, scenario.id, orderSide, game.timeLimit);
+  const orderProblems = opord && orderPlaces ? validateOrder(writtenOrder, orderPlaces.platoons).map(orderProblemHe) : [];
+  const [autoplay, setAutoplay] = useState(false);
+  const [autoplaySpeed, setAutoplaySpeed] = useState(1);
+  /** How many of the order's intent notes the log has told. */
+  const notesTold = useRef(0);
+
   /** Whether anything has been planned — until it has, leaving loses nothing. */
   const [planned, setPlanned] = useState(resume?.ui.planned ?? false);
   /** How mortar and artillery rounds are fuzed (rules decision 31). */
@@ -520,7 +559,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
 
   function handleContinue() {
     setLeaveArmed(false);
-    game.advanceToPhase("targeting");
+    // The advance in its own statement: `ordered.current?.heard(game.advanceToPhase(…))` skips it with no order.
+    const aiming = game.advanceToPhase("targeting");
+    ordered.current?.heard(aiming.resolved);
     setStage("activation");
     enterActivation(activations, 0);
     force();
@@ -541,6 +582,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
    */
   function handleTargetAt(x: number, y: number) {
     if (stage === "planning") {
+      if (opord) return;
       handlePlanAt(x, y);
       return;
     }
@@ -715,6 +757,42 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   }
 
   /** This side has planned: hand over to the next, or begin the first turn. */
+  /**
+   * OPORD mode: the order given. The company is built from it — its fire
+   * plan registered, its planning questions answered by the order — and the
+   * battle begins. An order that does not play is refused before it touches
+   * the game, and the form already says why.
+   */
+  function handleIssueOrder() {
+    if (!opord || ordered.current) return;
+    try {
+      ordered.current = new OrderedAttacker(game, orderSide, writtenOrder, scn, scenario.brief, scn.reserves ?? []);
+    } catch (e) {
+      if (!(e instanceof OrderRefused)) throw e;
+      for (const p of e.problems) pushLog(`הפקודה נדחתה: ${orderProblemHe(p)}`, "info", onlyFor(orderSide));
+      force();
+      return;
+    }
+    setPlanned(true);
+    pushLog("הפקודה הוצאה — הפלוגה פועלת לפיה", "info", onlyFor(orderSide));
+    logIntentNotes();
+    handleEndPlanning();
+  }
+
+  /** What the order's company did where the order did not say, told to its side as it happens. */
+  function logIntentNotes() {
+    const notes = ordered.current?.notes ?? [];
+    for (; notesTold.current < notes.length; notesTold.current++) pushLog(intentNoteHe(notes[notesTold.current]!, nameOf), "info", onlyFor(orderSide));
+  }
+
+  // Auto-play (OPORD mode): the next turn after a pause, until paused or the battle ends.
+  useEffect(() => {
+    if (!opord || !autoplay || stage !== "initiative") return;
+    const t = setTimeout(() => handleContinue(), AUTOPLAY_DELAYS[autoplaySpeed] ?? 1500);
+    return () => clearTimeout(t);
+    // `handleContinue` is this render's; `tick` is the game's change.
+  }, [opord, autoplay, stage, tick, autoplaySpeed]);
+
   function handleEndPlanning() {
     setLeaveArmed(false);
     setSelectedId(null);
@@ -1498,7 +1576,10 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     // Sealed on the way out: the fingerprints let a later load tell whether
     // the rules have moved under the recording since.
     const recording = sealRecording(game.toRecording());
-    const blob = new Blob([JSON.stringify(recording, null, 2)], { type: "application/json" });
+    // OPORD mode: the order as written, and what was done by the intent where it said nothing (decision 126),
+    // beside the actions that replay the battle; the debrief does not show it yet.
+    const file = ordered.current ? { ...recording, opord: { order: ordered.current.order, byIntent: ordered.current.notes } } : recording;
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -1600,13 +1681,15 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
         // Stepping into movement crosses resolvePriorArty, where fire missions
         // marked on an earlier turn come down.
         const { resolved, smokeArrived, observed } = game.advanceToPhase(to);
+        ordered.current?.heard(resolved);
         pushLog(`מעבר ל${phaseLabelHe[to]}`, "phase", TABLE);
         logImpacts(resolved, smokeArrived);
         logNewContacts(observed);
         if (over.current) return;
       }
-      if (acts[next]!.side !== computer || !ai) break;
-      playComputer(ai, to);
+      const cpu = computerFor(acts[next]!.side);
+      if (!cpu) break;
+      playComputer(cpu, to);
       if (checkVictory()) return;
     }
     if (next < acts.length) {
@@ -1622,6 +1705,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     }
     // End of turn: run upkeep + begin the next turn.
     const closed = game.advanceToPhase("initiative");
+    ordered.current?.heard(closed.resolved);
+    logIntentNotes();
     logArrivals(closed.arrived);
     logChargeWork(closed.chargeWork);
     logAmmunition(closed.ammunition);
@@ -1676,6 +1761,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
       pushLog(`המחשב: ${(err as Error).message}`, "info", onlyFor(side.side));
     }
     for (const id of struck) logNeutralized(game.getUnit(id), side.side);
+    // What the order's company did by the intent in this activation, told before the battle can end on it.
+    if (side === ordered.current) logIntentNotes();
   }
 
   // ---- saving ----
@@ -1690,6 +1777,8 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
   // not on every render, which a click on a force or a panel also makes.
   const kept = useRef<boolean | null>(resumed ? true : null);
   useEffect(() => {
+    // ⚠️ An OPORD battle is not kept for resuming yet (decision 129): it neither saves nor clears the one slot.
+    if (opord) return;
     if (stage === "gameover") {
       clearStoredSession();
       kept.current = null;
@@ -1783,7 +1872,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
           <div className="attribution">
             © OpenStreetMap contributors (ODbL) · Terrain Tiles courtesy of Mapzen · SRTM (NASA)
           </div>
-          {stage === "initiative" ? (
+          {stage === "initiative" && !opord ? (
             // Nobody's screen: the device is still in the hands of whoever
             // acted last, and the side to move first is not theirs to see —
             // least of all its plan (rules decisions 17 and 38).
@@ -1833,12 +1922,34 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
               onFireAt={handleFireAt}
               onMoveTo={handleMoveTo}
               onTargetAt={handleTargetAt}
+              {...(opord && stage === "planning" && orderPlaces
+                ? { orderMarks: formMarks(orderPlaces, orderChoices), onOrderMark: (id: string) => setOrderChoices((c) => applyMark(c, id, placing, orderPlaces.platoons.length)) }
+                : {})}
             />
           )}
         </div>
 
         <aside className="sidebar">
-          {stage === "planning" && !showHandoff && planningSide && (
+          {stage === "planning" && opord && orderPlaces && (
+            <div className="panel">
+              <h3>
+                <span className={`chip chip-${orderSide.toLowerCase()}`}>{orderSide}</span> פקודת מבצע
+              </h3>
+              <OrderForm
+                ground={orderPlaces}
+                choices={orderChoices}
+                onChange={setOrderChoices}
+                placing={placing}
+                onPlacing={setPlacing}
+                templates={REFERENCE_ORDERS}
+                problems={orderProblems}
+                {...(game.timeLimit !== undefined ? { timeLimit: game.timeLimit } : {})}
+                onSubmit={handleIssueOrder}
+              />
+            </div>
+          )}
+
+          {stage === "planning" && !opord && !showHandoff && planningSide && (
             <div className="panel">
               <h3>
                 <span className={`chip chip-${planningSide.toLowerCase()}`}>{planningSide}</span> תכנון משימה
@@ -1978,13 +2089,36 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
             </div>
           )}
 
-          {stage === "initiative" && (
+          {stage === "initiative" && !opord && (
             <div className="panel">
               <h3>שלב יוזמה — תור {game.turn}</h3>
               <p>סדר פעולה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</p>
               <button className="btn-primary" onClick={handleContinue}>
                 התחל תור
               </button>
+            </div>
+          )}
+
+          {stage === "initiative" && opord && (
+            <div className="panel">
+              <h3>הפקודה בביצוע — תור {game.turn}</h3>
+              <p>סדר פעולה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</p>
+              <div className="row">
+                <button className="btn-primary" onClick={handleContinue} disabled={autoplay}>
+                  תור הבא
+                </button>
+                <button className="btn-ghost" onClick={() => setAutoplay((a) => !a)}>
+                  {autoplay ? "השהה" : "הרצה אוטומטית"}
+                </button>
+                <select value={autoplaySpeed} onChange={(e) => setAutoplaySpeed(Number(e.target.value))} title="מהירות ההרצה">
+                  <option value={0}>איטי</option>
+                  <option value={1}>רגיל</option>
+                  <option value={2}>מהיר</option>
+                </select>
+              </div>
+              {ordered.current && ordered.current.notes.length > 0 && (
+                <p className="order-notes">הפקודה לא אמרה {ordered.current.notes.length} פעמים — פעלו לפי כוונת המפקד (ביומן).</p>
+              )}
             </div>
           )}
 

@@ -141,6 +141,22 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .alternate rect { fill: none; stroke: var(--ok); stroke-width: 2; }
 .alternate line { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 4 5; opacity: 0.7; }
 .alternate text { fill: var(--ok); }
+/* OPORD mode's order form (decision 128): the places the battle offers, chosen or not. */
+.order-mark { cursor: pointer; }
+.order-mark circle { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 5 4; }
+.order-mark text { fill: var(--muted); font-size: 15px; font-weight: 600; }
+.order-mark.chosen circle { stroke: var(--accent); stroke-width: 3; stroke-dasharray: none; fill: rgba(255, 255, 255, 0.08); }
+.order-mark.chosen text { fill: var(--accent); }
+.order-objective { cursor: default; }
+.order-objective circle { stroke: var(--red); }
+.order-objective text { fill: var(--red); }
+.order-form fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 10px; padding: 6px 10px; }
+.order-form legend { font-weight: 700; padding: 0 4px; }
+.order-form label { display: block; margin: 4px 0; }
+.order-form textarea { width: 100%; min-height: 3em; }
+.order-form .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.order-problems { color: var(--red); margin: 6px 0; padding-inline-start: 18px; }
+.order-notes { font-size: 0.9em; opacity: 0.85; }
 .cache { pointer-events: none; }
 .cache polygon { fill: none; stroke: var(--ok); stroke-width: 2; }
 .cache text { fill: var(--ok); font-size: 15px; font-weight: 600; }

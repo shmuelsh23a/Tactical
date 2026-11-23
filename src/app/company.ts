@@ -129,6 +129,56 @@ export function platoonKey(id: string): string {
   return parts.length >= 3 ? parts.slice(0, -1).join("-") : id;
 }
 
+/**
+ * The flank points ({@link ScriptedCompany.flankPoints}) from a company at
+ * `home` on an enemy at `enemy`, watched from `watchers`: dead ground
+ * {@link FLANK_OFFSET_M} to each side of the line of attack and
+ * {@link FLANK_SHORT_M} back toward the company, west first. Pure, so the
+ * order form can draw them before there is a company (decision 128).
+ */
+export function flankPointsFrom(home: Point, enemy: Point, watchers: readonly Point[], ground: CompanyGround): { side: "west" | "east"; at: Point }[] {
+  const back = distance(home, enemy);
+  if (back === 0) return [];
+  const bx = (home.x - enemy.x) / back;
+  const by = (home.y - enemy.y) / back;
+  const out: { side: "west" | "east"; at: Point }[] = [];
+  for (const sign of [1, -1]) {
+    const aim = {
+      x: enemy.x + bx * FLANK_SHORT_M + sign * by * FLANK_OFFSET_M,
+      y: enemy.y + by * FLANK_SHORT_M - sign * bx * FLANK_OFFSET_M,
+    };
+    if (aim.x < 0 || aim.y < 0 || aim.x > ground.width || aim.y > ground.height) continue;
+    const at = nearestDeadGround({ terrain: ground.terrain, watchers: [...watchers] }, aim, {
+      width: ground.width,
+      height: ground.height,
+      radius: ASSAULT_POSITION_SEARCH_M,
+      step: 20,
+    });
+    // Named by the compass: which side of the enemy it is on.
+    if (at) out.push({ side: at.x < enemy.x ? "west" : "east", at });
+  }
+  return out.sort((a, b) => (a.side < b.side ? 1 : -1));
+}
+
+/**
+ * Roughly where a company at `home` would move up to ({@link ScriptedCompany.moveUp}):
+ * the dead ground nearest {@link ASSAULT_POSITION_M} short of the enemy on the
+ * line from home. Each squad finds its own when it moves; this is the one the
+ * order form draws.
+ */
+export function assaultPointFrom(home: Point, enemy: Point, watchers: readonly Point[], ground: CompanyGround): Point | undefined {
+  const range = distance(home, enemy);
+  if (range <= ASSAULT_POSITION_M) return undefined;
+  const k = ASSAULT_POSITION_M / range;
+  const aim = { x: enemy.x + (home.x - enemy.x) * k, y: enemy.y + (home.y - enemy.y) * k };
+  return nearestDeadGround({ terrain: ground.terrain, watchers: [...watchers] }, aim, {
+    width: ground.width,
+    height: ground.height,
+    radius: ASSAULT_POSITION_SEARCH_M,
+    step: 20,
+  }) ?? undefined;
+}
+
 /** What the scripted company commander was told to do about finding the enemy. */
 export interface ReconPlan {
   /** How many squads go ahead to find the enemy, the nearest the objective first. */
@@ -520,28 +570,7 @@ export class ScriptedCompany {
    */
   flankPoints(found: readonly Point[] = []): { side: "west" | "east"; at: Point }[] {
     const enemy = found.length ? centreOf(found) : this.objective;
-    const back = distance(this.home, enemy);
-    if (back === 0) return [];
-    const bx = (this.home.x - enemy.x) / back;
-    const by = (this.home.y - enemy.y) / back;
-    const watchers = [...this.suspected, ...found];
-    const out: { side: "west" | "east"; at: Point }[] = [];
-    for (const sign of [1, -1]) {
-      const aim = {
-        x: enemy.x + bx * FLANK_SHORT_M + sign * by * FLANK_OFFSET_M,
-        y: enemy.y + by * FLANK_SHORT_M - sign * bx * FLANK_OFFSET_M,
-      };
-      if (aim.x < 0 || aim.y < 0 || aim.x > this.ground.width || aim.y > this.ground.height) continue;
-      const at = nearestDeadGround({ terrain: this.ground.terrain, watchers }, aim, {
-        width: this.ground.width,
-        height: this.ground.height,
-        radius: ASSAULT_POSITION_SEARCH_M,
-        step: 20,
-      });
-      // Named by the compass: which side of the enemy it is on.
-      if (at) out.push({ side: at.x < enemy.x ? "west" : "east", at });
-    }
-    return out.sort((a, b) => (a.side < b.side ? 1 : -1));
+    return flankPointsFrom(this.home, enemy, [...this.suspected, ...found], this.ground);
   }
 
   /** Whether a force is one of this company's scouts. */
