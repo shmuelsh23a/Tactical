@@ -4257,8 +4257,8 @@ on the stated reasoning, still awaiting the author's word.
       greatest-threat-first); a boundary keeps each platoon's route in its
       lane, dispersed under the mortars but sometimes off the best cover,
       where without one two platoons may take one covered route and be
-      shelled together. Later: fratricide and masked fire as a combat rule,
-      which boundaries and sectors then also prevent.
+      shelled together. Fratricide and masked fire as a combat rule,
+      which boundaries and sectors then also prevent: built as decision 133.
     - **Every FSCM drawable** at company, the FSCL and kill box included:
       restrictive ones (no-fire area, restrictive fire area and line)
       refuse a call into or across them; permissive ones (coordinated fire
@@ -4512,9 +4512,11 @@ on the stated reasoning, still awaiting the author's word.
       platoon in one lane leans worse at both (1 to 2 points more men
       lost); granting changes nothing measurable (at 2:1 the neighbours
       block 286 grants in 294). **Not shown to be dominated — and no way
-      for a boundary to pay has been shown either**: with no fire that
-      hits friends, the safety rule costs targets and saves nobody, so
-      the tradeoff decision 128 asked of it is open for the author.
+      for a boundary to pay has been shown either**: with no small-arms
+      fire that hit friends, the safety rule cost targets and saved
+      nobody, so the tradeoff decision 128 asked of it is open for the
+      author. (Decision 133 adds that fire; its table has split lanes
+      saving men under B at 3:1.)
       Requests come 0.55–1.6 times a battle with split lanes, 1.9–4.4 with
       every platoon in one lane. Off is off: without a boundary every
       battle is the same as before, seed by seed.
@@ -4535,9 +4537,71 @@ on the stated reasoning, still awaiting the author's word.
       of command, keeps the order it has and may cross — it never got the
       word — and asks nothing; a bound from inside the lane to past the
       end may cut the other lane's corner; screening and break-contact
-      smoke may still go onto an enemy across. The engine has no fire
-      that hits friends yet (decision 128's "later"), so the safety rule
-      costs targets and saves nobody today.
+      smoke may still go onto an enemy across. When this was built small
+      arms hit no friend (decision 128's "later"); decision 133 makes
+      them, so the safety rule now keeps the misses off friends. It still
+      reads its own friend set (vehicles counted, friends inside not),
+      apart from decision 133's: one rule each, measured as built.
+
+133. ✅ **Friendly fire and masked fire, for small arms** (the author,
+    2026-11-25, two rounds of ruling cards; decision 128's "later:
+    fratricide and masked fire as a combat rule, which boundaries and
+    sectors then also prevent"). A blast already caught whoever was in it,
+    the firer's side too (decisions 3, 75 and 79); until this a rifle or
+    machine-gun shot hit only what it was aimed at.
+    - **A miss can hit a friend** within 50 m of the target or within
+      10 m of the line of fire short of it (decision 132's distances,
+      the author's). Each miss is rolled against the friends at risk,
+      likeliest first, and hits the first it catches; the friend's cover
+      counts. ⚠️ Ours, tentative (docs/balance.md): the chance is 0.05
+      for a friend at the target, falling to none at 50 m, and 0.10 on
+      the line, falling to none at 10 m (`FRIENDLY_FIRE`).
+    - **Masked: no force fires through its own men.** A friend whose
+      centre is within 10 m of the line (a squad's half-front, the
+      author's), short of the target, refuses the shot — for the player,
+      a standing order and covering fire alike. **Height counts** (the
+      author): fire passing at least 3 m over the friend's head (⚠️ ours,
+      `overheadClearM`) — a firer on a rise, the friend in dead ground —
+      is not masked, and the friend stays at risk.
+    - **The drill never fires through its own men, and takes the risk
+      beside the line** (the author): a masked enemy is not a target, nor
+      for its grenadiers; a held force under a standing order takes the
+      nearest enemy it is not masked from.
+    - **The player is warned and decides** (the author): the fire card
+      names, for each marked enemy, the friends near it or the line, or
+      that the shot is masked; judged where the side has it marked, never
+      where it really is (decisions 12–13). Not for a vehicle's main gun,
+      a round that is never masked.
+    - **Friends fighting inside a building are at risk behind its walls**
+      (the author): by the men they show at their windows toward the
+      firer, with full cover's factor; they never mask.
+    - **The assault gate counts only the enemy's suppression of us** (the
+      author): a stray suppresses the friend it hits, kept apart
+      (`strayedSuppression`, halved with the rest), and decision 112's
+      "their fire is not stopping us" leaves it out.
+    - Told: the firer's side reads its strays exactly, in the log and the
+      debrief, and counts them among its losses; the enemy is told
+      nothing of them, nor of the share they put on its suppression.
+    - **Measured** (docs/balance.md, *Friendly fire and masked fire*):
+      it costs the attack beyond the noise in three cells of four (wins
+      −10 to −13; A at 3:1 −1); 1.3–2.6 of the attacker's men a battle are
+      put out by its own small arms — about a fifth of its losses. Split
+      boundaries cut that under B at 3:1 (2.38 → 1.69) and lean +7.5 there;
+      elsewhere they and sectors stay inside the noise. Off is off:
+      without the rule every battle is the same as before, seed by seed.
+    - A recording or save made before it replays with it off.
+    - ⚠️ Ours: the firer's own first 10 m are not its line of fire; a
+      friend within 10 m of the target is at it, not masking; a stray's
+      suppression is the burst's for its hits (`directSuppression`) and
+      does not shake its nerve as enemy fire would (no fire-log entry),
+      though its casualties count in end-of-turn morale like any; the men
+      a friend inside shows include men on its roof or in the street,
+      and they all take full cover's factor; the drill judges the mask
+      where the enemy really is (it never wastes a shot `fire()` would
+      refuse), the player's card where it is marked; a shot the player
+      takes at a masked mark is refused on where the enemy really is, as
+      a want of sight is; "ירי דו-צדדי" for friendly fire (IDF usage —
+      the author may prefer another word).
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

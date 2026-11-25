@@ -6628,6 +6628,68 @@ back, grenades on; cleared / attackers out a fight / minutes):
   take time.
 
 
+## Friendly fire and masked fire, built and measured, 2026-11-25 (decision 133)
+
+The author's rulings (two rounds of cards): a small-arms miss can hit a
+friend within 50 m of the target or 10 m of the line of fire; a friend
+within 10 m of the line, short of the target, masks it (no shot), unless
+the fire passes well over its head; the drill never fires through its own
+men but takes the risk beside the line; the player is warned and decides;
+friends fighting inside are at risk behind the walls; the assault gate
+counts only the enemy's suppression of us.
+
+**Off is off**: `--no-friendly-fire` matches the previous commit
+(`af7e5c5`, run in a worktree) seed by seed in every cell (the HEAD runs
+cover 95–147 of the 200 seeds each; all of them match), and its rows are
+decision 132's *none* rows to the decimal.
+
+`jev-sim --rule <variant> [--no-friendly-fire] [--boundary …] [--sectors …]
+--seed 1000 --n 200`, the reference drill, about fifteen minutes at six
+jobs, on the code as committed (after four review rounds). *Split*: as in
+decisions 131–132 (A: BLUE-1 west, BLUE-2 east; B at 3:1: BLUE-2 west,
+BLUE-3 east; B at 2:1: BLUE-1 west, BLUE-2 east). *Own men* is the
+attacker's men put out of the fight by its own small arms, a battle (the
+defender's is 0.00–0.01 in every cell: it stands still, nobody in front of
+it). *Changed*: battles differing at all from the cell's control row.
+
+| Ratio | Plan | Friendly fire | Measure | Attacker wins | Draws | Attacker lost | Defender lost | Own men | Changed |
+|---|---|---|---|---|---|---|---|---|---|
+| 3:1 | A | off | none | 76.0% | 0.5% | 14.9% | 51.6% | — | — |
+| | | on | none | 75.0% | 1.5% | 18.4% | 50.3% | 2.52 | 200 of 200 |
+| | | on | boundary split | 74.5% | 2.5% | 17.7% | 50.4% | 2.35 | 164 |
+| | | on | sectors split | 75.0% | 4.0% | 18.3% | 50.6% | 2.58 | 121 |
+| | B | off | none | 61.5% | 0.5% | 20.0% | 46.7% | — | — |
+| | | on | none | 48.5% | 0.0% | 22.7% | 44.1% | 2.38 | 199 |
+| | | on | boundary split | 56.0% | 0.5% | 21.8% | 45.6% | 1.69 | 199 |
+| | | on | sectors split | 49.5% | 0.0% | 22.6% | 44.1% | 2.44 | 23 |
+| 2:1 | A | off | none | 46.0% | 2.0% | 23.1% | 42.7% | — | — |
+| | | on | none | 36.0% | 1.0% | 25.8% | 36.6% | 2.13 | 189 |
+| | | on | boundary split | 32.5% | 2.5% | 26.0% | 37.9% | 1.85 | 184 |
+| | | on | sectors split | 37.5% | 1.0% | 25.5% | 37.6% | 2.04 | 129 |
+| | B | off | none | 39.5% | 1.5% | 25.1% | 39.6% | — | — |
+| | | on | none | 29.0% | 1.0% | 27.4% | 34.9% | 1.36 | 193 |
+| | | on | boundary split | 25.5% | 1.0% | 27.9% | 34.3% | 1.30 | 95 |
+| | | on | sectors split | 35.5% | 0.5% | 25.9% | 36.1% | 1.27 | 128 |
+
+(*Changed* for the *on / none* rows is against *off*; for the measures,
+against *on / none*.)
+
+- **The rule costs the attack, beyond the noise in three cells of four**:
+  wins −1 (A 3:1, noise), −13 (B 3:1), −10 (A 2:1), −10.5 (B 2:1); the
+  attacker loses 2.3–3.5 points more of its men, the defender 1.3–6
+  points fewer. Its own small arms put 1.3–2.6 of the attacker's men out
+  of a battle — roughly a fifth of what it loses — on our tentative stray
+  chances (0.05 at the target, 0.10 on the line). Masked shots and strays
+  are not separated here.
+- **Boundaries now save men in one cell, and lean better there**: under
+  B at 3:1 split lanes cut own men 2.38 → 1.69 and win +7.5 (at the edge
+  of a cell's ±7); elsewhere they cut own men by 0.06–0.28 and lean worse
+  (−0.5, −3.5, −3.5), inside the noise. The tradeoff decision 132 left
+  open now exists, but this table does not settle it.
+- **Sectors change little**: own men within 0.1 of none; wins 0 to +6.5
+  (B 2:1), inside the noise.
+- Not re-run on a disjoint window.
+
 ## Boundaries, built and measured, 2026-11-25 (decision 132)
 
 The author's rulings (two rounds of cards, FM 3-90 (2023) para A-16): a
@@ -6673,7 +6735,8 @@ result differs at all from the same seed without a boundary.
   fire that hits friends (decision 128's "later"), the rule against firing
   across saves nobody and only costs targets; a lane's only possible
   benefit is the dispersion decision 128 named, and nothing here isolates
-  it. The tradeoff is open for the author.
+  it. The tradeoff is open for the author. (Since decision 133 small
+  arms do hit friends: see *Friendly fire and masked fire*, above.)
 - **Granting changes nothing measurable.** At 2:1 nearly every grant is
   blocked (286 in 294): with two platoons abreast the neighbours stand
   where the line would have to go.

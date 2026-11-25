@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: OPORD's next piece with the author — the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot; it now also holds the boundary's live line and requests), the order in the debrief (the recording carries `opord.boundaryRequests`). Decision 128's control measures are all built now except the drawn lines and FSCMs. Done 2026-11-25: decisions 131 (sectors of fire) and 132 (boundaries, with in-battle requests to redraw them — the first thing a subordinate asks the player during play). Both measure inside the noise on Tel Azeka, like the LOA: their tradeoffs wait for the deeper scenario the author will design with us (one enemy on one position gives them little to act on). The commit gate enforces since 2026-11-25. Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours), and decision 132's ⚠️ (partial and blocked grants, command groups and routs outside the lanes). The sideways redraw the author accepted for now (2026-11-25): with drawn lines on the battle chart, a granted change means the player redraws the lines — build it that way then.**
+**Next, in one line: OPORD's next piece with the author — the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot; it now also holds the boundary's live line and requests), the order in the debrief (the recording carries `opord.boundaryRequests`). Decision 128's control measures are all built now except the drawn lines and FSCMs. Done 2026-11-25: decisions 131 (sectors of fire), 132 (boundaries, with in-battle requests to redraw them — the first thing a subordinate asks the player during play) and 133 (small-arms friendly fire and masked fire). 133 moves every attack table: wins −10 to −13 in three cells of four, about a fifth of the attacker's losses its own fire, on our tentative stray chances (0.05 / 0.10) — **the author has not yet seen that figure; ask before tuning it**. Split boundaries now save men under B at 3:1 (+7.5); sectors and the rest stay inside the noise on Tel Azeka. Not driven in the app: 133's fire-card warning (hotseat) and its debrief lines (the live log was, OPORD seed 1004). The commit gate enforces since 2026-11-25. Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours), and decision 132's ⚠️ (partial and blocked grants, command groups and routs outside the lanes). The sideways redraw the author accepted for now (2026-11-25): with drawn lines on the battle chart, a granted change means the player redraws the lines — build it that way then.**
 
 **Current as of 2026-11-25** (decision 131's commits, pushed). The batch below, of 2026-10-28, is kept for its figures.
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -67,10 +67,12 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of decision 131 (2026-11-25)
+## Green as of decision 133 (2026-11-25)
 
 ```
-npm run check       lint + both typechecks clean, 1,407 tests, 95 files
+npm run check       lint + both typechecks clean, 1,426 tests, 96 files
+npm run jev-sim -- --rule --no-friendly-fire --scenario telAzekaAssault --seed 1000 --n 200
+                    small arms hit only what they are aimed at, as before decision 133
 npm run jev-sim -- --opord parity --n 20
                     the reference plans written as orders against their --rule
                     form, question by question (decision 128); all 8 the same
@@ -522,6 +524,15 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **What friendly fire costs** (2026-11-25, balance.md, *Friendly fire
+  and masked fire*): plans A and B at 3:1 and 2:1, off / on / on with split
+  boundaries / on with split sectors, 200 battles a cell, about fifteen
+  minutes at six jobs; the off cells are decision 132's control rows to the
+  decimal. `tools/jev-sim.ts`'s RESULT line prints each side's men lost to
+  its own fire; a run's `result.friendlyFire` has hits and casualties.
+  Seed-picked tests moved because of it: suppressionGate (1002 → 1001),
+  orderedAttacker's LOA test (1002 → 1013).
 
 - **What boundaries are worth** (2026-11-25, balance.md, *Boundaries*):
   plans A and B at 3:1 and 2:1, none / split (refused, granted) / one
