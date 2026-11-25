@@ -1,6 +1,6 @@
 # Handoff — where the project stands
 
-**Next, in one line: boundaries, the second half of decision 128's pair — a boundary keeps each platoon's route in its lane (`coveredStep`'s candidates held to its side, as `holdShortOfLimit` holds the LOA); doctrine read (FM 3-90 A-16: manoeuvre within, direct fire across on identified targets); rules questions to the author as cards before building. Then OPORD's other pieces with him: the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot), the order in the debrief. Done 2026-11-25: decision 131, sectors of fire as halves of the objective (README; balance.md, *Sectors of fire*) — they change most battles and move no outcome past noise, split, massed and none level; like the LOA, the tradeoff waits for a deeper scenario (designed later, with the author). The commit gate is enforcing since 2026-11-25 (`.claude/sop-gate`). Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours).**
+**Next, in one line: OPORD's next piece with the author — the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot; it now also holds the boundary's live line and requests), the order in the debrief (the recording carries `opord.boundaryRequests`). Decision 128's control measures are all built now except the drawn lines and FSCMs. Done 2026-11-25: decisions 131 (sectors of fire) and 132 (boundaries, with in-battle requests to redraw them — the first thing a subordinate asks the player during play). Both measure inside the noise on Tel Azeka, like the LOA: their tradeoffs wait for the deeper scenario the author will design with us (one enemy on one position gives them little to act on). The commit gate enforces since 2026-11-25. Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours), and decision 132's ⚠️ (the redraw as a sideways move of the whole line, blocked grants as refusals, command groups and routs outside the lanes).**
 
 **Current as of 2026-11-25** (decision 131's commits, pushed). The batch below, of 2026-10-28, is kept for its figures.
 Since the batch below: decisions 118–122 in the README (122, time costs the
@@ -70,12 +70,14 @@ out of here on purpose:
 ## Green as of decision 131 (2026-11-25)
 
 ```
-npm run check       lint + both typechecks clean, 1,382 tests, 94 files
+npm run check       lint + both typechecks clean, 1,407 tests, 95 files
 npm run jev-sim -- --opord parity --n 20
                     the reference plans written as orders against their --rule
                     form, question by question (decision 128); all 8 the same
 npm run jev-sim -- --rule --sectors BLUE-1=west,BLUE-2=east --scenario telAzekaAssault --seed 1000 --n 200
                     sectors of fire (decision 131); an order's own via --opord
+npm run jev-sim -- --rule --boundary BLUE-1=west,BLUE-2=east --boundary-requests grant --scenario telAzekaAssault --seed 1000 --n 200
+                    boundaries (decision 132); requests refused unless granted
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -520,6 +522,12 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **What boundaries are worth** (2026-11-25, balance.md, *Boundaries*):
+  plans A and B at 3:1 and 2:1, none / split (refused, granted) / one
+  lane, 200 battles a cell, about twelve minutes at six jobs; split within
+  noise either way, one lane leaning worse (+1 to 2 points of men lost);
+  not re-run on a disjoint window.
 
 - **What sectors of fire are worth** (2026-11-25, balance.md, *Sectors of
   fire*): plans A and B at 3:1 and 2:1, none / split / massed west, 200

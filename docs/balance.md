@@ -6628,6 +6628,59 @@ back, grenades on; cleared / attackers out a fight / minutes):
   take time.
 
 
+## Boundaries, built and measured, 2026-11-25 (decision 132)
+
+The author's rulings (two rounds of cards, FM 3-90 (2023) para A-16): a
+line along the line of attack from the start line to 100 m short of the
+objective; each platoon west, east or none; no move or assault across;
+fire across only with no friend within 50 m of the target or 10 m of the
+line of fire; a platoon the line holds back asks to have it redrawn, and
+a grant moves it for the platoon and its neighbours.
+
+**Off is off**: the no-boundary cells (A at 3:1 and 2:1) match the
+previous commit (`6bd8d13`) seed by seed; B's are the sectors' table's.
+
+`jev-sim --rule <variant> [--boundary …] [--boundary-requests grant]
+--seed 1000 --n 200`, the reference drill, about twelve minutes at six
+jobs, on the code of fd29a1a (after the review's fixes). *Split*: the
+first two assaulting platoons west and east (under A at 3:1 the third
+has none); *one lane*: every platoon west. *Changed*: battles whose
+result differs at all from the same seed without a boundary.
+
+| Ratio | Plan | Boundary | Requests | Attacker wins | Draws | Attacker lost | Defender lost | Changed | Asked | Granted (partly) / blocked |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 3:1 | A | none | | 76.0% | 0.5% | 14.9% | 51.6% | — | | |
+| | | split | refused | 81.0% | 0.5% | 14.0% | 51.6% | 145 | 244 | |
+| | | split | granted | 79.0% | 1.0% | 14.3% | 51.3% | 146 | 254 | 151 (74) / 103 |
+| | | one lane | refused | 74.5% | 2.0% | 17.0% | 50.0% | 200 | 887 | |
+| | B | none | | 61.5% | 0.5% | 20.0% | 46.7% | — | | |
+| | | split | refused | 64.0% | 0.5% | 19.1% | 48.0% | 197 | 267 | |
+| | | split | granted | 63.5% | 1.0% | 19.5% | 47.5% | 198 | 316 | 223 (81) / 93 |
+| 2:1 | A | none | | 46.0% | 2.0% | 23.1% | 42.7% | — | | |
+| | | split | refused | 42.5% | 1.5% | 24.1% | 41.7% | 186 | 293 | |
+| | | split | granted | 42.5% | 1.5% | 24.2% | 41.6% | 185 | 294 | 8 (6) / 286 |
+| | | one lane | refused | 42.0% | 1.0% | 24.3% | 40.9% | 196 | 378 | |
+| | B | none | | 39.5% | 1.5% | 25.1% | 39.6% | — | | |
+| | | split | refused | 39.0% | 0.5% | 24.6% | 39.6% | 89 | 109 | |
+| | | split | granted | 40.0% | 1.0% | 24.2% | 40.1% | 89 | 113 | 28 (27) / 85 |
+
+- **Every row is inside a cell's ±7, so the table separates nothing.**
+  Split lanes lean better at 3:1 (A +5, B +2.5, a point fewer of the
+  attacker's men lost) and a little worse under A at 2:1 (−3.5, a point
+  more lost); every platoon in one lane leans worse at both ratios (wins
+  −1.5 and −4, men lost +2.1 and +1.2). Not re-run on a disjoint window.
+- **Not shown to be dominated, and no way to pay shown either.** With no
+  fire that hits friends (decision 128's "later"), the rule against firing
+  across saves nobody and only costs targets; a lane's only possible
+  benefit is the dispersion decision 128 named, and nothing here isolates
+  it. The tradeoff is open for the author.
+- **Granting changes nothing measurable.** At 2:1 nearly every grant is
+  blocked (286 in 294): with two platoons abreast the neighbours stand
+  where the line would have to go.
+- **How often a player is stopped**: 0.55–1.6 requests a battle with
+  split lanes, 1.9 (2:1) to 4.4 (3:1) with every platoon in one lane (it
+  keeps wanting across).
+
 ## Sectors of fire, built and measured, 2026-11-25 (decision 131)
 
 The author's rulings (three cards, FM 3-90 (2023) paras A-83 and A-16): a

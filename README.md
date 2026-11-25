@@ -4250,8 +4250,8 @@ on the stated reasoning, still awaiting the author's word.
       A-53), which sees the counterattack or the reinforcement coming and
       is exposed doing so. Pursuit is a new drill behaviour and moves every
       attack table: measured when built.
-    - **Sectors of fire and boundaries: both** (sectors built as decision
-      131, as halves of the objective; boundaries next). Now: a sector holds a force
+    - **Sectors of fire and boundaries: both** (built as decisions 131
+      and 132). Now: a sector holds a force
       to targets in its arc, spreading fire over more of the enemy at the
       cost of massing on the greatest threat (A-83, against decision 115's
       greatest-threat-first); a boundary keeps each platoon's route in its
@@ -4464,7 +4464,78 @@ on the stated reasoning, still awaiting the author's word.
       north–south (|dx|/|dy| 0.24 and 0.00), and `jev-sim --sectors`
       should not be read on such ground; the line drawn 400 m each way
       from the objective. Boundaries, the second of decision 128's pair, are
-      next.
+      decision 132.
+
+132. ✅ **Boundaries: a lane for each platoon, and asking to move it**
+    (the author, 2026-11-25, two rounds of ruling cards; decision 128's
+    "boundaries … both", the second of its pair). Doctrine: FM 3-90 (2023)
+    para A-16 — within its area a unit "may maneuver … without close
+    coordination", "direct fire may be placed across boundaries on clearly
+    identified enemy targets … provided friendly forces are not
+    endangered", and boundaries "should not split responsibilities for key
+    or decisive terrain"; ATP 3-21.8 (2024) para 4-101 — lateral
+    boundaries among what leaders designate "beyond the LD".
+    - **The line**: the line of attack (start line to the objective as
+      briefed, the sectors' line) from the start line to 100 m short of the
+      objective's centre (`BOUNDARY_SHORT_M`): lanes govern the approach,
+      and the objective itself is not split. Past the end there are none.
+    - **Each platoon west, east or none** on the form; two may share a
+      lane, and a platoon with none moves freely. One boundary a company.
+    - **No move across** — not a bound, not an assault, not following into
+      a house; a destination across is held just inside the lane.
+    - **Fire across only where no friend can be hit**: withheld if any of
+      our forces stands within 50 m of the target, or within 10 m of the
+      line of fire short of it (`ACROSS_SAFE`, the author's distances).
+    - **A platoon the line holds back asks the commander to redraw it**
+      ("no move outside boundaries without a boundary change request to the
+      player"): once, and after a refusal again no sooner than 5 turns from
+      when it asked. In the app play stops on it — auto-play pauses, the
+      next turn waits — with *אשר — הזז את הגבול* and *דחה*; the answer is
+      logged, and saved with the order in the recording
+      (`opord.boundaryRequests`). Headless, `--boundary-requests
+      grant|refuse` answers as the next turn opens, as the player does;
+      refused by default.
+    - **Granted, the boundary is redrawn** for the platoon and the
+      neighbours across it (the author's words). Built as: the whole line
+      moved sideways so the place asked for is 25 m inside the lane, but no
+      nearer any force of the other lane than 25 m
+      (`BOUNDARY_REDRAW_MARGIN_M`); short of that it moves part of the way;
+      if it cannot move toward it at all the request cannot be granted, the
+      panel says so, and only refusing is offered.
+    - **Scouts are free until H-hour**: they go to the posts the order gave
+      them; once the company goes, they are held like the rest.
+    - **Measured** (docs/balance.md, *Boundaries*; plans A and B at 3:1
+      and 2:1, 200 battles a cell): every row is inside a cell's ±7. Split
+      lanes lean better at 3:1 and a little worse under A at 2:1; every
+      platoon in one lane leans worse at both (1 to 2 points more men
+      lost); granting changes nothing measurable (at 2:1 the neighbours
+      block 286 grants in 294). **Not shown to be dominated — and no way
+      for a boundary to pay has been shown either**: with no fire that
+      hits friends, the safety rule costs targets and saves nobody, so
+      the tradeoff decision 128 asked of it is open for the author.
+      Requests come 0.55–1.6 times a battle with split lanes, 1.9–4.4 with
+      every platoon in one lane. Off is off: without a boundary every
+      battle is the same as before, seed by seed.
+    - The order's measure is `{ kind: "boundary", lanes }`; the shape it
+      was typed with on 2026-11-23 (a drawn line between two platoons) was
+      never carried out and is refused as not an order. A drawn boundary
+      comes with the battle chart.
+    - ⚠️ Ours: the redraw as a sideways move of the whole line, partial
+      grants, a blocked grant counting as a refusal; a force held 5 m
+      inside its lane (`LANE_INSIDE_M`); no request for a destination less
+      than 5 m across (on the line itself, say), nor from a force only
+      being brought into its lane where the start line put it; a request
+      nobody needs any more (another grant moved the line past what it
+      asked for, or its platoon is gone) dropped with no wait against it;
+      a firer's own 10 m not counted on the line of fire; command groups,
+      the platoons' included, move outside the lanes (they are not
+      manoeuvre elements, and follow the company); a rout, or a force out
+      of command, keeps the order it has and may cross — it never got the
+      word — and asks nothing; a bound from inside the lane to past the
+      end may cut the other lane's corner; screening and break-contact
+      smoke may still go onto an enemy across. The engine has no fire
+      that hits friends yet (decision 128's "later"), so the safety rule
+      costs targets and saves nobody today.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 
