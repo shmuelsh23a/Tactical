@@ -1,8 +1,8 @@
 # Handoff — where the project stands
 
-**Next, in one line: pick OPORD mode's next piece with the author — the other control measures one at a time (sectors of fire and boundaries next: distribution and dispersion, decision 128), the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot), the order in the debrief. The limit of advance measures as nothing today (a battle ends when a side breaks, and the defence nearly always breaks before the objective is seized): the author ruled on 2026-11-23 that a deeper scenario, one that goes on past the objective, gives it something to act on, and that it is designed later, with him — do not start it unasked. Done 2026-11-23, afternoon: decision 130 — the trained drill crosses to the far side and holds (ATP 3-21.10 para 2-181, never pursuing: para 2-3, which amended decision 128's pursuit), the untrained drill still chases; a limit of advance nobody crosses with one fresh squad pushed out to it; the order form's LOA (100–400 m past the objective). Measured (balance.md): a point at most on the standard windows but yokneamHouseReserve's second (48% → 44%); `--no-far-side` reproduces the old code exactly. Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours).**
+**Next, in one line: boundaries, the second half of decision 128's pair — a boundary keeps each platoon's route in its lane (`coveredStep`'s candidates held to its side, as `holdShortOfLimit` holds the LOA); doctrine read (FM 3-90 A-16: manoeuvre within, direct fire across on identified targets); rules questions to the author as cards before building. Then OPORD's other pieces with him: the drawn battle chart with the UX/UI pass, resuming an OPORD battle (`OrderedAttacker` has no snapshot), the order in the debrief. Done 2026-11-25: decision 131, sectors of fire as halves of the objective (README; balance.md, *Sectors of fire*) — they change most battles and move no outcome past noise, split, massed and none level; like the LOA, the tradeoff waits for a deeper scenario (designed later, with the author). The commit gate is enforcing since 2026-11-25 (`.claude/sop-gate`). Waiting on the author: `MEASURE_HE` (the measures' Hebrew names, ours).**
 
-**Current as of 2026-11-23, evening** (`792ea19` and the records after it, pushed). The batch below, of 2026-10-28, is kept for its figures.
+**Current as of 2026-11-25** (decision 131's commits, pushed). The batch below, of 2026-10-28, is kept for its figures.
 Since the batch below: decisions 118–122 in the README (122, time costs the
 attacker, is the latest), and the debrief's reinforcement narration. The
 batch of 2026-10-21, night, kept here for its figures — since the late
@@ -67,13 +67,15 @@ out of here on purpose:
 - [docs/validation.md](validation.md) — the game's numbers against the
   research, with sources, and what `npm run validate` measures.
 
-## Green as of `792ea19` (2026-11-23)
+## Green as of decision 131 (2026-11-25)
 
 ```
-npm run check       lint + both typechecks clean, 1,366 tests, 93 files
+npm run check       lint + both typechecks clean, 1,382 tests, 94 files
 npm run jev-sim -- --opord parity --n 20
                     the reference plans written as orders against their --rule
                     form, question by question (decision 128); all 8 the same
+npm run jev-sim -- --rule --sectors BLUE-1=west,BLUE-2=east --scenario telAzekaAssault --seed 1000 --n 200
+                    sectors of fire (decision 131); an order's own via --opord
 npm run balance     the balance harness; see balance.md for every run recorded
 npm run validate    the numbers against the sources; see validation.md
 npm run interior-sim [-- --prepared --hold --expect-above --storeys 1 --only door-no]
@@ -143,10 +145,11 @@ The 2026-10-01 version of this section, with its tables and the rulings of
 
 ### The verification procedure (2026-11-18)
 
-- **The commit gate is in observe mode**: `.claude/hooks/sop/` logs to
-  `~/.claude/sop-gate.log` what it would have blocked and blocks nothing.
-  Read the log after a week or two; enforce with
-  `py C:\Lunete\sop\install.py --repo . --mode enforce`.
+- **The commit gate enforces** (the author, 2026-11-25, after a week in
+  observe mode logged nothing: all 29 commits carried a `Verified:` line).
+  A commit without one is blocked, twice, then let through and logged to
+  `~/.claude/sop-gate.log`. The installer needs `PYTHONUTF8=1` here (the
+  repo's Hebrew path).
 - **`.claude/agents/code-reviewer.md` was kept** (the installer leaves a
   filled-in agent alone). It reads REVIEW.md through
   `docs/review-checklist.md` section 7; the kit's own agent is the
@@ -517,6 +520,12 @@ Closed deliberately, with reasons that are not obvious from the code:
   overspends.
 
 ## Do not re-derive
+
+- **What sectors of fire are worth** (2026-11-25, balance.md, *Sectors of
+  fire*): plans A and B at 3:1 and 2:1, none / split / massed west, 200
+  battles a cell, about ten minutes at six jobs; every row within 2
+  points of its control. Re-measure only on a scenario with the enemy in
+  more than one place.
 
 - **What the reinforcement costs each plan** (2026-10-28, balance.md): the
   eight 3:1 plans on both drills with `--no-reinforcement` and without, 32

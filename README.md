@@ -4250,7 +4250,8 @@ on the stated reasoning, still awaiting the author's word.
       A-53), which sees the counterattack or the reinforcement coming and
       is exposed doing so. Pursuit is a new drill behaviour and moves every
       attack table: measured when built.
-    - **Sectors of fire and boundaries: both.** Now: a sector holds a force
+    - **Sectors of fire and boundaries: both** (sectors built as decision
+      131, as halves of the objective; boundaries next). Now: a sector holds a force
       to targets in its arc, spreading fire over more of the enemy at the
       cost of massing on the greatest threat (A-83, against decision 115's
       greatest-threat-first); a boundary keeps each platoon's route in its
@@ -4405,6 +4406,65 @@ on the stated reasoning, still awaiting the author's word.
       the LOA (a breach, a scout post, a door to follow in by) is held at
       the line and never given up. A force out of command keeps the order
       it had and may cross the line: it never got the word.
+
+131. ✅ **Sectors of fire: a half of the objective, and a shift to the
+    other** (the author, 2026-11-25, three ruling cards, every one the
+    recommended option; decision 128's "sectors of fire … both", the first
+    of its two). Doctrine: FM 3-90 (2023) para A-83 — a sector is "the area
+    assigned to a unit … in which it will engage the enemy in accordance
+    with established engagement priorities", it "can be an enclosed area at
+    a distance from the firing position", and "fire shifts to the secondary
+    sector … when there are no targets in the primary sector", the
+    secondary being "another element's primary sector … to obtain mutual
+    support"; para A-16 — direct fire "may be placed across boundaries on
+    clearly identified enemy targets".
+    - **A sector is a half of the objective** for now: the line of attack
+      (start line to the objective as briefed) through the objective's
+      centre splits the ground into a west and an east half, west the side
+      of the lesser x, as a flank's side is. It is read from wherever the
+      force stands, so it stays right as the squads move. The form offers
+      each platoon *כל היעד* (no sector: the drill's own arc, as before),
+      *חצי מערבי* or *חצי מזרחי*; the line between the halves is drawn on
+      the map and kept through the battle. A drawn sector comes with the
+      battle chart.
+    - **The secondary is the other half**, and fire shifts to it by
+      itself when nothing in the primary is in reach: A-83's condition read
+      as standing, no FRAGORD needed.
+    - **Shooting back needs no sector**: under the reference drill, whose
+      return fire it is (`returnFire`), a force fired on answers its firer
+      wherever it is (decision 115 kept); the plain drill answers nobody
+      first, with or without one. A sector only narrows which enemies are
+      targets; the drill then ranks them as it always has — not pinned
+      before pinned, a crew-served weapon before riflemen, the nearest — so
+      a sector whose half holds every enemy changes nothing (the review).
+    - **Every platoon on one half is allowed**: it is massing, the other
+      side of the tradeoff, and is measured with the rest.
+    - **The tradeoff it asks** (decision 128): a sector spreads the
+      company's fire over more of the position, at the cost of a platoon
+      not massing on the greatest threat when it stands in the other half.
+      **Measured** (docs/balance.md, *Sectors of fire*; plans A and B at
+      3:1 and 2:1, 200 battles a cell): the sector changes 15% to 69% of
+      the battles, and moves no win rate by more than 2 points nor any loss by
+      more than a point — split, massed on one half and none are level.
+      Nothing is dominated, and nothing is gained or paid today; as with
+      the limit of advance, the tradeoff waits for ground where the enemy
+      is in more than one place. Off is off: without sectors, every battle
+      is the same as before, seed by seed.
+    - The order's measure is `{ kind: "sectorOfFire", platoon, primary }`;
+      the bearings it was typed with on 2026-11-23 were never carried out,
+      and a file that still has them is refused as not an order, never
+      played as another. `ORDER_VERSION` is unchanged for that reason.
+    - ⚠️ Ours: an enemy within the drill's assault reach is engaged
+      whatever its half, as a force's own ground; the drill's arc no
+      longer refuses a sectored platoon a target (it still breaks ties);
+      on the dividing line itself, west; on ground where the line of attack
+      runs east–west the halves are north and south, and which is called
+      west turns on the sign of a few metres of planning error, so there
+      it is arbitrary from battle to battle — both OPORD scenarios attack
+      north–south (|dx|/|dy| 0.24 and 0.00), and `jev-sim --sectors`
+      should not be read on such ground; the line drawn 400 m each way
+      from the objective. Boundaries, the second of decision 128's pair, are
+      next.
 
 Still modelled by reasonable assumption (flag if you want them changed):
 

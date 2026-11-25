@@ -6628,6 +6628,59 @@ back, grenades on; cleared / attackers out a fight / minutes):
   take time.
 
 
+## Sectors of fire, built and measured, 2026-11-25 (decision 131)
+
+The author's rulings (three cards, FM 3-90 (2023) paras A-83 and A-16): a
+sector is a half of the objective, split by the line of attack; fire
+shifts to the other half when nothing in the primary is in reach; a force
+fired on shoots back wherever its firer is.
+
+**Off is off**: the four cells without sectors (plans A and B at 3:1 and
+2:1) were run on `HEAD` (f5012f8, a clean worktree) and on the new code
+and came out identical seed by seed — every battle's line the same.
+
+`jev-sim --rule <variant> [--sectors …] --seed 1000 --n 200`, the
+reference drill, about ten minutes at six jobs, on the code of 7e17b72
+(the sectored rows re-run after the review's last fix: a half with nothing
+in reach leaves the other whole). A is the calibrated
+plan (every platoon assaults), B the deliberate one (BLUE-1 a base of
+fire, its sector left whole). *Split* gives the first two assaulting
+platoons west and east (the third, at 3:1 under A, keeps the whole);
+*mass* gives every platoon the west. *Changed* is the battles whose result
+differs at all from the same seed without sectors.
+
+| Ratio | Plan | Sectors | Attacker wins | Draws | Attacker lost | Defender lost | Turns | Changed |
+|---|---|---|---|---|---|---|---|---|
+| 3:1 | A | none | 76.0% | 0.5% | 14.9% | 51.6% | 36 | — |
+| | | split | 76.5% | 2.0% | 15.4% | 52.0% | 37 | 116 |
+| | | mass west | 76.5% | 2.5% | 15.5% | 52.5% | 36.5 | 93 |
+| | B | none | 61.5% | 0.5% | 20.0% | 46.7% | 36 | — |
+| | | split | 60.5% | 1.0% | 20.2% | 46.6% | 36 | 29 |
+| 2:1 | A | none | 46.0% | 2.0% | 23.1% | 42.7% | 38 | — |
+| | | split | 46.0% | 2.0% | 23.7% | 43.6% | 37 | 134 |
+| | | mass west | 48.0% | 1.5% | 23.1% | 43.6% | 37 | 119 |
+| | B | none | 39.5% | 1.5% | 25.1% | 39.6% | 39 | — |
+| | | split | 41.0% | 1.0% | 24.8% | 39.9% | 39 | 138 |
+
+- **The sector acts, and nothing it does reaches the outcome.** It changes
+  15% to 69% of the battles, shot by shot (in the test's three battles a
+  platoon ordered east put 50% of its fire there, against 34% with none),
+  yet every row is within two points of its control in wins and a point in
+  losses — inside a 200-battle cell's ±7. Draws at 3:1 under A go from 0.5%
+  to 2–2.5% (one draw to four or five), also inside the noise. Split, mass and none are level:
+  **no setting is dominated**, and none is worth anything measurable.
+- **Why is not probed.** Two readings, neither tested: return fire comes
+  first whatever the sector (half of the ordered platoon's fire still went
+  into the other half in the test's battles); and the enemy on Tel Azeka
+  is one platoon on one position, so fire spread or massed meets about the
+  same men. If it is the second, a defence in depth, or a second position
+  the sectors would cover, is where decision 128's tradeoff has something
+  to act on — as with the limit of advance.
+
+Ours (⚠️): an enemy within assault reach engaged whatever its half; the
+drill's arc kept only as a tie-break for a sectored platoon; the line
+drawn 400 m each way (`SECTOR_LINE_M`).
+
 ## The far side and the limit of advance, built and measured, 2026-11-23 (decision 130)
 
 The author's rulings (three cards, after doctrine was read: ATP 3-21.10
