@@ -4553,9 +4553,11 @@ on the stated reasoning, still awaiting the author's word.
       10 m of the line of fire short of it (decision 132's distances,
       the author's). Each miss is rolled against the friends at risk,
       likeliest first, and hits the first it catches; the friend's cover
-      counts. ⚠️ Ours, tentative (docs/balance.md): the chance is 0.05
-      for a friend at the target, falling to none at 50 m, and 0.10 on
-      the line, falling to none at 10 m (`FRIENDLY_FIRE`).
+      counts. The chance is 0.05 for a friend at the target, falling to
+      none at 50 m, and 0.10 on the line, falling to none at 10 m
+      (`FRIENDLY_FIRE`): ours, and **the author kept them for now**
+      (2026-11-25), having seen that they make about a fifth of the
+      attacker's losses its own; tentative on docs/balance.md.
     - **Masked: no force fires through its own men.** A friend whose
       centre is within 10 m of the line (a squad's half-front, the
       author's), short of the target, refuses the shot — for the player,

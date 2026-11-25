@@ -6679,7 +6679,8 @@ against *on / none*.)
   attacker loses 2.3–3.5 points more of its men, the defender 1.3–6
   points fewer. Its own small arms put 1.3–2.6 of the attacker's men out
   of a battle — roughly a fifth of what it loses — on our tentative stray
-  chances (0.05 at the target, 0.10 on the line). Masked shots and strays
+  chances (0.05 at the target, 0.10 on the line), which the author kept
+  for now having seen this (2026-11-25). Masked shots and strays
   are not separated here.
 - **Boundaries now save men in one cell, and lean better there**: under
   B at 3:1 split lanes cut own men 2.38 → 1.69 and win +7.5 (at the edge
