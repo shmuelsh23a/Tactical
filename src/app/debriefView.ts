@@ -387,11 +387,15 @@ export function lessonsFor(
       if (!shotBack.result.fired) continue;
       shot(shotBack.coveringId, shotBack.targetId);
       count(shotBack.targetId, shotBack.result.newCasualties);
+      // …and what its misses cost its own side (decision 133).
+      // A stray is only ever suffered: the enemy's own losses to its own fire are not ours to claim.
+      for (const s of shotBack.result.friendly ?? []) if (own(s.unitId)) count(s.unitId, s.newCasualties);
     }
 
     switch (outcome.kind) {
       case "fire":
         if (action.kind === "fire") count(action.targetId, outcome.result.newCasualties);
+        for (const s of outcome.result.friendly ?? []) if (own(s.unitId)) count(s.unitId, s.newCasualties);
         break;
       case "assault":
         if (action.kind === "assault") {
@@ -422,6 +426,7 @@ export function lessonsFor(
         if (outcome.kind === "executeStandingOrders") {
           for (const done of outcome.executions) {
             if (done.engaged) count(done.engaged.targetId, done.engaged.newCasualties);
+            for (const s of done.engaged?.friendly ?? []) if (own(s.unitId)) count(s.unitId, s.newCasualties);
           }
         }
         break;

@@ -157,8 +157,10 @@ export {
   NOT_A_COAXIAL_WEAPON,
   type DirectFireResult,
   type DirectFireOptions,
+  type FriendlyHit,
   type WeaponClass,
 } from "./combat/directFire.js";
+export { FRIENDLY_FIRE, MASKED_BY_FRIENDS, friendsAtRisk, maskingFriend, type AtRisk } from "./combat/friendlyFire.js";
 export { resolveArmorHit, rollArmorLocation, type ArmorHitResult } from "./combat/armorDamage.js";
 export { resolveDispersion, type DispersionResult } from "./combat/artillery.js";
 export {
@@ -305,6 +307,7 @@ export {
   shooterAccuracy,
   sideBroken,
   suppressionLevel,
+  enemySuppressionLevel,
   unitSeed,
   StressLedger,
   type FireNote,

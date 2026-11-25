@@ -31,14 +31,14 @@ describe("the doctrinal gate on an assault", () => {
   });
 
   it("changes the battle, and the same seed changes it the same way", () => {
-    // Seed 1002: since the drill audit (decisions 114–116) seed 1001's battle
-    // comes out the same either way, as 1000's had since decision 105 (6 seeds
-    // in 12 differ, 1000-1011: 1002, 1004, 1005, 1007, 1009, 1010).
-    const a = play({ ...RECON, suppressionGate: GATE }, 1002);
-    const b = play({ ...RECON, suppressionGate: GATE }, 1002);
+    // Seed 1001: since friendly fire (decision 133) seed 1002's battle comes
+    // out the same either way (9 seeds in 12 differ, 1000-1011: all but 1002,
+    // 1006 and 1007).
+    const a = play({ ...RECON, suppressionGate: GATE }, 1001);
+    const b = play({ ...RECON, suppressionGate: GATE }, 1001);
     expect(a).toEqual(b);
     // …and it is not simply the ungated battle under another name.
-    expect(a).not.toEqual(play(RECON, 1002));
+    expect(a).not.toEqual(play(RECON, 1001));
   });
 
   it("leaves a company with no gate exactly as it was", () => {

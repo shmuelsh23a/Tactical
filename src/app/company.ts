@@ -1,4 +1,4 @@
-import { MEDIUM_MG_BANDS, SMALL_ARMS_BANDS, distance, suppressionLevel, type Game, type Point, type Side, type Terrain, type Unit } from "../engine/index.js";
+import { MEDIUM_MG_BANDS, SMALL_ARMS_BANDS, distance, enemySuppressionLevel, suppressionLevel, type Game, type Point, type Side, type Terrain, type Unit } from "../engine/index.js";
 import { bestVantages, nearestDeadGround } from "./deadGround.js";
 import { hasEyesOn, sideView } from "./hotseat.js";
 
@@ -674,7 +674,8 @@ export class ScriptedCompany {
     const own = this.inContact(game, gate);
     // Nobody in contact yet: there is no firefight to have won.
     if (!own.length) return false;
-    const held = own.filter((u) => suppressionLevel(u) !== "none").length;
+    // Held by the enemy's fire, not by our own strays (the author, decision 133).
+    const held = own.filter((u) => enemySuppressionLevel(u) !== "none").length;
     if (held / own.length > gate.heldWhileShare) return false;
     // Is our fire telling on them? Only the enemy we can watch counts.
     const watched = foes

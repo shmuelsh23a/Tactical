@@ -146,6 +146,16 @@ export function ammunitionHe(report: AmmunitionReport, name: (id: string) => str
   }
 }
 
+/** A shot's misses on the firer's own men (decision 133), for the firer's side: its own men, so told exactly. */
+export function friendlyFireHe(firer: string, friend: string, hits: number, casualties: number): string {
+  return `ירי דו-צדדי: ${firer} פגע ב${friend} — ${hits} פגיעות, ${casualties} נפגעים`;
+}
+
+/** What a shot would risk of our own forces (decision 133), for the fire card: the friends its misses can reach, likeliest first. */
+export function friendlyRiskHe(names: readonly string[]): string {
+  return `סכנת ירי דו-צדדי — בקרבת המטרה או קו הירי: ${names.join(", ")}`;
+}
+
 export function reasonHe(reason?: string): string {
   switch (reason) {
     // …a shot that could not be taken
@@ -171,6 +181,8 @@ export function reasonHe(reason?: string): string {
       return "הכוח בחיפוי — הפעולה לתור זה נוצלה";
     case "out of ammunition":
       return "אזלה התחמושת";
+    case "masked by our own forces":
+      return "האש חסומה — כוחותינו בקו הירי";
     case "no charges left":
       return "לא נותרו מטענים";
     // …an order that could not be carried out
@@ -717,10 +729,14 @@ export function describeExecution(
     if (view === "target") {
       return `${who} — ${hits}, ${casualtyReport(done.engaged.newCasualties, true)}`;
     }
+    // What its misses did to its own men (decision 133): the firer's side and the umpire count them.
+    const strays = (done.engaged.friendly ?? [])
+      .map((s) => ` · ${friendlyFireHe(name, nameOf(s.unitId), s.hits, s.newCasualties)}`)
+      .join("");
     return `${who} — ${view === "umpire" ? `${hits} ` : ""}${chance}, ${casualtyReport(
       done.engaged.newCasualties,
       counted,
-    )}`;
+    )}${strays}`;
   }
   const bound = describeBound(done, nameOf, placeKnown);
   if (bound) return bound;
@@ -968,6 +984,10 @@ export function describeOutcome(
       for (const shot of coveringFire) {
         if (!lens.isOwn(shot.coveringId) && !lens.isOwn(shot.targetId)) continue;
         bits.push(coveringFireHe(shot, who, lens.isOwn(shot.targetId)));
+        // What its misses did to the coverer's own men (decision 133): theirs to count.
+        for (const s of shot.result.friendly ?? []) {
+          if (lens.isOwn(s.unitId)) bits.push(friendlyFireHe(who(shot.coveringId), who(s.unitId), s.hits, s.newCasualties));
+        }
       }
       if (!mine) return bits.join(" · ");
       if (detection.spottedUnitIds.length) {
@@ -990,9 +1010,14 @@ export function describeOutcome(
     case "fire": {
       const r = outcome.result;
       if (!r.fired) return `לא ירה (${reasonHe(r.reason)})`;
+      // What its misses did to the firer's own men (decision 133): theirs to count, and the umpire's.
+      const strays = (r.friendly ?? [])
+        .filter((s) => umpire || lens.isOwn(s.unitId))
+        .map((s) => ` · ירי דו-צדדי: נפגע ${who(s.unitId)} — ${s.hits} פגיעות, ${s.newCasualties} נפגעים${s.neutralized ? " — נוטרל" : ""}`)
+        .join("");
       // Fire onto ground the side had no eyes on: its own men and its own
       // chance, and not a word about what it found there.
-      if (!observed) return `${r.shooters} יורים ב-${pct(r.hitChance)} — ללא תצפית על המטרה`;
+      if (!observed) return `${r.shooters} יורים ב-${pct(r.hitChance)} — ללא תצפית על המטרה${strays}`;
       // **Three readings, not two.** `exact` says the reader owns the target,
       // which is true of the umpire *and* of the force being shot at — so one
       // flag cannot separate "entitled to the whole picture" from "entitled to
@@ -1004,16 +1029,16 @@ export function describeOutcome(
       if (umpire) {
         return `${r.hits}/${r.shooters} פגיעות ב-${pct(r.hitChance)}, ${r.totalDamage} נק"פ, ${r.newCasualties} נפגעים${
           r.targetNeutralized ? " — נוטרל" : ""
-        }`;
+        }${strays}`;
       }
       // The force that was shot at: what landed on its own men, counted.
       if (exact) {
-        return `${r.hits} פגיעות, ${r.newCasualties} נפגעים${r.targetNeutralized ? " — נוטרל" : ""}`;
+        return `${r.hits} פגיעות, ${r.newCasualties} נפגעים${r.targetNeutralized ? " — נוטרל" : ""}${strays}`;
       }
       // The shooter: its own men, its own chance, and a report of the effect.
       return `${r.shooters} יורים ב-${pct(r.hitChance)} — ${casualtyReport(r.newCasualties, false)}${
         r.targetNeutralized ? " — נראה מנוטרל" : ""
-      }`;
+      }${strays}`;
     }
 
     case "fireExplosive": {

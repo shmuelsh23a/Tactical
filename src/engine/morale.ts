@@ -248,6 +248,15 @@ export function suppressionLevel(unit: Unit): SuppressionLevel {
   return "none";
 }
 
+/**
+ * The suppression level the **enemy's** fire alone has put on a force (rules
+ * decision 133, the author): what its own side's strays added left out. For
+ * a commander judging whether the firefight is won; the men are held by all of it.
+ */
+export function enemySuppressionLevel(unit: Unit): SuppressionLevel {
+  return suppressionLevel({ ...unit, suppression: Math.max(0, (unit.suppression ?? 0) - (unit.strayedSuppression ?? 0)) });
+}
+
 /** What suppression does to a force's aim: 1, or the suppressed or pinned factor. */
 export function suppressionAccuracy(unit: Unit): number {
   const level = suppressionLevel(unit);
@@ -1063,6 +1072,8 @@ export function resolveMorale(ctx: MoraleContext): MoraleStepResult {
   // --- 8. Suppression wears off ---
   for (const u of units) {
     if (u.suppression != null) u.suppression = Math.floor(u.suppression / 2);
+    // The share our own strays put on it wears off with the rest (decision 133).
+    if (u.strayedSuppression != null) u.strayedSuppression = Math.min(u.suppression ?? 0, Math.floor(u.strayedSuppression / 2));
   }
   return result;
 }

@@ -259,6 +259,7 @@ function checkRecording(recording: unknown): asserts recording is GameRecording 
   if (r.joinFights !== undefined && typeof r.joinFights !== "boolean") throw malformed("joinFights");
   if (r.breachingCharges !== undefined && !(Number.isInteger(r.breachingCharges) && (r.breachingCharges as number) >= 0)) throw malformed("breachingCharges");
   if (r.ammunition !== undefined && typeof r.ammunition !== "boolean") throw malformed("ammunition");
+  if (r.friendlyFire !== undefined && typeof r.friendlyFire !== "boolean") throw malformed("friendlyFire");
   if (r.charges !== undefined && !(Number.isInteger(r.charges) && (r.charges as number) >= 0)) throw malformed("charges");
   if (r.breakEndsInside !== undefined && typeof r.breakEndsInside !== "boolean") throw malformed("breakEndsInside");
   if (r.moraleInside !== undefined && typeof r.moraleInside !== "boolean") throw malformed("moraleInside");
@@ -508,6 +509,8 @@ export interface GameRecording {
   breachingCharges?: number;
   /** Whether ammunition was counted (rules decision 127). Read as **off** when absent: nobody ran out. */
   ammunition?: boolean;
+  /** Whether small arms could hit friends and were masked by them (rules decision 133). Read as **off** when absent. */
+  friendlyFire?: boolean;
   /** Mines and IEDs a force that might lay them carried (decision 127), when not the default. */
   charges?: number;
   /** Whether a side's break ended its fights inside (rules decision 102). Read as **off** when absent. */
@@ -740,6 +743,7 @@ export function replayWithOutcomes(
     joinFights: recording.joinFights ?? false,
     ...(recording.breachingCharges !== undefined ? { breachingCharges: recording.breachingCharges } : {}),
     ammunition: recording.ammunition ?? false,
+    friendlyFire: recording.friendlyFire ?? false,
     ...(recording.charges !== undefined ? { charges: recording.charges } : {}),
     breakEndsInside: recording.breakEndsInside ?? false,
     moraleInside: recording.moraleInside ?? false,

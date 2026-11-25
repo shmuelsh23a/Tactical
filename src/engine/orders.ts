@@ -1,6 +1,6 @@
 import { distance, type Point } from "./geometry.js";
 import type { MovementMode } from "./types.js";
-import type { WeaponClass } from "./combat/directFire.js";
+import type { FriendlyHit, WeaponClass } from "./combat/directFire.js";
 import type { MoveResult } from "./game.js";
 
 /**
@@ -95,7 +95,14 @@ export interface StandingOrderExecution {
     withdrawing?: boolean;
   };
   /** Set when the force engaged the target its order names. */
-  engaged?: { targetId: string; hits: number; newCasualties: number; hitChance: number };
+  engaged?: {
+    targetId: string;
+    hits: number;
+    newCasualties: number;
+    hitChance: number;
+    /** Our own forces its misses hit (rules decision 133): absent where none was. */
+    friendly?: FriendlyHit[];
+  };
   /** Why nothing happened, when nothing did. */
   reason?: string;
 }

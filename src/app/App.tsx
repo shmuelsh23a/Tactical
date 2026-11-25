@@ -85,7 +85,8 @@ import {
   reinforcementHe,
   weaponName,
 } from "./debriefText.js";
-import { boundaryAnswerHe, boundaryRequestHe, intentNoteHe, orderProblemHe } from "./debriefText.js";
+import { boundaryAnswerHe, boundaryRequestHe, friendlyFireHe, friendlyRiskHe, intentNoteHe, orderProblemHe } from "./debriefText.js";
+import type { FriendlyHit } from "../engine/index.js";
 import type { Scenario, ScenarioListing } from "./scenario.js";
 import {
   buildActivations,
@@ -911,6 +912,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
         }
         return coveringFireHe(shot, nameOf, reader === target.side);
       });
+      logStrays(coverer, shot.result.friendly, coverer.side);
     }
   }
 
@@ -1382,6 +1384,11 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
           describeExecution(done, nameOf, engaged?.side === reader ? "target" : "firer", reader === side),
         );
         if (engaged) logNeutralized(engaged, side);
+        // Its strays are on the execution's own line (describeExecution): only a friend they put down is told apart.
+        for (const s of engagement.friendly ?? []) {
+          const friend = game.units.find((u) => u.id === s.unitId);
+          if (friend) logNeutralized(friend, side);
+        }
       }
       if (done.reason && !isRoutineOrderReason(done.reason)) {
         pushLog(`${name}: ${reasonHe(done.reason)}`, "info", onlyFor(side));
@@ -1515,7 +1522,18 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
             false,
           )}`,
     );
+    logStrays(firer, r.friendly, by);
     return true;
+  }
+
+  /** What a shot's misses did to the firer's own men (decision 133): its own side's business, told exactly. */
+  function logStrays(firer: Unit, strays: readonly FriendlyHit[] | undefined, by: Side) {
+    for (const s of strays ?? []) {
+      const friend = game.units.find((u) => u.id === s.unitId);
+      if (!friend) continue;
+      pushLog(friendlyFireHe(firer.name, friend.name, s.hits, s.newCasualties), "casualty", onlyFor(by));
+      logNeutralized(friend, by);
+    }
   }
 
   /** A force put out of the fight, to whoever may know of it. */
@@ -2642,6 +2660,29 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                         בחר כוח, ולחץ על אויב מסומן כדי לירות. מוצגים רק כוחות שזוהו;
                         סימון דהוי הוא דיווח מתור קודם — ייתכן שהכוח כבר אינו שם.
                       </p>
+                      {/* Friendly fire (decision 133): warned, the player decides; a masked shot is refused. */}
+                      {/* Small arms and the coaxial gun only: a vehicle's main gun is a round, never masked. */}
+                      {selectedOwn &&
+                        game.friendlyFire &&
+                        (selectedOwn.kind !== "vehicle" || weapon === "sustainedMg") &&
+                        visibleEnemies.map((e) => {
+                          // Where its side has the enemy marked, never where it really is (decisions 12–13).
+                          const risk = game.friendlyRisk(selectedOwn.id, e.id, e.position);
+                          const name = (id: string) => game.units.find((u) => u.id === id)?.name ?? id;
+                          if (risk.masked) {
+                            return (
+                              <p key={e.id} className="hint warn friendly-risk">
+                                {e.name}: {reasonHe("masked by our own forces")} ({name(risk.masked)})
+                              </p>
+                            );
+                          }
+                          if (!risk.atRisk.length) return null;
+                          return (
+                            <p key={e.id} className="hint warn friendly-risk">
+                              {e.name}: {friendlyRiskHe(risk.atRisk.map((r) => name(r.unitId)))}
+                            </p>
+                          );
+                        })}
                     </>
                   ) : (
                     <>

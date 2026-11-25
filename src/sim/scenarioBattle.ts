@@ -173,6 +173,8 @@ export interface ScenarioBattleOptions {
   counterattackInside?: boolean;
   /** Ammunition counted (`GameOptions.ammunition`, rules decision 127). `false` takes the loads off the scenario's forces: every table before it. */
   ammunition?: boolean;
+  /** Small-arms friendly fire and masked fire (`GameOptions.friendlyFire`, rules decision 133). `false`: every table before it. */
+  friendlyFire?: boolean;
   /**
    * The attacker briefed on the defence with its reserves (true), as before
    * decision 105: the tasking aimed at the mean of every defending force. A
@@ -238,6 +240,8 @@ export interface ScenarioBattleResult {
   counterattacks: number;
   /** The attacker's requests to redraw its boundary, and how each was answered (decision 132). */
   boundaryRequests: BoundaryAnswer[];
+  /** What each side's small arms did to its own men (decision 133): hits, and men put out of the fight. */
+  friendlyFire: Record<Side, { hits: number; casualties: number }>;
   /**
    * What the battle did to buildings and vehicles (decisions 76–78): the
    * buildings damaged and brought down at the end, the rounds that went in
@@ -309,6 +313,8 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       delete u.charges;
     }
   }
+  // Small arms hit only what they are aimed at (decision 133 off), as before 2026-11-25: a measurement's switch.
+  if (opts.friendlyFire === false) (g as { friendlyFire: boolean }).friendlyFire = false;
   const attacker: Side = g.attackers[0] ?? "BLUE";
   const defender = other(attacker);
   const maxTurns = opts.maxTurns ?? g.timeLimit ?? 60;
@@ -421,6 +427,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     smoke: { RED: 0, BLUE: 0 },
     counterattacks: 0,
     boundaryRequests: [],
+    friendlyFire: { RED: { hits: 0, casualties: 0 }, BLUE: { hits: 0, casualties: 0 } },
     retaken: 0,
     defenderPlanned: 0,
     urban: { damaged: 0, rubble: 0, windowCriticals: 0, roofCriticals: 0, crushed: 0, vehiclesOut: { RED: 0, BLUE: 0 }, vehicles: { RED: 0, BLUE: 0 } },
@@ -505,6 +512,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     const u = g.getUnit(id);
     if (!u.neutralized && !u.routing && !u.surrendered && distance(u.position, post) <= HOLDS_POST_M) result.retaken++;
   }
+  result.friendlyFire = g.friendlyFireTally;
   const tally = g.urbanTally;
   result.urban = { damaged: 0, rubble: 0, ...tally, vehiclesOut: { RED: 0, BLUE: 0 }, vehicles: { RED: 0, BLUE: 0 } };
   for (const o of g.mapTerrain.objects) {

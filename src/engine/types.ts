@@ -339,6 +339,11 @@ export interface Unit {
    */
   suppression?: number;
   /**
+   * Of {@link suppression}, the share its own side's strays put on it (rules
+   * decision 133): halved with it, never more than it. Absent: none.
+   */
+  strayedSuppression?: number;
+  /**
    * The force broke and is running. The engine has taken it — it runs to its
    * commander, does not fire and cannot be given orders — until a leader
    * rallies enough of it.

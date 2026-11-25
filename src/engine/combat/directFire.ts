@@ -11,6 +11,7 @@ import {
 import { refreshUnitStatus, woundHit } from "../units.js";
 import { SMALL_ARMS_COMBAT_FACTOR, type Lethality } from "../data/lethality.js";
 import { readySoldiers, shooterAccuracy } from "../morale.js";
+import type { AtRisk } from "./friendlyFire.js";
 
 /**
  * `smallArms`: the נק"ל\מקלעים table, fired by every fit man of a force.
@@ -85,6 +86,16 @@ export interface DirectFireResult {
   totalDamage: number;
   newCasualties: number;
   targetNeutralized: boolean;
+  /** Our own forces the misses hit (rules decision 133): absent where none was. */
+  friendly?: FriendlyHit[];
+}
+
+/** What a shot's misses did to one of the firer's own forces (rules decision 133). */
+export interface FriendlyHit {
+  unitId: string;
+  hits: number;
+  newCasualties: number;
+  neutralized: boolean;
 }
 
 /**
@@ -104,6 +115,12 @@ export interface WindowFireOptions {
   shooterIds?: ReadonlySet<string>;
   /** Only these men of the target can be hit: those it shows at its windows. */
   targetPool?: ReadonlySet<string>;
+  /**
+   * Friends the misses can stray onto (rules decision 133), likeliest first:
+   * each miss is rolled against them in turn and hits the first it catches.
+   * Absent or empty: no miss is rolled again, as before the rule.
+   */
+  atRisk?: readonly AtRisk[];
 }
 
 export function resolveDirectFire(
@@ -167,8 +184,26 @@ export function resolveDirectFire(
   let totalDamage = 0;
   let newCasualties = 0;
   const turn = opts.turn ?? 0;
+  const atRisk = opts.atRisk ?? [];
+  const strays = new Map<Unit, FriendlyHit>();
   for (let i = 0; i < shooters; i++) {
-    if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) continue;
+    if (!rng.chance(clamp01(hitChance * (accuracy[i] ?? 1)))) {
+      // A miss goes somewhere (decision 133): onto the first friend it catches, if any is in its way.
+      for (const r of atRisk) {
+        // A friend the strays have already put out of the fight — no fit man left a stray can reach — is no longer in their way.
+        if (!(r.unit.soldiers ?? []).some((s) => !s.neutralized && (!r.pool || r.pool.has(s.id)))) continue;
+        if (!rng.chance(clamp01(r.chance))) continue;
+        const h = woundHit(rng, r.unit, turn, "smallArms", undefined, r.pool);
+        if (!h.missed) {
+          const s = strays.get(r.unit) ?? { unitId: r.unit.id, hits: 0, newCasualties: 0, neutralized: false };
+          s.hits++;
+          if (h.casualty) s.newCasualties++;
+          strays.set(r.unit, s);
+        }
+        break;
+      }
+      continue;
+    }
     const hit = woundHit(rng, target, turn, "smallArms", opts.targetSoldierId, opts.targetPool);
     if (hit.missed) continue; // a lucky man (rules decision 69)
     hits++;
@@ -182,6 +217,12 @@ export function resolveDirectFire(
     refreshUnitStatus(target);
   }
   attacker.firedThisTurn = true;
+  for (const [unit, s] of strays) {
+    unit.underFire = true;
+    unit.hitThisTurn = true;
+    refreshUnitStatus(unit);
+    s.neutralized = unit.neutralized;
+  }
 
   return {
     fired: true,
@@ -192,6 +233,7 @@ export function resolveDirectFire(
     totalDamage,
     newCasualties,
     targetNeutralized: target.neutralized,
+    ...(strays.size ? { friendly: [...strays.values()] } : {}),
   };
 }
 

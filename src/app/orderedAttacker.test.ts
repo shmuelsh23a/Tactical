@@ -70,14 +70,15 @@ describe("OPORD mode in the browser's loop (decision 128)", () => {
   it("keeps every force of the company short of the order's limit of advance, turn after turn (decision 130)", () => {
     const base = REFERENCE_ORDERS[0]!.order;
     const order: CompanyOrder = { ...base, execution: { ...base.execution, measures: [...base.execution.measures, { kind: "limitOfAdvance", beyondM: 100 }] } };
-    // Seed 1002: one where the company gets across the objective (most battles end with the defence broken short of it).
-    const built = telAzekaAssaultListing.build(1002);
+    // Seed 1013: one where the company gets across the objective (most battles end with the defence broken short of it).
+    // Since friendly fire (decision 133) 1002's stops 200 m short; of 1000–1035, 1013 comes up to 5 m of the limit.
+    const built = telAzekaAssaultListing.build(1013);
     const g0 = built.game;
     const own = g0.units.filter((u) => u.side === "BLUE" && u.kind !== "command");
     const startLine = { x: own.reduce((t, u) => t + u.position.x, 0) / own.length, y: own.reduce((t, u) => t + u.position.y, 0) / own.length };
     const loa = limitOfAdvanceFrom(startLine, briefedObjective(g0, "BLUE", "RED", undefined, built.reserves ?? []), 100);
     let worst = -Infinity;
-    const { ordered } = play(1002, 0, 60, order, (g) => {
+    const { ordered } = play(1013, 0, 60, order, (g) => {
       for (const u of g.units) if (u.side === "BLUE" && !u.neutralized && !u.routing) worst = Math.max(worst, pastLimit(loa, u.position));
     });
     expect(ordered.asked.company.released).toBeDefined();

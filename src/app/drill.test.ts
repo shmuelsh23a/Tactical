@@ -850,7 +850,8 @@ describe("the doctrinal drill's fire teams (drill audit A3, A4, A10)", () => {
     drillCombat(g, task, DOCTRINAL_DRILL, state);
     expect(a.firedThisTurn).toBeFalsy();
     // With its team off the enemy, it fires on him: what held it was the shift, not a want of sight.
-    team.position = { x: 10, y: 300 };
+    // Off the line of fire too, since decision 133: at (10, 300) the team would mask its own support.
+    team.position = { x: 40, y: 300 };
     g.advanceToPhase("summary");
     g.advanceToPhase("combat");
     drillCombat(g, task, DOCTRINAL_DRILL, state);
@@ -864,5 +865,28 @@ describe("the doctrinal drill's fire teams (drill audit A3, A4, A10)", () => {
     drillMovement(g, task, DOCTRINAL_DRILL, state);
     expect(state.baseOfFire.has(a.id)).toBe(false);
     expect(a.position.y).toBeGreaterThan(y);
+  });
+
+  it("never fires through its own men: a team standing in the line of fire masks it, and it takes another enemy (decision 133)", () => {
+    const shotAt = (g: Game, id: string) => g.toRecording().actions.filter((x) => x.kind === "fire" && x.attackerId === id).map((x) => (x as { targetId: string }).targetId);
+    for (const on of [true, false]) {
+      const { g, a } = field(false);
+      (g as { friendlyFire: boolean }).friendlyFire = on;
+      // A second enemy off to the flank, clear of the team and of its line.
+      g.addUnit(makeInfantry("R2", "RED", "squad", { x: 200, y: 420 }, 9));
+      const state = new DrillState();
+      const task = orders();
+      g.advanceToPhase("movement");
+      drillMovement(g, task, DOCTRINAL_DRILL, state);
+      // The team short of the enemy, clear of the shift, but on the support team's line of fire to it.
+      g.getUnit("BLUE-1-1/t1").position = { x: 5, y: 300 };
+      g.advanceToPhase("combat");
+      const before = shotAt(g, a.id).length;
+      drillCombat(g, task, DOCTRINAL_DRILL, state);
+      const now = shotAt(g, a.id).slice(before);
+      // On: it fires, and not at the enemy its own team masks. Off: nothing masks it.
+      expect(a.firedThisTurn).toBe(true);
+      if (on) expect(now).toEqual(["R2"]);
+    }
   });
 });

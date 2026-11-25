@@ -163,6 +163,8 @@ const engine = {
   ...(args.includes("--no-reinforcement") ? { reinforcements: false as const } : {}),
   // The attacker briefed on the defence with its reserves, as before decision 105: a measurement switch.
   ...(args.includes("--brief-reserves") ? { briefReserves: true as const } : {}),
+  // Small arms hit only what they are aimed at, as before decision 133: a measurement switch.
+  ...(args.includes("--no-friendly-fire") ? { friendlyFire: false as const } : {}),
   ...(fireOnTheMove !== undefined ? { fireOnTheMove } : {}),
   ...(attackerBreakpoint !== undefined ? { attackerBreakpoint } : {}),
 };
@@ -311,6 +313,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   if (args.includes("--no-covered")) framing += ", no covered routes";
   if (args.includes("--no-together")) framing += ", platoons not together";
   if (args.includes("--brief-reserves")) framing += ", briefed on the reserves too";
+  if (args.includes("--no-friendly-fire")) framing += ", no friendly fire";
   mkdirSync(out, { recursive: true });
   const attacker = listing.build(seed).game.attackers[0] ?? "BLUE";
   let wins = 0;
@@ -369,6 +372,7 @@ try {
       `on turn ${r.turns}. Men down: attacker ${r.down[attacker]}/${r.men[attacker]}, defender ` +
       `${r.down[attacker === "BLUE" ? "RED" : "BLUE"]}/${r.men[attacker === "BLUE" ? "RED" : "BLUE"]}. ` +
       `Company went in on turn ${r.released ?? "-"}; missions fired ${r.missions[attacker]} HE and ${r.smoke[attacker]} smoke. Answers used: ${decide.asked.length}.` +
+      ` Friendly fire: attacker ${r.friendlyFire[attacker].casualties} men, defender ${r.friendlyFire[attacker === "BLUE" ? "RED" : "BLUE"].casualties}.` +
       (sectorsCli ? ` Sectors ${sectorWords(sectorsCli)}.` : "") +
       (boundaryCli ? ` Boundary ${sectorWords(boundaryCli)}, requests ${boundaryRequests === "grant" ? "granted" : "refused"}: ${r.boundaryRequests.length} answered.` : ""),
   );

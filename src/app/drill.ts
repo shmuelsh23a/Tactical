@@ -23,6 +23,7 @@ import {
   type StandingOrderExecution,
   type Unit,
   type WithCoveringFire,
+  MASKED_BY_FRIENDS,
 } from "../engine/index.js";
 import { hasEyesOn, sideView } from "./hotseat.js";
 import { HOLD_SHORT_M, platoonKey, type CompanyOrders } from "./company.js";
@@ -2494,9 +2495,13 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const shifted = drill.shiftToFarFlank && task.attacking ? farFlankOnly(game, u, task, enemies, drill.shiftToFarFlank.clear, state) : enemies;
     // Across the boundary only where no friend can be hit (A-16; decision 132).
     const lane = laneHolding(task, u);
-    const mine = lane ? shifted.filter((e) => !acrossFrom(task, lane, e.position) || safeAcross(game, u, e)) : shifted;
+    const inLane = lane ? shifted.filter((e) => !acrossFrom(task, lane, e.position) || safeAcross(game, u, e)) : shifted;
+    // Never through its own men (decision 133): a masked enemy is not a target; the risk to friends beside the line it takes.
+    const mine = game.friendlyFire ? inLane.filter((e) => !game.isMasked(u.id, e.id)) : inLane;
+    // A foe it is set on, too, unless masked short of the assault: then it takes another it can shoot (the review).
+    const foeMasked = !!foe && game.friendlyFire && distance(u.position, foe.position) > drill.assault.range && game.isMasked(u.id, foe.id);
     const target =
-      foe && distance(u.position, foe.position) <= reach
+      foe && distance(u.position, foe.position) <= reach && !foeMasked
         ? foe
         : pickTarget(u, mine, axisOf(u, task), drill, reach, hurting, game, sectorOf(task, u));
     if (!target) {
@@ -2546,7 +2551,8 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     } else {
       const r = game.fire(u.id, target.id, { weapon: u.kind === "vehicle" ? "sustainedMg" : "smallArms" });
       report?.fired?.(u, target, r);
-      if (drill.grenadiers) {
+      // Nor its grenadiers through its own men (decision 133).
+      if (drill.grenadiers && r.reason !== MASKED_BY_FRIENDS) {
         const volleys = fireGrenadiers(game, u, target, drill.grenadiers.menPerLauncher);
         report?.grenadiers?.(u, target, volleys);
       }

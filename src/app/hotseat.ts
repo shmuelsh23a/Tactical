@@ -244,6 +244,8 @@ export function outsideView(unit: Unit, seenNow: boolean): Unit {
   // position faces (decisions 85 and 86): all its own.
   const {
     suppression: _s,
+    // How much of it its own side's strays put on it (decision 133).
+    strayedSuppression: _ss,
     motivation: _mo,
     experience: _ex,
     quality: _q,

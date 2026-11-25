@@ -107,6 +107,7 @@ import {
   type DirectFireResult,
   type WeaponClass,
 } from "./combat/directFire.js";
+import { FRIENDLY_FIRE, friendsAtRisk, maskingFriend, MASKED_BY_FRIENDS, type AtRisk } from "./combat/friendlyFire.js";
 import {
   resolveDirectExplosive,
   type BlastTargetResult,
@@ -126,6 +127,7 @@ import {
   underRoof,
   effectiveCover,
   eyeHeight,
+  groundHeight,
   reachAlong,
   steepestGradeAlong,
   terrainBlocksSight,
@@ -134,7 +136,7 @@ import {
   type MapObject,
   type Terrain,
 } from "./terrain.js";
-import { OBJECT_COVER_REACH_M, SLOPE } from "./data/terrain.js";
+import { EYE_HEIGHT, OBJECT_COVER_REACH_M, SLOPE } from "./data/terrain.js";
 import {
   COLLAPSE_KILLS,
   CRITICAL_CHANCE,
@@ -832,6 +834,14 @@ export interface GameOptions {
    */
   ammunition?: boolean;
   /**
+   * Small-arms friendly fire and masked fire (rules decision 133): no force
+   * fires through its own men, and a shot's misses can hit a friend within
+   * 50 m of the target or 10 m of the line of fire. On by default; a
+   * recording made before it reads it as off, where small arms hit only
+   * what they were aimed at.
+   */
+  friendlyFire?: boolean;
+  /**
    * Decision 16's mines and IEDs a force that may lay them carries, in a game
    * with ammunition (decision 127): the scenario's; {@link BASIC_LOAD}'s 2
    * when it says nothing.
@@ -949,6 +959,12 @@ export class Game {
   get urbanTally(): { windowCriticals: number; roofCriticals: number; crushed: number } {
     return { ...this.tally };
   }
+  /** What each side's small arms did to its own men (decision 133): read by the harness, never by a rule. */
+  private readonly strayTally: Record<Side, { hits: number; casualties: number }> = { RED: { hits: 0, casualties: 0 }, BLUE: { hits: 0, casualties: 0 } };
+  /** A copy of what each side's strays did to it (decision 133). */
+  get friendlyFireTally(): Record<Side, { hits: number; casualties: number }> {
+    return { RED: { ...this.strayTally.RED }, BLUE: { ...this.strayTally.BLUE } };
+  }
   readonly morale: boolean;
   readonly variants: RuleVariants;
   /** Targets registered before the battle (rules decisions 32 and 38): with the options, then in planning. */
@@ -1011,6 +1027,8 @@ export class Game {
   readonly breachingCharges: number;
   /** Whether ammunition is counted (rules decision 127). */
   readonly ammunition: boolean;
+  /** Whether small arms can hit friends and are masked by them (rules decision 133). */
+  readonly friendlyFire: boolean;
   /** Mines and IEDs a force that may lay them carries (decision 127). */
   readonly charges: number;
   /** The ammunition caches put out in planning (decision 127), each its side's only. */
@@ -1496,6 +1514,7 @@ export class Game {
     this.breachingCharges = opts.breachingCharges ?? BREACHING_CHARGES_EACH;
     if (!Number.isInteger(this.breachingCharges) || this.breachingCharges < 0) throw new Error(`breachingCharges must be a whole number, not ${this.breachingCharges}`);
     this.ammunition = opts.ammunition ?? true;
+    this.friendlyFire = opts.friendlyFire ?? true;
     this.charges = opts.charges ?? BASIC_LOAD.charges;
     if (!Number.isInteger(this.charges) || this.charges < 0) throw new Error(`charges must be a whole number, not ${this.charges}`);
     this.breakEndsInside = opts.breakEndsInside ?? true;
@@ -1694,6 +1713,7 @@ export class Game {
       ...(this.joinFights ? { joinFights: true } : {}),
       ...(this.breachingCharges !== BREACHING_CHARGES_EACH ? { breachingCharges: this.breachingCharges } : {}),
       ...(this.ammunition ? { ammunition: true } : {}),
+      ...(this.friendlyFire ? { friendlyFire: true } : {}),
       ...(this.charges !== BASIC_LOAD.charges ? { charges: this.charges } : {}),
       ...(this.breakEndsInside ? { breakEndsInside: true } : {}),
       ...(this.moraleInside ? { moraleInside: true } : {}),
@@ -3335,10 +3355,12 @@ export class Game {
         const bands = posture.weapon === "sustainedMg" ? SUSTAINED_MG_BANDS : SMALL_ARMS_BANDS;
         // A force firing out of a fight inside is answered through the windows it fires from (decision 98).
         const windows = from ? undefined : this.throughWindows(coverer, actor);
+        // Its own men in front of it mask the mover wherever they stand in the line (decision 133).
+        const friends = this.friendsOf(coverer, actor.id);
         const canFireAt = (at: Point): boolean => {
           actor.position = at;
           const reaches = lookupBand(bands, distance(coverer.position, at)) != null;
-          return reaches && (windows ? windows.seen : this.hasLineOfSight(coverer, actor));
+          return reaches && (windows ? windows.seen : this.hasLineOfSight(coverer, actor)) && !(friends.length && this.maskOf(coverer, at, actor.id, friends));
         };
 
         const at = from
@@ -3400,7 +3422,9 @@ export class Game {
               hasLineOfSight: true,
           ...(windows?.pool ? { targetPool: windows.pool } : {}),
           ...(firing ? { shooterIds: firing } : {}),
+          atRisk: this.atRiskFrom(coverer, at, actor.id),
         });
+        if (result.fired) this.noteStrays(posture.weapon, result);
         // What it was behind against this fire, as the hit read it, for the
         // suppression the burst puts on it (decision 91): before its cover is put back.
         const suppressionCover = this.suppressionCover(actor, coverer.position, { position: !from });
@@ -3692,6 +3716,99 @@ export class Game {
     return range > order.engagementRange;
   }
 
+  /**
+   * The firer's own forces a shot of its could mask or hit (rules decision
+   * 133): men still in the fight — not a vehicle, which small arms do not
+   * hurt — the firer and its target excepted. A force fighting inside a
+   * building is among them, behind its walls (the author).
+   */
+  private friendsOf(firer: Unit, targetId: string): Unit[] {
+    if (!this.friendlyFire) return [];
+    return this.units.filter(
+      (u) => u.side === firer.side && u.id !== firer.id && u.id !== targetId && u.kind !== "vehicle" && !u.neutralized && !u.surrendered,
+    );
+  }
+
+  /**
+   * Whether fire from `firer` at a target standing at `to` passes well over
+   * `friend`'s head, `share` of the way along (decision 133): the line from
+   * the firer's eye to the target's silhouette, over the ground, at least
+   * {@link FRIENDLY_FIRE.overheadClearM} above the friend's own height.
+   */
+  private firesOver(firer: Unit, to: Point, target: Unit | undefined, friend: Unit, share: number): boolean {
+    const from = groundHeight(this.terrain, firer.position) + eyeHeight(firer);
+    const at = groundHeight(this.terrain, to) + (target ? eyeHeight(target) : EYE_HEIGHT.infantry);
+    const line = from + (at - from) * share;
+    return line - (groundHeight(this.terrain, friend.position) + eyeHeight(friend)) >= FRIENDLY_FIRE.overheadClearM;
+  }
+
+  /** The friend that masks a shot from `firer` at `to` (decision 133), if any: on the ground, not inside, not fired over. */
+  private maskOf(firer: Unit, to: Point, targetId: string, friends = this.friendsOf(firer, targetId)): Unit | undefined {
+    const open = friends.filter((u) => !this.interior.inFight(u.id));
+    if (!open.length) return undefined;
+    const target = this.units.find((u) => u.id === targetId);
+    return maskingFriend(firer.position, to, open, (u, share) => this.firesOver(firer, to, target, u, share));
+  }
+
+  /** What a friend's cover is worth against a stray from `from`, as a factor on the chance: inside a building, its walls (the author). */
+  private strayCover(friend: Unit, from: Point): number {
+    if (this.interior.inFight(friend.id)) return 1 + COVER_MODIFIERS.full;
+    const modifier = this.directionalCover ? directionalCoverModifier(friend, from, this.terrain, this.lethality) : COVER_MODIFIERS[this.coverAgainst(friend)];
+    return Math.max(0, 1 + modifier);
+  }
+
+  /** The friends a shot from `firer` at `to` puts at risk (decision 133): a friend fighting inside, by the men it shows toward the firer. */
+  private atRiskFrom(firer: Unit, to: Point, targetId: string, friends = this.friendsOf(firer, targetId)): AtRisk[] {
+    if (!friends.length) return [];
+    return friendsAtRisk(
+      firer.position,
+      to,
+      friends,
+      (u) => this.strayCover(u, firer.position),
+      (u) => (this.interior.inFight(u.id) ? new Set((this.interior.shown(this, u.id, firer.position) ?? []).map((m) => m.soldierId)) : undefined),
+    );
+  }
+
+  /** Whether a small-arms shot from `firerId` at `targetId` (at `at`, where its side has it marked) is masked by its own men (decision 133). */
+  isMasked(firerId: string, targetId: string, at?: Point): boolean {
+    if (!this.friendlyFire) return false;
+    const firer = this.getUnit(firerId);
+    return !!this.maskOf(firer, at ?? this.getUnit(targetId).position, targetId);
+  }
+
+  /**
+   * What a small-arms shot from `firerId` at `targetId` would risk of its own
+   * side (rules decision 133), for a player's fire card: the friend that
+   * masks it, if one does, and the friends its misses could hit, each with
+   * the chance a miss strays onto it. `at` is where the side has the target
+   * marked — the card must not read where it really is. Nothing where the
+   * rule is off.
+   */
+  friendlyRisk(firerId: string, targetId: string, at?: Point): { masked?: string; atRisk: { unitId: string; chance: number }[] } {
+    const firer = this.getUnit(firerId);
+    const to = at ?? this.getUnit(targetId).position;
+    const friends = this.friendsOf(firer, targetId);
+    const masked = this.maskOf(firer, to, targetId, friends);
+    const atRisk = this.atRiskFrom(firer, to, targetId, friends);
+    return { ...(masked ? { masked: masked.id } : {}), atRisk: atRisk.map((r) => ({ unitId: r.unit.id, chance: r.chance })) };
+  }
+
+  /** A shot's strays onto its own side (decision 133): suppressed as by any burst that hits, its nerve unshaken by an enemy it did not see. */
+  private noteStrays(weapon: WeaponClass, result: DirectFireResult): void {
+    for (const s of result.friendly ?? []) {
+      const unit = this.getUnit(s.unitId);
+      this.strayTally[unit.side].hits += s.hits;
+      this.strayTally[unit.side].casualties += s.newCasualties;
+      if (this.morale) {
+        // Its own side's share is kept apart (the author): a commander reading the firefight counts only the enemy's.
+        const before = unit.suppression ?? 0;
+        addSuppression(unit, this.directSuppression(weapon, s.hits));
+        const added = (unit.suppression ?? 0) - before;
+        if (added > 0) unit.strayedSuppression = (unit.strayedSuppression ?? 0) + added;
+      }
+    }
+  }
+
   fire(
     attackerId: string,
     targetId: string,
@@ -3707,13 +3824,15 @@ export class Game {
     // and below half the force's load only half of them — unless it spares none.
     const firing = opts.weapon === "sustainedMg" ? undefined : this.firingMenFor(attacker, target, false, this.throughWindows(attacker, target)?.shooters);
     const dry = firing && firing.size === 0 && this.hasReadyMen(attacker, this.throughWindows(attacker, target)?.shooters) ? OUT_OF_AMMUNITION : undefined;
+    // No force fires through its own men (decision 133).
+    const masked = this.friendlyFire && this.maskOf(attacker, target.position, targetId) ? MASKED_BY_FRIENDS : undefined;
     // The men the resolver is given (decision 127): who is charged for the shot is exactly who could take it.
     let firedBy: ReadonlySet<string> | undefined;
-    if (moraleRefusal || blind || dry || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
+    if (moraleRefusal || blind || dry || masked || attacker.covering || this.isHoldingFire(attackerId, targetId)) {
       // A shot never taken draws no answer.
       return {
         fired: false,
-        reason: moraleRefusal ?? blind ?? dry ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
+        reason: moraleRefusal ?? blind ?? dry ?? masked ?? (attacker.covering ? HOLDING_COVERING_FIRE : HOLDING_FIRE),
         range: distance(attacker.position, target.position),
         hitChance: 0,
         shooters: 0,
@@ -3768,7 +3887,10 @@ export class Game {
           ...(w.pool ? { targetPool: w.pool } : {}),
         };
       })(),
+      // The engine's, never the caller's (decision 133): the friends its misses can stray onto.
+      atRisk: this.atRiskFrom(attacker, target.position, targetId),
     });
+    if (fireResult.fired) this.noteStrays(opts.weapon, fireResult);
     // The men who fired spend a turn's rounds (decision 127): the first the resolver took.
     if (fireResult.fired && firedBy) this.spendFor(attacker, fireResult.shooters, firedBy);
     if (fireResult.fired) {
@@ -4430,6 +4552,9 @@ export class Game {
       .filter((u) => u.side !== unit.side && !u.neutralized && !u.vehicle?.destroyed)
       .filter((u) => !this.trackIntel || this.knows(unit.side, u.id))
       .filter(inRange)
+      // Not through its own men (decision 133): the nearest it can fire on, not one it would be refused every turn.
+      // A vehicle firing its main gun is not masked; on its coaxial gun it is (engageWithWhatItHas).
+      .filter((u) => (unit.kind === "vehicle" && order.engage?.weapon !== "sustainedMg") || !this.maskOf(unit, u.position, u.id))
       .sort((a, b) => distance(unit.position, a.position) - distance(unit.position, b.position));
     return candidates[0];
   }
@@ -4464,6 +4589,7 @@ export class Game {
       hits: result.hits,
       newCasualties: result.newCasualties,
       hitChance: result.hitChance,
+      ...(result.friendly ? { friendly: result.friendly } : {}),
     };
   }
 
