@@ -4501,7 +4501,9 @@ on the stated reasoning, still awaiting the author's word.
       nearer any force of the other lane than 25 m
       (`BOUNDARY_REDRAW_MARGIN_M`); short of that it moves part of the way;
       if it cannot move toward it at all the request cannot be granted, the
-      panel says so, and only refusing is offered.
+      panel says so, and only refusing is offered. **The author accepted
+      this for now** (2026-11-25): once lines are drawn on the battle
+      chart, a granted change will mean the player redrawing the lines.
     - **Scouts are free until H-hour**: they go to the posts the order gave
       them; once the company goes, they are held like the rest.
     - **Measured** (docs/balance.md, *Boundaries*; plans A and B at 3:1
@@ -4520,8 +4522,8 @@ on the stated reasoning, still awaiting the author's word.
       was typed with on 2026-11-23 (a drawn line between two platoons) was
       never carried out and is refused as not an order. A drawn boundary
       comes with the battle chart.
-    - ⚠️ Ours: the redraw as a sideways move of the whole line, partial
-      grants, a blocked grant counting as a refusal; a force held 5 m
+    - ⚠️ Ours: partial grants, a blocked grant counting as a refusal (the
+      sideways move itself the author accepted, above); a force held 5 m
       inside its lane (`LANE_INSIDE_M`); no request for a destination less
       than 5 m across (on the line itself, say), nor from a force only
       being brought into its lane where the start line put it; a request
