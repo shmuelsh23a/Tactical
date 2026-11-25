@@ -1926,7 +1926,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                 ? { orderMarks: formMarks(orderPlaces, orderChoices), onOrderMark: (id: string) => setOrderChoices((c) => applyMark(c, id, placing, orderPlaces.platoons.length)) }
                 : opord && ordered.current && orderPlaces
                   ? // The order's lines stay on the map once it is given: the limit of advance (decision 130).
-                    { orderMarks: formMarks(orderPlaces, orderChoices).filter((m) => m.kind === "loa") }
+                    { orderMarks: formMarks(orderPlaces, orderChoices).filter((m) => m.kind === "loa" || m.kind === "sector") }
                   : {})}
             />
           )}

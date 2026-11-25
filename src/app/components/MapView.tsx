@@ -134,7 +134,7 @@ export interface OrderMark {
   id: string;
   at: Point;
   label: string;
-  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa";
+  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa" | "sector";
   chosen: boolean;
   /** A line's other end: drawn from `at` to here (the limit of advance). */
   to?: Point;

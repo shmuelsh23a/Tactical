@@ -88,7 +88,7 @@ import { ORDERS } from "../src/sim/opord.js";
 import { ruleDecide } from "../src/app/ruleCommander.js";
 import { orderDecider, type IntentNote } from "../src/app/orderCommander.js";
 import { REFERENCE_ORDERS } from "../src/app/referenceOrders.js";
-import { limitOfAdvanceM, type CompanyOrder } from "../src/app/order.js";
+import { limitOfAdvanceM, sectorsOfFire, type CompanyOrder } from "../src/app/order.js";
 import { platoonKey } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
@@ -115,6 +115,20 @@ const drill =
 // A limit of advance N metres past the objective (decision 130); an order's own, given one, is its.
 const loaArg = value("--loa") === undefined ? undefined : Number(value("--loa"));
 if (loaArg !== undefined && !(loaArg > 0)) throw new Error("--loa: metres past the objective, more than 0");
+// Sectors of fire (decision 131), `--sectors BLUE-1=west,BLUE-2=east`: each platoon's primary half; an order's own, given one, are its.
+const sectorsArg = value("--sectors");
+const sectorPairs = sectorsArg === undefined ? undefined : sectorsArg.split(",").map((kv) => kv.split("="));
+if (sectorPairs?.some(([k, v]) => !k || (v !== "west" && v !== "east"))) throw new Error('--sectors: platoon=west or platoon=east, comma-separated');
+const sectorsCli = sectorPairs ? (Object.fromEntries(sectorPairs) as Record<string, "west" | "east">) : undefined;
+// …on platoons the attacker has, on every path: a misspelt one would play an unsectored battle without a word.
+function checkSectors(sectors: Readonly<Record<string, string>>): void {
+  const have = platoonsOf(Number(value("--seed") ?? 11));
+  const missing = Object.keys(sectors).filter((k) => !have.includes(k));
+  if (missing.length) throw new Error(`--sectors: the attacker has no platoon ${missing.join(", ")} (it has ${have.join(", ")})`);
+}
+if (sectorsCli) checkSectors(sectorsCli);
+/** The sectors as a run's record words them. */
+const sectorWords = (sectors: Readonly<Record<string, string>>): string => Object.entries(sectors).map(([k, v]) => `${k}=${v}`).join(",");
 const decide = fromAnswers(answers);
 // Where the scripted defender registers its mortars (`--defender-plan`): dead ground (the default), open ground, or nothing.
 const defenderPlan = value("--defender-plan") ?? "dead";
@@ -129,6 +143,7 @@ if (attackerBreakpoint !== undefined && !(attackerBreakpoint > 0 && attackerBrea
 const engine = {
   defenderFirePlan,
   ...(loaArg !== undefined ? { limitOfAdvanceM: loaArg } : {}),
+  ...(sectorsCli ? { sectors: sectorsCli } : {}),
   // The mission's deadline in place of the scenario's (decision 58): a measurement switch.
   ...(value("--time-limit") ? { timeLimit: Number(value("--time-limit")) } : {}),
   // The drill's covered routes and arriving together (balance.md, forty-fifth round), on unless turned off.
@@ -184,7 +199,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   let framing = "rule";
   const order = ORDERS[id];
   let written: CompanyOrder | undefined;
-  let orderLoa: { limitOfAdvanceM?: number } = {};
+  let orderLoa: { limitOfAdvanceM?: number; sectors?: Record<string, "west" | "east"> } = {};
   if (opordArg) {
     const ref = opordArg.startsWith("ref:") ? REFERENCE_ORDERS.find((r) => `ref:${r.key}` === opordArg) : undefined;
     if (opordArg.startsWith("ref:") && !ref) throw new Error(`--opord: "${opordArg}" is not one of ${REFERENCE_ORDERS.map((r) => `ref:${r.key}`).join(", ")}`);
@@ -194,6 +209,9 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     // The order's limit of advance reaches the drill (decision 130): nothing the order says is dropped.
     const m = limitOfAdvanceM(written);
     if (m !== undefined) orderLoa = { limitOfAdvanceM: m };
+    // …and so do its sectors of fire (decision 131).
+    const sec = sectorsOfFire(written);
+    if (Object.keys(sec).length) orderLoa = { ...orderLoa, sectors: sec };
     const o = written;
     // An order is for its scenario and its side: played elsewhere its platoons and places mean something else.
     if (o.scenario !== id) throw new Error(`--opord: the order was written for ${o.scenario}, not ${id}`);
@@ -261,6 +279,13 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   const n = Number(value("--n") ?? 1);
   const out =
     value("--out") ?? (opordArg ? "jev-runs/order" : args.includes("--rule") ? "jev-runs/rule" : args.includes("--claude") ? `jev-runs/${value("--claude")}` : "jev-runs");
+  // The sectors a battle is fought with (decision 131), on every run's record; a platoon the side does not have is refused, not ignored.
+  const sectorsUsed = orderLoa.sectors ?? sectorsCli;
+  if (sectorsCli && orderLoa.sectors) throw new Error("--sectors: the order gives its own sectors of fire; give them in one place");
+  if (sectorsUsed) {
+    checkSectors(sectorsUsed);
+    framing += `, sectors ${sectorWords(sectorsUsed)}`;
+  }
   if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
   if (fireOnTheMove !== undefined) framing += `, fire on the move ×${fireOnTheMove}`;
   if (attackerBreakpoint !== undefined) framing += `, attacker breaks at ${Math.round(attackerBreakpoint * 100)}%`;
@@ -324,7 +349,8 @@ try {
     `RESULT ${id} seed ${seed}: ${r.winner === attacker ? "the attack won" : r.winner === "draw" ? "a draw" : (r.outOfTime ? "the defence held: the attack ran out of time" : "the defence held")} ` +
       `on turn ${r.turns}. Men down: attacker ${r.down[attacker]}/${r.men[attacker]}, defender ` +
       `${r.down[attacker === "BLUE" ? "RED" : "BLUE"]}/${r.men[attacker === "BLUE" ? "RED" : "BLUE"]}. ` +
-      `Company went in on turn ${r.released ?? "-"}; missions fired ${r.missions[attacker]} HE and ${r.smoke[attacker]} smoke. Answers used: ${decide.asked.length}.`,
+      `Company went in on turn ${r.released ?? "-"}; missions fired ${r.missions[attacker]} HE and ${r.smoke[attacker]} smoke. Answers used: ${decide.asked.length}.` +
+      (sectorsCli ? ` Sectors ${sectorWords(sectorsCli)}.` : ""),
   );
   process.exit(0);
 } catch (e) {

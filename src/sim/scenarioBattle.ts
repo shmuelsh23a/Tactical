@@ -1,6 +1,6 @@
 import { battleScore, type SideScore } from "../app/score.js";
 import { delayHeld, outOfTime, sideDefeated } from "../app/hotseat.js";
-import { DrillState, HOLDS_POST_M, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, type DrillTask, type SquadDrill } from "../app/drill.js";
+import { DrillState, HOLDS_POST_M, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, sectorsFrom, type DrillTask, type SectorHalf, type SquadDrill } from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
@@ -86,6 +86,8 @@ export interface ScenarioBattleOptions {
    * squad out to it once the objective is seized. Absent: none.
    */
   limitOfAdvanceM?: number;
+  /** Sectors of fire (decision 131): each named platoon's primary half of the objective, on the same line of attack. Absent: none. */
+  sectors?: Readonly<Record<string, SectorHalf>>;
   /** Stop here. The mission's deadline (`timeLimit`, decision 58) unless given; 60 turns with none. */
   maxTurns?: number;
   /**
@@ -377,6 +379,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       objective,
       extent: { width: mapWidth, height: mapHeight },
       ...(opts.limitOfAdvanceM !== undefined ? { limitOfAdvance: limitOfAdvanceFrom(startLine, objective, opts.limitOfAdvanceM) } : {}),
+      ...(opts.sectors && Object.keys(opts.sectors).length ? { sectors: sectorsFrom(startLine, objective, opts.sectors) } : {}),
     },
     [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []), extent: { width: mapWidth, height: mapHeight } },
   } as Record<Side, DrillTask>;

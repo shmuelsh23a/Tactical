@@ -1,7 +1,7 @@
 import { ORDER_VERSION, type CompanyOrder, type ControlMeasure, type OrderTask, type Trigger } from "./order.js";
 import type { ReferenceOrder } from "./referenceOrders.js";
 import type { Side } from "../engine/index.js";
-import { limitOfAdvanceFrom } from "./drill.js";
+import { limitOfAdvanceFrom, sectorsFrom, type SectorHalf } from "./drill.js";
 
 /**
  * The order form's model (OPORD mode, decision 128): the choices the form
@@ -45,6 +45,8 @@ export interface OrderChoices {
   holdFireUntilHHour: boolean;
   /** A limit of advance this many metres past the objective (decision 130); 0 for none. */
   loa: number;
+  /** Each sectored platoon's primary half of the objective (decision 131); a platoon not named covers the whole of it. */
+  sectors: Record<string, SectorHalf>;
 }
 
 export const OBJECTIVE_NAME = "OBJ";
@@ -101,6 +103,7 @@ export function orderOf(c: OrderChoices, scenario: string, side: Side, byTurn?: 
   if (c.moveUp !== "no")
     measures.push({ kind: "assaultPosition", at: { suggested: "lastCover" }, occupy: c.moveUp === "found" ? { when: "enemyFound" } : { when: "atOnce" } });
   if (c.loa > 0) measures.push({ kind: "limitOfAdvance", beyondM: c.loa });
+  for (const [platoon, primary] of Object.entries(c.sectors)) measures.push({ kind: "sectorOfFire", platoon, primary });
   if (c.axis !== "straight")
     measures.push({
       kind: "checkpoint",
@@ -157,6 +160,7 @@ export function choicesOf(o: CompanyOrder): OrderChoices | undefined {
     policy: ex.fires.policy,
     holdFireUntilHHour: ex.fires.holdUntilTimeOfAttack,
     loa: m("limitOfAdvance")?.beyondM ?? 0,
+    sectors: Object.fromEntries(ex.measures.flatMap((x) => (x.kind === "sectorOfFire" ? [[x.platoon, x.primary]] : []))),
   };
 }
 
@@ -188,6 +192,7 @@ export function defaultChoices(templates: readonly ReferenceOrder[]): OrderChoic
       policy: "doctrine",
       holdFireUntilHHour: false,
       loa: 0,
+      sectors: {},
     }
   );
 }
@@ -217,13 +222,16 @@ export interface FormMark {
   id: string;
   at: { x: number; y: number };
   label: string;
-  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa";
+  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa" | "sector";
   chosen: boolean;
   /** A line's other end: the mark is drawn from `at` to here. */
   to?: { x: number; y: number };
 }
 
 const TARGET_NAMES = { centre: "מרכז", west: "מערב", east: "מזרח" } as const;
+const HALF_NAMES = { west: "חצי מערבי", east: "חצי מזרחי" } as const;
+/** How far each way from the objective the line between the sectors is drawn: across the whole position (ours). */
+const SECTOR_LINE_M = 400;
 
 /** The places the form draws, from what the battle will offer and what is chosen. */
 export function formMarks(
@@ -248,6 +256,22 @@ export function formMarks(
       to: { x: loa.at.x + across.x, y: loa.at.y + across.y },
       label: `קו גבול התקדמות — ${c.loa} מ' מעבר ליעד`,
       kind: "loa",
+      chosen: true,
+    });
+  }
+  const sectored = Object.entries(c.sectors);
+  if (sectored.length) {
+    // The line of attack through the objective, which splits it into the two halves (decision 131).
+    const s = sectorsFrom(ground.startLine, ground.objective, c.sectors);
+    const along = { x: -s.west.y * SECTOR_LINE_M, y: s.west.x * SECTOR_LINE_M };
+    const of = (h: SectorHalf) => sectored.filter(([, x]) => x === h).map(([p]) => p).join(", ");
+    const words = (["west", "east"] as const).filter((h) => of(h)).map((h) => `${HALF_NAMES[h]} — ${of(h)}`);
+    marks.push({
+      id: "sector",
+      at: { x: ground.objective.x - along.x, y: ground.objective.y - along.y },
+      to: { x: ground.objective.x + along.x, y: ground.objective.y + along.y },
+      label: `גזרות אש: ${words.join(" · ")}`,
+      kind: "sector",
       chosen: true,
     });
   }

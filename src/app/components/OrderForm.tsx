@@ -286,6 +286,26 @@ export function OrderForm({ ground, choices: c, onChange, placing, onPlacing, te
         <label>
           <input type="checkbox" checked={c.holdFireUntilHHour} onChange={(e) => set({ holdFireUntilHHour: e.target.checked })} /> לא יורים עד שעת ש׳
         </label>
+        <h5>גזרות אש</h5>
+        {ground.platoons.map((p) => (
+          <label key={`sector-${p}`}>
+            מחלקה {p}:{" "}
+            <select
+              value={c.sectors[p] ?? "whole"}
+              onChange={(e) => {
+                const sectors = { ...c.sectors };
+                if (e.target.value === "whole") delete sectors[p];
+                else sectors[p] = e.target.value as "west" | "east";
+                set({ sectors });
+              }}
+            >
+              <option value="whole">כל היעד</option>
+              <option value="west">חצי מערבי (משנית: המזרחי)</option>
+              <option value="east">חצי מזרחי (משנית: המערבי)</option>
+            </select>
+          </label>
+        ))}
+        {Object.keys(c.sectors).length > 0 && <p className="hint">מחלקה יורה קודם בגזרתה, ועוברת לחצי השני רק כשאין בה מטרה בטווח. מי שיורה עליה — היא משיבה אש לכל כיוון.</p>}
       </fieldset>
 
       {problems.length > 0 && (

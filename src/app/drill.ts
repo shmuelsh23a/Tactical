@@ -544,6 +544,45 @@ export interface DrillTask {
    * fresh squad is pushed out to it as security. Absent: none, as before.
    */
   limitOfAdvance?: LimitOfAdvance;
+  /**
+   * The order's sectors of fire (FM 3-90 (2023) para A-83; decision 131):
+   * each named platoon engages first in its half of the objective, and
+   * shifts to the other half — its secondary, the other platoon's primary —
+   * only when nothing is in reach there. Absent, or a platoon not named:
+   * the drill's own arc, as before.
+   */
+  sectors?: SectorsOfFire;
+}
+
+/** A half of the objective, split by the line of attack through its centre (decision 131). */
+export type SectorHalf = "west" | "east";
+
+/**
+ * Sectors of fire as the drill reads them: the line of attack through the
+ * objective splits the ground in two, and `west` is the unit vector square
+ * to it on the side of the lesser x (the map's west, as a flank's side is).
+ */
+export interface SectorsOfFire {
+  objective: Point;
+  /** Square to the line of attack, pointing into the west half. */
+  west: Point;
+  /** Each sectored platoon's primary half, by `platoonKey`. */
+  byPlatoon: Readonly<Record<string, SectorHalf>>;
+}
+
+/** The sectors of an order, on the line from `from` (the start line) through `objective`. */
+export function sectorsFrom(from: Point, objective: Point, byPlatoon: Readonly<Record<string, SectorHalf>>): SectorsOfFire {
+  const d = distance(from, objective) || 1;
+  const along = { x: (objective.x - from.x) / d, y: (objective.y - from.y) / d };
+  // Square to the line of attack; of its two senses, the one toward the lesser x is west.
+  const square = { x: -along.y, y: along.x };
+  const west = square.x <= 0 ? square : { x: -square.x, y: -square.y };
+  return { objective, west, byPlatoon: { ...byPlatoon } };
+}
+
+/** Which half of the objective a point is in (on the line itself: west). */
+export function halfOf(s: SectorsOfFire, p: Point): SectorHalf {
+  return (p.x - s.objective.x) * s.west.x + (p.y - s.objective.y) * s.west.y >= 0 ? "west" : "east";
 }
 
 /**
@@ -565,6 +604,13 @@ export function limitOfAdvanceFrom(from: Point, objective: Point, metres: number
   const d = distance(from, objective) || 1;
   const beyond = { x: (objective.x - from.x) / d, y: (objective.y - from.y) / d };
   return { at: { x: objective.x + beyond.x * metres, y: objective.y + beyond.y * metres }, beyond, halfWidth: LOA_HALF_WIDTH_M };
+}
+
+/** Whether an enemy is in `u`'s primary sector, when the order gave its platoon one; undefined when not. */
+export function sectorOf(task: DrillTask, u: Unit): ((e: Unit) => boolean) | undefined {
+  const s = task.sectors;
+  const half = s?.byPlatoon[platoonKey(u.id)];
+  return s && half ? (e: Unit) => halfOf(s, e.position) === half : undefined;
 }
 
 /** How far past the limit a point is, in metres; negative short of it. */
@@ -1149,6 +1195,8 @@ function knownEnemies(game: Game, side: Side): Unit[] {
 /**
  * The enemy a force should shoot at: the nearest known one inside its sector
  * and in reach, else — if the drill allows — the nearest in reach anywhere.
+ * `sector`, the order's (decision 131), first narrows the targets to its
+ * primary half while one there is in reach; the drill ranks the rest.
  */
 function pickTarget(
   u: Unit,
@@ -1158,6 +1206,7 @@ function pickTarget(
   reach: number,
   hurting?: ReadonlyMap<string, number>,
   game?: Game,
+  sector?: (e: Unit) => boolean,
 ): Unit | undefined {
   // Whoever is hurting us most, then the nearest: the drill's priority
   // (`returnFire`) if it has one, else ours, which is nearest-first.
@@ -1183,33 +1232,54 @@ function pickTarget(
     });
     if (seen.length) inReach = seen;
   }
+  // **An ordered sector of fire** (FM 3-90 (2023) para A-83; decision 131): only
+  // what is in the force's primary half is a target while anything there is in
+  // reach — and whoever is firing on it (decision 115, A-16's "clearly identified
+  // enemy targets") or is close enough to assault (⚠️ ours), wherever they are;
+  // with nothing of its half in reach, every enemy in reach, as if it had no
+  // sector: the other half is its secondary. The drill then ranks what is left
+  // exactly as it would without a sector, so a sector whose half holds every
+  // enemy, or none, changes nothing. Its arc no longer refuses a target: the order's
+  // sector covers both halves.
+  if (sector && inReach.some(sector)) {
+    inReach = inReach.filter((e) => sector(e) || weight(e) > 0 || distance(u.position, e.position) <= drill.assault.range);
+  }
+  const mayStray = drill.engageOutsideSector || !!sector;
   const inArc = (e: Unit) => drill.sectorWidth >= 360 || angleBetween(bearingDegrees(u.position, e.position), axis) <= drill.sectorWidth / 2;
   if (drill.threatFirst && game) {
-    const heavy = (e: Unit) => (e.mediumMg || e.kind === "vehicle" ? 1 : 0);
-    // Pinned as the firer's side can watch it, as the suppression gate reads it (hasEyesOn).
-    const pinned = (e: Unit) => {
-      try {
-        const it = game.getUnit(e.id);
-        return hasEyesOn(game, u.side, it) && suppressionLevel(it) === "pinned" ? 1 : 0;
-      } catch {
-        return 0;
-      }
-    };
     const near = (e: Unit) => distance(u.position, e.position);
     const ranked = [...inReach].sort(
       (a, b) =>
         weight(b) - weight(a) ||
-        pinned(a) - pinned(b) ||
-        heavy(b) - heavy(a) ||
+        threatOrder(game, u, a, b) ||
         Number(inArc(b)) - Number(inArc(a)) ||
         near(a) - near(b),
     );
     const first = ranked[0];
     // Shooting back needs no sector; anything else outside it only if the drill strays.
-    return first && (weight(first) > 0 || inArc(first) || drill.engageOutsideSector) ? first : undefined;
+    return first && (weight(first) > 0 || inArc(first) || mayStray) ? first : undefined;
   }
   const inSector = inReach.find(inArc);
-  return inSector ?? (drill.engageOutsideSector ? inReach[0] : undefined);
+  return inSector ?? (mayStray ? inReach[0] : undefined);
+}
+
+/**
+ * Greatest threat first, and no piling on (`threatFirst`, decision 115): an
+ * enemy not pinned before one that is, as `u`'s side can watch it (the
+ * suppression gate's `hasEyesOn`); then a crew-served weapon or a vehicle
+ * before riflemen. A comparator: negative puts `a` first.
+ */
+function threatOrder(game: Game, u: Unit, a: Unit, b: Unit): number {
+  const heavy = (e: Unit) => (e.mediumMg || e.kind === "vehicle" ? 1 : 0);
+  const pinned = (e: Unit) => {
+    try {
+      const it = game.getUnit(e.id);
+      return hasEyesOn(game, u.side, it) && suppressionLevel(it) === "pinned" ? 1 : 0;
+    } catch {
+      return 0;
+    }
+  };
+  return pinned(a) - pinned(b) || heavy(b) - heavy(a);
 }
 
 /** The position of whichever of our own forces is nearest an enemy we know of. */
@@ -2190,7 +2260,7 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const target =
       foe && distance(u.position, foe.position) <= reach
         ? foe
-        : pickTarget(u, mine, axisOf(u, task), drill, reach, hurting, game);
+        : pickTarget(u, mine, axisOf(u, task), drill, reach, hurting, game, sectorOf(task, u));
     if (!target) {
       // A consolidating attacker covers its new sector too (step 14h), not
       // only a defender in its own position.

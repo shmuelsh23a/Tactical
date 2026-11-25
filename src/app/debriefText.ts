@@ -1287,6 +1287,7 @@ export function orderProblemHe(p: OrderProblem): string {
     oneAssaultPosition: () => "עמדת הסתערות אחת לפלוגה",
     oneFinalCoordinationLine: () => "קו תיאום אחרון אחד לפלוגה",
     oneLimitOfAdvance: () => "קו גבול התקדמות אחד לפלוגה",
+    oneSectorAPlatoon: () => `מחלקה ${p.name}: גזרת אש ראשית אחת למחלקה`,
     triggerMissing: () => `${where}: לא נקבע מתי`,
     triggerEmpty: () => `${where}: תנאי ריק`,
     triggerUnknown: () => `${where}: "${p.name}" אינו תנאי מוכר`,

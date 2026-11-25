@@ -1,4 +1,5 @@
 import type { Point, Side } from "../engine/index.js";
+import type { SectorHalf } from "./drill.js";
 
 /**
  * OPORD mode's order (backlog 13, rules decisions 126 and 128): a company
@@ -115,7 +116,12 @@ export type ControlMeasure =
   /** A drawn line, or (for now, decision 130) `beyondM` metres past the objective, square to the line of attack. */
   | { kind: "limitOfAdvance"; line?: Line; beyondM?: number }
   // Direct fire control (FM 3-90 paras A-80–A-88).
-  | { kind: "sectorOfFire"; platoon: string; fromBearing: number; toBearing: number }
+  /**
+   * A platoon's primary sector (A-83; decision 131): for now a half of the
+   * objective, split by the line of attack through its centre; its secondary
+   * is the other half, which fire shifts to when nothing in the primary is in reach.
+   */
+  | { kind: "sectorOfFire"; platoon: string; primary: SectorHalf }
   | { kind: "targetReferencePoint"; name: string; at: Place }
   | { kind: "triggerLine"; platoon?: string; line: Line }
   | { kind: "engagementCriteria"; platoon?: string; openFire: Trigger }
@@ -230,6 +236,7 @@ export type OrderProblemCode =
   | "oneAssaultPosition"
   | "oneFinalCoordinationLine"
   | "oneLimitOfAdvance"
+  | "oneSectorAPlatoon"
   // Triggers.
   | "triggerMissing"
   | "triggerEmpty"
@@ -271,7 +278,15 @@ const CARRIED_OUT: Partial<Record<MeasureKind, (m: ControlMeasure) => string | u
     m.kind === "limitOfAdvance" && !m.line && Number.isInteger(m.beyondM) && m.beyondM! >= LOA_RANGE_M.min && m.beyondM! <= LOA_RANGE_M.max
       ? undefined
       : `only a distance past the objective, ${LOA_RANGE_M.min} to ${LOA_RANGE_M.max} m, for now`,
+  sectorOfFire: () => undefined,
 };
+
+/** The order's sectors of fire, each platoon's primary half (decision 131); empty with none. */
+export function sectorsOfFire(order: CompanyOrder): Record<string, SectorHalf> {
+  const out: Record<string, SectorHalf> = {};
+  for (const m of order.execution.measures) if (m.kind === "sectorOfFire") out[m.platoon] = m.primary;
+  return out;
+}
 
 /** The order's limit of advance, in metres past the objective; undefined with none. */
 export function limitOfAdvanceM(order: CompanyOrder): number | undefined {
@@ -349,6 +364,8 @@ function shapeProblems(order: CompanyOrder): OrderProblem[] {
       else if (PLACED.includes(m.kind) && (!(m as { at?: unknown }).at || typeof (m as { at?: unknown }).at !== "object"))
         out.push(problem("measureNoPlace", `${m.kind}: no place ("at")`, { kind: m.kind }));
       else if (m.kind === "finalCoordinationLine" && typeof m.holdUntilLifted !== "boolean") shape("finalCoordinationLine.holdUntilLifted", "true or false");
+      else if (m.kind === "sectorOfFire" && (typeof m.platoon !== "string" || (m.primary !== "west" && m.primary !== "east")))
+        shape("sectorOfFire", 'a platoon and its primary half, "west" or "east"');
     }
   return out;
 }
@@ -383,6 +400,11 @@ export function validateOrder(order: CompanyOrder, platoons?: readonly string[])
   if (measures.filter((m) => m.kind === "assaultPosition").length > 1) out.push(problem("oneAssaultPosition", "assaultPosition: one a company"));
   if (measures.filter((m) => m.kind === "finalCoordinationLine").length > 1) out.push(problem("oneFinalCoordinationLine", "finalCoordinationLine: one a company"));
   if (measures.filter((m) => m.kind === "limitOfAdvance").length > 1) out.push(problem("oneLimitOfAdvance", "limitOfAdvance: one a company"));
+  const sectored = measures.flatMap((m) => (m.kind === "sectorOfFire" ? [m.platoon] : []));
+  for (const key of new Set(sectored)) {
+    if (sectored.filter((k) => k === key).length > 1) out.push(problem("oneSectorAPlatoon", `sectorOfFire: one primary sector a platoon, and ${key} has more`, { name: key }));
+    if (platoons && !platoons.includes(key)) out.push(problem("noSuchPlatoon", `sectorOfFire: the side has no platoon ${key}`, { name: key }));
+  }
   out.push(...triggerProblems(ex.timeOfAttack, "timeOfAttack"));
   for (const m of measures) {
     if (m.kind !== "assaultPosition") continue;

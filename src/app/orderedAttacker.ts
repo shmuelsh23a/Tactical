@@ -2,8 +2,8 @@ import { type Game, type IndirectFireResult, type Point, type Side, type Unit } 
 import { AskedAttacker, observationPoints } from "./askedCompany.js";
 import { assaultPointFrom, flankPointsFrom, platoonKey, type CompanyGround } from "./company.js";
 import { attackerPlan, placeCaches, tubesOf } from "./computerSide.js";
-import { DrillState, REFERENCE_DRILL, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, type DrillReport, type DrillTask, type SquadDrill } from "./drill.js";
-import { limitOfAdvanceM, type CompanyOrder } from "./order.js";
+import { DrillState, REFERENCE_DRILL, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, sectorsFrom, type DrillReport, type DrillTask, type SquadDrill } from "./drill.js";
+import { limitOfAdvanceM, sectorsOfFire, type CompanyOrder } from "./order.js";
 import { orderDecider, type IntentNote } from "./orderCommander.js";
 import { briefedObjective } from "./planning.js";
 
@@ -119,12 +119,15 @@ export class OrderedAttacker {
     designateBreachSquads(g, side, drill, (u) => this.asked.company.isScout(u));
     // The order's limit of advance, on the line from the start line through the objective (decision 130).
     const loa = limitOfAdvanceM(order);
+    const sectors = sectorsOfFire(order);
     this.task = {
       side,
       attacking: true,
       objective,
       extent: { width: ground.mapWidth, height: ground.mapHeight },
       ...(loa !== undefined ? { limitOfAdvance: limitOfAdvanceFrom(startLine, objective, loa) } : {}),
+      // The order's sectors of fire, split by the same line of attack (decision 131).
+      ...(Object.keys(sectors).length ? { sectors: sectorsFrom(startLine, objective, sectors) } : {}),
     };
   }
 
