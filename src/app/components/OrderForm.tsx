@@ -248,6 +248,30 @@ export function OrderForm({ ground, choices: c, onChange, placing, onPlacing, te
         <label>
           <input type="checkbox" checked={c.bound} onChange={(e) => set({ bound: e.target.checked })} /> המחלקות המסתערות מדלגות בתורן
         </label>
+        <h5>גבול גזרה</h5>
+        {ground.platoons.map((p) => (
+          <label key={`lane-${p}`}>
+            מחלקה {p}:{" "}
+            <select
+              value={c.lanes[p] ?? "none"}
+              onChange={(e) => {
+                const lanes = { ...c.lanes };
+                if (e.target.value === "none") delete lanes[p];
+                else lanes[p] = e.target.value as "west" | "east";
+                set({ lanes });
+              }}
+            >
+              <option value="none">ללא — תנועה חופשית</option>
+              <option value="west">נתיב מערבי</option>
+              <option value="east">נתיב מזרחי</option>
+            </select>
+          </label>
+        ))}
+        {Object.keys(c.lanes).length > 0 && (
+          <p className="hint">
+            מקו היציאה ועד 100 מ' לפני מרכז היעד. מחלקה נעה רק בנתיבה, ויורה מעבר לגבול רק כשאין כוח שלנו בסכנה. כשהגבול עוצר אותה, היא מבקשת ממך לשנות אותו.
+          </p>
+        )}
         <label>
           קו גבול התקדמות:{" "}
           <select value={c.loa} onChange={(e) => set({ loa: Number(e.target.value) })}>

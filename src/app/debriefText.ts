@@ -1,3 +1,4 @@
+import type { BoundaryAnswer, BoundaryRequest } from "./drill.js";
 import type { IntentNote } from "./orderCommander.js";
 import { GO_ASKED_EVERY, LOA_RANGE_M, type MeasureKind, type OrderProblem, type OrderProblemCode } from "./order.js";
 import {
@@ -1266,6 +1267,23 @@ export const MEASURE_HE: Readonly<Record<MeasureKind, string>> = {
   battlePosition: "עמדת קרב",
 };
 
+/** A platoon's request to redraw the boundary, worded for the commander (decision 132), with whether it can be granted. */
+export function boundaryRequestHe(r: BoundaryRequest, grantable: { partly: boolean } | undefined): string {
+  const ask = `מחלקה ${r.platoon} מבקשת להזיז את גבול הגזרה: הגבול עוצר את תנועתה (תור ${r.turn}).`;
+  if (!grantable) return `${ask} אי אפשר להזיז אותו — כוחות הנתיב השכן עומדים במקום. אפשר רק לדחות.`;
+  return grantable.partly ? `${ask} אפשר להזיז אותו רק בחלקו: כוחות הנתיב השכן קרובים.` : ask;
+}
+
+/** The commander's answer, for the log (decision 132). */
+export function boundaryAnswerHe(a: BoundaryAnswer): string {
+  if (!a.granted)
+    return a.blocked
+      ? `גבול הגזרה לא הוזז: כוחות הנתיב השכן עומדים במקום (בקשת מחלקה ${a.platoon})`
+      : `בקשת מחלקה ${a.platoon} להזיז את גבול הגזרה נדחתה`;
+  const metres = Math.round(Math.abs(a.to - a.from));
+  return `גבול הגזרה הוזז ${metres} מ' ${a.to < a.from ? "מזרחה" : "מערבה"}${a.partly ? " — רק בחלקו" : ""}, לבקשת מחלקה ${a.platoon}`;
+}
+
 /** An order's problem, worded for the player (`validateOrder`'s codes). */
 export function orderProblemHe(p: OrderProblem): string {
   const where = p.where ? (ORDER_FIELD_HE[p.where] ?? p.where) : "";
@@ -1288,6 +1306,8 @@ export function orderProblemHe(p: OrderProblem): string {
     oneFinalCoordinationLine: () => "קו תיאום אחרון אחד לפלוגה",
     oneLimitOfAdvance: () => "קו גבול התקדמות אחד לפלוגה",
     oneSectorAPlatoon: () => `מחלקה ${p.name}: גזרת אש ראשית אחת למחלקה`,
+    oneBoundary: () => "גבול גזרה אחד לפלוגה",
+    boundaryEmpty: () => "גבול גזרה בלי מחלקה שקיבלה נתיב",
     triggerMissing: () => `${where}: לא נקבע מתי`,
     triggerEmpty: () => `${where}: תנאי ריק`,
     triggerUnknown: () => `${where}: "${p.name}" אינו תנאי מוכר`,

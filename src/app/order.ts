@@ -105,7 +105,13 @@ export type ControlMeasure =
   | { kind: "phaseLine"; line: Line; holdUntil?: Trigger }
   | { kind: "axisOfAdvance"; via: Place[]; widthM: number }
   | { kind: "directionOfAttack"; via: Place[] }
-  | { kind: "boundary"; line: Line; between: [string, string] }
+  /**
+   * One a company (decision 132): the line of attack from the start line to
+   * 100 m short of the objective, and each named platoon's lane, west or
+   * east of it; a platoon not named moves freely. A drawn line comes with the
+   * battle chart.
+   */
+  | { kind: "boundary"; lanes: Record<string, SectorHalf> }
   // The final stage (2-134: "between the probable line of deployment and the objective").
   | { kind: "probableLineOfDeployment"; line: Line }
   | { kind: "assaultPosition"; at: Place; occupy: Trigger }
@@ -237,6 +243,8 @@ export type OrderProblemCode =
   | "oneFinalCoordinationLine"
   | "oneLimitOfAdvance"
   | "oneSectorAPlatoon"
+  | "oneBoundary"
+  | "boundaryEmpty"
   // Triggers.
   | "triggerMissing"
   | "triggerEmpty"
@@ -279,7 +287,14 @@ const CARRIED_OUT: Partial<Record<MeasureKind, (m: ControlMeasure) => string | u
       ? undefined
       : `only a distance past the objective, ${LOA_RANGE_M.min} to ${LOA_RANGE_M.max} m, for now`,
   sectorOfFire: () => undefined,
+  boundary: () => undefined,
 };
+
+/** The order's lanes, each named platoon's (decision 132); empty with no boundary. */
+export function boundaryLanes(order: CompanyOrder): Record<string, SectorHalf> {
+  const m = order.execution.measures.find((x) => x.kind === "boundary");
+  return m && m.kind === "boundary" ? { ...m.lanes } : {};
+}
 
 /** The order's sectors of fire, each platoon's primary half (decision 131); empty with none. */
 export function sectorsOfFire(order: CompanyOrder): Record<string, SectorHalf> {
@@ -366,6 +381,11 @@ function shapeProblems(order: CompanyOrder): OrderProblem[] {
       else if (m.kind === "finalCoordinationLine" && typeof m.holdUntilLifted !== "boolean") shape("finalCoordinationLine.holdUntilLifted", "true or false");
       else if (m.kind === "sectorOfFire" && (typeof m.platoon !== "string" || (m.primary !== "west" && m.primary !== "east")))
         shape("sectorOfFire", 'a platoon and its primary half, "west" or "east"');
+      else if (
+        m.kind === "boundary" &&
+        (!m.lanes || typeof m.lanes !== "object" || Array.isArray(m.lanes) || Object.values(m.lanes).some((v) => v !== "west" && v !== "east"))
+      )
+        shape("boundary", 'each platoon\'s lane, "west" or "east"');
     }
   return out;
 }
@@ -400,6 +420,14 @@ export function validateOrder(order: CompanyOrder, platoons?: readonly string[])
   if (measures.filter((m) => m.kind === "assaultPosition").length > 1) out.push(problem("oneAssaultPosition", "assaultPosition: one a company"));
   if (measures.filter((m) => m.kind === "finalCoordinationLine").length > 1) out.push(problem("oneFinalCoordinationLine", "finalCoordinationLine: one a company"));
   if (measures.filter((m) => m.kind === "limitOfAdvance").length > 1) out.push(problem("oneLimitOfAdvance", "limitOfAdvance: one a company"));
+  const boundaries = measures.filter((m) => m.kind === "boundary");
+  if (boundaries.length > 1) out.push(problem("oneBoundary", "boundary: one a company"));
+  for (const m of boundaries) {
+    if (m.kind !== "boundary") continue;
+    if (!Object.keys(m.lanes).length) out.push(problem("boundaryEmpty", "boundary: no platoon is given a lane"));
+    for (const key of Object.keys(m.lanes))
+      if (platoons && !platoons.includes(key)) out.push(problem("noSuchPlatoon", `boundary: the side has no platoon ${key}`, { name: key }));
+  }
   const sectored = measures.flatMap((m) => (m.kind === "sectorOfFire" ? [m.platoon] : []));
   for (const key of new Set(sectored)) {
     if (sectored.filter((k) => k === key).length > 1) out.push(problem("oneSectorAPlatoon", `sectorOfFire: one primary sector a platoon, and ${key} has more`, { name: key }));

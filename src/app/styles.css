@@ -154,6 +154,10 @@ label.btn-ghost { margin-inline-start: 0.4rem; }
 .order-sector { cursor: default; pointer-events: none; }
 .order-sector line { stroke: var(--blue); stroke-width: 3; stroke-dasharray: 6 10; }
 .order-sector text { fill: var(--blue); }
+.order-boundary { cursor: default; pointer-events: none; }
+.order-boundary line { stroke: #f5f5f5; stroke-width: 3; stroke-dasharray: 22 6 4 6; }
+.order-boundary text { fill: #f5f5f5; }
+.boundary-request { border: 1px solid var(--blue); padding: 6px 8px; margin-top: 8px; }
 .order-objective circle { stroke: var(--red); }
 .order-objective text { fill: var(--red); }
 .order-form fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 10px; padding: 6px 10px; }

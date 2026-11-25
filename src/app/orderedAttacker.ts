@@ -2,8 +2,26 @@ import { type Game, type IndirectFireResult, type Point, type Side, type Unit } 
 import { AskedAttacker, observationPoints } from "./askedCompany.js";
 import { assaultPointFrom, flankPointsFrom, platoonKey, type CompanyGround } from "./company.js";
 import { attackerPlan, placeCaches, tubesOf } from "./computerSide.js";
-import { DrillState, REFERENCE_DRILL, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, sectorsFrom, type DrillReport, type DrillTask, type SquadDrill } from "./drill.js";
-import { limitOfAdvanceM, sectorsOfFire, type CompanyOrder } from "./order.js";
+import {
+  DrillState,
+  REFERENCE_DRILL,
+  answerBoundaryRequest,
+  boundaryEnds,
+  boundaryFrom,
+  boundaryRedraw,
+  designateBreachSquads,
+  drillCombat,
+  drillMovement,
+  limitOfAdvanceFrom,
+  pruneBoundaryRequests,
+  sectorsFrom,
+  type BoundaryAnswer,
+  type BoundaryRequest,
+  type DrillReport,
+  type DrillTask,
+  type SquadDrill,
+} from "./drill.js";
+import { boundaryLanes, limitOfAdvanceM, sectorsOfFire, type CompanyOrder } from "./order.js";
 import { orderDecider, type IntentNote } from "./orderCommander.js";
 import { briefedObjective } from "./planning.js";
 
@@ -120,6 +138,7 @@ export class OrderedAttacker {
     // The order's limit of advance, on the line from the start line through the objective (decision 130).
     const loa = limitOfAdvanceM(order);
     const sectors = sectorsOfFire(order);
+    const lanes = boundaryLanes(order);
     this.task = {
       side,
       attacking: true,
@@ -128,6 +147,8 @@ export class OrderedAttacker {
       ...(loa !== undefined ? { limitOfAdvance: limitOfAdvanceFrom(startLine, objective, loa) } : {}),
       // The order's sectors of fire, split by the same line of attack (decision 131).
       ...(Object.keys(sectors).length ? { sectors: sectorsFrom(startLine, objective, sectors) } : {}),
+      // …and its boundary on the same line, ending short of the objective (decision 132).
+      ...(Object.keys(lanes).length ? { boundary: boundaryFrom(startLine, objective, lanes) } : {}),
     };
   }
 
@@ -149,5 +170,32 @@ export class OrderedAttacker {
 
   combat(g: Game, report?: DrillReport): void {
     drillCombat(g, this.task, this.drill, this.state, report);
+  }
+
+  /** The request waiting on the commander to redraw the boundary, the earliest first (decision 132). */
+  pendingRequest(g?: Game): BoundaryRequest | undefined {
+    if (g) pruneBoundaryRequests(g, this.task, this.state);
+    return [...this.state.boundaryRequests.values()].sort((a, b) => a.turn - b.turn || a.platoon.localeCompare(b.platoon))[0];
+  }
+
+  /** Whether `platoon`'s request can be granted at all, and whether only partly: the neighbours' lane may not let the line move. */
+  grantable(g: Game, platoon: string): { partly: boolean } | undefined {
+    const r = boundaryRedraw(g, this.task, this.state, platoon);
+    return r ? { partly: r.partly } : undefined;
+  }
+
+  /** The commander's answer to `platoon`'s request. */
+  answer(g: Game, platoon: string, grant: boolean): BoundaryAnswer | undefined {
+    return answerBoundaryRequest(g, this.task, this.state, platoon, grant);
+  }
+
+  /** Every request answered, in order: what changed the order (decision 126). */
+  get boundaryAnswers(): readonly BoundaryAnswer[] {
+    return this.state.boundaryAnswers;
+  }
+
+  /** The boundary as it now runs, for the map; undefined with none. */
+  boundaryLine(): [Point, Point] | undefined {
+    return this.task.boundary ? boundaryEnds(this.task.boundary) : undefined;
   }
 }

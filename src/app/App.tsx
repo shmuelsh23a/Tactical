@@ -85,7 +85,7 @@ import {
   reinforcementHe,
   weaponName,
 } from "./debriefText.js";
-import { intentNoteHe, orderProblemHe } from "./debriefText.js";
+import { boundaryAnswerHe, boundaryRequestHe, intentNoteHe, orderProblemHe } from "./debriefText.js";
 import type { Scenario, ScenarioListing } from "./scenario.js";
 import {
   buildActivations,
@@ -117,7 +117,7 @@ import { OrderedAttacker, orderGround } from "./orderedAttacker.js";
 import { validateOrder } from "./order.js";
 import { OrderRefused } from "./orderCommander.js";
 import { REFERENCE_ORDERS } from "./referenceOrders.js";
-import { applyMark, defaultChoices, formMarks, orderOf, scoutCount, type OrderChoices } from "./orderForm.js";
+import { applyMark, battleMarks, defaultChoices, formMarks, orderOf, scoutCount, type OrderChoices } from "./orderForm.js";
 import { OrderForm } from "./components/OrderForm.js";
 
 /** An aim point this close to the caller's own forces is danger close: said in the log, not refused (rules decision 63, S4). */
@@ -785,9 +785,23 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     for (; notesTold.current < notes.length; notesTold.current++) pushLog(intentNoteHe(notes[notesTold.current]!, nameOf), "info", onlyFor(orderSide));
   }
 
+  // A platoon asks to have the boundary redrawn (decision 132): play stops until the commander answers.
+  const request = opord && stage === "initiative" ? ordered.current?.pendingRequest(game) : undefined;
+  useEffect(() => {
+    if (request && autoplay) setAutoplay(false);
+  }, [request, autoplay]);
+
+  function answerRequest(grant: boolean) {
+    const o = ordered.current;
+    if (!o || !request) return;
+    const a = o.answer(game, request.platoon, grant);
+    if (a) pushLog(boundaryAnswerHe(a), "info", onlyFor(o.side));
+    force();
+  }
+
   // Auto-play (OPORD mode): the next turn after a pause, until paused or the battle ends.
   useEffect(() => {
-    if (!opord || !autoplay || stage !== "initiative") return;
+    if (!opord || !autoplay || stage !== "initiative" || request) return;
     const t = setTimeout(() => handleContinue(), AUTOPLAY_DELAYS[autoplaySpeed] ?? 1500);
     return () => clearTimeout(t);
     // `handleContinue` is this render's; `tick` is the game's change.
@@ -1578,7 +1592,9 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
     const recording = sealRecording(game.toRecording());
     // OPORD mode: the order as written, and what was done by the intent where it said nothing (decision 126),
     // beside the actions that replay the battle; the debrief does not show it yet.
-    const file = ordered.current ? { ...recording, opord: { order: ordered.current.order, byIntent: ordered.current.notes } } : recording;
+    const file = ordered.current
+      ? { ...recording, opord: { order: ordered.current.order, byIntent: ordered.current.notes, boundaryRequests: ordered.current.boundaryAnswers } }
+      : recording;
     const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1926,7 +1942,7 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                 ? { orderMarks: formMarks(orderPlaces, orderChoices), onOrderMark: (id: string) => setOrderChoices((c) => applyMark(c, id, placing, orderPlaces.platoons.length)) }
                 : opord && ordered.current && orderPlaces
                   ? // The order's lines stay on the map once it is given: the limit of advance (decision 130).
-                    { orderMarks: formMarks(orderPlaces, orderChoices).filter((m) => m.kind === "loa" || m.kind === "sector") }
+                    { orderMarks: battleMarks(formMarks(orderPlaces, orderChoices), ordered.current.boundaryLine(), orderChoices.lanes) }
                   : {})}
             />
           )}
@@ -2107,10 +2123,10 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
               <h3>הפקודה בביצוע — תור {game.turn}</h3>
               <p>סדר פעולה: {activations.map((a) => a.side).filter((s, i, arr) => arr.indexOf(s) === i).join(" → ")}</p>
               <div className="row">
-                <button className="btn-primary" onClick={handleContinue} disabled={autoplay}>
+                <button className="btn-primary" onClick={handleContinue} disabled={autoplay || !!request}>
                   תור הבא
                 </button>
-                <button className="btn-ghost" onClick={() => setAutoplay((a) => !a)}>
+                <button className="btn-ghost" onClick={() => setAutoplay((a) => !a)} disabled={!!request}>
                   {autoplay ? "השהה" : "הרצה אוטומטית"}
                 </button>
                 <select value={autoplaySpeed} onChange={(e) => setAutoplaySpeed(Number(e.target.value))} title="מהירות ההרצה">
@@ -2119,6 +2135,19 @@ export function App({ scenario, onLeave, vsComputer, resume: resumed, onSaved }:
                   <option value={2}>מהיר</option>
                 </select>
               </div>
+              {request && ordered.current && (
+                <div className="boundary-request">
+                  <p>{boundaryRequestHe(request, ordered.current.grantable(game, request.platoon))}</p>
+                  <div className="row">
+                    <button className="btn-primary" onClick={() => answerRequest(true)} disabled={!ordered.current.grantable(game, request.platoon)}>
+                      אשר — הזז את הגבול
+                    </button>
+                    <button className="btn-ghost" onClick={() => answerRequest(false)}>
+                      דחה
+                    </button>
+                  </div>
+                </div>
+              )}
               {ordered.current && ordered.current.notes.length > 0 && (
                 <p className="order-notes">הפקודה לא אמרה {ordered.current.notes.length} פעמים — פעלו לפי כוונת המפקד (ביומן).</p>
               )}

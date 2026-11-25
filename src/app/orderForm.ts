@@ -1,7 +1,7 @@
 import { ORDER_VERSION, type CompanyOrder, type ControlMeasure, type OrderTask, type Trigger } from "./order.js";
 import type { ReferenceOrder } from "./referenceOrders.js";
 import type { Side } from "../engine/index.js";
-import { limitOfAdvanceFrom, sectorsFrom, type SectorHalf } from "./drill.js";
+import { boundaryEnds, boundaryFrom, limitOfAdvanceFrom, sectorsFrom, type SectorHalf } from "./drill.js";
 
 /**
  * The order form's model (OPORD mode, decision 128): the choices the form
@@ -47,6 +47,8 @@ export interface OrderChoices {
   loa: number;
   /** Each sectored platoon's primary half of the objective (decision 131); a platoon not named covers the whole of it. */
   sectors: Record<string, SectorHalf>;
+  /** Each laned platoon's lane under the boundary (decision 132); none named, no boundary. */
+  lanes: Record<string, SectorHalf>;
 }
 
 export const OBJECTIVE_NAME = "OBJ";
@@ -104,6 +106,7 @@ export function orderOf(c: OrderChoices, scenario: string, side: Side, byTurn?: 
     measures.push({ kind: "assaultPosition", at: { suggested: "lastCover" }, occupy: c.moveUp === "found" ? { when: "enemyFound" } : { when: "atOnce" } });
   if (c.loa > 0) measures.push({ kind: "limitOfAdvance", beyondM: c.loa });
   for (const [platoon, primary] of Object.entries(c.sectors)) measures.push({ kind: "sectorOfFire", platoon, primary });
+  if (Object.keys(c.lanes).length) measures.push({ kind: "boundary", lanes: { ...c.lanes } });
   if (c.axis !== "straight")
     measures.push({
       kind: "checkpoint",
@@ -161,6 +164,7 @@ export function choicesOf(o: CompanyOrder): OrderChoices | undefined {
     holdFireUntilHHour: ex.fires.holdUntilTimeOfAttack,
     loa: m("limitOfAdvance")?.beyondM ?? 0,
     sectors: Object.fromEntries(ex.measures.flatMap((x) => (x.kind === "sectorOfFire" ? [[x.platoon, x.primary]] : []))),
+    lanes: { ...(m("boundary")?.lanes ?? {}) },
   };
 }
 
@@ -193,6 +197,7 @@ export function defaultChoices(templates: readonly ReferenceOrder[]): OrderChoic
       holdFireUntilHHour: false,
       loa: 0,
       sectors: {},
+      lanes: {},
     }
   );
 }
@@ -222,7 +227,7 @@ export interface FormMark {
   id: string;
   at: { x: number; y: number };
   label: string;
-  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa" | "sector";
+  kind: "op" | "flank" | "assault" | "target" | "objective" | "loa" | "sector" | "boundary";
   chosen: boolean;
   /** A line's other end: the mark is drawn from `at` to here. */
   to?: { x: number; y: number };
@@ -230,6 +235,23 @@ export interface FormMark {
 
 const TARGET_NAMES = { centre: "מרכז", west: "מערב", east: "מזרח" } as const;
 const HALF_NAMES = { west: "חצי מערבי", east: "חצי מזרחי" } as const;
+const LANE_NAMES = { west: "נתיב מערבי", east: "נתיב מזרחי" } as const;
+
+/**
+ * The order's lines kept on the map once it is given (decisions 130-132): the
+ * limit of advance, the line between the sectors, and the boundary as it now
+ * runs, redrawn when a request is granted.
+ */
+export function battleMarks(marks: readonly FormMark[], boundary: readonly [{ x: number; y: number }, { x: number; y: number }] | undefined, lanes: Readonly<Record<string, SectorHalf>>): FormMark[] {
+  const kept = marks.filter((m) => m.kind === "loa" || m.kind === "sector");
+  return boundary ? [...kept, { id: "boundary", at: boundary[0], to: boundary[1], label: boundaryLabel(lanes), kind: "boundary", chosen: true }] : kept;
+}
+
+/** The boundary's label on the map: who is in which lane. */
+export function boundaryLabel(lanes: Readonly<Record<string, SectorHalf>>): string {
+  const of = (h: SectorHalf) => Object.entries(lanes).filter(([, x]) => x === h).map(([p]) => p).join(", ");
+  return `גבול גזרה: ${(["west", "east"] as const).filter((h) => of(h)).map((h) => `${LANE_NAMES[h]} — ${of(h)}`).join(" · ")}`;
+}
 /** How far each way from the objective the line between the sectors is drawn: across the whole position (ours). */
 const SECTOR_LINE_M = 400;
 
@@ -274,6 +296,11 @@ export function formMarks(
       kind: "sector",
       chosen: true,
     });
+  }
+  const laned = Object.entries(c.lanes);
+  if (laned.length) {
+    const [from, to] = boundaryEnds(boundaryFrom(ground.startLine, ground.objective, c.lanes));
+    marks.push({ id: "boundary", at: from, to, label: boundaryLabel(c.lanes), kind: "boundary", chosen: true });
   }
   (["centre", "west", "east"] as const).forEach((t, i) => {
     const at = ground.planned[i];

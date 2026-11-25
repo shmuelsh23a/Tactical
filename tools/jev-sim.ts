@@ -88,7 +88,7 @@ import { ORDERS } from "../src/sim/opord.js";
 import { ruleDecide } from "../src/app/ruleCommander.js";
 import { orderDecider, type IntentNote } from "../src/app/orderCommander.js";
 import { REFERENCE_ORDERS } from "../src/app/referenceOrders.js";
-import { limitOfAdvanceM, sectorsOfFire, type CompanyOrder } from "../src/app/order.js";
+import { boundaryLanes, limitOfAdvanceM, sectorsOfFire, type CompanyOrder } from "../src/app/order.js";
 import { platoonKey } from "../src/app/company.js";
 
 const args = process.argv.slice(2);
@@ -121,12 +121,20 @@ const sectorPairs = sectorsArg === undefined ? undefined : sectorsArg.split(",")
 if (sectorPairs?.some(([k, v]) => !k || (v !== "west" && v !== "east"))) throw new Error('--sectors: platoon=west or platoon=east, comma-separated');
 const sectorsCli = sectorPairs ? (Object.fromEntries(sectorPairs) as Record<string, "west" | "east">) : undefined;
 // …on platoons the attacker has, on every path: a misspelt one would play an unsectored battle without a word.
-function checkSectors(sectors: Readonly<Record<string, string>>): void {
+function checkSectors(sectors: Readonly<Record<string, string>>, flag = "--sectors"): void {
   const have = platoonsOf(Number(value("--seed") ?? 11));
   const missing = Object.keys(sectors).filter((k) => !have.includes(k));
-  if (missing.length) throw new Error(`--sectors: the attacker has no platoon ${missing.join(", ")} (it has ${have.join(", ")})`);
+  if (missing.length) throw new Error(`${flag}: the attacker has no platoon ${missing.join(", ")} (it has ${have.join(", ")})`);
 }
 if (sectorsCli) checkSectors(sectorsCli);
+// A boundary (decision 132), `--boundary BLUE-1=west,BLUE-2=east`, and how its requests are answered (`--boundary-requests grant|refuse`, refused by default).
+const boundaryArg = value("--boundary");
+const lanePairs = boundaryArg === undefined ? undefined : boundaryArg.split(",").map((kv) => kv.split("="));
+if (lanePairs?.some(([k, v]) => !k || (v !== "west" && v !== "east"))) throw new Error("--boundary: platoon=west or platoon=east, comma-separated");
+const boundaryCli = lanePairs ? (Object.fromEntries(lanePairs) as Record<string, "west" | "east">) : undefined;
+if (boundaryCli) checkSectors(boundaryCli, "--boundary");
+const boundaryRequests = value("--boundary-requests") ?? "refuse";
+if (boundaryRequests !== "grant" && boundaryRequests !== "refuse") throw new Error("--boundary-requests: grant or refuse");
 /** The sectors as a run's record words them. */
 const sectorWords = (sectors: Readonly<Record<string, string>>): string => Object.entries(sectors).map(([k, v]) => `${k}=${v}`).join(",");
 const decide = fromAnswers(answers);
@@ -144,6 +152,8 @@ const engine = {
   defenderFirePlan,
   ...(loaArg !== undefined ? { limitOfAdvanceM: loaArg } : {}),
   ...(sectorsCli ? { sectors: sectorsCli } : {}),
+  ...(boundaryCli ? { boundary: boundaryCli } : {}),
+  boundaryRequests: boundaryRequests as "grant" | "refuse",
   // The mission's deadline in place of the scenario's (decision 58): a measurement switch.
   ...(value("--time-limit") ? { timeLimit: Number(value("--time-limit")) } : {}),
   // The drill's covered routes and arriving together (balance.md, forty-fifth round), on unless turned off.
@@ -199,7 +209,7 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
   let framing = "rule";
   const order = ORDERS[id];
   let written: CompanyOrder | undefined;
-  let orderLoa: { limitOfAdvanceM?: number; sectors?: Record<string, "west" | "east"> } = {};
+  let orderLoa: { limitOfAdvanceM?: number; sectors?: Record<string, "west" | "east">; boundary?: Record<string, "west" | "east"> } = {};
   if (opordArg) {
     const ref = opordArg.startsWith("ref:") ? REFERENCE_ORDERS.find((r) => `ref:${r.key}` === opordArg) : undefined;
     if (opordArg.startsWith("ref:") && !ref) throw new Error(`--opord: "${opordArg}" is not one of ${REFERENCE_ORDERS.map((r) => `ref:${r.key}`).join(", ")}`);
@@ -212,6 +222,9 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     // …and so do its sectors of fire (decision 131).
     const sec = sectorsOfFire(written);
     if (Object.keys(sec).length) orderLoa = { ...orderLoa, sectors: sec };
+    // …and its boundary (decision 132).
+    const lanes = boundaryLanes(written);
+    if (Object.keys(lanes).length) orderLoa = { ...orderLoa, boundary: lanes };
     const o = written;
     // An order is for its scenario and its side: played elsewhere its platoons and places mean something else.
     if (o.scenario !== id) throw new Error(`--opord: the order was written for ${o.scenario}, not ${id}`);
@@ -286,6 +299,12 @@ if (args.includes("--jev") || args.includes("--rule") || args.includes("--claude
     checkSectors(sectorsUsed);
     framing += `, sectors ${sectorWords(sectorsUsed)}`;
   }
+  if (boundaryCli && orderLoa.boundary) throw new Error("--boundary: the order gives its own boundary; give it in one place");
+  const lanesUsed = orderLoa.boundary ?? boundaryCli;
+  if (lanesUsed) {
+    checkSectors(lanesUsed, "--boundary");
+    framing += `, boundary ${sectorWords(lanesUsed)}, requests ${boundaryRequests === "grant" ? "granted" : "refused"}`;
+  }
   if (defenderPlan !== "dead") framing += `, defender plan ${defenderPlan}`;
   if (fireOnTheMove !== undefined) framing += `, fire on the move ×${fireOnTheMove}`;
   if (attackerBreakpoint !== undefined) framing += `, attacker breaks at ${Math.round(attackerBreakpoint * 100)}%`;
@@ -350,7 +369,8 @@ try {
       `on turn ${r.turns}. Men down: attacker ${r.down[attacker]}/${r.men[attacker]}, defender ` +
       `${r.down[attacker === "BLUE" ? "RED" : "BLUE"]}/${r.men[attacker === "BLUE" ? "RED" : "BLUE"]}. ` +
       `Company went in on turn ${r.released ?? "-"}; missions fired ${r.missions[attacker]} HE and ${r.smoke[attacker]} smoke. Answers used: ${decide.asked.length}.` +
-      (sectorsCli ? ` Sectors ${sectorWords(sectorsCli)}.` : ""),
+      (sectorsCli ? ` Sectors ${sectorWords(sectorsCli)}.` : "") +
+      (boundaryCli ? ` Boundary ${sectorWords(boundaryCli)}, requests ${boundaryRequests === "grant" ? "granted" : "refused"}: ${r.boundaryRequests.length} answered.` : ""),
   );
   process.exit(0);
 } catch (e) {

@@ -1,6 +1,21 @@
 import { battleScore, type SideScore } from "../app/score.js";
 import { delayHeld, outOfTime, sideDefeated } from "../app/hotseat.js";
-import { DrillState, HOLDS_POST_M, designateBreachSquads, drillCombat, drillMovement, limitOfAdvanceFrom, sectorsFrom, type DrillTask, type SectorHalf, type SquadDrill } from "../app/drill.js";
+import {
+  DrillState,
+  HOLDS_POST_M,
+  answerBoundaryRequest,
+  boundaryFrom,
+  pruneBoundaryRequests,
+  designateBreachSquads,
+  drillCombat,
+  drillMovement,
+  limitOfAdvanceFrom,
+  sectorsFrom,
+  type BoundaryAnswer,
+  type DrillTask,
+  type SectorHalf,
+  type SquadDrill,
+} from "../app/drill.js";
 import { ScriptedCompany, type CompanyPlan } from "../app/company.js";
 import type { ScenarioListing } from "../app/scenarios/types.js";
 import {
@@ -88,6 +103,10 @@ export interface ScenarioBattleOptions {
   limitOfAdvanceM?: number;
   /** Sectors of fire (decision 131): each named platoon's primary half of the objective, on the same line of attack. Absent: none. */
   sectors?: Readonly<Record<string, SectorHalf>>;
+  /** A boundary (decision 132): each named platoon's lane, west or east of the line of attack, to 100 m short of the objective. Absent: none. */
+  boundary?: Readonly<Record<string, SectorHalf>>;
+  /** How the commander answers a platoon's request to redraw the boundary, at the end of the turn it asked in: refused unless "grant" (the author, decision 132). */
+  boundaryRequests?: "grant" | "refuse";
   /** Stop here. The mission's deadline (`timeLimit`, decision 58) unless given; 60 turns with none. */
   maxTurns?: number;
   /**
@@ -217,6 +236,8 @@ export interface ScenarioBattleResult {
   defenderPlanned: number;
   /** The defender's reserves that went in to retake a lost position (decision 60). */
   counterattacks: number;
+  /** The attacker's requests to redraw its boundary, and how each was answered (decision 132). */
+  boundaryRequests: BoundaryAnswer[];
   /**
    * What the battle did to buildings and vehicles (decisions 76–78): the
    * buildings damaged and brought down at the end, the rounds that went in
@@ -380,6 +401,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
       extent: { width: mapWidth, height: mapHeight },
       ...(opts.limitOfAdvanceM !== undefined ? { limitOfAdvance: limitOfAdvanceFrom(startLine, objective, opts.limitOfAdvanceM) } : {}),
       ...(opts.sectors && Object.keys(opts.sectors).length ? { sectors: sectorsFrom(startLine, objective, opts.sectors) } : {}),
+      ...(opts.boundary && Object.keys(opts.boundary).length ? { boundary: boundaryFrom(startLine, objective, opts.boundary) } : {}),
     },
     [defender]: { side: defender, attacking: false, objective: startLine, reserves: new Set(reserves ?? []), extent: { width: mapWidth, height: mapHeight } },
   } as Record<Side, DrillTask>;
@@ -398,6 +420,7 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     missions: { RED: 0, BLUE: 0 },
     smoke: { RED: 0, BLUE: 0 },
     counterattacks: 0,
+    boundaryRequests: [],
     retaken: 0,
     defenderPlanned: 0,
     urban: { damaged: 0, rubble: 0, windowCriticals: 0, roofCriticals: 0, crushed: 0, vehiclesOut: { RED: 0, BLUE: 0 }, vehicles: { RED: 0, BLUE: 0 } },
@@ -460,6 +483,12 @@ export function runScenarioBattle(listing: ScenarioListing, seed: number, opts: 
     asked?.heard(next.resolved);
     ignore(next.morale);
     if (settle()) break;
+    // The commander answers each request to redraw the boundary as the next turn opens, as the app's player does (decision 132).
+    pruneBoundaryRequests(g, tasks[attacker], state);
+    for (const platoon of [...state.boundaryRequests.keys()].sort()) {
+      const a = answerBoundaryRequest(g, tasks[attacker], state, platoon, opts.boundaryRequests === "grant");
+      if (a) result.boundaryRequests.push(a);
+    }
     // A delay mission done (decision 109): the defender held the attack as long as it was to.
     if (delayHeld(g)) { result.winner = defender; result.delayed = true; break; }
   }

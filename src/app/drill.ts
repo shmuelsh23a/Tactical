@@ -552,6 +552,60 @@ export interface DrillTask {
    * the drill's own arc, as before.
    */
   sectors?: SectorsOfFire;
+  /**
+   * The order's boundary (FM 3-90 (2023) para A-16; decision 132): each named
+   * platoon moves only in its lane, west or east of the line of attack, from
+   * the start line to {@link BOUNDARY_SHORT_M} short of the objective; it may
+   * fire across only where no friend can be hit, and asks the commander to
+   * redraw the line when it holds it back. Mutable: a granted request moves it.
+   */
+  boundary?: Boundary;
+}
+
+/**
+ * A boundary as the drill reads it: the line of attack from `from`, moved
+ * `shiftWestM` metres toward the west by granted requests, ending `endAlong`
+ * metres along it. Past the end a force is in no lane.
+ */
+export interface Boundary {
+  from: Point;
+  /** Unit vector along the line of attack. */
+  along: Point;
+  /** Unit vector square to it, into the west lane (as `SectorsOfFire.west`). */
+  west: Point;
+  endAlong: number;
+  shiftWestM: number;
+  /** Each laned platoon's lane, by `platoonKey`. */
+  byPlatoon: Readonly<Record<string, SectorHalf>>;
+}
+
+/** The boundary ends this far short of the objective's centre: the objective itself is not split (A-16; the author, decision 132). */
+export const BOUNDARY_SHORT_M = 100;
+
+/** The boundary of an order, on the line from `from` (the start line) toward `objective`. */
+export function boundaryFrom(from: Point, objective: Point, byPlatoon: Readonly<Record<string, SectorHalf>>): Boundary {
+  const d = distance(from, objective) || 1;
+  const along = { x: (objective.x - from.x) / d, y: (objective.y - from.y) / d };
+  const square = { x: -along.y, y: along.x };
+  const west = square.x <= 0 ? square : { x: -square.x, y: -square.y };
+  return { from, along, west, endAlong: Math.max(0, d - BOUNDARY_SHORT_M), shiftWestM: 0, byPlatoon: { ...byPlatoon } };
+}
+
+/** How far west of the boundary a point is (negative: east of it). */
+export function westOfBoundary(b: Boundary, p: Point): number {
+  return (p.x - b.from.x) * b.west.x + (p.y - b.from.y) * b.west.y - b.shiftWestM;
+}
+
+/** Which lane a point is in; undefined past the boundary's end, where there are none. */
+export function laneOf(b: Boundary, p: Point): SectorHalf | undefined {
+  if ((p.x - b.from.x) * b.along.x + (p.y - b.from.y) * b.along.y > b.endAlong) return undefined;
+  return westOfBoundary(b, p) >= 0 ? "west" : "east";
+}
+
+/** The ends of the boundary as it now runs, for drawing. */
+export function boundaryEnds(b: Boundary): [Point, Point] {
+  const at = (t: number): Point => ({ x: b.from.x + b.along.x * t + b.west.x * b.shiftWestM, y: b.from.y + b.along.y * t + b.west.y * b.shiftWestM });
+  return [at(0), at(b.endAlong)];
 }
 
 /** A half of the objective, split by the line of attack through its centre (decision 131). */
@@ -819,6 +873,12 @@ export class DrillState {
   objectiveFound = false;
   /** Each breach squad's house and how its charges there have gone (`breach`). */
   readonly breachJobs = new Map<string, BreachJob>();
+  /** Each platoon's open request to the commander to redraw the boundary (decision 132), by `platoonKey`. */
+  readonly boundaryRequests = new Map<string, BoundaryRequest>();
+  /** The turn each platoon's last request was refused: it asks again no sooner than {@link BOUNDARY_ASK_AGAIN_TURNS} after. */
+  readonly boundaryRefused = new Map<string, number>();
+  /** Every answer given, in order: what changed the order (decision 126). */
+  readonly boundaryAnswers: BoundaryAnswer[] = [];
   /** Houses the breach was given up on: the door it is (`breach`). */
   readonly breachGaveUp = new Set<string>();
   /** Where each consolidating squad holds on the far side of the objective, chosen once (decision 130). */
@@ -1481,6 +1541,176 @@ function holdShortOfLimit(game: Game, forces: readonly Unit[], loa: LimitOfAdvan
   }
 }
 
+/** A platoon the boundary held back asks the commander to redraw it (decision 132). */
+export interface BoundaryRequest {
+  platoon: string;
+  /** Where the drill wanted to go, across the line. */
+  wanted: Point;
+  turn: number;
+}
+
+/** A request answered: refused, or granted with the line moved from `from` to `to` (`shiftWestM`). */
+export interface BoundaryAnswer {
+  platoon: string;
+  turn: number;
+  granted: boolean;
+  /** Granted, but the neighbours' lane let the line go only part of the way. */
+  partly?: boolean;
+  /** Could not be granted: the neighbours stand where the line would have to go. */
+  blocked?: boolean;
+  from: number;
+  to: number;
+}
+
+/** A refused platoon asks again no sooner than this many turns after (the author, decision 132). */
+export const BOUNDARY_ASK_AGAIN_TURNS = 5;
+/** A force held at the boundary stops this far inside its lane (ours). */
+const LANE_INSIDE_M = 5;
+/** A redrawn line leaves the place asked for, and every force of the other lane, this far inside their lanes (ours). */
+export const BOUNDARY_REDRAW_MARGIN_M = 25;
+
+/** The force's lane, when the boundary holds it now: its platoon has one, it is short of the end, and it is not a scout before H-hour. */
+function laneHolding(task: DrillTask, u: Unit): SectorHalf | undefined {
+  const b = task.attacking ? task.boundary : undefined;
+  const lane = b?.byPlatoon[platoonKey(u.id)];
+  if (!b || !lane || u.kind === "command") return undefined;
+  // Scouts go to the posts the order gave them until the company goes (the author, decision 132).
+  if (task.company?.hold && task.company.scouts.has(u.id)) return undefined;
+  return laneOf(b, u.position) === undefined ? undefined : lane;
+}
+
+/**
+ * Every move of a laned force kept in its lane (decision 132): a destination
+ * across the line is brought back to just inside it, and a force that was in
+ * its lane and wanted across asks the commander to redraw the line - once,
+ * and again no sooner than {@link BOUNDARY_ASK_AGAIN_TURNS} after a refusal.
+ * A force standing out of its lane (where the start line put it) is only
+ * brought in.
+ */
+function holdInLane(game: Game, forces: readonly Unit[], task: DrillTask, state: DrillState): void {
+  const b = task.boundary!;
+  pruneBoundaryRequests(game, task, state);
+  for (const u of forces) {
+    // Its lane by its platoon, wherever it stands: a force past the end coming back short of it is held too.
+    const lane = b.byPlatoon[platoonKey(u.id)];
+    if (!lane || !inPlay(u) || (task.company?.hold && task.company.scouts.has(u.id))) continue;
+    const order = game.standingOrderFor(u.id);
+    const to = order?.destination;
+    if (!order || !to) continue;
+    const there = laneOf(b, to);
+    if (there === undefined || there === lane) continue;
+    const sign = lane === "west" ? 1 : -1;
+    const over = sign * LANE_INSIDE_M - westOfBoundary(b, to);
+    const held = { x: to.x + b.west.x * over, y: to.y + b.west.y * over };
+    const { destination: _was, ...rest } = order;
+    // Refused (out of command, decision 6): it keeps the order it has and may cross — it never got the word, and asks nothing.
+    if (!game.setStandingOrder(u.id, distance(held, u.position) < 2 ? rest : { ...rest, destination: held })) continue;
+    const platoon = platoonKey(u.id);
+    const refused = state.boundaryRefused.get(platoon);
+    // A request only from a force in its lane, short of the end, that wanted well across: not one being brought in, nor a few metres on the line.
+    const wasIn = laneOf(b, u.position) !== undefined && sign * westOfBoundary(b, u.position) >= 0;
+    const wellAcross = -sign * westOfBoundary(b, to) >= LANE_INSIDE_M;
+    if (wasIn && wellAcross && !state.boundaryRequests.has(platoon) && (refused === undefined || game.turn - refused >= BOUNDARY_ASK_AGAIN_TURNS))
+      state.boundaryRequests.set(platoon, { platoon, wanted: { ...to }, turn: game.turn });
+  }
+}
+
+/**
+ * Requests nobody needs answered any more, dropped with no refusal against
+ * them: the platoon has nobody left in play, or what it asked for is in its
+ * lane now (another's grant moved the line), or past the end.
+ */
+export function pruneBoundaryRequests(game: Game, task: DrillTask, state: DrillState): void {
+  const b = task.boundary;
+  if (!b) return;
+  for (const [platoon, r] of [...state.boundaryRequests]) {
+    const lane = b.byPlatoon[platoon];
+    const there = laneOf(b, r.wanted);
+    const anyone = game.units.some((u) => u.side === task.side && u.kind !== "command" && inPlay(u) && platoonKey(u.id) === platoon);
+    if (!lane || !anyone || there === undefined || there === lane) state.boundaryRequests.delete(platoon);
+  }
+}
+
+/**
+ * Where granting `platoon`'s request would move the line (`shiftWestM`): the
+ * place it asked for {@link BOUNDARY_REDRAW_MARGIN_M} inside its lane, but no
+ * further than leaves every force of the other lane as far inside its own.
+ * Undefined when the line cannot move toward it at all.
+ */
+export function boundaryRedraw(game: Game, task: DrillTask, state: DrillState, platoon: string): { to: number; partly: boolean } | undefined {
+  const b = task.boundary;
+  const req = state.boundaryRequests.get(platoon);
+  const lane = b?.byPlatoon[platoon];
+  if (!b || !req || !lane) return undefined;
+  const sign = lane === "west" ? 1 : -1;
+  const raw = (p: Point) => (p.x - b.from.x) * b.west.x + (p.y - b.from.y) * b.west.y;
+  // Granted in full: the place asked for this far inside the lane.
+  const full = raw(req.wanted) - sign * BOUNDARY_REDRAW_MARGIN_M;
+  const others = game.units.filter((u) => {
+    const theirs = b.byPlatoon[platoonKey(u.id)];
+    return u.side === task.side && u.kind !== "command" && inPlay(u) && theirs !== undefined && theirs !== lane && laneOf(b, u.position) !== undefined;
+  });
+  // The other lane's forces keep the margin: the line goes no nearer them.
+  const cap = others.length
+    ? sign > 0
+      ? Math.max(...others.map((u) => raw(u.position))) + BOUNDARY_REDRAW_MARGIN_M
+      : Math.min(...others.map((u) => raw(u.position))) - BOUNDARY_REDRAW_MARGIN_M
+    : sign > 0
+      ? -Infinity
+      : Infinity;
+  const to = sign > 0 ? Math.max(full, cap) : Math.min(full, cap);
+  const gains = sign > 0 ? to < b.shiftWestM : to > b.shiftWestM;
+  return gains ? { to, partly: to !== full } : undefined;
+}
+
+/**
+ * The commander's answer to `platoon`'s request (decision 132): granted, the
+ * line is redrawn as {@link boundaryRedraw} says (for the platoon and the
+ * neighbours across it); refused, or not grantable, it stays and the platoon
+ * waits {@link BOUNDARY_ASK_AGAIN_TURNS} turns before asking again.
+ */
+export function answerBoundaryRequest(game: Game, task: DrillTask, state: DrillState, platoon: string, grant: boolean): BoundaryAnswer | undefined {
+  const b = task.boundary;
+  if (!b || !state.boundaryRequests.has(platoon)) return undefined;
+  const redraw = grant ? boundaryRedraw(game, task, state, platoon) : undefined;
+  const answer: BoundaryAnswer = redraw
+    ? { platoon, turn: game.turn, granted: true, ...(redraw.partly ? { partly: true } : {}), from: b.shiftWestM, to: redraw.to }
+    : { platoon, turn: game.turn, granted: false, ...(grant ? { blocked: true } : {}), from: b.shiftWestM, to: b.shiftWestM };
+  const asked = state.boundaryRequests.get(platoon)!.turn;
+  state.boundaryRequests.delete(platoon);
+  if (redraw) b.shiftWestM = redraw.to;
+  // The wait counts from the turn it asked, whenever it is answered (the app and the runner both answer as the next turn opens).
+  else state.boundaryRefused.set(platoon, asked);
+  state.boundaryAnswers.push(answer);
+  return answer;
+}
+
+/** A friend of the firer's within this of an enemy across the boundary, or of the line of fire to it, withholds the shot (the author, decision 132). */
+export const ACROSS_SAFE = { targetM: 50, lineM: 10, clearOfFirerM: 10 } as const;
+
+/** Whether `u` may fire at `e` across the boundary: no friend within 50 m of it, nor within 10 m of the line of fire short of it (A-16). */
+function safeAcross(game: Game, u: Unit, e: Unit): boolean {
+  const dx = e.position.x - u.position.x;
+  const dy = e.position.y - u.position.y;
+  const len = Math.hypot(dx, dy) || 1;
+  for (const f of game.units) {
+    if (f.side !== u.side || f.id === u.id || !inPlay(f)) continue;
+    if (distance(f.position, e.position) <= ACROSS_SAFE.targetM) return false;
+    const t = ((f.position.x - u.position.x) * dx + (f.position.y - u.position.y) * dy) / len;
+    if (t <= ACROSS_SAFE.clearOfFirerM || t >= len) continue;
+    const off = Math.abs((f.position.x - u.position.x) * dy - (f.position.y - u.position.y) * dx) / len;
+    if (off <= ACROSS_SAFE.lineM) return false;
+  }
+  return true;
+}
+
+/** Whether a point is across the boundary from a force in `lane`: in the other lane, short of the end. */
+function acrossFrom(task: DrillTask, lane: SectorHalf | undefined, p: Point): boolean {
+  if (!lane || !task.boundary) return false;
+  const there = laneOf(task.boundary, p);
+  return there !== undefined && there !== lane;
+}
+
 function axisOf(u: Unit, task: DrillTask): number {
   return bearingDegrees(u.position, task.objective);
 }
@@ -2096,6 +2326,8 @@ export function drillMovement(game: Game, task: DrillTask, drill: SquadDrill, st
   });
   // The limit of advance (FM 3-90 A-53): no element goes past it — not a chase, not a bound, not a scout (decision 130).
   if (task.attacking && task.limitOfAdvance) holdShortOfLimit(game, forces, task.limitOfAdvance);
+  // The boundary (FM 3-90 A-16): each laned force moves only in its lane, and asks to have the line redrawn (decision 132).
+  if (task.attacking && task.boundary) holdInLane(game, forces, task, state);
   const done = game.executeStandingOrders(side);
   report?.executed?.(done);
 
@@ -2168,7 +2400,10 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     // assault on the house's defender joins the fight (decision 99).
     const follow = follows.get(u.id);
     const inside = follow ? game.getUnit(follow.defenderId) : undefined;
-    const insidePastLoa = !!inside && task.attacking && !!task.limitOfAdvance && pastLimit(task.limitOfAdvance, inside.position) > 0;
+    const insidePastLoa =
+      !!inside &&
+      task.attacking &&
+      ((!!task.limitOfAdvance && pastLimit(task.limitOfAdvance, inside.position) > 0) || acrossFrom(task, laneHolding(task, u), inside.position));
     if (follow?.goIn && inside && !insidePastLoa && distance(u.position, follow.door) <= ASSAULT_RANGE_M && distance(u.position, inside.position) <= ASSAULT_RANGE_M) {
       if (u.covering) game.setCovering(u.id, false); // a posture is no reason not to go in
       const r = game.assault(u.id, inside.id, drill.assault.grenades);
@@ -2256,7 +2491,10 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const hurting = drill.returnFire ? hurtingUs(game, side, u, enemies, drill.returnFire.since) : undefined;
     // A force giving a base of fire while the assault is in shoots at the
     // far side of the objective, not across the assault's front.
-    const mine = drill.shiftToFarFlank && task.attacking ? farFlankOnly(game, u, task, enemies, drill.shiftToFarFlank.clear, state) : enemies;
+    const shifted = drill.shiftToFarFlank && task.attacking ? farFlankOnly(game, u, task, enemies, drill.shiftToFarFlank.clear, state) : enemies;
+    // Across the boundary only where no friend can be hit (A-16; decision 132).
+    const lane = laneHolding(task, u);
+    const mine = lane ? shifted.filter((e) => !acrossFrom(task, lane, e.position) || safeAcross(game, u, e)) : shifted;
     const target =
       foe && distance(u.position, foe.position) <= reach
         ? foe
@@ -2289,7 +2527,9 @@ export function drillCombat(game: Game, task: DrillTask, drill: SquadDrill, stat
     const awaitsBreach = task.attacking && waitsForBreach(game, state, side, u, target, !!task.company?.hold);
     // Not onto an enemy past the limit of advance: it is fired on from short of it (decision 130).
     const pastLoa = task.attacking && !!task.limitOfAdvance && pastLimit(task.limitOfAdvance, target.position) > 0;
-    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !awaitsBreach && !pastLoa && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
+    // Nor onto an enemy across the boundary: fired on from its own lane, never closed with (decision 132).
+    const across = acrossFrom(task, lane, target.position);
+    if (u.kind !== "command" && !fight && !holdsHouse && !breakingNow && !awaitsBreach && !pastLoa && !across && !game.interior.inFight(target.id) && distance(u.position, target.position) <= drill.assault.range) {
       const r = game.assault(u.id, target.id, drill.assault.grenades);
       report?.assaulted?.(u, target, drill.assault.grenades, r);
     } else if (tank && fired(game.fireExplosive("tankRound", u.id, target.id), (r) => report?.explosive?.(u, target, "tankRound", r))) {
